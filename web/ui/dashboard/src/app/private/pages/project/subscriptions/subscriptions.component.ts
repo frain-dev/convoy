@@ -21,6 +21,7 @@ export class SubscriptionsComponent implements OnInit {
 	isDeletingSubscription = false;
 	showUpdateSubscriptionModal = false;
 	textCopied = false;
+	showDeleteSubscriptionModal = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
 		this.route.queryParams.subscribe(params => (this.activeSubscription = this.subscriptions?.content.find(source => source.uid === params?.id)));
@@ -74,6 +75,8 @@ export class SubscriptionsComponent implements OnInit {
 			const response = await this.subscriptionsService.deleteSubscription(this.activeSubscription?.uid || '');
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
+			this.showDeleteSubscriptionModal = false
+			this.isDeletingSubscription = false;
 		} catch (error) {
 			this.isDeletingSubscription = false;
 		}

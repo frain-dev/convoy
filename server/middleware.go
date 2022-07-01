@@ -44,13 +44,11 @@ const (
 	endpointCtx         contextKey = "endpoint"
 	eventCtx            contextKey = "event"
 	eventDeliveryCtx    contextKey = "eventDelivery"
-	configCtx           contextKey = "configCtx"
 	authLoginCtx        contextKey = "authLogin"
 	authUserCtx         contextKey = "authUser"
 	userCtx             contextKey = "user"
 	pageableCtx         contextKey = "pageable"
 	pageDataCtx         contextKey = "pageData"
-	dashboardCtx        contextKey = "dashboard"
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 	hostCtx             contextKey = "host"
 	appIdCtx            contextKey = "appId"
@@ -1092,14 +1090,6 @@ func getPaginationDataFromContext(ctx context.Context) *datastore.PaginationData
 	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
 }
 
-func setDashboardSummaryInContext(ctx context.Context, d *models.DashboardSummary) context.Context {
-	return context.WithValue(ctx, dashboardCtx, d)
-}
-
-func getDashboardSummaryFromContext(ctx context.Context) *models.DashboardSummary {
-	return ctx.Value(dashboardCtx).(*models.DashboardSummary)
-}
-
 func setDeliveryAttemptInContext(ctx context.Context,
 	attempt *datastore.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
@@ -1136,14 +1126,6 @@ func getUserFromContext(ctx context.Context) *datastore.User {
 
 func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
 	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
-}
-
-func setConfigInContext(ctx context.Context, c *ViewableConfiguration) context.Context {
-	return context.WithValue(ctx, configCtx, c)
-}
-
-func getConfigFromContext(ctx context.Context) *ViewableConfiguration {
-	return ctx.Value(configCtx).(*ViewableConfiguration)
 }
 
 func setHostInContext(ctx context.Context, baseUrl string) context.Context {

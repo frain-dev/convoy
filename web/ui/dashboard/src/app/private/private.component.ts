@@ -15,14 +15,16 @@ export class PrivateComponent implements OnInit {
 	showMoreDropdown = false;
 	showOverlay = false;
 	showAddOrganisationModal = false;
+	showAddAnalytics = false;
 	apiURL = this.generalService.apiURL();
 	organisations!: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
 
 	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
-	ngOnInit() {
-		this.getOrganizations();
+	async ngOnInit() {
+		this.getConfiguration();
+		await this.getOrganizations();
 	}
 
 	async logout() {
@@ -37,29 +39,43 @@ export class PrivateComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
+	async getConfiguration() {
+		try {
+			const response = await this.privateService.getConfiguration();
+			if (response.data.length === 0 && !this.router.url.includes('app-portal')) this.showAddAnalytics = true;
+		} catch {}
+	}
+
 	async getOrganizations() {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
-			const setOrg = localStorage.getItem('CONVOY_ORG');
-			if (!setOrg || setOrg === 'undefined') {
-				this.privateService.organisationDetails = this.organisations[0];
-				this.userOrganization = this.organisations[0];
-				localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
-			} else {
-				this.privateService.organisationDetails = JSON.parse(setOrg);
-				this.userOrganization = JSON.parse(setOrg);
-			}
+			this.checkForSelectedOrganisation();
 		} catch (error) {
 			return error;
 		}
 	}
 
 	async selectOrganisation(organisation: ORGANIZATION_DATA) {
+		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		location.reload();
+		this.router.url.includes('/projects/') ? this.router.navigateByUrl('/projects') : location.reload();
+	}
+
+	checkForSelectedOrganisation() {
+		if (!this.organisations?.length) return;
+
+		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
+		if (!selectedOrganisation || selectedOrganisation === 'undefined') {
+			this.privateService.organisationDetails = this.organisations[0];
+			this.userOrganization = this.organisations[0];
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+		} else {
+			this.privateService.organisationDetails = JSON.parse(selectedOrganisation);
+			this.userOrganization = JSON.parse(selectedOrganisation);
+		}
 	}
 
 	closeAddOrganisationModal(event?: { action: 'created' | 'cancel' }) {

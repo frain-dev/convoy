@@ -71,11 +71,11 @@ type NativeRealmOptions struct {
 }
 
 type JwtRealmOptions struct {
-	Enabled       bool   `json:"enabled"`
-	Secret        string `json:"secret"`
-	Expiry        int    `json:"expiry"`
-	RefreshSecret string `json:"refresh_secret"`
-	RefreshExpiry int    `json:"refresh_expiry"`
+	Enabled       bool   `json:"enabled" envconfig:"CONVOY_JWT_REALM_ENABLED"`
+	Secret        string `json:"secret" envconfig:"CONVOY_JWT_SECRET"`
+	Expiry        int    `json:"expiry" envconfig:"CONVOY_JWT_EXPIRY"`
+	RefreshSecret string `json:"refresh_secret" envconfig:"CONVOY_JWT_REFRESH_SECRET"`
+	RefreshExpiry int    `json:"refresh_expiry" envconfig:"CONVOY_JWT_REFRESH_EXPIRY"`
 }
 
 type SMTPConfiguration struct {
@@ -421,6 +421,26 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 		c.Auth.File.Basic = override.Auth.File.Basic
 	}
 
+	// CONVOY_JWT_SECRET
+	if !IsStringEmpty(override.Auth.Jwt.Secret) {
+		c.Auth.Jwt.Secret = override.Auth.Jwt.Secret
+	}
+
+	// CONVOY_JWT_EXPIRY
+	if override.Auth.Jwt.Expiry != 0 {
+		c.Auth.Jwt.Expiry = override.Auth.Jwt.Expiry
+	}
+
+	// CONVOY_JWT_REFRESH_SECRET
+	if !IsStringEmpty(override.Auth.Jwt.RefreshSecret) {
+		c.Auth.Jwt.RefreshSecret = override.Auth.Jwt.RefreshSecret
+	}
+
+	// CONVOY_JWT_REFRESH_EXPIRY
+	if override.Auth.Jwt.RefreshExpiry != 0 {
+		c.Auth.Jwt.RefreshExpiry = override.Auth.Jwt.RefreshExpiry
+	}
+
 	// boolean values are weird; we have to check if they are actually set
 
 	if _, ok := os.LookupEnv("CONVOY_MULTIPLE_TENANTS"); ok {
@@ -437,6 +457,10 @@ func overrideConfigWithEnvVars(c *Configuration, override *Configuration) {
 
 	if _, ok := os.LookupEnv("CONVOY_NATIVE_REALM_ENABLED"); ok {
 		c.Auth.Native.Enabled = override.Auth.Native.Enabled
+	}
+
+	if _, ok := os.LookupEnv("CONVOY_JWT_REALM_ENABLED"); ok {
+		c.Auth.Jwt.Enabled = override.Auth.Jwt.Enabled
 	}
 }
 

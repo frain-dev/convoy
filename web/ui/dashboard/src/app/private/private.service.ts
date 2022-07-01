@@ -14,7 +14,6 @@ export class PrivateService {
 	constructor(private http: HttpService) {}
 
 	getOrganisation(): ORGANIZATION_DATA {
-		if (this.organisationDetails) return this.organisationDetails;
 		let org = localStorage.getItem('CONVOY_ORG');
 		return org ? JSON.parse(org) : null;
 	}
@@ -31,7 +30,22 @@ export class PrivateService {
 		}
 	}
 
-	async getApps(requestDetails?: { pageNo?: number; searchString?: string }): Promise<HTTP_RESPONSE> {
+	getConfiguration(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/configuration`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getApps(requestDetails?: { pageNo?: number; searchString?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -40,7 +54,22 @@ export class PrivateService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	deleteApp(appID:string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.urlFactory('org_project')}/apps/${appID}`,
+					method: 'delete'
+				});
+
+				return resolve(response);
+			} catch (error) {
 				return reject(error);
 			}
 		});
@@ -55,7 +84,7 @@ export class PrivateService {
 				});
 
 				return resolve(sourcesResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
@@ -71,34 +100,38 @@ export class PrivateService {
 
 				this.activeProjectDetails = projectResponse.data;
 				return resolve(projectResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async getOrganizations(): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `/organisations`,
-				method: 'get'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	getOrganizations(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve,reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/organisations`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		})
 	}
 
-	async logout(): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: '/auth/logout',
-				method: 'post',
-				body: null
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	logout(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve,reject) => {
+			try {
+				const response = await this.http.request({
+					url: '/auth/logout',
+					method: 'post',
+					body: null
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		})
 	}
 }

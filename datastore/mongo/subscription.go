@@ -14,11 +14,13 @@ import (
 
 type subscriptionRepo struct {
 	client *mongo.Collection
+	store  datastore.Store
 }
 
-func NewSubscriptionRepo(db *mongo.Database) datastore.SubscriptionRepository {
+func NewSubscriptionRepo(db *mongo.Database, store datastore.Store) datastore.SubscriptionRepository {
 	return &subscriptionRepo{
 		client: db.Collection(SubscriptionCollection),
+		store:  store,
 	}
 }
 
@@ -28,8 +30,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, groupId strin
 	}
 
 	subscription.ID = primitive.NewObjectID()
-	_, err := s.client.InsertOne(ctx, subscription)
-	return err
+	return s.store.Save(ctx, subscription, nil)
 }
 
 func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription) error {
@@ -45,22 +46,21 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "name", Value: subscription.Name},
-		primitive.E{Key: "source_id", Value: subscription.SourceID},
-		primitive.E{Key: "endpoint_id", Value: subscription.EndpointID},
+	update := bson.M{
+		"name":        subscription.Name,
+		"source_id":   subscription.SourceID,
+		"endpoint_id": subscription.EndpointID,
 
-		primitive.E{Key: "filter_config.event_types", Value: subscription.FilterConfig.EventTypes},
+		"filter_config.event_types": subscription.FilterConfig.EventTypes,
+		"alert_config.count":        subscription.AlertConfig.Count,
+		"alert_config.threshold":    subscription.AlertConfig.Threshold,
 
-		primitive.E{Key: "alert_config.count", Value: subscription.AlertConfig.Count},
-		primitive.E{Key: "alert_config.threshold", Value: subscription.AlertConfig.Threshold},
+		"retry_config.type":        string(subscription.RetryConfig.Type),
+		"retry_config.duration":    subscription.RetryConfig.Duration,
+		"retry_config.retry_count": subscription.RetryConfig.RetryCount,
+	}
 
-		primitive.E{Key: "retry_config.type", Value: string(subscription.RetryConfig.Type)},
-		primitive.E{Key: "retry_config.duration", Value: subscription.RetryConfig.Duration},
-		primitive.E{Key: "retry_config.retry_count", Value: subscription.RetryConfig.RetryCount},
-	}}}
-
-	_, err := s.client.UpdateOne(ctx, filter, update)
+	err := s.store.UpdateOne(ctx, filter, update)
 	return err
 }
 
@@ -90,28 +90,18 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, groupId strin
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
-	update := bson.M{
-		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
-		},
+	filter := bson.M{
+		"uid":      subscription.UID,
+		"group_id": groupId,
 	}
-
-	filter := bson.M{"uid": subscription.UID, "group_id": groupId}
-	_, err := s.client.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.store.DeleteOne(ctx, filter)
 }
 
 func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId string, uid string) (*datastore.Subscription, error) {
-	var subscription *datastore.Subscription
+	subscription := &datastore.Subscription{}
 
 	filter := bson.M{"uid": uid, "group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
-	err := s.client.FindOne(ctx, filter).Decode(&subscription)
-
+	err := s.store.FindOne(ctx, filter, nil, subscription)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrSubscriptionNotFound
 	}
@@ -119,21 +109,16 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 	return subscription, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
-	var subscription []datastore.Subscription
+func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
+	var subscriptions []datastore.Subscription
 	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType), "document_status": datastore.ActiveDocumentStatus}
 
-	c, err := s.client.Find(ctx, filter)
+	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, subscriptions)
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.All(ctx, &subscription)
-	if err != nil {
-		return nil, err
-	}
-
-	return subscription, nil
+	return subscriptions, nil
 }
 
 func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]datastore.Subscription, error) {
@@ -143,35 +128,25 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	c, err := s.client.Find(ctx, filter)
+	var subscriptions []datastore.Subscription
+	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, subscriptions)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, datastore.ErrSubscriptionNotFound
 	}
 
-	var subscription []datastore.Subscription
-	err = c.All(ctx, &subscription)
-	if err != nil {
-		return nil, err
-	}
-
-	return subscription, nil
+	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {
-	var subscription []datastore.Subscription
+func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {
+	var subscriptions []datastore.Subscription
 	filter := bson.M{"group_id": groupId, "source_id": sourceId, "document_status": datastore.ActiveDocumentStatus}
 
-	c, err := s.client.Find(ctx, filter)
+	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.All(ctx, &subscription)
-	if err != nil {
-		return nil, err
-	}
-
-	return subscription, nil
+	return subscriptions, nil
 }
 
 func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.SubscriptionStatus) error {
@@ -181,12 +156,11 @@ func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	updatedAt := primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "status", Value: status},
-		primitive.E{Key: "updated_at", Value: updatedAt},
-	}}}
+	update := bson.M{
+		"status":     status,
+		"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+	}
 
-	_, err := s.client.UpdateOne(ctx, filter, update)
+	err := s.store.UpdateOne(ctx, filter, update)
 	return err
 }

@@ -12,29 +12,30 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type groupRepo struct {
 	innerDB *mongo.Database
 	inner   *mongo.Collection
+	store   datastore.Store
 }
 
 func isDuplicateNameIndex(err error) bool {
 	return strings.Contains(err.Error(), "name")
 }
 
-func NewGroupRepo(db *mongo.Database) datastore.GroupRepository {
+func NewGroupRepo(db *mongo.Database, store datastore.Store) datastore.GroupRepository {
 	return &groupRepo{
 		innerDB: db,
 		inner:   db.Collection(GroupCollection),
+		store:   store,
 	}
 }
 
 func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
 	groups := make([]*datastore.Group, 0)
 
-	opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
+	// opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
 	filter := bson.M{
 		"document_status": datastore.ActiveDocumentStatus,
 		"organisation_id": f.OrgID,
@@ -45,59 +46,36 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 		filter["name"] = bson.M{"$in": f.Names}
 	}
 
-	cur, err := db.inner.Find(ctx, filter, opts)
-	if err != nil {
-		return groups, err
-	}
+	sort := bson.M{"created_at": 1}
+	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 
-	for cur.Next(ctx) {
-		var group = new(datastore.Group)
-		if err := cur.Decode(&group); err != nil {
-			return groups, err
-		}
-
-		groups = append(groups, group)
-	}
-
-	if err := cur.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := cur.Close(ctx); err != nil {
-		return groups, err
-	}
-
-	return groups, nil
+	return groups, err
 }
 
 func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error {
-
 	o.ID = primitive.NewObjectID()
 
-	_, err := db.inner.InsertOne(ctx, o)
+	err := db.store.Save(ctx, o, nil)
 
 	// check if the error string contains the index called "name"
 	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
 		return datastore.ErrDuplicateGroupName
 	}
+
 	return err
 }
 
 func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error {
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-
-	filter := bson.D{primitive.E{Key: "uid", Value: o.UID}}
-
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "name", Value: o.Name},
+	update := bson.D{primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
 		primitive.E{Key: "rate_limit", Value: o.RateLimit},
 		primitive.E{Key: "rate_limit_duration", Value: o.RateLimitDuration},
-	}}}
+	}
 
-	_, err := db.inner.UpdateOne(ctx, filter, update)
+	err := db.store.UpdateByID(ctx, o.UID, update)
 	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
 		return datastore.ErrDuplicateGroupName
 	}
@@ -108,12 +86,7 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
 	group := new(datastore.Group)
 
-	filter := bson.M{
-		"uid":             id,
-		"document_status": datastore.ActiveDocumentStatus,
-	}
-
-	err := db.inner.FindOne(ctx, filter).Decode(group)
+	err := db.store.FindByID(ctx, id, nil, group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrGroupNotFound
 	}
@@ -162,16 +135,11 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
 			}},
 	}
+	var stats []datastore.GroupStatistics
 
-	data, err := db.inner.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, projectStage})
+	err := db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, projectStage}, &stats, false)
 	if err != nil {
 		log.WithError(err).Error("failed to run group statistics aggregation")
-		return err
-	}
-
-	var stats []datastore.GroupStatistics
-	if err = data.All(ctx, &stats); err != nil {
-		log.WithError(err).Error("failed to marshal group statistics")
 		return err
 	}
 
@@ -188,14 +156,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 }
 
 func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
-	update := bson.M{
-		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
-		},
-	}
-
-	_, err := db.inner.UpdateOne(ctx, bson.M{"uid": uid}, update)
+	err := db.store.DeleteByID(ctx, uid)
 	if err != nil {
 		return err
 	}
@@ -212,19 +173,10 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 	}
 
 	groups := make([]datastore.Group, 0)
-
-	cur, err := db.inner.Find(ctx, filter, nil)
+	sort := bson.M{"created_at": 1}
+	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 	if err != nil {
-		return groups, err
-	}
-
-	for cur.Next(ctx) {
-		var group datastore.Group
-		if err := cur.Decode(&group); err != nil {
-			return groups, err
-		}
-
-		groups = append(groups, group)
+		return nil, err
 	}
 
 	return groups, err

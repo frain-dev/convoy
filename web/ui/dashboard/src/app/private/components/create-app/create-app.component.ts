@@ -46,9 +46,7 @@ export class CreateAppComponent implements OnInit {
 		return this.formBuilder.group({
 			url: ['', Validators.required],
 			description: ['', Validators.required],
-			http_timeout: [''],
-			rate_limit: [''],
-			rate_limit_duration: ['']
+			http_timeout: [null]
 		});
 	}
 
@@ -106,7 +104,7 @@ export class CreateAppComponent implements OnInit {
 	}
 
 	saveNewEndpoints(requests: any[]) {
-		Promise.all(requests);
+		Promise.allSettled(requests);
 	}
 
 	async getAppDetails() {

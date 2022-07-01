@@ -50,15 +50,11 @@
 <div class="_overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false"></div>
 
 <div class="modal modal__center" *ngIf="showDeleteModal">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
-		<img src="/assets/img/warning.gif" class="img" alt="warning" />
-		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
-			Are you sure you want to deactivate
-			<span class="text__capitalize font__weight-600">“{{ organisationName }}”</span>
-			?
-		</p>
-		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
-		<button class="button button__deactivate" [disabled]="isDeletingOrganisation" (click)="deleteOrganisation()">{{ isDeletingOrganisation ? 'Deleting...' : 'Yes, Delete' }}</button>
-		<button class="button__primary button__clear margin-top__28px" (click)="showDeleteModal = false">No, Cancel</button>
-	</div>
+	<app-delete-modal
+		[isLoading]="isDeletingOrganisation"
+		[deleteText]="'deactivate “' + organisationName + '”'"
+		[deleteButtonText]="'Deactivate'"
+		(closeModal)="showDeleteModal = false"
+		(deleteData)="deleteOrganisation()"
+	></app-delete-modal>
 </div>
