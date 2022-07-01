@@ -43,48 +43,50 @@
 	</div>
 
 	<ng-container *ngIf="selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData">
-		<table class="table table__no-style">
-			<thead>
-				<tr class="table--head">
-					<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr *ngFor="let team of teams?.content">
-					<td>
-						<div class="badge badge__dark">
-							<div class="icon">{{ team?.user_metadata?.first_name?.slice(0, 1) }}{{ team?.user_metadata?.last_name?.slice(0, 1) }}</div>
-							<div class="name">{{ team.user_metadata.first_name || '-' }} {{ team.user_metadata.last_name || '-' }}</div>
-						</div>
-					</td>
-					<td>
-						<div>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
-					</td>
-					<td>
-						<div>All projects</div>
-					</td>
-					<td>
-						<div class="dropdown">
-							<button class="button--has-icon button__clear" (click)="showDropdown(team.uid); showOverlay = true">
-								<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-							</button>
-							<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
-								<ul>
-									<li class="flex flex__justify-center">
-										<button
-											class="button__danger button__clear color__danger"
-											(click)="showDeactivateModal = !showDeactivateModal; showTeamMemberDropdown = false; selectedMember = team; currentId = ''"
-										>
-											Deactivate team member
-										</button>
-									</li>
-								</ul>
+		<div class="table--container">
+			<table class="table table__no-style">
+				<thead>
+					<tr class="table--head">
+						<th scope="col" *ngFor="let head of tableHead">{{ head }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let team of teams?.content">
+						<td>
+							<div class="badge badge__dark">
+								<div class="icon">{{ team?.user_metadata?.first_name?.slice(0, 1) }}{{ team?.user_metadata?.last_name?.slice(0, 1) }}</div>
+								<div class="name">{{ team.user_metadata.first_name || '-' }} {{ team.user_metadata.last_name || '-' }}</div>
 							</div>
-						</div>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+						</td>
+						<td>
+							<div>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
+						</td>
+						<td>
+							<div>All projects</div>
+						</td>
+						<td>
+							<div class="dropdown">
+								<button class="button--has-icon button__clear" (click)="currentId = team.uid; showOverlay = true">
+									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+								</button>
+								<div [ngClass]="{ show: currentId == team.uid }" class="dropdown__menu dropdown__menu__nav large">
+									<ul>
+										<li class="flex flex__justify-center">
+											<button
+												class="button__danger button__clear color__danger"
+												(click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false"
+											>
+												Deactivate team member
+											</button>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 		<div class="button-container flex flex__align-items-center margin-top__16px">
 			<button
 				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
@@ -113,27 +115,47 @@
 		</div>
 	</ng-container>
 	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
-		<table class="table table__no-style">
-			<thead>
-				<tr class="table--head">
-					<th scope="col" *ngFor="let head of tableHead">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr *ngFor="let team of pendingInvites?.content">
-					<td>
-						<div>{{ team.invitee_email }}</div>
-					</td>
-					<td>
-						<div class="text__capitalize">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
-					</td>
-					<td>
-						<div>All projects</div>
-					</td>
-					<td></td>
-				</tr>
-			</tbody>
-		</table>
+		<div class="table--container">
+			<table class="table table__no-style">
+				<thead>
+					<tr class="table--head">
+						<th scope="col" *ngFor="let head of tableHead">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let team of pendingInvites?.content">
+						<td>
+							<div>{{ team.invitee_email }}</div>
+						</td>
+						<td>
+							<div class="text__capitalize">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</div>
+						</td>
+						<td>
+							<div>All projects</div>
+						</td>
+						<td>
+							<div class="dropdown">
+								<button class="button--has-icon button__clear" (click)="currentId = team.uid; showPendingInvitesDropdown = true; showOverlay = true">
+									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+								</button>
+								<div [ngClass]="{ show: currentId === team.uid && showPendingInvitesDropdown }" class="dropdown__menu dropdown__menu__nav large">
+									<ul>
+										<li>
+											<button class="button__clear" (click)="resendInvite(team.uid); currentId = ''; showOverlay = false">Resend Invite</button>
+										</li>
+										<li>
+											<button class="button__clear color__danger" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false; showOverlay = false">
+												Cancel Invite
+											</button>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 		<div class="button-container flex flex__align-items-center margin-top__16px">
 			<button
 				class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
@@ -176,9 +198,9 @@
 	</div>
 </div>
 
-<div class="_overlay" *ngIf="showSuccessModal || showDeactivateModal" (click)="showSuccessModal = false; showDeactivateModal = false; showTeamGroupDropdown = false"></div>
+<div class="_overlay" *ngIf="showDeactivateModal || showCancelInviteModal" (click)="showDeactivateModal = false; showCancelInviteModal = false"></div>
 
-<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showFilterDropdown = false; currentId = ''"></div>
+<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showFilterDropdown = false; showPendingInvitesDropdown = false; currentId = ''"></div>
 
 <div class="modal modal__full" *ngIf="showInviteTeamMemberModal">
 	<div class="modal--head">
@@ -220,24 +242,12 @@
 	</div>
 </div>
 
-<div class="modal modal__center" *ngIf="showSuccessModal">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
-		<img width="140px" src="/assets/img/success.gif" alt="success animation" />
-		<p class="margin-top__12px margin-bottom__32px font__16px color__grey font__weight-400">Team member created succesfully! We sent them an email for onboarding instructions.</p>
-		<button class="button button__white" (click)="showSuccessModal = false">Close</button>
-	</div>
-</div>
-
-<div class="modal modal__center" *ngIf="showDeactivateModal">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center deactivate">
-		<img src="/assets/img/warning.gif" class="img" alt="warning" />
-		<p class="font__20px color__black font__weight-600 margin-bottom__8px margin-top__16px text--center no-width">
-			Are you sure you want to deactivate
-			<span class="text__capitalize font__weight-600">“{{ selectedMember?.user_metadata?.first_name }} {{ selectedMember?.user_metadata?.last_name }}”</span>
-			?
-		</p>
-		<p class="color__grey font__14px font__weight-500 margin-bottom__12px">This action is irrevesible</p>
-		<button class="button button__deactivate" [disabled]="deactivatingUser" (click)="deactivateMember()">{{ deactivatingUser ? 'Deactivating...' : 'Yes, Deactivate' }}</button>
-		<button class="button__primary button__clear margin-top__28px" (click)="showDeactivateModal = false">No, Cancel</button>
-	</div>
+<div class="modal modal__center" *ngIf="showDeactivateModal || showCancelInviteModal">
+	<app-delete-modal
+		[isLoading]="deactivatingUser || cancelingInvite"
+		[deleteText]="showCancelInviteModal ? 'cancel this invite' : 'deactivate “' + selectedMember?.user_metadata?.first_name + ' ' + selectedMember?.user_metadata?.last_name + '”'"
+		[deleteButtonText]="showCancelInviteModal ? 'Cancel Invite' : 'Deactivate'"
+		(closeModal)="showDeactivateModal = false; showCancelInviteModal = false"
+		(deleteData)="showCancelInviteModal ? cancelInvite() : deactivateMember()"
+	></app-delete-modal>
 </div>

@@ -9,7 +9,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class EventDeliveryDetailsService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	async getEventDeliveryDetails(eventId: string, token?: string): Promise<HTTP_RESPONSE> {
+	getEventDeliveryDetails(eventId: string, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -19,13 +19,13 @@ export class EventDeliveryDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async getEventDeliveryAttempts(eventId: string, token?: string): Promise<HTTP_RESPONSE> {
+	getEventDeliveryAttempts(eventId: string, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -35,7 +35,7 @@ export class EventDeliveryDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

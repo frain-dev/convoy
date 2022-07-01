@@ -3,8 +3,8 @@
 	<ng-container *ngIf="!isInviteAccepted">
 		<img src="/assets/img/logo.svg" class="logo" alt="convoy logo" />
 		<h3>Join your team to start managing webhooks</h3>
-		<p class="text--center">Please fill in your {{ userDetailsAvailable ? 'password details below to' : 'details below to create your account and' }} join your team</p>
-		<section class="auth-page--container">
+		<p *ngIf="!userDetailsAvailable" class="text--center">Please fill in your {{ userDetailsAvailable ? 'password details below to' : 'details below to create your account and' }} join your team</p>
+		<section class="auth-page--container" [ngClass]="{ 'margin-top__20px': userDetailsAvailable }">
 			<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()">
 				<div class="grid grid__col-2 grid--gap__20px">
 					<div class="input">
@@ -34,41 +34,46 @@
 						<span>Email is required</span>
 					</div>
 				</div>
-				<div class="input">
-					<label for="password">Create Password</label>
-					<div class="input--password">
-						<input
-							[type]="showPassword ? 'text' : 'password'"
-							autocomplete="new-password"
-							formControlName="password"
-							id="password"
-							[ngClass]="{ danger: acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid }"
-							required
-						/>
-						<button class="input--password__view-toggle" (click)="showPassword = !showPassword" type="button">
-							<img [src]="!showPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showPassword ? 'hide password icon' : 'view password icon'" />
-						</button>
+				<ng-container *ngIf="!userDetailsAvailable">
+					<div class="input">
+						<label for="password">Create Password</label>
+						<div class="input--password">
+							<input
+								[type]="showPassword ? 'text' : 'password'"
+								autocomplete="new-password"
+								formControlName="password"
+								id="password"
+								[ngClass]="{ danger: acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid }"
+								required
+							/>
+							<button class="input--password__view-toggle" (click)="showPassword = !showPassword" type="button">
+								<img
+									[src]="!showPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
+									alt="showPassword ? 'hide password icon' : 'view password icon'"
+								/>
+							</button>
+						</div>
+						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Password is required</span>
+						</div>
+						<div
+							class="input__error input__error__danger"
+							*ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid && acceptInviteForm.controls.password.errors?.['minlength']"
+						>
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Password should be at least 8 characters</span>
+						</div>
+						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Password should have at least one number</span>
+						</div>
+						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
+							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+							<span>Password should have at least one special character</span>
+						</div>
 					</div>
-					<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Password is required</span>
-					</div>
-					<div
-						class="input__error input__error__danger"
-						*ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid && acceptInviteForm.controls.password.errors?.['minlength']"
-					>
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Password should be at least 8 characters</span>
-					</div>
-					<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Password should have at least one number</span>
-					</div>
-					<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Password should have at least one special character</span>
-					</div>
-				</div>
+				</ng-container>
 
 				<button class="button button__primary--without-gradient button--has-icon icon-center button--full-100" [disabled]="loading" (click)="acceptInvite()">
 					<span *ngIf="!loading">Join your team</span>

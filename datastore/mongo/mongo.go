@@ -72,21 +72,31 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 
 	dbName := strings.TrimPrefix(u.Path, "/")
 	conn := client.Database(dbName, nil)
+	groups := datastore.New(conn, GroupCollection)
+	events := datastore.New(conn, EventCollection)
+	sources := datastore.New(conn, SourceCollection)
+	apps := datastore.New(conn, AppCollection)
+	subscriptions := datastore.New(conn, SubscriptionCollection)
+	orgs := datastore.New(conn, OrganisationCollection)
+	org_member := datastore.New(conn, OrganisationMembersCollection)
+	org_invite := datastore.New(conn, OrganisationInvitesCollection)
+	users := datastore.New(conn, UserCollection)
+	config := datastore.New(conn, ConfigCollection)
 
 	c := &Client{
 		db:                conn,
 		apiKeyRepo:        NewApiKeyRepo(conn),
-		groupRepo:         NewGroupRepo(conn),
-		subscriptionRepo:  NewSubscriptionRepo(conn),
-		applicationRepo:   NewApplicationRepo(conn),
-		eventRepo:         NewEventRepository(conn),
+		groupRepo:         NewGroupRepo(conn, groups),
+		applicationRepo:   NewApplicationRepo(conn, apps),
+		subscriptionRepo:  NewSubscriptionRepo(conn, subscriptions),
+		eventRepo:         NewEventRepository(conn, events),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
-		sourceRepo:        NewSourceRepo(conn),
-		orgRepo:           NewOrgRepo(conn),
-		orgMemberRepo:     NewOrgMemberRepo(conn),
-		orgInviteRepo:     NewOrgInviteRepo(conn),
-		userRepo:          NewUserRepo(conn),
-		configRepo:        NewConfigRepo(conn),
+		sourceRepo:        NewSourceRepo(conn, sources),
+		orgRepo:           NewOrgRepo(conn, orgs),
+		orgMemberRepo:     NewOrgMemberRepo(conn, org_member),
+		orgInviteRepo:     NewOrgInviteRepo(conn, org_invite),
+		userRepo:          NewUserRepo(conn, users),
+		configRepo:        NewConfigRepo(conn, config),
 	}
 
 	c.ensureMongoIndices()

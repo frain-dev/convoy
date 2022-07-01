@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ForgotPasswordService } from './forgot-password.service';
 
@@ -19,19 +19,21 @@ export class ForgotPasswordComponent implements OnInit {
 	ngOnInit(): void {}
 
 	async resetPassword() {
+		if (this.forgotPasswordForm.invalid) {
+			(<any>Object).values(this.forgotPasswordForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+
 		this.loading = true;
 		try {
 			const response = await this.forgotPasswordService.forgotPassword(this.forgotPasswordForm.value);
-			if (response.status) {
-				this.activeState = 'instructionSent';
-				this.generalService.showNotification({ style: 'success', message: response.message });
-			}
-
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.activeState = 'instructionSent';
 			this.loading = false;
-		} catch (error) {
+		} catch {
 			this.loading = false;
-			this.activeState = 'resetPassword';
-			throw error;
 		}
 	}
 }

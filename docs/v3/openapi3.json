@@ -474,6 +474,38 @@
 				},
 				"type": "object"
 			},
+			"datastore.OrganisationInvite": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"invitee_email": {
+						"type": "string"
+					},
+					"organisation_id": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
+					},
+					"status": {
+						"type": "string"
+					},
+					"token": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.OrganisationMember": {
 				"properties": {
 					"created_at": {
@@ -580,6 +612,9 @@
 						"type": "string"
 					},
 					"name": {
+						"type": "string"
+					},
+					"provider": {
 						"type": "string"
 					},
 					"type": {
@@ -1005,6 +1040,9 @@
 					"name": {
 						"type": "string"
 					},
+					"provider": {
+						"type": "string"
+					},
 					"type": {
 						"type": "string"
 					},
@@ -1032,6 +1070,9 @@
 						"type": "string"
 					},
 					"name": {
+						"type": "string"
+					},
+					"provider": {
 						"type": "string"
 					},
 					"type": {
@@ -8082,7 +8123,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/datastore.OrganisationInvite"
 												}
 											},
 											"type": "object"

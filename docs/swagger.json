@@ -6132,7 +6132,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/datastore.OrganisationInvite"
                                         }
                                     }
                                 }
@@ -8461,6 +8461,38 @@
                 }
             }
         },
+        "datastore.OrganisationInvite": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "invitee_email": {
+                    "type": "string"
+                },
+                "organisation_id": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/auth.Role"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.OrganisationMember": {
             "type": "object",
             "properties": {
@@ -8568,6 +8600,9 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "provider": {
                     "type": "string"
                 },
                 "type": {
@@ -8994,6 +9029,9 @@
                 "name": {
                     "type": "string"
                 },
+                "provider": {
+                    "type": "string"
+                },
                 "type": {
                     "type": "string"
                 },
@@ -9021,6 +9059,9 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "provider": {
                     "type": "string"
                 },
                 "type": {

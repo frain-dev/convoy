@@ -18,7 +18,7 @@ export class SourcesService {
 				});
 
 				return resolve(sourceResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

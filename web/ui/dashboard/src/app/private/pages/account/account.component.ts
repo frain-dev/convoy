@@ -78,10 +78,8 @@ export class AccountComponent implements OnInit {
 		this.isUpdatingPassword = true;
 		try {
 			const response = await this.accountService.changePassword({ userId: this.userId, body: this.changePasswordForm.value });
-			if (response.status === true) {
-				this.generalService.showNotification({ style: 'success', message: response.message });
-				this.changePasswordForm.reset();
-			}
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.changePasswordForm.reset();
 			this.isUpdatingPassword = false;
 		} catch {
 			this.isUpdatingPassword = false;
@@ -91,10 +89,7 @@ export class AccountComponent implements OnInit {
 	checkPassword(): boolean {
 		const newPassword = this.changePasswordForm.value.password;
 		const confirmPassword = this.changePasswordForm.value.password_confirmation;
-		if (newPassword === confirmPassword) {
-			return true;
-		} else {
-			return false;
-		}
+		if (newPassword === confirmPassword) return true;
+		return false;
 	}
 }

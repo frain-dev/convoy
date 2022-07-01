@@ -322,6 +322,27 @@ definitions:
       updated_at:
         type: string
     type: object
+  datastore.OrganisationInvite:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      invitee_email:
+        type: string
+      organisation_id:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      status:
+        type: string
+      token:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
   datastore.OrganisationMember:
     properties:
       created_at:
@@ -392,6 +413,8 @@ definitions:
       mask_id:
         type: string
       name:
+        type: string
+      provider:
         type: string
       type:
         type: string
@@ -671,6 +694,8 @@ definitions:
         type: boolean
       name:
         type: string
+      provider:
+        type: string
       type:
         type: string
       verifier:
@@ -689,6 +714,8 @@ definitions:
       mask_id:
         type: string
       name:
+        type: string
+      provider:
         type: string
       type:
         type: string
@@ -3985,7 +4012,7 @@ paths:
             - $ref: '#/definitions/server.serverResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/datastore.OrganisationInvite'
               type: object
         "400":
           description: Bad Request

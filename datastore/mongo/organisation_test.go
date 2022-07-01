@@ -18,8 +18,8 @@ import (
 func TestLoadOrganisationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
-
-	orgRepo := NewOrgRepo(db)
+	store := getStore(db, OrganisationCollection)
+	orgRepo := NewOrgRepo(db, store)
 
 	for i := 1; i < 6; i++ {
 		org := &datastore.Organisation{
@@ -48,7 +48,8 @@ func TestCreateOrganisation(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db)
+	store := getStore(db, OrganisationCollection)
+	orgRepo := NewOrgRepo(db, store)
 	org := &datastore.Organisation{
 		UID:       uuid.NewString(),
 		Name:      fmt.Sprintf("new org"),
@@ -64,7 +65,8 @@ func TestUpdateOrganisation(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db)
+	store := getStore(db, OrganisationCollection)
+	orgRepo := NewOrgRepo(db, store)
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
 		Name:           fmt.Sprintf("new org"),
@@ -92,7 +94,8 @@ func TestFetchOrganisationByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db)
+	store := getStore(db, OrganisationCollection)
+	orgRepo := NewOrgRepo(db, store)
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
 		Name:           fmt.Sprintf("new org"),
@@ -114,7 +117,8 @@ func TestDeleteOrganisation(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db)
+	store := getStore(db, OrganisationCollection)
+	orgRepo := NewOrgRepo(db, store)
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
 		Name:           fmt.Sprintf("new org"),

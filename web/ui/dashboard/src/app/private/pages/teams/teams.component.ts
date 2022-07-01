@@ -15,10 +15,9 @@ export class TeamsComponent implements OnInit {
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
 	filterOptions: ['active', 'pending'] = ['active', 'pending'];
 	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new');
-	showTeamMemberDropdown = false;
-	showTeamGroupDropdown = false;
-	showSuccessModal = false;
 	showDeactivateModal = false;
+	showCancelInviteModal = false;
+	cancelingInvite = false;
 	selectedMember!: TEAMS;
 	isFetchingTeamMembers = false;
 	isFetchingPendingInvites = false;
@@ -34,6 +33,7 @@ export class TeamsComponent implements OnInit {
 	noInvitesData = false;
 	showFilterDropdown = false;
 	invitingUser = false;
+	showPendingInvitesDropdown = false;
 	inviteUserForm: FormGroup = this.formBuilder.group({
 		invitee_email: ['', Validators.compose([Validators.required, Validators.email])],
 		role: this.formBuilder.group({
@@ -91,18 +91,13 @@ export class TeamsComponent implements OnInit {
 		};
 		try {
 			const response = await this.teamService.deactivateTeamMember(requestOptions);
-			if (response.status) this.showDeactivateModal = false;
+			this.showDeactivateModal = false;
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.fetchTeamMembers();
 			this.deactivatingUser = false;
-		} catch {
+		} catch (error) {
 			this.deactivatingUser = false;
 		}
-	}
-
-	showDropdown(id: string) {
-		this.showOverlay = false;
-		this.currentId == id ? (this.currentId = '') : (this.currentId = id);
 	}
 
 	addFilterToUrl() {
@@ -122,6 +117,28 @@ export class TeamsComponent implements OnInit {
 			this.router.navigate(['/team'], { queryParams: { inviteType: 'pending' } });
 		} catch {
 			this.invitingUser = false;
+		}
+	}
+
+	async resendInvite(inviteId: string) {
+		try {
+			const response = await this.teamService.resendPendingInvite(inviteId);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.fetchPendingTeamMembers();
+		} catch {}
+	}
+
+	async cancelInvite() {
+		this.cancelingInvite = true;
+		try {
+			const response = await this.teamService.cancelPendingInvite(this.currentId);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.fetchPendingTeamMembers();
+			this.currentId = '';
+			this.showCancelInviteModal = false;
+			this.cancelingInvite = false;
+		} catch {
+			this.cancelingInvite = false;
 		}
 	}
 }

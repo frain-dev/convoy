@@ -103,16 +103,16 @@
 				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px margin-left__16px margin-top__8px" *ngIf="subscription.type === 'incoming'">
 					<div class="width__100">
 						<div class="color__grey font__10px margin-bottom__12px">Source</div>
-						<div class="font__12px font__weight-500">{{ subscription.source_metadata.name }}</div>
+						<div class="font__12px font__weight-500">{{ subscription.source_metadata?.name }}</div>
 					</div>
 					<div class="width__100">
-						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata.verifier.type }}</div>
+						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
 					</div>
 					<div class="width__100">
-						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata.type }}</div>
+						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata?.type }}</div>
 					</div>
 					<div class="flex flex__align-items-center width__50 flex__justify-end">
-						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata.uid }">
+						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata?.uid }">
 							<div class="font__12px font__weight-500">Go to source</div>
 							<svg width="18" height="18" class="margin-left__8px" fill="var(--primary-color)">
 								<use xlink:href="#arrow-right-icon"></use>
@@ -176,12 +176,8 @@
 			</ul>
 
 			<div class="button--container margin-top__40px margin-right__24px">
-				<button
-					class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px"
-					(click)="deleteSubscripton()"
-					[disabled]="isDeletingSubscription"
-				>
-					{{ isDeletingSubscription ? 'Delete...' : 'Delete' }}
+				<button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px" (click)="showDeleteSubscriptionModal = true">
+					Delete
 					<svg width="18" height="18" class="margin-left__8px">
 						<use xlink:href="#delete-icon"></use>
 					</svg>
@@ -257,4 +253,14 @@
 	<div class="modal--body padding-all__0px">
 		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></app-create-subscription>
 	</div>
+</div>
+
+<div class="_overlay" *ngIf="showDeleteSubscriptionModal" (click)="showDeleteSubscriptionModal = false"></div>
+<div class="modal modal__center small" *ngIf="showDeleteSubscriptionModal">
+	<app-delete-modal
+		[isLoading]="isDeletingSubscription"
+		[deleteText]="'delete “' + activeSubscription?.name + '”'"
+		(closeModal)="showDeleteSubscriptionModal = false"
+		(deleteData)="deleteSubscripton()"
+	></app-delete-modal>
 </div>

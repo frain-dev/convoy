@@ -9,7 +9,7 @@ import { PrivateService } from '../../private.service';
 export class CreateAppService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	async updateApp(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
+	updateApp(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -19,13 +19,13 @@ export class CreateAppService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async createApp(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
+	createApp(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -35,13 +35,13 @@ export class CreateAppService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async addNewEndpoint(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
+	addNewEndpoint(requestDetails: { appId: string; body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -51,13 +51,13 @@ export class CreateAppService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async getApp(appId: string): Promise<HTTP_RESPONSE> {
+	getApp(appId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -66,7 +66,7 @@ export class CreateAppService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

@@ -176,17 +176,17 @@ func (a *applicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param inviteID path string true "invite id"
-// @Success 200 {object} serverResponse{data=Stub}
+// @Success 200 {object} serverResponse{data=datastore.OrganisationInvite}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/cancel [post]
 func (a *applicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	err := a.organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
+	iv, err := a.organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {
 		log.WithError(err).Error("failed to cancel organisation member invite")
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("invite cancelled successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, newServerResponse("invite cancelled successfully", iv, http.StatusOK))
 }
