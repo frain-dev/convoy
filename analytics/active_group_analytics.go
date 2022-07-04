@@ -9,18 +9,18 @@ import (
 )
 
 type ActiveGroupAnalytics struct {
-	groupRepo datastore.GroupRepository
-	eventRepo datastore.EventRepository
-	client    AnalyticsClient
-	host      string
+	groupRepo  datastore.GroupRepository
+	eventRepo  datastore.EventRepository
+	client     AnalyticsClient
+	instanceID string
 }
 
-func newActiveGroupAnalytics(groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, client AnalyticsClient, host string) *ActiveGroupAnalytics {
+func newActiveGroupAnalytics(groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, client AnalyticsClient, instanceID string) *ActiveGroupAnalytics {
 	return &ActiveGroupAnalytics{
-		groupRepo: groupRepo,
-		eventRepo: eventRepo,
-		client:    client,
-		host:      host,
+		groupRepo:  groupRepo,
+		eventRepo:  eventRepo,
+		client:     client,
+		instanceID: instanceID,
 	}
 
 }
@@ -50,7 +50,7 @@ func (a *ActiveGroupAnalytics) Track() error {
 		}
 	}
 
-	return a.client.Export(a.Name(), Event{"Count": count, "Host": a.host})
+	return a.client.Export(a.Name(), Event{"Count": count, "instanceID": a.instanceID})
 
 }
 
