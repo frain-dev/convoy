@@ -1,3 +1,10 @@
+## v0.6.0-rc.3
+
+-   [Change] Changed host to instance id in the analytics #821
+-   [Enhancement] Add support for JWT environment variables #813
+-   [Bugfix] Fix analytics query #825
+-   [Bugfix] UI bug fixes #814
+
 ## v0.6.0-rc.2
 
 -   [Bugfix] Dereference slice when finding source subscriptions #808
