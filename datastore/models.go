@@ -82,7 +82,8 @@ const (
 )
 
 const (
-	GithubSourceProvider SourceProvider = "github"
+	GithubSourceProvider  SourceProvider = "github"
+	ShopifySourceProvider SourceProvider = "shopify"
 )
 
 const (
