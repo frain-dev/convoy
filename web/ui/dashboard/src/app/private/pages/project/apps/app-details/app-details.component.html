@@ -77,7 +77,13 @@
     </div> -->
 
 	<div class="flex flex__justify-between flex__wrap border__top margin-top__22px">
-		<div class="padding-top__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize && privateService.activeProjectDetails?.type === 'outgoing', width__100: shouldRenderSmallSize || privateService.activeProjectDetails?.type === 'incoming' }">
+		<div
+			class="padding-top__32px"
+			[ngClass]="{
+				'width__50 border__right padding-right__32px': !shouldRenderSmallSize && privateService.activeProjectDetails?.type === 'outgoing',
+				width__100: shouldRenderSmallSize || privateService.activeProjectDetails?.type === 'incoming'
+			}"
+		>
 			<div class="flex flex__align-items-center flex__justify-between" *ngIf="isLoadingAppDetails">
 				<h3>App Event Endpoints</h3>
 				<div class="flex flex__align-items-center">
@@ -176,7 +182,11 @@
 				<p>No endpoint has been added for selected app yet</p>
 			</div>
 		</div>
-		<div class="padding-top__32px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
+		<div
+			class="padding-top__32px"
+			[hidden]="privateService.activeProjectDetails?.type === 'incoming'"
+			[ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }"
+		>
 			<div *ngIf="loadingAppPotalToken">
 				<h3>App Portal</h3>
 				<ul class="margin-top__10px">
@@ -277,5 +287,5 @@
 </div>
 
 <div class="modal modal__center small" *ngIf="showDeleteModal">
-	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'“' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
+	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
 </div>

@@ -8,16 +8,18 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class ForgotPasswordService {
 	constructor(private http: HttpService) {}
 
-	async forgotPassword(requestDetails: { email: string }): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: '/users/forgot-password',
-				body: requestDetails,
-				method: 'post'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	forgotPassword(requestDetails: { email: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: '/users/forgot-password',
+					body: requestDetails,
+					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 }

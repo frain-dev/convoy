@@ -33,15 +33,13 @@ export class ResetPasswordComponent implements OnInit {
 			});
 			return;
 		}
-		
+
 		this.resetingPassword = true;
 		try {
 			const response = await this.resetPasswordService.resetPassword({ token: this.token, body: this.resetPasswordForm.value });
 			this.resetingPassword = false;
-			if (response.status === true) {
-				this.generalService.showNotification({ style: 'success', message: response.message });
-				this.activePage = 'success';
-			}
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.activePage = 'success';
 		} catch {
 			this.resetingPassword = false;
 		}

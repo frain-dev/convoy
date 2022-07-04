@@ -103,16 +103,16 @@
 				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px margin-left__16px margin-top__8px" *ngIf="subscription.type === 'incoming'">
 					<div class="width__100">
 						<div class="color__grey font__10px margin-bottom__12px">Source</div>
-						<div class="font__12px font__weight-500">{{ subscription.source_metadata.name }}</div>
+						<div class="font__12px font__weight-500">{{ subscription.source_metadata?.name }}</div>
 					</div>
 					<div class="width__100">
-						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata.verifier.type }}</div>
+						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
 					</div>
 					<div class="width__100">
-						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata.type }}</div>
+						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata?.type }}</div>
 					</div>
 					<div class="flex flex__align-items-center width__50 flex__justify-end">
-						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata.uid }">
+						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata?.uid }">
 							<div class="font__12px font__weight-500">Go to source</div>
 							<svg width="18" height="18" class="margin-left__8px" fill="var(--primary-color)">
 								<use xlink:href="#arrow-right-icon"></use>
@@ -259,7 +259,7 @@
 <div class="modal modal__center small" *ngIf="showDeleteSubscriptionModal">
 	<app-delete-modal
 		[isLoading]="isDeletingSubscription"
-		[deleteText]="'“' + activeSubscription?.name + '”'"
+		[deleteText]="'delete “' + activeSubscription?.name + '”'"
 		(closeModal)="showDeleteSubscriptionModal = false"
 		(deleteData)="deleteSubscripton()"
 	></app-delete-modal>

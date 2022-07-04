@@ -91,11 +91,11 @@ export class TeamsComponent implements OnInit {
 		};
 		try {
 			const response = await this.teamService.deactivateTeamMember(requestOptions);
-			if (response.status) this.showDeactivateModal = false;
+			this.showDeactivateModal = false;
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.fetchTeamMembers();
 			this.deactivatingUser = false;
-		} catch {
+		} catch(error) {
 			this.deactivatingUser = false;
 		}
 	}

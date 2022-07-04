@@ -1,7 +1,7 @@
 <header class="dashboard--header border__bottom">
 	<div class="dashboard--header--container">
 		<div class="flex flex__align-items-center">
-			<a target="_blank" routerLink="/" rel="noreferrer">
+			<a routerLink="/" rel="noreferrer">
 				<img src="/assets/img/logo.svg" alt="convoy logo" class="logo" />
 			</a>
 
@@ -24,7 +24,7 @@
 			</a>
 
 			<div class="dropdown">
-				<button class="button__more with-padding button--has-icon icon-left" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
+				<button class="button__more with-padding button--has-icon" (click)="showOrgDropdown = !showOrgDropdown; showOverlay = true">
 					<div class="badge" *ngIf="organisations?.length">
 						<div class="icon">{{ userOrganization?.name?.slice(0, 1) }}</div>
 						<div class="name">{{ userOrganization?.name }}</div>
