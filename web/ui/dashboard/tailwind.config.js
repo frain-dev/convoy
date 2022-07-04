@@ -100,7 +100,8 @@ module.exports = {
 			purple: '#5A53B3',
 			'dark-green': '#327D63',
 			'light-green': '#47B38D',
-			black: '#16192C'
+			black: '#16192C',
+			transparent: 'transparent'
 		}
 	},
 	plugins: []
