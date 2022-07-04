@@ -21,6 +21,8 @@ const (
 	DailyUserCount         string = "Daily User Count"
 	MixPanelDevToken       string = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
 	MixPanelProdToken      string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
+	PerPage                int    = 20
+	Page                   int    = 1
 )
 
 type Tracker interface {
@@ -58,7 +60,6 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	}
 
 	a := &Analytics{Repo: Repo, client: client}
-	//a.instanceID = cfg.instanceID
 
 	config, err := a.Repo.ConfigRepo.LoadConfiguration(context.Background())
 	if err != nil {
@@ -110,7 +111,7 @@ func (a *Analytics) RegisterTrackers() {
 		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.Repo.GroupRepo, a.Repo.OrgRepo, a.client, a.instanceID),
 		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client, a.instanceID),
 		DailyGroupCount:        newGroupAnalytics(a.Repo.GroupRepo, a.client, a.instanceID),
-		DailyActiveGroupCount:  newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.client, a.instanceID),
+		DailyActiveGroupCount: newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.Repo.OrgRepo, a.client, a.instanceID),
 		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client, a.instanceID),
 	}
 

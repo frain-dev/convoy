@@ -34,17 +34,20 @@ func Test_TrackEventAnalytics(t *testing.T) {
 				groupRepo := ea.groupRepo.(*mocks.MockGroupRepository)
 				eventRepo := ea.eventRepo.(*mocks.MockEventRepository)
 				orgRepo := ea.orgRepo.(*mocks.MockOrganisationRepository)
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test-group"}}, nil)
-				eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil)
-				orgRepo.EXPECT().FetchOrganisationByID(gomock.Any(), gomock.Any()).Return(&datastore.Organisation{UID: "123456", Name: "test-org"}, nil)
+				gomock.InOrder(
+					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return([]datastore.Organisation{{UID: "123"}}, datastore.PaginationData{}, nil),
+					groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test-group"}}, nil),
+					eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
+					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
+				)
 			},
 		},
 
 		{
 			name: "should_fail_to_track_event_analytics",
 			dbFn: func(ea *EventAnalytics) {
-				groupRepo := ea.groupRepo.(*mocks.MockGroupRepository)
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed"))
+				orgRepo := ea.orgRepo.(*mocks.MockOrganisationRepository)
+				orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr: true,
 		},
