@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"context"
+	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/sirupsen/logrus"
@@ -26,33 +27,53 @@ func newEventAnalytics(eventRepo datastore.EventRepository, groupRepo datastore.
 }
 
 func (ea *EventAnalytics) Track() error {
+	return ea.track(PerPage, Page)
+}
+
+func (ea *EventAnalytics) track(perPage, page int) error {
 	ctx := context.Background()
-	groups, err := ea.groupRepo.LoadGroups(ctx, &datastore.GroupFilter{})
+	orgs, _, err := ea.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, Page: page, Sort: -1})
+
 	if err != nil {
 		return err
 	}
 
-	for _, group := range groups {
-		_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, group.UID, "", datastore.SearchParams{}, datastore.Pageable{Sort: -1})
+	if len(orgs) == 0 {
+		return nil
+	}
+
+	now := time.Now()
+	for _, org := range orgs {
+		groups, err := ea.groupRepo.LoadGroups(ctx, &datastore.GroupFilter{OrgID: org.UID})
 		if err != nil {
-			log.WithError(err).Error("failed to load events paged")
+			log.WithError(err).Error("failed to load organisation groups")
 			continue
 		}
 
-		org, err := ea.orgRepo.FetchOrganisationByID(ctx, group.OrganisationID)
-		if err != nil {
-			log.WithError(err).Error("failed to load fetch organisation")
-			continue
-		}
+		for _, group := range groups {
+			filter := datastore.SearchParams{
+				CreatedAtStart: time.Unix(0, 0).Unix(),
+				CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
+			}
 
-		err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": group.Name, "Organization": org.Name, "instanceID": ea.instanceID})
-		if err != nil {
-			log.WithError(err).Error("failed to load export metrics")
-			continue
+			_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, group.UID, "", filter, datastore.Pageable{PerPage: 20, Page: 1, Sort: -1})
+			if err != nil {
+				log.WithError(err).Error("failed to load events paged")
+				continue
+			}
+
+			err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": group.Name, "Organization": org.Name, "instanceID": ea.instanceID})
+			if err != nil {
+				log.WithError(err).Error("failed to load export metrics")
+				continue
+			}
 		}
 	}
 
-	return nil
+	perPage += 20
+	page += 1
+
+	return ea.track(perPage, page)
 }
 
 func (ea *EventAnalytics) Name() string {
