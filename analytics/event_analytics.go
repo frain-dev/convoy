@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"context"
+	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/sirupsen/logrus"
@@ -41,6 +42,7 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 		return nil
 	}
 
+	now := time.Now()
 	for _, org := range orgs {
 		groups, err := ea.groupRepo.LoadGroups(ctx, &datastore.GroupFilter{OrgID: org.UID})
 		if err != nil {
@@ -49,7 +51,12 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 		}
 
 		for _, group := range groups {
-			_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, group.UID, "", datastore.SearchParams{}, datastore.Pageable{Sort: -1})
+			filter := datastore.SearchParams{
+				CreatedAtStart: time.Unix(0, 0).Unix(),
+				CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
+			}
+
+			_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, group.UID, "", filter, datastore.Pageable{PerPage: 20, Page: 1, Sort: -1})
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue
