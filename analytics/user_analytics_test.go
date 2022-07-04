@@ -14,7 +14,7 @@ func provideUserAnalytics(ctrl *gomock.Controller) *UserAnalytics {
 	userRepo := mocks.NewMockUserRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newUserAnalytics(userRepo, client, TestHost)
+	return newUserAnalytics(userRepo, client, TestInstanceID)
 }
 
 func Test_TrackUserAnalytics(t *testing.T) {

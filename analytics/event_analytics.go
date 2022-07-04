@@ -8,20 +8,20 @@ import (
 )
 
 type EventAnalytics struct {
-	eventRepo datastore.EventRepository
-	groupRepo datastore.GroupRepository
-	orgRepo   datastore.OrganisationRepository
-	client    AnalyticsClient
-	host      string
+	eventRepo  datastore.EventRepository
+	groupRepo  datastore.GroupRepository
+	orgRepo    datastore.OrganisationRepository
+	client     AnalyticsClient
+	instanceID string
 }
 
-func newEventAnalytics(eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, host string) *EventAnalytics {
+func newEventAnalytics(eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *EventAnalytics {
 	return &EventAnalytics{
-		eventRepo: eventRepo,
-		groupRepo: groupRepo,
-		orgRepo:   orgRepo,
-		client:    client,
-		host:      host,
+		eventRepo:  eventRepo,
+		groupRepo:  groupRepo,
+		orgRepo:    orgRepo,
+		client:     client,
+		instanceID: instanceID,
 	}
 }
 
@@ -45,7 +45,7 @@ func (ea *EventAnalytics) Track() error {
 			continue
 		}
 
-		err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": group.Name, "Organization": org.Name, "Host": ea.host})
+		err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": group.Name, "Organization": org.Name, "instanceID": ea.instanceID})
 		if err != nil {
 			log.WithError(err).Error("failed to load export metrics")
 			continue

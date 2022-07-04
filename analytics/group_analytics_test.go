@@ -13,7 +13,7 @@ func provideGroupAnalytics(ctrl *gomock.Controller) *GroupAnalytics {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newGroupAnalytics(groupRepo, client, TestHost)
+	return newGroupAnalytics(groupRepo, client, TestInstanceID)
 }
 
 func Test_TrackGroupAnalytics(t *testing.T) {
