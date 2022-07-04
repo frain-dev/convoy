@@ -1,5 +1,9 @@
 <div class="w-full relative mb-24px" *ngIf="control">
-	<label class="w-full font-medium text-12 text-grey-40 mb-8px block" [for]="name">{{ label }}</label>
+	<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center" [for]="name">
+		{{ label }}
+
+		<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{tooltipContent}}</convoy-tooltip>
+	</label>
 
 	<div class="w-full relative" *ngIf="type === 'password'">
 		<input
