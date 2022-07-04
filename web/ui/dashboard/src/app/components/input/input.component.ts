@@ -24,6 +24,7 @@ export class InputComponent implements OnInit, ControlValueAccessor {
 	@Input('label') label!: string;
 	@Input('formControlName') formControlName!: string;
 	@Input('required') required = false;
+	@Input('readonly') readonly = false;
 	@Input('placeholder') placeholder!: string;
 	control!: any;
 	showLoginPassword = false;
