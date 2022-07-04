@@ -35,6 +35,18 @@
 
 				<ng-container *ngIf="!userDetailsAvailable">
 					<convoy-input type="password" formControlName="password" name="password" errorMessage="Password is required" label="Create Password"></convoy-input>
+					<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Password should be at least 8 characters</span>
+					</div>
+					<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)">
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Password should have at least one number</span>
+					</div>
+					<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Password should have at least one special character</span>
+					</div>
 				</ng-container>
 
 				<convoy-button [disable]="loading" size="full">
