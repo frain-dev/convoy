@@ -1,24 +1,16 @@
-<div class="modal--head">
-	<h1>Add an Organization</h1>
-	<button class="modal--close button__clear" (click)="close()">
+<div class="px-20px pt-20px pb-16px border-b border-b-grey-10 flex items-center justify-between">
+	<h2 class="font-semibold">Add an Organization</h2>
+	<convoy-button type="text" class="px-0" (click)="close()">
 		<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-	</button>
+	</convoy-button>
 </div>
 
-<div class="modal--body">
+<div class="p-20px">
 	<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
-		<div class="input">
-			<label for="organisation">Organisation Name</label>
-			<input type="text" id="organisation" formControlName="name" required />
-			<div class="input__error input__error__danger" *ngIf="addOrganisationForm.controls.name.touched && addOrganisationForm.controls.name.invalid">
-				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-				<span>Organisation name is required</span>
-			</div>
-		</div>
-
-		<div class="flex flex__justify-end margin-top__40px">
-			<button class="button button__white margin-right__24px" type="button" (click)="close()">Discard</button>
-			<button class="button button__primary" [disabled]="loading">{{ loading ? 'Adding Organisation' : 'Create Organisation' }}</button>
+		<convoy-input type="text" name="organisation" formControlName="name" errorMessage="Organisation name is required" label="Organisation name" placeholder="e.g Kuda"></convoy-input>
+		<div class="flex justify-end mt-32px">
+			<convoy-button class="mr-16px" type="outline" (click)="close()">Discard</convoy-button>
+			<convoy-button [disable]="loading">{{ loading ? 'Adding Organisation' : 'Create Organisation' }}</convoy-button>
 		</div>
 	</form>
 </div>
