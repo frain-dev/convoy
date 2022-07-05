@@ -13,7 +13,7 @@ export class ButtonComponent implements OnInit {
 	@Input('buttonText') buttonText!: string;
 	@Input('class') class = '';
 	@Input('size') size: 'small' | 'medium' | 'full' = 'medium';
-	@Input('type') type: 'default' | 'outline' | 'clear' = 'default';
+	@Input('type') type: 'default' | 'outline' | 'clear' | 'text' | 'link' = 'default';
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' = 'primary';
 	buttonSizes = { small: `py-6px px-16px`, medium: `py-12px px-40px`, full: `py-12px px-40px w-full` };
 	buttonTypes = {
