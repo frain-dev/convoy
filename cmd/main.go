@@ -278,6 +278,10 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 
 func postRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		if db == nil {
+			return nil
+		}
+
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)
@@ -306,6 +310,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addUpgradeCommand(app))
 	cmd.AddCommand(addIndexCommand(app))
+	cmd.AddCommand(addLoginCommand(app))
 }
 
 type ConvoyCli struct {

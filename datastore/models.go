@@ -441,6 +441,12 @@ type EventDelivery struct {
 
 type KeyType string
 
+const (
+	RoleProject   = KeyType("project")
+	RoleAppPortal = KeyType("portal")
+	RoleCLI       = KeyType("cli")
+)
+
 type APIKey struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`

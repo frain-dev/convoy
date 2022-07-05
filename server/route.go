@@ -386,8 +386,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 	//App Portal API.
 	router.Route("/portal", func(portalRouter chi.Router) {
-		portalRouter.Use(jsonResponse)
 		portalRouter.Use(setupCORS)
+		portalRouter.Use(jsonResponse)
 		portalRouter.Use(requireAuth())
 		portalRouter.Use(requireGroup(app.groupRepo, app.cache))
 		portalRouter.Use(requireAppID())
@@ -457,6 +457,16 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					deliveryRouter.With(requireDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetDeliveryAttempt)
 				})
 			})
+		})
+	})
+
+	router.Route("/cli", func(cliRouter chi.Router) {
+		cliRouter.Use(setupCORS)
+		cliRouter.Use(jsonResponse)
+		cliRouter.Use(requireAuth())
+
+		cliRouter.Post("/login", func(w http.ResponseWriter, r *http.Request) {
+			println("------------------")
 		})
 	})
 

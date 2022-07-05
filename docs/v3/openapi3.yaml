@@ -2,10 +2,14 @@ components:
   schemas:
     auth.Role:
       properties:
+        app_id:
+          type: string
         apps:
           items:
             type: string
           type: array
+        group_id:
+          type: string
         groups:
           items:
             type: string
@@ -682,7 +686,11 @@ components:
       properties:
         app:
           type: string
+        app_id:
+          type: string
         group:
+          type: string
+        group_id:
           type: string
         type:
           type: string

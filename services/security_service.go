@@ -28,7 +28,7 @@ func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastor
 	return &SecurityService{groupRepo: groupRepo, apiKeyRepo: apiKeyRepo}
 }
 
-func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
+func (ss *SecurityService) CreateProjectAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
 	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
 		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
 	}
@@ -36,6 +36,8 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	role := &auth.Role{
 		Type:   newApiKey.Role.Type,
 		Groups: []string{newApiKey.Role.Group},
+
+		GroupId: newApiKey.Role.Group,
 	}
 
 	err := role.Validate("api key")
@@ -106,6 +108,9 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 		Type:   auth.RoleAdmin,
 		Groups: []string{group.UID},
 		Apps:   []string{app.UID},
+
+		GroupId: group.UID,
+		AppId:   app.UID,
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -125,7 +130,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
 		Name:           app.Title,
-		Type:           "app_portal",
+		Type:           datastore.RoleAppPortal,
 		Role:           role,
 		Hash:           encodedKey,
 		Salt:           salt,

@@ -104,13 +104,14 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 
 	newAPIKey := &models.APIKey{
 		Name: fmt.Sprintf("%s's default key", group.Name),
+		Type: datastore.RoleProject,
 		Role: models.Role{
 			Type:  auth.RoleAdmin,
 			Group: group.UID,
 		},
 	}
 
-	apiKey, keyString, err := NewSecurityService(gs.groupRepo, gs.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
+	apiKey, keyString, err := NewSecurityService(gs.groupRepo, gs.apiKeyRepo).CreateProjectAPIKey(ctx, member, newAPIKey)
 	if err != nil {
 		return nil, nil, err
 	}

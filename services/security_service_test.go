@@ -254,7 +254,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			apiKey, keyString, err := ss.CreateAPIKey(tc.args.ctx, tc.args.member, tc.args.newApiKey)
+			apiKey, keyString, err := ss.CreateProjectAPIKey(tc.args.ctx, tc.args.member, tc.args.newApiKey)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
@@ -306,7 +306,7 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 			},
 			wantAPIKey: &datastore.APIKey{
 				Name: "test_app",
-				Type: "app_portal",
+				Type: datastore.RoleAppPortal,
 				Role: auth.Role{
 					Type:   auth.RoleAdmin,
 					Groups: []string{"1234"},
