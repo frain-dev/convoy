@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 
 @Component({
 	selector: 'convoy-toggle',
@@ -12,5 +12,7 @@ export class ToggleComponent implements OnInit {
 	constructor() {}
 	@Input('isChecked') isChecked = false;
 	@Input('label') label!: string;
+	@Output('onChange') onChange = new EventEmitter<any>();
+
 	ngOnInit(): void {}
 }

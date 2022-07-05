@@ -1,5 +1,5 @@
 <label for="convoy-toggle" class="inline-flex relative items-center mb-5 cursor-pointer">
-    <input type="checkbox" id="convoy-toggle" class="sr-only peer" [checked]="isChecked" />
+    <input type="checkbox" id="convoy-toggle" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit()" />
     <div
         class="
             w-[35px]
