@@ -34,15 +34,15 @@ export class CreateSubscriptionComponent implements OnInit {
 	});
 	apps!: APP[];
 	sources!: SOURCE[];
-	endPoints?: ENDPOINT[];
+	endPoints: ENDPOINT[] = [];
 	eventTags: string[] = [];
 	showCreateAppModal = false;
 	showCreateSourceModal = false;
 	showCreateEndpointModal = false;
 	enableMoreConfig = false;
 	retryLogicTypes = [
-		{ id: 'linear', type: 'Linear time retry' },
-		{ id: 'exponential', type: 'Exponential time backoff' }
+		{ uid: 'linear', name: 'Linear time retry' },
+		{ uid: 'exponential', name: 'Exponential time backoff' }
 	];
 	isCreatingSubscription = false;
 	@Output() onAction = new EventEmitter();
@@ -67,7 +67,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		try {
 			const apps = await this.createSubscriptionService.getAppPortalApp(this.token);
 			this.subscriptionForm.patchValue({ app_id: apps.data.uid, group_id: apps.data.group_id, type: 'outgoing' });
-			this.endPoints = apps.data.endpoints;
+			this.modifyEndpointData(apps.data.endpoints);
 			this.isloadingAppPortalAppDetails = false;
 			return;
 		} catch (error) {
@@ -102,7 +102,10 @@ export class CreateSubscriptionComponent implements OnInit {
 			const appsResponse = await this.privateService.getApps();
 			this.apps = appsResponse.data.content;
 
-			if (this.subscriptionForm.value.app_id) this.endPoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
+			if (this.subscriptionForm.value.app_id) {
+				const endpoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
+				this.modifyEndpointData(endpoints);
+			}
 			return;
 		} catch (error) {
 			return error;
@@ -139,7 +142,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	onUpdateAppSelection() {
 		const app = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id);
-		this.endPoints = app?.endpoints;
+		this.modifyEndpointData(app?.endpoints);
 	}
 
 	async onCreateSource(newSource: SOURCE) {
@@ -223,5 +226,15 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	focusInput() {
 		document.getElementById('tagInput')?.focus();
+	}
+
+	modifyEndpointData(endpoints?: ENDPOINT[]) {
+		if (endpoints) {
+			const endpointData = endpoints;
+			endpointData.forEach(data => {
+				data.name = data.description;
+			});
+			this.endPoints = endpointData;
+		}
 	}
 }
