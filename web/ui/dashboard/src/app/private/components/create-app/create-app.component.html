@@ -10,6 +10,7 @@
             errorMessage="Firstname is required"
             label="Enter App Name"
             placeholder="App name is required"
+            [required]="true"
         ></convoy-input>
         <div class="grid grid-cols-2 gap-6">
             <convoy-input
@@ -55,6 +56,7 @@
                             errorMessage="Please provide a description"
                             label="Description"
                             placeholder="Description"
+                            [required]="true"
                         ></convoy-input>
                         <convoy-input
                             type="url"
@@ -64,6 +66,7 @@
                             label="Enter Endpoint URL"
                             placeholder="Endpoint url"
                             errorMessage="Please enter endpoint url"
+                            [required]="true"
                         ></convoy-input>
                     </div>
                     <convoy-input
