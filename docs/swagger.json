@@ -7991,11 +7991,17 @@
         "auth.Role": {
             "type": "object",
             "properties": {
+                "app_id": {
+                    "type": "string"
+                },
                 "apps": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "group_id": {
+                    "type": "string"
                 },
                 "groups": {
                     "type": "array",
@@ -9012,7 +9018,13 @@
                 "app": {
                     "type": "string"
                 },
+                "app_id": {
+                    "type": "string"
+                },
                 "group": {
+                    "type": "string"
+                },
+                "group_id": {
                     "type": "string"
                 },
                 "type": {

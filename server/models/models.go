@@ -60,6 +60,9 @@ type Role struct {
 	Type  auth.RoleType `json:"type"`
 	Group string        `json:"group"`
 	App   string        `json:"app,omitempty"`
+
+	GroupId string `json:"group_id"`
+	AppId   string `json:"app_id,omitempty"`
 }
 
 type UpdateOrganisationMember struct {

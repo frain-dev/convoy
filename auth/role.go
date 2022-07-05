@@ -8,6 +8,9 @@ type Role struct {
 	Type   RoleType `json:"type"`
 	Groups []string `json:"groups"`
 	Apps   []string `json:"apps,omitempty"`
+
+	GroupId string `json:"group_id" bson:"group_id"`
+	AppId   string `json:"app_id,omitempty" bson:"app_id,omitempty"`
 }
 
 type RoleType string
@@ -16,6 +19,7 @@ const (
 	RoleSuperUser = RoleType("super_user")
 	RoleAdmin     = RoleType("admin")
 	RoleAPI       = RoleType("api")
+	RoleCLI       = RoleType("cli")
 )
 
 func (r RoleType) IsValid() bool {

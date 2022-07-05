@@ -34,7 +34,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	member := getOrganisationMemberFromContext(r.Context())
-	apiKey, keyString, err := a.securityService.CreateAPIKey(r.Context(), member, &newApiKey)
+	apiKey, keyString, err := a.securityService.CreateProjectAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
 		log.WithError(err).Error("fff")
 		_ = render.Render(w, r, newServiceErrResponse(err))
