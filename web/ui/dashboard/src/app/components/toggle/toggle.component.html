@@ -1,0 +1,31 @@
+<label for="convoy-toggle" class="inline-flex relative items-center mb-5 cursor-pointer">
+    <input type="checkbox" id="convoy-toggle" class="sr-only peer" [checked]="isChecked" />
+    <div
+        class="
+            w-[35px]
+            h-[21px]
+            bg-grey-10
+            peer-focus:outline-none
+            rounded-16px
+            peer
+            peer-checked:after:translate-x-[16px]
+            peer-checked:after:border-primary-100
+            peer-checked:after:bg-[url(assets/img/checkmark.svg)]
+            peer-checked:after:bg-no-repeat
+            peer-checked:after:bg-center
+            peer-checked:after:transition-transform
+            peer-checked:after:duration-300
+            after:content-['']
+            after:absolute
+            after:top-[2px]
+            after:bg-white-100
+            after:border-grey-10 after:border
+            after:rounded-100px
+            after:h-[18px]
+            after:w-[18px]
+            after:transition-all
+            peer-checked:bg-primary-100
+        "
+    ></div>
+    <span class="ml-2 font-medium text-14">{{label}}</span>
+</label>
