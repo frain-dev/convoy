@@ -1,8 +1,10 @@
 <div class="w-full relative mb-24px" *ngIf="control">
-	<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center" [for]="name">
-		{{ label }}
-
-		<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{tooltipContent}}</convoy-tooltip>
+	<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
+		<div class="flex items-center">
+			{{ label }}
+			<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{ tooltipContent }}</convoy-tooltip>
+		</div>
+		<span *ngIf="required" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
 	</label>
 
 	<div class="w-full relative" *ngIf="type === 'password'">
