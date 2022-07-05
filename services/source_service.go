@@ -45,6 +45,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		GroupID:        g.UID,
 		MaskID:         uniuri.NewLen(16),
 		Name:           newSource.Name,
+		ForwardHeaders: newSource.ForwardHeaders,
 		Type:           newSource.Type,
 		Provider:       datastore.SourceProvider(newSource.Provider),
 		Verifier:       &newSource.Verifier,

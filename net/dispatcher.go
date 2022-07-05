@@ -27,7 +27,7 @@ func NewDispatcher(timeout time.Duration) *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, g *datastore.Group, hmac string, timestamp string, maxResponseSize int64) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, g *datastore.Group, hmac string, timestamp string, maxResponseSize int64, forwardedHeaders datastore.HttpHeader) (*Response, error) {
 	r := &Response{}
 	signatureHeader := g.Config.Signature.Header.String()
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
@@ -43,6 +43,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		return r, err
 	}
 
+	forwardedHeaders.SetHeadersInRequest(req)
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())

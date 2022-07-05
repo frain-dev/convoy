@@ -108,6 +108,10 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
+	if len(source.ForwardHeaders) > 0 {
+		event.SetForwardedHeaders(source.ForwardHeaders, r)
+	}
+
 	eventByte, err := json.Marshal(event)
 	if err != nil {
 		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
