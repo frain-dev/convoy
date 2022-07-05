@@ -1,0 +1,44 @@
+<div class="w-full relative mb-24px" *ngIf="control">
+	<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
+		<div class="flex items-center">
+			{{ label }}
+			<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{ tooltipContent }}</convoy-tooltip>
+		</div>
+		<span *ngIf="required" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
+	</label>
+	<select
+		(change)="onChange.emit()"
+		[id]="name"
+		[name]="name"
+		[formControl]="control"
+		class="
+			transition-all
+			duration-[.3s]
+			w-full
+			font-medium
+			text-14
+			text-grey-100
+			border
+			valid:border-primary-500
+			invalid:border-danger-100
+			disabled:border-primary-500
+			disabled:bg-[#F7F9FC]
+			hover:bg-primary-500
+			hover:border-grey-20
+			focus:border-primary-100
+			focus:bg-white-100
+			outline-none
+			rounded-4px
+			bg-[#F7F9FC]
+			py-12px
+			px-16px
+		"
+	>
+		<option selected>{{ placeholder ? placeholder : 'Select option' }}</option>
+		<option *ngFor="let option of options" [value]="option?.uid">{{ option.name }}</option>
+	</select>
+	<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="control.touched && control.invalid">
+		<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+		<span>{{ errorMessage }}</span>
+	</div>
+</div>
