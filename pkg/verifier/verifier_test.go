@@ -379,3 +379,40 @@ func Test_GithubVerifier_VerifyRequest(t *testing.T) {
 		})
 	}
 }
+
+func Test_TwitterVerifier_VerifyRequest(t *testing.T) {
+	tests := map[string]struct {
+		secret        string
+		payload       []byte
+		requestFn     func(t *testing.T) *http.Request
+		expectedError error
+	}{
+		"valid_signature": {
+			secret:  "Convoy",
+			payload: []byte(`Test Payload Body`),
+			requestFn: func(t *testing.T) *http.Request {
+				req, err := http.NewRequest("POST", "URL", strings.NewReader(``))
+				require.NoError(t, err)
+
+				hash := "sha256=d7a154547e7c35e31c4c820e20237650939c3d34dae136e30a7757ca61abb4cf"
+				req.Header.Add("X-Twitter-Webhooks-Signature", hash)
+				return req
+			},
+			expectedError: nil,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			// Arrange.
+			v := NewTwitterVerifier(tc.secret)
+			req := tc.requestFn(t)
+
+			// Assert.
+			err := v.VerifyRequest(req, tc.payload)
+
+			// Act.
+			require.ErrorIs(t, err, tc.expectedError)
+		})
+	}
+}

@@ -209,3 +209,29 @@ func (gV *GithubVerifier) VerifyRequest(r *http.Request, payload []byte) error {
 func (gV *GithubVerifier) getSignature(sig string) string {
 	return strings.Split(sig, "sha256=")[1]
 }
+
+type TwitterVerifier struct {
+	HmacOpts *HmacOptions
+}
+
+func NewTwitterVerifier(secret string) *TwitterVerifier {
+	tv := &TwitterVerifier{}
+	tv.HmacOpts = &HmacOptions{
+		Header:       "X-Twitter-Webhooks-Signature",
+		Hash:         "SHA256",
+		GetSignature: tv.getSignature,
+		Secret:       secret,
+		Encoding:     "hex",
+	}
+
+	return tv
+}
+
+func (tv *TwitterVerifier) VerifyRequest(r *http.Request, payload []byte) error {
+	 v := HmacVerifier{tv.HmacOpts}
+	 return v.VerifyRequest(r, payload)
+}
+
+func (tV *TwitterVerifier) getSignature(sig string) string {
+	return strings.Split(sig, "sha256=")[1]
+}

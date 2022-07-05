@@ -45,6 +45,8 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		switch source.Provider {
 		case datastore.GithubSourceProvider:
 			v = verifier.NewGithubVerifier(verifierConfig.HMac.Secret)
+		case datastore.TwitterSourceProvider:
+			v = verifier.NewTwitterVerifier(verifierConfig.HMac.Secret)
 		default:
 			_ = render.Render(w, r, newErrorResponse("Provider type undefined",
 				http.StatusBadRequest))
