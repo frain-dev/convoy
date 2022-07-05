@@ -73,6 +73,50 @@ func TestSourceService_CreateSource(t *testing.T) {
 			},
 		},
 		{
+			name: "should_set_default_forward_header_for_shopify_source",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name:     "Convoy-Prod",
+					Type:     datastore.HTTPSource,
+					Provider: datastore.ShopifySourceProvider,
+					Verifier: datastore.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &datastore.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
+						},
+					},
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantSource: &datastore.Source{
+				Name: "Convoy-Prod",
+				Type: datastore.HTTPSource,
+				ForwardHeaders: []string{
+					"X-Shopify-Topic",
+					"X-Shopify-Hmac-Sha256",
+					"X-Shopify-Shop-Domain",
+					"X-Shopify-API-Version",
+					"X-Shopify-Webhook-Id",
+				},
+				Verifier: &datastore.VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &datastore.HMac{
+						Header: "X-Convoy-Header",
+						Hash:   "SHA512",
+						Secret: "Convoy-Secret",
+					},
+				},
+			},
+			dbFn: func(so *SourceService) {
+				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
+				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
+		{
 			name: "should_fail_to_create_source",
 			args: args{
 				ctx: ctx,
