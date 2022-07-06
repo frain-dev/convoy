@@ -175,7 +175,7 @@ func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res := c.ValidateRequest(r)
+	res := c.HandleRequest(r)
 	data, err := json.Marshal(res)
 	if err != nil {
 		log.Errorf("Unable to marshal response data - %s", err)
@@ -183,5 +183,9 @@ func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, err = w.Write(data)
+	if err != nil {
+		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 }

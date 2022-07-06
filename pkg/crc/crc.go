@@ -9,18 +9,18 @@ import (
 )
 
 type Crc interface {
-	ValidateRequest(r *http.Request) map[string]interface{}
+	HandleRequest(r *http.Request) map[string]interface{}
 }
 
-type TwitterCrC struct {
+type TwitterCrc struct {
 	secret string
 }
 
-func NewTwitterCrc(secret string) *TwitterCrC {
-	return &TwitterCrC{secret: secret}
+func NewTwitterCrc(secret string) *TwitterCrc {
+	return &TwitterCrc{secret: secret}
 }
 
-func (tc *TwitterCrC) ValidateRequest(r *http.Request) map[string]interface{} {
+func (tc *TwitterCrc) HandleRequest(r *http.Request) map[string]interface{} {
 	crcToken := r.URL.Query().Get("crc_token")
 
 	h := hmac.New(sha256.New, []byte(tc.secret))

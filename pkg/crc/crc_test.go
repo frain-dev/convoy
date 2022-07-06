@@ -29,7 +29,7 @@ func Test_TwitterCrc_ValidateRequest(t *testing.T) {
 			c := NewTwitterCrc(tc.secret)
 			req := tc.requestFn(t)
 
-			res := c.ValidateRequest(req)
+			res := c.HandleRequest(req)
 
 			require.Equal(t, tc.encryptedToken, res["response_token"])
 		})
