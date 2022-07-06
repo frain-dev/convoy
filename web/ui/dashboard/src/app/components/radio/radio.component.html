@@ -1,0 +1,10 @@
+<div class="checkbox-option">
+	<input type="radio" [id]="name" [name]="name" [formControlName]="control" [value]="value" class="peer" />
+	<label [for]="name" class="border border-grey-10 rounded-4px p-16px block animate peer-checked:border-primary-100">
+		<div class="flex items-center mb-8px">
+			<div class="rounded-[50px] mb-0 border border-grey-10 w-16px h-16px animate peer-checked:border-primary-100 peer-checked:border-2"></div>
+			<p class="text-14 font-semibold ml-8px">{{ label }}</p>
+		</div>
+		<p *ngIf="description" class="text-grey-40 text-12 font-normal">{{ description }}</p>
+	</label>
+</div>
