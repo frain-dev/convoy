@@ -1,8 +1,8 @@
 <div class="fixed bg-black bg-opacity-50 h-screen w-screen top-0 right-0 bottom-0" (click)="closeModal.emit()"></div>
 <div class="fixed w-full bg-white-100 shadow" [class]="classes">
 	<div *ngIf="title" class="px-20px pt-20px pb-16px border-b border-b-grey-10 flex items-center justify-between">
-		<h2 class="semibold">{{ title }}</h2>
-		<convoy-button type="text" class="px-0" (click)="closeModal.emit()">
+		<h2 class="font-semibold capitalize">{{ title }}</h2>
+		<convoy-button type="outline" size="small" class="px-2" (click)="closeModal.emit()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</convoy-button>
 	</div>
