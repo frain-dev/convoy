@@ -74,6 +74,8 @@ type VerifierType string
 
 type EncodingType string
 
+type StorageType string
+
 const (
 	HTTPSource     SourceType = "http"
 	RestApiSource  SourceType = "rest_api"
@@ -99,6 +101,11 @@ const (
 const (
 	OutgoingGroup GroupType = "outgoing"
 	IncomingGroup GroupType = "incoming"
+)
+
+const (
+	S3     StorageType = "s3"
+	OnPrem StorageType = "on_prem"
 )
 
 const (
@@ -206,11 +213,13 @@ type Group struct {
 }
 
 type GroupConfig struct {
-	RateLimit       *RateLimitConfiguration `json:"ratelimit"`
-	Strategy        *StrategyConfiguration  `json:"strategy"`
-	Signature       *SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                    `json:"disable_endpoint" bson:"disable_endpoint"`
-	ReplayAttacks   bool                    `json:"replay_attacks" bson:"replay_attacks"`
+	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
+	Strategy                 *StrategyConfiguration        `json:"strategy"`
+	Signature                *SignatureConfiguration       `json:"signature"`
+	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
+	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
+	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
 }
 
 type RateLimitConfiguration struct {
@@ -232,6 +241,10 @@ type SignatureConfiguration struct {
 type SignatureValues struct {
 	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
 	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+}
+
+type RetentionPolicyConfiguration struct {
+	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
 }
 
 type GroupStatistics struct {
@@ -571,14 +584,33 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	ID                 primitive.ObjectID `json:"-" bson:"_id"`
-	UID                string             `json:"uid" bson:"uid"`
-	IsAnalyticsEnabled bool               `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
-	DocumentStatus     DocumentStatus     `json:"-" bson:"document_status"`
+	ID                 primitive.ObjectID          `json:"-" bson:"_id"`
+	UID                string                      `json:"uid" bson:"uid"`
+	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" bson:"storage_policy"`
+	DocumentStatus     DocumentStatus              `json:"-" bson:"document_status"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type StoragePolicyConfiguration struct {
+	Type   StorageType    `json:"type,omitempty" bson:"type" valid:"supported_storage~please provide a valid storage type,required"`
+	S3     *S3Storage     `json:"s3" bson:"s3"`
+	OnPrem *OnPremStorage `json:"on_prem" bson:"on_prem"`
+}
+
+type S3Storage struct {
+	Bucket       string `json:"bucket" bson:"bucket"`
+	AccessKey    string `json:"access_key" bson:"access_key"`
+	SecretKey    string `json:"secret_key" bson:"secret_key"`
+	SessionToken string `json:"session_token" bson:"session_token"`
+	Region       string `json:"region" bson:"region"`
+}
+
+type OnPremStorage struct {
+	Path string `json:"path" bson:"path"`
 }
 
 type OrganisationMember struct {

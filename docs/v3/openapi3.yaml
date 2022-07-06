@@ -254,10 +254,14 @@ components:
       properties:
         disable_endpoint:
           type: boolean
+        is_retention_policy_enabled:
+          type: boolean
         ratelimit:
           $ref: '#/components/schemas/datastore.RateLimitConfiguration'
         replay_attacks:
           type: boolean
+        retention_policy:
+          $ref: '#/components/schemas/datastore.RetentionPolicyConfiguration'
         signature:
           $ref: '#/components/schemas/datastore.SignatureConfiguration'
         strategy:
@@ -382,6 +386,11 @@ components:
         count:
           type: integer
         duration:
+          type: string
+      type: object
+    datastore.RetentionPolicyConfiguration:
+      properties:
+        policy:
           type: string
       type: object
     datastore.RetryConfiguration:

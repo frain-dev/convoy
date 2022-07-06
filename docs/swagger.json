@@ -8364,11 +8364,17 @@
                 "disable_endpoint": {
                     "type": "boolean"
                 },
+                "is_retention_policy_enabled": {
+                    "type": "boolean"
+                },
                 "ratelimit": {
                     "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
                 "replay_attacks": {
                     "type": "boolean"
+                },
+                "retention_policy": {
+                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
                 },
                 "signature": {
                     "$ref": "#/definitions/datastore.SignatureConfiguration"
@@ -8552,6 +8558,14 @@
                     "type": "integer"
                 },
                 "duration": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.RetentionPolicyConfiguration": {
+            "type": "object",
+            "properties": {
+                "policy": {
                     "type": "string"
                 }
             }

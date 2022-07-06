@@ -83,6 +83,13 @@ const (
 	PriorityQueue    QueueName = "PriorityQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"
 )
+
+//Exports dir
+const (
+	DefaultOnPremDir = "/var/convoy/export/"
+	TmpExportDir     = "/var/convoy/export/tmp/"
+)
+
 const (
 	EventDeliveryIDLength = 12
 )
