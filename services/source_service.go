@@ -81,6 +81,10 @@ func setDefaultForwardHeaders(s *datastore.Source) {
 			"X-Shopify-API-Version",
 			"X-Shopify-Webhook-Id",
 		}
+	case datastore.TwitterSourceProvider:
+		s.ForwardHeaders = []string{
+			"X-Twitter-Webhooks-Signature",
+		}
 	}
 }
 
