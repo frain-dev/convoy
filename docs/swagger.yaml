@@ -163,6 +163,8 @@ definitions:
         type: string
       event_type:
         type: string
+      forwarded_headers:
+        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
       matched_endpoints:
@@ -202,6 +204,8 @@ definitions:
         type: string
       event_metadata:
         $ref: '#/definitions/datastore.Event'
+      forwarded_headers:
+        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
       metadata:
@@ -406,6 +410,10 @@ definitions:
         type: string
       deleted_at:
         type: string
+      forward_headers:
+        items:
+          type: string
+        type: array
       group_id:
         type: string
       is_disabled:
@@ -690,6 +698,10 @@ definitions:
     type: object
   models.Source:
     properties:
+      forward_headers:
+        items:
+          type: string
+        type: array
       is_disabled:
         type: boolean
       name:
