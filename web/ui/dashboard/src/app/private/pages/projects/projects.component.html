@@ -1,102 +1,86 @@
 <convoy-loader *ngIf="isloadingOrganisations"></convoy-loader>
 
 <ng-container *ngIf="!isloadingOrganisations && organisations.length > 0 && !noData">
-	<div class="page padding-top__60px">
-		<div class="page__head">
-			<div>
-				<h3 class="margin-bottom__8px">Projects</h3>
-				<p class="page__head--sub">All your project's summary at a glance</p>
+	<div class="w-[1374px] m-auto px-8 pb-8 pt-16">
+		<h3 class="mb-2 font-semibold">Projects</h3>
+		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
+
+		<div class="grid grid-cols-3 gap-6" *ngIf="isLoadingProjects">
+			<div *ngFor="let index of projectsLoaderIndex" class="rounded-8px bg-white-100 block border border-grey-10">
+				<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
+					<div class="flex items-center">
+						<div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">
+							<svg width="16" height="16" fill="#477db3" stroke="#477db3">
+								<use xlink:href="#top-right-icon"></use>
+							</svg>
+						</div>
+						<div class="bg-grey-20 rounded-[24px] animate-pulse h-4 w-[140px]"></div>
+					</div>
+
+					<div class="bg-grey-20 rounded-[24px] animate-pulse h-4 w-16"></div>
+				</div>
+
+				<div class="flex items-center p-0">
+					<div class="py-2 px-6 w-2/5">
+						<div class="bg-grey-20 rounded-[24px] animate-pulse h-4 w-18"></div>
+					</div>
+					<div class="py-2 px-6 w-3/5 flex items-center justify-between border-l border-l-grey-10">
+						<div class="bg-grey-20 rounded-[24px] animate-pulse h-4 w-16"></div>
+						<div class="bg-grey-20 rounded-[24px] animate-pulse h-4 w-10"></div>
+					</div>
+				</div>
 			</div>
 		</div>
 
-		<ul class="grid projects-grid" *ngIf="isLoadingProjects">
-			<li *ngFor="let index of projectsLoaderIndex">
-				<div class="card rounded__8px border__all bg__white">
-					<div class="padding-x__24px padding-top__24px padding-bottom__14px border__bottom">
-						<div class="skeleton-loader header"></div>
-					</div>
-					<div class="flex flex__align-items-center border__bottom">
-						<div class="border__right padding-y__8px padding-x__24px">
-							<div class="skeleton-loader text"></div>
-						</div>
-						<div class="flex flex__align-items-center flex__justify-between width__60 padding-y__8px padding-x__24px">
-							<div>
-								<div class="skeleton-loader text"></div>
-							</div>
-							<div><div class="skeleton-loader small"></div></div>
-						</div>
-					</div>
-				</div>
-			</li>
-		</ul>
-
-		<ul class="grid projects-grid" *ngIf="!isLoadingProjects">
-			<li *ngFor="let project of projects">
-				<a [routerLink]="'/projects/' + project.uid" class="card rounded__8px bg__white display__block">
-					<div class="padding-x__24px padding-y__16px border__bottom flex flex__align-items-center flex__justify-between">
-						<div class="flex flex__align-items-center">
-							<div class="width__24px height__24px rounded__50px margin-right__8px flex flex__align-items-center flex__justify-center" style="background: var(--primary-color-500)">
-								<svg width="16" height="16" fill="var(--primary-color)" stroke="var(--primary-color)">
-									<use xlink:href="#top-right-icon"></use>
-								</svg>
-							</div>
-							<h4 class="pointer-cursor">{{ project.name }}</h4>
-						</div>
-						<div class="tag tag--Primary font__10px text__uppercase">{{ project.type || '-' }}</div>
-					</div>
-
-					<div class="flex flex__align-items-center">
-						<div class="font__12px font__weight-500 color__grey border__right width__40 padding-y__8px padding-x__24px">
-							<span class="color__black margin-right__8px">{{ project.statistics.messages_sent }}</span>
-							<span class="color__grey">Events Sent</span>
-						</div>
-						<div class="flex flex__align-items-center flex__justify-between flex__align-items-center width__60 padding-y__8px padding-x__24px">
-							<div class="font__12px font__weight-500 color__grey">
-								<span class="color__black margin-right__8px">{{ project.statistics.total_apps }}</span>
-								<span class="color__grey">Apps</span>
-							</div>
-							<svg width="20" height="20" fill="var(--primary-color)">
-								<use xlink:href="#arrow-right-icon"></use>
+		<div class="grid grid-cols-3 gap-6" *ngIf="!isLoadingProjects">
+			<a *ngFor="let project of projects" [routerLink]="'/projects/' + project.uid" class="rounded-8px bg-white-100 block border border-grey-10">
+				<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
+					<div class="flex items-center">
+						<div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">
+							<svg width="16" height="16" fill="#477db3" stroke="#477db3">
+								<use xlink:href="#top-right-icon"></use>
 							</svg>
 						</div>
+						<h4 class="cursor-pointer">{{ project.name }}</h4>
 					</div>
-				</a>
-			</li>
 
-			<li>
-				<a routerLink="./new" class="card new-project-card rounded__8px bg__white flex flex__align-items-center flex__justify-center padding-y__32px">
-					<svg width="22" height="22" class="margin-right__8px" fill="var(--primary-color)">
-						<use xlink:href="#plus-icon"></use>
-					</svg>
-					<span class="color__primary font__weight-500">Create new project</span>
-				</a>
-			</li>
-		</ul>
+					<div class="bg-primary-500 rounded-8px px-2 pt-[1px] text-10 font-medium text-primary-100 uppercase">{{ project.type || '-' }}</div>
+				</div>
+
+				<div class="flex items-center p-0">
+					<div class="py-2 px-6 text-12 font-medium w-2/5">
+						<span class="text-black mr-2">{{ project.statistics.messages_sent }}</span>
+						<span class="text-grey-40">Events Sent</span>
+					</div>
+					<div class="py-2 px-6 w-3/5 flex items-center justify-between border-l border-l-grey-10">
+						<div class="text-12 font-medium">
+							<span class="text-black mr-2">{{ project.statistics.total_apps }}</span>
+							<span class="text-grey-40">Apps</span>
+						</div>
+						<svg width="20" height="20" fill="#477db3">
+							<use xlink:href="#arrow-right-icon"></use>
+						</svg>
+					</div>
+				</div>
+			</a>
+		</div>
 	</div>
 </ng-container>
 
-<div class="page padding-top__60px" *ngIf="organisations.length == 0">
-	<div class="page--empty-state">
-		<div class="page--empty-state--img">
-			<img src="/assets/img/org-empty-img.svg" alt="add group empty" />
-		</div>
-		<h3>You have no organisation yet</h3>
-		<p>Create an organisation to get started with sending/receiving webhooks</p>
-		<button class="button button__primary" (click)="showOrganisationModal = true">Create Organisation</button>
+<div class="w-[1374px] m-auto px-8 pb-8 pt-16" *ngIf="organisations.length == 0">
+	<div class="bg-white-100 border border-grey-10 h-[550px] rounded-[10px] flex flex-col items-center justify-center">
+		<img src="/assets/img/org-empty-img.svg" alt="add group empty" class="h-20 mb-4" />
+		<h1 class="font-semibold mb-2">You have no organisation yet</h1>
+		<p class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">Create an organisation to get started with sending/receiving webhooks</p>
+		<convoy-button (click)="showOrganisationModal = true">Create Organisation</convoy-button>
 	</div>
 </div>
 
-<div class="_overlay z-index--2" *ngIf="showOrganisationModal" (click)="showOrganisationModal = false"></div>
-<div class="modal modal__right z-index--3" *ngIf="showOrganisationModal">
-	<app-create-organisation (closeModal)="setOrganisation()"></app-create-organisation>
-</div>
-<div class="page margin-top__40px" *ngIf="noData && !isLoadingProjects">
-	<div class="page--empty-state">
-		<div class="page--empty-state--img">
-			<img src="/assets/img/group-empty-img.svg" alt="add group empty" />
-		</div>
-		<h3>You have no project yet</h3>
-		<p>All your project's summary at a glance</p>
-		<button class="button button__primary" routerLink="./new">Create Project</button>
+<div class="w-[1374px] m-auto px-8 pb-8 pt-10" *ngIf="noData && !isLoadingProjects">
+	<div class="bg-white-100 border border-grey-10 h-[550px] rounded-[10px] flex flex-col items-center justify-center">
+		<img src="/assets/img/group-empty-img.svg" alt="add group empty" class="h-20 mb-4" />
+		<h1 class="font-semibold mb-2">You have no project yet</h1>
+		<p class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">Create a project to start sending/receiving webhooks</p>
+		<convoy-button routerLink="./new">Create Project</convoy-button>
 	</div>
 </div>
