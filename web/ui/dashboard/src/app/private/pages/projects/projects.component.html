@@ -1,7 +1,7 @@
 <convoy-loader *ngIf="isloadingOrganisations"></convoy-loader>
 
 <ng-container *ngIf="!isloadingOrganisations && organisations.length > 0 && !noData">
-	<div class="w-[1374px] m-auto px-8 pb-8 pt-16">
+	<convoy-page>
 		<h3 class="mb-2 font-semibold">Projects</h3>
 		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
 
@@ -70,26 +70,26 @@
 				<span class="text-primary-100 font-medium text-16">Create new project</span>
 			</a>
 		</div>
-	</div>
+	</convoy-page>
 </ng-container>
 
-<div class="w-[1374px] m-auto px-8 pb-8 pt-16" *ngIf="organisations.length == 0">
+<convoy-page *ngIf="organisations.length == 0">
 	<div class="bg-white-100 border border-grey-10 h-[550px] rounded-[10px] flex flex-col items-center justify-center">
 		<img src="/assets/img/org-empty-img.svg" alt="add group empty" class="h-20 mb-4" />
 		<h1 class="font-semibold mb-2">You have no organisation yet</h1>
 		<p class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">Create an organisation to get started with sending/receiving webhooks</p>
 		<convoy-button (click)="showOrganisationModal = true">Create Organisation</convoy-button>
 	</div>
-</div>
+</convoy-page>
 
-<div class="w-[1374px] m-auto px-8 pb-8 pt-10" *ngIf="noData && !isLoadingProjects">
+<convoy-page *ngIf="noData && !isLoadingProjects">
 	<div class="bg-white-100 border border-grey-10 h-[550px] rounded-[10px] flex flex-col items-center justify-center">
 		<img src="/assets/img/group-empty-img.svg" alt="add group empty" class="h-20 mb-4" />
 		<h1 class="font-semibold mb-2">You have no project yet</h1>
 		<p class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">Create a project to start sending/receiving webhooks</p>
 		<convoy-button routerLink="./new">Create Project</convoy-button>
 	</div>
-</div>
+</convoy-page>
 
 <convoy-modal title="Add an organisation" *ngIf="showOrganisationModal" (closeModal)="showOrganisationModal = false">
 	<div modalBody>

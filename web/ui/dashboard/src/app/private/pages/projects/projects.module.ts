@@ -6,11 +6,12 @@ import { CreateOrganisationModule } from '../../components/create-organisation/c
 import { LoaderModule } from '../../components/loader/loader.module';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { PageComponent } from 'src/app/components/page/page.component';
 
 const routes: Routes = [{ path: '', component: ProjectsComponent }];
 
 @NgModule({
 	declarations: [ProjectsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), CreateOrganisationModule, LoaderModule, ButtonComponent, ModalComponent]
+	imports: [CommonModule, RouterModule.forChild(routes), CreateOrganisationModule, LoaderModule, ButtonComponent, ModalComponent, PageComponent]
 })
 export class ProjectsModule {}
