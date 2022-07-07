@@ -487,15 +487,16 @@ type Subscription struct {
 }
 
 type Source struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	GroupID    string             `json:"group_id" bson:"group_id"`
-	MaskID     string             `json:"mask_id" bson:"mask_id"`
-	Name       string             `json:"name" bson:"name"`
-	Type       SourceType         `json:"type" bson:"type"`
-	Provider   SourceProvider     `json:"provider" bson:"provider"`
-	IsDisabled bool               `json:"is_disabled" bson:"is_disabled"`
-	Verifier   *VerifierConfig    `json:"verifier" bson:"verifier"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	GroupID        string             `json:"group_id" bson:"group_id"`
+	MaskID         string             `json:"mask_id" bson:"mask_id"`
+	Name           string             `json:"name" bson:"name"`
+	Type           SourceType         `json:"type" bson:"type"`
+	Provider       SourceProvider     `json:"provider" bson:"provider"`
+	IsDisabled     bool               `json:"is_disabled" bson:"is_disabled"`
+	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
+	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
@@ -534,6 +535,14 @@ type AlertConfiguration struct {
 
 type FilterConfiguration struct {
 	EventTypes []string `json:"event_types" bson:"event_types,omitempty"`
+}
+
+type ProviderConfig struct {
+	Twitter *TwitterProviderConfig `json:"twitter" bson:"twitter"`
+}
+
+type TwitterProviderConfig struct {
+	CrcVerifiedAt primitive.DateTime `json:"crc_verified_at" bson:"crc_verified_at"`
 }
 
 type VerifierConfig struct {

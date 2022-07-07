@@ -43,6 +43,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *d
 		primitive.E{Key: "is_disabled", Value: source.IsDisabled},
 		primitive.E{Key: "verifier", Value: source.Verifier},
 		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
+		primitive.E{Key: "provider_config", Value: source.ProviderConfig},
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)

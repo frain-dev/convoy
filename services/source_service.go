@@ -53,6 +53,10 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
+	if source.Provider == datastore.TwitterSourceProvider {
+		source.ProviderConfig = &datastore.ProviderConfig{Twitter: &datastore.TwitterProviderConfig{}}
+	}
+
 	err := s.sourceRepo.CreateSource(ctx, source)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create source"))
