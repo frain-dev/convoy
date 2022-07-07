@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -14,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/notification/email"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
 )
 
 func MonitorTwitterSources(sourceRepo datastore.SourceRepository, subRepo datastore.SubscriptionRepository, appRepo datastore.ApplicationRepository, queue queue.Queuer) func(context.Context, *asynq.Task) error {
@@ -22,15 +22,12 @@ func MonitorTwitterSources(sourceRepo datastore.SourceRepository, subRepo datast
 		f := &datastore.SourceFilter{Provider: string(datastore.TwitterSourceProvider)}
 
 		sources, _, err := sourceRepo.LoadSourcesPaged(context.Background(), "", f, p)
-		fmt.Println("sources", sources)
 		if err != nil {
 			log.Error("Failed to load sources paged")
 			return err
 		}
 
 		for _, source := range sources {
-			// get the time from two hours ago
-
 			now := time.Now()
 			crcExpiry := time.Now().Add(time.Hour * -2)
 
@@ -51,10 +48,12 @@ func MonitorTwitterSources(sourceRepo datastore.SourceRepository, subRepo datast
 							return err
 						}
 
-						err = sendNotificationEmail(source, app, queue)
-						if err != nil {
-							log.Error("failed to send notification")
-							return err
+						if !util.IsStringEmpty(app.SupportEmail) {
+							err = sendNotificationEmail(source, app, queue)
+							if err != nil {
+								log.Error("failed to send notification")
+								return err
+							}
 						}
 					}
 				}

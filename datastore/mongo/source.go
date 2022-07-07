@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -95,9 +94,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	fi := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID, "type": f.Type, "provider": f.Provider}
 
 	filter := removeUnusedFields(fi)
-
-	fmt.Println("fi is", fi)
-
 	paginatedData, err := pager.New(s.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&sources).Find()
 	if err != nil {
 		return sources, datastore.PaginationData{}, err
