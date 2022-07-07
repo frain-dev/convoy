@@ -63,6 +63,12 @@
 					</div>
 				</div>
 			</a>
+			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8">
+				<svg width="22" height="22" class="mr-2" fill="#477db3">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				<span class="text-primary-100 font-medium text-16">Create new project</span>
+			</a>
 		</div>
 	</div>
 </ng-container>
@@ -84,3 +90,9 @@
 		<convoy-button routerLink="./new">Create Project</convoy-button>
 	</div>
 </div>
+
+<convoy-modal title="Add an organisation" *ngIf="showOrganisationModal" (closeModal)="showOrganisationModal = false">
+	<div modalBody>
+		<app-create-organisation (closeModal)="setOrganisation()"></app-create-organisation>
+	</div>
+</convoy-modal>
