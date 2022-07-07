@@ -11,13 +11,13 @@ import { Component, Input, OnInit } from '@angular/core';
 export class PageComponent implements OnInit {
 	@Input('size') size: 'small' | 'normal' = 'normal';
 	@Input('class') class!: string;
-	sizes = { small: 'max-w-[848px]', normal: 'max-w-[1374px]' };
+	types = { small: 'max-w-[848px] bg-white-100 border border-grey-10 rounded-8px mt-10', normal: 'max-w-[1374px] px-8 pb-8 pt-16' };
 
 	constructor() {}
 
 	ngOnInit(): void {}
 
-  get classes(): string{
-    return `${this.sizes[this.size]} ${this.class} ${this.size === 'small' ? 'bg-white-100 border border-grey-10 rounded-8px mt-10' : 'px-8 pb-8 pt-16'}`
-  }
+	get classes(): string {
+		return `${this.types[this.size]} ${this.class}`;
+	}
 }
