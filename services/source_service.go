@@ -45,6 +45,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		GroupID:        g.UID,
 		MaskID:         uniuri.NewLen(16),
 		Name:           newSource.Name,
+		ForwardHeaders: newSource.ForwardHeaders,
 		Type:           newSource.Type,
 		Provider:       datastore.SourceProvider(newSource.Provider),
 		Verifier:       &newSource.Verifier,
@@ -53,12 +54,31 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
+	setDefaultForwardHeaders(source)
+
 	err := s.sourceRepo.CreateSource(ctx, source)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create source"))
 	}
 
 	return source, nil
+}
+
+func setDefaultForwardHeaders(s *datastore.Source) {
+	if len(s.ForwardHeaders) > 0 {
+		return
+	}
+
+	switch s.Provider {
+	case datastore.ShopifySourceProvider:
+		s.ForwardHeaders = []string{
+			"X-Shopify-Topic",
+			"X-Shopify-Hmac-Sha256",
+			"X-Shopify-Shop-Domain",
+			"X-Shopify-API-Version",
+			"X-Shopify-Webhook-Id",
+		}
+	}
 }
 
 func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, sourceUpdate *models.UpdateSource, source *datastore.Source) (*datastore.Source, error) {
@@ -85,6 +105,13 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, so
 	if sourceUpdate.Verifier.Type == datastore.BasicAuthVerifier && sourceUpdate.Verifier.BasicAuth == nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
 	}
+
+	if sourceUpdate.ForwardHeaders != nil {
+		source.ForwardHeaders = sourceUpdate.ForwardHeaders
+	}
+
+	setDefaultForwardHeaders(source)
+
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating source"))

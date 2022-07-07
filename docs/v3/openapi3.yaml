@@ -163,6 +163,8 @@ components:
           type: string
         event_type:
           type: string
+        forwarded_headers:
+          $ref: '#/components/schemas/datastore.HttpHeader'
         group_id:
           type: string
         matched_endpoints:
@@ -202,6 +204,8 @@ components:
           type: string
         event_metadata:
           $ref: '#/components/schemas/datastore.Event'
+        forwarded_headers:
+          $ref: '#/components/schemas/datastore.HttpHeader'
         group_id:
           type: string
         metadata:
@@ -406,6 +410,10 @@ components:
           type: string
         deleted_at:
           type: string
+        forward_headers:
+          items:
+            type: string
+          type: array
         group_id:
           type: string
         is_disabled:
@@ -689,6 +697,10 @@ components:
       type: object
     models.Source:
       properties:
+        forward_headers:
+          items:
+            type: string
+          type: array
         is_disabled:
           type: boolean
         name:

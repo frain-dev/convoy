@@ -45,6 +45,8 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		switch source.Provider {
 		case datastore.GithubSourceProvider:
 			v = verifier.NewGithubVerifier(verifierConfig.HMac.Secret)
+		case datastore.ShopifySourceProvider:
+			v = verifier.NewShopifyVerifier(verifierConfig.HMac.Secret)
 		default:
 			_ = render.Render(w, r, newErrorResponse("Provider type undefined",
 				http.StatusBadRequest))
@@ -104,6 +106,10 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	if len(source.ForwardHeaders) > 0 {
+		event.SetForwardedHeaders(source.ForwardHeaders, r)
 	}
 
 	eventByte, err := json.Marshal(event)
