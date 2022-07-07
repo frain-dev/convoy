@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -91,11 +92,11 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	var sources []datastore.Source
 
-	filter := bson.M{"group_id": groupID, "document_status": datastore.ActiveDocumentStatus}
+	fi := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID, "type": f.Type, "provider": f.Provider}
 
-	if !util.IsStringEmpty(f.Type) {
-		filter = bson.M{"group_id": groupID, "document_status": datastore.ActiveDocumentStatus, "type": f.Type}
-	}
+	filter := removeUnusedFields(fi)
+
+	fmt.Println("fi is", fi)
 
 	paginatedData, err := pager.New(s.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&sources).Find()
 	if err != nil {
@@ -107,4 +108,20 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	}
 
 	return sources, datastore.PaginationData(paginatedData.Pagination), nil
+}
+
+func removeUnusedFields(filter map[string]interface{}) map[string]interface{} {
+	for k, v := range filter {
+		item, ok := v.(string)
+		if !ok {
+			continue
+		}
+
+		if util.IsStringEmpty(item) {
+			delete(filter, k)
+		}
+
+	}
+
+	return filter
 }
