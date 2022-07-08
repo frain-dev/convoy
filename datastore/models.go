@@ -84,6 +84,7 @@ const (
 
 const (
 	GithubSourceProvider  SourceProvider = "github"
+	TwitterSourceProvider SourceProvider = "twitter"
 	ShopifySourceProvider SourceProvider = "shopify"
 )
 
@@ -512,6 +513,7 @@ type Source struct {
 	Provider       SourceProvider     `json:"provider" bson:"provider"`
 	IsDisabled     bool               `json:"is_disabled" bson:"is_disabled"`
 	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
+	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
 	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
@@ -551,6 +553,14 @@ type AlertConfiguration struct {
 
 type FilterConfiguration struct {
 	EventTypes []string `json:"event_types" bson:"event_types,omitempty"`
+}
+
+type ProviderConfig struct {
+	Twitter *TwitterProviderConfig `json:"twitter" bson:"twitter"`
+}
+
+type TwitterProviderConfig struct {
+	CrcVerifiedAt primitive.DateTime `json:"crc_verified_at" bson:"crc_verified_at"`
 }
 
 type VerifierConfig struct {
