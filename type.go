@@ -82,12 +82,13 @@ const (
 	CreateEventQueue QueueName = "CreateEventQueue"
 	PriorityQueue    QueueName = "PriorityQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"
+	DefaultQueue     QueueName = "DefaultQueue"
 )
 
 //Exports dir
 const (
-	DefaultOnPremDir = "/var/convoy/export/"
-	TmpExportDir     = "/var/convoy/export/tmp/"
+	DefaultOnPremDir = "./etc/convoy/export/"
+	TmpExportDir     = "/tmp/convoy/"
 )
 
 const (

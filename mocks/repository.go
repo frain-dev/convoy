@@ -361,7 +361,7 @@ func (mr *MockEventRepositoryMockRecorder) CreateEvent(arg0, arg1 interface{}) *
 }
 
 // DeleteGroupEvents mocks base method.
-func (m *MockEventRepository) DeleteGroupEvents(arg0 context.Context, arg1 string) error {
+func (m *MockEventRepository) DeleteGroupEvents(arg0 context.Context, arg1 *datastore.EventFilter) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteGroupEvents", arg0, arg1)
 	ret0, _ := ret[0].(error)

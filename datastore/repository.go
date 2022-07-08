@@ -35,7 +35,7 @@ type EventRepository interface {
 	FindEventsByIDs(context.Context, []string) ([]Event, error)
 	CountGroupMessages(ctx context.Context, groupID string) (int64, error)
 	LoadEventsPaged(context.Context, string, string, SearchParams, Pageable) ([]Event, PaginationData, error)
-	DeleteGroupEvents(context.Context, string) error
+	DeleteGroupEvents(context.Context, *EventFilter) error
 }
 
 type GroupRepository interface {

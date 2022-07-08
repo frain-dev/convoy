@@ -180,18 +180,34 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			log.WithError(err).Error("failed to create worker")
 		}
 
-		// register tasks.
 		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 		consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
-		// register tasks.
 		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
-		// register tasks.
 		notificationHandler := task.SendNotification(a.emailNotificationSender)
 		consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
 
+		//register scheduler
+		scheduler := worker.NewScheduler(a.queue)
+
+		//register scheduler tasks
+		scheduler.RegisterTask("@every 24h", convoy.ScheduleQueue, convoy.TaskName("retention_policies"))
+
+		//register worker tasks
+		consumer.RegisterHandlers(convoy.TaskName("retention_policies"), task.RententionPolicies(
+			cfg,
+			a.configRepo,
+			a.groupRepo,
+			a.eventRepo,
+			a.searcher,
+		))
+
+		//start scheduler
+		scheduler.Start()
+
+		//start worker
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}

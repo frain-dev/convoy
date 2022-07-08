@@ -39,8 +39,8 @@ func (e *eventRepo) CountGroupMessages(ctx context.Context, gid string) (int64, 
 	return int64(count), err
 }
 
-func (e *eventRepo) DeleteGroupEvents(ctx context.Context, gid string) error {
-	return e.db.DeleteMatching(&datastore.Event{}, badgerhold.Where("AppMetadata.GroupID").Eq(gid))
+func (e *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.EventFilter) error {
+	return e.db.DeleteMatching(&datastore.Event{}, badgerhold.Where("AppMetadata.GroupID").Eq(filter.GroupID))
 }
 
 func (e *eventRepo) FindEventByID(ctx context.Context, eid string) (*datastore.Event, error) {

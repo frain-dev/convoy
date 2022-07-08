@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -141,6 +142,12 @@ var (
 		Count:     4,
 		Threshold: "1h",
 	}
+	DefaultStoragePolicy = StoragePolicyConfiguration{
+		Type: OnPrem,
+		OnPrem: &OnPremStorage{
+			Path: convoy.DefaultOnPremDir,
+		},
+	}
 )
 
 const (
@@ -216,7 +223,7 @@ type GroupConfig struct {
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
+	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
 	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
 	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
@@ -256,6 +263,12 @@ type GroupStatistics struct {
 type GroupFilter struct {
 	OrgID string   `json:"org_id" bson:"org_id"`
 	Names []string `json:"name" bson:"name"`
+}
+
+type EventFilter struct {
+	GroupID        string `json:"group_id" bson:"group_id"`
+	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
 func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
@@ -602,11 +615,11 @@ type StoragePolicyConfiguration struct {
 }
 
 type S3Storage struct {
-	Bucket       string `json:"bucket" bson:"bucket"`
-	AccessKey    string `json:"access_key" bson:"access_key"`
-	SecretKey    string `json:"secret_key" bson:"secret_key"`
-	SessionToken string `json:"session_token" bson:"session_token"`
-	Region       string `json:"region" bson:"region"`
+	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
+	AccessKey    string `json:"-" bson:"access_key" valid:"required~please provide an access key"`
+	SecretKey    string `json:"-" bson:"secret_key" valid:"required~please provide a secret key"`
+	SessionToken string `json:"-" bson:"session_token"`
+	Region       string `json:"region" bson:"region" valid:"required~please provide AWS bucket region"`
 }
 
 type OnPremStorage struct {

@@ -313,6 +313,11 @@ definitions:
       strategy:
         type: string
     type: object
+  datastore.OnPremStorage:
+    properties:
+      path:
+        type: string
+    type: object
   datastore.Organisation:
     properties:
       created_at:
@@ -402,6 +407,13 @@ definitions:
       type:
         type: string
     type: object
+  datastore.S3Storage:
+    properties:
+      bucket:
+        type: string
+      region:
+        type: string
+    type: object
   datastore.SignatureConfiguration:
     properties:
       hash:
@@ -433,6 +445,15 @@ definitions:
         type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
+    type: object
+  datastore.StoragePolicyConfiguration:
+    properties:
+      on_prem:
+        $ref: '#/definitions/datastore.OnPremStorage'
+      s3:
+        $ref: '#/definitions/datastore.S3Storage'
+      type:
+        type: string
     type: object
   datastore.StrategyConfiguration:
     properties:
@@ -557,6 +578,8 @@ definitions:
     properties:
       is_analytics_enabled:
         type: boolean
+      storage_policy:
+        $ref: '#/definitions/datastore.StoragePolicyConfiguration'
     type: object
   models.ConfigurationResponse:
     properties:
@@ -568,6 +591,8 @@ definitions:
         type: integer
       is_analytics_enabled:
         type: boolean
+      storage_policy:
+        $ref: '#/definitions/datastore.StoragePolicyConfiguration'
       uid:
         type: string
       updated_at:
@@ -1747,6 +1772,61 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create a configuration
+      tags:
+      - Application
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates configuration
+      parameters:
+      - description: Configuration Details
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Configuration'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ConfigurationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update configuration
       tags:
       - Application
   /eventdeliveries:

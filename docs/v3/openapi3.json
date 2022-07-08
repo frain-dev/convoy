@@ -460,6 +460,14 @@
 				},
 				"type": "object"
 			},
+			"datastore.OnPremStorage": {
+				"properties": {
+					"path": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.Organisation": {
 				"properties": {
 					"created_at": {
@@ -597,6 +605,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.S3Storage": {
+				"properties": {
+					"bucket": {
+						"type": "string"
+					},
+					"region": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.SignatureConfiguration": {
 				"properties": {
 					"hash": {
@@ -642,6 +661,20 @@
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.StoragePolicyConfiguration": {
+				"properties": {
+					"on_prem": {
+						"$ref": "#/components/schemas/datastore.OnPremStorage"
+					},
+					"s3": {
+						"$ref": "#/components/schemas/datastore.S3Storage"
+					},
+					"type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -831,6 +864,9 @@
 				"properties": {
 					"is_analytics_enabled": {
 						"type": "boolean"
+					},
+					"storage_policy": {
+						"$ref": "#/components/schemas/datastore.StoragePolicyConfiguration"
 					}
 				},
 				"type": "object"
@@ -848,6 +884,9 @@
 					},
 					"is_analytics_enabled": {
 						"type": "boolean"
+					},
+					"storage_policy": {
+						"$ref": "#/components/schemas/datastore.StoragePolicyConfiguration"
 					},
 					"uid": {
 						"type": "string"
@@ -3147,6 +3186,120 @@
 					}
 				],
 				"summary": "Create a configuration",
+				"tags": [
+					"Application"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates configuration",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Configuration"
+							}
+						}
+					},
+					"description": "Configuration Details",
+					"required": true,
+					"x-originalParamName": "application"
+				},
+				"responses": {
+					"202": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.ConfigurationResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Accepted"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update configuration",
 				"tags": [
 					"Application"
 				]

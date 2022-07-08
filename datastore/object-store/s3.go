@@ -49,10 +49,10 @@ func (s3 *S3Client) Save(filename string) error {
 		Body:   file,
 	})
 	if err != nil {
-		log.WithError(err).Errorf("Unable to upload %q to %q, %v", filename, s3.opts.Bucket, err)
+		log.WithError(err).Errorf("Unable to save %q to %q, %v", filename, s3.opts.Bucket, err)
 		return err
 	}
 
-	log.Printf("Successfully uploaded %q to %q\n", filename, s3.opts.Bucket)
+	log.Printf("Successfully saved %q to %q\n", filename, s3.opts.Bucket)
 	return nil
 }

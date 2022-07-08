@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/mongodb/mongo-tools/common/log"
@@ -14,12 +13,12 @@ var (
 	GitCommit  = "build-without-git-commit"
 )
 
-func MongoExport(args []string) error {
+func MongoExport(args []string) (int64, error) {
 	opts, err := mongoexport.ParseOptions(args, VersionStr, GitCommit)
 	if err != nil {
 		log.Logvf(log.Always, "error parsing options: %v", err)
 		log.Logvf(log.Always, util.ShortUsage("mongoexport"))
-		return err
+		return 0, err
 	}
 	exporter, err := mongoexport.New(opts)
 	if err != nil {
@@ -28,14 +27,14 @@ func MongoExport(args []string) error {
 		if se, ok := err.(util.SetupError); ok && se.Message != "" {
 			log.Logv(log.Always, se.Message)
 		}
-		return err
+		return 0, err
 	}
 	defer exporter.Close()
 
 	writer, err := exporter.GetOutputWriter()
 	if err != nil {
 		log.Logvf(log.Always, "error opening output stream: %v", err)
-		return err
+		return 0, err
 	}
 	if writer == nil {
 		writer = os.Stdout
@@ -46,7 +45,7 @@ func MongoExport(args []string) error {
 	numDocs, err := exporter.Export(writer)
 	if err != nil {
 		log.Logvf(log.Always, "Failed: %v", err)
-		return err
+		return 0, err
 	}
 
 	if numDocs == 1 {
@@ -54,14 +53,18 @@ func MongoExport(args []string) error {
 	} else {
 		log.Logvf(log.Always, "exported %v records", numDocs)
 	}
-	return nil
+	return numDocs, nil
 }
 
 func MongoExportArgsBuilder(uri string, collection string, query string, out string) []string {
-	args := make([]string, 3)
-	args[0] = fmt.Sprintf("--uri %s", uri)
-	args[1] = fmt.Sprintf("--collection %s", collection)
-	args[2] = fmt.Sprintf("--query %s", query)
-	args[3] = fmt.Sprintf("--out %s", out)
+	args := make([]string, 8)
+	args[0] = "--uri"
+	args[1] = uri
+	args[2] = "--collection"
+	args[3] = collection
+	args[4] = "--query"
+	args[5] = query
+	args[6] = "--out"
+	args[7] = out
 	return args
 }

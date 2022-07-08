@@ -61,14 +61,22 @@ func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (in
 	return count, nil
 }
 
-func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) error {
+func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.EventFilter) error {
 	update := bson.M{
 		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.ActiveDocumentStatus,
+		"document_status": datastore.DeletedDocumentStatus,
 	}
 
-	filter := bson.M{"group_id": groupID}
-	err := db.store.UpdateMany(ctx, filter, update)
+	f := bson.M{
+		"group_id":        filter.GroupID,
+		"document_status": datastore.ActiveDocumentStatus,
+		"created_at": bson.M{
+			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
+			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
+		},
+	}
+
+	err := db.store.UpdateMany(ctx, f, update)
 	if err != nil {
 		return err
 	}

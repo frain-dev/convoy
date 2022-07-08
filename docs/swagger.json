@@ -1596,6 +1596,109 @@
                     }
                 }
             },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint updates configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Update configuration",
+                "parameters": [
+                    {
+                        "description": "Configuration Details",
+                        "name": "application",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Configuration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.ConfigurationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -8447,6 +8550,14 @@
                 }
             }
         },
+        "datastore.OnPremStorage": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.Organisation": {
             "type": "object",
             "properties": {
@@ -8584,6 +8695,17 @@
                 }
             }
         },
+        "datastore.S3Storage": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.SignatureConfiguration": {
             "type": "object",
             "properties": {
@@ -8630,6 +8752,20 @@
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
+                }
+            }
+        },
+        "datastore.StoragePolicyConfiguration": {
+            "type": "object",
+            "properties": {
+                "on_prem": {
+                    "$ref": "#/definitions/datastore.OnPremStorage"
+                },
+                "s3": {
+                    "$ref": "#/definitions/datastore.S3Storage"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -8820,6 +8956,9 @@
             "properties": {
                 "is_analytics_enabled": {
                     "type": "boolean"
+                },
+                "storage_policy": {
+                    "$ref": "#/definitions/datastore.StoragePolicyConfiguration"
                 }
             }
         },
@@ -8837,6 +8976,9 @@
                 },
                 "is_analytics_enabled": {
                     "type": "boolean"
+                },
+                "storage_policy": {
+                    "$ref": "#/definitions/datastore.StoragePolicyConfiguration"
                 },
                 "uid": {
                     "type": "string"

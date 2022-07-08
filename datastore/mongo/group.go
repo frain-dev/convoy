@@ -34,18 +34,21 @@ func NewGroupRepo(db *mongo.Database, store datastore.Store) datastore.GroupRepo
 
 func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
 	groups := make([]*datastore.Group, 0)
-
-	// opts := &options.FindOptions{Collation: &options.Collation{Locale: "en", Strength: 2}}
-	filter := bson.M{
-		"document_status": datastore.ActiveDocumentStatus,
-		"organisation_id": f.OrgID,
+	var filter primitive.M
+	if f.OrgID == "" {
+		filter = bson.M{
+			"document_status": datastore.ActiveDocumentStatus,
+		}
+	} else {
+		filter = bson.M{
+			"document_status": datastore.ActiveDocumentStatus,
+			"organisation_id": f.OrgID,
+		}
 	}
 	f = f.WithNamesTrimmed()
-
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
 	}
-
 	sort := bson.M{"created_at": 1}
 	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 
