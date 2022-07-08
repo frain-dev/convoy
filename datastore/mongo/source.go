@@ -91,9 +91,10 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	var sources []datastore.Source
 
-	fi := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID, "type": f.Type, "provider": f.Provider}
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID, "type": f.Type, "provider": f.Provider}
 
-	filter := removeUnusedFields(fi)
+	removeUnusedFields(filter)
+
 	paginatedData, err := pager.New(s.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&sources).Find()
 	if err != nil {
 		return sources, datastore.PaginationData{}, err
@@ -106,7 +107,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	return sources, datastore.PaginationData(paginatedData.Pagination), nil
 }
 
-func removeUnusedFields(filter map[string]interface{}) map[string]interface{} {
+func removeUnusedFields(filter map[string]interface{}) {
 	for k, v := range filter {
 		item, ok := v.(string)
 		if !ok {
@@ -118,6 +119,4 @@ func removeUnusedFields(filter map[string]interface{}) map[string]interface{} {
 		}
 
 	}
-
-	return filter
 }
