@@ -73,26 +73,12 @@
 	</convoy-page>
 </ng-container>
 
-<convoy-page *ngIf="organisations.length == 0">
-	<div class="bg-white-100 border border-grey-10 h-[550px] rounded-[10px] flex flex-col items-center justify-center">
-		<img src="/assets/img/org-empty-img.svg" alt="add group empty" class="h-20 mb-4" />
-		<h1 class="font-semibold mb-2">You have no organisation yet</h1>
-		<p class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">Create an organisation to get started with sending/receiving webhooks</p>
-		<convoy-button (click)="showOrganisationModal = true">Create Organisation</convoy-button>
-	</div>
+<convoy-page>
+	<convoy-empty-state imgSrc="/assets/img/org-empty-img.svg" heading="You have no organisation yet" description="Create an organisation to get started with sending/receiving webhooks" buttonText="Create Organisation" (onAction)="showOrganisationModal = true"></convoy-empty-state>
 </convoy-page>
 
 <convoy-page *ngIf="noData && !isLoadingProjects">
-	<div class="bg-white-100 border border-grey-10 h-[550px] rounded-[10px] flex flex-col items-center justify-center">
-		<img src="/assets/img/group-empty-img.svg" alt="add group empty" class="h-20 mb-4" />
-		<h1 class="font-semibold mb-2">You have no project yet</h1>
-		<p class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">Create a project to start sending/receiving webhooks</p>
-		<convoy-button routerLink="./new">Create Project</convoy-button>
-	</div>
+	<convoy-empty-state imgSrc="/assets/img/group-empty-img.svg" heading="You have no project yet" description="Create a project to start sending/receiving webhooks" buttonText="Create Project" (onAction)="goToCreateProjectPage()"></convoy-empty-state>
 </convoy-page>
 
-<convoy-modal title="Add an organisation" *ngIf="showOrganisationModal" (closeModal)="showOrganisationModal = false">
-	<div modalBody>
-		<app-create-organisation (closeModal)="setOrganisation()"></app-create-organisation>
-	</div>
-</convoy-modal>
+<app-create-organisation *ngIf="showOrganisationModal" (closeModal)="setOrganisation()"></app-create-organisation>
