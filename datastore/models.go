@@ -183,6 +183,7 @@ type Endpoint struct {
 }
 
 var ErrOrgNotFound = errors.New("organisation not found")
+var ErrDeviceNotFound = errors.New("device not found")
 var ErrOrgInviteNotFound = errors.New("organisation invite not found")
 var ErrOrgMemberNotFound = errors.New("organisation member not found")
 
@@ -485,6 +486,7 @@ type Subscription struct {
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
+	DeviceID   string             `json:"device_id" bson:"device_id"`
 
 	Source   *Source      `json:"source_metadata,omitempty" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
@@ -610,6 +612,18 @@ type OrganisationMember struct {
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type Device struct {
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	HostName   string             `json:"host_name" bson:"host_name"`
+	ClientID   string             `json:"client_id" bson:"client_id"`
+	Status     string             `json:"status" bson:"status"`
+	LastSeenAt primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
+	CreatedAt  primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt  primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt  primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type UserMetadata struct {

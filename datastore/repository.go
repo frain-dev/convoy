@@ -98,6 +98,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
 	FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]Subscription, error)
+	//FindSubscriptionByDeviceID(context.Context, string, string) (*Subscription, error)
 	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
 }
 
@@ -108,6 +109,13 @@ type SourceRepository interface {
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
 	DeleteSourceByID(ctx context.Context, groupID string, id string) error
 	LoadSourcesPaged(ctx context.Context, groupID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+}
+
+type DeviceRepository interface {
+	CreateDevice(ctx context.Context, member *Device) error
+	UpdateDevice(ctx context.Context, member *Device) error
+	DeleteDevice(ctx context.Context, memberID string, orgID string) error
+	FetchDeviceByID(ctx context.Context, memberID string) (*Device, error)
 }
 
 type UserRepository interface {
