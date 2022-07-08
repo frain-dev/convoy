@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 export class ButtonComponent implements OnInit {
 	@Input('disable') disable = false;
 	@Input('buttonText') buttonText!: string;
+	@Input('buttonType') buttonType!: 'button' | 'submit' | 'reset';
 	@Input('class') class = '';
 	@Input('size') size: 'small' | 'medium' | 'full' = 'medium';
 	@Input('type') type: 'default' | 'outline' | 'clear' | 'text' | 'link' = 'default';
@@ -23,6 +24,7 @@ export class ButtonComponent implements OnInit {
 		text: `bg-transparent border-none text-${this.color}-100`,
 		link: `bg-transparent border-none text-${this.color}-100 underline decoration-primary-100`
 	};
+	@Output('click') click = new EventEmitter();
 
 	constructor() {}
 

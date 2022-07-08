@@ -16,8 +16,7 @@
 			duration-[.3s]
 			w-full
 			font-medium
-			text-14
-			text-grey-100
+			text-14 text-grey-100
 			border
 			valid:border-primary-500
 			disabled:border-primary-500
@@ -34,8 +33,9 @@
 		"
 	>
 		<option selected>{{ placeholder ? placeholder : 'Select option' }}</option>
-		<option *ngFor="let option of options" [value]="option?.uid">{{ option.name }}</option>
+		<option *ngFor="let option of options" [value]="option?.uid || option">{{ option?.name || option }}</option>
 	</select>
+
 	<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="control.touched && control.invalid">
 		<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
 		<span>{{ errorMessage }}</span>
