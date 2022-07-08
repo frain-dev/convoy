@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProjectComponent } from './project.component';
 import { Routes, RouterModule } from '@angular/router';
+import { PageComponent } from 'src/app/components/page/page.component';
+import { ButtonComponent } from 'src/app/components/button/button.component';
 
 const routes: Routes = [
 	{
@@ -51,6 +53,6 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [ProjectComponent],
-	imports: [CommonModule, RouterModule.forChild(routes)]
+	imports: [CommonModule, RouterModule.forChild(routes), PageComponent, ButtonComponent]
 })
 export class ProjectModule {}
