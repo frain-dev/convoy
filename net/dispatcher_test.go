@@ -28,12 +28,13 @@ func TestDispatcher_SendRequest(t *testing.T) {
 	_, _ = rand.Read(buf)
 	timestamp := fmt.Sprint(time.Now().Unix())
 	type args struct {
-		endpoint        string
-		method          string
-		jsonData        json.RawMessage
-		group           *datastore.Group
-		convoyTimestamp string
-		hmac            string
+		endpoint         string
+		method           string
+		jsonData         json.RawMessage
+		forwardedHeaders datastore.HttpHeader
+		group            *datastore.Group
+		convoyTimestamp  string
+		hmac             string
 	}
 	tests := []struct {
 		name    string
@@ -68,6 +69,55 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				RequestHeader: http.Header{
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
+					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
+				},
+				ResponseHeader: nil,
+				Body:           successBody,
+				IP:             "",
+				Error:          "",
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodPost, "https://google.com",
+					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_send_message_with_forwarded_headers",
+			args: args{
+				endpoint: "https://google.com",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("testing").Bytes(),
+				forwardedHeaders: map[string]string{
+					"X-test-sig": "abcdef",
+				},
+				group: &datastore.Group{
+					UID: "12345",
+					Config: &datastore.GroupConfig{
+						Signature: &datastore.SignatureConfiguration{
+							Header: configSignature,
+						},
+						ReplayAttacks: false,
+					},
+				},
+				convoyTimestamp: "",
+				hmac:            "12345",
+			},
+			want: &Response{
+				Status:     "200",
+				StatusCode: http.StatusOK,
+				Method:     http.MethodPost,
+				URL:        nil,
+				RequestHeader: http.Header{
+					"Content-Type":                         []string{"application/json"},
+					"User-Agent":                           []string{defaultUserAgent()},
+					"X-Test-Sig":                           []string{"abcdef"},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
 				ResponseHeader: nil,
@@ -267,7 +317,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize)
+			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize, tt.args.forwardedHeaders)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)

@@ -11,6 +11,7 @@ import (
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -42,6 +43,8 @@ func addSchedulerCommand(a *app) *cobra.Command {
 				OrgRepo:    a.orgRepo,
 				UserRepo:   a.userRepo,
 			}, cfg))
+
+			s.RegisterTask("30 * * * *", convoy.TaskName("monitor twitter sources"), task.MonitorTwitterSources(a.sourceRepo, a.subRepo, a.applicationRepo, a.queue))
 
 			// Start scheduler
 			s.Start()

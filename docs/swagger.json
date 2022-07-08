@@ -8233,6 +8233,9 @@
                 "event_type": {
                     "type": "string"
                 },
+                "forwarded_headers": {
+                    "$ref": "#/definitions/datastore.HttpHeader"
+                },
                 "group_id": {
                     "type": "string"
                 },
@@ -8284,6 +8287,9 @@
                 },
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
+                },
+                "forwarded_headers": {
+                    "$ref": "#/definitions/datastore.HttpHeader"
                 },
                 "group_id": {
                     "type": "string"
@@ -8589,6 +8595,12 @@
                 },
                 "deleted_at": {
                     "type": "string"
+                },
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "group_id": {
                     "type": "string"
@@ -9023,6 +9035,12 @@
         "models.Source": {
             "type": "object",
             "properties": {
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },
