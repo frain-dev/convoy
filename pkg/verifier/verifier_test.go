@@ -432,7 +432,7 @@ func Test_TwitterVerifier_VerifyRequest(t *testing.T) {
 				req, err := http.NewRequest("POST", "URL", strings.NewReader(``))
 				require.NoError(t, err)
 
-				hash := "sha256=d7a154547e7c35e31c4c820e20237650939c3d34dae136e30a7757ca61abb4cf"
+				hash := "sha256=16FUVH58NeMcTIIOICN2UJOcPTTa4TbjCndXymGrtM8="
 				req.Header.Add("X-Twitter-Webhooks-Signature", hash)
 				return req
 			},

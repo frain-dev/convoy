@@ -243,15 +243,15 @@ func NewTwitterVerifier(secret string) *TwitterVerifier {
 		Hash:         "SHA256",
 		GetSignature: tv.getSignature,
 		Secret:       secret,
-		Encoding:     "hex",
+		Encoding:     "base64",
 	}
 
 	return tv
 }
 
 func (tv *TwitterVerifier) VerifyRequest(r *http.Request, payload []byte) error {
-	 v := HmacVerifier{tv.HmacOpts}
-	 return v.VerifyRequest(r, payload)
+	v := HmacVerifier{tv.HmacOpts}
+	return v.VerifyRequest(r, payload)
 }
 
 func (tV *TwitterVerifier) getSignature(sig string) string {
