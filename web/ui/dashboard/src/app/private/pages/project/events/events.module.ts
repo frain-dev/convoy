@@ -7,12 +7,14 @@ import { DateFilterModule } from 'src/app/private/components/date-filter/date-fi
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { EventModule } from './event/event.module';
 import { EventDeliveriesModule } from './event-deliveries/event-deliveries.module';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { ButtonComponent } from 'src/app/components/button/button.component';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
 @NgModule({
 	declarations: [EventsComponent],
-	imports: [CommonModule, ReactiveFormsModule, DateFilterModule, LoaderModule, RouterModule.forChild(routes), EventModule, EventDeliveriesModule],
+	imports: [CommonModule, ReactiveFormsModule, DateFilterModule, LoaderModule, RouterModule.forChild(routes), EventModule, EventDeliveriesModule, DropdownComponent, ButtonComponent],
 	providers: [DatePipe]
 })
 export class EventsModule {}

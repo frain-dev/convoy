@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { format } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
@@ -9,6 +9,7 @@ import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 @Component({
 	selector: 'app-events',
@@ -16,6 +17,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 	styleUrls: ['./events.component.scss']
 })
 export class EventsComponent implements OnInit {
+	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
 	activeTab: 'events' | 'event deliveries' = 'events';
@@ -47,6 +49,10 @@ export class EventsComponent implements OnInit {
 	async ngOnInit() {
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 		await this.fetchDashboardData();
+	}
+
+	closeFilterOptions() {
+		this.dropdownComponent.show = false;
 	}
 
 	addTabToUrl() {
