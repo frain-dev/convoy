@@ -125,7 +125,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				EndpointID:       s.EndpointID,
 				ForwardedHeaders: event.ForwardedHeaders,
 
-				Status:           getEventDeliveryStatus(s, app),
+				Status:           getEventDeliveryStatus(&s, app),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
@@ -171,7 +171,7 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 	return matched
 }
 
-func getEventDeliveryStatus(subscription datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
+func getEventDeliveryStatus(subscription *datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
 	if app.IsDisabled || subscription.Status != datastore.ActiveSubscriptionStatus {
 		return datastore.DiscardedEventStatus
 	}

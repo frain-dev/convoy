@@ -338,6 +338,7 @@ func (e *Event) SetForwardedHeaders(headers []string, r *http.Request) {
 	}
 }
 
+type SubscriptionType string
 type EventDeliveryStatus string
 type HttpHeader map[string]string
 
@@ -370,6 +371,11 @@ func (e EventDeliveryStatus) IsValid() bool {
 		return false
 	}
 }
+
+const (
+	SubscriptionTypeCLI SubscriptionType = "cli"
+	SubscriptionTypeAPI SubscriptionType = "api"
+)
 
 type Metadata struct {
 	// Data to be sent to endpoint.
@@ -480,7 +486,7 @@ type Subscription struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
-	Type       string             `json:"type" bson:"type"`
+	Type       SubscriptionType   `json:"type" bson:"type"`
 	Status     SubscriptionStatus `json:"status" bson:"status"`
 	AppID      string             `json:"-" bson:"app_id"`
 	GroupID    string             `json:"-" bson:"group_id"`

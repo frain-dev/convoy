@@ -57,7 +57,16 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
+		// This event delivery will be picked up by the convoy stream command(if it is currently running).
+		// Otherwise, it will be lost to the wind?
+		// TODO(daniel): workaround for this is to disable the subscriptions created while the command was running,
+		// however in that scenario the event deliveries will still be created, but will be in the datastore.DiscardedEventStatus status
+		// We can also delete the subscription, that is a firmer solution
+		if subscription.Type == datastore.SubscriptionTypeCLI {
+			return nil
+		}
+
+		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
 		switch ed.Status {
 		case datastore.ProcessingEventStatus,

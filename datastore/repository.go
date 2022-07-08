@@ -114,6 +114,7 @@ type SourceRepository interface {
 type DeviceRepository interface {
 	CreateDevice(ctx context.Context, member *Device) error
 	UpdateDevice(ctx context.Context, member *Device) error
+	UpdateDeviceLastSeen(ctx context.Context, uid string) error
 	DeleteDevice(ctx context.Context, memberID string, orgID string) error
 	FetchDeviceByID(ctx context.Context, memberID string) (*Device, error)
 }
