@@ -73,7 +73,7 @@
 	</convoy-page>
 </ng-container>
 
-<convoy-page>
+<convoy-page *ngIf="organisations.length == 0">
 	<convoy-empty-state imgSrc="/assets/img/org-empty-img.svg" heading="You have no organisation yet" description="Create an organisation to get started with sending/receiving webhooks" buttonText="Create Organisation" (onAction)="showOrganisationModal = true"></convoy-empty-state>
 </convoy-page>
 
