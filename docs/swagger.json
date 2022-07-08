@@ -8336,6 +8336,9 @@
                 "event_type": {
                     "type": "string"
                 },
+                "forwarded_headers": {
+                    "$ref": "#/definitions/datastore.HttpHeader"
+                },
                 "group_id": {
                     "type": "string"
                 },
@@ -8387,6 +8390,9 @@
                 },
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
+                },
+                "forwarded_headers": {
+                    "$ref": "#/definitions/datastore.HttpHeader"
                 },
                 "group_id": {
                     "type": "string"
@@ -8662,6 +8668,14 @@
                 }
             }
         },
+        "datastore.ProviderConfig": {
+            "type": "object",
+            "properties": {
+                "twitter": {
+                    "$ref": "#/definitions/datastore.TwitterProviderConfig"
+                }
+            }
+        },
         "datastore.RateLimitConfiguration": {
             "type": "object",
             "properties": {
@@ -8726,6 +8740,12 @@
                 "deleted_at": {
                     "type": "string"
                 },
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "group_id": {
                     "type": "string"
                 },
@@ -8740,6 +8760,9 @@
                 },
                 "provider": {
                     "type": "string"
+                },
+                "provider_config": {
+                    "$ref": "#/definitions/datastore.ProviderConfig"
                 },
                 "type": {
                     "type": "string"
@@ -8825,6 +8848,14 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "datastore.TwitterProviderConfig": {
+            "type": "object",
+            "properties": {
+                "crc_verified_at": {
+                    "type": "integer"
                 }
             }
         },
@@ -9179,6 +9210,12 @@
         "models.Source": {
             "type": "object",
             "properties": {
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },

@@ -74,6 +74,7 @@ const (
 	ApplicationsCacheKey  CacheKey = "applications"
 	GroupsCacheKey        CacheKey = "groups"
 	TokenCacheKey         CacheKey = "tokens"
+	SourceCacheKey        CacheKey = "sources"
 )
 
 //queues

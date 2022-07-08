@@ -163,6 +163,8 @@ definitions:
         type: string
       event_type:
         type: string
+      forwarded_headers:
+        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
       matched_endpoints:
@@ -202,6 +204,8 @@ definitions:
         type: string
       event_metadata:
         $ref: '#/definitions/datastore.Event'
+      forwarded_headers:
+        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
       metadata:
@@ -386,6 +390,11 @@ definitions:
       totalPage:
         type: integer
     type: object
+  datastore.ProviderConfig:
+    properties:
+      twitter:
+        $ref: '#/definitions/datastore.TwitterProviderConfig'
+    type: object
   datastore.RateLimitConfiguration:
     properties:
       count:
@@ -427,6 +436,10 @@ definitions:
         type: string
       deleted_at:
         type: string
+      forward_headers:
+        items:
+          type: string
+        type: array
       group_id:
         type: string
       is_disabled:
@@ -437,6 +450,8 @@ definitions:
         type: string
       provider:
         type: string
+      provider_config:
+        $ref: '#/definitions/datastore.ProviderConfig'
       type:
         type: string
       uid:
@@ -493,6 +508,11 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  datastore.TwitterProviderConfig:
+    properties:
+      crc_verified_at:
+        type: integer
     type: object
   datastore.User:
     properties:
@@ -724,6 +744,10 @@ definitions:
     type: object
   models.Source:
     properties:
+      forward_headers:
+        items:
+          type: string
+        type: array
       is_disabled:
         type: boolean
       name:
