@@ -7,22 +7,20 @@
 			absolute
 			bottom-[30px]
 			opacity-0
-			group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100
-            transition-all
+			group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto
+			pointer-events-none
+			transition-all
 			bg-primary-100
 			rounded-8px
-            w-192px
+			w-192px
 			p-14px
-			text-white-100 text-14 text-left
+			text-white-100 text-12 text-left
 			after:content-['']
 			after:absolute
-            after:-bottom-[20px]
-            after:border-[10px]
-            after:border-t-primary-100
-            after:border-b-transparent
-            after:border-x-transparent
+			after:-bottom-[20px]
+			after:border-[10px] after:border-t-primary-100 after:border-b-transparent after:border-x-transparent
 		"
-        [class]="position === 'right' ? '-right-[160px] after:right-[157px]' : '-right-[16px] after:right-[15px]'"
+		[class]="position === 'right' ? '-right-[160px] after:right-[157px]' : '-right-[16px] after:right-[15px]'"
 	>
 		<ng-content></ng-content>
 	</div>
