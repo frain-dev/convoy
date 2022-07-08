@@ -111,7 +111,7 @@ func TestConfigService_UpdateConfiguration(t *testing.T) {
 			name: "should_update_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(false), StoragePolicy: &datastore.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &datastore.OnPremStorage{
 						Path: "/tmp/",
