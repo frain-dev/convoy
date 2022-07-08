@@ -1,4 +1,4 @@
-<button [disabled]="disable" class="flex items-center justify-center" [class]="classes">
+<button [disabled]="disable" class="flex items-center justify-center" [class]="classes" [type]="buttonType || ''" (click)="click.emit()">
 	<span class="text-14px" *ngIf="buttonText">{{ buttonText }}</span>
 	<ng-content *ngIf="!buttonText"></ng-content>
 </button>
