@@ -1,6 +1,6 @@
 <div class="h-[500px] rounded-[10px] flex flex-col items-center justify-center" [class]="type === 'normal' ? 'bg-white-100 border border-grey-10' : ''">
-	<img *ngIf="imgSrc" [src]="imgSrc" alt="empty state" class="h-20 mb-4" />
+	<img *ngIf="imgSrc" [src]="imgSrc" alt="empty state" class="h-[88px] mb-4" />
 	<h1 class="font-semibold mb-2">{{ heading }}</h1>
 	<p *ngIf="description" class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">{{ description }}</p>
-	<convoy-button (click)="onAction.emit()">{{ buttonText }}</convoy-button>
+	<convoy-button *ngIf="buttonText" (click)="onAction.emit()">{{ buttonText }}</convoy-button>
 </div>
