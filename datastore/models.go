@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strings"
 
 	"github.com/frain-dev/convoy/auth"
@@ -82,7 +83,9 @@ const (
 )
 
 const (
-	GithubSourceProvider SourceProvider = "github"
+	GithubSourceProvider  SourceProvider = "github"
+	TwitterSourceProvider SourceProvider = "twitter"
+	ShopifySourceProvider SourceProvider = "shopify"
 )
 
 const (
@@ -309,12 +312,12 @@ type Event struct {
 	// with your internal systems.
 	// This is optional
 	// If not provided, we will generate one for you
-	ProviderID string `json:"provider_id,omitempty" bson:"provider_id"`
-	SourceID   string `json:"source_id,omitempty" bson:"source_id"`
-	GroupID    string `json:"group_id,omitempty" bson:"group_id"`
-	AppID      string `json:"app_id,omitempty" bson:"app_id"`
-
-	App *Application `json:"app_metadata,omitempty" bson:"-"`
+	ProviderID       string       `json:"provider_id,omitempty" bson:"provider_id"`
+	SourceID         string       `json:"source_id,omitempty" bson:"source_id"`
+	GroupID          string       `json:"group_id,omitempty" bson:"group_id"`
+	AppID            string       `json:"app_id,omitempty" bson:"app_id"`
+	ForwardedHeaders HttpHeader   `json:"forwarded_headers" bson:"forwarded_headers"`
+	App              *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -327,8 +330,22 @@ type Event struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
+func (e *Event) SetForwardedHeaders(headers []string, r *http.Request) {
+	e.ForwardedHeaders = map[string]string{}
+	for _, header := range headers {
+		value := r.Header.Get(header)
+		e.ForwardedHeaders[header] = value
+	}
+}
+
 type EventDeliveryStatus string
 type HttpHeader map[string]string
+
+func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
+	for k, v := range h {
+		r.Header.Set(k, v)
+	}
+}
 
 const (
 	// ScheduledEventStatus : when  a Event has been scheduled for delivery
@@ -415,13 +432,14 @@ type DeliveryAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	AppID          string             `json:"app_id,omitempty" bson:"app_id"`
-	GroupID        string             `json:"group_id,omitempty" bson:"group_id"`
-	EventID        string             `json:"event_id,omitempty" bson:"event_id"`
-	EndpointID     string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	SubscriptionID string             `json:"subscription_id,omitempty" bson:"subscription_id"`
+	ID               primitive.ObjectID `json:"-" bson:"_id"`
+	UID              string             `json:"uid" bson:"uid"`
+	AppID            string             `json:"app_id,omitempty" bson:"app_id"`
+	GroupID          string             `json:"group_id,omitempty" bson:"group_id"`
+	EventID          string             `json:"event_id,omitempty" bson:"event_id"`
+	EndpointID       string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
+	SubscriptionID   string             `json:"subscription_id,omitempty" bson:"subscription_id"`
+	ForwardedHeaders HttpHeader         `json:"forwarded_headers" bson:"forwarded_headers"`
 
 	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
@@ -486,15 +504,17 @@ type Subscription struct {
 }
 
 type Source struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	GroupID    string             `json:"group_id" bson:"group_id"`
-	MaskID     string             `json:"mask_id" bson:"mask_id"`
-	Name       string             `json:"name" bson:"name"`
-	Type       SourceType         `json:"type" bson:"type"`
-	Provider   SourceProvider     `json:"provider" bson:"provider"`
-	IsDisabled bool               `json:"is_disabled" bson:"is_disabled"`
-	Verifier   *VerifierConfig    `json:"verifier" bson:"verifier"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	GroupID        string             `json:"group_id" bson:"group_id"`
+	MaskID         string             `json:"mask_id" bson:"mask_id"`
+	Name           string             `json:"name" bson:"name"`
+	Type           SourceType         `json:"type" bson:"type"`
+	Provider       SourceProvider     `json:"provider" bson:"provider"`
+	IsDisabled     bool               `json:"is_disabled" bson:"is_disabled"`
+	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
+	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
+	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
@@ -533,6 +553,14 @@ type AlertConfiguration struct {
 
 type FilterConfiguration struct {
 	EventTypes []string `json:"event_types" bson:"event_types,omitempty"`
+}
+
+type ProviderConfig struct {
+	Twitter *TwitterProviderConfig `json:"twitter" bson:"twitter"`
+}
+
+type TwitterProviderConfig struct {
+	CrcVerifiedAt primitive.DateTime `json:"crc_verified_at" bson:"crc_verified_at"`
 }
 
 type VerifierConfig struct {
