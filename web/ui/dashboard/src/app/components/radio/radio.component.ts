@@ -18,8 +18,9 @@ import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveForm
 })
 export class RadioComponent implements OnInit, ControlValueAccessor {
 	@Input('label') label!: string;
-	@Input('name') name!: string;
-	@Input('value') value!: string;
+	@Input('_name') name!: string;
+	@Input('value') value!: any;
+	@Input('_id') id!: string;
 	@Input('description') description!: string;
 	@Input('formControlName') formControlName!: string;
 	control!: any;
