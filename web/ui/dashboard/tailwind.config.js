@@ -29,7 +29,7 @@ module.exports = {
 			}
 		},
 		screens: {
-			desktop: '1050px'
+			desktop: { max: '1050px' }
 		},
 		borderRadius: {
 			'4px': '4px',
