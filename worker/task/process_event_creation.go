@@ -123,6 +123,7 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				GroupID:          group.UID,
 				EventID:          event.UID,
 				EndpointID:       s.EndpointID,
+				DeviceID:         s.DeviceID,
 				ForwardedHeaders: event.ForwardedHeaders,
 
 				Status:           getEventDeliveryStatus(&s, app),

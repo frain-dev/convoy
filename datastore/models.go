@@ -444,6 +444,7 @@ type EventDelivery struct {
 	GroupID          string             `json:"group_id,omitempty" bson:"group_id"`
 	EventID          string             `json:"event_id,omitempty" bson:"event_id"`
 	EndpointID       string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
+	DeviceID         string             `json:"device_id" bson:"device_id"`
 	SubscriptionID   string             `json:"subscription_id,omitempty" bson:"subscription_id"`
 	ForwardedHeaders HttpHeader         `json:"forwarded_headers" bson:"forwarded_headers"`
 

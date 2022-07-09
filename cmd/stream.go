@@ -6,14 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/frain-dev/convoy/auth/realm_chain"
 
-	m "github.com/frain-dev/convoy/datastore/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy"
+	m "github.com/frain-dev/convoy/datastore/mongo"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -21,13 +24,9 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -74,6 +73,10 @@ type Client struct {
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
+	deviceRepo       datastore.DeviceRepository
+	subscriptionRepo datastore.SubscriptionRepository
+	sourceRepo       datastore.SourceRepository
+
 	// Registered clients.
 	deviceClients map[string]*Client
 
@@ -83,12 +86,21 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	deviceRepo       datastore.DeviceRepository
-	subscriptionRepo datastore.SubscriptionRepository
-	sourceRepo       datastore.SourceRepository
-
 	events chan *CLIEvent
 	close  chan struct{}
+}
+
+func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository) *Hub {
+	return &Hub{
+		deviceRepo:       deviceRepo,
+		subscriptionRepo: subscriptionRepo,
+		sourceRepo:       sourceRepo,
+		deviceClients:    map[string]*Client{},
+		register:         make(chan *Client),
+		unregister:       make(chan *Client),
+		events:           make(chan *CLIEvent),
+		close:            make(chan struct{}),
+	}
 }
 
 func (h *Hub) StartEventSender() {
@@ -103,7 +115,7 @@ func (h *Hub) StartEventSender() {
 			}
 
 		case <-h.close:
-
+			return
 		}
 	}
 }
@@ -157,15 +169,15 @@ func (h *Hub) watchEventDeliveriesCollection() WatcherFn {
 			return fmt.Errorf("event delivery group id has wrong type of: %T", doc["group_id"])
 		}
 
-		subscription, ok := doc["metadata"].(*datastore.Subscription)
+		deviceID, ok := doc["device_id"].(string)
 		if !ok {
-			return fmt.Errorf("event delivery subscription has wrong type of: %T", doc["metadata"])
+			return fmt.Errorf("event delivery device id has wrong type of: %T", doc["device_id"])
 		}
 
 		h.events <- &CLIEvent{
 			Data:     metadata.Data,
 			AppID:    appID,
-			DeviceID: subscription.DeviceID,
+			DeviceID: deviceID,
 			GroupID:  groupID,
 		}
 
@@ -230,9 +242,11 @@ func (c *Client) readPump() {
 			_, _, err := c.conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.Printf("error: %v", err)
+					log.WithError(err).
+						WithField("device_id", c.deviceID).
+						Error("failed to read message from client")
 				}
-				break
+				break // TODO: not confident about breaking the loop which then returns the function because we couldn't read one message from the client here.
 			}
 
 		}
@@ -240,44 +254,68 @@ func (c *Client) readPump() {
 }
 
 func addStreamCommand(a *app) *cobra.Command {
-	var cronspec string
 	cmd := &cobra.Command{
-		Use:   "scheduler",
-		Short: "schedule a periodic task.",
+		Use:   "stream",
+		Short: "Start a websocket server to pipe events to another convoy instance",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, err := config.Get()
+			// enable only the native auth realm
+			authCfg := &config.AuthConfiguration{
+				Native: config.NativeRealmOptions{Enabled: true},
+			}
+			err := realm_chain.Init(authCfg, a.apiKeyRepo, nil, nil)
 			if err != nil {
-				log.Fatalf("Error getting config: %v", err)
+				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
-			if cfg.Queue.Type != config.RedisQueueProvider {
-				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
-			}
-			ctx := context.Background()
 
-			//initialize scheduler
-			s := worker.NewScheduler(a.queue)
-
-			s.Start()
+			hub := NewHub(a.deviceRepo, a.subRepo, a.sourceRepo)
+			go hub.StartRegister()
+			go hub.StartEventWatcher()
+			go hub.StartEventSender()
 
 			router := chi.NewRouter()
-			router.Handle("/queue/monitoring/*", a.queue.(*redisqueue.RedisQueue).Monitor())
-			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
+			router.Route("/stream", func(streamRouter chi.Router) {
+				streamRouter.Get("/listen", hub.Listen)
+				streamRouter.Post("/login", nil)
+			})
 
 			srv := &http.Server{
 				Handler: router,
-				Addr:    fmt.Sprintf(":%d", 5007),
+				Addr:    fmt.Sprintf(":%d", 5008),
 			}
 
-			e := srv.ListenAndServe()
-			if e != nil {
-				log.Fatal(e)
-			}
-			<-ctx.Done()
+			go func() {
+				//service connections
+				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					log.WithError(err).Fatal("failed to listen")
+				}
+			}()
+
+			gracefulShutdown(srv, hub)
 		},
 	}
 
-	cmd.Flags().StringVar(&cronspec, "cronspec", "", "scheduler time interval '@every <duration>'")
 	return cmd
+}
+
+func gracefulShutdown(srv *http.Server, hub *Hub) {
+	//Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	hub.Stop()
+
+	log.Info("Stopping websocket server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.WithError(err).Fatal("Server Shutdown")
+	}
+
+	log.Info("Websocket server exiting")
+
+	time.Sleep(2 * time.Second) // allow all websocket connections close themselves
 }
 
 type DeviceRegistration struct {

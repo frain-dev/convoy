@@ -108,6 +108,7 @@ type app struct {
 	apiKeyRepo              datastore.APIKeyRepository
 	groupRepo               datastore.GroupRepository
 	applicationRepo         datastore.ApplicationRepository
+	deviceRepo              datastore.DeviceRepository
 	eventRepo               datastore.EventRepository
 	eventDeliveryRepo       datastore.EventDeliveryRepository
 	subRepo                 datastore.SubscriptionRepository
