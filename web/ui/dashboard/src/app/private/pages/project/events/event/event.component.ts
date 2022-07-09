@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { APP } from 'src/app/models/app.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -31,7 +32,6 @@ export class EventComponent implements OnInit {
 	showEventsAppsDropdown: boolean = false;
 	isloadingEvents: boolean = false;
 	selectedEventsDateOption: string = '';
-	filteredApps!: APP[];
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
@@ -48,6 +48,7 @@ export class EventComponent implements OnInit {
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('eventsTimeFilter', { static: true }) eventsTimerFilter!: TimeFilterComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
+	@ViewChild(DropdownComponent) appDropdownComponent!: DropdownComponent;
 	@ViewChild(DateFilterComponent) dateFilterComponent!: DateFilterComponent;
 	eventsAppsFilter$!: Observable<APP[]>;
 	appPortalToken = this.route.snapshot.params?.token;
@@ -74,6 +75,7 @@ export class EventComponent implements OnInit {
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
+		this.appDropdownComponent.show = false;
 
 		switch (filterType) {
 			case 'eventsApp':
@@ -122,7 +124,7 @@ export class EventComponent implements OnInit {
 
 	getCodeSnippetString() {
 		if (!this.eventsDetailsItem?.data) return 'No event data was sent';
-		return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 2).replaceAll(/"([^"]+)":/g, '$1:');
 	}
 
 	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {

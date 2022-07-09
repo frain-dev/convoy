@@ -23,7 +23,6 @@ export class EventsComponent implements OnInit {
 	activeTab: 'events' | 'event deliveries' = 'events';
 	showOverlay: boolean = false;
 	isloadingDashboardData: boolean = false;
-	showFilterCalendar: boolean = false;
 	showFilterDropdown: boolean = false;
 	selectedDateOption: string = '';
 	dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';

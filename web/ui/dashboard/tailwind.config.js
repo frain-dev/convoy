@@ -17,6 +17,7 @@ function customSpacing() {
 module.exports = {
 	mode: 'jit',
 	content: ['./src/**/*.{html,ts}'],
+	safelist: ['bg-success-500', 'text-success-100', 'bg-warning-500', 'text-warning-100', 'bg-danger-500', 'text-danger-100', 'text-grey-40', 'bg-grey-10'],
 	theme: {
 		extend: {
 			spacing: customSpacing(),
