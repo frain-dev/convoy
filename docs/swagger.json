@@ -8276,6 +8276,9 @@
                 "description": {
                     "type": "string"
                 },
+                "device_id": {
+                    "type": "string"
+                },
                 "endpoint_id": {
                     "type": "string"
                 },
@@ -8659,6 +8662,9 @@
                     "type": "string"
                 },
                 "deleted_at": {
+                    "type": "string"
+                },
+                "device_id": {
                     "type": "string"
                 },
                 "endpoint_metadata": {

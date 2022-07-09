@@ -616,7 +616,7 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 	}
 }
 
-func requireAuth() func(next http.Handler) http.Handler {
+func RequireAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := getAuthFromRequest(r)

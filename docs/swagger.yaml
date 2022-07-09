@@ -196,6 +196,8 @@ definitions:
         type: string
       description:
         type: string
+      device_id:
+        type: string
       endpoint_id:
         type: string
       endpoint_metadata:
@@ -452,6 +454,8 @@ definitions:
       created_at:
         type: string
       deleted_at:
+        type: string
+      device_id:
         type: string
       endpoint_metadata:
         $ref: '#/definitions/datastore.Endpoint'

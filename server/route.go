@@ -75,7 +75,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
-			r.Use(requireAuth())
+			r.Use(RequireAuth())
 
 			r.Route("/applications", func(appRouter chi.Router) {
 				appRouter.Use(requireGroup(app.groupRepo, app.cache))
@@ -189,7 +189,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(setupCORS)
-		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
+		uiRouter.Use(middleware.Maybe(RequireAuth(), shouldAuthRoute))
 		uiRouter.Use(requireBaseUrl())
 
 		uiRouter.Post("/organisations/process_invite", app.ProcessOrganisationMemberInvite)
@@ -388,7 +388,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/portal", func(portalRouter chi.Router) {
 		portalRouter.Use(jsonResponse)
 		portalRouter.Use(setupCORS)
-		portalRouter.Use(requireAuth())
+		portalRouter.Use(RequireAuth())
 		portalRouter.Use(requireGroup(app.groupRepo, app.cache))
 		portalRouter.Use(requireAppID())
 
