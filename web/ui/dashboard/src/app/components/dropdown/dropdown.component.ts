@@ -1,19 +1,24 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit } from '@angular/core';
+import { ButtonComponent } from '../button/button.component';
 
 @Component({
 	selector: 'convoy-dropdown',
 	standalone: true,
-	imports: [CommonModule],
+	imports: [CommonModule, ButtonComponent],
 	templateUrl: './dropdown.component.html',
 	styleUrls: ['./dropdown.component.scss']
 })
 export class DropdownComponent implements OnInit {
+	@Input('onSelectOption') onSelectOption = new EventEmitter();
 	@Input('position') position: 'right' | 'left' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' = 'md';
 	@Input('class') class!: string;
-	@Input('show') show = false;
+	@Input('buttonClass') buttonClass = '';
+	@Input('buttonSize') buttonSize: 'small' | 'medium' | 'full' = 'medium';
+	@Input('buttonType') buttonType: 'default' | 'outline' | 'clear' | 'text' | 'link' = 'default';
 	sizes = { sm: 'w-[140px]', md: 'w-[200px]', lg: 'w-[249px]', xl: 'w-[350px]' };
+	show = false;
 
 	constructor() {}
 
