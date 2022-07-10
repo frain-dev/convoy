@@ -76,12 +76,12 @@
 				<table id="table" class="w-full">
 					<thead class="bg-primary-500">
 						<tr>
-							<th class="table--head text-left whitespace-nowrap pt-10px pb-10px font-medium text-14 first-of-type:pl-20px" *ngFor="let head of eventsTableHead" scope="col">{{ head }}</th>
+							<th class="text-left whitespace-nowrap pt-10px pb-10px font-medium text-12 first-of-type:pl-20px" *ngFor="let head of eventsTableHead" scope="col">{{ head }}</th>
 						</tr>
 					</thead>
 					<tbody>
 						<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
-							<tr class="table--date-row border-t border-grey-10 text-grey-40">
+							<tr class="border-t border-grey-10 text-grey-40 text-12">
 								<td>
 									<div class="pt-16px pb-8px pl-16px">{{ eventGroup.date }}</div>
 								</td>
@@ -97,18 +97,18 @@
 							>
 								<td class="p-0">
 									<div class="pl-16px pt-8px pb-8px whitespace-nowrap text-14">
-										<div class="tag tag--Neutral">{{ event.event_type }}</div>
+										<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 									</div>
 								</td>
-								<td>
+								<td class="p-0">
 									<div class="w-150px overflow-ellipsis pt-8px pb-8px whitespace-nowrap text-14">
 										<span class="underline text-primary-100">{{ event.app_metadata.name }}</span>
 									</div>
 								</td>
-								<td>
+								<td class="p-0">
 									<div class="pt-8px pb-8px whitespace-nowrap text-14">{{ event.created_at | date: 'mediumTime' }}</div>
 								</td>
-								<td>
+								<td class="p-0">
 									<div class="pt-8px pb-8px whitespace-nowrap">
 										<convoy-button type="clear" size="small" (clickItem)="openDeliveriesTab(event.uid)">
 											Deliveries
@@ -133,8 +133,8 @@
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
 					<prism language="json" [code]="getCodeSnippetString()" title="Event"></prism>
 
-					<h3 class="text-16 font-bold mb-16px mt-26px" *ngIf="sidebarEventDeliveries.length > 0">Deliveries Overview</h3>
-					<ul *ngIf="sidebarEventDeliveries.length > 0">
+					<h3 class="text-16 font-bold mb-16px mt-26px" *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">Deliveries Overview</h3>
+					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
 						<convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery.endpoint_metadata?.target_url">
 							<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
 							<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden">
@@ -175,7 +175,7 @@
 		[disable]="events?.pagination?.next === 0"
 	>
 		Next
-		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+		<svg width="24" height="24" class="ml-8px" fill="var(--primary-color)">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</convoy-button>

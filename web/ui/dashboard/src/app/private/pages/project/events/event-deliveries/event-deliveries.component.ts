@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { APP } from 'src/app/models/app.model';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -47,9 +48,9 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	eventsDelAppsFilter$!: Observable<APP[]>;
-	filteredApps!: APP[];
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
+	@ViewChild('appsFilterDropdown') appDropdownComponent!: DropdownComponent;
 	appPortalToken = this.route.snapshot.params?.token;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe, private route: ActivatedRoute, private router: Router) {}
@@ -72,9 +73,9 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	ngOnChanges(changes: SimpleChanges) {
-		const prevValue = changes?.eventDeliveryFilteredByEventId.previousValue
-		const currentValue = changes?.eventDeliveryFilteredByEventId.currentValue
-		if(currentValue !== prevValue) this.getEventDeliveries();
+		const prevValue = changes?.eventDeliveryFilteredByEventId.previousValue;
+		const currentValue = changes?.eventDeliveryFilteredByEventId.currentValue;
+		if (currentValue !== prevValue) this.getEventDeliveries();
 	}
 
 	getFiltersFromURL() {
@@ -171,6 +172,7 @@ export class EventDeliveriesComponent implements OnInit {
 	clearFilters(filterType?: 'eventsDelApp' | 'eventsDelDate' | 'eventsDelsStatus') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
+		this.appDropdownComponent.show = false;
 
 		switch (filterType) {
 			case 'eventsDelApp':

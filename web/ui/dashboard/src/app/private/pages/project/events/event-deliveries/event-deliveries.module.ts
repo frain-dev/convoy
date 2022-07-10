@@ -13,6 +13,11 @@ import { EventDeliveriesComponent } from './event-deliveries.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
+import { PipesModule } from 'src/app/pipes/pipes.module';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
 
 @NgModule({
 	declarations: [EventDeliveriesComponent],
@@ -30,7 +35,12 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 		RouterModule,
 		CardComponent,
 		ButtonComponent,
-		DropdownComponent
+		DropdownComponent,
+		ListItemComponent,
+		EmptyStateComponent,
+		TagComponent,
+		PipesModule,
+		ModalComponent
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]

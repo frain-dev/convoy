@@ -4,233 +4,239 @@
 			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('eventsDelDate')"></date-filter>
 			<app-time-filter class="margin-left__14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
 
-			<div class="dropdown margin-left__14px">
-				<button
-					class="button button__filter button--has-icon icon-left"
-					[ngClass]="{ active: eventDeliveryFilteredByStatus.length > 0 }"
-					(click)="showOverlay = true; showEventDeliveriesStatusDropdown = !showEventDeliveriesStatusDropdown"
-				>
-					<img class="margin-left__0px" src="/assets/img/status-filter-icon.svg" alt="status filter icon" />
-					<span class="font__weight-500">Status</span>
-					<img class="margin-left__16px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-				</button>
+			<convoy-dropdown size="md" position="left" buttonSize="small" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px">
+				<ng-container dropdownToggle>
+					<img src="/assets/img/status-filter-icon.svg" class="w-14px mr-10px" alt="status filter icon" />
+					<span class="text-grey-40 w-full">Status</span>
+					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</ng-container>
 
-				<div class="dropdown__menu with-padding small" [ngClass]="{ show: showEventDeliveriesStatusDropdown }">
-					<div class="dropdown__menu__item with-border" *ngFor="let status of eventDeliveryStatuses">
-						<label [for]="status">{{ status || 'None' }}</label>
-						<input
-							type="checkbox"
-							name="status"
-							[value]="status"
-							[id]="status"
-							[checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)"
-							(change)="updateEventDevliveryStatusFilter(status, $event)"
-						/>
+				<ng-container>
+					<ul class="pt-10px px-10px">
+						<convoy-list-item *ngFor="let status of eventDeliveryStatuses" className="pt-4px pb-4px">
+							<label class="text-12 block w-full" [for]="status">{{ status || 'None' }}</label>
+							<input
+								type="checkbox"
+								name="status"
+								[value]="status"
+								[id]="status"
+								[checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)"
+								(change)="updateEventDevliveryStatusFilter(status, $event)"
+							/>
+						</convoy-list-item>
+					</ul>
+
+					<div class="flex items-center mt-10px p-10px">
+						<convoy-button size="small" (clickItem)="this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</convoy-button>
+						<convoy-button size="small" type="clear" (clickItem)="clearFilters('eventsDelsStatus'); showEventDeliveriesStatusDropdown = false; showOverlay = false">Clear</convoy-button>
 					</div>
+				</ng-container>
+			</convoy-dropdown>
 
-					<div class="flex flex__align-items-center margin-top__10px">
-						<button
-							class="button button__small button__primary font__12px margin-right__10px"
-							(click)="showOverlay = false; showEventDeliveriesStatusDropdown = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })"
-						>
-							Apply
-						</button>
-						<button class="button__clear" (click)="clearFilters('eventsDelsStatus'); showEventDeliveriesStatusDropdown = false; showOverlay = false">Clear</button>
-					</div>
-				</div>
-			</div>
-
-			<div class="dropdown margin-left__14px" [hidden]="appPortalToken">
-				<button
-					class="button button__filter button--has-icon icon-left"
-					[ngClass]="{ active: !!eventDeliveriesApp }"
-					(click)="showOverlay = true; showEventDeliveriesAppsDropdown = !showEventDeliveriesAppsDropdown"
-				>
-					<img class="margin-left__0px" src="/assets/img/apps-icon-grey.svg" alt="apps filter icon" />
-					<span class="font__weight-500">All Apps</span>
-					<img class="margin-left__16px margin-right__0px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-				</button>
-
-				<div class="dropdown__menu large with-padding" [ngClass]="{ show: showEventDeliveriesAppsDropdown }">
-					<div class="input__search">
-						<img src="/assets/img/search-icon.svg" alt="search icon" />
-						<input type="search" placeholder="Search apps here" #eventDelsAppsFilter />
-					</div>
-
-					<div class="dropdown__menu__item with-border" *ngFor="let app of eventsDelAppsFilter$ | async">
-						<label [for]="app.uid + 'eventDel'">{{ app.name }}</label>
-						<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid + 'eventDel'" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event)" />
-					</div>
-					<div *ngIf="filteredApps?.length !== 0 && !!eventDeliveriesApp" class="margin-top__10px">
-						<button class="button button__clear button__small" (click)="clearFilters('eventsDelApp'); showEventDeliveriesAppsDropdown = false; showOverlay = false">Clear</button>
-					</div>
-					<p *ngIf="filteredApps?.length === 0">No app to display</p>
-				</div>
-			</div>
-
-			<div class="button__filter active margin-left__14px" *ngIf="eventDeliveryFilteredByEventId">
-				Event Filtered
-				<button class="button__clear button--has-icon margin-left__4px" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()">
-					<img src="assets/img/close-icon.svg" alt="close icon" />
-				</button>
-			</div>
-
-			<button
-				class="button button__filter margin-left__14px flex__justify-center"
-				(click)="fetchRetryCount(); showBatchRetryModal = true"
-				[ngClass]="{
-					disabled:
-						(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
-						(eventDeliveriesApp?.length == 0 || eventDeliveriesApp == undefined) &&
-						(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
-						!eventDeliveriesStatusFilterActive &&
-						eventDelsTimeFilterData.startTime == 'T00:00:00' &&
-						eventDelsTimeFilterData.endTime == 'T23:59:59'
-				}"
+			<convoy-dropdown
+				size="lg"
+				position="left"
+				buttonSize="small"
+				buttonType="outline"
+				buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
+				#appsFilterDropdown
 			>
-				Batch Retry
-			</button>
-		</div>
+				<ng-container dropdownToggle>
+					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
+					<span class="text-grey-40 w-full">All Apps</span>
+					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</ng-container>
 
-		<button
-			class="button button__white button__small font__12px"
-			(click)="clearFilters()"
-			[ngClass]="{
-				disabled:
+				<ng-container>
+					<div class="m-10px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
+						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
+						<input type="search" placeholder="Search apps here" #eventDelsAppsFilter class="w-full outline-none text-12" />
+					</div>
+
+					<ul class="min-h-[100px] px-10px pb-10px">
+						<convoy-list-item *ngFor="let app of eventsDelAppsFilter$ | async" className="pt-4px pb-4px">
+							<label [for]="app.uid + 'eventDel'" class="text-12 block w-full">{{ app.name }}</label>
+							<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid + 'eventDel'" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event)" />
+						</convoy-list-item>
+					</ul>
+
+					<div *ngIf="!!eventDeliveriesApp" class="p-10px pb-10px">
+						<convoy-button type="text" size="small" (clickItem)="clearFilters('eventsDelApp')">Clear</convoy-button>
+					</div>
+				</ng-container>
+			</convoy-dropdown>
+
+			<div
+				class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium"
+				*ngIf="eventDeliveryFilteredByEventId"
+			>
+				Event Filtered
+				<convoy-button size="small" type="icon" className="ml-4px">
+					<img class="w-14px" src="assets/img/close-icon.svg" alt="close icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()" />
+				</convoy-button>
+			</div>
+
+			<convoy-button
+				size="small"
+				type="outline"
+				className="ml-14px px-10px border-primary-400 n h-36px"
+				[disable]="
 					(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
 					(eventDeliveriesApp?.length == 0 || eventDeliveriesApp == undefined) &&
 					(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
 					!eventDeliveriesStatusFilterActive &&
 					eventDelsTimeFilterData.startTime == 'T00:00:00' &&
 					eventDelsTimeFilterData.endTime == 'T23:59:59'
-			}"
+				"
+				(clickItem)="fetchRetryCount(); showBatchRetryModal = true"
+			>
+				Batch Retry
+			</convoy-button>
+		</div>
+
+		<convoy-button
+			type="outline"
+			size="small"
+			(clickItem)="clearFilters()"
+			*ngIf="
+				!(
+					(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
+					(eventDeliveriesApp?.length == 0 || eventDeliveriesApp == undefined) &&
+					(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
+					!eventDeliveriesStatusFilterActive &&
+					eventDelsTimeFilterData.startTime == 'T00:00:00' &&
+					eventDelsTimeFilterData.endTime == 'T23:59:59'
+				)
+			"
 		>
 			Clear Filters
-		</button>
+		</convoy-button>
 	</div>
 
-	<div class="event__table width-100">
-		<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
+	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
-		<div class="table table--container has-loader" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
-			<table id="table">
-				<thead>
-					<tr class="table--head">
-						<th *ngFor="let head of eventDelTableHead" scope="col">{{ head }}</th>
+	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
+		<table id="table" class="w-full">
+			<thead class="bg-primary-500">
+				<tr>
+					<th class="text-left whitespace-nowrap pt-10px pb-10px font-medium text-12 first-of-type:pl-20px" *ngFor="let head of eventDelTableHead" scope="col">{{ head }}</th>
+				</tr>
+			</thead>
+			<tbody>
+				<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
+					<tr class="border-t border-grey-10 text-grey-40 text-12">
+						<td>
+							<div class="pt-16px pb-8px pl-16px">{{ eventDeliveriesGroup.date }}</div>
+						</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
 					</tr>
-				</thead>
-				<tbody>
-					<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
-						<tr class="table--date-row">
-							<td>
-								<div>{{ eventDeliveriesGroup.date }}</div>
-							</td>
-							<td></td>
-							<td></td>
-							<td></td>
-							<td></td>
-							<td></td>
-						</tr>
-						<tr
-							*ngFor="let event of eventDeliveriesGroup.content; let index = index"
-							[ngClass]="{ 'last-item': index === eventDeliveriesGroup.content.length - 1, active: event.uid === eventDelsDetailsItem?.uid }"
-							[id]="'eventDel' + i"
-							[routerLink]="['./event-deliveries/' + event.uid]"
-						>
-							<td>
-								<div class="has-retry">
-									<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" />
-									<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
-								</div>
-							</td>
-							<td>
-								<div>
-									<div class="tag tag--Neutral">{{ event?.event_metadata?.event_type }}</div>
-								</div>
-							</td>
-							<td>
-								<div>{{ event.metadata?.num_trials }}</div>
-							</td>
-							<td>
-								<div>{{ event.metadata?.retry_limit }}</div>
-							</td>
-							<td>
-								<div>{{ event.created_at | date: 'mediumTime' }}</div>
-							</td>
-							<td>
-								<div>
-									<button
-										[disabled]="event.status !== 'Failure' && event.status !== 'Success'"
-										class="button__retry button--has-icon icon-left font__12px"
-										(click)="
-											event.status === 'Success'
-												? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
-												: retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
-										"
-									>
-										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" />
-
-										{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
-									</button>
-								</div>
-							</td>
-							<td class="width__5">
-								<div>
-									<button class="button__clear button--has-icon icon-right" [routerLink]="'./delivery/' + event.uid">
-										<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
-									</button>
-								</div>
-							</td>
-						</tr>
-					</ng-container>
-				</tbody>
-			</table>
-		</div>
-
-		<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="displayedEventDeliveries?.length === 0">
-			<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
-			<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No event to show here</p>
-		</div>
+					<tr
+						*ngFor="let event of eventDeliveriesGroup.content; let index = index"
+						[ngClass]="{ 'bg-primary-500': index === eventDeliveriesGroup.content.length - 1, 'mb-16px': event.uid === eventDelsDetailsItem?.uid }"
+						[id]="'eventDel' + i"
+						[routerLink]="['./event-deliveries/' + event.uid]"
+					>
+						<td class="p-0">
+							<div class="pl-16px pt-8px pb-8px whitespace-nowrap text-14 relative">
+								<img
+									*ngIf="event.metadata.num_trials > event.metadata.retry_limit"
+									src="assets/img/retry-icon.svg"
+									alt="retry icon"
+									title="manually retried"
+									class="w-12px absolute top-[50%] -translate-x-[3px] -translate-y-[-50%] opacity-50"
+								/>
+								<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
+								<convoy-tag [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
+							</div>
+						</td>
+						<td>
+							<div class="pt-8px pb-8px whitespace-nowrap text-14">
+								<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
+							</div>
+						</td>
+						<td>
+							<div class="pt-8px pb-8px whitespace-nowrap text-14">{{ event.metadata?.num_trials }}</div>
+						</td>
+						<td>
+							<div class="pt-8px pb-8px whitespace-nowrap text-14">{{ event.metadata?.retry_limit }}</div>
+						</td>
+						<td>
+							<div class="pt-8px pb-8px whitespace-nowrap text-14">{{ event.created_at | date: 'mediumTime' }}</div>
+						</td>
+						<td>
+							<div class="pt-8px pb-8px whitespace-nowrap">
+								<convoy-button
+									size="tiny"
+									texture="light"
+									(clickItem)="
+										event.status === 'Success'
+											? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
+											: retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
+									"
+								>
+									<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+									{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
+								</convoy-button>
+							</div>
+						</td>
+						<td class="w-6px">
+							<div class="pt-8px pb-8px whitespace-nowrap">
+								<convoy-button size="tiny" type="icon" [routerLink]="'./delivery/' + event.uid">
+									<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+								</convoy-button>
+							</div>
+						</td>
+					</tr>
+				</ng-container>
+			</tbody>
+		</table>
 	</div>
+
+	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="displayedEventDeliveries?.length === 0"></convoy-empty-state>
 </convoy-card>
 
-<div class="button-container flex flex__align-items-center margin-top__16px">
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+<div class="flex items-center mt-16px">
+	<convoy-button
+		type="outline"
+		size="small"
+		className="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
-		[disabled]="eventDeliveries?.pagination?.prev === 0"
+		[disable]="eventDeliveries?.pagination?.prev === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="margin-right__8px">
+		<svg width="24" height="24" class="mr-8px">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
-	</button>
+	</convoy-button>
 
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+	<convoy-button
+		type="outline"
+		size="small"
+		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
-		[disabled]="eventDeliveries?.pagination?.next === 0"
+		[disable]="eventDeliveries?.pagination?.next === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
 	>
 		Next
-		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+		<svg width="24" height="24" class="ml-8px" fill="var(--primary-color)">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-	</button>
+	</convoy-button>
 </div>
 
-<div class="overlay" *ngIf="showOverlay" (click)="showOverlay = false; showEventDeliveriesAppsDropdown = false; showEventDeliveriesStatusDropdown = false"></div>
-<div class="_overlay" *ngIf="showBatchRetryModal" (click)="showBatchRetryModal = false"></div>
-<!-- batch retry modal  -->
-<div class="modal modal__center" *ngIf="showBatchRetryModal">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete">
-		<img src="/assets/img/filter.gif" alt="filter icon" class="filter-img" />
-		<div class="text-center font__20px font__weight-500 color__grey margin-bottom__8px">The filters applied will affect</div>
-		<div class="text-center font__20px font__weight-600 color__black margin-bottom__32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
-		<button class="button button__primary" [disabled]="isRetrying || batchRetryCount == 0" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button class="button__primary button__clear margin-top__28px font__weight-600" (click)="showBatchRetryModal = false">No, Cancel</button>
+<convoy-modal position="center" size="small" *ngIf="showBatchRetryModal">
+	<div class="text-center" modalBody>
+		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
+		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
+		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
+		<convoy-button [disable]="isRetrying || batchRetryCount == 0" className="m-auto" (clickItem)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</convoy-button>
+		<convoy-button type="clear" className="font-semibold m-auto" (clickItem)="showBatchRetryModal = false">No, Cancel</convoy-button>
 	</div>
-</div>
+</convoy-modal>
