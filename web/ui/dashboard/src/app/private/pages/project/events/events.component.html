@@ -22,7 +22,7 @@
 		<ul>
 			<convoy-list-item
 				*ngFor="let filterOption of filterOptions"
-				[className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : '' + 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'"
+				[className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'"
 			>
 				<convoy-button color="grey" type="text" (clickItem)="dashboardFrequency = filterOption; fetchDashboardData(); closeFilterOptions()" className="capitalize text-left w-full !justify-start">
 					{{ filterOption }}
