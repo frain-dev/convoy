@@ -1,11 +1,11 @@
 <div class="relative">
 	<input type="radio" [id]="id" [name]="name" [formControl]="control" [value]="value" class="peer opacity-0 absolute" />
-	<label [for]="id" class="border border-grey-10 rounded-4px p-16px block animate peer-checked:border-primary-100 peer-checked:bg-[#FAFAFE]">
-		<div class="flex items-center mb-8px">
-			<div class="w-16px h-16px"></div>
+	<label [for]="id" class="border border-grey-10 rounded-4px p-14px block transition-all duration-200 peer-checked:border-primary-100 peer-checked:bg-[#FAFAFE]">
+		<div class="flex items-center">
+			<div class="w-20px"></div>
 			<p class="text-14 font-semibold ml-8px">{{ label }}</p>
 		</div>
 		<p *ngIf="description" class="text-grey-40 text-12 font-normal">{{ description }}</p>
 	</label>
-	<div class="absolute top-20px left-[17px] rounded-[50px] mb-0 border border-grey-10 w-16px h-16px animate peer-checked:border-primary-100 peer-checked:border-4"></div>
+	<div class="absolute top-[42px] left-[17px] rounded-[50px] mb-0 border border-grey-10 w-16px h-16px animate peer-checked:border-primary-100 peer-checked:border-4"></div>
 </div>
