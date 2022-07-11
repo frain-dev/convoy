@@ -1,4 +1,4 @@
-<convoy-dropdown buttonClass="px-10px border-primary-400 justify-between h-36px min-w-[117px]" buttonType="outline" buttonSize="small" position="left" className="p-10px !w-fit" [active]="filterIsActive()" #dropdown>
+<convoy-dropdown buttonClass="px-10px border-primary-400 justify-between h-36px min-w-[117px]" buttonType="outline" buttonSize="sm" position="left" className="p-10px !w-fit" [active]="filterIsActive()" #dropdown>
 	<ng-container dropdownToggle>
 		<img src="assets/img/clock.svg" class="mr-10px w-14px" alt="time filter icon" />
 		<span class="text-grey-40 mr-4px">Time</span>
@@ -95,7 +95,7 @@
 		</div>
 
 		<div class="margin-top__16px flex flex__align-items-center">
-			<convoy-button size="small" (clickItem)="onApplyFilter()">Apply</convoy-button>
+			<convoy-button size="sm" (clickItem)="onApplyFilter()">Apply</convoy-button>
 		</div>
 	</ng-container>
 </convoy-dropdown>

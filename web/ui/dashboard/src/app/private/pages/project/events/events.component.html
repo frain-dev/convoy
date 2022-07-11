@@ -12,7 +12,7 @@
 
 <div class="py-24px flex items-center">
 	<date-filter (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
-	<convoy-dropdown size="sm" position="left" buttonSize="small" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px">
+	<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px">
 		<ng-container dropdownToggle>
 			<span class="text-grey-60 mr-4px">Filter By:</span>
 			<span class="text-primary-100 capitalize">{{ dashboardFrequency }}</span>
@@ -20,10 +20,7 @@
 		</ng-container>
 
 		<ul>
-			<convoy-list-item
-				*ngFor="let filterOption of filterOptions"
-				[className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'"
-			>
+			<convoy-list-item *ngFor="let filterOption of filterOptions" [className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'">
 				<convoy-button color="grey" type="text" (clickItem)="dashboardFrequency = filterOption; fetchDashboardData(); closeFilterOptions()" className="capitalize text-left w-full !justify-start">
 					{{ filterOption }}
 				</convoy-button>

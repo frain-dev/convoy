@@ -13,7 +13,7 @@
 
 			<app-time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></app-time-filter>
 
-			<convoy-dropdown size="lg" position="left" buttonSize="small" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [active]="!!eventApp">
+			<convoy-dropdown size="lg" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [active]="!!eventApp">
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Apps</span>
@@ -34,7 +34,7 @@
 					</ul>
 
 					<div *ngIf="!!eventApp" class="p-10px pb-20px">
-						<convoy-button type="text" size="small" (clickItem)="clearEventFilters(); showEventsAppsDropdown = false">Clear</convoy-button>
+						<convoy-button type="text" size="sm" (clickItem)="clearEventFilters(); showEventsAppsDropdown = false">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -42,7 +42,7 @@
 
 		<convoy-button
 			type="outline"
-			size="small"
+			size="sm"
 			(clickItem)="clearEventFilters(); selectedEventsDateOption = ''"
 			*ngIf="
 				!(
@@ -101,7 +101,7 @@
 								</td>
 								<td class="p-0">
 									<div class="pt-12px pb-12px whitespace-nowrap">
-										<convoy-button type="clear" className="!p-0" size="small" (clickItem)="openDeliveriesTab(event.uid)">
+										<convoy-button type="clear" className="!p-0" size="sm" (clickItem)="openDeliveriesTab(event.uid)">
 											Deliveries
 											<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px" alt="arrow right" />
 										</convoy-button>
@@ -142,7 +142,7 @@
 <div class="flex items-center mt-16px">
 	<convoy-button
 		type="outline"
-		size="small"
+		size="sm"
 		className="pl-4px pr-16px py-4px border-primary-300"
 		(clickItem)="getEvents({ page: events?.pagination?.prev })"
 		routerLink="./"
@@ -157,7 +157,7 @@
 
 	<convoy-button
 		type="outline"
-		size="small"
+		size="sm"
 		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		(clickItem)="getEvents({ page: events?.pagination?.prev })"
 		routerLink="./"
