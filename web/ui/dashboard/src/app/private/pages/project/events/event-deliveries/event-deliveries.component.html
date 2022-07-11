@@ -136,39 +136,39 @@
 					</tr>
 					<tr
 						*ngFor="let event of eventDeliveriesGroup.content; let index = index"
-						[ngClass]="{ 'bg-primary-500': index === eventDeliveriesGroup.content.length - 1, 'mb-16px': event.uid === eventDelsDetailsItem?.uid }"
+						[ngClass]="{ 'mb-16px': index === eventDeliveriesGroup.content.length - 1 }"
+						class="hover:bg-primary-500 transition-all duration-300"
 						[id]="'eventDel' + i"
 						[routerLink]="['./event-deliveries/' + event.uid]"
 					>
 						<td class="p-0">
-							<div class="pl-16px pt-8px pb-8px whitespace-nowrap text-14 relative">
+							<div class="pl-16px pt-12px pb-12px whitespace-nowrap text-14 relative">
 								<img
 									*ngIf="event.metadata.num_trials > event.metadata.retry_limit"
 									src="assets/img/retry-icon.svg"
 									alt="retry icon"
 									title="manually retried"
-									class="w-12px absolute top-[50%] -translate-x-[3px] -translate-y-[-50%] opacity-50"
+									class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50"
 								/>
-								<div [class]="'tag tag--' + event.status">{{ event.status }}</div>
-								<convoy-tag [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
+								<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
 							</div>
 						</td>
 						<td>
-							<div class="pt-8px pb-8px whitespace-nowrap text-14">
+							<div class="pt-12px pb-12px whitespace-nowrap text-14">
 								<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
 							</div>
 						</td>
 						<td>
-							<div class="pt-8px pb-8px whitespace-nowrap text-14">{{ event.metadata?.num_trials }}</div>
+							<div class="pt-12px pb-12px whitespace-nowrap text-14">{{ event.metadata?.num_trials }}</div>
 						</td>
 						<td>
-							<div class="pt-8px pb-8px whitespace-nowrap text-14">{{ event.metadata?.retry_limit }}</div>
+							<div class="pt-12px pb-12px whitespace-nowrap text-14">{{ event.metadata?.retry_limit }}</div>
 						</td>
 						<td>
-							<div class="pt-8px pb-8px whitespace-nowrap text-14">{{ event.created_at | date: 'mediumTime' }}</div>
+							<div class="pt-12px pb-12px whitespace-nowrap text-14">{{ event.created_at | date: 'mediumTime' }}</div>
 						</td>
 						<td>
-							<div class="pt-8px pb-8px whitespace-nowrap">
+							<div class="pt-12px pb-12px whitespace-nowrap">
 								<convoy-button
 									size="tiny"
 									texture="light"
@@ -184,7 +184,7 @@
 							</div>
 						</td>
 						<td class="w-6px">
-							<div class="pt-8px pb-8px whitespace-nowrap">
+							<div class="pt-12px pb-12px whitespace-nowrap">
 								<convoy-button size="tiny" type="icon" [routerLink]="'./delivery/' + event.uid">
 									<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
 								</convoy-button>

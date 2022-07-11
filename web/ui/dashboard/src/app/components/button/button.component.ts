@@ -26,9 +26,9 @@ export class ButtonComponent implements OnInit {
 	ngOnInit(): void {}
 
 	get classes(): string {
-		const colorLevel = this.texture == 'deep' ? '100' : '400';
+		const colorLevel = this.texture == 'deep' ? '100' : '500';
 		this.buttonTypes = {
-			default: `bg-${this.color}-${colorLevel} text-white-100 border-none rounded-8px`,
+			default: `bg-${this.color}-${colorLevel} text-${this.texture == 'deep' ? 'white' : this.color}-100 border-none rounded-8px`,
 			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100 bg-transparent`,
 			clear: `bg-transparent border-none text-${this.color}-100`,
 			text: `bg-transparent border-none text-${this.color}-${colorLevel} ${this.size == 'small' ? 'text-12' : ''}`,

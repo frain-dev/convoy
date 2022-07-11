@@ -37,7 +37,6 @@ export class EventDeliveriesComponent implements OnInit {
 	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
 	eventDeliveriesApp?: string;
-	eventDelsDetailsItem?: any;
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
