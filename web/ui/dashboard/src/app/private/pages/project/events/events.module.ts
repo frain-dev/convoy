@@ -9,12 +9,26 @@ import { EventModule } from './event/event.module';
 import { EventDeliveriesModule } from './event-deliveries/event-deliveries.module';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
+import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
+import { CardComponent } from 'src/app/components/card/card.component';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
 @NgModule({
 	declarations: [EventsComponent],
-	imports: [CommonModule, ReactiveFormsModule, DateFilterModule, LoaderModule, RouterModule.forChild(routes), EventModule, EventDeliveriesModule, DropdownComponent, ButtonComponent],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		DateFilterModule,
+		LoaderModule,
+		RouterModule.forChild(routes),
+		EventModule,
+		EventDeliveriesModule,
+		DropdownComponent,
+		ButtonComponent,
+		ListItemComponent,
+		CardComponent
+	],
 	providers: [DatePipe]
 })
 export class EventsModule {}

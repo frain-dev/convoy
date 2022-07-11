@@ -1,25 +1,23 @@
-<div class="dropdown">
-	<button [ngClass]="{ active: dateRange.value.startDate && dateRange.value.endDate }" class="button button__filter button--has-icon" (click)="statsPicker.open()">
-		<img src="/assets/img/calendar-icon.svg" class="margin-right__10px" alt="calender icon" />
-		<span class="color__grey margin-right__4px">Date</span>
+<convoy-button type="outline" size="sm" [className]="getCalculatedClass + 'px-10px border-primary-400 justify-between h-36px min-w-[117px]'" (click)="statsPicker.open()">
+	<img src="/assets/img/calendar-icon.svg" class="mr-10px w-14px" alt="calender icon" />
+	<span class="text-grey-40 mr-4px">Date</span>
 
-		<mat-date-range-input [formGroup]="dateRange" [max]="maxDate" [rangePicker]="statsPicker">
-			<input matStartDate formControlName="startDate" placeholder="Start date" />
-			<input matEndDate formControlName="endDate" placeholder="End date" />
-		</mat-date-range-input>
+	<mat-date-range-input [formGroup]="dateRange" [max]="maxDate" [rangePicker]="statsPicker">
+		<input matStartDate formControlName="startDate" placeholder="Start date" />
+		<input matEndDate formControlName="endDate" placeholder="End date" />
+	</mat-date-range-input>
 
-		<mat-date-range-picker #statsPicker [disabled]="false">
-			<mat-datepicker-actions class="flex__justify-start">
-				<button class="button button__primary button__small" matDatepickerApply (click)="setDate()">Apply</button>
-				<button matDatepickerCancel class="button button__clear button__small margin-left__10px" (click)="clearDate()">Clear</button>
-			</mat-datepicker-actions>
-		</mat-date-range-picker>
+	<mat-date-range-picker #statsPicker [disabled]="false">
+		<mat-datepicker-actions class="justify-start">
+			<convoy-button size="sm" matDatepickerApply (clickItem)="setDate()">Apply</convoy-button>
+		</mat-datepicker-actions>
+	</mat-date-range-picker>
 
-		<img src="/assets/img/angle-arrow-down.svg" class="margin-left__16px margin-right__0px" alt="arrow down icon" *ngIf="!dateRange.value.startDate && !dateRange.value.endDate" />
-		<button class="button button__clear" *ngIf="dateRange.value.startDate && dateRange.value.endDate" (click)="clearDate($event)">
-			<svg width="10" height="10" fill="var(--primary-color)">
-				<use xlink:href="#close-icon"></use>
-			</svg>
-		</button>
-	</button>
-</div>
+	<img src="/assets/img/angle-arrow-down.svg" class="ml-16px mr-0px w-14px" alt="arrow down icon" *ngIf="!dateRange.value.startDate && !dateRange.value.endDate" />
+
+	<convoy-button type="icon" *ngIf="dateRange.value.startDate && dateRange.value.endDate" (clickItem)="clearDate($event)" className="ml-16px">
+		<svg width="10" height="10" fill="var(--primary-color)">
+			<use xlink:href="#close-icon"></use>
+		</svg>
+	</convoy-button>
+</convoy-button>

@@ -6,3 +6,5 @@ export interface PAGINATION {
 	total: number;
 	totalPage: number;
 }
+
+export type STATUS_COLOR = 'grey' | 'success' | 'warning' | 'danger';
