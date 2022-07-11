@@ -13,7 +13,8 @@ export class DropdownComponent implements OnInit {
 	@Input('onSelectOption') onSelectOption = new EventEmitter();
 	@Input('position') position: 'right' | 'left' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' = 'md';
-	@Input('class') class!: string;
+	@Input('active') active: boolean = false;
+	@Input('className') class!: string;
 	@Input('buttonClass') buttonClass = '';
 	@Input('buttonSize') buttonSize: 'small' | 'medium' | 'full' = 'medium';
 	@Input('buttonType') buttonType: 'default' | 'outline' | 'clear' | 'text' | 'link' = 'default';
@@ -28,5 +29,9 @@ export class DropdownComponent implements OnInit {
 		return `${this.sizes[this.size]} ${this.position === 'right' ? 'right-[5%]' : 'left-[5%]'} ${
 			this.show ? 'opacity-100 h-fit overflow-y-auto pointer-events-auto' : 'opacity-0 h-0 overflow-hidden pointer-events-none'
 		} ${this.class}`;
+	}
+
+	get buttonClasses(): string {
+		return `${this.active ? 'text-primary-100 bg-primary-500 !border-primary-100' : ''} ${this.buttonClass}`;
 	}
 }

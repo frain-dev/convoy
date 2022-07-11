@@ -46,10 +46,10 @@ export class EventComponent implements OnInit {
 	eventsDetailsItem: any;
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-	@ViewChild('eventsTimeFilter', { static: true }) eventsTimerFilter!: TimeFilterComponent;
+	@ViewChild('timeFilter', { static: true }) timeFilter!: TimeFilterComponent;
+	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
 	@ViewChild(DropdownComponent) appDropdownComponent!: DropdownComponent;
-	@ViewChild(DateFilterComponent) dateFilterComponent!: DateFilterComponent;
 	eventsAppsFilter$!: Observable<APP[]>;
 	appPortalToken = this.route.snapshot.params?.token;
 
@@ -76,6 +76,11 @@ export class EventComponent implements OnInit {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.appDropdownComponent.show = false;
+		this.dateFilter?.dateRange.patchValue({ startDate: '', endDate: '' });
+		this.timeFilter.filterStartHour = 0;
+		this.timeFilter.filterStartMinute = 0;
+		this.timeFilter.filterEndHour = 23;
+		this.timeFilter.filterEndMinute = 59;
 
 		switch (filterType) {
 			case 'eventsApp':
@@ -92,12 +97,11 @@ export class EventComponent implements OnInit {
 				break;
 		}
 
-		this.dateFilterComponent.dateRange.patchValue({ startDate: '', endDate: '' });
 		this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
 		this.eventsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 		this.eventApp = undefined;
 		this.eventsSearchString = undefined;
-		this.eventsTimerFilter.clearFilter();
+		this.timeFilter.clearFilter();
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
@@ -139,8 +143,8 @@ export class EventComponent implements OnInit {
 		if (dates.startDate) {
 			const hour = new Date(dates.startDate).getHours();
 			const minute = new Date(dates.startDate).getMinutes();
-			this.eventsTimerFilter.filterStartHour = hour;
-			this.eventsTimerFilter.filterStartMinute = minute;
+			this.timeFilter.filterStartHour = hour;
+			this.timeFilter.filterStartMinute = minute;
 			response.startTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:00`;
 		} else {
 			response.startTime = 'T00:00:00';
@@ -149,8 +153,8 @@ export class EventComponent implements OnInit {
 		if (dates.endDate) {
 			const hour = new Date(dates.endDate).getHours();
 			const minute = new Date(dates.endDate).getMinutes();
-			this.eventsTimerFilter.filterEndHour = hour;
-			this.eventsTimerFilter.filterEndMinute = minute;
+			this.timeFilter.filterEndHour = hour;
+			this.timeFilter.filterEndMinute = minute;
 			response.endTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:59`;
 		} else {
 			response.endTime = 'T23:59:59';

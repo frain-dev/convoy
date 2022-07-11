@@ -34,4 +34,8 @@ export class DateFilterComponent implements OnInit {
 		this.clearDates.emit();
 		this.dateRange.patchValue({ startDate: '', endDate: '' });
 	}
+
+	get getCalculatedClass() {
+		return `${this.dateRange.value.startDate && this.dateRange.value.endDate ? 'text-primary-100 bg-primary-500 !border-primary-100' : ''}`;
+	}
 }

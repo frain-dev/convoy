@@ -13,7 +13,5 @@ export class ListItemComponent implements OnInit {
 
 	constructor() {}
 
-	ngOnInit(): void {
-		console.log(this.class);
-	}
+	ngOnInit(): void {}
 }

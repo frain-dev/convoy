@@ -175,6 +175,10 @@ export class EventDeliveriesComponent implements OnInit {
 		let filterItems: string[] = [];
 		this.appDropdownComponent.show = false;
 		this.dateFilter?.dateRange.patchValue({ startDate: '', endDate: '' });
+		this.eventDeliveryTimerFilter.filterStartHour = 0;
+		this.eventDeliveryTimerFilter.filterStartMinute = 0;
+		this.eventDeliveryTimerFilter.filterEndHour = 23;
+		this.eventDeliveryTimerFilter.filterEndMinute = 59;
 
 		switch (filterType) {
 			case 'eventsDelApp':

@@ -15,14 +15,7 @@
 					<ul class="pt-10px px-10px">
 						<convoy-list-item *ngFor="let status of eventDeliveryStatuses" className="pt-4px pb-4px">
 							<label class="text-12 block w-full" [for]="status">{{ status || 'None' }}</label>
-							<input
-								type="checkbox"
-								name="status"
-								[value]="status"
-								[id]="status"
-								[checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)"
-								(change)="updateEventDevliveryStatusFilter(status, $event)"
-							/>
+							<input type="checkbox" name="status" [value]="status" [id]="status" [checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)" (change)="updateEventDevliveryStatusFilter(status, $event)" />
 						</convoy-list-item>
 					</ul>
 
@@ -33,14 +26,7 @@
 				</ng-container>
 			</convoy-dropdown>
 
-			<convoy-dropdown
-				size="lg"
-				position="left"
-				buttonSize="small"
-				buttonType="outline"
-				buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
-				#appsFilterDropdown
-			>
+			<convoy-dropdown size="lg" position="left" buttonSize="small" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #appsFilterDropdown [active]="!!eventDeliveriesApp">
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Apps</span>
@@ -66,10 +52,7 @@
 				</ng-container>
 			</convoy-dropdown>
 
-			<div
-				class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium"
-				*ngIf="eventDeliveryFilteredByEventId"
-			>
+			<div class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium" *ngIf="eventDeliveryFilteredByEventId">
 				Event Filtered
 				<convoy-button size="small" type="icon" className="ml-4px">
 					<img class="w-14px" src="assets/img/close-icon.svg" alt="close icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()" />
@@ -143,13 +126,7 @@
 					>
 						<td class="p-0">
 							<div class="pl-16px pt-12px pb-12px whitespace-nowrap text-14 relative">
-								<img
-									*ngIf="event.metadata.num_trials > event.metadata.retry_limit"
-									src="assets/img/retry-icon.svg"
-									alt="retry icon"
-									title="manually retried"
-									class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50"
-								/>
+								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
 								<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
 							</div>
 						</td>
@@ -172,11 +149,7 @@
 								<convoy-button
 									size="tiny"
 									texture="light"
-									(clickItem)="
-										event.status === 'Success'
-											? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
-											: retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })
-									"
+									(clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 								>
 									<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 									{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}

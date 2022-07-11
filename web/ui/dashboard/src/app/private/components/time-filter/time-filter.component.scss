@@ -1,16 +1,7 @@
-.time-filter {
-    width: fit-content;
+.overflow-y-scroll::-webkit-scrollbar-track {
+	background: #f3f3f3;
 }
 
-.can-scroll {
-    height: 200px;
-    overflow-y: scroll;
-}
-
-.can-scroll::-webkit-scrollbar {
-    width: 2px;
-}
-
-.can-scroll::-webkit-scrollbar-track {
-    background: #f3f3f3;
+.overflow-y-scroll::-webkit-scrollbar {
+	width: 2px;
 }

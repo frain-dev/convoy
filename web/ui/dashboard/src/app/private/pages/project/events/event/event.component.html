@@ -1,29 +1,19 @@
 <convoy-card className="rounded-tl-[0] rounded-tr-[0]">
 	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
 		<div class="flex">
-			<form
-				class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100"
-				[ngClass]="{ active: eventsSearchString != undefined && eventsSearchString != '' }"
-			>
+			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" [ngClass]="{ active: eventsSearchString != undefined && eventsSearchString != '' }">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-				<input
-					type="search"
-					placeholder="Search events"
-					[(ngModel)]="eventsSearchString"
-					(change)="getEvents({ addToURL: true, page: 1 })"
-					[ngModelOptions]="{ standalone: true }"
-					class="w-full text-grey-40 text-14 outline-none"
-				/>
+				<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="getEvents({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
 				<convoy-button type="icon">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</convoy-button>
 			</form>
 
-			<date-filter class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')"></date-filter>
+			<date-filter class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')" #dateFilter></date-filter>
 
-			<app-time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #eventsTimeFilter></app-time-filter>
+			<app-time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></app-time-filter>
 
-			<convoy-dropdown size="lg" position="left" buttonSize="small" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px">
+			<convoy-dropdown size="lg" position="left" buttonSize="small" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [active]="!!eventApp">
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Apps</span>
