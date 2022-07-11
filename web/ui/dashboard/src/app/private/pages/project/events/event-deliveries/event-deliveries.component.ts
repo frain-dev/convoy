@@ -9,6 +9,7 @@ import { APP } from 'src/app/models/app.model';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { DateFilterComponent } from 'src/app/private/components/date-filter/date-filter.component';
 import { TimeFilterComponent } from 'src/app/private/components/time-filter/time-filter.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
@@ -48,6 +49,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	eventsDelAppsFilter$!: Observable<APP[]>;
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
+	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
 	@ViewChild('appsFilterDropdown') appDropdownComponent!: DropdownComponent;
 	appPortalToken = this.route.snapshot.params?.token;
@@ -172,6 +174,7 @@ export class EventDeliveriesComponent implements OnInit {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.appDropdownComponent.show = false;
+		this.dateFilter?.dateRange.patchValue({ startDate: '', endDate: '' });
 
 		switch (filterType) {
 			case 'eventsDelApp':

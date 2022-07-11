@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 
 @Component({
 	selector: 'date-filter',
@@ -20,7 +19,7 @@ export class DateFilterComponent implements OnInit {
 	};
 	maxDate = new Date();
 
-	constructor(private formBuilder: FormBuilder, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder) {}
 
 	ngOnInit(): void {
 		if (this.dateRangeValue) this.dateRange.patchValue(this.dateRangeValue);
