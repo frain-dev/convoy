@@ -1,7 +1,9 @@
-<div class="modal--body flex flex__column flex__justify-center flex__align-items-center delete-modal">
-	<img src="/assets/img/warning.gif" class="img" alt="warning" />
-	<p class="font__16px font__weight-600 color__black margin-bottom__8px text--center">Are you sure you want to {{ deleteText }}?</p>
-	<p class="font__14px font__weight-500 color__grey margin-bottom__20px">This action is irrevesible.</p>
-	<button class="button button__deactivate margin-bottom__24px" [disabled]="isLoading" (click)="deleteData.emit()">{{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}</button>
-	<button class="button__primary button__clear font__weight-600 cancel" (click)="closeModal.emit()">No, Cancel</button>
-</div>
+<convoy-modal position="center" size="small">
+	<div class="flex flex-col justify-center items-center px-20px" modalBody>
+		<img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
+		<p class="text-16 font-semibold text-black mb-8px text-center">Are you sure you want to {{ deleteText }}?</p>
+		<p class="text-14 font-medium text-grey-40 mb-20px">This action is irrevesible.</p>
+		<convoy-button color="danger" className="mb-24px" [disable]="isLoading" (click)="deleteData.emit()">{{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}</convoy-button>
+		<convoy-button type="text" className="font-semibold" (click)="closeModal.emit()">No, Cancel</convoy-button>
+	</div>
+</convoy-modal>
