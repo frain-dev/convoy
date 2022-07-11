@@ -1,3 +1,7 @@
+## v0.6.0-rc.4
+
+-   [Bugfix] Fixed bug in correctly using datastore FindMany method #856
+
 ## v0.6.0-rc.3
 
 -   [Change] Changed host to instance id in the analytics #821
