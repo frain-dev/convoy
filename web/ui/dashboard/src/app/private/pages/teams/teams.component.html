@@ -16,12 +16,12 @@
 					[ngModelOptions]="{ standalone: true }"
 					class="w-full text-grey-40 text-14 outline-none"
 				/>
-				<convoy-button *ngIf="searchString && searchString.length > 0" type="icon" (click)="searchTeam({ searchInput: $event })">
+				<convoy-button *ngIf="searchString && searchString.length > 0" className="transition-all duration-200" type="icon" (click)="searchTeam({ searchInput: $event })">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</convoy-button>
 			</form>
 
-			<convoy-dropdown [show]="showFilterDropdown" buttonSize="small" buttonType="outline" buttonClass="px-10px border-primary-400 mx-16px min-w-[160px] whitespace-nowrap justify-between h-36px">
+			<convoy-dropdown size="sm"  buttonSize="sm" buttonType="outline" buttonClass="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
 				<ng-container dropdownToggle>
 					<span class="text-grey-40 text-12 mr-4px">Filter By:</span>
 					<span class="text-primary-100 text-12 capitalize">{{ selectedFilterOption }} Invites</span>
@@ -30,11 +30,12 @@
 				<div>
 					<ul>
 						<li
+							class="first-of-type:border-b first-of-type:border-b-grey-10"
 							[ngClass]="{ active: selectedFilterOption == filterOption }"
 							*ngFor="let filterOption of filterOptions"
 							(click)="showFilterDropdown = false; showOverlay = false; toggleFilter(filterOption)"
 						>
-							<convoy-button type="text" buttonClass="px-16px capitalize" (click)="showFilterDropdown = false; showOverlay = false; toggleFilter(filterOption)">
+							<convoy-button type="text" className="w-full px-16px py-14px text-12 text-black justify-start capitalize" (click)="showFilterDropdown = false; showOverlay = false; toggleFilter(filterOption)">
 								{{ filterOption }} Invites
 							</convoy-button>
 						</li>
@@ -42,7 +43,7 @@
 				</div>
 			</convoy-dropdown>
 
-			<convoy-button size="small" className="min-w-[150px] h-36px" routerLink="./new" (click)="currentId = ''">Add team member</convoy-button>
+			<convoy-button size="sm" className="min-w-[150px] h-36px" routerLink="./new" (click)="currentId = ''">Add team member</convoy-button>
 		</div>
 	</div>
 
@@ -70,16 +71,18 @@
 							<div class="py-16px text-14 text-grey-40">All projects</div>
 						</td>
 						<td>
-							<convoy-dropdown size="lg" [show]="currentId === team.uid">
-								<convoy-button type="text" (click)="currentId = team.uid" dropdownToggle>
+							<convoy-dropdown size="lg" buttonSize="sm" buttonType="clear">
+								<ng-container dropdownToggle>
 									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-								</convoy-button>
+								</ng-container>
+							
 								<div>
 									<ul>
 										<li>
 											<convoy-button
-												type="text"
-												[class]="'text-danger-100'"
+												type="clear"
+												color="danger"
+												className="w-full"
 												(click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false"
 											>
 												Deactivate team member
@@ -96,7 +99,7 @@
 		<div class="flex items-center mt-16px">
 			<convoy-button
 				type="outline"
-				size="small"
+				size="sm"
 				className="pl-4px pr-16px py-4px border-primary-300"
 				routerLink="./"
 				[queryParams]="{ page: teams?.pagination?.prev }"
@@ -110,7 +113,7 @@
 			</convoy-button>
 			<convoy-button
 				type="outline"
-				size="small"
+				size="sm"
 				className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 				routerLink="./"
 				[queryParams]="{ page: teams?.pagination?.next }"
@@ -146,20 +149,20 @@
 							<div class="py-16px text-14 text-grey-40">All projects</div>
 						</td>
 						<td>
-							<convoy-dropdown size="lg" [show]="currentId === team.uid && showPendingInvitesDropdown">
-								<convoy-button type="text" (click)="currentId = team.uid" dropdownToggle>
+							<convoy-dropdown buttonSize="sm" buttonType="clear" >
+								<ng-container dropdownToggle>
 									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-								</convoy-button>
+								</ng-container>
 								<div>
 									<ul>
-										<li>
-											<convoy-button type="text" buttonClass="text-danger-100" (click)="resendInvite(team.uid); currentId = ''; showOverlay = false">Resend Invite</convoy-button>
+										<li class="border-b border-b-grey-10">
+											<convoy-button type="clear" color="grey" className="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</convoy-button>
 										</li>
 										<li>
 											<convoy-button
-												type="text"
-												buttonClass="text-danger-100"
-												(click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false; showOverlay = false"
+												type="clear"
+												color="danger" className="w-full"
+												(clickItem)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false;"
 											>
 												Cancel Invite
 											</convoy-button>
@@ -175,7 +178,7 @@
 		<div class="flex items-center mt-16px">
 			<convoy-button
 				type="outline"
-				size="small"
+				size="sm"
 				className="pl-4px pr-16px py-4px border-primary-300"
 				routerLink="./"
 				[queryParams]="{ pendingInvitePage: pendingInvites?.pagination?.prev }"
@@ -189,7 +192,7 @@
 			</convoy-button>
 			<convoy-button
 				type="outline"
-				size="small"
+				size="sm"
 				className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 				routerLink="./"
 				[queryParams]="{ pendingInvitePage: pendingInvites?.pagination?.next }"
@@ -214,10 +217,10 @@
 	></convoy-empty-state>
 </convoy-page>
 
-<convoy-modal position="full" title="Add Team Member" *ngIf="showInviteTeamMemberModal">
+<convoy-modal position="full" title="Add Team Member" (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
 	<ng-container modalBody>
 		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
-			<div class="card p-24px mt-24px">
+			<convoy-card className="p-24px mt-24px">
 				<h3 class="font-semibold">Basic info</h3>
 				<div class="text-grey-40 text-14 font-normal mb-16px">Invite other members of your team to your organisation.</div>
 
@@ -231,7 +234,7 @@
 					placeholder="Enter member email"
 					[required]="true"
 				></convoy-input>
-			</div>
+			</convoy-card>
 		</form>
 		<div class="flex justify-end pt-24px pb-40px">
 			<convoy-button type="outline" buttonType="button" routerLink="/team">Discard</convoy-button>

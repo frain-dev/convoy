@@ -12,6 +12,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { BadgeComponent } from 'src/app/components/badge/badge.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { InputComponent } from 'src/app/components/input/input.component';
+import { CardComponent } from 'src/app/components/card/card.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -33,6 +34,7 @@ const routes: Routes = [
 		BadgeComponent,
 		EmptyStateComponent,
 		InputComponent,
+		CardComponent,
 		RouterModule.forChild(routes)
 	]
 })
