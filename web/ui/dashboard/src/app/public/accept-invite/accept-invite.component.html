@@ -1,96 +1,68 @@
 <convoy-loader *ngIf="fetchingDetails"></convoy-loader>
-<div class="auth-page" *ngIf="!fetchingDetails">
+<div class="bg-[url('/assets/img/background-pattern.svg')] bg-center min-h-screen flex flex-col items-center justify-center bg-cover" *ngIf="!fetchingDetails">
 	<ng-container *ngIf="!isInviteAccepted">
-		<img src="/assets/img/logo.svg" class="logo" alt="convoy logo" />
-		<h3>Join your team to start managing webhooks</h3>
-		<p *ngIf="!userDetailsAvailable" class="text--center">Please fill in your {{ userDetailsAvailable ? 'password details below to' : 'details below to create your account and' }} join your team</p>
-		<section class="auth-page--container" [ngClass]="{ 'margin-top__20px': userDetailsAvailable }">
+		<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
+		<h2 class="font-semibold text-20 mb-10px">Join your team to start managing webhooks</h2>
+		<p *ngIf="!userDetailsAvailable" class="text-grey-40 text-center text-16px max-w-[445px] mb-32px">
+			Please fill in your {{ userDetailsAvailable ? 'password details below to' : 'details below to create your account and' }} join your team
+		</p>
+		<section class="max-w-[445px] mx-auto px-24px py-24px w-full bg-white-100 shadow-default rounded-8px" [ngClass]="{ 'mt-20px': userDetailsAvailable }">
 			<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()">
-				<div class="grid grid__col-2 grid--gap__20px">
-					<div class="input">
-						<label for="firstname">Firstname</label>
-						<input type="text" id="firstname" formControlName="first_name" [readonly]="userDetailsAvailable" required />
-						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.first_name.touched && acceptInviteForm.controls.first_name.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Firstname is required</span>
-						</div>
-					</div>
-
-					<div class="input">
-						<label for="lastname">Lastname</label>
-						<input type="text" id="lastname" formControlName="last_name" class="editMode" [readonly]="userDetailsAvailable" required />
-						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.last_name.touched && acceptInviteForm.controls.last_name.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Lastname is required</span>
-						</div>
-					</div>
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-input
+						type="text"
+						autocomplete="firstname"
+						name="firstname"
+						formControlName="first_name"
+						errorMessage="Firstname is required"
+						label="Firstname"
+						placeholder="Enter your firstname"
+						[readonly]="userDetailsAvailable"
+					></convoy-input>
+					<convoy-input
+						type="text"
+						autocomplete="lastname"
+						name="lastname"
+						formControlName="last_name"
+						errorMessage="Lastname is required"
+						label="Lastname"
+						placeholder="Enter your lastname"
+						[readonly]="userDetailsAvailable"
+					></convoy-input>
 				</div>
 
-				<div class="input">
-					<label for="email">Email Address</label>
-					<input type="email" autocomplete="email" formControlName="email" class="editMode" readonly required />
-					<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.email.touched && acceptInviteForm.controls.email.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Email is required</span>
-					</div>
-				</div>
+				<convoy-input type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Email is required" label="Email Address" placeholder="Enter your email" [readonly]="true"></convoy-input>
+
 				<ng-container *ngIf="!userDetailsAvailable">
-					<div class="input">
-						<label for="password">Create Password</label>
-						<div class="input--password">
-							<input
-								[type]="showPassword ? 'text' : 'password'"
-								autocomplete="new-password"
-								formControlName="password"
-								id="password"
-								[ngClass]="{ danger: acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid }"
-								required
-							/>
-							<button class="input--password__view-toggle" (click)="showPassword = !showPassword" type="button">
-								<img
-									[src]="!showPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
-									alt="showPassword ? 'hide password icon' : 'view password icon'"
-								/>
-							</button>
-						</div>
-						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Password is required</span>
-						</div>
-						<div
-							class="input__error input__error__danger"
-							*ngIf="acceptInviteForm.controls.password.touched && acceptInviteForm.controls.password.invalid && acceptInviteForm.controls.password.errors?.['minlength']"
-						>
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Password should be at least 8 characters</span>
-						</div>
-						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Password should have at least one number</span>
-						</div>
-						<div class="input__error input__error__danger" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Password should have at least one special character</span>
-						</div>
+					<convoy-input type="password" formControlName="password" name="password" errorMessage="Password is required" label="Create Password"></convoy-input>
+					<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Password should be at least 8 characters</span>
+					</div>
+					<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)">
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Password should have at least one number</span>
+					</div>
+					<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)">
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Password should have at least one special character</span>
 					</div>
 				</ng-container>
 
-				<button class="button button__primary--without-gradient button--has-icon icon-center button--full-100" [disabled]="loading" (click)="acceptInvite()">
+				<convoy-button [disable]="loading" size="full">
 					<span *ngIf="!loading">Join your team</span>
 					<img *ngIf="loading" src="assets/img/button-loader.gif" alt="loader" />
-				</button>
+				</convoy-button>
 			</form>
 		</section>
 	</ng-container>
 	<ng-container *ngIf="isInviteAccepted">
-		<img src="/assets/img/logo.svg" class="logo" alt="convoy logo" />
-		<div class="logo-2 margin-bottom__40px">
-			<img src="/assets/img/success.gif" alt="success" />
-		</div>
-		<h3>This invitation has been accepted</h3>
-		<p class="center">Login to continue to your workspace</p>
-		<div class="flex flex__column flex__justify-center width__100">
-			<button class="button button__white button--full-100 margin-auto" [routerLink]="['/login']">Go to Login</button>
-		</div>
+		<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
+		<img src="/assets/img/success.gif" alt="success" class="mb-40px h-100px rounded-100px" />
+
+		<h2 class="font-semibold text-20 mb-10px">This invitation has been accepted</h2>
+		<p class="text-grey-40 text-center text-16px max-w-[445px] mb-32px">Login to continue to your workspace</p>
+
+		<convoy-button [disable]="loading" routerLink="/login" class="w-[450px] mb-20px">Go to Login</convoy-button>
 	</ng-container>
 </div>

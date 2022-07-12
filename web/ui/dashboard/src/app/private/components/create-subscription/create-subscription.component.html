@@ -1,191 +1,114 @@
-<form class="padding-bottom__40px position__relative" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
-	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
+<convoy-modal position="full" [title]="action === 'update' ? 'Update Subscription' : 'Create Subscription'" (closeModal)="goToSubsriptionsPage()">
+	<form class="pb-40px mt-40px relative" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()" modalBody>
+		<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-	<section class="card padding-all__24px">
-		<div class="input">
-			<label for="source-name">Subscription name</label>
-			<input type="text" id="subscription-name" placeholder="e.g paystack-prod" formControlName="name" />
-			<div class="input__error input__error__danger" *ngIf="subscriptionForm.controls['name'].touched && subscriptionForm.controls['name'].invalid">
-				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-				<span>Enter new subscription name</span>
+		<convoy-card className="px-24px py-24px">
+			<convoy-input type="text" name="subscription-name" formControlName="name" errorMessage="Enter new subscription name" label="Subscription name" placeholder="e.g paystack-prod"></convoy-input>
+
+			<ng-container *ngIf="projectType === 'incoming' && !token">
+				<convoy-select class="mb-0" [options]="sources" name="source" formControlName="source_id" errorMessage="Select or create a source" label="Source" placeholder="Select source" [required]="true"></convoy-select>
+				<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (clickItem)="showCreateSourceModal = true">
+					<svg width="14" height="14" class="mr-4px" fill="currentColor">
+						<use xlink:href="#plus-icon"></use>
+					</svg>
+					New Source
+				</convoy-button>
+			</ng-container>
+
+			<ng-container *ngIf="!token">
+				<convoy-select
+					class="mb-0"
+					[options]="apps"
+					name="application"
+					formControlName="app_id"
+					errorMessage="Select or create an application"
+					label="Application"
+					placeholder="Select application"
+					[required]="true"
+					(onChange)="onUpdateAppSelection()"
+				></convoy-select>
+				<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateAppModal = true">
+					<svg width="14" height="14" class="mr-4px" fill="currentColor">
+						<use xlink:href="#plus-icon"></use>
+					</svg>
+					New App
+				</convoy-button>
+			</ng-container>
+
+			<div [ngClass]="{ 'opacity-50 pointer-events-none': subscriptionForm.get('app_id')?.invalid }">
+				<convoy-select class="mb-0 mt-24px" [options]="endPoints" name="endpoint" formControlName="endpoint_id" errorMessage="Select or create an endpoint" label="Endpoint" placeholder="Select an endpoint" [required]="true"></convoy-select>
+				<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true">
+					<svg width="14" height="14" class="mr-4px" fill="currentColor">
+						<use xlink:href="#plus-icon"></use>
+					</svg>
+					New Endpoint
+				</convoy-button>
 			</div>
-		</div>
 
-		<ng-container *ngIf="projectType === 'incoming' && !token">
-			<div class="input margin-bottom__0px">
-				<label for="source" class="position__relative">
-					Source
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<select id="source" formControlName="source_id">
-					<option value="">Select source</option>
-					<option [value]="source.uid" *ngFor="let source of sources">{{ source.name }}</option>
-				</select>
-				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('source_id')?.touched && subscriptionForm.get('source_id')?.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Select or create a source</span>
+			<div class="mt-24px">
+				<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
+				<div (click)="focusInput()" class="w-full font-medium text-14 text-grey-100 border border-primary-500 outline-none rounded-4px bg-[#F7F9FC] pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
+					<div *ngFor="let tag of eventTags" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
+						{{ tag }}
+						<convoy-button (click)="removeEventTag(tag)" type="text" buttonType="button" className="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></convoy-button>
+					</div>
+					<input type="text" id="tagInput" (input)="addTag()" required class="text-12 bg-[#F7F9FC] focus:outline-none focus:border-none" autocomplete="off" />
+				</div>
+				<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
+			</div>
+
+			<div [hidden]="!enableMoreConfig">
+				<h2 class="font-semibold flex items-center mb-20px mt-30px">
+					Retry Logic
+					<convoy-tooltip position="right" size="small" class="ml-4px">
+						These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively
+						increasing the time before the next retry attempt.
+					</convoy-tooltip>
+				</h2>
+
+				<div class="grid grid-cols-2 gap-6" formGroupName="retry_config">
+					<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism"></convoy-select>
+
+					<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3s"></convoy-input>
+					<convoy-input type="text" name="retry-logic-count" formControlName="retry_count" label="Limit" placeholder="e.g 5"></convoy-input>
+				</div>
+
+				<h2 class="font-semibold flex items-center mb-20px mt-30px">
+					Alert Rule
+					<convoy-tooltip position="right" size="small" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
+				</h2>
+				<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
+					<convoy-input type="number" name="alert-config-count" formControlName="count" label="Count" placeholder="e.g 10"></convoy-input>
+					<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
 				</div>
 			</div>
-			<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateSourceModal = true">
-				<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
-					<use xlink:href="#plus-icon"></use>
+
+			<div class="flex justify-end mt-20px">
+				<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
+			</div>
+		</convoy-card>
+
+		<div class="flex justify-end mt-32px">
+			<convoy-button className="mr-16px" type="outline" buttonType="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</convoy-button>
+			<convoy-button>
+				{{ action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
+				<svg width="24" height="24" class="ml-8px" class="fill-white-100">
+					<use xlink:href="#arrow-right-icon"></use>
 				</svg>
-				New Source
-			</button>
-		</ng-container>
-
-		<ng-container *ngIf="!token">
-			<div class="input margin-bottom__0px">
-				<label for="application" class="position__relative">
-					Application
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<select id="application" formControlName="app_id" (change)="onUpdateAppSelection()">
-					<option value="">Select application</option>
-					<option [value]="app.uid" *ngFor="let app of apps">{{ app.name }}</option>
-				</select>
-				<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('app_id')?.touched && subscriptionForm.get('app_id')?.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>Select or create an application</span>
-				</div>
-			</div>
-			<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateAppModal = true">
-				<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				New App
-			</button>
-		</ng-container>
-
-		<div class="input" [ngClass]="{ disabled: subscriptionForm.get('app_id')?.invalid }">
-			<label for="endpoint" class="position__relative">
-				Endpoint
-				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-			</label>
-			<select id="endpoint" formControlName="endpoint_id">
-				<option value="">Select endpoint</option>
-				<option [value]="endpoint.uid" *ngFor="let endpoint of endPoints">{{ endpoint.description }}</option>
-			</select>
-			<div class="input__error input__error__danger" *ngIf="subscriptionForm.get('endpoint_id')?.touched && subscriptionForm.get('endpoint_id')?.invalid">
-				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-				<span>Select an endpoint</span>
-			</div>
-			<button class="button button__clear button--has-icon font__12px margin-top__4px margin-bottom__20px" type="button" (click)="showCreateEndpointModal = true">
-				<svg width="14" height="14" class="margin-right__4px" fill="var(--primary-color)">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				New Endpoint
-			</button>
+			</convoy-button>
 		</div>
+	</form>
 
-		<div class="input multiple" *ngIf="projectType === 'outgoing'">
-			<label class="flex flex__justify-between" for="tagInput">
-				<div class="flex flex__align-items-center">Event types</div>
-			</label>
-			<div class="input--multiple" (click)="focusInput()">
-				<div class="tag" *ngFor="let tag of eventTags">
-					<div class="flex flex__align-items-center font__weight-400">{{ tag }}</div>
-					<button class="button button__clear button--has-icon" (click)="removeEventTag(tag)">
-						<img src="/assets/img/close-icon-black.svg" width="12px" class="margin-left__8px" alt="close icon" />
-					</button>
-				</div>
-				<input type="text" id="tagInput" (input)="addTag()" required class="font__12px" autocomplete="off" />
-			</div>
-			<div class="input__error input__error__secondary">
-				<span>Separate event types with comma (,) or space</span>
-			</div>
+	<convoy-modal
+		size="large"
+		[title]="showCreateAppModal ? 'Create New App' : showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'"
+		*ngIf="showCreateAppModal || showCreateSourceModal || showCreateEndpointModal"
+		(closeModal)="showCreateAppModal = false; showCreateSourceModal = false; showCreateEndpointModal = false"
+	>
+		<div modalBody>
+			<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
+			<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action == 'close' ? false : onCreateSource($event); showCreateSourceModal = false"></app-create-source>
+			<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action == 'cancel' ? false : getApps(); showCreateEndpointModal = false"></app-create-endpoint>
 		</div>
-
-		<div [hidden]="!enableMoreConfig">
-			<h3 class="margin-top__40px margin-bottom__16px flex flex__align-items-center">
-				Retry Logic
-				<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
-					These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off
-					retry, events are retried progressively increasing the time before the next retry attempt.
-				</app-tooltip>
-			</h3>
-			<div class="grid grid__col-2 grid--gap__24px" formGroupName="retry_config">
-				<div class="input margin-bottom__0px">
-					<label for="type">Mechanism</label>
-					<select name="type" id="type" formControlName="type">
-						<option *ngFor="let type of retryLogicTypes" [value]="type.id">{{ type.type }}</option>
-					</select>
-				</div>
-
-				<div class="input margin-bottom__0px">
-					<label for="retry-logic-duration">Duration</label>
-					<input type="text" id="retry-logic-duration" placeholder="e.g 3s" formControlName="duration" />
-				</div>
-
-				<div class="input margin-bottom__0px">
-					<label for="retry-logic-count">Limit</label>
-					<input type="number" id="retry-logic-count" placeholder="e.g 5" formControlName="retry_count" />
-				</div>
-			</div>
-			<h3 class="margin-top__40px margin-bottom__16px flex flex__align-items-center">
-				Alert Rule
-				<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
-					This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.
-				</app-tooltip>
-			</h3>
-			<div class="grid grid__col-2 grid--gap__24px" formGroupName="alert_config">
-				<div class="input">
-					<label for="alert-config-count">Count</label>
-					<input type="number" id="alert-config-count" placeholder="e.g 10" formControlName="count" />
-				</div>
-
-				<div class="input">
-					<label for="alert-config-time">Time</label>
-					<input type="text" id="alert-config-time" placeholder="e.g 1h" formControlName="threshold" />
-				</div>
-			</div>
-		</div>
-		<div class="flex flex__justify-end">
-			<label class="toggle">
-				<span class="toggle-label">Add more configurations</span>
-				<input class="toggle-checkbox" type="checkbox" (change)="enableMoreConfig = !enableMoreConfig" [checked]="enableMoreConfig" />
-				<div class="toggle-switch"></div>
-			</label>
-		</div>
-	</section>
-
-	<div class="button-container flex flex__justify-end margin-top__32px">
-		<button class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</button>
-
-		<button class="button button__primary button--has-icon padding-y__12px rounded__8px" type="submit" [disabled]="isCreatingSubscription">
-			{{ action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
-			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</button>
-	</div>
-</form>
-
-<div class="_overlay" *ngIf="showCreateAppModal || showCreateSourceModal || showCreateEndpointModal" (click)="showCreateAppModal = false; showCreateSourceModal = false; showCreateEndpointModal = false"></div>
-<div class="modal modal__right large" *ngIf="showCreateAppModal || showCreateSourceModal || showCreateEndpointModal">
-	<!-- add endpoint modal  -->
-	<div class="modal--head" *ngIf="showCreateAppModal">
-		<h2>Create New App</h2>
-		<button class="modal--close button__clear" (click)="showCreateAppModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</button>
-	</div>
-	<div class="modal--head" *ngIf="showCreateSourceModal">
-		<h2>Create New Source</h2>
-		<button class="modal--close button__clear" (click)="showCreateSourceModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</button>
-	</div>
-	<div class="modal--head" *ngIf="showCreateEndpointModal">
-		<h2>Create New Endpoint</h2>
-		<button class="modal--close button__clear" (click)="showCreateEndpointModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</button>
-	</div>
-
-	<div class="modal--body">
-		<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
-		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action == 'close' ? false : onCreateSource($event); showCreateSourceModal = false"></app-create-source>
-		<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action == 'cancel' ? false : getApps(); showCreateEndpointModal = false"></app-create-endpoint>
-	</div>
-</div>
+	</convoy-modal>
+</convoy-modal>

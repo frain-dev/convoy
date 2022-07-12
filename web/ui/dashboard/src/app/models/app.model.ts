@@ -17,6 +17,7 @@ export interface ENDPOINT {
 	events: any;
 	status: string;
 	secret: string;
+	name?: string;
 	target_url: string;
 	updated_at: Date;
 	rate_limit?: number;

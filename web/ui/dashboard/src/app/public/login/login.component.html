@@ -2,15 +2,7 @@
 	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px" />
 	<section class="max-w-[445px] mx-auto my-0 px-60px py-24px w-full bg-white-100 shadow-default rounded-8px">
 		<form [formGroup]="loginForm" (ngSubmit)="login()" class="mt-30px">
-			<convoy-input
-				type="text"
-				autocomplete="username"
-				name="username"
-				formControlName="username"
-				errorMessage="Please enter your username"
-				label="Username"
-				placeholder="super@default.com"
-			></convoy-input>
+			<convoy-input type="text" autocomplete="username" name="username" formControlName="username" errorMessage="Please enter your username" label="Username" placeholder="super@default.com"></convoy-input>
 
 			<convoy-input type="password" formControlName="password" name="password" errorMessage="Password is required" label="Password"></convoy-input>
 
@@ -19,7 +11,7 @@
 				<a [routerLink]="['/forgot-password']" class="text-12 text-primary-100 ml-6px">Reset it here</a>
 			</div>
 
-			<convoy-button [disable]="disableLoginBtn" size="full">
+			<convoy-button [disable]="disableLoginBtn" size="lg">
 				<span class="text-14" *ngIf="!disableLoginBtn">Login</span>
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" />
 			</convoy-button>

@@ -1,97 +1,97 @@
 <convoy-loader *ngIf="isLoadingAppDetails"></convoy-loader>
 
 <div>
-    <form [formGroup]="addNewAppForm" id="create-app-form" class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px">
-        <convoy-input
-            type="text"
-            autocomplete="app-name"
-            name="app-name"
-            formControlName="name"
-            errorMessage="Firstname is required"
-            label="Enter App Name"
-            placeholder="App name is required"
-            [required]="true"
-        ></convoy-input>
-        <div class="grid grid-cols-2 gap-6">
-            <convoy-input
-                type="email"
-                autocomplete="app-slack-url"
-                name="app-slack-url"
-                formControlName="support_email"
-                label="Support Email"
-                placeholder="Support email"
-                tooltipPosition="right"
-                tooltipSize="small"
-                tooltipContent="We use this to send an email notifcation for when a failure happens"
-            ></convoy-input>
-            <convoy-input
-                type="url"
-                autocomplete="app-email"
-                name="app-email"
-                formControlName="slack_webhook_url"
-                label="Slack webhook url"
-                placeholder="Slack webhook url"
-                tooltipSize="small"
-                tooltipContent="We use this to send notifications to your slack channel when a failure happens"
-            ></convoy-input>
-        </div>
+	<form [formGroup]="addNewAppForm" id="create-app-form" class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px">
+		<convoy-input
+			type="text"
+			autocomplete="app-name"
+			name="app-name"
+			formControlName="name"
+			errorMessage="Firstname is required"
+			label="Enter App Name"
+			placeholder="App name is required"
+			[required]="true"
+		></convoy-input>
+		<div class="grid grid-cols-2 gap-6">
+			<convoy-input
+				type="email"
+				autocomplete="app-slack-url"
+				name="app-slack-url"
+				formControlName="support_email"
+				label="Support Email"
+				placeholder="Support email"
+				tooltipPosition="right"
+				tooltipSize="small"
+				tooltipContent="We use this to send an email notifcation for when a failure happens"
+			></convoy-input>
+			<convoy-input
+				type="url"
+				autocomplete="app-email"
+				name="app-email"
+				formControlName="slack_webhook_url"
+				label="Slack webhook url"
+				placeholder="Slack webhook url"
+				tooltipSize="small"
+				tooltipContent="We use this to send notifications to your slack channel when a failure happens"
+			></convoy-input>
+		</div>
 
-        <div class="mt-32px" *ngIf="!editAppMode" formArrayName="endpoints">
-            <div class="mt-40px" *ngFor="let endpoint of endpoints.controls; let i = index">
-                <div class="flex justify-between items-center mb-16px">
-                    <h2 class="font-semibold">Endpoint {{ i > 0 ? i + 1 : '' }}</h2>
+		<div class="mt-32px" *ngIf="!editAppMode" formArrayName="endpoints">
+			<div class="mt-40px" *ngFor="let endpoint of endpoints.controls; let i = index">
+				<div class="flex justify-between items-center mb-16px">
+					<h2 class="font-semibold">Endpoint {{ i > 0 ? i + 1 : '' }}</h2>
 
-                    <convoy-button (click)="removeEndpoint(i)" type="text" color="danger" class="px-0 font-medium">
-                        <img src="/assets/img/trash-icon.svg" alt="close icon" class="mr-2" />
-                        Remove Endpoint
-                    </convoy-button>
-                </div>
-                <div [formGroupName]="i">
-                    <div class="grid grid-cols-2 gap-6">
-                        <convoy-input
-                            type="text"
-                            autocomplete="description"
-                            [name]="'description' + i"
-                            formControlName="description"
-                            errorMessage="Please provide a description"
-                            label="Description"
-                            placeholder="Description"
-                            [required]="true"
-                        ></convoy-input>
-                        <convoy-input
-                            type="url"
-                            autocomplete="endpoint-url"
-                            [name]="'endpoint-url' + i"
-                            formControlName="url"
-                            label="Enter Endpoint URL"
-                            placeholder="Endpoint url"
-                            errorMessage="Please enter endpoint url"
-                            [required]="true"
-                        ></convoy-input>
-                    </div>
-                    <convoy-input
-                        type="text"
-                        autocomplete="http-timeout"
-                        [name]="'http-timeout' + i"
-                        formControlName="http_timeout"
-                        label="HTTP Timeout"
-                        placeholder="e.g. 10s"
-                        tooltipSize="small"
-                        tooltipPosition="right"
-                        tooltipContent="This specifies how long the socket stays open in the absense of a response."
-                    ></convoy-input>
-                </div>
-            </div>
-            <convoy-button (click)="addEndpoint()" type="text" class="px-0 font-medium">
-                <img src="/assets/img/add-icon.svg" alt="close icon" class="mr-2" />
-                Add Endpoint
-            </convoy-button>
-        </div>
-    </form>
-    <div class="flex justify-end mt-6 mb-16">
-        <convoy-button (click)="closeAppInstance(); editAppMode = false; addNewAppForm.reset()" type="outline" class="mr-3">Discard</convoy-button>
-        <convoy-button [disable]="isSavingApp" (click)="saveApp()">
-            {{ editAppMode ? 'Edit App' : 'Create App' }}
-        </convoy-button>
-    </div>
+					<convoy-button (click)="removeEndpoint(i)" type="text" color="danger" className="px-0 font-medium">
+						<img src="/assets/img/trash-icon.svg" alt="close icon" class="mr-2" />
+						Remove Endpoint
+					</convoy-button>
+				</div>
+				<div [formGroupName]="i">
+					<div class="grid grid-cols-2 gap-6">
+						<convoy-input
+							type="text"
+							autocomplete="description"
+							[name]="'description' + i"
+							formControlName="description"
+							errorMessage="Please provide a description"
+							label="Description"
+							placeholder="Description"
+							[required]="true"
+						></convoy-input>
+						<convoy-input
+							type="url"
+							autocomplete="endpoint-url"
+							[name]="'endpoint-url' + i"
+							formControlName="url"
+							label="Enter Endpoint URL"
+							placeholder="Endpoint url"
+							errorMessage="Please enter endpoint url"
+							[required]="true"
+						></convoy-input>
+					</div>
+					<convoy-input
+						type="text"
+						autocomplete="http-timeout"
+						[name]="'http-timeout' + i"
+						formControlName="http_timeout"
+						label="HTTP Timeout"
+						placeholder="e.g. 10s"
+						tooltipSize="small"
+						tooltipPosition="right"
+						tooltipContent="This specifies how long the socket stays open in the absense of a response."
+					></convoy-input>
+				</div>
+			</div>
+			<convoy-button (click)="addEndpoint()" type="text" className="px-0 font-medium">
+				<img src="/assets/img/add-icon.svg" alt="close icon" class="mr-2" />
+				Add Endpoint
+			</convoy-button>
+		</div>
+	</form>
+	<div class="flex justify-end mt-6 mb-16">
+		<convoy-button (click)="closeAppInstance(); editAppMode = false; addNewAppForm.reset()" type="outline" className="mr-3">Discard</convoy-button>
+		<convoy-button [disable]="isSavingApp" (click)="saveApp()">
+			{{ editAppMode ? 'Edit App' : 'Create App' }}
+		</convoy-button>
+	</div>
 </div>
