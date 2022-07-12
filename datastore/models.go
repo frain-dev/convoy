@@ -624,6 +624,8 @@ type OrganisationMember struct {
 type Device struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
+	GroupID    string             `json:"group_id" bson:"group_id"`
+	AppID      string             `json:"app_id" bson:"app_id"`
 	HostName   string             `json:"host_name" bson:"host_name"`
 	ClientID   string             `json:"client_id" bson:"client_id"`
 	Status     string             `json:"status" bson:"status"`
