@@ -78,7 +78,7 @@ func addStreamCommand(a *app) *cobra.Command {
 				streamRouter.Use(hub.requireApp())
 
 				streamRouter.Get("/listen", hub.Listen)
-				streamRouter.Post("/login", nil)
+				streamRouter.Post("/login", hub.Login)
 			})
 
 			srv := &http.Server{
@@ -121,16 +121,20 @@ func gracefulShutdown(srv *http.Server, hub *Hub) {
 	time.Sleep(2 * time.Second) // allow all websocket connections close themselves
 }
 
-type DeviceRegistration struct {
+type ListenRequest struct {
 	HostName   string   `json:"host_name"`
 	DeviceID   string   `json:"device_id"`
 	SourceID   string   `json:"source_id"`
 	EventTypes []string `json:"event_types"`
 }
 
+type LoginRequest struct {
+	HostName string `json:"host_name"`
+}
+
 func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
-	deviceReg := &DeviceRegistration{}
-	err := util.ReadJSON(r, &deviceReg)
+	loginRequest := &LoginRequest{}
+	err := util.ReadJSON(r, &loginRequest)
 	if err != nil {
 		respond(w, http.StatusBadRequest, "device id is required in request body")
 		return
@@ -139,24 +143,26 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 	group := server.GetGroupFromContext(r.Context())
 	app, ok := getApplicationFromContext(r.Context())
 
+	appID := ""
+	if ok {
+		appID = app.UID
+	}
+
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
 		GroupID:    group.UID,
-		HostName:   deviceReg.HostName,
+		AppID:      appID,
+		HostName:   loginRequest.HostName,
 		Status:     "online",
 		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	if ok {
-		device.AppID = app.UID
-	}
-
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	err = h.deviceRepo.CreateDevice(ctx, device)
+	err = h.deviceRepo.CreateDevice(ctx, device, group.UID, appID)
 	if err != nil {
 		respond(w, http.StatusBadRequest, "failed to create new device")
 		return
@@ -166,8 +172,8 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
-	deviceReg := &DeviceRegistration{}
-	err := util.ReadJSON(r, &deviceReg)
+	listenRequest := &ListenRequest{}
+	err := util.ReadJSON(r, &listenRequest)
 	if err != nil {
 		respond(w, http.StatusBadRequest, "empty request body")
 		return
@@ -176,17 +182,32 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 	group := server.GetGroupFromContext(r.Context())
 	app, ok := getApplicationFromContext(r.Context())
 
+	appID := ""
+	if ok {
+		appID = app.UID
+	}
+
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	device, err := h.deviceRepo.FetchDeviceByID(ctx, deviceReg.DeviceID)
+	device, err := h.deviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, appID, group.UID)
 	if err != nil {
 		respond(w, http.StatusBadRequest, "device not found")
 		return
 	}
 
-	if !util.IsStringEmpty(deviceReg.SourceID) {
-		source, err := h.sourceRepo.FindSourceByID(ctx, "", deviceReg.SourceID)
+	if device.GroupID != group.UID {
+		respond(w, http.StatusUnauthorized, "unauthorized to access device")
+		return
+	}
+
+	if device.AppID != appID {
+		respond(w, http.StatusUnauthorized, "unauthorized to access device")
+		return
+	}
+
+	if !util.IsStringEmpty(listenRequest.SourceID) {
+		source, err := h.sourceRepo.FindSourceByID(ctx, "", listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
 			respond(w, http.StatusBadRequest, "failed to find source")
@@ -211,7 +232,7 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 			GroupID:        "group.UID",
 			Type:           datastore.SubscriptionTypeCLI,
 			Name:           fmt.Sprintf("device-%s-subscription", device.UID),
-			SourceID:       deviceReg.SourceID,
+			SourceID:       listenRequest.SourceID,
 			Status:         datastore.ActiveSubscriptionStatus,
 			DocumentStatus: datastore.ActiveDocumentStatus,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -243,7 +264,7 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 		hub:        h,
 		conn:       conn,
 		deviceID:   device.UID,
-		EventTypes: deviceReg.EventTypes,
+		EventTypes: listenRequest.EventTypes,
 		send:       make(chan []byte, 256),
 	}
 
@@ -252,6 +273,7 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client.hub.register <- client
+	go client.readPump()
 }
 
 func respond(w http.ResponseWriter, code int, msg string) {

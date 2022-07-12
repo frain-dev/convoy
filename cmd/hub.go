@@ -179,6 +179,12 @@ func (h *Hub) StartRegister() {
 	}
 }
 
+func (h *Hub) RemoveClient(c *Client) {
+	h.lock.Lock()
+	delete(h.deviceClients, c.deviceID)
+	h.lock.Unlock()
+}
+
 func (h *Hub) Stop() {
 	close(h.close)
 }

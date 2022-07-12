@@ -112,11 +112,11 @@ type SourceRepository interface {
 }
 
 type DeviceRepository interface {
-	CreateDevice(ctx context.Context, member *Device) error
-	UpdateDevice(ctx context.Context, member *Device) error
-	UpdateDeviceLastSeen(ctx context.Context, uid string) error
-	DeleteDevice(ctx context.Context, memberID string, orgID string) error
-	FetchDeviceByID(ctx context.Context, memberID string) (*Device, error)
+	CreateDevice(ctx context.Context, device *Device, appID, groupID string) error
+	UpdateDevice(ctx context.Context, device *Device, appID, groupID string) error
+	UpdateDeviceLastSeen(ctx context.Context, uid string, appID, groupID string) error
+	DeleteDevice(ctx context.Context, uid string, appID, groupID string) error
+	FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*Device, error)
 }
 
 type UserRepository interface {

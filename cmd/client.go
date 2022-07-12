@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -32,24 +33,26 @@ type Client struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *Client) readPump() {
+	defer c.Close()
+
 	err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
 		return
 	}
 
-	c.conn.SetPongHandler(func(string) error {
-		return nil
-	})
+	c.conn.SetPongHandler(func(string) error { return nil })
 
-	c.conn.SetPingHandler(func(deviceID string) error {
-		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), deviceID)
+	c.conn.SetPingHandler(func(string) error {
+		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device.UID, c.Device.AppID, c.Device.GroupID)
 		if err != nil {
 			log.WithError(err).Error("failed to update device last seen")
+			return errors.New("failed to update device last seen")
 		}
 
 		err = c.conn.WriteMessage(websocket.PongMessage, []byte("ok"))
 		if err != nil {
 			log.WithError(err).Error("failed to write pong message")
+			return errors.New("failed to write pong message")
 		}
 		return nil
 	})
@@ -57,20 +60,23 @@ func (c *Client) readPump() {
 	for {
 		select {
 		case <-c.hub.close:
-			err := c.conn.Close()
-			if err != nil {
-				log.WithError(err).Error("failed to close client conn")
-			}
+			return
 		default:
 			_, _, err := c.conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.WithError(err).
-						WithField("device_id", c.deviceID).
-						Error("failed to read message from client")
+					log.WithError(err).WithField("device_id", c.deviceID).Error("unexpected close error")
 				}
-				break // TODO: not confident about breaking the loop which then returns the function because we couldn't read one message from the client here.
+				return
 			}
 		}
 	}
+}
+
+func (c *Client) Close() {
+	err := c.conn.Close()
+	if err != nil {
+		log.WithError(err).Error("failed to close client conn")
+	}
+	c.hub.RemoveClient(c)
 }
