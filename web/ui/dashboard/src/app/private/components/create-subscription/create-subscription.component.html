@@ -1,5 +1,5 @@
 <convoy-modal position="full" [title]="action === 'update' ? 'Update Subscription' : 'Create Subscription'" (closeModal)="goToSubsriptionsPage()">
-	<form class="pb-40px relative" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()" modalBody>
+	<form class="pb-40px mt-40px relative" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()" modalBody>
 		<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
 		<section class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px">
