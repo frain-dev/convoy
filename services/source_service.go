@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -17,10 +19,11 @@ import (
 
 type SourceService struct {
 	sourceRepo datastore.SourceRepository
+	cache      cache.Cache
 }
 
-func NewSourceService(sourceRepo datastore.SourceRepository) *SourceService {
-	return &SourceService{sourceRepo: sourceRepo}
+func NewSourceService(sourceRepo datastore.SourceRepository, cache cache.Cache) *SourceService {
+	return &SourceService{sourceRepo: sourceRepo, cache: cache}
 }
 
 func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Source, g *datastore.Group) (*datastore.Source, error) {
@@ -45,6 +48,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		GroupID:        g.UID,
 		MaskID:         uniuri.NewLen(16),
 		Name:           newSource.Name,
+		ForwardHeaders: newSource.ForwardHeaders,
 		Type:           newSource.Type,
 		Provider:       datastore.SourceProvider(newSource.Provider),
 		Verifier:       &newSource.Verifier,
@@ -53,12 +57,38 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
+	if source.Provider == datastore.TwitterSourceProvider {
+		source.ProviderConfig = &datastore.ProviderConfig{Twitter: &datastore.TwitterProviderConfig{}}
+	}
+	setDefaultForwardHeaders(source)
+
 	err := s.sourceRepo.CreateSource(ctx, source)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create source"))
 	}
 
 	return source, nil
+}
+
+func setDefaultForwardHeaders(s *datastore.Source) {
+	if len(s.ForwardHeaders) > 0 {
+		return
+	}
+
+	switch s.Provider {
+	case datastore.ShopifySourceProvider:
+		s.ForwardHeaders = []string{
+			"X-Shopify-Topic",
+			"X-Shopify-Hmac-Sha256",
+			"X-Shopify-Shop-Domain",
+			"X-Shopify-API-Version",
+			"X-Shopify-Webhook-Id",
+		}
+	case datastore.TwitterSourceProvider:
+		s.ForwardHeaders = []string{
+			"X-Twitter-Webhooks-Signature",
+		}
+	}
 }
 
 func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, sourceUpdate *models.UpdateSource, source *datastore.Source) (*datastore.Source, error) {
@@ -85,9 +115,25 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, so
 	if sourceUpdate.Verifier.Type == datastore.BasicAuthVerifier && sourceUpdate.Verifier.BasicAuth == nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
 	}
+
+	if sourceUpdate.ForwardHeaders != nil {
+		source.ForwardHeaders = sourceUpdate.ForwardHeaders
+	}
+
+	setDefaultForwardHeaders(source)
+
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)
 	if err != nil {
 		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating source"))
+	}
+
+	if source.Provider == datastore.TwitterSourceProvider {
+		sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
+		err = s.cache.Set(ctx, sourceCacheKey, &source, time.Hour*24)
+		if err != nil {
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create source cache"))
+		}
+
 	}
 
 	return source, nil
@@ -116,12 +162,20 @@ func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Group
 	return sources, paginationData, nil
 }
 
-func (s *SourceService) DeleteSourceByID(ctx context.Context, g *datastore.Group, id string) error {
+func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Group, source *datastore.Source) error {
 	//ToDo: add check here to ensure the source doesn't have any existing subscriptions
-	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, id)
+	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID)
 
 	if err != nil {
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete source"))
+	}
+
+	if source.Provider == datastore.TwitterSourceProvider {
+		sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
+		err = s.cache.Delete(ctx, sourceCacheKey)
+		if err != nil {
+			return NewServiceError(http.StatusBadRequest, errors.New("failed to delete source cache"))
+		}
 	}
 
 	return nil

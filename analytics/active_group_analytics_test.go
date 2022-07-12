@@ -13,9 +13,10 @@ import (
 func provideActiveGroupAnalytics(ctrl *gomock.Controller) *ActiveGroupAnalytics {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
+	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newActiveGroupAnalytics(groupRepo, eventRepo, client, TestHost)
+	return newActiveGroupAnalytics(groupRepo, eventRepo, orgRepo, client, TestInstanceID)
 }
 
 func Test_TrackActiveGroupAnalytics(t *testing.T) {
@@ -30,17 +31,21 @@ func Test_TrackActiveGroupAnalytics(t *testing.T) {
 			dbFn: func(ga *ActiveGroupAnalytics) {
 				groupRepo := ga.groupRepo.(*mocks.MockGroupRepository)
 				eventRepo := ga.eventRepo.(*mocks.MockEventRepository)
-
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test"}}, nil)
-				eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil)
+				orgRepo := ga.orgRepo.(*mocks.MockOrganisationRepository)
+				gomock.InOrder(
+					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return([]datastore.Organisation{{UID: "123"}}, datastore.PaginationData{}, nil),
+					groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test"}}, nil),
+					eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
+					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
+				)
 			},
 		},
 
 		{
 			name: "should_fail_to_track_active_group_analytics",
 			dbFn: func(ga *ActiveGroupAnalytics) {
-				groupRepo := ga.groupRepo.(*mocks.MockGroupRepository)
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed"))
+				orgRepo := ga.orgRepo.(*mocks.MockOrganisationRepository)
+				orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr: true,
 		},

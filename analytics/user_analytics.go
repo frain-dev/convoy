@@ -7,16 +7,16 @@ import (
 )
 
 type UserAnalytics struct {
-	userRepo datastore.UserRepository
-	client   AnalyticsClient
-	host     string
+	userRepo   datastore.UserRepository
+	client     AnalyticsClient
+	instanceID string
 }
 
-func newUserAnalytics(userRepo datastore.UserRepository, client AnalyticsClient, host string) *UserAnalytics {
+func newUserAnalytics(userRepo datastore.UserRepository, client AnalyticsClient, instanceID string) *UserAnalytics {
 	return &UserAnalytics{
-		userRepo: userRepo,
-		client:   client,
-		host:     host,
+		userRepo:   userRepo,
+		client:     client,
+		instanceID: instanceID,
 	}
 }
 
@@ -26,7 +26,7 @@ func (u *UserAnalytics) Track() error {
 		return err
 	}
 
-	return u.client.Export(u.Name(), Event{"Count": pagination.Total, "Host": u.host})
+	return u.client.Export(u.Name(), Event{"Count": pagination.Total, "instanceID": u.instanceID})
 }
 
 func (u *UserAnalytics) Name() string {

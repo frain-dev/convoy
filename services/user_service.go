@@ -221,7 +221,7 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 	user, err := u.userRepo.FindUserByEmail(ctx, data.Email)
 	if err != nil {
 		if err == datastore.ErrUserNotFound {
-			return NewServiceError(http.StatusUnauthorized, errors.New("invalid username"))
+			return NewServiceError(http.StatusBadRequest, errors.New("an account with this email does not exist"))
 		}
 
 		return NewServiceError(http.StatusInternalServerError, err)

@@ -1,250 +1,125 @@
-<p class="font__14px color__grey margin-bottom__24px">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
+<p class="text-14 text-grey-60 mb-24px">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
 
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
-	<div class="card card--second-half padding-all__24px margin-top__24px">
-		<div class="input">
-			<label for="project-name">
-				Project name
-				<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-			</label>
-			<input
-				type="text"
-				id="project-name"
-				placeholder="Enter project name here"
-				formControlName="name"
-				[ngClass]="{ invalid: projectForm.controls['name'].touched && projectForm.controls['name'].invalid }"
-			/>
-			<div class="input__error input__error__danger" *ngIf="projectForm.controls['name'].touched && projectForm.controls['name'].invalid">
-				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-				<span>Enter new project name</span>
-			</div>
-		</div>
+	<div class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px mt-24px">
+		<convoy-input label="Project name" name="project-name" formControlName="name" placeholder="Enter project name here" [required]="true" errorMessage="Enter new project name"></convoy-input>
 
-		<h3 class="margin-top__24px margin-bottom__16px">Project type</h3>
-		<div class="project-types grid grid__col-2 grid--gap__24px">
-			<div class="project-type checkbox-option">
-				<input type="radio" id="incoming" name="type" formControlName="type" value="incoming" />
-				<label for="incoming" class="border__all padding-all__16px rounded__4px display__block animate">
-					<div class="flex flex__align-items-center margin-bottom__8px">
-						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-						<p class="font__14px font__weight-600 margin-left__8px">Incoming webhooks</p>
-					</div>
-					<p class="color__grey font__12px font__weight-400">Create an incoming webhooks project to proxy events from third-party providers to your endpoints</p>
-				</label>
-			</div>
+		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
+		<div class="project-types grid grid-cols-2 gap-24px">
+			<convoy-radio
+				formControlName="type"
+				description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints"
+				label="Incoming webhooks"
+				_name="type"
+				value="incoming"
+				_id="incoming"
+			></convoy-radio>
 
-			<div class="project-type checkbox-option">
-				<input type="radio" id="outgoing" name="type" formControlName="type" value="outgoing" />
-				<label for="outgoing" class="border__all padding-all__16px rounded__4px display__block animate">
-					<div class="flex flex__align-items-center margin-bottom__8px">
-						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-						<p class="font__14px font__weight-600 margin-left__8px">Outgoing webhook</p>
-					</div>
-					<p class="color__grey font__12px font__weight-400">Create an outgoing webhooks project to publish events to your customer-provided endpoints</p>
-				</label>
-			</div>
+			<convoy-radio
+				formControlName="type"
+				description="Create an outgoing webhooks project to publish events to your customer-provided endpoints"
+				label="Outgoing webhooks"
+				_name="type"
+				value="outgoing"
+				_id="outgoing"
+			></convoy-radio>
 		</div>
-		<div class="input__error input__error__danger" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
-			<img src="assets/img/input-error-icon.svg" alt="input error icon" />
+		<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
+			<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
 			<span>Please select a project type</span>
 		</div>
 
+		<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="enableMoreConfig = !enableMoreConfig" [isChecked]="enableMoreConfig"></convoy-toggle>
+
 		<div [hidden]="!enableMoreConfig">
 			<div formGroupName="config">
-				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+				<h3 class="mt-24px mb-16px font-semibold flex items-center">
 					Signature Details
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">This specifies your header and hash function for your project</app-tooltip>
+					<convoy-tooltip [size]="'small'" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h3>
-				<div class="grid grid__col-2 grid--gap__24px" formGroupName="signature">
-					<div class="input">
-						<label for="header">
-							Header
-						</label>
-						<input
-							type="text"
-							id="header"
-							placeholder="X-Convoy-Signature"
-							formControlName="header"
-							[ngClass]="{ invalid: projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid }"
-						/>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter header for project requests</span>
-						</div>
-					</div>
-
-					<div class="input">
-						<label for="hash">
-							Hash
-						</label>
-						<select name="hash" id="hash" formControlName="hash" [ngClass]="{ invalid: projectForm.get('config.signature.hash')?.touched && projectForm.get('config.signature.hash')?.invalid }">
-							<option *ngFor="let hash of hashAlgorithms" [value]="hash">{{ hash }}</option>
-						</select>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('config.signature.hash')?.touched && projectForm.get('config.signature.hash')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please select a hash</span>
-						</div>
-					</div>
+				<div class="grid grid-cols-2 gap-24px" formGroupName="signature">
+					<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests"></convoy-input>
+					<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash"></convoy-select>
 				</div>
-				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+
+				<h3 class="mt-24px mb-16px flex items-center font-semibold">
 					Retry Logic
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">
+					<convoy-tooltip [size]="'small'" position="right" class="ml-4px">
 						These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are
 						retried progressively increasing the time before the next retry attempt.
-					</app-tooltip>
+					</convoy-tooltip>
 				</h3>
-				<div class="grid grid__col-2 grid--gap__24px" formGroupName="strategy">
-					<div class="input margin-bottom__0px">
-						<label for="type">
-							Mechanism
-						</label>
-						<select name="type" id="type" formControlName="type" [ngClass]="{ invalid: projectForm.get('config.strategy.type')?.touched && projectForm.get('config.strategy.type')?.invalid }">
-							<option *ngFor="let type of retryLogicTypes" [value]="type.id">{{ type.type }}</option>
-						</select>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('config.strategy.type')?.touched && projectForm.get('config.strategy.type')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please select a retry logic mechanism</span>
-						</div>
-					</div>
-
-					<div class="input margin-bottom__0px">
-						<label for="retry-logic-duration">
-							Duration
-						</label>
-						<input
-							[type]="action === 'update' ? 'number' : 'text'"
-							id="retry-logic-duration"
-							placeholder="e.g 3s"
-							formControlName="duration"
-							[ngClass]="{ invalid: projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid }"
-						/>
-
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter your retry logic duration</span>
-						</div>
-					</div>
-
-					<div class="input">
-						<label for="retry-logic-count">
-							Limit
-						</label>
-						<input
-							type="number"
-							id="retry-logic-count"
-							placeholder="e.g 5"
-							formControlName="retry_count"
-							[ngClass]="{ invalid: projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid }"
-						/>
-
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter a retry limit</span>
-						</div>
-					</div>
+				<div class="grid grid-cols-2 gap-24px" formGroupName="strategy">
+					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism"></convoy-select>
+					<convoy-input
+						[type]="action === 'update' ? 'number' : 'text'"
+						label="Duration"
+						name="retry-logic-duration"
+						formControlName="duration"
+						placeholder="e.g 3s"
+						errorMessage="Please enter your retry logic duration"
+					></convoy-input>
+					<convoy-input type="number" label="Limit" name="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" errorMessage="Please enter a retry limit"></convoy-input>
 				</div>
-				<h3 class="margin-top__24px margin-bottom__16px flex flex__align-items-center">
+
+				<h3 class="mt-24px mb-16px flex items-center font-semibold">
 					Rate Limit Parameters
-					<app-tooltip [size]="'small'" position="right" class="margin-left__4px">These are the specifications for how many events are to be sent to an endpoint per time</app-tooltip>
+					<convoy-tooltip [size]="'small'" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 				</h3>
-				<div class="grid grid__col-2 grid--gap__24px" formGroupName="ratelimit">
-					<div class="input">
-						<label for="rate-limit-duration">
-							Duration
-						</label>
-						<input
-							type="text"
-							id="rate-limit-duration"
-							placeholder="e.g 1m"
-							formControlName="duration"
-							[ngClass]="{ invalid: projectForm.get('config.ratelimit.duration')?.touched && projectForm.get('config.ratelimit.duration')?.invalid }"
-						/>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('config.ratelimit.duration')?.touched && projectForm.get('config.ratelimit.duration')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter your rate limit duration</span>
-						</div>
-					</div>
-					<div class="input">
-						<label for="rate-limit-count">
-							Limit
-						</label>
-						<input
-							type="number"
-							id="rate-limit-count"
-							placeholder="e.g 5000"
-							formControlName="count"
-							[ngClass]="{ invalid: projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid }"
-						/>
-						<div class="input__error input__error__danger" *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter a rate limit</span>
-						</div>
-					</div>
+				<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
+					<convoy-input label="Duration" name="rate-limit-duration" formControlName="duration" placeholder="e.g 5m" errorMessage="Please enter a rate limit duration"></convoy-input>
+					<convoy-input type="number" label="Limit" name="rate-limit-count" formControlName="count" placeholder="e.g 5000" errorMessage="Please enter a rate limit"></convoy-input>
 				</div>
 
-				<h3 class="margin-top__24px margin-bottom__16px">Disable Failing Endpoints</h3>
-				<div class="project-types grid grid__col-2 grid--gap__24px">
-					<div class="project-type checkbox-option">
-						<input type="radio" id="true" name="disable_endpoint" [value]="true" formControlName="disable_endpoint" />
-						<label for="true" class="border__all padding-all__16px rounded__4px display__block animate">
-							<div class="flex flex__align-items-center">
-								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-								<p class="font__14px font__weight-600 margin-left__8px">True</p>
-							</div>
-							<p class="color__grey font__12px font__weight-400">Endpoints would be disabled automatically when they are failing.</p>
-						</label>
-					</div>
-
-					<div class="project-type checkbox-option">
-						<input type="radio" id="false" name="disable_endpoint" [value]="false" formControlName="disable_endpoint" />
-						<label for="false" class="border__all padding-all__16px rounded__4px display__block animate">
-							<div class="flex flex__align-items-center">
-								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-								<p class="font__14px font__weight-600 margin-left__8px">False</p>
-							</div>
-							<p class="color__grey font__12px font__weight-400">Endpoints are not automatically disabled when they are failing.</p>
-						</label>
-					</div>
+				<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
+				<div class="project-types grid grid-cols-2 gap-24px">
+					<convoy-radio
+						formControlName="disable_endpoint"
+						description="Endpoints would be disabled automatically when they are failing."
+						label="True"
+						_name="disable_endpoint"
+						[value]="true"
+						_id="true"
+					></convoy-radio>
+					<convoy-radio
+						formControlName="disable_endpoint"
+						description="Endpoints are not automatically disabled when they are failing."
+						label="False"
+						_name="disable_endpoint"
+						[value]="false"
+						_id="false"
+					></convoy-radio>
 				</div>
 			</div>
 		</div>
-
-		<div class="flex flex__justify-end margin-top__20px" *ngIf="action !== 'update'">
-			<label class="toggle">
-				<span class="toggle-label">Add more configurations</span>
-				<input class="toggle-checkbox" type="checkbox" (change)="enableMoreConfig = !enableMoreConfig" [checked]="enableMoreConfig" />
-				<div class="toggle-switch"></div>
-			</label>
-		</div>
 	</div>
 
-	<div class="button-container flex flex__justify-end margin-top__32px margin-bottom__40px">
-		<button routerLink="/" class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button" *ngIf="action !== 'update'">Cancel</button>
-
-		<button class="button button__primary button--has-icon padding-y__12px padding-x__28px rounded__8px" [disabled]="isCreatingProject" *ngIf="action === 'create'">
+	<div class="button-container flex justify-end mt-32px mab-40px">
+		<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px" buttonType="button" (click)="router.navigateByUrl('/')">Cancel</convoy-button>
+		<convoy-button [disable]="isCreatingProject" *ngIf="action === 'create'">
 			Create Project
-			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
+			<svg width="24" height="24" class="ml-8px" fill="#FCFCFC">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
-		</button>
-
-		<button class="button button__primary padding-y__12px padding-x__28px rounded__8px" [disabled]="isCreatingProject" *ngIf="action === 'update'">Update Project</button>
+		</convoy-button>
+		<convoy-button [disable]="isCreatingProject" *ngIf="action === 'update'">Update Project</convoy-button>
 	</div>
 </form>
+
 <div class="_overlay" *ngIf="showApiKey"></div>
 <div class="modal modal__right" *ngIf="showApiKey">
 	<div class="modal--body delete no-padding flex flex__column flex__align-items-center">
 		<img src="/assets/img/success.gif" class="img" alt="success" />
-		<h2 class="font__weight-600 color__black margin-top__16px">Project Created Successfully</h2>
-		<p class="font__14px color__grey font-weight-400 text--center margin-bottom__16px margin-top__8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
-		<p class="font__14px color__danger margin-bottom__40px text--center">For security reasons, we cannot show it to you again</p>
-		<div class="key margin-bottom__32px">
+		<h2 class="font-semibold mt-16px">Project Created Successfully</h2>
+		<p class="text-14 text-grey-60 font-normal text-center mb-16px mt-8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
+		<p class="text-14 text-danger-100 mb-40px text-center">For security reasons, we cannot show it to you again</p>
+		<div class="key mb-32px">
 			<span>{{ apiKey }}</span>
 			<button (click)="copyKey(apiKey)">
 				<img src="/assets/img/copy.svg" alt="copy" />
 				<small *ngIf="showSecretCopyText">Copied!</small>
 			</button>
 		</div>
-		<button class="button button__primary" (click)="onAction.emit({ action: 'createProject', data: projectDetails })">Done</button>
+		<convoy-button (click)="onAction.emit({ action: 'createProject', data: projectDetails })" buttonType="button">Done</convoy-button>
 	</div>
 </div>

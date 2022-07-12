@@ -1,6 +1,6 @@
 import { Component, forwardRef, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AbstractControl, ControlContainer, ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { TooltipComponent } from '../tooltip/tooltip.component';
 
 @Component({
@@ -19,7 +19,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 })
 export class InputComponent implements OnInit, ControlValueAccessor {
 	@Input('name') name!: string;
-	@Input('type') type!: string;
+	@Input('type') type = 'text';
 	@Input('autocomplete') autocomplete!: string;
 	@Input('errorMessage') errorMessage!: string;
 	@Input('label') label!: string;

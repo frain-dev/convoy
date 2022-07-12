@@ -182,7 +182,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g, hmac, timestamp, int64(cfg.MaxResponseSize))
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g, hmac, timestamp, int64(cfg.MaxResponseSize), ed.ForwardedHeaders)
 		status := "-"
 		statusCode := 0
 		if resp != nil {

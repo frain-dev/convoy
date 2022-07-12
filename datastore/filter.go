@@ -11,5 +11,6 @@ type Filter struct {
 }
 
 type SourceFilter struct {
-	Type string
+	Type     string
+	Provider string
 }
