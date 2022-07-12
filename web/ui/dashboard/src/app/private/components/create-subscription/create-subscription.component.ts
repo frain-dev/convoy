@@ -53,7 +53,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	isloadingAppPortalAppDetails = false;
 	token: string = this.route.snapshot.params.token;
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router:Router) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -236,5 +236,9 @@ export class CreateSubscriptionComponent implements OnInit {
 			});
 			this.endPoints = endpointData;
 		}
+	}
+
+	goToSubsriptionsPage(){
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions')
 	}
 }
