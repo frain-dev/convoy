@@ -36,6 +36,6 @@ export class DateFilterComponent implements OnInit {
 	}
 
 	get getCalculatedClass() {
-		return `${this.dateRange.value.startDate && this.dateRange.value.endDate ? 'text-primary-100 bg-primary-500 !border-primary-100' : ''}`;
+		return `${this.dateRange.value.startDate && this.dateRange.value.endDate ? 'text-primary-100 !bg-primary-500 ' : ''}`;
 	}
 }

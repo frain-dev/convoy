@@ -4,7 +4,7 @@
 			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('eventsDelDate')" #dateFilter></date-filter>
 			<app-time-filter class="margin-left__14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
 
-			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px">
+			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px">
 				<ng-container dropdownToggle>
 					<img src="/assets/img/status-filter-icon.svg" class="w-14px mr-10px" alt="status filter icon" />
 					<span class="text-grey-40 w-full">Status</span>
@@ -26,7 +26,7 @@
 				</ng-container>
 			</convoy-dropdown>
 
-			<convoy-dropdown size="lg" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #appsFilterDropdown [active]="!!eventDeliveriesApp">
+			<convoy-dropdown size="lg" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #appsFilterDropdown [active]="!!eventDeliveriesApp">
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Apps</span>
