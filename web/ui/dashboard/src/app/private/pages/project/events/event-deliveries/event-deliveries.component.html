@@ -99,74 +99,46 @@
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
-		<table id="table" class="w-full">
-			<thead class="bg-primary-500">
-				<tr>
-					<th class="text-left whitespace-nowrap pt-10px pb-10px font-medium text-12 first-of-type:pl-20px" *ngFor="let head of eventDelTableHead" scope="col">{{ head }}</th>
-				</tr>
-			</thead>
+		<convoy-table>
+			<convoy-table-head class="contents">
+				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventDelTableHead; let i = index">{{ head }}</convoy-table-head-cell>
+			</convoy-table-head>
 			<tbody>
 				<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
-					<tr class="border-t border-grey-10 text-grey-40 text-12">
-						<td>
-							<div class="pt-16px pb-8px pl-16px">{{ eventDeliveriesGroup.date }}</div>
-						</td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-					</tr>
-					<tr
-						*ngFor="let event of eventDeliveriesGroup.content; let index = index"
-						[ngClass]="{ 'mb-16px': index === eventDeliveriesGroup.content.length - 1 }"
-						class="hover:bg-primary-500 transition-all duration-300"
-						[id]="'eventDel' + i"
-						[routerLink]="['./event-deliveries/' + event.uid]"
-					>
-						<td class="p-0">
-							<div class="pl-16px pt-12px pb-12px whitespace-nowrap text-14 relative">
-								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
-								<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
-							</div>
-						</td>
-						<td>
-							<div class="pt-12px pb-12px whitespace-nowrap text-14">
-								<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
-							</div>
-						</td>
-						<td>
-							<div class="pt-12px pb-12px whitespace-nowrap text-14">{{ event.metadata?.num_trials }}</div>
-						</td>
-						<td>
-							<div class="pt-12px pb-12px whitespace-nowrap text-14">{{ event.metadata?.retry_limit }}</div>
-						</td>
-						<td>
-							<div class="pt-12px pb-12px whitespace-nowrap text-14">{{ event.created_at | date: 'mediumTime' }}</div>
-						</td>
-						<td>
-							<div class="pt-12px pb-12px whitespace-nowrap">
-								<convoy-button
-									size="xs"
-									texture="light"
-									(clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
-								>
-									<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-									{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
-								</convoy-button>
-							</div>
-						</td>
-						<td class="w-6px">
-							<div class="pt-12px pb-12px whitespace-nowrap">
-								<convoy-button size="xs" type="icon" [routerLink]="'./delivery/' + event.uid">
-									<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
-								</convoy-button>
-							</div>
-						</td>
-					</tr>
+					<convoy-table-row [forDate]="true" class="contents">
+						<convoy-table-cell class="contents" [forDate]="true">{{ eventDeliveriesGroup.date }}</convoy-table-cell>
+						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+					</convoy-table-row>
+					<convoy-table-row class="contents" *ngFor="let event of eventDeliveriesGroup.content; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]">
+						<convoy-table-cell class="contents" className="pl-16px relative">
+							<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
+							<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
+						</convoy-table-cell>
+						<convoy-table-cell class="contents">
+							<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
+						</convoy-table-cell>
+						<convoy-table-cell class="contents">{{ event.metadata?.num_trials }}</convoy-table-cell>
+						<convoy-table-cell class="contents">{{ event.metadata?.retry_limit }}</convoy-table-cell>
+						<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
+						<convoy-table-cell class="contents">
+							<convoy-button size="xs" texture="light" (clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })">
+								<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+								{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
+							</convoy-button>
+						</convoy-table-cell>
+						<convoy-table-cell class="contents">
+							<convoy-button size="xs" type="icon" [routerLink]="'./delivery/' + event.uid">
+								<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+							</convoy-button>
+						</convoy-table-cell>
+					</convoy-table-row>
 				</ng-container>
 			</tbody>
-		</table>
+		</convoy-table>
 	</div>
 
 	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="displayedEventDeliveries?.length === 0"></convoy-empty-state>
