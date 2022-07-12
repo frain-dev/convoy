@@ -7,16 +7,16 @@ import (
 )
 
 type GroupAnalytics struct {
-	groupRepo datastore.GroupRepository
-	client    AnalyticsClient
-	host      string
+	groupRepo  datastore.GroupRepository
+	client     AnalyticsClient
+	instanceID string
 }
 
-func newGroupAnalytics(groupRepo datastore.GroupRepository, client AnalyticsClient, host string) *GroupAnalytics {
+func newGroupAnalytics(groupRepo datastore.GroupRepository, client AnalyticsClient, instanceID string) *GroupAnalytics {
 	return &GroupAnalytics{
-		groupRepo: groupRepo,
-		client:    client,
-		host:      host,
+		groupRepo:  groupRepo,
+		client:     client,
+		instanceID: instanceID,
 	}
 }
 
@@ -26,7 +26,7 @@ func (g *GroupAnalytics) Track() error {
 		return err
 	}
 
-	return g.client.Export(g.Name(), Event{"Count": len(groups), "Host": g.host})
+	return g.client.Export(g.Name(), Event{"Count": len(groups), "instanceID": g.instanceID})
 }
 
 func (g *GroupAnalytics) Name() string {

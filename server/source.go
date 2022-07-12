@@ -130,7 +130,7 @@ func (a *applicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = a.sourceService.DeleteSourceByID(r.Context(), group, source.UID)
+	err = a.sourceService.DeleteSource(r.Context(), group, source)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return

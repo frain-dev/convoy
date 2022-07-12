@@ -1,17 +1,17 @@
-<h1 class="font__12px font__weight-500 flex flex__align-items-center margin-bottom__24px text__uppercase">
-	<a routerLink="/projects" class="font__weight-500 pointer-cursor color__primary">Projects</a>
-	<svg width="16" height="16" class="margin-x__4px">
+<h1 class="text-12 font-medium flex items-center uppercase">
+	<a routerLink="/projects" class="font-medium cursor-pointer text-primary-100">Projects</a>
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="margin-x__4px">
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<button class="button button__clear pointer-cursor font__weight-500 text__uppercase font__12px" (click)="goBack()">Event Deliveries</button>
-	<svg width="16" height="16" class="margin-x__4px">
+	<convoy-button type="clear" className="!p-0 font-medium uppercase text-12" (clickItem)="goBack()">Event Deliveries</convoy-button>
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="font__weight-500">Event Delivery</span>
+	<span class="font-medium">Event Delivery</span>
 </h1>
 
 <app-event-delivery-details></app-event-delivery-details>

@@ -15,6 +15,7 @@ export class EmptyStateComponent implements OnInit {
 	@Input('description') description!: string;
 	@Input('buttonText') buttonText!: string;
 	@Input('type') type: 'normal' | 'table' = 'normal';
+	@Input('className') class!: string;
 	@Output('onAction') onAction = new EventEmitter<any>();
 
 	constructor() {}

@@ -95,7 +95,7 @@
 	</div>
 
 	<div class="button-container flex justify-end mt-32px mab-40px">
-		<convoy-button type="outline" *ngIf="action !== 'update'" class="mr-16px" buttonType="button" (click)="router.navigateByUrl('/')">Cancel</convoy-button>
+		<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px" buttonType="button" (click)="router.navigateByUrl('/')">Cancel</convoy-button>
 		<convoy-button [disable]="isCreatingProject" *ngIf="action === 'create'">
 			Create Project
 			<svg width="24" height="24" class="ml-8px" fill="#FCFCFC">
