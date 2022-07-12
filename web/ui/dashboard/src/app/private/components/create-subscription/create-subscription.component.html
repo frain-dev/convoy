@@ -1,8 +1,8 @@
 <convoy-modal position="full" [title]="action === 'update' ? 'Update Subscription' : 'Create Subscription'" (closeModal)="goToSubsriptionsPage()">
-	<form class="pb-40px relative" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()" modalBody>
+	<form class="pb-40px mt-40px relative" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()" modalBody>
 		<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-		<section class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px">
+		<convoy-card className="px-24px py-24px">
 			<convoy-input type="text" name="subscription-name" formControlName="name" errorMessage="Enter new subscription name" label="Subscription name" placeholder="e.g paystack-prod"></convoy-input>
 
 			<ng-container *ngIf="projectType === 'incoming' && !token">
@@ -86,7 +86,7 @@
 			<div class="flex justify-end mt-20px">
 				<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
 			</div>
-		</section>
+		</convoy-card>
 
 		<div class="flex justify-end mt-32px">
 			<convoy-button className="mr-16px" type="outline" buttonType="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</convoy-button>
