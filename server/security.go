@@ -84,7 +84,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /security/applications/{appID}/keys [post]
 func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 	app := getApplicationFromContext(r.Context())
 	baseUrl := getHostFromContext(r.Context())
 

@@ -72,7 +72,7 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	qs := fmt.Sprintf("%v:%v:%v:%v", group.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
@@ -127,7 +127,7 @@ func (a *applicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request
 
 func (a *applicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
 
-	g := getGroupFromContext(r.Context())
+	g := GetGroupFromContext(r.Context())
 
 	viewableConfig := ViewableConfiguration{
 		Strategy:  *g.Config.Strategy,

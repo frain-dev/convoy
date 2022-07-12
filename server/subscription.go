@@ -29,7 +29,7 @@ import (
 // @Router /subscriptions [get]
 func (a *applicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	apps, paginationData, err := a.subService.LoadSubscriptionsPaged(r.Context(), group.UID, pageable)
 	if err != nil {
@@ -56,7 +56,7 @@ func (a *applicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Router /subscriptions/{subscriptionID} [get]
 func (a *applicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	subscription, err := a.subService.FindSubscriptionByID(r.Context(), group.UID, subId)
 	if err != nil {
@@ -109,7 +109,7 @@ func (a *applicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Security ApiKeyAuth
 // @Router /subscriptions [post]
 func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	var s models.Subscription
 	err := util.ReadJSON(r, &s)
@@ -143,7 +143,7 @@ func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [delete]
 func (a *applicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	sub, err := a.subService.FindSubscriptionByID(r.Context(), group.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
@@ -182,7 +182,7 @@ func (a *applicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	g := getGroupFromContext(r.Context())
+	g := GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	sub, err := a.subService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
@@ -206,7 +206,7 @@ func (a *applicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID}/toggle_status [put]
 func (a *applicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	g := getGroupFromContext(r.Context())
+	g := GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	sub, err := a.subService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)

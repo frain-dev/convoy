@@ -147,7 +147,7 @@ func requireApp(appRepo datastore.ApplicationRepository, cache cache.Cache) func
 				}
 			}
 
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			r = r.WithContext(SetApplicationInContext(r.Context(), app))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -157,7 +157,7 @@ func requireAppID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 
 			if len(authUser.Role.Apps) > 0 {
 				appID := authUser.Role.Apps[0]
@@ -199,7 +199,7 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 				return
 			}
 
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			r = r.WithContext(SetApplicationInContext(r.Context(), app))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -208,7 +208,7 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 			if authUser.Role.Type.Is(auth.RoleSuperUser) {
 				// superuser has access to everything
 				next.ServeHTTP(w, r)
@@ -220,7 +220,7 @@ func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http
 				return
 			}
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			for _, v := range authUser.Role.Groups {
 				if group.Name == v || group.UID == v {
 
@@ -350,7 +350,7 @@ func requireAuthUserMetadata() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 			user, ok := authUser.Metadata.(*datastore.User)
 			if !ok {
 				log.Error("metadata missing in auth user object")
@@ -395,7 +395,7 @@ func requireOrganisationGroupMember() func(next http.Handler) http.Handler {
 				return
 			}
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			for _, g := range member.Role.Groups {
 				if g == group.UID {
 					next.ServeHTTP(w, r)
@@ -533,7 +533,7 @@ func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*dat
 	return groups[0], err
 }
 
-func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(next http.Handler) http.Handler {
+func RequireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var group *datastore.Group
@@ -551,7 +551,7 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 			}
 
 			if util.IsStringEmpty(groupID) {
-				authUser := getAuthUserFromContext(r.Context())
+				authUser := GetAuthUserFromContext(r.Context())
 
 				if len(authUser.Role.Groups) > 0 && authUser.Credential.Type == auth.CredentialTypeAPIKey {
 					groupID = authUser.Role.Groups[0]
@@ -649,7 +649,7 @@ func RequireAuth() func(next http.Handler) http.Handler {
 func requireAuthorizedUser(userRepo datastore.UserRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 			user, ok := authUser.Metadata.(*datastore.User)
 
 			if !ok {
@@ -694,14 +694,14 @@ func requireBaseUrl() func(next http.Handler) http.Handler {
 func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 
 			if !authUser.Role.Type.Is(role) {
 				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
 				return
 			}
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			if group == nil {
 				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
 				return
@@ -944,7 +944,7 @@ func fetchGroupApps(appRepo datastore.ApplicationRepository) func(next http.Hand
 
 			pageable := getPageableFromContext(r.Context())
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 
 			apps, paginationData, err := appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
 			if err != nil {
@@ -1003,7 +1003,7 @@ func computeDashboardMessages(ctx context.Context, orgId string, eventRepo datas
 	return messagesSent, messages, nil
 }
 
-func setApplicationInContext(ctx context.Context,
+func SetApplicationInContext(ctx context.Context,
 	app *datastore.Application) context.Context {
 	return context.WithValue(ctx, appCtx, app)
 }
@@ -1070,7 +1070,7 @@ func setGroupInContext(ctx context.Context, group *datastore.Group) context.Cont
 	return context.WithValue(ctx, groupCtx, group)
 }
 
-func getGroupFromContext(ctx context.Context) *datastore.Group {
+func GetGroupFromContext(ctx context.Context) *datastore.Group {
 	return ctx.Value(groupCtx).(*datastore.Group)
 }
 
@@ -1112,7 +1112,7 @@ func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) contex
 	return context.WithValue(ctx, authUserCtx, a)
 }
 
-func getAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
+func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(authUserCtx).(*auth.AuthenticatedUser)
 }
 

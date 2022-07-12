@@ -152,7 +152,7 @@ func (a *applicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Router /applications [get]
 func (a *applicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 	q := r.URL.Query().Get("q")
 
 	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
@@ -187,7 +187,7 @@ func (a *applicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 	app, err := a.appService.CreateApp(r.Context(), &newApp, group)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
