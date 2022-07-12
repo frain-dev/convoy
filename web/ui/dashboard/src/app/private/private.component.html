@@ -17,23 +17,24 @@
 			</nav>
 		</div>
 		<div class="flex items-center">
-			<a class="flex items-center mr-12px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+			<a class="flex items-center mr-16px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
 				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
 				<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
 			</a>
-			<convoy-dropdown [show]="showOrgDropdown" size="xl">
-				<convoy-button type="text" [class]="'bg-grey-10 py-10px px-20px rounded-8px mr-2'" (click)="showOrgDropdown = !showOrgDropdown" dropdownToggle>
+			<convoy-dropdown size="xl" buttonColor="grey" buttonSize="sm" buttonClass="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
+				<ng-container dropdownToggle>
 					<div class="flex items-center" *ngIf="organisations?.length">
 						<div class="w-24px h-24px rounded-[50%] text-12 uppercase text-white-100 flex items-center justify-center bg-black">{{ userOrganization?.name?.slice(0, 1) }}</div>
 						<div class="text-14 ml-8px capitalize text-left text-grey-100">{{ userOrganization?.name }}</div>
 					</div>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="ml-8px" />
-				</convoy-button>
+				</ng-container>
+			
 				<div>
 					<div class="font-semibold text-14 text-grey-40 px-32px pt-24px pb-16px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</div>
 					<ul *ngIf="organisations?.length">
 						<li *ngFor="let organisation of organisations">
-							<convoy-button type="text" [class]="'justify-start px-30px'" (click)="selectOrganisation(organisation)" class="w-full">
+							<convoy-button type="text" className="justify-start px-30px py-12px w-full" (clickItem)="selectOrganisation(organisation)" class="w-full">
 								<div class="flex justify-between items-center w-full">
 									<div class="flex items-center">
 										<div class="w-24px h-24px rounded-[50%] text-12 uppercase text-white-100 flex items-center justify-center bg-grey-40">{{ organisation?.name?.slice(0, 1) }}</div>
@@ -45,7 +46,7 @@
 						</li>
 					</ul>
 					<div class="border-t border-t-grey-10">
-						<convoy-button type="text" [class]="'px-30px py-16px'" (click)="showAddOrganisationModal = true; showOrgDropdown = false">
+						<convoy-button type="text" className="px-30px py-16px" (clickItem)="showAddOrganisationModal = true; showOrgDropdown = false">
 							<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 							Add {{ organisations?.length ? 'another' : 'an' }} Organization
 						</convoy-button>
@@ -53,10 +54,11 @@
 				</div>
 			</convoy-dropdown>
 
-			<convoy-dropdown [show]="showMoreDropdown" size="lg">
-				<convoy-button type="text" [class]="'bg-grey-10 py-12px px-20px rounded-8px'" (click)="showMoreDropdown = !showMoreDropdown" dropdownToggle>
+			<convoy-dropdown size="lg" buttonColor="grey" buttonSize="sm" buttonClass="bg-grey-10 py-12px px-20px rounded-8px h-[36px]">
+				<ng-container dropdownToggle>
 					<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-				</convoy-button>
+				</ng-container>
+			
 
 				<div>
 					<div class="border-b border-b-grey-10 px-24px py-16px">
@@ -72,7 +74,7 @@
 						</li>
 					</ul>
 					<div class="border-t border-t-grey-10">
-						<convoy-button type="text" [class]="'text-danger-100 font-medium px-24px py-20px'" (click)="logout()">Logout</convoy-button>
+						<convoy-button type="text" color="danger" className="font-medium px-24px py-20px" (click)="logout()">Logout</convoy-button>
 					</div>
 				</div>
 			</convoy-dropdown>
