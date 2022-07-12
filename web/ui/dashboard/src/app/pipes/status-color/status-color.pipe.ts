@@ -12,7 +12,9 @@ export class StatusColorPipe implements PipeTransform {
 			case 'default':
 				type = 'grey';
 				break;
-			case 'Success' || 'success':
+			case 'active':
+			case 'Success':
+			case 'success':
 				type = 'success';
 				break;
 			case 'Pending':
