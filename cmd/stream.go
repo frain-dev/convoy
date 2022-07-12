@@ -153,7 +153,7 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 		GroupID:    group.UID,
 		AppID:      appID,
 		HostName:   loginRequest.HostName,
-		Status:     "online",
+		Status:     datastore.DeviceStatusOnline,
 		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
@@ -162,7 +162,7 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	err = h.deviceRepo.CreateDevice(ctx, device, group.UID, appID)
+	err = h.deviceRepo.CreateDevice(ctx, device)
 	if err != nil {
 		respond(w, http.StatusBadRequest, "failed to create new device")
 		return
@@ -228,22 +228,19 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 	case datastore.ErrSubscriptionNotFound:
 		subscription = &datastore.Subscription{
 			UID:            uuid.NewString(),
-			DeviceID:       device.UID,
-			GroupID:        "group.UID",
-			Type:           datastore.SubscriptionTypeCLI,
 			Name:           fmt.Sprintf("device-%s-subscription", device.UID),
+			Type:           datastore.SubscriptionTypeCLI,
+			AppID:          appID,
+			GroupID:        group.UID,
 			SourceID:       listenRequest.SourceID,
-			Status:         datastore.ActiveSubscriptionStatus,
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			DeviceID:       device.UID,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			Status:         datastore.ActiveSubscriptionStatus,
+			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
-		if ok {
-			subscription.AppID = app.UID
-		}
-
-		err := h.subscriptionRepo.CreateSubscription(ctx, "", subscription)
+		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, subscription)
 		if err != nil {
 			respond(w, http.StatusBadRequest, "failed to create new subscription")
 			return
@@ -264,8 +261,8 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 		hub:        h,
 		conn:       conn,
 		deviceID:   device.UID,
+		Device:     device,
 		EventTypes: listenRequest.EventTypes,
-		send:       make(chan []byte, 256),
 	}
 
 	if len(client.EventTypes) == 0 {

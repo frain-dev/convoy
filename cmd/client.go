@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,8 +23,7 @@ type Client struct {
 	// The websocket connection.
 	conn *websocket.Conn
 
-	// Buffered channel of outbound messages.
-	send chan []byte
+	lock sync.RWMutex // protect Device from data race
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -43,7 +42,10 @@ func (c *Client) readPump() {
 	c.conn.SetPongHandler(func(string) error { return nil })
 
 	c.conn.SetPingHandler(func(string) error {
-		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device.UID, c.Device.AppID, c.Device.GroupID)
+		c.lock.Lock()
+		defer c.lock.Unlock()
+
+		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID)
 		if err != nil {
 			log.WithError(err).Error("failed to update device last seen")
 			return errors.New("failed to update device last seen")
@@ -78,5 +80,38 @@ func (c *Client) Close() {
 	if err != nil {
 		log.WithError(err).Error("failed to close client conn")
 	}
-	c.hub.RemoveClient(c)
+	c.hub.RemoveClient(c) //TODO: possibly streamline this with a channel
+}
+
+func (c *Client) GoOffline() {
+	c.lock.Lock()
+
+	c.Device.Status = datastore.DeviceStatusOffline
+
+	err := c.hub.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID)
+	if err != nil {
+		log.WithError(err).Error("failed to update device status to offline")
+	}
+
+	c.lock.Unlock()
+	c.Close()
+}
+
+func (c *Client) IsOnline() bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	lastSeen := c.Device.LastSeenAt.Time()
+	since := time.Since(lastSeen)
+
+	return since < maxDeviceLastSeenDuration
+}
+
+func (c *Client) HasEventType(evType string) bool {
+	for _, eventType := range c.EventTypes {
+		if evType == eventType || eventType == "*" {
+			return true
+		}
+	}
+	return false
 }

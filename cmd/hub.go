@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -56,6 +57,25 @@ func (h *Hub) StartEventSender() {
 			h.lock.RLock()
 			client := h.deviceClients[ev.DeviceID]
 			h.lock.RUnlock()
+
+			if !client.IsOnline() {
+				client.GoOffline()
+				continue
+			}
+
+			if client.Device.GroupID != ev.GroupID {
+				continue
+			}
+
+			if !util.IsStringEmpty(client.Device.AppID) {
+				if client.Device.AppID != ev.AppID {
+					continue
+				}
+			}
+
+			if !client.HasEventType(ev.EventType) {
+				continue
+			}
 
 			err := client.conn.WriteMessage(websocket.TextMessage, ev.Data)
 			if err != nil {
