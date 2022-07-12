@@ -3,20 +3,15 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/frain-dev/convoy/server"
+
 	"github.com/frain-dev/convoy/auth/realm_chain"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/frain-dev/convoy"
-	m "github.com/frain-dev/convoy/datastore/mongo"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -43,6 +38,8 @@ const (
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
+
+	maxDeviceLastSeenDuration = 2 * time.Minute
 )
 
 var (
@@ -53,204 +50,6 @@ var (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-}
-
-// Client is a middleman between the websocket connection and the hub.
-type Client struct {
-	hub *Hub
-
-	// device id of the cli client
-	deviceID   string
-	EventTypes []string
-
-	// The websocket connection.
-	conn *websocket.Conn
-
-	// Buffered channel of outbound messages.
-	send chan []byte
-}
-
-// Hub maintains the set of active clients and broadcasts messages to the
-// clients.
-type Hub struct {
-	deviceRepo       datastore.DeviceRepository
-	subscriptionRepo datastore.SubscriptionRepository
-	sourceRepo       datastore.SourceRepository
-
-	// Registered clients.
-	deviceClients map[string]*Client
-
-	// Register requests from the clients.
-	register chan *Client
-
-	// Unregister requests from clients.
-	unregister chan *Client
-
-	events chan *CLIEvent
-	close  chan struct{}
-}
-
-func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository) *Hub {
-	return &Hub{
-		deviceRepo:       deviceRepo,
-		subscriptionRepo: subscriptionRepo,
-		sourceRepo:       sourceRepo,
-		deviceClients:    map[string]*Client{},
-		register:         make(chan *Client),
-		unregister:       make(chan *Client),
-		events:           make(chan *CLIEvent),
-		close:            make(chan struct{}),
-	}
-}
-
-func (h *Hub) StartEventSender() {
-	for {
-		select {
-		case ev := <-h.events:
-			client := h.deviceClients[ev.DeviceID] //TODO: protect h.deviceClients against data race
-
-			err := client.conn.WriteMessage(websocket.TextMessage, ev.Data)
-			if err != nil {
-				log.WithError(err).Error("failed to write pong message")
-			}
-
-		case <-h.close:
-			return
-		}
-	}
-}
-
-func (h *Hub) StartEventWatcher() {
-	lookupStage := bson.D{
-		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: m.SubscriptionCollection},
-			{Key: "localField", Value: "subscription_id"},
-			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "subscription"},
-		}},
-	}
-
-	matchStage := bson.D{
-		{Key: "$match",
-			Value: bson.D{
-				{Key: "subscription.type", Value: datastore.SubscriptionTypeCLI},
-			},
-		},
-	}
-
-	fn := h.watchEventDeliveriesCollection()
-	err := watchCollection(fn, mongo.Pipeline{lookupStage, matchStage}, m.EventCollection, h.close)
-	if err != nil {
-		log.WithError(err).Error("database collection watcher exited unexpectedly")
-	}
-}
-
-type CLIEvent struct {
-	Data     json.RawMessage
-	DeviceID string
-	AppID    string
-	GroupID  string
-}
-
-func (h *Hub) watchEventDeliveriesCollection() WatcherFn {
-	return func(doc convoy.GenericMap) error {
-		metadata, ok := doc["metadata"].(*datastore.Metadata)
-		if !ok {
-			return fmt.Errorf("event delivery metadata has wrong type of: %T", doc["metadata"])
-		}
-
-		appID, ok := doc["app_id"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery app id has wrong type of: %T", doc["app_id"])
-		}
-
-		groupID, ok := doc["group_id"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery group id has wrong type of: %T", doc["group_id"])
-		}
-
-		deviceID, ok := doc["device_id"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery device id has wrong type of: %T", doc["device_id"])
-		}
-
-		h.events <- &CLIEvent{
-			Data:     metadata.Data,
-			AppID:    appID,
-			DeviceID: deviceID,
-			GroupID:  groupID,
-		}
-
-		return nil
-	}
-}
-
-func (h *Hub) StartRegister() {
-	for {
-		select {
-		case client := <-h.register:
-			h.deviceClients[client.deviceID] = client
-		case <-h.close:
-			return
-		}
-	}
-}
-
-func (h *Hub) Stop() {
-	close(h.close)
-}
-
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
-func (c *Client) readPump() {
-	err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	if err != nil {
-		return
-	}
-
-	c.conn.SetPongHandler(func(string) error {
-		return nil
-	})
-
-	c.conn.SetPingHandler(func(deviceID string) error {
-		ctx, cancel := getCtx()
-		defer cancel()
-
-		err := c.hub.deviceRepo.UpdateDeviceLastSeen(ctx, deviceID)
-		if err != nil {
-			log.WithError(err).Error("failed to update device last seen")
-		}
-
-		err = c.conn.WriteMessage(websocket.PongMessage, []byte("ok"))
-		if err != nil {
-			log.WithError(err).Error("failed to write pong message")
-		}
-		return nil
-	})
-
-	for {
-		select {
-		case <-c.hub.close:
-			err := c.conn.Close()
-			if err != nil {
-				log.WithError(err).Error("failed to close client conn")
-			}
-		default:
-			_, _, err := c.conn.ReadMessage()
-			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.WithError(err).
-						WithField("device_id", c.deviceID).
-						Error("failed to read message from client")
-				}
-				break // TODO: not confident about breaking the loop which then returns the function because we couldn't read one message from the client here.
-			}
-
-		}
-	}
 }
 
 func addStreamCommand(a *app) *cobra.Command {
@@ -274,6 +73,10 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			router := chi.NewRouter()
 			router.Route("/stream", func(streamRouter chi.Router) {
+				streamRouter.Use(server.RequireAuth())
+				streamRouter.Use(server.RequireGroup(a.groupRepo, a.cache))
+				streamRouter.Use(hub.requireApp())
+
 				streamRouter.Get("/listen", hub.Listen)
 				streamRouter.Post("/login", nil)
 			})
@@ -325,82 +128,114 @@ type DeviceRegistration struct {
 	EventTypes []string `json:"event_types"`
 }
 
+func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
+	deviceReg := &DeviceRegistration{}
+	err := util.ReadJSON(r, &deviceReg)
+	if err != nil {
+		respond(w, http.StatusBadRequest, "device id is required in request body")
+		return
+	}
+
+	group := server.GetGroupFromContext(r.Context())
+	app, ok := getApplicationFromContext(r.Context())
+
+	device := &datastore.Device{
+		UID:        uuid.NewString(),
+		GroupID:    group.UID,
+		HostName:   deviceReg.HostName,
+		Status:     "online",
+		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	if ok {
+		device.AppID = app.UID
+	}
+
+	ctx, cancel := getCtx()
+	defer cancel()
+
+	err = h.deviceRepo.CreateDevice(ctx, device)
+	if err != nil {
+		respond(w, http.StatusBadRequest, "failed to create new device")
+		return
+	}
+
+	respondWithData(w, http.StatusOK, device)
+}
+
 func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 	deviceReg := &DeviceRegistration{}
 	err := util.ReadJSON(r, &deviceReg)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "device id is required in request body")
+		respond(w, http.StatusBadRequest, "empty request body")
 		return
 	}
+
+	group := server.GetGroupFromContext(r.Context())
+	app, ok := getApplicationFromContext(r.Context())
 
 	ctx, cancel := getCtx()
 	defer cancel()
 
 	device, err := h.deviceRepo.FetchDeviceByID(ctx, deviceReg.DeviceID)
 	if err != nil {
-		if errors.Is(err, datastore.ErrDeviceNotFound) {
-			device = &datastore.Device{
-				UID:        deviceReg.DeviceID,
-				HostName:   "",
-				Status:     "online",
-				LastSeenAt: 0,
-				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-			}
-
-			err = h.deviceRepo.CreateDevice(ctx, device)
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, "failed to create new device")
-				return
-			}
-		} else {
-			respondWithError(w, http.StatusBadRequest, "device id is required in request body")
-			return
-		}
+		respond(w, http.StatusBadRequest, "device not found")
+		return
 	}
 
 	if !util.IsStringEmpty(deviceReg.SourceID) {
-		_, err = h.sourceRepo.FindSourceByID(ctx, "", deviceReg.SourceID)
+		source, err := h.sourceRepo.FindSourceByID(ctx, "", deviceReg.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
-			respondWithError(w, http.StatusBadRequest, "failed to find source")
+			respond(w, http.StatusBadRequest, "failed to find source")
+			return
+		}
+
+		if source.GroupID != group.UID {
+			respond(w, http.StatusUnauthorized, "unauthorized to access source")
 			return
 		}
 	}
 
-	subscription, err := h.subscriptionRepo.FindSubscriptionByID(ctx, device.UID, "")
-	if err != nil {
-		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
-			subscription = &datastore.Subscription{
-				UID:      uuid.NewString(),
-				DeviceID: device.UID,
-				GroupID:  "group.UID",
-				Type:     datastore.SubscriptionTypeCLI,
-				Name:     fmt.Sprintf("device-%s-subscription", device.UID),
-				SourceID: deviceReg.SourceID,
-				AppID:    "",
+	subscription, err := h.subscriptionRepo.FindSubscriptionByID(ctx, group.UID, device.UID)
 
-				Status:         datastore.ActiveSubscriptionStatus,
-				DocumentStatus: datastore.ActiveDocumentStatus,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			}
+	switch err {
+	case nil:
+		break
+	case datastore.ErrSubscriptionNotFound:
+		subscription = &datastore.Subscription{
+			UID:            uuid.NewString(),
+			DeviceID:       device.UID,
+			GroupID:        "group.UID",
+			Type:           datastore.SubscriptionTypeCLI,
+			Name:           fmt.Sprintf("device-%s-subscription", device.UID),
+			SourceID:       deviceReg.SourceID,
+			Status:         datastore.ActiveSubscriptionStatus,
+			DocumentStatus: datastore.ActiveDocumentStatus,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		}
 
-			err = h.subscriptionRepo.CreateSubscription(ctx, "", subscription)
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, "failed to create new subscription")
-				return
-			}
-		} else {
-			respondWithError(w, http.StatusBadRequest, "failed to find subscription by id")
+		if ok {
+			subscription.AppID = app.UID
+		}
+
+		err := h.subscriptionRepo.CreateSubscription(ctx, "", subscription)
+		if err != nil {
+			respond(w, http.StatusBadRequest, "failed to create new subscription")
 			return
 		}
+	default:
+		respond(w, http.StatusBadRequest, "failed to find subscription by id")
+		return
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.WithError(err).Error("failed to upgrade connection to websocket connection")
-		respondWithError(w, http.StatusBadRequest, "failed to upgrade connection to websocket connection")
+		respond(w, http.StatusBadRequest, "failed to upgrade connection to websocket connection")
 		return
 	}
 
@@ -419,7 +254,45 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 	client.hub.register <- client
 }
 
-func respondWithError(w http.ResponseWriter, code int, err string) {
+func respond(w http.ResponseWriter, code int, msg string) {
 	w.WriteHeader(code)
-	w.Write([]byte(err))
+	w.Write([]byte(msg))
+}
+
+func respondWithData(w http.ResponseWriter, code int, v interface{}) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		log.WithError(err).Error("failed to marshal data")
+		respond(w, http.StatusInternalServerError, "failed to marshal response")
+		return
+	}
+
+	w.WriteHeader(code)
+	w.Write(data)
+}
+
+func (h *Hub) requireApp() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := server.GetAuthUserFromContext(r.Context())
+			if len(authUser.Role.Apps) > 0 {
+				appID := authUser.Role.Apps[0]
+				app, err := h.appRepo.FindApplicationByID(r.Context(), appID)
+				if err != nil {
+					respond(w, http.StatusBadRequest, "failed to find application")
+					return
+				}
+
+				r = r.WithContext(server.SetApplicationInContext(r.Context(), app))
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// the app may not exist, so we have to check like this to avoid panic
+func getApplicationFromContext(ctx context.Context) (*datastore.Application, bool) {
+	app, ok := ctx.Value("app").(*datastore.Application)
+	return app, ok
 }
