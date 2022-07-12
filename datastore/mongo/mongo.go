@@ -23,6 +23,7 @@ const (
 	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
 	AppCollection                 = "applications"
+	DeviceCollection              = "devices"
 	EventCollection               = "events"
 	SourceCollection              = "sources"
 	UserCollection                = "users"
@@ -42,6 +43,7 @@ type Client struct {
 	orgMemberRepo     datastore.OrganisationMemberRepository
 	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
+	deviceRepo        datastore.DeviceRepository
 	configRepo        datastore.ConfigurationRepository
 }
 
@@ -82,6 +84,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	org_invite := datastore.New(conn, OrganisationInvitesCollection)
 	users := datastore.New(conn, UserCollection)
 	config := datastore.New(conn, ConfigCollection)
+	devices := datastore.New(conn, DeviceCollection)
 
 	c := &Client{
 		db:                conn,
@@ -92,6 +95,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventRepo:         NewEventRepository(conn, events),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn),
 		sourceRepo:        NewSourceRepo(conn, sources),
+		deviceRepo:        NewDeviceRepository(conn, devices),
 		orgRepo:           NewOrgRepo(conn, orgs),
 		orgMemberRepo:     NewOrgMemberRepo(conn, org_member),
 		orgInviteRepo:     NewOrgInviteRepo(conn, org_invite),
@@ -126,6 +130,10 @@ func (c *Client) GroupRepo() datastore.GroupRepository {
 
 func (c *Client) AppRepo() datastore.ApplicationRepository {
 	return c.applicationRepo
+}
+
+func (c *Client) DeviceRepo() datastore.DeviceRepository {
+	return c.deviceRepo
 }
 
 func (c *Client) EventRepo() datastore.EventRepository {

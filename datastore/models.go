@@ -628,12 +628,20 @@ type Device struct {
 	AppID      string             `json:"app_id" bson:"app_id"`
 	HostName   string             `json:"host_name" bson:"host_name"`
 	ClientID   string             `json:"client_id" bson:"client_id"`
-	Status     string             `json:"status" bson:"status"`
+	Status     DeviceStatus       `json:"status" bson:"status"`
 	LastSeenAt primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
 	CreatedAt  primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt  primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt  primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
+
+type DeviceStatus string
+
+const (
+	DeviceStatusOffline  DeviceStatus = "offline"
+	DeviceStatusOnline   DeviceStatus = "online"
+	DeviceStatusDisabled DeviceStatus = "disabled"
+)
 
 type UserMetadata struct {
 	UserID    string `json:"-" bson:"user_id"`
