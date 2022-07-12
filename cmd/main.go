@@ -259,6 +259,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.applicationRepo = db.AppRepo()
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
+		app.deviceRepo = db.DeviceRepo()
 		app.userRepo = db.UserRepo()
 		app.configRepo = db.ConfigurationRepo()
 		app.orgRepo = db.OrganisationRepo()
@@ -307,6 +308,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addUpgradeCommand(app))
 	cmd.AddCommand(addIndexCommand(app))
+	cmd.AddCommand(addStreamCommand(app))
 }
 
 type ConvoyCli struct {
