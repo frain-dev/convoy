@@ -35,7 +35,7 @@
 			<div formGroupName="config">
 				<h3 class="mt-24px mb-16px font-semibold flex items-center">
 					Signature Details
-					<convoy-tooltip [size]="'small'" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h3>
 				<div class="grid grid-cols-2 gap-24px" formGroupName="signature">
 					<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests"></convoy-input>
@@ -44,7 +44,7 @@
 
 				<h3 class="mt-24px mb-16px flex items-center font-semibold">
 					Retry Logic
-					<convoy-tooltip [size]="'small'" position="right" class="ml-4px">
+					<convoy-tooltip size="sm" position="right" class="ml-4px">
 						These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are
 						retried progressively increasing the time before the next retry attempt.
 					</convoy-tooltip>
@@ -64,7 +64,7 @@
 
 				<h3 class="mt-24px mb-16px flex items-center font-semibold">
 					Rate Limit Parameters
-					<convoy-tooltip [size]="'small'" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
+					<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 				</h3>
 				<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
 					<convoy-input label="Duration" name="rate-limit-duration" formControlName="duration" placeholder="e.g 5m" errorMessage="Please enter a rate limit duration"></convoy-input>

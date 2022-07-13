@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 })
 export class ListItemComponent implements OnInit {
 	@Input('className') class!: string;
+	@Input('hover') hover: boolean = false;
 
 	constructor() {}
 

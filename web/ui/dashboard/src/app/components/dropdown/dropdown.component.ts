@@ -16,6 +16,7 @@ export class DropdownComponent implements OnInit {
 	@Input('active') active: boolean = false;
 	@Input('className') class!: string;
 	@Input('buttonClass') buttonClass = '';
+	@Input('buttonColor') buttonColor!: 'primary' | 'success' | 'warning' | 'danger' | 'grey';
 	@Input('buttonSize') buttonSize: 'sm' | 'md' | 'lg' = 'md';
 	@Input('buttonType') buttonType: 'default' | 'outline' | 'clear' | 'text' | 'link' = 'default';
 	sizes = { sm: 'w-[140px]', md: 'w-[200px]', lg: 'w-[249px]', xl: 'w-[350px]' };
@@ -30,6 +31,6 @@ export class DropdownComponent implements OnInit {
 	}
 
 	get buttonClasses(): string {
-		return `${this.active ? 'text-primary-100 bg-primary-500 !border-primary-100' : ''} ${this.buttonClass}`;
+		return `${this.active ? 'text-primary-100 bg-primary-500' : ''} ${this.buttonClass}`;
 	}
 }
