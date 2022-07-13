@@ -11,8 +11,13 @@ import { CommonModule } from '@angular/common';
 export class TableRowComponent implements OnInit {
 	@Input('className') class!: string;
 	@Input('forDate') forDate: boolean = false;
+	@Input('active') active: boolean = false;
 
 	constructor() {}
 
 	ngOnInit(): void {}
+
+	get getClassNames() {
+		return `${this.forDate ? 'border-t border-grey-10 ' : 'hover:bg-primary-500 transition-all duration-300'} ${this.active ? 'bg-primary-500' : ''} ${this.class}`;
+	}
 }

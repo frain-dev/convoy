@@ -75,7 +75,7 @@
 								<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
 								<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
 							</convoy-table-row>
-							<convoy-table-row class="contents" *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)" [className]="event.uid === eventsDetailsItem?.uid ? 'bg-primary-500' : ''">
+							<convoy-table-row class="contents" *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)" [active]="event.uid === eventsDetailsItem?.uid">
 								<convoy-table-cell class="contents" className="pl-16px">
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
