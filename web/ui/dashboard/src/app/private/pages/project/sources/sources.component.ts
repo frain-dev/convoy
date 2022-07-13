@@ -18,6 +18,8 @@ export class SourcesComponent implements OnInit {
 	activeSource?: SOURCE;
 	sources!: { content: SOURCE[]; pagination: PAGINATION };
 	isLoadingSources = false;
+	isDeletingSource = false;
+	showDeleteSourceModal = false;
 	projectId = this.privateService.activeProjectDetails.uid;
 	sourceTypes = [
 		{ value: 'http', viewValue: 'http' },
@@ -68,18 +70,20 @@ export class SourcesComponent implements OnInit {
 	}
 
 	async deleteSource() {
+		this.isDeletingSource = true;
 		try {
 			await this.sourcesService.deleteSource(this.activeSource?.uid);
+			this.isDeletingSource = false;
 			this.getSources();
-			this.router.navigateByUrl('./');
+			this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
 			this.activeSource = undefined;
 		} catch (error) {
-			console.log(error);
+			this.isDeletingSource = false;
 		}
 	}
 
 	closeCreateSourceModal(source: { action: string; data?: any }) {
-		if (source.action !== 'close') this.generalService.showNotification({ message: `Source ${this.shouldShowUpdateSourceModal ? 'updat' : 'creat'}ed successfully`, style: 'success' });
+		if (source.action !== 'close') this.generalService.showNotification({ message: `Source ${source.action}d successfully`, style: 'success' });
 		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
 	}
 

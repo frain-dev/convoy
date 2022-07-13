@@ -43,6 +43,7 @@ export interface SOURCE {
 	uid: string;
 	updated_at: number;
 	url: string;
+	provider: string;
 	verifier: {
 		api_key: {
 			header: string;
