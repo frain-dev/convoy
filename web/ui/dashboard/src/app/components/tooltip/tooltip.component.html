@@ -1,5 +1,5 @@
-<button class="relative flex flex-col items-center group">
-	<svg width="18" height="18" [attr.width]="size === 'small' ? '13' : '18'">
+<convoy-button buttonType="button" type="icon" className="relative flex flex-col items-center group">
+	<svg width="18" height="18" [attr.width]="size === 'sm' ? '13' : '18'">
 		<use xlink:href="#info-icon"></use>
 	</svg>
 	<div
@@ -24,4 +24,4 @@
 	>
 		<ng-content></ng-content>
 	</div>
-</button>
+</convoy-button>
