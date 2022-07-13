@@ -1,182 +1,97 @@
-<form class="padding-bottom__40px" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
-	<section class="card padding-all__24px">
-		<h3 class="margin-bottom__12px font__weight-600 font__18px">Source name</h3>
+<convoy-modal position="full" [title]="action === 'update' ? 'Update Source' : 'Create source'" (closeModal)="onAction.emit({ action: 'close' })">
+	<form class="pb-40px" [formGroup]="sourceForm" (ngSubmit)="saveSource()" modalBody>
+		<convoy-card className="p-24px mt-40px">
+			<h2 class="mb-12px font-semibold">Source name</h2>
 
-		<div class="input">
-			<label for="source-name">Source name</label>
-			<input type="text" id="source-name" placeholder="Enter source name" formControlName="name" />
-			<div class="input__error input__error__danger" *ngIf="sourceForm.controls['name'].touched && sourceForm.controls['name'].invalid">
-				<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-				<span>Enter new source name</span>
+			<convoy-input type="text" autocomplete="source-name" name="name" formControlName="name" errorMessage="Enter new source name" label="Source name" placeholder="Enter source name" [required]="true"></convoy-input>
+
+			<h2 class="font-semibold mb-12px">Select source type</h2>
+
+			<div class="grid grid-cols-2 gap-6">
+				<convoy-radio
+					*ngFor="let sourceType of sourceTypes"
+					formControlName="type"
+					[tooltipContent]="sourceType.value === 'http' ? sourceType.description : ''"
+					[label]="sourceType.viewValue"
+					[_name]="sourceType.value"
+					[value]="sourceType.value"
+					[_id]="sourceType.value"
+					[checked]="sourceForm.value.type === sourceType.value"
+					[ngClass]="{ 'pointer-events-none opacity-50': sourceType.value !== 'http' }"
+					className="mb-0"
+				></convoy-radio>
 			</div>
+			
+		</convoy-card>
+
+		<div formGroupName="verifier">
+			<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.type === 'http'">
+				<h2 class="font-semibold mb-12px">Select Ingester HTTP type</h2>
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-radio
+						*ngFor="let httpType of httpTypes"
+						formControlName="type"
+						tooltipContent="This is a tip to help you accomplish a task."
+						[label]="httpType.viewValue"
+						[_name]="httpType.value"
+						[value]="httpType.value"
+						[_id]="httpType.value"
+						[checked]="sourceForm.value.verifier.type === httpType.value"
+					></convoy-radio>
+				</div>
+			</convoy-card>
+
+			<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'api_key'" formGroupName="api_key">
+				<h2 class="font-semibold mb-20px">Configure API Key</h2>
+
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-input type="text" autocomplete="header_name" name="header_name" formControlName="header_name" errorMessage="Enter api key header" label="Header Name" placeholder="Header Name" [required]="true" className="mb-0"></convoy-input>
+					<convoy-input type="text" autocomplete="header_value" name="header_value" formControlName="header_value" errorMessage="Enter api key" label="Header Value" placeholder="Key goes here" [required]="true" className="mb-0"></convoy-input>
+				</div>
+			</convoy-card>
+
+			<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || sourceForm.value.verifier.type === 'github'" formGroupName="hmac">
+				<h2 class="font-semibold mb-20px">{{ sourceForm.value.verifier.type === 'github' ? 'Github Credentials' : 'Configure HMAC' }}</h2>
+
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-select *ngIf="sourceForm.value.verifier.type === 'hmac'" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" className="mb-0"></convoy-select>
+					<convoy-select *ngIf="sourceForm.value.verifier.type === 'hmac'" label="Hash Algorithm" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Select algorithm type" [required]="true" className="mb-0"></convoy-select>
+
+					<convoy-input
+						*ngIf="sourceForm.value.verifier.type === 'hmac'"
+						type="text"
+						autocomplete="header"
+						name="header"
+						formControlName="header"
+						errorMessage="Enter header key"
+						label="Signature header key"
+						placeholder="X-Convoy-Signature"
+						[required]="true"
+						className="mb-0"
+					></convoy-input>
+					<convoy-input type="text" autocomplete="secret" name="secret" formControlName="secret" errorMessage="Enter webhook signing secret" label="Webhook signing secret" placeholder="Secret goes here" [required]="true" className="mb-0"></convoy-input>
+
+				</div>
+			</convoy-card>
+
+			<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" formGroupName="basic_auth">
+				<h2 class="font-semibold mb-20px">Configure Basic Auth</h2>
+
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-input type="text" autocomplete="username" name="username" formControlName="username" errorMessage="Enter basic auth username" label="Username" placeholder="Name goes here" [required]="true" className="mb-0"></convoy-input>
+					<convoy-input type="text" autocomplete="password" name="password" formControlName="password" errorMessage="Enter basic auth password" label="Password" placeholder="*******" [required]="true" className="mb-0"></convoy-input>
+				</div>
+			</convoy-card>
 		</div>
 
-		<h2 class="margin-bottom__16px">Select source type</h2>
-
-		<div class="source-types grid grid__col-2 grid--gap__24px">
-			<div class="source-type checkbox-option pointer-cursor" *ngFor="let sourceType of sourceTypes" [ngClass]="{ disabled: sourceType.value !== 'http' }">
-				<input type="radio" [id]="sourceType.value" formControlName="type" [value]="sourceType.value" [checked]="sourceForm.value.type === sourceType.value" />
-				<label [for]="sourceType.value" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-					<div class="flex flex__align-items-center flex__justify-between position__relative">
-						<div class="flex flex__align-items-center">
-							<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-							<p class="font__14px font__weight-600 margin-left__8px">{{ sourceType.viewValue }}</p>
-						</div>
-
-						<app-tooltip *ngIf="sourceType.value === 'http'">{{ sourceType.description }}</app-tooltip>
-					</div>
-				</label>
-			</div>
+		<div class="flex justify-end mt-32px">
+			<convoy-button type="outline" buttonType="button" className="mr-16px" (clickItem)="onAction.emit({ action: 'close' })">Cancel</convoy-button>
+			<convoy-button [disable]="isloading">
+				{{ action === 'update' ? 'Update' : 'Create' }} Source
+				<svg width="24" height="24" class="ml-8px fill-white-100">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</convoy-button>
 		</div>
-	</section>
-
-	<div formGroupName="verifier">
-		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.type === 'http'">
-			<h2>Select Ingester HTTP type</h2>
-			<div class="ingester-types grid grid__col-2 grid--gap__24px margin-top__16px">
-				<div class="ingester-type checkbox-option" *ngFor="let httpType of httpTypes">
-					<input type="radio" [id]="httpType.value" [value]="httpType.value" formControlName="type" />
-					<label [for]="httpType.value" class="border__all padding-all__16px rounded__4px position__relative display__block animate">
-						<div class="flex flex__align-items-center flex__justify-between position__relative">
-							<div class="flex flex__align-items-center">
-								<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-								<p class="font__14px font__weight-600 margin-left__8px">{{ httpType.viewValue }}</p>
-							</div>
-
-							<app-tooltip>This is a tip to help you accomplish a task.</app-tooltip>
-						</div>
-					</label>
-				</div>
-			</div>
-		</section>
-
-		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'api_key'" formGroupName="api_key">
-			<h2 class="margin-bottom__12px">Configure API Key</h2>
-
-			<div class="grid grid__col-2 grid--gap__24px">
-				<div class="input margin-bottom__0px">
-					<label for="key-header" class="position__relative flex flex__justify-between flex__align-items-center">
-						<div class="flex flex__justify-between flex__align-items-center">Header Name</div>
-						<span class="bg__grey__light rounded__4px padding-x__4px font__10px font__weight-400">required</span>
-					</label>
-					<input type="text" id="key-header" placeholder="Header goes here" formControlName="header_name" />
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.api_key.header')?.touched && sourceForm.get('verifier.api_key.header')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter api key header</span>
-					</div>
-				</div>
-
-				<div class="input margin-bottom__0px">
-					<label for="key-header" class="position__relative">
-						Header Value
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
-					</label>
-					<input type="text" id="key-header" placeholder="Key goes here" formControlName="header_value" />
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.api_key.key')?.touched && sourceForm.get('verifier.api_key.key')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter api key</span>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || sourceForm.value.verifier.type === 'github'" formGroupName="hmac">
-			<h2 class="margin-bottom__12px">{{ sourceForm.value.verifier.type === 'github' ? 'Github Credentials' : 'Configure HMAC' }}</h2>
-
-			<div class="grid grid__col-2 grid--gap__24px">
-				<div class="input margin-bottom__0px" *ngIf="sourceForm.value.verifier.type === 'hmac'">
-					<label for="encoding" class="position__relative">
-						Encoding
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<select id="encoding" formControlName="encoding">
-						<option [value]="encoding" *ngFor="let encoding of encodings">{{ encoding }}</option>
-					</select>
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.encoding')?.touched && sourceForm.get('verifier.hmac.encoding')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Select encoding type</span>
-					</div>
-				</div>
-
-				<div class="input margin-bottom__0px" *ngIf="sourceForm.value.verifier.type === 'hmac'">
-					<label for="algorithm" class="position__relative">
-						Hash Algorithm
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<select id="algorithm" formControlName="hash">
-						<option [value]="hash" *ngFor="let hash of hashAlgorithms">{{ hash }}</option>
-					</select>
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.hash')?.touched && sourceForm.get('verifier.hmac.hash')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Select algorithm type</span>
-					</div>
-				</div>
-
-				<div class="input margin-bottom__0px" *ngIf="sourceForm.value.verifier.type === 'hmac'">
-					<label for="header-key" class="position__relative">
-						Signature header key
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<input type="text" id="header-key" placeholder="X-Convoy-Signature" formControlName="header" />
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.header')?.touched && sourceForm.get('verifier.hmac.header')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter header key</span>
-					</div>
-				</div>
-
-				<div class="input margin-bottom__0px">
-					<label for="signing-secret">
-						Webhook signing secret
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
-					</label>
-					<input type="text" id="signing-secret" placeholder="Secret goes here" formControlName="secret" />
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.hmac.secret')?.touched && sourceForm.get('verifier.hmac.secret')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter webhook signing secret</span>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<section class="card padding-all__24px margin-top__24px" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" formGroupName="basic_auth">
-			<h2 class="margin-bottom__12px">Configure Basic Auth</h2>
-
-			<div class="grid grid__col-2 grid--gap__24px">
-				<div class="input margin-bottom__0px">
-					<label for="header-key" class="position__relative">
-						Username
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-					</label>
-					<input type="text" id="header-key" placeholder="Name goes here" formControlName="username" />
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.basic_auth.username')?.touched && sourceForm.get('verifier.basic_auth.username')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter basic auth username</span>
-					</div>
-				</div>
-
-				<div class="input margin-bottom__0px">
-					<label for="signing-secret">
-						Password
-						<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px">required</span>
-					</label>
-					<input type="text" id="signing-secret" placeholder="*******" formControlName="password" />
-					<div class="input__error input__error__danger" *ngIf="sourceForm.get('verifier.basic_auth.password')?.touched && sourceForm.get('verifier.basic_auth.password')?.invalid">
-						<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-						<span>Enter basic auth password</span>
-					</div>
-				</div>
-			</div>
-		</section>
-	</div>
-
-	<div class="button-container flex flex__justify-end margin-top__32px">
-		<button class="button button__white padding-y__12px padding-x__28px rounded__8px margin-right__16px" type="button" (click)="onAction.emit({ action: 'close' })">Cancel</button>
-
-		<button class="button button__primary button--has-icon padding-y__12px rounded__8px" [disabled]="isloading">
-			{{ action === 'update' ? 'Update' : 'Create' }} Source
-			<svg width="24" height="24" class="margin-left__8px" fill="#FCFCFC">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</button>
-	</div>
-</form>
+	</form>
+</convoy-modal>

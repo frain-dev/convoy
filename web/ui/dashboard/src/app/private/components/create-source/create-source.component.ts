@@ -69,6 +69,7 @@ export class CreateSourceComponent implements OnInit {
 
 	async saveSource() {
 		const verifier = this.sourceForm.get('verifier.type')?.value === 'github' ? 'hmac' : this.sourceForm.get('verifier.type')?.value;
+
 		if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
 
@@ -85,7 +86,7 @@ export class CreateSourceComponent implements OnInit {
 		try {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			this.isloading = false;
-			this.onAction.emit(response.data);
+			this.onAction.emit({ action: this.action, data: response.data });
 		} catch (error) {
 			this.isloading = false;
 		}

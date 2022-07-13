@@ -60,7 +60,7 @@
 			<div [hidden]="!enableMoreConfig">
 				<h2 class="font-semibold flex items-center mb-20px mt-30px">
 					Retry Logic
-					<convoy-tooltip position="right" size="small" class="ml-4px">
+					<convoy-tooltip position="right" size="sm" class="ml-4px">
 						These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively
 						increasing the time before the next retry attempt.
 					</convoy-tooltip>
@@ -75,7 +75,7 @@
 
 				<h2 class="font-semibold flex items-center mb-20px mt-30px">
 					Alert Rule
-					<convoy-tooltip position="right" size="small" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
+					<convoy-tooltip position="right" size="sm" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
 				</h2>
 				<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
 					<convoy-input type="number" name="alert-config-count" formControlName="count" label="Count" placeholder="e.g 10"></convoy-input>

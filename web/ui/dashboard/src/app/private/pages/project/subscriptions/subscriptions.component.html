@@ -45,7 +45,7 @@
 	</convoy-card>
 </div>
 
-<div class="min-h-[70vh] w-full flex items-start">
+<div class="min-h-[70vh] w-full min-w-[485px] flex items-start">
 	<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100% - 382px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
 		<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
 			<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10">
@@ -54,7 +54,6 @@
 						{{ subscription.name }}
 					</h4>
 					<convoy-tag [type]="subscription.status | statuscolor" className="ml-4px">{{ subscription.status }}</convoy-tag>
-
 				</div>
 				<div class="flex items-center">
 					<div class="flex items-center mr-16px">

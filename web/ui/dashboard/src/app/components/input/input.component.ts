@@ -27,8 +27,9 @@ export class InputComponent implements OnInit, ControlValueAccessor {
 	@Input('required') required = false;
 	@Input('readonly') readonly = false;
 	@Input('placeholder') placeholder!: string;
-	@Input('tooltipPosition') tooltipPosition!: string;
-	@Input('tooltipSize') tooltipSize!: string;
+	@Input('className') class!: string;
+	@Input('tooltipPosition') tooltipPosition: 'left'| 'right' = 'left';
+	@Input('tooltipSize') tooltipSize: 'sm'| 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
 	control!: any;
 	showLoginPassword = false;
