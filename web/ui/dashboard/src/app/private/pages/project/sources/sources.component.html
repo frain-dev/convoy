@@ -1,21 +1,21 @@
-<h1 class="font__12px font-medium flex flex__align-items-center text__uppercase">
-	<a routerLink="/projects" class="font-medium pointer-cursor">Projects</a>
-	<svg width="16" height="16" class="margin-x__4px">
+<h1 class="text-12 font-medium flex items-center uppercase">
+	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="margin-x__4px">
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="color__primary font-medium">Sources</span>
+	<span class="text-primary-100 font-medium">Sources</span>
 </h1>
 
-<div class="main--head width__100 flex flex__justify-end flex__align-items-center margin-y__24px">
-	<a routerLink="./new" class="button button__primary padding-y__8px padding-x__28px">Create a source</a>
+<div class="w-full flex justify-end items-center my-24px">
+	<convoy-button size="sm" routerLink="./new">Create a source</convoy-button>
 </div>
 
-<div class="card">
-	<convoy-table-loader id="events_loader_loader" [tableHead]="sourcesTableHead" *ngIf="isLoadingSources"></convoy-table-loader>
+<convoy-card>
+	<convoy-table-loader id="sources-loader" [tableHead]="sourcesTableHead" *ngIf="isLoadingSources"></convoy-table-loader>
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] flex" id="event-deliveries-table-container" *ngIf="!isLoadingSources && sources.content.length > 0">
 		<convoy-table class="w-full">
 			<convoy-table-head class="contents">
@@ -120,57 +120,38 @@
 		</div>
 	</div>
 
-	<div class="flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isLoadingSources && sources?.content?.length == 0">
-		<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
-		<p class="text-14 font__weight-600 margin-top__0px color__black width__20 text--center">No source yet</p>
-	</div>
-</div>
+	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No source yet" className="h-[50vh]" id="sources-empty-state" *ngIf="!isLoadingSources && sources?.content?.length == 0"></convoy-empty-state>
+</convoy-card>
 
-<div class="button-container flex flex__align-items-center margin-top__16px">
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+<div class="flex items-center mt-16px">
+	<convoy-button
+		type="outline"
+		size="sm"
+		className="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources?.pagination?.prev } : { page: sources?.pagination?.prev }"
-		[disabled]="sources?.pagination?.prev === 0"
+		[disable]="sources?.pagination?.prev === 0"
 		(click)="getSources({ page: sources?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="margin-right__8px">
+		<svg width="24" height="24" class="mr-8px">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
-	</button>
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+	</convoy-button>
+	<convoy-button
+		type="outline"
+		size="sm"
+		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
-		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources?.pagination?.next } : { page: sources?.pagination?.next }"
-		[disabled]="sources?.pagination?.next === 0"
-		(click)="getSources({ page: sources?.pagination?.next })"
+		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources?.pagination?.prev } : { page: sources?.pagination?.prev }"
+		[disable]="sources?.pagination?.prev === 0"
+		(click)="getSources({ page: sources?.pagination?.prev })"
 	>
 		Next
-		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+		<svg width="24" height="24" class="fill-primary-100 mr-8px">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-	</button>
+	</convoy-button>
 </div>
 
-<div class="modal modal__full" *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal">
-	<div class="modal--head">
-		<div class="flex flex__align-items-center flex__justify-between width__100">
-			<div class="modal--head--left flex flex__align-items-center">
-				<a [routerLink]="'/projects/' + projectId + '/sources'" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
-					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-				</a>
-				<h2 class="font__16px font__weight-600">{{ shouldShowUpdateSourceModal ? 'Update Source' : 'Create source' }}</h2>
-			</div>
-
-			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-				<span class="font-medium text-14 color__primary">Go to docs</span>
-			</a>
-		</div>
-	</div>
-
-	<div class="modal--body padding-all__0px">
-		<app-create-source (onAction)="closeCreateSourceModal()" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></app-create-source>
-	</div>
-</div>
+<app-create-source *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></app-create-source>

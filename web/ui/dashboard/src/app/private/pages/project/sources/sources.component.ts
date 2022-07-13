@@ -78,8 +78,8 @@ export class SourcesComponent implements OnInit {
 		}
 	}
 
-	closeCreateSourceModal() {
-		this.generalService.showNotification({ message: `Source ${this.shouldShowUpdateSourceModal ? 'updat' : 'creat'}ed successfully`, style: 'success' });
+	closeCreateSourceModal(source: { action: string; data?: any }) {
+		if (source.action !== 'close') this.generalService.showNotification({ message: `Source ${this.shouldShowUpdateSourceModal ? 'updat' : 'creat'}ed successfully`, style: 'success' });
 		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
 	}
 
