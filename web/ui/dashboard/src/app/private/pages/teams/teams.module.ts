@@ -13,6 +13,11 @@ import { BadgeComponent } from 'src/app/components/badge/badge.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
+import { TableComponent } from 'src/app/components/table/table.component';
+import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
+import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
+import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
+import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -35,6 +40,11 @@ const routes: Routes = [
 		EmptyStateComponent,
 		InputComponent,
 		CardComponent,
+		TableComponent,
+		TableHeadComponent,
+		TableHeadCellComponent,
+		TableCellComponent,
+		TableRowComponent,
 		RouterModule.forChild(routes)
 	]
 })
