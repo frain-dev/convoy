@@ -47,7 +47,7 @@
 
 		<app-create-source
 			*ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid"
-			(onAction)="$event?.action == 'cancel' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"
+			(onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"
 		></app-create-source>
 
 		<app-create-app
