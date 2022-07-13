@@ -3,32 +3,12 @@
 	<ng-container *ngIf="!isInviteAccepted">
 		<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
 		<h2 class="font-semibold text-20 mb-10px">Join your team to start managing webhooks</h2>
-		<p *ngIf="!userDetailsAvailable" class="text-grey-40 text-center text-16px max-w-[445px] mb-32px">
-			Please fill in your {{ userDetailsAvailable ? 'password details below to' : 'details below to create your account and' }} join your team
-		</p>
+		<p *ngIf="!userDetailsAvailable" class="text-grey-40 text-center text-16px max-w-[445px] mb-32px">Please fill in your {{ userDetailsAvailable ? 'password details below to' : 'details below to create your account and' }} join your team</p>
 		<section class="max-w-[445px] mx-auto px-24px py-24px w-full bg-white-100 shadow-default rounded-8px" [ngClass]="{ 'mt-20px': userDetailsAvailable }">
 			<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()">
 				<div class="grid grid-cols-2 gap-6">
-					<convoy-input
-						type="text"
-						autocomplete="firstname"
-						name="firstname"
-						formControlName="first_name"
-						errorMessage="Firstname is required"
-						label="Firstname"
-						placeholder="Enter your firstname"
-						[readonly]="userDetailsAvailable"
-					></convoy-input>
-					<convoy-input
-						type="text"
-						autocomplete="lastname"
-						name="lastname"
-						formControlName="last_name"
-						errorMessage="Lastname is required"
-						label="Lastname"
-						placeholder="Enter your lastname"
-						[readonly]="userDetailsAvailable"
-					></convoy-input>
+					<convoy-input type="text" autocomplete="firstname" name="firstname" formControlName="first_name" errorMessage="Firstname is required" label="Firstname" placeholder="Enter your firstname" [readonly]="userDetailsAvailable"></convoy-input>
+					<convoy-input type="text" autocomplete="lastname" name="lastname" formControlName="last_name" errorMessage="Lastname is required" label="Lastname" placeholder="Enter your lastname" [readonly]="userDetailsAvailable"></convoy-input>
 				</div>
 
 				<convoy-input type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Email is required" label="Email Address" placeholder="Enter your email" [readonly]="true"></convoy-input>
@@ -49,7 +29,7 @@
 					</div>
 				</ng-container>
 
-				<convoy-button [disable]="loading" size="full">
+				<convoy-button [disable]="loading" size="lg">
 					<span *ngIf="!loading">Join your team</span>
 					<img *ngIf="loading" src="assets/img/button-loader.gif" alt="loader" />
 				</convoy-button>

@@ -2,15 +2,14 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-	selector: 'convoy-list-item',
+	selector: 'convoy-table-head-cell',
 	standalone: true,
 	imports: [CommonModule],
-	templateUrl: './list-item.component.html',
-	styleUrls: ['./list-item.component.scss']
+	templateUrl: './table-head-cell.component.html',
+	styleUrls: ['./table-head-cell.component.scss']
 })
-export class ListItemComponent implements OnInit {
+export class TableHeadCellComponent implements OnInit {
 	@Input('className') class!: string;
-	@Input('hover') hover: boolean = false;
 
 	constructor() {}
 
