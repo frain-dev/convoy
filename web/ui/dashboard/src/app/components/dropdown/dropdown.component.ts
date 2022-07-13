@@ -31,6 +31,6 @@ export class DropdownComponent implements OnInit {
 	}
 
 	get buttonClasses(): string {
-		return `${this.active ? 'text-primary-100 bg-primary-500 !border-primary-100' : ''} ${this.buttonClass}`;
+		return `${this.active ? 'text-primary-100 bg-primary-500' : ''} ${this.buttonClass}`;
 	}
 }

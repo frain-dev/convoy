@@ -18,6 +18,11 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { PipesModule } from 'src/app/pipes/pipes.module';
+import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
+import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
+import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
+import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
+import { TableComponent } from 'src/app/components/table/table.component';
 
 @NgModule({
 	declarations: [EventComponent],
@@ -40,7 +45,12 @@ import { PipesModule } from 'src/app/pipes/pipes.module';
 		TagComponent,
 		ListItemComponent,
 		CardComponent,
-		PipesModule
+		PipesModule,
+		TableHeadComponent,
+		TableHeadCellComponent,
+		TableRowComponent,
+		TableCellComponent,
+		TableComponent
 	],
 	exports: [EventComponent]
 })
