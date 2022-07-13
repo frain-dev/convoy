@@ -20,7 +20,7 @@ export class ModalComponent implements OnInit {
 		full: `h-screen w-screen top-0 right-0 bottom-0 overflow-y-auto translate-x-0`,
 		left: `h-screen top-0 left-0 bottom-0 overflow-y-auto translate-x-0`,
 		right: `h-screen top-0 right-0 bottom-0 overflow-y-auto translate-x-0`,
-		center: `top-[50%] left-[50%] -translate-x-2/4 -translate-y-2/4 rounded-[16px]`
+		center: `h-fit top-[50%] left-[50%] -translate-x-2/4 -translate-y-2/4 rounded-[16px]`
 	};
 
 	constructor() {}
