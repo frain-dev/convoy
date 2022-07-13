@@ -1,35 +1,17 @@
-<div class="padding-x__30px padding-y__40px">
-	<h3>Welcome 🌤</h3>
+<convoy-modal size="small" position="center">
+	<div class="px-30px py-40px">
+		<h3 class="font-medium">Welcome 🌤</h3>
 
-	<form [formGroup]="addAnalyticsForm" (ngSubmit)="addAnalytics()">
-		<h5 class="margin-top__24px font__weight-500">Would you like to enable analytics?</h5>
-		<p class="font__14px color__grey margin-bottom__20px margin-top__4px">
-			Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.
-		</p>
-		<div class="grid grid__col-2 grid--gap__24px margin-bottom__50px">
-			<div class="checkbox-option">
-				<input type="radio" id="true" name="is_analytics_enabled" [value]="true" formControlName="is_analytics_enabled" />
-				<label for="true" class="border__all padding-all__10px rounded__4px display__block animate">
-					<div class="flex flex__align-items-center">
-						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-						<p class="font__14px font__weight-600 margin-left__8px">Yes</p>
-					</div>
-				</label>
+		<form [formGroup]="addAnalyticsForm" (ngSubmit)="addAnalytics()">
+			<h5 class="mt-24px font-medium">Would you like to enable analytics?</h5>
+			<p class="text-14 text-grey-40 mb-20px mt-4px">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
+			<div class="grid grid-cols-2 gap-6 mb-50px">
+				<convoy-radio formControlName="is_analytics_enabled" label="Yes" _name="is_analytics_enabled" [value]="true" _id="true"></convoy-radio>
+				<convoy-radio formControlName="is_analytics_enabled" label="No" _name="is_analytics_enabled" [value]="false" _id="false"></convoy-radio>
 			</div>
 
-			<div class="checkbox-option">
-				<input type="radio" id="false" name="is_analytics_enabled" [value]="false" formControlName="is_analytics_enabled" />
-				<label for="false" class="border__all padding-all__10px rounded__4px display__block animate">
-					<div class="flex flex__align-items-center">
-						<div class="checkbox rounded__50px margin-bottom__0px border__all width__16px height__16px animate"></div>
-						<p class="font__14px font__weight-600 margin-left__8px">No</p>
-					</div>
-				</label>
-			</div>
-		</div>
+			<convoy-button [class]="'w-full'" [disable]="loading || addAnalyticsForm.invalid">Save option</convoy-button>
 
-		<div class="flex flex__column flex__justify-center width__50 margin-auto">
-			<button class="button button__primary" [disabled]="loading || addAnalyticsForm.invalid">Save option</button>
-		</div>
-	</form>
-</div>
+		</form>
+	</div>
+</convoy-modal>

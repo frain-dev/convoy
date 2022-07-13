@@ -5,9 +5,11 @@ import { PrivateRoutingModule } from './private-routing.module';
 import { PrivateComponent } from './private.component';
 import { CreateOrganisationModule } from './components/create-organisation/create-organisation.module';
 import { AddAnalyticsModule } from './components/add-analytics/add-analytics.module';
+import { DropdownComponent } from '../components/dropdown/dropdown.component';
+import { ButtonComponent } from '../components/button/button.component';
 
 @NgModule({
 	declarations: [PrivateComponent],
-	imports: [CommonModule, PrivateRoutingModule, CreateOrganisationModule, AddAnalyticsModule]
+	imports: [CommonModule, PrivateRoutingModule, CreateOrganisationModule, AddAnalyticsModule, DropdownComponent, ButtonComponent]
 })
 export class PrivateModule {}
