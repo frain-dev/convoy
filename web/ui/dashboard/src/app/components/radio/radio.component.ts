@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, forwardRef, Input, OnInit } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 @Component({
 	selector: 'convoy-radio',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule],
+	imports: [CommonModule, ReactiveFormsModule, TooltipComponent],
 	templateUrl: './radio.component.html',
 	styleUrls: ['./radio.component.scss'],
 	providers: [
@@ -21,7 +22,11 @@ export class RadioComponent implements OnInit, ControlValueAccessor {
 	@Input('_name') name!: string;
 	@Input('value') value!: any;
 	@Input('_id') id!: string;
+	@Input('checked') checked = false;
 	@Input('description') description!: string;
+	@Input('tooltipPosition') tooltipPosition: 'left'| 'right' = 'left';
+	@Input('tooltipSize') tooltipSize: 'sm'| 'md' = 'md';
+	@Input('tooltipContent') tooltipContent!: string;
 	@Input('formControlName') formControlName!: string;
 	control!: any;
 
