@@ -141,4 +141,8 @@ export class TeamsComponent implements OnInit {
 			this.cancelingInvite = false;
 		}
 	}
+
+	goToTeams(){
+		this.router.navigateByUrl('/team')
+	}
 }
