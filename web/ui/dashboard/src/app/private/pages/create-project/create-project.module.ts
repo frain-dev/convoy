@@ -8,11 +8,14 @@ import { TooltipModule } from '../../components/tooltip/tooltip.module';
 import { CreateAppModule } from '../../components/create-app/create-app.module';
 import { CreateProjectComponentModule } from '../../components/create-project-component/create-project-component.module';
 import { CreateSubscriptionModule } from '../../components/create-subscription/create-subscription.module';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { CardComponent } from 'src/app/components/card/card.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 const routes: Routes = [{ path: '', component: CreateProjectComponent }];
 
 @NgModule({
 	declarations: [CreateProjectComponent],
-	imports: [CommonModule, ReactiveFormsModule, FormsModule, TooltipModule, CreateAppModule, RouterModule.forChild(routes), CreateSourceModule, CreateProjectComponentModule, CreateSubscriptionModule]
+	imports: [CommonModule, ReactiveFormsModule, FormsModule, TooltipModule, CreateAppModule, RouterModule.forChild(routes), CreateSourceModule, CreateProjectComponentModule, CreateSubscriptionModule, ModalComponent, CardComponent, TooltipComponent]
 })
 export class CreateProjectModule {}
