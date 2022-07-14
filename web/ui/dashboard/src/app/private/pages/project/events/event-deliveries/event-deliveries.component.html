@@ -2,7 +2,7 @@
 	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
 		<div class="flex">
 			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('eventsDelDate')" #dateFilter></date-filter>
-			<app-time-filter class="margin-left__14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
+			<app-time-filter class="ml-14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
 
 			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px">
 				<ng-container dropdownToggle>
@@ -141,10 +141,10 @@
 		</convoy-table>
 	</div>
 
-	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="displayedEventDeliveries?.length === 0"></convoy-empty-state>
+	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="displayedEventDeliveries?.length === 0"></convoy-empty-state>
 </convoy-card>
 
-<div class="flex items-center mt-16px">
+<div class="flex items-center mt-16px mb-24px">
 	<convoy-button
 		type="outline"
 		size="sm"
@@ -170,7 +170,7 @@
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
 	>
 		Next
-		<svg width="24" height="24" class="ml-8px" fill="var(--primary-color)">
+		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</convoy-button>

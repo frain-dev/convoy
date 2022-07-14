@@ -1,4 +1,4 @@
-<h1 class="text-12 font-medium flex items-center uppercase">
+<div class="text-12 font-medium flex items-center uppercase">
 	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
@@ -8,7 +8,7 @@
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	<span class="text-primary-100 font-medium">Apps</span>
-</h1>
+</div>
 
 <div class="flex items-center justify-between mb-24px mt-18px">
 	<div class="flex items-center">
@@ -105,7 +105,6 @@
 		</convoy-table>
 	</div>
 </convoy-card>
-
 <convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No app to show here" className="h-[50vh]" id="events-empty-state" *ngIf="!isloadingApps && displayedApps?.length === 0"></convoy-empty-state>
 
 <div class="flex items-center mt-16px">

@@ -186,7 +186,7 @@
 		[disable]="subscriptions?.pagination?.prev === 0"
 		(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="margin-right__8px">
+		<svg width="24" height="24" class="mr-8px">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
@@ -201,7 +201,7 @@
 		(click)="getSubscriptions({ page: subscriptions?.pagination?.next })"
 	>
 		Next
-		<svg width="24" height="24" class="margin-left__8px" fill="#477db3">
+		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</convoy-button>

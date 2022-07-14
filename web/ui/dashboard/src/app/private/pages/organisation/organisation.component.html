@@ -5,11 +5,11 @@
 				<h3 class="font-semibold">Organisation Settings</h3>
 			</div>
 			<ul class="sidemenu--items">
-				<li class="my-30px mx-0 pl-22px" [ngClass]="{ 'text-primary-100': activePage === 'general settings' }">
-					<convoy-button type="text" className="text-grey-40" (click)="activePage = 'general settings'">General Settings</convoy-button>
+				<li class="my-30px mx-0 pl-22px">
+					<convoy-button type="text" [color]="activePage === 'general settings' ? 'primary' : 'grey'" (click)="activePage = 'general settings'">General Settings</convoy-button>
 				</li>
-				<li class="my-30px mx-0 pl-22px" [ngClass]="{ 'text-primary-100': activePage === 'danger zone' }">
-					<convoy-button type="text" className="text-grey-40" (click)="activePage = 'danger zone'">Danger Zone</convoy-button>
+				<li class="my-30px mx-0 pl-22px">
+					<convoy-button type="text" [color]="activePage === 'danger zone' ? 'primary' : 'grey'" (click)="activePage = 'danger zone'">Danger Zone</convoy-button>
 				</li>
 				<hr class="border-t border-t-grey-10" />
 				<li class="my-30px mx-0 pl-22px" (click)="logout()">

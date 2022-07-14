@@ -86,7 +86,7 @@
 								<convoy-table-cell class="contents">
 									<convoy-button type="clear" className="!p-0" size="sm" (clickItem)="openDeliveriesTab(event.uid)">
 										Deliveries
-										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px" alt="arrow right" />
+										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
 									</convoy-button>
 								</convoy-table-cell>
 							</convoy-table-row>
@@ -95,7 +95,7 @@
 				</convoy-table>
 			</div>
 
-			<convoy-empty-state imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!displayedEvents || displayedEvents?.length === 0"></convoy-empty-state>
+			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!displayedEvents || displayedEvents?.length === 0"></convoy-empty-state>
 		</div>
 
 		<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-grey-10">
@@ -121,7 +121,7 @@
 	</div>
 </convoy-card>
 
-<div class="flex items-center mt-16px">
+<div class="flex items-center mt-16px mb-24px">
 	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" (clickItem)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disable]="events?.pagination?.prev === 0">
 		<svg width="24" height="24" class="mr-8px">
 			<use xlink:href="#arrow-left-icon"></use>
@@ -140,7 +140,7 @@
 		[disable]="events?.pagination?.next === 0"
 	>
 		Next
-		<svg width="24" height="24" class="ml-8px" fill="var(--primary-color)">
+		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</convoy-button>

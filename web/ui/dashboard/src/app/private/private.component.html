@@ -1,90 +1,86 @@
-<header class="w-full bg-white-100 border-b border-b-grey-10">
-	<div class="flex items-center justify-between w-full max-w-[1376px] m-auto bg-white-100 px-32px py-12px">
-		<div class="flex items-center">
-			<a routerLink="/" rel="noreferrer">
-				<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
-			</a>
+<body class="bg-[#fafafe] min-h-screen overflow-y-auto">
+	<header class="w-full bg-white-100 border-b border-b-grey-10">
+		<div class="flex items-center justify-between w-full max-w-[1376px] m-auto bg-white-100 px-32px py-12px">
+			<div class="flex items-center">
+				<a routerLink="/" rel="noreferrer">
+					<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
+				</a>
 
-			<nav class="ml-130px desktop:ml-20px transition-all duration-200">
-				<ul class="flex items-center">
-					<li>
-						<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
-					</li>
-					<li>
-						<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
-					</li>
-				</ul>
-			</nav>
-		</div>
-		<div class="flex items-center">
-			<a class="flex items-center mr-16px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-				<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
-			</a>
-			<convoy-dropdown size="xl" buttonColor="grey" buttonSize="sm" buttonClass="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
-				<ng-container dropdownToggle>
-					<div class="flex items-center" *ngIf="organisations?.length">
-						<div class="w-24px h-24px rounded-[50%] text-12 uppercase text-white-100 flex items-center justify-center bg-black">{{ userOrganization?.name?.slice(0, 1) }}</div>
-						<div class="text-14 ml-8px capitalize text-left text-grey-100">{{ userOrganization?.name }}</div>
-					</div>
-					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="ml-8px" />
-				</ng-container>
-			
-				<div>
-					<div class="font-semibold text-14 text-grey-40 px-32px pt-24px pb-16px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</div>
-					<ul *ngIf="organisations?.length">
-						<li *ngFor="let organisation of organisations">
-							<convoy-button type="text" className="justify-start px-30px py-12px w-full" (clickItem)="selectOrganisation(organisation)" class="w-full">
-								<div class="flex justify-between items-center w-full">
-									<div class="flex items-center">
-										<div class="w-24px h-24px rounded-[50%] text-12 uppercase text-white-100 flex items-center justify-center bg-grey-40">{{ organisation?.name?.slice(0, 1) }}</div>
-										<p class="text-14 ml-8px capitalize text-left">{{ organisation?.name }}</p>
+				<nav class="ml-130px desktop:ml-20px transition-all duration-200">
+					<ul class="flex items-center">
+						<li>
+							<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
+						</li>
+						<li>
+							<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
+						</li>
+					</ul>
+				</nav>
+			</div>
+			<div class="flex items-center">
+				<a class="flex items-center mr-16px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+					<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+				</a>
+				<convoy-dropdown size="xl" buttonColor="grey" buttonSize="sm" buttonClass="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
+					<ng-container dropdownToggle>
+						<convoy-badge *ngIf="organisations?.length" className="mr-8px" [text]="userOrganization.name"></convoy-badge>
+
+						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+					</ng-container>
+
+					<div>
+						<div class="font-semibold text-14 text-grey-40 px-32px pt-24px pb-16px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</div>
+						<ul *ngIf="organisations?.length">
+							<li *ngFor="let organisation of organisations">
+								<convoy-button type="text" className="justify-start px-30px py-12px w-full" (clickItem)="selectOrganisation(organisation); dropdownComponent.show = false" class="w-full">
+									<div class="flex justify-between items-center w-full">
+										<convoy-badge [text]="organisation.name"></convoy-badge>
+
+										<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
 									</div>
-									<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
-								</div>
+								</convoy-button>
+							</li>
+						</ul>
+						<div class="border-t border-t-grey-10">
+							<convoy-button type="text" className="px-30px py-16px" (clickItem)="showAddOrganisationModal = true; dropdownComponent.show = false">
+								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+								Add {{ organisations?.length ? 'another' : 'an' }} Organization
 							</convoy-button>
-						</li>
-					</ul>
-					<div class="border-t border-t-grey-10">
-						<convoy-button type="text" className="px-30px py-16px" (clickItem)="showAddOrganisationModal = true; showOrgDropdown = false">
-							<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
-							Add {{ organisations?.length ? 'another' : 'an' }} Organization
-						</convoy-button>
+						</div>
 					</div>
-				</div>
-			</convoy-dropdown>
+				</convoy-dropdown>
 
-			<convoy-dropdown size="lg" buttonColor="grey" buttonSize="sm" buttonClass="bg-grey-10 py-12px px-20px rounded-8px h-36px">
-				<ng-container dropdownToggle>
-					<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-				</ng-container>
-			
+				<convoy-dropdown size="lg" buttonColor="grey" buttonSize="sm" buttonClass="bg-grey-10 py-12px px-20px rounded-8px h-36px">
+					<ng-container dropdownToggle>
+						<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+					</ng-container>
 
-				<div>
-					<div class="border-b border-b-grey-10 px-24px py-16px">
-						<h3 class="capitalize font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
-						<p class="text-12 text-grey-40">{{ authDetails()?.email }}</p>
+					<div>
+						<div class="border-b border-b-grey-10 px-24px py-16px">
+							<h3 class="capitalize font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
+							<p class="text-12 text-grey-40">{{ authDetails()?.email }}</p>
+						</div>
+						<ul>
+							<li class="py-8px">
+								<a (click)="dropdownComponent.show = false" routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
+							</li>
+							<li class="py-8px" *ngIf="organisations?.length">
+								<a (click)="dropdownComponent.show = false" routerLink="/organisation-settings" class="text-14 pl-24px text-grey-40">Organisation settings</a>
+							</li>
+						</ul>
+						<div class="border-t border-t-grey-10">
+							<convoy-button type="text" color="danger" className="font-medium px-24px py-20px" (click)="logout()">Logout</convoy-button>
+						</div>
 					</div>
-					<ul>
-						<li class="pt-16px">
-							<a routerLink="/user-settings" (click)="showMoreDropdown = false; showOverlay = false" class="text-14 pl-24px text-grey-40">My account</a>
-						</li>
-						<li class="pt-16px pb-16px" *ngIf="organisations?.length">
-							<a routerLink="/organisation-settings" (click)="showMoreDropdown = false; showOverlay = false" class="text-14 pl-24px text-grey-40">Organisation settings</a>
-						</li>
-					</ul>
-					<div class="border-t border-t-grey-10">
-						<convoy-button type="text" color="danger" className="font-medium px-24px py-20px" (click)="logout()">Logout</convoy-button>
-					</div>
-				</div>
-			</convoy-dropdown>
+				</convoy-dropdown>
+			</div>
 		</div>
-	</div>
-</header>
+	</header>
 
+	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 
-<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
+	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 
-<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()"></app-add-analytics>
-
-<router-outlet></router-outlet>
+	<router-outlet></router-outlet>
+</body>

@@ -5,11 +5,11 @@
 				<h3 class="font-semibold">User Settings</h3>
 			</div>
 			<ul class="sidemenu--items">
-				<li class="my-30px mx-0 pl-22px" [ngClass]="{ 'text-primary-100': activePage === 'profile' }">
-					<convoy-button type="text" className="text-grey-40" (click)="activePage = 'profile'">Profile</convoy-button>
+				<li class="my-30px mx-0 pl-22px">
+					<convoy-button type="text" [color]="activePage === 'profile' ? 'primary': 'grey'" (click)="activePage = 'profile'">Profile</convoy-button>
 				</li>
-				<li class="my-30px mx-0 pl-22px" [ngClass]="{ 'text-primary-100': activePage === 'security' }">
-					<convoy-button type="text" className="text-grey-40" (click)="activePage = 'security'">Security</convoy-button>
+				<li class="my-30px mx-0 pl-22px">
+					<convoy-button type="text" [color]="activePage === 'security' ? 'primary': 'grey'" (click)="activePage = 'security'">Security</convoy-button>
 				</li>
 				<hr class="border-t border-t-grey-10" />
 				<li class="my-30px mx-0 pl-22px" (click)="logout()">
