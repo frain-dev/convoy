@@ -1,5 +1,5 @@
 <convoy-modal position="full" title="Create Project" (closeModal)="cancel()">
-	<div class="pt-40px" modalBody>
+	<div class="pt-40px pb-60px" modalBody>
 		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
 		<convoy-card className="p-24px mb-24px" *ngIf="projectStage !== 'createProject'">

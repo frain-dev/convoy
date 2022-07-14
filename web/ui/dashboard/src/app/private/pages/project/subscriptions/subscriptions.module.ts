@@ -10,11 +10,12 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { PipesModule } from 'src/app/pipes/pipes.module';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
 @NgModule({
 	declarations: [SubscriptionsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DeleteModalModule, PipesModule, ButtonComponent, ModalComponent, CardComponent, ListItemComponent, TagComponent]
+	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DeleteModalModule, PipesModule, ButtonComponent, ModalComponent, CardComponent, ListItemComponent, TagComponent, EmptyStateComponent]
 })
 export class SubscriptionsModule {}

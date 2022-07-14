@@ -1,4 +1,4 @@
-<div class="flex flex-col items-center justify-center" [class]="type === 'normal' ? class + ' bg-white-100 border border-grey-10' : class">
+<div class="flex flex-col items-center justify-center rounded-8px" [class]="type === 'normal' ? class + ' bg-white-100 border border-grey-10' : class">
 	<img *ngIf="imgSrc" [src]="imgSrc" alt="empty state" class="max-h-[88px] mb-4" />
 	<h1 class="font-semibold mb-2">{{ heading }}</h1>
 	<p *ngIf="description" class="text-14 text-grey-100 font-medium w-full max-w-[384px] text-center mb-4">{{ description }}</p>
