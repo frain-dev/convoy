@@ -10,7 +10,7 @@ import { Component, Input, OnInit } from '@angular/core';
 })
 export class PageComponent implements OnInit {
 	@Input('size') size: 'small' | 'normal' = 'normal';
-	@Input('class') class!: string;
+	@Input('className') class!: string;
 	types = { small: 'max-w-[848px] bg-white-100 border border-grey-10 rounded-8px mt-10', normal: 'max-w-[1374px] px-8 pb-8 pt-16' };
 
 	constructor() {}
