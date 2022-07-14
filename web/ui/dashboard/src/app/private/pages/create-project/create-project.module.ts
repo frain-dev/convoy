@@ -4,7 +4,6 @@ import { CreateProjectComponent } from './create-project.component';
 import { Routes, RouterModule } from '@angular/router';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TooltipModule } from '../../components/tooltip/tooltip.module';
 import { CreateAppModule } from '../../components/create-app/create-app.module';
 import { CreateProjectComponentModule } from '../../components/create-project-component/create-project-component.module';
 import { CreateSubscriptionModule } from '../../components/create-subscription/create-subscription.module';
@@ -16,6 +15,6 @@ const routes: Routes = [{ path: '', component: CreateProjectComponent }];
 
 @NgModule({
 	declarations: [CreateProjectComponent],
-	imports: [CommonModule, ReactiveFormsModule, FormsModule, TooltipModule, CreateAppModule, RouterModule.forChild(routes), CreateSourceModule, CreateProjectComponentModule, CreateSubscriptionModule, ModalComponent, CardComponent, TooltipComponent]
+	imports: [CommonModule, ReactiveFormsModule, FormsModule, CreateAppModule, RouterModule.forChild(routes), CreateSourceModule, CreateProjectComponentModule, CreateSubscriptionModule, ModalComponent, CardComponent, TooltipComponent]
 })
 export class CreateProjectModule {}
