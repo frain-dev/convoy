@@ -1,60 +1,42 @@
-<div class="page">
-	<div class="card flex padding-all__0px">
-		<div class="sidemenu">
-			<div class="border__bottom padding-x__24px padding-top__16px padding-bottom__10px">
-				<h3>Organisation Settings</h3>
+<convoy-page size="small">
+	<convoy-card className="flex p-0">
+		<div class="border-r border-r-grey-10 w-full max-w-[260px]">
+			<div class="border-b border-b-grey-10 px-24px pt-16px pb-10px">
+				<h3 class="font-semibold">Organisation Settings</h3>
 			</div>
 			<ul class="sidemenu--items">
-				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'general settings' }">
-					<button (click)="activePage = 'general settings'" class="button__clear">General Settings</button>
+				<li class="my-30px mx-0 pl-22px" [ngClass]="{ 'text-primary-100': activePage === 'general settings' }">
+					<convoy-button type="text" className="text-grey-40" (click)="activePage = 'general settings'">General Settings</convoy-button>
 				</li>
-
-				<li class="sidemenu--item font__14px" [ngClass]="{ active: activePage === 'danger zone' }">
-					<button (click)="activePage = 'danger zone'" class="button__clear">Danger Zone</button>
+				<li class="my-30px mx-0 pl-22px" [ngClass]="{ 'text-primary-100': activePage === 'danger zone' }">
+					<convoy-button type="text" className="text-grey-40" (click)="activePage = 'danger zone'">Danger Zone</convoy-button>
 				</li>
-				<hr class="border__top" />
-				<li class="sidemenu--item font__14px color__danger font-weight__600" (click)="logout()">
-					<a href="">Logout</a>
+				<hr class="border-t border-t-grey-10" />
+				<li class="my-30px mx-0 pl-22px" (click)="logout()">
+					<convoy-button type="text" color="danger" (click)="logout()">Logout</convoy-button>
 				</li>
 			</ul>
 		</div>
-
-		<div class="page__small--view">
+		<div class="p-32px w-full">
 			<ng-container *ngIf="activePage === 'general settings'">
-				<div class="flex flex__justify-between flex__align-items-center margin-bottom__28px">
-					<h3>Organisation Info</h3>
+				<div class="flex justify-between items-center mb-28px">
+					<h3 class="font-semibold">Organisation Info</h3>
 
-					<button class="button button__primary button__small" [disabled]="isEditingOrganisation" (click)="updateOrganisation()">Save Changes</button>
+					<convoy-button size="sm" [disable]="isEditingOrganisation" (click)="updateOrganisation()">Save Changes</convoy-button>
 				</div>
 
 				<form [formGroup]="editOrganisationForm">
-					<div class="input">
-						<label class="margin-bottom__4px" for="organisation-name">Organisation name</label>
-						<input type="text" aria-label="Organization name" formControlName="name" id="organisation-name" />
-						<div class="input__error input__error__danger" *ngIf="editOrganisationForm.controls.name.touched && editOrganisationForm.controls.name.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter a name for your organisation</span>
-						</div>
-					</div>
+					<convoy-input type="text" autocomplete="name" name="name" formControlName="name" errorMessage="Please enter a name for your organisation" label="Organisation name" placeholder="Organisation name" [required]="true"></convoy-input>
 				</form>
 			</ng-container>
 
 			<ng-container *ngIf="activePage === 'danger zone'">
-				<h3 class="color__danger margin-bottom__8px">Danger zone</h3>
-				<p class="color__grey font__14px">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
-				<button class="button button__danger button__small margin-top__20px" (click)="showDeleteModal = !showDeleteModal">Delete Organisation</button>
+				<h2 class="text-danger font-semibold mb-8px">Danger zone</h2>
+				<p class="text-grey-40 text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
+				<convoy-button className="mt-20px" (click)="showDeleteModal = !showDeleteModal">Delete Organisation</convoy-button>
 			</ng-container>
 		</div>
-	</div>
-</div>
-<div class="_overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false"></div>
+	</convoy-card>
+</convoy-page>
 
-<div class="modal modal__center" *ngIf="showDeleteModal">
-	<app-delete-modal
-		[isLoading]="isDeletingOrganisation"
-		[deleteText]="'deactivate “' + organisationName + '”'"
-		[deleteButtonText]="'Deactivate'"
-		(closeModal)="showDeleteModal = false"
-		(deleteData)="deleteOrganisation()"
-	></app-delete-modal>
-</div>
+<app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="showDeleteModal = false" (deleteData)="deleteOrganisation()"></app-delete-modal>
