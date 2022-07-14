@@ -26,6 +26,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('required') required = false;
 	@Input('placeholder') placeholder!: string;
 	@Input('className') class!: string;
+	@Input('value') value!: any;
 	@Input('tooltipPosition') tooltipPosition: 'left' | 'right' = 'left';
 	@Input('tooltipSize') tooltipSize: 'sm' | 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
