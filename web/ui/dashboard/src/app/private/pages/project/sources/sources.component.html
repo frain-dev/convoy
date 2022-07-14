@@ -63,7 +63,7 @@
 
 				<convoy-list-item *ngIf="activeSource?.provider !== ''">
 					<div class="w-1/2 text-14 font-medium">Provider</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.provider}}</div>
+					<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.provider }}</div>
 				</convoy-list-item>
 
 				<ng-container *ngIf="activeSource?.verifier?.type == 'hmac'">
@@ -159,6 +159,10 @@
 	</convoy-button>
 </div>
 
-<app-create-source *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></app-create-source>
+<convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [title]="shouldShowUpdateSourceModal ? 'Update Source' : 'Create source'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
+	<ng-container modalBody>
+		<app-create-source (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></app-create-source>
+	</ng-container>
+</convoy-modal>
 
 <app-delete-modal *ngIf="showDeleteSourceModal" [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="showDeleteSourceModal = false" (deleteData)="deleteSource()"></app-delete-modal>
