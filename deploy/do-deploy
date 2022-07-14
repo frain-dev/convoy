@@ -47,7 +47,7 @@ apt install -y jq
 
 # rewrite convoy.json
 echo "Setting up convoy.json ..."
-echo "$( jq --arg domain "${DOMAIN}" '.host = $domain' convoy.json  )" > convoy.json
+echo "$( jq --arg domain "${DOMAIN}" '.host = $domain | .environment = "production"' convoy.json  )" > convoy.json
 echo "convoy.json ready"
 echo ""
 echo ""
