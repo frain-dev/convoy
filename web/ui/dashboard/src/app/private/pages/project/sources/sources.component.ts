@@ -22,7 +22,7 @@ export class SourcesComponent implements OnInit {
 	showDeleteSourceModal = false;
 	projectId = this.privateService.activeProjectDetails.uid;
 	sourceTypes = [
-		{ value: 'http', viewValue: 'http' },
+		{ value: 'http', viewValue: 'HTTP' },
 		{ value: 'rest_api', viewValue: 'Rest API' },
 		{ value: 'pub_sub', viewValue: 'Pub/Sub' },
 		{ value: 'db_change_stream', viewValue: 'Database' }

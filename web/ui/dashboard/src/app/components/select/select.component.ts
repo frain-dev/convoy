@@ -18,7 +18,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 	]
 })
 export class SelectComponent implements OnInit, ControlValueAccessor {
-	@Input('options') options!: Array<any>;
+	@Input('options') options?: Array<any>;
 	@Input('name') name!: string;
 	@Input('errorMessage') errorMessage!: string;
 	@Input('label') label!: string;

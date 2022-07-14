@@ -1,10 +1,10 @@
 <convoy-card className="rounded-tl-[0] rounded-tr-[0]">
 	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
 		<div class="flex">
-			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('eventsDelDate')" #dateFilter></date-filter>
+			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #dateFilter></date-filter>
 			<app-time-filter class="margin-left__14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
 
-			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px">
+			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #statusDropdown>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/status-filter-icon.svg" class="w-14px mr-10px" alt="status filter icon" />
 					<span class="text-grey-40 w-full">Status</span>
@@ -20,8 +20,8 @@
 					</ul>
 
 					<div class="flex items-center mt-10px p-10px">
-						<convoy-button size="sm" (clickItem)="this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</convoy-button>
-						<convoy-button size="sm" type="clear" (clickItem)="clearFilters('eventsDelsStatus'); showEventDeliveriesStatusDropdown = false; showOverlay = false">Clear</convoy-button>
+						<convoy-button size="sm" (clickItem)="statusDropdown.show = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</convoy-button>
+						<convoy-button size="sm" type="clear" (clickItem)="clearFilters('status'); showEventDeliveriesStatusDropdown = false; showOverlay = false">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -47,7 +47,7 @@
 					</ul>
 
 					<div *ngIf="!!eventDeliveriesApp" class="p-10px pb-10px">
-						<convoy-button type="text" size="sm" (clickItem)="clearFilters('eventsDelApp')">Clear</convoy-button>
+						<convoy-button size="sm" (clickItem)="clearFilters('app')">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
