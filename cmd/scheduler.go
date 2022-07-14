@@ -70,8 +70,8 @@ func addSchedulerCommand(a *app) *cobra.Command {
 				UserRepo:   a.userRepo,
 			}, cfg))
 			w.RegisterHandlers(convoy.TaskName("monitor twitter sources"), task.MonitorTwitterSources(a.sourceRepo, a.subRepo, a.applicationRepo, a.queue))
-			s.RegisterTask("55 23 * * *", convoy.DefaultQueue, convoy.TaskName("daily analytics"))
-			s.RegisterTask("30 * * * *", convoy.DefaultQueue, convoy.TaskName("monitor twitter sources"))
+			s.RegisterTask("55 23 * * *", convoy.DefaultQueue, convoy.DailyAnalytics)
+			s.RegisterTask("30 * * * *", convoy.DefaultQueue, convoy.MonitorTwitterSources)
 
 			// Start scheduler
 			s.Start()

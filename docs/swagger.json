@@ -8440,6 +8440,9 @@
                 "logo_url": {
                     "type": "string"
                 },
+                "metadata": {
+                    "$ref": "#/definitions/datastore.GroupMetadata"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -8490,6 +8493,14 @@
                 },
                 "strategy": {
                     "$ref": "#/definitions/datastore.StrategyConfiguration"
+                }
+            }
+        },
+        "datastore.GroupMetadata": {
+            "type": "object",
+            "properties": {
+                "retained_events": {
+                    "type": "integer"
                 }
             }
         },

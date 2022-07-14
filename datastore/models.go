@@ -212,14 +212,19 @@ type Group struct {
 	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
-	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Metadata          *GroupMetadata `json:"metadata" bson:"metadata"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type GroupMetadata struct {
+	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
 type GroupConfig struct {
@@ -269,6 +274,13 @@ type GroupFilter struct {
 }
 
 type EventFilter struct {
+	GroupID        string         `json:"group_id" bson:"group_id"`
+	DocumentStatus DocumentStatus `json:"document_status" bson:"document_status"`
+	CreatedAtStart int64          `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64          `json:"created_at_end" bson:"created_at_end"`
+}
+
+type EventDeliveryFilter struct {
 	GroupID        string `json:"group_id" bson:"group_id"`
 	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`

@@ -210,7 +210,7 @@ func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 		CreatedAtStart: 0,
 		CreatedAtEnd:   time.Now().Unix(),
 	}
-	err = gs.eventRepo.DeleteGroupEvents(ctx, evntFilter)
+	err = gs.eventRepo.DeleteGroupEvents(ctx, evntFilter, false)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group events")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group events"))

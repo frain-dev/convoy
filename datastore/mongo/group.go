@@ -75,6 +75,7 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
 		primitive.E{Key: "rate_limit", Value: o.RateLimit},
+		primitive.E{Key: "metadata", Value: o.Metadata},
 		primitive.E{Key: "rate_limit_duration", Value: o.RateLimitDuration},
 	}
 
@@ -159,7 +160,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 }
 
 func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
-	err := db.store.DeleteByID(ctx, uid)
+	err := db.store.DeleteByID(ctx, uid, false)
 	if err != nil {
 		return err
 	}

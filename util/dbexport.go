@@ -13,8 +13,16 @@ var (
 	GitCommit  = "build-without-git-commit"
 )
 
-func MongoExport(args []string) (int64, error) {
-	opts, err := mongoexport.ParseOptions(args, VersionStr, GitCommit)
+type DBExporter interface {
+	Export() (int64, error)
+}
+
+type MongoExporter struct {
+	Args []string
+}
+
+func (me *MongoExporter) Export() (int64, error) {
+	opts, err := mongoexport.ParseOptions(me.Args, VersionStr, GitCommit)
 	if err != nil {
 		log.Logvf(log.Always, "error parsing options: %v", err)
 		log.Logvf(log.Always, util.ShortUsage("mongoexport"))
@@ -49,9 +57,9 @@ func MongoExport(args []string) (int64, error) {
 	}
 
 	if numDocs == 1 {
-		log.Logvf(log.Always, "exported %v record", numDocs)
+		log.Logvf(log.Always, "exported %v record from %v", numDocs, me.Args[3])
 	} else {
-		log.Logvf(log.Always, "exported %v records", numDocs)
+		log.Logvf(log.Always, "exported %v records from %v", numDocs, me.Args[3])
 	}
 	return numDocs, nil
 }

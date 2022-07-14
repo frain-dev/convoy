@@ -17,15 +17,17 @@ import (
 
 type eventDeliveryRepo struct {
 	inner *mongo.Collection
+	store datastore.Store
 }
 
 const (
 	EventDeliveryCollection = "eventdeliveries"
 )
 
-func NewEventDeliveryRepository(db *mongo.Database) datastore.EventDeliveryRepository {
+func NewEventDeliveryRepository(db *mongo.Database, store datastore.Store) datastore.EventDeliveryRepository {
 	return &eventDeliveryRepo{
 		inner: db.Collection(EventDeliveryCollection),
+		store: store,
 	}
 }
 
@@ -259,4 +261,26 @@ func getFilter(groupID string, appID string, eventID string, status []datastore.
 	}
 
 	return filter
+}
+
+func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
+	update := bson.M{
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.DeletedDocumentStatus,
+	}
+
+	f := bson.M{
+		"group_id":        filter.GroupID,
+		"document_status": datastore.ActiveDocumentStatus,
+		"created_at": bson.M{
+			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
+			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
+		},
+	}
+
+	err := db.store.DeleteMany(ctx, f, update, hardDelete)
+	if err != nil {
+		return err
+	}
+	return nil
 }

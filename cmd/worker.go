@@ -57,6 +57,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.configRepo,
 				a.groupRepo,
 				a.eventRepo,
+				a.eventDeliveryRepo,
 				a.searcher,
 			))
 			//start scheduler

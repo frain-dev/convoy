@@ -71,6 +71,8 @@ const (
 	DeadLetterProcessor   TaskName = "DeadLetterProcessor"
 	CreateEventProcessor  TaskName = "CreateEventProcessor"
 	NotificationProcessor TaskName = "NotificationProcessor"
+	DailyAnalytics        TaskName = "daily analytics"
+	MonitorTwitterSources TaskName = "monitor twitter sources"
 	ApplicationsCacheKey  CacheKey = "applications"
 	GroupsCacheKey        CacheKey = "groups"
 	TokenCacheKey         CacheKey = "tokens"

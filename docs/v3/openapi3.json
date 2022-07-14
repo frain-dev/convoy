@@ -349,6 +349,9 @@
 					"logo_url": {
 						"type": "string"
 					},
+					"metadata": {
+						"$ref": "#/components/schemas/datastore.GroupMetadata"
+					},
 					"name": {
 						"type": "string"
 					},
@@ -399,6 +402,14 @@
 					},
 					"strategy": {
 						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.GroupMetadata": {
+				"properties": {
+					"retained_events": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
