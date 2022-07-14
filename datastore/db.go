@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -145,6 +146,7 @@ func (d *mongoStore) FindOne(ctx context.Context, filter, projection bson.M, res
 
 func (d *mongoStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error {
 	if !IsValidPointer(results) {
+		log.Errorf("Invalid Pointer Type")
 		return ErrInvalidPtr
 	}
 
@@ -166,6 +168,7 @@ func (d *mongoStore) FindMany(ctx context.Context, filter, projection bson.M, so
 
 	cursor, err := d.Collection.Find(ctx, filter, ops)
 	if err != nil {
+		log.WithError(err).Error("Cannot find many")
 		return err
 	}
 
