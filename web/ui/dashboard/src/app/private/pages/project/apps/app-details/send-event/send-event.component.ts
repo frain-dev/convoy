@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -39,16 +39,11 @@ export class SendEventComponent implements OnInit {
 	}
 
 	async sendNewEvent() {
-		if (this.sendEventForm.invalid) {
-			(<any>Object).values(this.sendEventForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.sendEventForm.invalid) return this.sendEventForm.markAsTouched();
 
 		if (!this.convertStringToJson(this.sendEventForm.value.data)) return;
-
 		this.sendEventForm.value.data = this.convertStringToJson(this.sendEventForm.value.data);
+
 		this.isSendingNewEvent = true;
 		try {
 			const response = await this.appDetailsService.sendEvent({ body: this.sendEventForm.value });

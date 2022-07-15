@@ -1,0 +1,5 @@
+select.ng-invalid.ng-touched,
+input.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-touched {
+	@apply border-danger-100;
+}
