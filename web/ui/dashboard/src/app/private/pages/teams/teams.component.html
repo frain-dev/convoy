@@ -78,7 +78,7 @@
 
 		<div class="flex items-center mt-16px">
 			<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: teams?.pagination?.prev }" [disable]="teams?.pagination?.prev === 0" (click)="fetchTeamMembers({ page: teams?.pagination?.prev })">
-				<svg width="24" height="24" class="margin-right__8px">
+				<svg width="24" height="24" class="mr-8px">
 					<use xlink:href="#arrow-left-icon"></use>
 				</svg>
 				Previous
@@ -146,7 +146,7 @@
 				[disable]="pendingInvites?.pagination?.prev === 0"
 				(click)="fetchPendingTeamMembers({ page: pendingInvites?.pagination?.prev })"
 			>
-				<svg width="24" height="24" class="margin-right__8px">
+				<svg width="24" height="24" class="mr-8px">
 					<use xlink:href="#arrow-left-icon"></use>
 				</svg>
 				Previous
@@ -161,7 +161,7 @@
 				(click)="fetchPendingTeamMembers({ page: pendingInvites?.pagination?.next })"
 			>
 				Next
-				<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+				<svg width="24" height="24" class="mr-8px fill-primary-100">
 					<use xlink:href="#arrow-right-icon"></use>
 				</svg>
 			</convoy-button>
