@@ -18,6 +18,7 @@ import { TableHeadComponent } from 'src/app/components/table-head/table-head.com
 import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
+import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -45,7 +46,8 @@ const routes: Routes = [
 		TableHeadCellComponent,
 		TableCellComponent,
 		TableRowComponent,
-		RouterModule.forChild(routes)
+		RouterModule.forChild(routes),
+		ListItemComponent
 	]
 })
 export class TeamsModule {}
