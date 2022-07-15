@@ -80,9 +80,15 @@
 						<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.verifier?.hmac?.header }}</div>
 					</convoy-list-item>
 					<convoy-list-item>
-						<div class="w-1/2 text-14 font-medium">Signning secret</div>
+						<div class="w-1/2 text-14 font-medium">Signing secret</div>
 						<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">**********</div>
 					</convoy-list-item>
+					<ng-container *ngIf="activeSource?.provider === 'twitter' && isDateBefore(activeSource?.provider_config?.twitter?.crc_verified_at, activeSource?.created_at)">
+						<convoy-list-item>
+							<div class="w-1/2 text-14 font-medium">Last verified</div>
+							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.provider_config?.twitter?.crc_verified_at | date: 'medium' }}</div>
+						</convoy-list-item>
+					</ng-container>
 				</ng-container>
 
 				<ng-container *ngIf="activeSource?.verifier?.type == 'basic_auth'">

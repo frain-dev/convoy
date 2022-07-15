@@ -97,4 +97,9 @@ export class SourcesComponent implements OnInit {
 		this.generalService.showNotification({ message: `${sourceName} URL has been copied to clipboard`, style: 'info' });
 		document.body.removeChild(el);
 	}
+
+	isDateBefore(date1?: Date, date2?: Date): boolean {
+		if (date1 && date2) return date1 > date2;
+		return false;
+	}
 }
