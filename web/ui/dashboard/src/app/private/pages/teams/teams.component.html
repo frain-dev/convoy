@@ -83,6 +83,7 @@
 				</svg>
 				Previous
 			</convoy-button>
+
 			<convoy-button
 				type="outline"
 				size="sm"
@@ -99,43 +100,47 @@
 			</convoy-button>
 		</div>
 	</ng-container>
-	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
-		<div class="min-h-[70vh]">
-			<convoy-table class="contents" className="w-full border border-primary-500">
-				<convoy-table-head class="contents" className="border border-primary-500">
-					<convoy-table-head-cell class="contents" className="uppercase" [className]="i === 0 ? 'pl-20px uppercase' : 'uppercase'" *ngFor="let head of tableHead; let i = index">
-						{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}
-					</convoy-table-head-cell>
-				</convoy-table-head>
 
-				<tbody>
-					<convoy-table-row class="contents" className="border border-primary-500" *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
-						<convoy-table-cell class="contents" className="pl-20px">
-							{{ team.invitee_email }}
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</convoy-table-cell>
-						<convoy-table-cell class="contents">All projects</convoy-table-cell>
-						<convoy-table-cell class="contents">
-							<convoy-dropdown buttonSize="sm" buttonType="clear">
-								<ng-container dropdownToggle>
-									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-								</ng-container>
-								<div>
-									<ul>
-										<li class="border-b border-b-grey-10">
-											<convoy-button type="clear" color="grey" className="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</convoy-button>
-										</li>
-										<li>
-											<convoy-button type="clear" color="danger" className="w-full" (clickItem)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</convoy-button>
-										</li>
-									</ul>
-								</div>
-							</convoy-dropdown>
-						</convoy-table-cell>
-					</convoy-table-row>
-				</tbody>
-			</convoy-table>
-		</div>
+	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
+		<convoy-card>
+			<div class="min-h-[70vh]">
+				<convoy-table class="contents" className="w-full border border-primary-500">
+					<convoy-table-head class="contents" className="border border-primary-500">
+						<convoy-table-head-cell class="contents" className="uppercase" [className]="i === 0 ? 'pl-20px uppercase' : 'uppercase'" *ngFor="let head of tableHead; let i = index">
+							{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}
+						</convoy-table-head-cell>
+					</convoy-table-head>
+
+					<tbody>
+						<convoy-table-row class="contents" className="border border-primary-500" *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
+							<convoy-table-cell class="contents" className="pl-20px">
+								{{ team.invitee_email }}
+							</convoy-table-cell>
+							<convoy-table-cell class="contents">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</convoy-table-cell>
+							<convoy-table-cell class="contents">All projects</convoy-table-cell>
+							<convoy-table-cell class="contents">
+								<convoy-dropdown buttonSize="sm" buttonType="clear">
+									<ng-container dropdownToggle>
+										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+									</ng-container>
+									<div>
+										<ul>
+											<li class="border-b border-b-grey-10">
+												<convoy-button type="clear" color="grey" className="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</convoy-button>
+											</li>
+											<li>
+												<convoy-button type="clear" color="danger" className="w-full" (clickItem)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</convoy-button>
+											</li>
+										</ul>
+									</div>
+								</convoy-dropdown>
+							</convoy-table-cell>
+						</convoy-table-row>
+					</tbody>
+				</convoy-table>
+			</div>
+		</convoy-card>
+
 		<div class="flex items-center mt-16px">
 			<convoy-button
 				type="outline"
@@ -151,6 +156,7 @@
 				</svg>
 				Previous
 			</convoy-button>
+
 			<convoy-button
 				type="outline"
 				size="sm"
@@ -185,9 +191,9 @@
 			<convoy-card className="p-24px mt-24px">
 				<h3 class="font-semibold">Basic info</h3>
 				<div class="text-grey-40 text-14 font-normal mb-16px">Invite other members of your team to your organisation.</div>
-
 				<convoy-input type="email" autocomplete="email" name="email" formControlName="invitee_email" errorMessage="Please enter a valid email" label="Email" placeholder="Enter member email" [required]="true"></convoy-input>
 			</convoy-card>
+
 			<div class="flex justify-end pt-24px pb-40px">
 				<convoy-button type="outline" buttonType="button" routerLink="/team">Discard</convoy-button>
 				<convoy-button className="ml-16px" [disable]="invitingUser">
