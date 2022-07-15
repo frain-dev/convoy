@@ -236,6 +236,8 @@ components:
           type: string
         logo_url:
           type: string
+        metadata:
+          $ref: '#/components/schemas/datastore.GroupMetadata'
         name:
           type: string
         organisation_id:
@@ -258,14 +260,23 @@ components:
       properties:
         disable_endpoint:
           type: boolean
+        is_retention_policy_enabled:
+          type: boolean
         ratelimit:
           $ref: '#/components/schemas/datastore.RateLimitConfiguration'
         replay_attacks:
           type: boolean
+        retention_policy:
+          $ref: '#/components/schemas/datastore.RetentionPolicyConfiguration'
         signature:
           $ref: '#/components/schemas/datastore.SignatureConfiguration'
         strategy:
           $ref: '#/components/schemas/datastore.StrategyConfiguration'
+      type: object
+    datastore.GroupMetadata:
+      properties:
+        retained_events:
+          type: integer
       type: object
     datastore.GroupStatistics:
       properties:
@@ -311,6 +322,11 @@ components:
         retry_limit:
           type: integer
         strategy:
+          type: string
+      type: object
+    datastore.OnPremStorage:
+      properties:
+        path:
           type: string
       type: object
     datastore.Organisation:
@@ -381,11 +397,21 @@ components:
         totalPage:
           type: integer
       type: object
+    datastore.ProviderConfig:
+      properties:
+        twitter:
+          $ref: '#/components/schemas/datastore.TwitterProviderConfig'
+      type: object
     datastore.RateLimitConfiguration:
       properties:
         count:
           type: integer
         duration:
+          type: string
+      type: object
+    datastore.RetentionPolicyConfiguration:
+      properties:
+        policy:
           type: string
       type: object
     datastore.RetryConfiguration:
@@ -395,6 +421,13 @@ components:
         retry_count:
           type: integer
         type:
+          type: string
+      type: object
+    datastore.S3Storage:
+      properties:
+        bucket:
+          type: string
+        region:
           type: string
       type: object
     datastore.SignatureConfiguration:
@@ -424,6 +457,8 @@ components:
           type: string
         provider:
           type: string
+        provider_config:
+          $ref: '#/components/schemas/datastore.ProviderConfig'
         type:
           type: string
         uid:
@@ -432,6 +467,15 @@ components:
           type: string
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
+      type: object
+    datastore.StoragePolicyConfiguration:
+      properties:
+        on_prem:
+          $ref: '#/components/schemas/datastore.OnPremStorage'
+        s3:
+          $ref: '#/components/schemas/datastore.S3Storage'
+        type:
+          type: string
       type: object
     datastore.StrategyConfiguration:
       properties:
@@ -470,6 +514,11 @@ components:
           type: string
         updated_at:
           type: string
+      type: object
+    datastore.TwitterProviderConfig:
+      properties:
+        crc_verified_at:
+          type: integer
       type: object
     datastore.User:
       properties:
@@ -555,6 +604,8 @@ components:
       properties:
         is_analytics_enabled:
           type: boolean
+        storage_policy:
+          $ref: '#/components/schemas/datastore.StoragePolicyConfiguration'
       type: object
     models.ConfigurationResponse:
       properties:
@@ -566,6 +617,8 @@ components:
           type: integer
         is_analytics_enabled:
           type: boolean
+        storage_policy:
+          $ref: '#/components/schemas/datastore.StoragePolicyConfiguration'
         uid:
           type: string
         updated_at:
@@ -1850,6 +1903,66 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create a configuration
+      tags:
+      - Application
+    put:
+      description: This endpoint updates configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Configuration'
+        description: Configuration Details
+        required: true
+        x-originalParamName: application
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.ConfigurationResponse'
+                  type: object
+          description: Accepted
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/server.serverResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Update configuration
       tags:
       - Application
   /eventdeliveries:
