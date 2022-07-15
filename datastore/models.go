@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -75,6 +76,8 @@ type VerifierType string
 
 type EncodingType string
 
+type StorageType string
+
 const (
 	HTTPSource     SourceType = "http"
 	RestApiSource  SourceType = "rest_api"
@@ -102,6 +105,11 @@ const (
 const (
 	OutgoingGroup GroupType = "outgoing"
 	IncomingGroup GroupType = "incoming"
+)
+
+const (
+	S3     StorageType = "s3"
+	OnPrem StorageType = "on_prem"
 )
 
 const (
@@ -136,6 +144,12 @@ var (
 	DefaultAlertConfig = AlertConfiguration{
 		Count:     4,
 		Threshold: "1h",
+	}
+	DefaultStoragePolicy = StoragePolicyConfiguration{
+		Type: OnPrem,
+		OnPrem: &OnPremStorage{
+			Path: convoy.DefaultOnPremDir,
+		},
 	}
 )
 
@@ -198,8 +212,9 @@ type Group struct {
 	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
-	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Metadata          *GroupMetadata `json:"metadata" bson:"metadata"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -208,12 +223,18 @@ type Group struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
+type GroupMetadata struct {
+	RetainedEvents int `json:"retained_events" bson:"retained_events"`
+}
+
 type GroupConfig struct {
-	RateLimit       *RateLimitConfiguration `json:"ratelimit"`
-	Strategy        *StrategyConfiguration  `json:"strategy"`
-	Signature       *SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                    `json:"disable_endpoint" bson:"disable_endpoint"`
-	ReplayAttacks   bool                    `json:"replay_attacks" bson:"replay_attacks"`
+	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
+	Strategy                 *StrategyConfiguration        `json:"strategy"`
+	Signature                *SignatureConfiguration       `json:"signature"`
+	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
+	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
+	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
 }
 
 type RateLimitConfiguration struct {
@@ -237,6 +258,10 @@ type SignatureValues struct {
 	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
 
+type RetentionPolicyConfiguration struct {
+	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
+}
+
 type GroupStatistics struct {
 	GroupID      string `json:"-" bson:"group_id"`
 	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
@@ -246,6 +271,19 @@ type GroupStatistics struct {
 type GroupFilter struct {
 	OrgID string   `json:"org_id" bson:"org_id"`
 	Names []string `json:"name" bson:"name"`
+}
+
+type EventFilter struct {
+	GroupID        string         `json:"group_id" bson:"group_id"`
+	DocumentStatus DocumentStatus `json:"document_status" bson:"document_status"`
+	CreatedAtStart int64          `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64          `json:"created_at_end" bson:"created_at_end"`
+}
+
+type EventDeliveryFilter struct {
+	GroupID        string `json:"group_id" bson:"group_id"`
+	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
 func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
@@ -599,14 +637,33 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	ID                 primitive.ObjectID `json:"-" bson:"_id"`
-	UID                string             `json:"uid" bson:"uid"`
-	IsAnalyticsEnabled bool               `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
-	DocumentStatus     DocumentStatus     `json:"-" bson:"document_status"`
+	ID                 primitive.ObjectID          `json:"-" bson:"_id"`
+	UID                string                      `json:"uid" bson:"uid"`
+	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" bson:"storage_policy"`
+	DocumentStatus     DocumentStatus              `json:"-" bson:"document_status"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type StoragePolicyConfiguration struct {
+	Type   StorageType    `json:"type,omitempty" bson:"type" valid:"supported_storage~please provide a valid storage type,required"`
+	S3     *S3Storage     `json:"s3" bson:"s3"`
+	OnPrem *OnPremStorage `json:"on_prem" bson:"on_prem"`
+}
+
+type S3Storage struct {
+	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
+	AccessKey    string `json:"-" bson:"access_key" valid:"required~please provide an access key"`
+	SecretKey    string `json:"-" bson:"secret_key" valid:"required~please provide a secret key"`
+	SessionToken string `json:"-" bson:"session_token"`
+	Region       string `json:"region" bson:"region" valid:"required~please provide AWS bucket region"`
+}
+
+type OnPremStorage struct {
+	Path string `json:"path" bson:"path"`
 }
 
 type OrganisationMember struct {

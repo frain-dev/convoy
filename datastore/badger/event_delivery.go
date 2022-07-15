@@ -234,3 +234,7 @@ func (e *eventDeliveryRepo) generateQuery(f *filter) *badgerhold.Query {
 	// this is a play-safe workaround, uid will never be empty so use it to get the query object
 	return qFunc("UID").Ne("")
 }
+
+func (e *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
+	return e.db.DeleteMatching(&datastore.Event{}, badgerhold.Where("GroupID").Eq(filter.GroupID))
+}
