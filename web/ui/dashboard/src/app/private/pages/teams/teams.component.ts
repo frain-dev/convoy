@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { PAGINATION } from 'src/app/models/global.model';
 import { TEAMS } from 'src/app/models/teams.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -12,6 +13,7 @@ import { TeamsService } from './teams.service';
 	styleUrls: ['./teams.component.scss']
 })
 export class TeamsComponent implements OnInit {
+	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
 	filterOptions: ['active', 'pending'] = ['active', 'pending'];
 	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new');
@@ -142,7 +144,7 @@ export class TeamsComponent implements OnInit {
 		}
 	}
 
-	goToTeams(){
-		this.router.navigateByUrl('/team')
+	goToTeams() {
+		this.router.navigateByUrl('/team');
 	}
 }

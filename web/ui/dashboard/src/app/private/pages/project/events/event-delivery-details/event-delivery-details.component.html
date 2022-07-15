@@ -96,7 +96,7 @@
 	</div>
 
 	<div class="flex justify-between flex-wrap border-t border-grey-10">
-		<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
+		<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
 			<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
 			<prism *ngIf="!isloadingDeliveryAttempts" title="Event Payload" language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 		</div>
@@ -108,7 +108,7 @@
 	</div>
 
 	<div class="flex justify-between flex-wrap border-t border-grey-10">
-		<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
+		<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
 			<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
 			<prism *ngIf="eventDeliveryAtempt?.error && !isloadingDeliveryAttempts" language="json" title="Error" [code]="getCodeSnippetString('error')"></prism>
 			<prism *ngIf="!eventDeliveryAtempt?.error && !isloadingDeliveryAttempts" language="json" title="Response Body" [code]="getCodeSnippetString('res_body')"></prism>
