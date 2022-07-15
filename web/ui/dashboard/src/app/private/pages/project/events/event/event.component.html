@@ -80,7 +80,7 @@
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents" className="w-150px overflow-ellipsis">
-									<span class="underline text-primary-100">{{ event.app_metadata.name }}</span>
+									<span class="underline text-primary-100">{{ event.app_metadata?.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 								<convoy-table-cell class="contents">
