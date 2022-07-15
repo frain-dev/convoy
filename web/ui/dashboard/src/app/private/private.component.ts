@@ -11,7 +11,8 @@ import { PrivateService } from './private.service';
 	styleUrls: ['./private.component.scss']
 })
 export class PrivateComponent implements OnInit {
-	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
+	@ViewChild('accountDropdown') dropdownComponent!: DropdownComponent;
+	@ViewChild('organisationDropdown') organisationDropdown!: DropdownComponent;
 	showDropdown = false;
 	showOrgDropdown = false;
 	showMoreDropdown = false;

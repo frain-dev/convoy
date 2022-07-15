@@ -6,14 +6,10 @@
 			</div>
 			<ul class="sidemenu--items">
 				<li class="my-30px mx-0 pl-22px">
-					<convoy-button type="text" [color]="activePage === 'general settings' ? 'primary' : 'grey'" (click)="activePage = 'general settings'">General Settings</convoy-button>
+					<convoy-button type="text" [color]="activePage === 'general settings' ? 'primary' : 'grey'" [className]="activePage === 'general settings' ? 'font-medium' : ''" (click)="activePage = 'general settings'">General Settings</convoy-button>
 				</li>
 				<li class="my-30px mx-0 pl-22px">
-					<convoy-button type="text" [color]="activePage === 'danger zone' ? 'primary' : 'grey'" (click)="activePage = 'danger zone'">Danger Zone</convoy-button>
-				</li>
-				<hr class="border-t border-t-grey-10" />
-				<li class="my-30px mx-0 pl-22px" (click)="logout()">
-					<convoy-button type="text" color="danger" (click)="logout()">Logout</convoy-button>
+					<convoy-button type="text" [color]="activePage === 'danger zone' ? 'primary' : 'grey'" [className]="activePage === 'danger zone' ? 'font-medium' : ''" (click)="activePage = 'danger zone'">Danger Zone</convoy-button>
 				</li>
 			</ul>
 		</div>
@@ -33,7 +29,7 @@
 			<ng-container *ngIf="activePage === 'danger zone'">
 				<h2 class="text-danger font-semibold mb-8px">Danger zone</h2>
 				<p class="text-grey-40 text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
-				<convoy-button className="mt-20px" (click)="showDeleteModal = !showDeleteModal">Delete Organisation</convoy-button>
+				<convoy-button className="mt-20px" color="danger" (click)="showDeleteModal = !showDeleteModal">Delete Organisation</convoy-button>
 			</ng-container>
 		</div>
 	</convoy-card>

@@ -6,14 +6,10 @@
 			</div>
 			<ul class="sidemenu--items">
 				<li class="my-30px mx-0 pl-22px">
-					<convoy-button type="text" [color]="activePage === 'profile' ? 'primary': 'grey'" (click)="activePage = 'profile'">Profile</convoy-button>
+					<convoy-button type="text" [color]="activePage === 'profile' ? 'primary' : 'grey'" [className]="activePage === 'profile' ? 'font-medium' : ''" (click)="activePage = 'profile'">Profile</convoy-button>
 				</li>
 				<li class="my-30px mx-0 pl-22px">
-					<convoy-button type="text" [color]="activePage === 'security' ? 'primary': 'grey'" (click)="activePage = 'security'">Security</convoy-button>
-				</li>
-				<hr class="border-t border-t-grey-10" />
-				<li class="my-30px mx-0 pl-22px" (click)="logout()">
-					<convoy-button type="text" color="danger" (click)="logout()">Logout</convoy-button>
+					<convoy-button type="text" [color]="activePage === 'security' ? 'primary' : 'grey'" [className]="activePage === 'security' ? 'font-medium' : ''" (click)="activePage = 'security'">Security</convoy-button>
 				</li>
 			</ul>
 		</div>
@@ -60,7 +56,10 @@
 						placeholder="********"
 						[required]="true"
 					></convoy-input>
-					<div class="flex items-center text-12 text-danger-100 mt-8px mb-24px" *ngIf="changePasswordForm.controls.password.valid && changePasswordForm.controls.password_confirmation.valid && changePasswordForm.controls.password_confirmation.touched && !checkPassword()">
+					<div
+						class="flex items-center text-12 text-danger-100 mt-8px mb-24px"
+						*ngIf="changePasswordForm.controls.password.valid && changePasswordForm.controls.password_confirmation.valid && changePasswordForm.controls.password_confirmation.touched && !checkPassword()"
+					>
 						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
 						<span>Password should have at least one special character</span>
 					</div>
