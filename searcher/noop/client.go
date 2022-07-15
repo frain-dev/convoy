@@ -19,3 +19,7 @@ func (n *NoopSearcher) Search(collection string, filter *datastore.Filter) ([]st
 func (n *NoopSearcher) Index(collection string, document convoy.GenericMap) error {
 	return nil
 }
+
+func (n *NoopSearcher) Remove(collection string, filter *datastore.Filter) error {
+	return nil
+}

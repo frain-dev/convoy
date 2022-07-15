@@ -21,12 +21,7 @@ export class LoginComponent implements OnInit {
 	ngOnInit(): void {}
 
 	async login() {
-		if (this.loginForm.invalid) {
-			(<any>Object).values(this.loginForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.loginForm.invalid) return this.loginForm.markAsTouched();
 
 		this.disableLoginBtn = true;
 		try {

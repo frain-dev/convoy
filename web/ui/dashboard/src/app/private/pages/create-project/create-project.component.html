@@ -1,63 +1,42 @@
-<div class="modal modal__full margin-bottom__40px">
-	<div class="modal--head">
-		<div class="flex flex__align-items-center flex__justify-between width__100">
-			<div class="modal--head--left flex flex__align-items-center">
-				<a routerLink="/projects" class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear" tabindex="0">
-					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-				</a>
-				<h2 class="font__16px font__weight-600">Create Project</h2>
-			</div>
-
-			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
-			</a>
-		</div>
-	</div>
-
-	<div class="modal--body padding-all__0px">
+<convoy-modal position="full" title="Create Project" (closeModal)="cancel()">
+	<div class="pt-40px pb-60px" modalBody>
 		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
-		<div class="card padding-all__24px margin-bottom__24px" *ngIf="projectStage !== 'createProject'">
-			<ul class="setup-steps flex flex__align-items-center border__bottom padding-bottom__24px">
-				<li [class]="'setup-step--step ' + stage.currentStage" *ngFor="let stage of projectStages">
+		<convoy-card className="p-24px mb-24px" *ngIf="projectStage !== 'createProject'">
+			<ul class="setup-steps flex items-center border-b border-b-grey-10 pb-24px">
+				<li class="mr-32px last-of-type:mr-0" *ngFor="let stage of projectStages">
 					<div>
-						<div class="line"></div>
-						<div class="margin-top__4px flex flex__align-items-center">
-							<div class="checkbox margin-all__0px width__16px height__16px border__all rounded__50px"></div>
-							<div class="text margin-left__8px font__14px font__weight-500">{{ stage.projectStage }}</div>
+						<div class="h-4px w-240px bg-grey-20" [ngClass]="{ 'bg-primary-300': stage.currentStage === 'current', 'bg-primary-500': stage.currentStage === 'done' }"></div>
+						<div class="mt-4px flex items-center">
+							<div class="m-0 w-16px h-16px border-[5px] border-grey-20 rounded-[50px]" [ngClass]="{ '!border-primary-300': stage.currentStage === 'current', '!border-primary-500': stage.currentStage === 'done' }"></div>
+							<div class="ml-8px text-14 text-grey-40 font-medium" [ngClass]="{ 'text-grey-40': stage.currentStage === 'current', 'text-black': stage.currentStage === 'current' }">{{ stage.projectStage }}</div>
 						</div>
 					</div>
 				</li>
 			</ul>
 
 			<div *ngIf="projectStage === 'createSource'">
-				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first source</h3>
-				<p class="font__14px color__grey margin-top__8px width__80">Create a source that'll triger a webhook event in your project</p>
+				<h2 class="mt-24px font-semibold">Create your first source</h2>
+				<p class="text-14 text-grey-40 mt-8px w-4/5">Create a source that'll triger a webhook event in your project</p>
 			</div>
 			<div *ngIf="projectStage === 'createApplication'">
-				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first application</h3>
-				<p class="font__14px color__grey margin-top__8px width__80">Create and aplication and endpoint(s) that'll listen to events on this project</p>
+				<h2 class="mt-24px font-semibold">Create your first application</h2>
+				<p class="text-14 text-grey-40 mt-8px w-4/5">Create and aplication and endpoint(s) that'll listen to events on this project</p>
 			</div>
 			<div *ngIf="projectStage === 'createSubscription'">
-				<h3 class="margin-top__24px font__weight-600 font__18px">Create your first subscription</h3>
-				<p class="font__14px color__grey margin-top__8px width__80">Create a subscription that'll listen to events from your source</p>
+				<h2 class="mt-24px font-semibold">Create your first subscription</h2>
+				<p class="text-14 text-grey-40 mt-8px w-4/5">Create a subscription that'll listen to events from your source</p>
 			</div>
-		</div>
+		</convoy-card>
 
-		<app-create-source
-			*ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid"
-			(onAction)="$event?.action == 'cancel' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"
-		></app-create-source>
+		<app-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
 
 		<app-create-app
 			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails.uid"
 			(discardApp)="cancel()"
-			(createApp)="
-				projectType == 'incoming' ? toggleActiveStage({ project: 'createSource', prevStage: 'createApplication' }) : toggleActiveStage({ project: 'createSubscription', prevStage: 'createApplication' })
-			"
+			(createApp)="projectType == 'incoming' ? toggleActiveStage({ project: 'createSource', prevStage: 'createApplication' }) : toggleActiveStage({ project: 'createSubscription', prevStage: 'createApplication' })"
 		></app-create-app>
 
 		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>
 	</div>
-</div>
+</convoy-modal>

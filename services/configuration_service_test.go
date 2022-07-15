@@ -18,7 +18,7 @@ func provideConfigService(ctrl *gomock.Controller) *ConfigService {
 	return NewConfigService(configRepo)
 }
 
-func TestConfigService_CreateOrUpdateConfiguration(t *testing.T) {
+func TestConfigService_CreateConfiguration(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -37,33 +37,106 @@ func TestConfigService_CreateOrUpdateConfiguration(t *testing.T) {
 		{
 			name: "should_create_configuration",
 			args: args{
-				ctx:       ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true)},
+				ctx: ctx,
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
+					Type: datastore.OnPrem,
+					OnPrem: &datastore.OnPremStorage{
+						Path: "/tmp/",
+					},
+				}},
 			},
 			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true},
 			dbFn: func(c *ConfigService) {
 				co, _ := c.configRepo.(*mocks.MockConfigurationRepository)
-				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
 				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
 
 		{
+			name: "should_fail_create_configuration",
+			args: args{
+				ctx: ctx,
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
+					Type: datastore.S3,
+					S3: &datastore.S3Storage{
+						Bucket: "my-bucket",
+					},
+				}},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			c := provideConfigService(ctrl)
+
+			if tc.dbFn != nil {
+				tc.dbFn(c)
+			}
+
+			config, err := c.CreateConfiguration(tc.args.ctx, tc.args.newConfig)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				return
+			}
+			require.Nil(t, err)
+			require.Equal(t, config.IsAnalyticsEnabled, tc.wantConfig.IsAnalyticsEnabled)
+		})
+	}
+}
+
+func TestConfigService_UpdateConfiguration(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx       context.Context
+		newConfig *models.Configuration
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		wantConfig  *datastore.Configuration
+		dbFn        func(c *ConfigService)
+		wantErr     bool
+		wantErrCode int
+	}{
+		{
 			name: "should_update_configuration",
 			args: args{
-				ctx:       ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(false)},
+				ctx: ctx,
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
+					Type: datastore.OnPrem,
+					OnPrem: &datastore.OnPremStorage{
+						Path: "/tmp/",
+					},
+				}},
 			},
-			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: false},
+			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
+				Type: datastore.OnPrem,
+				OnPrem: &datastore.OnPremStorage{
+					Path: "/tmp/",
+				},
+			}},
 			dbFn: func(c *ConfigService) {
 				co, _ := c.configRepo.(*mocks.MockConfigurationRepository)
-				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{IsAnalyticsEnabled: true}, nil)
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
+					Type: datastore.OnPrem,
+					OnPrem: &datastore.OnPremStorage{
+						Path: "/tmp/",
+					},
+				}}, nil)
 				co.EXPECT().UpdateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
-
 		{
-			name: "should_fail_to_create_configuration",
+			name: "should_fail_to_update_configuration",
 			args: args{
 				ctx:       ctx,
 				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true)},
@@ -71,7 +144,6 @@ func TestConfigService_CreateOrUpdateConfiguration(t *testing.T) {
 			dbFn: func(c *ConfigService) {
 				co, _ := c.configRepo.(*mocks.MockConfigurationRepository)
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
-				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusInternalServerError,
@@ -89,8 +161,7 @@ func TestConfigService_CreateOrUpdateConfiguration(t *testing.T) {
 				tc.dbFn(c)
 			}
 
-			config, err := c.CreateOrUpdateConfiguration(tc.args.ctx, tc.args.newConfig)
-
+			config, err := c.UpdateConfiguration(tc.args.ctx, tc.args.newConfig)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
@@ -98,7 +169,7 @@ func TestConfigService_CreateOrUpdateConfiguration(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.Equal(t, config.IsAnalyticsEnabled, tc.wantConfig.IsAnalyticsEnabled)
+			require.Equal(t, config, tc.wantConfig)
 		})
 	}
 }

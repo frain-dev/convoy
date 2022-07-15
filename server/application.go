@@ -80,7 +80,7 @@ func newApplicationHandler(
 	ss := services.NewSecurityService(groupRepo, apiKeyRepo)
 	os := services.NewOrganisationService(orgRepo, orgMemberRepo)
 	rs := services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
-	sos := services.NewSourceService(sourceRepo)
+	sos := services.NewSourceService(sourceRepo, cache)
 	us := services.NewUserService(userRepo, cache, queue)
 	ois := services.NewOrganisationInviteService(orgRepo, userRepo, orgMemberRepo, orgInviteRepo, queue)
 	om := services.NewOrganisationMemberService(orgMemberRepo)

@@ -85,6 +85,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	users := datastore.New(conn, UserCollection)
 	config := datastore.New(conn, ConfigCollection)
 	devices := datastore.New(conn, DeviceCollection)
+	event_delivery := datastore.New(conn, EventDeliveryCollection)
 
 	c := &Client{
 		db:                conn,
@@ -93,7 +94,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		applicationRepo:   NewApplicationRepo(conn, apps),
 		subscriptionRepo:  NewSubscriptionRepo(conn, subscriptions),
 		eventRepo:         NewEventRepository(conn, events),
-		eventDeliveryRepo: NewEventDeliveryRepository(conn),
+		eventDeliveryRepo: NewEventDeliveryRepository(conn, event_delivery),
 		sourceRepo:        NewSourceRepo(conn, sources),
 		deviceRepo:        NewDeviceRepository(conn, devices),
 		orgRepo:           NewOrgRepo(conn, orgs),

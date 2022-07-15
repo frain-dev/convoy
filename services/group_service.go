@@ -205,8 +205,12 @@ func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 		log.WithError(err).Error("failed to delete group apps")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group apps"))
 	}
-
-	err = gs.eventRepo.DeleteGroupEvents(ctx, id)
+	evntFilter := &datastore.EventFilter{
+		GroupID:        id,
+		CreatedAtStart: 0,
+		CreatedAtEnd:   time.Now().Unix(),
+	}
+	err = gs.eventRepo.DeleteGroupEvents(ctx, evntFilter, false)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group events")
 		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group events"))

@@ -15,7 +15,8 @@ import (
 
 func provideSourceService(ctrl *gomock.Controller) *SourceService {
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
-	return NewSourceService(sourceRepo)
+	cache := mocks.NewMockCache(ctrl)
+	return NewSourceService(sourceRepo, cache)
 }
 
 func TestSourceService_CreateSource(t *testing.T) {
@@ -388,85 +389,12 @@ func TestSourceService_FindSourceByID(t *testing.T) {
 	}
 }
 
-// func TestSourceService_FindSourceByMaskID(t *testing.T) {
-// 	ctx := context.Background()
-
-// 	type args struct {
-// 		ctx    context.Context
-// 		maskID string
-// 		group  *datastore.Group
-// 	}
-
-// 	tests := []struct {
-// 		name        string
-// 		args        args
-// 		wantSource  *datastore.Source
-// 		dbFn        func(so *SourceService)
-// 		wantErr     bool
-// 		wantErrCode int
-// 		wantErrMsg  string
-// 	}{
-// 		{
-// 			name: "should_find_source_by_id",
-// 			args: args{
-// 				ctx:    ctx,
-// 				maskID: "1234",
-// 				group:  &datastore.Group{UID: "12345"},
-// 			},
-// 			wantSource: &datastore.Source{MaskID: "1234"},
-// 			dbFn: func(so *SourceService) {
-// 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
-// 				s.EXPECT().FindSourceByMaskID(gomock.Any(), "1234").Times(1).Return(&datastore.Source{MaskID: "1234"}, nil)
-// 			},
-// 		},
-
-// 		{
-// 			name: "should_fail_to_find_source_by_id",
-// 			args: args{
-// 				ctx:    ctx,
-// 				maskID: "1234",
-// 				group:  &datastore.Group{UID: "12345"},
-// 			},
-// 			dbFn: func(so *SourceService) {
-// 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
-// 				s.EXPECT().FindSourceByMaskID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
-// 			},
-// 			wantErr:     true,
-// 			wantErrCode: http.StatusBadRequest,
-// 			wantErrMsg:  "error retrieving source",
-// 		},
-// 	}
-
-// 	for _, tc := range tests {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
-
-// 			so := provideSourceService(ctrl)
-
-// 			if tc.dbFn != nil {
-// 				tc.dbFn(so)
-// 			}
-
-// 			source, err := so.FindSourceByMaskID(tc.args.ctx, tc.args.group, tc.args.maskID)
-// 			if tc.wantErr {
-// 				require.NotNil(t, err)
-// 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-// 				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
-// 				return
-// 			}
-// 			require.Nil(t, err)
-// 			require.Equal(t, tc.wantSource, source)
-// 		})
-// 	}
-// }
-
-func TestSourceService_DeleteSourceByID(t *testing.T) {
+func TestSourceService_DeleteSource(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx   context.Context
-		id    string
-		group *datastore.Group
+		ctx    context.Context
+		source *datastore.Source
+		group  *datastore.Group
 	}
 
 	tests := []struct {
@@ -480,9 +408,9 @@ func TestSourceService_DeleteSourceByID(t *testing.T) {
 		{
 			name: "should_delete_source",
 			args: args{
-				ctx:   ctx,
-				id:    "12345",
-				group: &datastore.Group{UID: "12345"},
+				ctx:    ctx,
+				source: &datastore.Source{UID: "12345", Provider: ""},
+				group:  &datastore.Group{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -491,11 +419,27 @@ func TestSourceService_DeleteSourceByID(t *testing.T) {
 		},
 
 		{
+			name: "should_delete_twitter_custom_source_from_cache",
+			args: args{
+				ctx:    ctx,
+				source: &datastore.Source{UID: "12345", MaskID: "abcd", Provider: datastore.TwitterSourceProvider},
+				group:  &datastore.Group{UID: "12345"},
+			},
+			dbFn: func(so *SourceService) {
+				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
+				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345").Times(1).Return(nil)
+
+				c, _ := so.cache.(*mocks.MockCache)
+				c.EXPECT().Delete(gomock.Any(), gomock.Any())
+			},
+		},
+
+		{
 			name: "should_fail_to_delete_source",
 			args: args{
-				ctx:   ctx,
-				id:    "12345",
-				group: &datastore.Group{UID: "12345"},
+				ctx:    ctx,
+				source: &datastore.Source{UID: "12345", Provider: ""},
+				group:  &datastore.Group{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -518,7 +462,7 @@ func TestSourceService_DeleteSourceByID(t *testing.T) {
 				tc.dbFn(so)
 			}
 
-			err := so.DeleteSourceByID(tc.args.ctx, tc.args.group, tc.args.id)
+			err := so.DeleteSource(tc.args.ctx, tc.args.group, tc.args.source)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())

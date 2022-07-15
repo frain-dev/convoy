@@ -205,6 +205,20 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) CreateEventDelivery(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEventDelivery", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CreateEventDelivery), arg0, arg1)
 }
 
+// DeleteGroupEventDeliveries mocks base method.
+func (m *MockEventDeliveryRepository) DeleteGroupEventDeliveries(ctx context.Context, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteGroupEventDeliveries", ctx, filter, hardDelete)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteGroupEventDeliveries indicates an expected call of DeleteGroupEventDeliveries.
+func (mr *MockEventDeliveryRepositoryMockRecorder) DeleteGroupEventDeliveries(ctx, filter, hardDelete interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).DeleteGroupEventDeliveries), ctx, filter, hardDelete)
+}
+
 // FindEventDeliveriesByEventID mocks base method.
 func (m *MockEventDeliveryRepository) FindEventDeliveriesByEventID(arg0 context.Context, arg1 string) ([]datastore.EventDelivery, error) {
 	m.ctrl.T.Helper()
@@ -361,17 +375,17 @@ func (mr *MockEventRepositoryMockRecorder) CreateEvent(arg0, arg1 interface{}) *
 }
 
 // DeleteGroupEvents mocks base method.
-func (m *MockEventRepository) DeleteGroupEvents(arg0 context.Context, arg1 string) error {
+func (m *MockEventRepository) DeleteGroupEvents(arg0 context.Context, arg1 *datastore.EventFilter, arg2 bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteGroupEvents", arg0, arg1)
+	ret := m.ctrl.Call(m, "DeleteGroupEvents", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteGroupEvents indicates an expected call of DeleteGroupEvents.
-func (mr *MockEventRepositoryMockRecorder) DeleteGroupEvents(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) DeleteGroupEvents(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteGroupEvents), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteGroupEvents), arg0, arg1, arg2)
 }
 
 // FindEventByID mocks base method.
