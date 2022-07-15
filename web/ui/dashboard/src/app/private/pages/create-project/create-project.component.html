@@ -1,12 +1,12 @@
 <convoy-modal position="full" title="Create Project" (closeModal)="cancel()">
-	<div class="pt-40px" modalBody>
+	<div class="pt-40px pb-60px" modalBody>
 		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
 		<convoy-card className="p-24px mb-24px" *ngIf="projectStage !== 'createProject'">
 			<ul class="setup-steps flex items-center border-b border-b-grey-10 pb-24px">
 				<li class="mr-32px last-of-type:mr-0" *ngFor="let stage of projectStages">
 					<div>
-						<div class="h-4px w-240px" [ngClass]="{ 'bg-primary-300': stage.currentStage === 'current', 'bg-primary-500': stage.currentStage === 'done' }"></div>
+						<div class="h-4px w-240px bg-grey-20" [ngClass]="{ 'bg-primary-300': stage.currentStage === 'current', 'bg-primary-500': stage.currentStage === 'done' }"></div>
 						<div class="mt-4px flex items-center">
 							<div class="m-0 w-16px h-16px border-[5px] border-grey-20 rounded-[50px]" [ngClass]="{ '!border-primary-300': stage.currentStage === 'current', '!border-primary-500': stage.currentStage === 'done' }"></div>
 							<div class="ml-8px text-14 text-grey-40 font-medium" [ngClass]="{ 'text-grey-40': stage.currentStage === 'current', 'text-black': stage.currentStage === 'current' }">{{ stage.projectStage }}</div>

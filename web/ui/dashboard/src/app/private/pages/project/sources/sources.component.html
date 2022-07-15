@@ -1,4 +1,4 @@
-<h1 class="text-12 font-medium flex items-center uppercase">
+<div class="text-12 font-medium flex items-center uppercase">
 	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
@@ -8,7 +8,7 @@
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	<span class="text-primary-100 font-medium">Sources</span>
-</h1>
+</div>
 
 <div class="w-full flex justify-end items-center my-24px">
 	<convoy-button size="sm" routerLink="./new">Create a source</convoy-button>
@@ -28,15 +28,15 @@
 					<convoy-table-cell class="contents">{{ getDataReadableValue('verifier', source.verifier.type)?.viewValue }}</convoy-table-cell>
 					<convoy-table-cell class="contents" className="w-220px overflow-hidden overflow-ellipsis relative pr-16px">
 						{{ source.url }}
-						<button class="button button__clear button--has-icon absolute top-[50%] translate-y-[-50%] right-2px" (click)="copyText(source.url, source.name, $event)">
+						<convoy-button type="icon" size="sm" className="absolute top-[50%] translate-y-[-50%] right-2px" (click)="copyText(source.url, source.name, $event)">
 							<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
-						</button>
+						</convoy-button>
 					</convoy-table-cell>
 					<convoy-table-cell class="contents">{{ source.created_at | date }}</convoy-table-cell>
 					<convoy-table-cell class="contents">
-						<button class="button button__clear">
-							<img src="/assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
-						</button>
+						<convoy-button type="icon" size="sm" className="pt-0 pb-0">
+							<img src="/assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
+						</convoy-button>
 					</convoy-table-cell>
 				</convoy-table-row>
 			</tbody>

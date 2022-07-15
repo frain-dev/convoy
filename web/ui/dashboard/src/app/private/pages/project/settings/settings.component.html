@@ -1,30 +1,25 @@
 <convoy-loader *ngIf="isloading"></convoy-loader>
-
-<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase margin-bottom__24px">
-	<span routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</span>
-	<svg width="16" height="16" class="margin-x__4px">
+<div class="text-12 font-medium flex items-center uppercase mb-24px">
+	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="margin-x__4px">
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="color__primary font__weight-500">SETTINGS</span>
-</h1>
+	<span class="text-primary-100 font-medium">Settings</span>
+</div>
 
 <app-create-project-component [action]="'update'"></app-create-project-component>
 
-<section class="card padding-all__24px margin-top__24px">
-	<h1 class="color__danger">Danger Zone</h1>
-	<p class="color__grey width__500px margin-top__16px">
+<convoy-card className="p-24px my-24px max-w-[600px]">
+	<h1 class="text-danger-100">Danger Zone</h1>
+	<p class="text-grey-80 max-w-[500px] mt-16px">
 		Deleting this project will delete all of it's data including events, apps, subscriptions and config.
 		<strong>Are you sure you want to delete this project?</strong>
 	</p>
-	<button class="button button__danger margin-top__28px" (click)="showDeleteProjectModal = true">Delete</button>
-</section>
+	<convoy-button color="danger" className="mt-28px" (click)="showDeleteProjectModal = true">Delete</convoy-button>
+</convoy-card>
 
-<div class="_overlay" *ngIf="showDeleteProjectModal" (click)="showDeleteProjectModal = false"></div>
-
-<div class="modal modal__center small" *ngIf="showDeleteProjectModal">
-	<app-delete-modal [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="showDeleteProjectModal = false" (deleteData)="deleteProject()"></app-delete-modal>
-</div>
+<app-delete-modal *ngIf="showDeleteProjectModal" [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="showDeleteProjectModal = false" (deleteData)="deleteProject()"></app-delete-modal>

@@ -9,8 +9,9 @@ import { Component, Input, OnInit } from '@angular/core';
 	styleUrls: ['./badge.component.scss']
 })
 export class BadgeComponent implements OnInit {
-	@Input('color') color!: string;
+	@Input('texture') texture: 'dark' | 'light' = 'light';
 	@Input('text') text!: string;
+	@Input('className') class!: string;
 	constructor() {}
 
 	ngOnInit(): void {}

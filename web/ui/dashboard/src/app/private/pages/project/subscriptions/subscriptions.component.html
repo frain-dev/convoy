@@ -45,7 +45,7 @@
 	</convoy-card>
 </div>
 
-<div class="min-h-[70vh] w-full min-w-[485px] flex items-start" *ngIf="subscriptions?.content && subscriptions.content.length > 0">
+<div class="min-h-[70vh] w-full min-w-[485px] flex items-start" *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
 	<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100%_-_382px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
 		<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
 			<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10">
@@ -175,9 +175,10 @@
 		</div>
 	</convoy-card>
 </div>
-<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No subscription yet" className="h-[50vh]" id="subscriptions-empty-state"></convoy-empty-state>
 
-<div class="flex items-center mt-16px">
+<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No subscriptions yet" className="h-[50vh]" id="subscriptions-empty-state" *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"></convoy-empty-state>
+
+<div class="flex items-center mt-16px" [hidden]="subscriptions?.content?.length === 0">
 	<convoy-button
 		type="outline"
 		size="sm"
@@ -187,7 +188,7 @@
 		[disable]="subscriptions?.pagination?.prev === 0"
 		(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="margin-right__8px">
+		<svg width="24" height="24" class="mr-8px">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
@@ -202,7 +203,7 @@
 		(click)="getSubscriptions({ page: subscriptions?.pagination?.next })"
 	>
 		Next
-		<svg width="24" height="24" class="margin-left__8px" fill="#477db3">
+		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</convoy-button>

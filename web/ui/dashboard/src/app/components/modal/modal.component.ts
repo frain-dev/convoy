@@ -13,7 +13,7 @@ export class ModalComponent implements OnInit {
 	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
 	@Input('size') size: 'small' | 'medium' | 'large' = 'medium';
 	@Input('title') title!: string;
-	@Input('class') class!: string;
+	@Input('className') class!: string;
 	@Output('closeModal') closeModal = new EventEmitter<any>();
 	modalSizes = { small: 'max-w-[380px]', medium: 'max-w-[460px]', large: 'max-w-[600px]' };
 	modalType = {
@@ -28,6 +28,6 @@ export class ModalComponent implements OnInit {
 	ngOnInit(): void {}
 
 	get classes(): string {
-		return `${this.modalType[this.position]} ${this.position === 'full' ? '' : this.modalSizes[this.size]} ${this.class}`;
+		return `${this.modalType[this.position]} ${this.position === 'full' ? 'bg-[#fafafe]' : this.modalSizes[this.size]} ${this.class}`;
 	}
 }

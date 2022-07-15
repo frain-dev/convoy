@@ -16,12 +16,12 @@
 		</convoy-button>
 		<nav class="pl-8px pr-24px">
 			<ul>
-				<li [class]="shouldShowFullSideBar ? 'w-182px' : 'w-66px'" *ngFor="let nav of sideBarItems" class="animate">
-					<a [routerLink]="'.' + nav.route" routerLinkActive="bg-primary-500 text-primary-100" #route="routerLinkActive" class="flex items-center text-grey-40 py-2 pl-6 my-2 rounded-8px animate">
+				<li [class]="shouldShowFullSideBar ? 'w-182px' : 'w-66px'" *ngFor="let nav of sideBarItems" class="transition-all duration-200">
+					<a [routerLink]="'.' + nav.route" routerLinkActive="bg-primary-500 text-primary-100" #route="routerLinkActive" class="flex items-center text-grey-40 py-2 pl-6 my-2 rounded-8px transition-all duration-200">
 						<svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="nav.icon == 'subscriptions' ? (route.isActive ? 'stroke-primary-100' : 'stroke-grey-40') : route.isActive ? 'fill-primary-100' : 'fill-grey-40'" [id]="nav.icon">
 							<use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
 						</svg>
-						<span class="font-medium text-14 animate" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">{{ nav.name }}</span>
+						<span class="font-medium text-14 transition-all duration-200" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">{{ nav.name }}</span>
 					</a>
 				</li>
 			</ul>
@@ -29,7 +29,7 @@
 		<div class="mt-358px border-t border-t-grey-10 pt-16px">
 			<ul class="pl-8px pr-24px">
 				<li>
-					<a routerLink="./settings" routerLinkActive="bg-primary-500 text-primary-100" #route="routerLinkActive" class="flex items-center text-grey-40 py-8px pl-24px my-8px rounded-8px animate">
+					<a routerLink="./settings" routerLinkActive="bg-primary-500 text-primary-100" #route="routerLinkActive" class="flex items-center text-grey-40 py-8px pl-24px my-8px rounded-8px transition-all duration-200">
 						<svg width="18" height="18" class="mr-10px" [class]="route.isActive ? 'fill-primary-100' : 'fill-grey-40'">
 							<use xlink:href="#settings-icon"></use>
 						</svg>
@@ -37,7 +37,7 @@
 					</a>
 				</li>
 				<li>
-					<a href="https://getconvoy.io/docs" target="_blank" referrerpolicy="no-referrer" class="flex items-center text-grey-40 py-8px pl-24px my-8px rounded-8px animate">
+					<a href="https://getconvoy.io/docs" target="_blank" referrerpolicy="no-referrer" class="flex items-center text-grey-40 py-8px pl-24px my-8px rounded-8px transition-all duration-200">
 						<svg width="18" height="18" class="mr-10px fill-grey-40">
 							<use xlink:href="#guide-icon"></use>
 						</svg>
@@ -47,7 +47,7 @@
 			</ul>
 		</div>
 	</aside>
-	<main class="w-full ml-24px mt-16px relative animate">
+	<main class="w-full ml-24px mt-16px relative transition-all duration-200">
 		<router-outlet></router-outlet>
 	</main>
 </convoy-page>
