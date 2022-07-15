@@ -48,8 +48,11 @@
 			</div>
 		</convoy-card>
 
-		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || sourceForm.value.verifier.type === 'github'" formGroupName="hmac">
-			<h2 class="font-semibold mb-20px">{{ sourceForm.value.verifier.type === 'github' ? 'Github Credentials' : 'Configure HMAC' }}</h2>
+		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || sourceForm.value.verifier.type === 'github' || sourceForm.value.verifier.type === 'twitter' || sourceForm.value.verifier.type === 'shopify'" formGroupName="hmac">
+			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</h2>
+			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'github'">Github Credentials</h2>
+			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'twitter'">Twitter Credentials</h2>
+			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'shopify'">Shopify Credentials</h2>
 
 			<div class="grid grid-cols-2 gap-6">
 				<convoy-select *ngIf="sourceForm.value.verifier.type === 'hmac'" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" className="mb-0"></convoy-select>
@@ -67,6 +70,7 @@
 					[required]="true"
 					className="mb-0"
 				></convoy-input>
+				
 				<convoy-input type="text" autocomplete="secret" name="secret" formControlName="secret" errorMessage="Enter webhook signing secret" label="Webhook signing secret" placeholder="Secret goes here" [required]="true" className="mb-0"></convoy-input>
 			</div>
 		</convoy-card>
