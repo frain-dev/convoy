@@ -233,7 +233,8 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subscription, err := h.subscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID, listenRequest.SourceID)
+	var subscription *datastore.Subscription
+	subscription, err = h.subscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID, listenRequest.SourceID)
 	switch err {
 	case nil:
 		break
