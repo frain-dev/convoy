@@ -92,6 +92,19 @@ func init() {
 		return true
 	})
 
+	govalidator.TagMap["supported_storage"] = govalidator.Validator(func(encoder string) bool {
+		encoders := map[string]bool{
+			string(datastore.S3):     true,
+			string(datastore.OnPrem): true,
+		}
+
+		if _, ok := encoders[encoder]; !ok {
+			return false
+		}
+
+		return true
+	})
+
 	govalidator.TagMap["duration"] = govalidator.Validator(func(duration string) bool {
 		_, err := time.ParseDuration(duration)
 

@@ -11,6 +11,7 @@ import (
 type Searcher interface {
 	Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error)
 	Index(collection string, document convoy.GenericMap) error
+	Remove(collection string, filter *datastore.Filter) error
 }
 
 func NewSearchClient(c config.Configuration) (Searcher, error) {

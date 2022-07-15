@@ -382,6 +382,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			configRouter.Get("/", app.LoadConfiguration)
 			configRouter.Post("/", app.CreateConfiguration)
+			configRouter.Put("/", app.UpdateConfiguration)
+
 		})
 	})
 

@@ -36,8 +36,9 @@ type Store interface {
 
 	Inc(ctx context.Context, filter bson.M, payload interface{}) error
 
-	DeleteByID(ctx context.Context, id string) error
-	DeleteOne(ctx context.Context, filter bson.M) error
+	DeleteByID(ctx context.Context, id string, hardDelete bool) error
+	DeleteOne(ctx context.Context, filter bson.M, hardDelete bool) error
+	DeleteMany(ctx context.Context, filter, payload bson.M, hardDelete bool) error
 
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
 
@@ -273,18 +274,26 @@ func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload bson.M) err
  * DeleteByID
  * Deletes a single record by id
  * where ID can be a string or whatever.
+ *
  * param: interface{} id
+ * param: bool hardDelete
  * return: error
- * The record is not completed deleted, only the status is changed.
+ * If hard delete is false, a soft delete is executed where the document status is changed.
+ * If hardDelete is true, the document is completely deleted.
  */
-func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
-	payload := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": DeletedDocumentStatus,
-	}
+func (d *mongoStore) DeleteByID(ctx context.Context, id string, hardDelete bool) error {
+	if hardDelete {
+		_, err := d.Collection.DeleteOne(ctx, bson.M{"uid": id}, nil)
+		return err
 
-	_, err := d.Collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
-	return err
+	} else {
+		payload := bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": DeletedDocumentStatus,
+		}
+		_, err := d.Collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
+		return err
+	}
 }
 
 /**
@@ -292,17 +301,45 @@ func (d *mongoStore) DeleteByID(ctx context.Context, id string) error {
  * Deletes one item from the mongoStore using filter a hash map to properly filter what is to be deleted.
  *
  * param: bson.M filter
+ * param: bool hardDelete
  * return: error
- * The record is not completed deleted, only the status is changed.
+ * If hard delete is false, a soft delete is executed where the document status is changed.
+ * If hardDelete is true, the document is completely deleted.
  */
-func (d *mongoStore) DeleteOne(ctx context.Context, filter bson.M) error {
-	payload := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": DeletedDocumentStatus,
-	}
+func (d *mongoStore) DeleteOne(ctx context.Context, filter bson.M, hardDelete bool) error {
+	if hardDelete {
+		_, err := d.Collection.DeleteOne(ctx, filter, nil)
+		return err
 
-	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
-	return err
+	} else {
+		payload := bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": DeletedDocumentStatus,
+		}
+		_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+		return err
+	}
+}
+
+/**
+ * DeleteMany
+ * Hard Deletes many items in the collection
+ * `filter` this is the search criteria
+ *
+ * param: bson.M filter
+ * param: bool hardDelete
+ * If hardDelete is false, a soft delete is executed where the document status is changed.
+ * If hardDelete is true, the document is completely deleted.
+ * return: error
+ */
+func (d *mongoStore) DeleteMany(ctx context.Context, filter, payload bson.M, hardDelete bool) error {
+	if hardDelete {
+		_, err := d.Collection.DeleteMany(ctx, filter)
+		return err
+	} else {
+		_, err := d.Collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
+		return err
+	}
 }
 
 func (d *mongoStore) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {
