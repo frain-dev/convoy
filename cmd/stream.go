@@ -95,7 +95,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 func gracefulShutdown(srv *http.Server, hub *Hub) {
 	//Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	hub.Stop()
@@ -287,7 +287,10 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 
 func respond(w http.ResponseWriter, code int, msg string) {
 	w.WriteHeader(code)
-	w.Write([]byte(msg))
+	_, err := w.Write([]byte(msg))
+	if err != nil {
+		log.WithError(err).Error("failed to write response message")
+	}
 }
 
 func respondWithData(w http.ResponseWriter, code int, v interface{}) {
@@ -299,7 +302,10 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	}
 
 	w.WriteHeader(code)
-	w.Write(data)
+	_, err = w.Write(data)
+	if err != nil {
+		log.WithError(err).Error("failed to write response data")
+	}
 }
 
 func (h *Hub) requireApp() func(next http.Handler) http.Handler {

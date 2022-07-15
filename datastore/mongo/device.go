@@ -79,7 +79,7 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, appID, groupI
 		filter["app_id"] = appID
 	}
 
-	return d.store.DeleteOne(ctx, filter)
+	return d.store.DeleteOne(ctx, filter, false)
 }
 
 func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*datastore.Device, error) {
