@@ -118,8 +118,6 @@ func (a *applicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	s.Type = string(group.Type)
-
 	subscription, err := a.subService.CreateSubscription(r.Context(), group, &s)
 	if err != nil {
 		log.WithError(err).Error("failed to create subscription")

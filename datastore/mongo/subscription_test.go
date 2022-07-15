@@ -17,7 +17,7 @@ func createSubscription() *datastore.Subscription {
 	return &datastore.Subscription{
 		UID:        uuid.NewString(),
 		Name:       "Subscription",
-		Type:       "incoming",
+		Type:       datastore.SubscriptionTypeCLI,
 		AppID:      "app-id-1",
 		GroupID:    "group-id-1",
 		SourceID:   "source-id-1",
@@ -48,10 +48,10 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		subscription := &datastore.Subscription{
 			UID:            uuid.NewString(),
 			Name:           fmt.Sprintf("Subscription %d", i),
-			Type:           "incoming",
+			Type:           datastore.SubscriptionTypeAPI,
 			GroupID:        "group-id-1",
-			SourceID:       "source-id-1",
-			EndpointID:     "endpoint-id-1",
+			SourceID:       uuid.NewString(),
+			EndpointID:     uuid.NewString(),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
@@ -197,11 +197,11 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 		subscription := &datastore.Subscription{
 			UID:            uuid.NewString(),
 			Name:           fmt.Sprintf("Subscription %d", i),
-			Type:           "incoming",
+			Type:           datastore.SubscriptionTypeCLI,
 			AppID:          "app-id-1",
 			GroupID:        "group-id-1",
-			SourceID:       "source-id-1",
-			EndpointID:     "endpoint-id-1",
+			SourceID:       uuid.NewString(),
+			EndpointID:     uuid.NewString(),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))

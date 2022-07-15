@@ -786,6 +786,8 @@ definitions:
         type: string
       provider:
         type: string
+      provider_config:
+        $ref: '#/definitions/datastore.ProviderConfig'
       type:
         type: string
       uid:
@@ -802,6 +804,8 @@ definitions:
       alert_config:
         $ref: '#/definitions/datastore.AlertConfiguration'
       app_id:
+        description: Type       string `json:"type" bson:"type" valid:"required~please
+          provide a valid subscription type"`
         type: string
       endpoint_id:
         type: string
@@ -812,8 +816,6 @@ definitions:
       retry_config:
         $ref: '#/definitions/datastore.RetryConfiguration'
       source_id:
-        type: string
-      type:
         type: string
     type: object
   models.Token:
