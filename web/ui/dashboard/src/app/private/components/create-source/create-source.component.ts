@@ -63,6 +63,8 @@ export class CreateSourceComponent implements OnInit {
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
 			if (sourceProvider === 'github') this.sourceForm.patchValue({ verifier: { type: 'github' } });
+			if (sourceProvider === 'twitter') this.sourceForm.patchValue({ verifier: { type: 'twitter' } });
+			if (sourceProvider === 'shopify') this.sourceForm.patchValue({ verifier: { type: 'shopify' } });
 			return;
 		} catch (error) {
 			return error;
