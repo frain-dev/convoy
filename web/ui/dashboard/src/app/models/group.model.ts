@@ -33,7 +33,7 @@ export interface GROUP {
 }
 
 export interface SOURCE {
-	created_at: number;
+	created_at: Date;
 	deleted_at: number;
 	group_id: string;
 	is_disabled: boolean;
@@ -44,6 +44,7 @@ export interface SOURCE {
 	updated_at: number;
 	url: string;
 	provider: string;
+	provider_config?: { twitter: { crc_verified_at: Date } };
 	verifier: {
 		api_key: {
 			header: string;
