@@ -128,7 +128,7 @@ export class EventComponent implements OnInit {
 
 	getCodeSnippetString() {
 		if (!this.eventsDetailsItem?.data) return 'No event data was sent';
-		return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 2).replaceAll(/"([^"]+)":/g, '$1:');
+		return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 	}
 
 	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
@@ -162,6 +162,7 @@ export class EventComponent implements OnInit {
 
 		return response;
 	}
+
 	// fetch filters from url
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
@@ -191,6 +192,11 @@ export class EventComponent implements OnInit {
 		this.isloadingEvents = true;
 
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
+		if (page <= 1) {
+			delete this.eventsDetailsItem;
+			this.sidebarEventDeliveries = [];
+		}
+
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL();
 
@@ -221,6 +227,8 @@ export class EventComponent implements OnInit {
 	}
 
 	async getEventDeliveriesForSidebar(eventId: string) {
+		this.sidebarEventDeliveries = [];
+
 		const response = await this.eventsService.getEventDeliveries({
 			eventId,
 			startDate: '',
@@ -231,6 +239,7 @@ export class EventComponent implements OnInit {
 			token: this.appPortalToken
 		});
 		this.sidebarEventDeliveries = response.data.content;
+		return;
 	}
 
 	openDeliveriesTab(eventId: string) {
