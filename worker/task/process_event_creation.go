@@ -140,7 +140,12 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			}
 
 			taskName := convoy.EventProcessor
-			if eventDelivery.Status != datastore.DiscardedEventStatus {
+
+			// This event delivery will be picked up by the convoy stream command(if it is currently running).
+			// Otherwise, it will be lost to the wind? workaround for this is to disable the subscriptions created
+			// while the command was running, however in that scenario the event deliveries will still be created,
+			// but will be in the datastore.DiscardedEventStatus status, we can also delete the subscription, that is a firmer solution
+			if eventDelivery.Status != datastore.DiscardedEventStatus && s.Type != datastore.SubscriptionTypeCLI {
 				payload := json.RawMessage(eventDelivery.UID)
 
 				job := &queue.Job{

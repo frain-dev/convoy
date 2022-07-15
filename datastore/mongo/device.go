@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy/util"
@@ -42,7 +43,12 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 
 	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	return d.store.UpdateOne(ctx, filter, device)
+	update := bson.M{
+		"updated_at":   device.UpdatedAt,
+		"last_seen_at": device.LastSeenAt,
+	}
+
+	return d.store.UpdateOne(ctx, filter, update)
 }
 
 func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, appID, groupID string) error {
@@ -90,6 +96,9 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 	device := &datastore.Device{}
 	err := d.store.FindOne(ctx, filter, nil, device)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, datastore.ErrDeviceNotFound
+		}
 		return nil, err
 	}
 	return device, nil

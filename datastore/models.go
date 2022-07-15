@@ -627,7 +627,6 @@ type Device struct {
 	GroupID    string             `json:"group_id" bson:"group_id"`
 	AppID      string             `json:"app_id" bson:"app_id"`
 	HostName   string             `json:"host_name" bson:"host_name"`
-	ClientID   string             `json:"client_id" bson:"client_id"`
 	Status     DeviceStatus       `json:"status" bson:"status"`
 	LastSeenAt primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
 	CreatedAt  primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`

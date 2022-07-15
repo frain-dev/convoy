@@ -202,6 +202,8 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureCompoundIndex(EventCollection)
 	c.ensureCompoundIndex(UserCollection)
 	c.ensureCompoundIndex(GroupCollection)
+	c.ensureCompoundIndex(SubscriptionCollection)
+	c.ensureCompoundIndex(DeviceCollection)
 	c.ensureCompoundIndex(EventDeliveryCollection)
 	c.ensureCompoundIndex(OrganisationInvitesCollection)
 	c.ensureCompoundIndex(OrganisationMembersCollection)
@@ -459,6 +461,17 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
+		DeviceCollection: {
+			{
+				Keys: bson.D{
+					{Key: "app_id", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
 		SubscriptionCollection: {
 			{
 				Keys: bson.D{
@@ -466,6 +479,16 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "group_id", Value: 1},
 					{Key: "source_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: bson.D{
+					{Key: "device_id", Value: 1},
+					{Key: "app_id", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "source_id", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
