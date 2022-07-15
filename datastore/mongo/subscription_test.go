@@ -17,7 +17,7 @@ func createSubscription() *datastore.Subscription {
 	return &datastore.Subscription{
 		UID:        uuid.NewString(),
 		Name:       "Subscription",
-		Type:       datastore.SubscriptionTypeCLI,
+		Type:       datastore.SubscriptionTypeAPI,
 		AppID:      "app-id-1",
 		GroupID:    "group-id-1",
 		SourceID:   "source-id-1",
@@ -197,7 +197,7 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 		subscription := &datastore.Subscription{
 			UID:            uuid.NewString(),
 			Name:           fmt.Sprintf("Subscription %d", i),
-			Type:           datastore.SubscriptionTypeCLI,
+			Type:           datastore.SubscriptionTypeAPI,
 			AppID:          "app-id-1",
 			GroupID:        "group-id-1",
 			SourceID:       uuid.NewString(),
