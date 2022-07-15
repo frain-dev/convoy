@@ -29,7 +29,7 @@
 				</div>
 			</convoy-dropdown>
 
-			<convoy-button size="sm" className="min-w-[150px] h-36px" routerLink="./new" (click)="currentId = ''">Add team member</convoy-button>
+			<convoy-button size="sm" className="min-w-[150px] h-36px" (click)="openCreateTeamModal(); currentId = ''">Add team member</convoy-button>
 		</div>
 	</div>
 
@@ -169,6 +169,7 @@
 <convoy-page className="pt-0" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
 	<convoy-empty-state
 		className="h-[50vh]"
+		(onAction)="openCreateTeamModal()"
 		imgSrc="/assets/img/team-empty-img.svg"
 		[buttonText]="!searchString ? 'Add team member' : ''"
 		[heading]="searchString ? 'You have no one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'You have no one on your team yet' : 'You have no pending invites'"

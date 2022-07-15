@@ -5,7 +5,7 @@
 		<h3 class="mb-2 font-semibold">Projects</h3>
 		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
 
-		<div class="grid grid-cols-3 gap-6" *ngIf="isLoadingProjects">
+		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="isLoadingProjects">
 			<div *ngFor="let index of projectsLoaderIndex" class="rounded-8px bg-white-100 block border border-grey-10">
 				<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
 					<div class="flex items-center">
@@ -32,7 +32,7 @@
 			</div>
 		</div>
 
-		<div class="grid grid-cols-3 gap-6" *ngIf="!isLoadingProjects">
+		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="!isLoadingProjects">
 			<a *ngFor="let project of projects" [routerLink]="'/projects/' + project.uid" class="rounded-8px bg-white-100 block border border-grey-10">
 				<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
 					<div class="flex items-center">

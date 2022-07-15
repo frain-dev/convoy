@@ -147,4 +147,8 @@ export class TeamsComponent implements OnInit {
 	goToTeams() {
 		this.router.navigateByUrl('/team');
 	}
+
+	openCreateTeamModal() {
+		this.router.navigateByUrl('/team/new');
+	}
 }
