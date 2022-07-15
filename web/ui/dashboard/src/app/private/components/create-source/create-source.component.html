@@ -48,7 +48,7 @@
 			</div>
 		</convoy-card>
 
-		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || checkForCustomSource()" formGroupName="hmac">
+		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" formGroupName="hmac">
 			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</h2>
 			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'github'">Github Credentials</h2>
 			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'twitter'">Twitter Credentials</h2>

@@ -62,9 +62,8 @@ export class CreateSourceComponent implements OnInit {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
-			if (sourceProvider === 'github') this.sourceForm.patchValue({ verifier: { type: 'github' } });
-			if (sourceProvider === 'twitter') this.sourceForm.patchValue({ verifier: { type: 'twitter' } });
-			if (sourceProvider === 'shopify') this.sourceForm.patchValue({ verifier: { type: 'shopify' } });
+			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } })
+			
 			return;
 		} catch (error) {
 			return error;
@@ -73,7 +72,7 @@ export class CreateSourceComponent implements OnInit {
 
 	async saveSource() {
 		
-		const verifier = this.checkForCustomSource() ? 'hmac' : this.sourceForm.get('verifier.type')?.value;
+		const verifier = this.isCustomSource(this.sourceForm.get('verifier.type')?.value) ? 'hmac' : this.sourceForm.get('verifier.type')?.value;
 
 		if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
 		if (this.sourceForm.get('verifier.type')?.value === 'shopify') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Shopify-Hmac-SHA256', hash: 'SHA256' });
@@ -98,11 +97,11 @@ export class CreateSourceComponent implements OnInit {
 		}
 	}
 
-	checkForCustomSource(): boolean {
+	isCustomSource(sourceValue: string): boolean {
 		const customSources = ['github', 'twitter', 'shopify'];
-		const isCustomSource = customSources.some(source => this.sourceForm.get('verifier.type')?.value.includes(source));
+		const checkForCustomSource = customSources.some(source => sourceValue.includes(source));
 
-		return isCustomSource;
+		return checkForCustomSource;
 	}
 
 	isSourceFormValid(): boolean {
@@ -117,7 +116,7 @@ export class CreateSourceComponent implements OnInit {
 		}
 
 		if (
-			(this.sourceForm.get('verifier')?.value.type === 'hmac' || this.checkForCustomSource()) &&
+			(this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) &&
 			this.sourceForm.get('verifier.hmac')?.valid
 		) {
 			return true;
