@@ -100,15 +100,16 @@ type PortalAPIKeyResponse struct {
 }
 
 type SourceResponse struct {
-	UID        string                    `json:"uid"`
-	MaskID     string                    `json:"mask_id"`
-	GroupID    string                    `json:"group_id"`
-	Name       string                    `json:"name"`
-	Type       datastore.SourceType      `json:"type"`
-	URL        string                    `json:"url"`
-	IsDisabled bool                      `json:"is_disabled"`
-	Verifier   *datastore.VerifierConfig `json:"verifier"`
-	Provider   datastore.SourceProvider  `json:"provider"`
+	UID            string                    `json:"uid"`
+	MaskID         string                    `json:"mask_id"`
+	GroupID        string                    `json:"group_id"`
+	Name           string                    `json:"name"`
+	Type           datastore.SourceType      `json:"type"`
+	URL            string                    `json:"url"`
+	IsDisabled     bool                      `json:"is_disabled"`
+	Verifier       *datastore.VerifierConfig `json:"verifier"`
+	Provider       datastore.SourceProvider  `json:"provider"`
+	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
