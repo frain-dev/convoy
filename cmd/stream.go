@@ -233,13 +233,12 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var subscription *datastore.Subscription
-	subscription, err = h.subscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID, listenRequest.SourceID)
+	_, err = h.subscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID, listenRequest.SourceID)
 	switch err {
 	case nil:
 		break
 	case datastore.ErrSubscriptionNotFound:
-		subscription = &datastore.Subscription{
+		s := &datastore.Subscription{
 			UID:            uuid.NewString(),
 			Name:           fmt.Sprintf("device-%s-subscription", device.UID),
 			Type:           datastore.SubscriptionTypeCLI,
@@ -253,7 +252,7 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
-		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, subscription)
+		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, s)
 		if err != nil {
 			respond(w, http.StatusBadRequest, "failed to create new subscription")
 			return
