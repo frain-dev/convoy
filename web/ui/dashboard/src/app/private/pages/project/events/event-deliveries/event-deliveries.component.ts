@@ -170,7 +170,7 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ addToURL: true });
 	}
 
-	clearFilters(filterType?: 'eventsDelApp' | 'eventsDelDate' | 'eventsDelsStatus') {
+	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.appDropdownComponent.show = false;
@@ -181,24 +181,33 @@ export class EventDeliveriesComponent implements OnInit {
 		this.eventDeliveryTimerFilter.filterEndMinute = 59;
 
 		switch (filterType) {
-			case 'eventsDelApp':
+			case 'app':
+				filterItems = ['eventDelsApp'];
+				this.eventDeliveriesApp = undefined;
 				break;
-			case 'eventsDelDate':
+			case 'date':
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
+				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				break;
-			case 'eventsDelsStatus':
+			case 'status':
 				filterItems = ['eventDelsStatus'];
+				this.eventDeliveryFilteredByStatus = [];
+				break;
+			case 'time':
+				filterItems = ['eventDelsTime'];
+				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				break;
 			default:
-				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				this.eventDeliveriesApp = undefined;
+				this.dateFiltersFromURL = { startDate: '', endDate: '' };
+				this.eventDeliveryFilteredByEventId = undefined;
+				this.eventDeliveryFilteredByStatus = [];
+				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				break;
 		}
 
-		this.eventDeliveriesApp = undefined;
-		this.dateFiltersFromURL = { startDate: '', endDate: '' };
 		this.eventDeliveryFilteredByEventId = undefined;
-		this.eventDeliveryFilteredByStatus = [];
-		this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate(['./'], { relativeTo: this.route, queryParams: activeFilters });

@@ -3,15 +3,16 @@
 	<div *ngIf="title" class="px-20px pt-20px pb-16px border-b border-b-grey-10 bg-white-100">
 		<div class="flex items-center justify-between" *ngIf="position !== 'full'">
 			<h2 class="font-semibold capitalize">{{ title }}</h2>
-			<convoy-button type="outline" size="sm" className="px-2" (click)="closeModal.emit()">
+
+			<convoy-button texture="light" size="sm" className="px-8px !py-10px" (click)="closeModal.emit()">
 				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 			</convoy-button>
 		</div>
 
 		<div class="flex items-center justify-between m-auto max-w-[834px]" *ngIf="position === 'full'">
 			<div class="flex items-center">
-				<convoy-button type="outline" size="sm" [className]="'px-2'" (click)="closeModal.emit()">
-					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+				<convoy-button size="sm" texture="light" className="px-10px !py-10px" (click)="closeModal.emit()">
+					<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
 				</convoy-button>
 
 				<h2 class="font-semibold capitalize ml-2">{{ title }}</h2>

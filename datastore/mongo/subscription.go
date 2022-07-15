@@ -94,7 +94,7 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, groupId strin
 		"uid":      subscription.UID,
 		"group_id": groupId,
 	}
-	return s.store.DeleteOne(ctx, filter)
+	return s.store.DeleteOne(ctx, filter, false)
 }
 
 func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId string, uid string) (*datastore.Subscription, error) {
@@ -110,10 +110,10 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 }
 
 func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
-	var subscriptions []datastore.Subscription
 	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType), "document_status": datastore.ActiveDocumentStatus}
 
-	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, subscriptions)
+	subscriptions := make([]datastore.Subscription, 0)
+	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
 	if err != nil {
 		return nil, err
 	}
@@ -128,8 +128,8 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	var subscriptions []datastore.Subscription
-	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, subscriptions)
+	subscriptions := make([]datastore.Subscription, 0)
+	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, datastore.ErrSubscriptionNotFound
 	}
@@ -138,9 +138,9 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 }
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {
-	var subscriptions []datastore.Subscription
 	filter := bson.M{"group_id": groupId, "source_id": sourceId, "document_status": datastore.ActiveDocumentStatus}
 
+	subscriptions := make([]datastore.Subscription, 0)
 	err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
 	if err != nil {
 		return nil, err

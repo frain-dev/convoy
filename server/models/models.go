@@ -31,13 +31,15 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
+	IsAnalyticsEnabled *bool                                 `json:"is_analytics_enabled"`
+	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 }
 
 type ConfigurationResponse struct {
-	UID                string `json:"uid"`
-	IsAnalyticsEnabled bool   `json:"is_analytics_enabled"`
-	ApiVersion         string `json:"api_version"`
+	UID                string                                `json:"uid"`
+	IsAnalyticsEnabled bool                                  `json:"is_analytics_enabled"`
+	ApiVersion         string                                `json:"api_version"`
+	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`

@@ -46,7 +46,7 @@
 </div>
 
 <div class="min-h-[70vh] w-full min-w-[485px] flex items-start" *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
-	<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100% - 382px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
+	<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100%_-_382px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
 		<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
 			<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10">
 				<div class="flex items-center">
@@ -119,7 +119,8 @@
 			</div>
 		</convoy-card>
 	</div>
-	<convoy-card className="pb-20px ml-8px w-full max-w-[382px] min-w-[310px] border-l border-l-grey-10 desktop:max-w-none desktop:ml-0 transition-all duration-200" *ngIf="activeSubscription?.uid">
+
+	<convoy-card className="pb-20px ml-8px w-full max-w-[382px] min-w-[310px] border-l border-l-grey-10 desktop:max-w-none desktop:ml-0 transition-all duration-200" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
 		<div class="flex items-center justify-between border-b border-b-grey-10 px-24px pt-24px pb-16px">
 			<h2 class="font-bold">{{ activeSubscription?.name }}</h2>
 			<a [routerLink]="['./']" [queryParams]="{}" class="w-32px h-32px bg-primary-500 flex items-center justify-center rounded-[6px]" tabindex="0">
