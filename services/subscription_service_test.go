@@ -52,7 +52,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -90,7 +90,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -138,7 +138,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -178,7 +178,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -206,7 +206,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -242,7 +242,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -314,7 +314,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -408,7 +408,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeCLI,
+				Type:       datastore.SubscriptionTypeAPI,
 				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
@@ -418,7 +418,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Subscription{
 					UID:  "sub-uid-1",
-					Type: datastore.SubscriptionTypeCLI,
+					Type: datastore.SubscriptionTypeAPI,
 				}, nil)
 
 				s.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -749,7 +749,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 				ctx: ctx,
 				newSubscription: &datastore.Subscription{
 					Name:       "sub 1",
-					Type:       datastore.SubscriptionTypeCLI,
+					Type:       datastore.SubscriptionTypeAPI,
 					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -769,7 +769,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 				ctx: ctx,
 				newSubscription: &datastore.Subscription{
 					Name:       "sub 1",
-					Type:       datastore.SubscriptionTypeCLI,
+					Type:       datastore.SubscriptionTypeAPI,
 					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
