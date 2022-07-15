@@ -72,7 +72,8 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	async saveSource() {
-		const verifier = this.sourceForm.get('verifier.type')?.value === 'github' || this.sourceForm.get('verifier.type')?.value === 'twitter' || this.sourceForm.get('verifier.type')?.value === 'shopify' ? 'hmac' : this.sourceForm.get('verifier.type')?.value;
+		
+		const verifier = this.checkForCustomSource() ? 'hmac' : this.sourceForm.get('verifier.type')?.value;
 
 		if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
 		if (this.sourceForm.get('verifier.type')?.value === 'shopify') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Shopify-Hmac-SHA256', hash: 'SHA256' });
@@ -97,6 +98,13 @@ export class CreateSourceComponent implements OnInit {
 		}
 	}
 
+	checkForCustomSource(): boolean {
+		const customSources = ['github', 'twitter', 'shopify'];
+		const isCustomSource = customSources.some(source => this.sourceForm.get('verifier.type')?.value.includes(source));
+
+		return isCustomSource;
+	}
+
 	isSourceFormValid(): boolean {
 		if (this.sourceForm.get('name')?.invalid || this.sourceForm.get('type')?.invalid) return false;
 
@@ -109,7 +117,7 @@ export class CreateSourceComponent implements OnInit {
 		}
 
 		if (
-			(this.sourceForm.get('verifier')?.value.type === 'hmac' || this.sourceForm.get('verifier')?.value.type === 'github' || this.sourceForm.get('verifier')?.value.type === 'twitter' || this.sourceForm.get('verifier')?.value.type === 'shopify') &&
+			(this.sourceForm.get('verifier')?.value.type === 'hmac' || this.checkForCustomSource()) &&
 			this.sourceForm.get('verifier.hmac')?.valid
 		) {
 			return true;
