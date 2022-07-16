@@ -34,9 +34,6 @@ func Test_CreateDevice(t *testing.T) {
 	}
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	err := deviceRepo.CreateDevice(context.Background(), device)
-	require.NoError(t, err)
-
 	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)
 	require.NoError(t, err)
 
