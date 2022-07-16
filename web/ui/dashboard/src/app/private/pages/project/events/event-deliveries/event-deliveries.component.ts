@@ -4,10 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { APP } from 'src/app/models/app.model';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { DateFilterComponent } from 'src/app/private/components/date-filter/date-filter.component';
 import { TimeFilterComponent } from 'src/app/private/components/time-filter/time-filter.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
@@ -36,7 +38,6 @@ export class EventDeliveriesComponent implements OnInit {
 	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
 	eventDeliveriesApp?: string;
-	eventDelsDetailsItem?: any;
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
@@ -47,9 +48,10 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	eventsDelAppsFilter$!: Observable<APP[]>;
-	filteredApps!: APP[];
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
+	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
+	@ViewChild('appsFilterDropdown') appDropdownComponent!: DropdownComponent;
 	appPortalToken = this.route.snapshot.params?.token;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe, private route: ActivatedRoute, private router: Router) {}
@@ -72,9 +74,9 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	ngOnChanges(changes: SimpleChanges) {
-		const prevValue = changes?.eventDeliveryFilteredByEventId.previousValue
-		const currentValue = changes?.eventDeliveryFilteredByEventId.currentValue
-		if(currentValue !== prevValue) this.getEventDeliveries();
+		const prevValue = changes?.eventDeliveryFilteredByEventId.previousValue;
+		const currentValue = changes?.eventDeliveryFilteredByEventId.currentValue;
+		if (currentValue !== prevValue) this.getEventDeliveries();
 	}
 
 	getFiltersFromURL() {
@@ -168,29 +170,44 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ addToURL: true });
 	}
 
-	clearFilters(filterType?: 'eventsDelApp' | 'eventsDelDate' | 'eventsDelsStatus') {
+	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
+		this.appDropdownComponent.show = false;
+		this.dateFilter?.dateRange.patchValue({ startDate: '', endDate: '' });
+		this.eventDeliveryTimerFilter.filterStartHour = 0;
+		this.eventDeliveryTimerFilter.filterStartMinute = 0;
+		this.eventDeliveryTimerFilter.filterEndHour = 23;
+		this.eventDeliveryTimerFilter.filterEndMinute = 59;
 
 		switch (filterType) {
-			case 'eventsDelApp':
+			case 'app':
+				filterItems = ['eventDelsApp'];
+				this.eventDeliveriesApp = undefined;
 				break;
-			case 'eventsDelDate':
+			case 'date':
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
+				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				break;
-			case 'eventsDelsStatus':
+			case 'status':
 				filterItems = ['eventDelsStatus'];
+				this.eventDeliveryFilteredByStatus = [];
+				break;
+			case 'time':
+				filterItems = ['eventDelsTime'];
+				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				break;
 			default:
-				filterItems = ['eventDelsStartDate', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				this.eventDeliveriesApp = undefined;
+				this.dateFiltersFromURL = { startDate: '', endDate: '' };
+				this.eventDeliveryFilteredByEventId = undefined;
+				this.eventDeliveryFilteredByStatus = [];
+				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				break;
 		}
 
-		this.eventDeliveriesApp = undefined;
-		this.dateFiltersFromURL = { startDate: '', endDate: '' };
 		this.eventDeliveryFilteredByEventId = undefined;
-		this.eventDeliveryFilteredByStatus = [];
-		this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate(['./'], { relativeTo: this.route, queryParams: activeFilters });

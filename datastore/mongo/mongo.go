@@ -85,6 +85,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	users := datastore.New(conn, UserCollection)
 	config := datastore.New(conn, ConfigCollection)
 	devices := datastore.New(conn, DeviceCollection)
+	event_delivery := datastore.New(conn, EventDeliveryCollection)
 
 	c := &Client{
 		db:                conn,
@@ -93,7 +94,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		applicationRepo:   NewApplicationRepo(conn, apps),
 		subscriptionRepo:  NewSubscriptionRepo(conn, subscriptions),
 		eventRepo:         NewEventRepository(conn, events),
-		eventDeliveryRepo: NewEventDeliveryRepository(conn),
+		eventDeliveryRepo: NewEventDeliveryRepository(conn, event_delivery),
 		sourceRepo:        NewSourceRepo(conn, sources),
 		deviceRepo:        NewDeviceRepository(conn, devices),
 		orgRepo:           NewOrgRepo(conn, orgs),
@@ -202,6 +203,8 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureCompoundIndex(EventCollection)
 	c.ensureCompoundIndex(UserCollection)
 	c.ensureCompoundIndex(GroupCollection)
+	c.ensureCompoundIndex(SubscriptionCollection)
+	c.ensureCompoundIndex(DeviceCollection)
 	c.ensureCompoundIndex(EventDeliveryCollection)
 	c.ensureCompoundIndex(OrganisationInvitesCollection)
 	c.ensureCompoundIndex(OrganisationMembersCollection)
@@ -459,6 +462,17 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
+		DeviceCollection: {
+			{
+				Keys: bson.D{
+					{Key: "app_id", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
 		SubscriptionCollection: {
 			{
 				Keys: bson.D{
@@ -466,6 +480,16 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "group_id", Value: 1},
 					{Key: "source_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: bson.D{
+					{Key: "device_id", Value: 1},
+					{Key: "app_id", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "source_id", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),

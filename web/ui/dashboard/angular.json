@@ -18,7 +18,7 @@
 			},
 			"root": "",
 			"sourceRoot": "src",
-			"prefix": "app",
+			"prefix": "convoy",
 			"architect": {
 				"build": {
 					"builder": "@angular-devkit/build-angular:browser",
@@ -100,6 +100,5 @@
 				}
 			}
 		}
-	},
-	"defaultProject": "convoy-ng"
+	}
 }

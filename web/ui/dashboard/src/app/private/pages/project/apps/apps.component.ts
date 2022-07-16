@@ -1,6 +1,7 @@
 import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
@@ -13,7 +14,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 	styleUrls: ['./apps.component.scss']
 })
 export class AppsComponent implements OnInit {
-	appsTableHead: string[] = ['Status', 'Name', 'Time Created', 'Updated', 'Events', 'Endpoints'];
+	appsTableHead: string[] = ['Status', 'Name', 'Time Created', 'Updated', 'Events', 'Endpoints', '', ''];
 	appsSearchString: string = '';
 	selectedAppStatus: string = 'All';
 	appStatuses: string[] = ['All', 'Enabled', 'Disabled'];
@@ -32,6 +33,7 @@ export class AppsComponent implements OnInit {
 	displayedApps: { date: string; content: APP[] }[] = [];
 	appsDetailsItem?: any;
 	filteredApps!: APP[];
+	@ViewChild('appTableDropdown') appTableDropdown!: DropdownComponent;
 
 	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}
 
@@ -92,6 +94,7 @@ export class AppsComponent implements OnInit {
 	}
 
 	promptDeleteModal(event: MouseEvent, app: APP) {
+		this.appTableDropdown.show = false;
 		event.stopPropagation();
 		this.appsDetailsItem = app;
 		this.currentAppId = '';

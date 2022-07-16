@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AccountService } from './account.service';
@@ -61,12 +61,7 @@ export class AccountComponent implements OnInit {
 	}
 
 	async editBasicUserInfo() {
-		if (this.editBasicInfoForm.invalid) {
-			(<any>Object).values(this.editBasicInfoForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.editBasicInfoForm.invalid) return this.editBasicInfoForm.markAllAsTouched();
 		this.isSavingUserDetails = true;
 		try {
 			const response = await this.accountService.editBasicInfo({ userId: this.userId, body: this.editBasicInfoForm.value });
@@ -79,12 +74,7 @@ export class AccountComponent implements OnInit {
 	}
 
 	async changePassword() {
-		if (this.changePasswordForm.invalid) {
-			(<any>Object).values(this.changePasswordForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.changePasswordForm.invalid) return this.changePasswordForm.markAllAsTouched();
 		this.isUpdatingPassword = true;
 		try {
 			const response = await this.accountService.changePassword({ userId: this.userId, body: this.changePasswordForm.value });

@@ -10,7 +10,7 @@ import { AddAnalyticsService } from './add-analytics.service';
 export class AddAnalyticsComponent implements OnInit {
 	@Output() closeModal = new EventEmitter<any>();
 	@Input() authDetails: any;
-	loading: boolean = false;
+	loading = false;
 	addAnalyticsForm: FormGroup = this.formBuilder.group({
 		is_analytics_enabled: [null, Validators.required]
 	});

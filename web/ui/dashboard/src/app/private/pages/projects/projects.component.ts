@@ -19,7 +19,7 @@ export class ProjectsComponent implements OnInit {
 	showOrganisationModal = false;
 	isloadingOrganisations = false;
 
-	constructor(private projectsService: ProjectsService, private privateService: PrivateService) {}
+	constructor(private projectsService: ProjectsService, private privateService: PrivateService, private router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingOrganisations = true;
@@ -59,5 +59,9 @@ export class ProjectsComponent implements OnInit {
 
 		// temporary fix for reloading page
 		location.reload();
+	}
+
+	goToCreateProjectPage() {
+		this.router.navigateByUrl('/projects/new');
 	}
 }

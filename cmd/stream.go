@@ -28,13 +28,10 @@ import (
 
 const (
 	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
+	writeWait = 5 * time.Second
 
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 2 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
@@ -42,12 +39,7 @@ const (
 	maxDeviceLastSeenDuration = 2 * time.Minute
 )
 
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
-)
-
-var upgrader = websocket.Upgrader{
+var ug = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
@@ -68,6 +60,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			hub := NewHub(a.deviceRepo, a.subRepo, a.sourceRepo)
 			go hub.StartRegister()
+			go hub.StartUnregister()
 			go hub.StartEventWatcher()
 			go hub.StartEventSender()
 
@@ -102,7 +95,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 func gracefulShutdown(srv *http.Server, hub *Hub) {
 	//Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	hub.Stop()
@@ -130,6 +123,7 @@ type ListenRequest struct {
 
 type LoginRequest struct {
 	HostName string `json:"host_name"`
+	DeviceID string `json:"device_id"`
 }
 
 func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
@@ -148,24 +142,43 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 		appID = app.UID
 	}
 
-	device := &datastore.Device{
-		UID:        uuid.NewString(),
-		GroupID:    group.UID,
-		AppID:      appID,
-		HostName:   loginRequest.HostName,
-		Status:     datastore.DeviceStatusOnline,
-		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-	}
+	var device *datastore.Device
+	if !util.IsStringEmpty(loginRequest.DeviceID) {
+		device, err = h.deviceRepo.FetchDeviceByID(r.Context(), loginRequest.DeviceID, appID, group.UID)
+		if err != nil {
+			respond(w, http.StatusBadRequest, "device not found")
+			return
+		}
 
-	ctx, cancel := getCtx()
-	defer cancel()
+		if device.GroupID != group.UID {
+			respond(w, http.StatusUnauthorized, "unauthorized to access device")
+			return
+		}
 
-	err = h.deviceRepo.CreateDevice(ctx, device)
-	if err != nil {
-		respond(w, http.StatusBadRequest, "failed to create new device")
-		return
+		if device.AppID != appID {
+			respond(w, http.StatusUnauthorized, "unauthorized to access device")
+			return
+		}
+	} else {
+		device = &datastore.Device{
+			UID:        uuid.NewString(),
+			GroupID:    group.UID,
+			AppID:      appID,
+			HostName:   loginRequest.HostName,
+			Status:     datastore.DeviceStatusOnline,
+			LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		}
+
+		ctx, cancel := getCtx()
+		defer cancel()
+
+		err = h.deviceRepo.CreateDevice(ctx, device)
+		if err != nil {
+			respond(w, http.StatusBadRequest, "failed to create new device")
+			return
+		}
 	}
 
 	respondWithData(w, http.StatusOK, device)
@@ -220,13 +233,12 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subscription, err := h.subscriptionRepo.FindSubscriptionByID(ctx, group.UID, device.UID)
-
+	_, err = h.subscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID, listenRequest.SourceID)
 	switch err {
 	case nil:
 		break
 	case datastore.ErrSubscriptionNotFound:
-		subscription = &datastore.Subscription{
+		s := &datastore.Subscription{
 			UID:            uuid.NewString(),
 			Name:           fmt.Sprintf("device-%s-subscription", device.UID),
 			Type:           datastore.SubscriptionTypeCLI,
@@ -240,7 +252,7 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
-		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, subscription)
+		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, s)
 		if err != nil {
 			respond(w, http.StatusBadRequest, "failed to create new subscription")
 			return
@@ -250,7 +262,7 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := ug.Upgrade(w, r, nil)
 	if err != nil {
 		log.WithError(err).Error("failed to upgrade connection to websocket connection")
 		respond(w, http.StatusBadRequest, "failed to upgrade connection to websocket connection")
@@ -275,7 +287,10 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 
 func respond(w http.ResponseWriter, code int, msg string) {
 	w.WriteHeader(code)
-	w.Write([]byte(msg))
+	_, err := w.Write([]byte(msg))
+	if err != nil {
+		log.WithError(err).Error("failed to write response message")
+	}
 }
 
 func respondWithData(w http.ResponseWriter, code int, v interface{}) {
@@ -287,7 +302,10 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	}
 
 	w.WriteHeader(code)
-	w.Write(data)
+	_, err = w.Write(data)
+	if err != nil {
+		log.WithError(err).Error("failed to write response data")
+	}
 }
 
 func (h *Hub) requireApp() func(next http.Handler) http.Handler {

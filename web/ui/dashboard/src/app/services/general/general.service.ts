@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { NOTIFICATION_STATUS } from 'src/app/models/global.model';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class GeneralService {
-	alertStatus: BehaviorSubject<{ message: string; style: string; show: boolean }> = new BehaviorSubject<{ message: string; style: string; show: boolean }>({ message: 'testing', style: 'info', show: false });
+	alertStatus: BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; show: boolean }> = new BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; show: boolean }>({ message: 'testing', style: 'info', show: false });
 
 	constructor() {}
 
-	showNotification(details: { message: string; style: string }) {
+	showNotification(details: { message: string; style: NOTIFICATION_STATUS }) {
 		this.alertStatus.next({ message: details.message, style: details.style, show: true });
 		setTimeout(() => {
 			this.dismissNotification();
@@ -18,7 +19,7 @@ export class GeneralService {
 	}
 
 	dismissNotification() {
-		this.alertStatus.next({ message: '', style: '', show: false });
+		this.alertStatus.next({ message: '', style: 'info', show: false });
 	}  
 	
 	apiURL(): string {

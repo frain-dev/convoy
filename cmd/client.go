@@ -34,6 +34,8 @@ type Client struct {
 func (c *Client) readPump() {
 	defer c.Close()
 
+	c.conn.SetReadLimit(maxMessageSize)
+
 	err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
 		return
@@ -80,7 +82,7 @@ func (c *Client) Close() {
 	if err != nil {
 		log.WithError(err).Error("failed to close client conn")
 	}
-	c.hub.RemoveClient(c) //TODO: possibly streamline this with a channel
+	c.hub.unregister <- c
 }
 
 func (c *Client) GoOffline() {
@@ -99,11 +101,10 @@ func (c *Client) GoOffline() {
 
 func (c *Client) IsOnline() bool {
 	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	lastSeen := c.Device.LastSeenAt.Time()
-	since := time.Since(lastSeen)
+	c.lock.RUnlock()
 
+	since := time.Since(lastSeen)
 	return since < maxDeviceLastSeenDuration
 }
 

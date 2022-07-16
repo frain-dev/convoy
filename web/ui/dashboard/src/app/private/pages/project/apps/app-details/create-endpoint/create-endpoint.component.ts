@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ENDPOINT } from 'src/app/models/app.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -29,12 +29,7 @@ export class CreateEndpointComponent implements OnInit {
 	}
 
 	async saveEndpoint() {
-		if (this.addNewEndpointForm.invalid) {
-			(<any>Object).values(this.addNewEndpointForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAsTouched();
 		this.savingEndpoint = true;
 
 		try {

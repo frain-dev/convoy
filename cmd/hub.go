@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -23,14 +24,15 @@ type Hub struct {
 	sourceRepo       datastore.SourceRepository
 	appRepo          datastore.ApplicationRepository
 
-	lock sync.RWMutex
+	lock sync.RWMutex // prevent data race on deviceClients
+
 	// Registered clients.
 	deviceClients map[string]*Client
 
-	// Register requests from the clients.
+	// Register new clients.
 	register chan *Client
 
-	// Unregister requests from clients.
+	// Unregister clients.
 	unregister chan *Client
 
 	events chan *CLIEvent
@@ -43,9 +45,9 @@ func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.Su
 		subscriptionRepo: subscriptionRepo,
 		sourceRepo:       sourceRepo,
 		deviceClients:    map[string]*Client{},
-		register:         make(chan *Client),
-		unregister:       make(chan *Client),
-		events:           make(chan *CLIEvent),
+		register:         make(chan *Client, 1),
+		unregister:       make(chan *Client, 1),
+		events:           make(chan *CLIEvent, 10),
 		close:            make(chan struct{}),
 	}
 }
@@ -77,7 +79,12 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			err := client.conn.WriteMessage(websocket.TextMessage, ev.Data)
+			err := client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				log.WithError(err).Error("failed to set write deadline")
+			}
+
+			err = client.conn.WriteMessage(websocket.TextMessage, ev.Data)
 			if err != nil {
 				log.WithError(err).Error("failed to write pong message")
 			}
@@ -199,10 +206,17 @@ func (h *Hub) StartRegister() {
 	}
 }
 
-func (h *Hub) RemoveClient(c *Client) {
-	h.lock.Lock()
-	delete(h.deviceClients, c.deviceID)
-	h.lock.Unlock()
+func (h *Hub) StartUnregister() {
+	for {
+		select {
+		case client := <-h.unregister:
+			h.lock.Lock()
+			delete(h.deviceClients, client.deviceID)
+			h.lock.Unlock()
+		case <-h.close:
+			return
+		}
+	}
 }
 
 func (h *Hub) Stop() {

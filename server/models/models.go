@@ -31,13 +31,15 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
+	IsAnalyticsEnabled *bool                                 `json:"is_analytics_enabled"`
+	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 }
 
 type ConfigurationResponse struct {
-	UID                string `json:"uid"`
-	IsAnalyticsEnabled bool   `json:"is_analytics_enabled"`
-	ApiVersion         string `json:"api_version"`
+	UID                string                                `json:"uid"`
+	IsAnalyticsEnabled bool                                  `json:"is_analytics_enabled"`
+	ApiVersion         string                                `json:"api_version"`
+	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
@@ -98,15 +100,16 @@ type PortalAPIKeyResponse struct {
 }
 
 type SourceResponse struct {
-	UID        string                    `json:"uid"`
-	MaskID     string                    `json:"mask_id"`
-	GroupID    string                    `json:"group_id"`
-	Name       string                    `json:"name"`
-	Type       datastore.SourceType      `json:"type"`
-	URL        string                    `json:"url"`
-	IsDisabled bool                      `json:"is_disabled"`
-	Verifier   *datastore.VerifierConfig `json:"verifier"`
-	Provider   datastore.SourceProvider  `json:"provider"`
+	UID            string                    `json:"uid"`
+	MaskID         string                    `json:"mask_id"`
+	GroupID        string                    `json:"group_id"`
+	Name           string                    `json:"name"`
+	Type           datastore.SourceType      `json:"type"`
+	URL            string                    `json:"url"`
+	IsDisabled     bool                      `json:"is_disabled"`
+	Verifier       *datastore.VerifierConfig `json:"verifier"`
+	Provider       datastore.SourceProvider  `json:"provider"`
+	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
@@ -233,8 +236,8 @@ type WebhookRequest struct {
 }
 
 type Subscription struct {
-	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
-	Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
+	Name string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
+	//Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
 	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`

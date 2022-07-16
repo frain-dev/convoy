@@ -352,6 +352,9 @@
 					"logo_url": {
 						"type": "string"
 					},
+					"metadata": {
+						"$ref": "#/components/schemas/datastore.GroupMetadata"
+					},
 					"name": {
 						"type": "string"
 					},
@@ -385,17 +388,31 @@
 					"disable_endpoint": {
 						"type": "boolean"
 					},
+					"is_retention_policy_enabled": {
+						"type": "boolean"
+					},
 					"ratelimit": {
 						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
 					},
 					"replay_attacks": {
 						"type": "boolean"
 					},
+					"retention_policy": {
+						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
+					},
 					"signature": {
 						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
 					},
 					"strategy": {
 						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.GroupMetadata": {
+				"properties": {
+					"retained_events": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -458,6 +475,14 @@
 						"type": "integer"
 					},
 					"strategy": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.OnPremStorage": {
+				"properties": {
+					"path": {
 						"type": "string"
 					}
 				},
@@ -567,12 +592,28 @@
 				},
 				"type": "object"
 			},
+			"datastore.ProviderConfig": {
+				"properties": {
+					"twitter": {
+						"$ref": "#/components/schemas/datastore.TwitterProviderConfig"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.RateLimitConfiguration": {
 				"properties": {
 					"count": {
 						"type": "integer"
 					},
 					"duration": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.RetentionPolicyConfiguration": {
+				"properties": {
+					"policy": {
 						"type": "string"
 					}
 				},
@@ -587,6 +628,17 @@
 						"type": "integer"
 					},
 					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.S3Storage": {
+				"properties": {
+					"bucket": {
+						"type": "string"
+					},
+					"region": {
 						"type": "string"
 					}
 				},
@@ -632,6 +684,9 @@
 					"provider": {
 						"type": "string"
 					},
+					"provider_config": {
+						"$ref": "#/components/schemas/datastore.ProviderConfig"
+					},
 					"type": {
 						"type": "string"
 					},
@@ -643,6 +698,20 @@
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.StoragePolicyConfiguration": {
+				"properties": {
+					"on_prem": {
+						"$ref": "#/components/schemas/datastore.OnPremStorage"
+					},
+					"s3": {
+						"$ref": "#/components/schemas/datastore.S3Storage"
+					},
+					"type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -704,6 +773,14 @@
 					},
 					"updated_at": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.TwitterProviderConfig": {
+				"properties": {
+					"crc_verified_at": {
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -835,6 +912,9 @@
 				"properties": {
 					"is_analytics_enabled": {
 						"type": "boolean"
+					},
+					"storage_policy": {
+						"$ref": "#/components/schemas/datastore.StoragePolicyConfiguration"
 					}
 				},
 				"type": "object"
@@ -852,6 +932,9 @@
 					},
 					"is_analytics_enabled": {
 						"type": "boolean"
+					},
+					"storage_policy": {
+						"$ref": "#/components/schemas/datastore.StoragePolicyConfiguration"
 					},
 					"uid": {
 						"type": "string"
@@ -1099,6 +1182,9 @@
 					"provider": {
 						"type": "string"
 					},
+					"provider_config": {
+						"$ref": "#/components/schemas/datastore.ProviderConfig"
+					},
 					"type": {
 						"type": "string"
 					},
@@ -1123,6 +1209,7 @@
 						"$ref": "#/components/schemas/datastore.AlertConfiguration"
 					},
 					"app_id": {
+						"description": "Type       string `json:\"type\" bson:\"type\" valid:\"required~please provide a valid subscription type\"`",
 						"type": "string"
 					},
 					"endpoint_id": {
@@ -1138,9 +1225,6 @@
 						"$ref": "#/components/schemas/datastore.RetryConfiguration"
 					},
 					"source_id": {
-						"type": "string"
-					},
-					"type": {
 						"type": "string"
 					}
 				},
@@ -3157,6 +3241,120 @@
 					}
 				],
 				"summary": "Create a configuration",
+				"tags": [
+					"Application"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates configuration",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Configuration"
+							}
+						}
+					},
+					"description": "Configuration Details",
+					"required": true,
+					"x-originalParamName": "application"
+				},
+				"responses": {
+					"202": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.ConfigurationResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Accepted"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/server.serverResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update configuration",
 				"tags": [
 					"Application"
 				]
