@@ -1,24 +1,23 @@
-package main
+package services
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/frain-dev/convoy/server"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/util"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -41,21 +40,31 @@ type Hub struct {
 	// Unregister clients.
 	unregister chan *Client
 
+	watchCollectionFn WatchCollectionFn
+
 	events chan *CLIEvent
 	close  chan struct{}
 }
 
-func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, appRepo datastore.ApplicationRepository) *Hub {
+type WatchCollectionFn func(fn func(doc convoy.GenericMap) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error
+
+var ug = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, appRepo datastore.ApplicationRepository, watchCollectionFn WatchCollectionFn) *Hub {
 	return &Hub{
-		appRepo:          appRepo,
-		deviceRepo:       deviceRepo,
-		subscriptionRepo: subscriptionRepo,
-		sourceRepo:       sourceRepo,
-		deviceClients:    map[string]*Client{},
-		register:         make(chan *Client, 1),
-		unregister:       make(chan *Client, 1),
-		events:           make(chan *CLIEvent, 10),
-		close:            make(chan struct{}),
+		watchCollectionFn: watchCollectionFn,
+		appRepo:           appRepo,
+		deviceRepo:        deviceRepo,
+		subscriptionRepo:  subscriptionRepo,
+		sourceRepo:        sourceRepo,
+		deviceClients:     map[string]*Client{},
+		register:          make(chan *Client, 1),
+		unregister:        make(chan *Client, 1),
+		events:            make(chan *CLIEvent, 10),
+		close:             make(chan struct{}),
 	}
 }
 
@@ -147,7 +156,7 @@ func (h *Hub) StartEventWatcher() {
 	pipeline := mongo.Pipeline{lookupStage1, matchStage, lookupStage2, addFieldStage, unsetStage1, unsetStage2}
 
 	fn := h.watchEventDeliveriesCollection()
-	err := watchCollection(fn, pipeline, m.EventCollection, h.close)
+	err := h.watchCollectionFn(fn, pipeline, m.EventCollection, h.close)
 	if err != nil {
 		log.WithError(err).Error("database collection watcher exited unexpectedly")
 	}
@@ -161,7 +170,7 @@ type CLIEvent struct {
 	GroupID   string
 }
 
-func (h *Hub) watchEventDeliveriesCollection() WatcherFn {
+func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error {
 	return func(doc convoy.GenericMap) error {
 		metadata, ok := doc["metadata"].(*datastore.Metadata)
 		if !ok {
@@ -230,26 +239,6 @@ func (h *Hub) Stop() {
 	close(h.close)
 }
 
-func (h *Hub) requireApp() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := server.GetAuthUserFromContext(r.Context())
-			if len(authUser.Role.Apps) > 0 {
-				appID := authUser.Role.Apps[0]
-				app, err := h.appRepo.FindApplicationByID(r.Context(), appID)
-				if err != nil {
-					respond(w, http.StatusBadRequest, "failed to find application")
-					return
-				}
-
-				r = r.WithContext(server.SetApplicationInContext(r.Context(), app))
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 type ListenRequest struct {
 	HostName   string   `json:"host_name"`
 	DeviceID   string   `json:"device_id"`
@@ -262,7 +251,7 @@ type LoginRequest struct {
 	DeviceID string `json:"device_id"`
 }
 
-func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
+func (h *Hub) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	loginRequest := &LoginRequest{}
 	err := util.ReadJSON(r, &loginRequest)
 	if err != nil {
@@ -270,30 +259,47 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := server.GetGroupFromContext(r.Context())
-	app, ok := getApplicationFromContext(r.Context())
+	group := getGroupFromContext(r.Context())
+	app, _ := getApplicationFromContext(r.Context())
 
+	device, err := h.login(r.Context(), group, app, loginRequest)
+	if err != nil {
+		respond(w, err.(*ServiceError).errCode, err.Error())
+		return
+	}
+
+	respondWithData(w, http.StatusOK, device)
+}
+
+func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.Application, loginRequest *LoginRequest) (*datastore.Device, error) {
 	appID := ""
-	if ok {
+	if app != nil {
 		appID = app.UID
 	}
 
 	var device *datastore.Device
+	var err error
 	if !util.IsStringEmpty(loginRequest.DeviceID) {
-		device, err = h.deviceRepo.FetchDeviceByID(r.Context(), loginRequest.DeviceID, appID, group.UID)
+		device, err = h.deviceRepo.FetchDeviceByID(ctx, loginRequest.DeviceID, appID, group.UID)
 		if err != nil {
-			respond(w, http.StatusBadRequest, "device not found")
-			return
+			log.WithError(err).Error("failed to find device by id")
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find device by id"))
 		}
 
 		if device.GroupID != group.UID {
-			respond(w, http.StatusUnauthorized, "unauthorized to access device")
-			return
+			return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
 		}
 
 		if device.AppID != appID {
-			respond(w, http.StatusUnauthorized, "unauthorized to access device")
-			return
+			return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+		}
+
+		if device.Status != datastore.DeviceStatusOnline {
+			device.Status = datastore.DeviceStatusOnline
+			err = h.deviceRepo.UpdateDevice(ctx, device, device.AppID, device.GroupID)
+			if err != nil {
+				return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
+			}
 		}
 	} else {
 		device = &datastore.Device{
@@ -308,20 +314,16 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
 
-		ctx, cancel := getCtx()
-		defer cancel()
-
 		err = h.deviceRepo.CreateDevice(ctx, device)
 		if err != nil {
-			respond(w, http.StatusBadRequest, "failed to create new device")
-			return
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create new device"))
 		}
 	}
 
-	respondWithData(w, http.StatusOK, device)
+	return device, nil
 }
 
-func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
+func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 	listenRequest := &ListenRequest{}
 	err := util.ReadJSON(r, &listenRequest)
 	if err != nil {
@@ -329,44 +331,68 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := server.GetGroupFromContext(r.Context())
-	app, ok := getApplicationFromContext(r.Context())
+	group := getGroupFromContext(r.Context())
+	app, _ := getApplicationFromContext(r.Context())
 
+	device, err := h.listen(r.Context(), group, app, listenRequest)
+	if err != nil {
+		respond(w, err.(*ServiceError).errCode, err.Error())
+		return
+	}
+
+	conn, err := ug.Upgrade(w, r, nil)
+	if err != nil {
+		log.WithError(err).Error("failed to upgrade connection to websocket connection")
+		respond(w, http.StatusBadRequest, "failed to upgrade connection to websocket connection")
+		return
+	}
+
+	client := &Client{
+		hub:        h,
+		conn:       conn,
+		deviceID:   device.UID,
+		Device:     device,
+		EventTypes: listenRequest.EventTypes,
+	}
+
+	if len(client.EventTypes) == 0 {
+		client.EventTypes = []string{"*"}
+	}
+
+	client.hub.register <- client
+	go client.readPump()
+
+	respond(w, http.StatusOK, "")
+}
+
+func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore.Application, listenRequest *ListenRequest) (*datastore.Device, error) {
 	appID := ""
-	if ok {
+	if app != nil {
 		appID = app.UID
 	}
 
-	ctx, cancel := getCtx()
-	defer cancel()
-
 	device, err := h.deviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, appID, group.UID)
 	if err != nil {
-		respond(w, http.StatusBadRequest, "device not found")
-		return
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("device not found"))
 	}
 
 	if device.GroupID != group.UID {
-		respond(w, http.StatusUnauthorized, "unauthorized to access device")
-		return
+		return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
 	}
 
 	if device.AppID != appID {
-		respond(w, http.StatusUnauthorized, "unauthorized to access device")
-		return
+		return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
 	}
 
 	if !util.IsStringEmpty(listenRequest.SourceID) {
 		source, err := h.sourceRepo.FindSourceByID(ctx, "", listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
-			respond(w, http.StatusBadRequest, "failed to find source")
-			return
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))
 		}
 
 		if source.GroupID != group.UID {
-			respond(w, http.StatusUnauthorized, "unauthorized to access source")
-			return
+			return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access source"))
 		}
 	}
 
@@ -391,35 +417,13 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 
 		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, s)
 		if err != nil {
-			respond(w, http.StatusBadRequest, "failed to create new subscription")
-			return
+			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create new subscription"))
 		}
 	default:
-		respond(w, http.StatusBadRequest, "failed to find subscription by id")
-		return
+		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find subscription by id"))
 	}
 
-	conn, err := ug.Upgrade(w, r, nil)
-	if err != nil {
-		log.WithError(err).Error("failed to u pgrade connection to websocket connection")
-		respond(w, http.StatusBadRequest, "failed to upgrade connection to websocket connection")
-		return
-	}
-
-	client := &Client{
-		hub:        h,
-		conn:       conn,
-		deviceID:   device.UID,
-		Device:     device,
-		EventTypes: listenRequest.EventTypes,
-	}
-
-	if len(client.EventTypes) == 0 {
-		client.EventTypes = []string{"*"}
-	}
-
-	client.hub.register <- client
-	go client.readPump()
+	return device, nil
 }
 
 func respond(w http.ResponseWriter, code int, msg string) {
@@ -443,4 +447,14 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	if err != nil {
 		log.WithError(err).Error("failed to write response data")
 	}
+}
+
+// the app may not exist, so we have to check like this to avoid panic
+func getApplicationFromContext(ctx context.Context) (*datastore.Application, bool) {
+	app, ok := ctx.Value("app").(*datastore.Application)
+	return app, ok
+}
+
+func getGroupFromContext(ctx context.Context) *datastore.Group {
+	return ctx.Value("group").(*datastore.Group)
 }
