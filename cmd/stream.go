@@ -58,7 +58,7 @@ func addStreamCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
 
-			hub := NewHub(a.deviceRepo, a.subRepo, a.sourceRepo)
+			hub := NewHub(a.deviceRepo, a.subRepo, a.sourceRepo, a.applicationRepo)
 			go hub.StartRegister()
 			go hub.StartUnregister()
 			go hub.StartEventWatcher()
@@ -87,6 +87,9 @@ func addStreamCommand(a *app) *cobra.Command {
 			}()
 
 			gracefulShutdown(srv, hub)
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
 		},
 	}
 
@@ -126,6 +129,12 @@ type LoginRequest struct {
 	DeviceID string `json:"device_id"`
 }
 
+type LoginResponse struct {
+	Device *datastore.Device      `json:"device"`
+	Group  *datastore.Group       `json:"group"`
+	App    *datastore.Application `json:"app"`
+}
+
 func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 	loginRequest := &LoginRequest{}
 	err := util.ReadJSON(r, &loginRequest)
@@ -161,14 +170,15 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		device = &datastore.Device{
-			UID:        uuid.NewString(),
-			GroupID:    group.UID,
-			AppID:      appID,
-			HostName:   loginRequest.HostName,
-			Status:     datastore.DeviceStatusOnline,
-			LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-			CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+			UID:            uuid.NewString(),
+			GroupID:        group.UID,
+			AppID:          appID,
+			HostName:       loginRequest.HostName,
+			Status:         datastore.DeviceStatusOnline,
+			LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
 		ctx, cancel := getCtx()
@@ -181,7 +191,9 @@ func (h *Hub) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respondWithData(w, http.StatusOK, device)
+	lr := &LoginResponse{Device: device, Group: group, App: app}
+
+	respondWithData(w, http.StatusOK, lr)
 }
 
 func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
@@ -286,6 +298,7 @@ func (h *Hub) Listen(w http.ResponseWriter, r *http.Request) {
 }
 
 func respond(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err := w.Write([]byte(msg))
 	if err != nil {
@@ -301,6 +314,7 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err = w.Write(data)
 	if err != nil {
@@ -320,12 +334,17 @@ func (h *Hub) requireApp() func(next http.Handler) http.Handler {
 					return
 				}
 
-				r = r.WithContext(server.SetApplicationInContext(r.Context(), app))
+				r = r.WithContext(setApplicationInContext(r.Context(), app))
 			}
 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func setApplicationInContext(ctx context.Context,
+	app *datastore.Application) context.Context {
+	return context.WithValue(ctx, "app", app)
 }
 
 // the app may not exist, so we have to check like this to avoid panic

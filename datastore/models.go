@@ -699,6 +699,8 @@ type Device struct {
 	CreatedAt  primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt  primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt  primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+
+	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type DeviceStatus string

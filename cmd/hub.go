@@ -39,11 +39,12 @@ type Hub struct {
 	close  chan struct{}
 }
 
-func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository) *Hub {
+func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, appRepo datastore.ApplicationRepository) *Hub {
 	return &Hub{
 		deviceRepo:       deviceRepo,
 		subscriptionRepo: subscriptionRepo,
 		sourceRepo:       sourceRepo,
+		appRepo:          appRepo,
 		deviceClients:    map[string]*Client{},
 		register:         make(chan *Client, 1),
 		unregister:       make(chan *Client, 1),
