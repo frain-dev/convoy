@@ -251,6 +251,12 @@ type LoginRequest struct {
 	DeviceID string `json:"device_id"`
 }
 
+type LoginResponse struct {
+	Device *datastore.Device      `json:"device"`
+	Group  *datastore.Group       `json:"group"`
+	App    *datastore.Application `json:"app"`
+}
+
 func (h *Hub) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	loginRequest := &LoginRequest{}
 	err := util.ReadJSON(r, &loginRequest)
@@ -268,7 +274,9 @@ func (h *Hub) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithData(w, http.StatusOK, device)
+	lr := &LoginResponse{Device: device, Group: group, App: app}
+
+	respondWithData(w, http.StatusOK, lr)
 }
 
 func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.Application, loginRequest *LoginRequest) (*datastore.Device, error) {
@@ -427,6 +435,7 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 }
 
 func respond(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err := w.Write([]byte(msg))
 	if err != nil {
@@ -442,6 +451,7 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err = w.Write(data)
 	if err != nil {

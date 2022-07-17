@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -125,13 +126,13 @@ func addLoginCommand(a *app) *cobra.Command {
 
 			deviceID := FindDeviceID(c)
 
-			loginRequest := &LoginRequest{HostName: uuid.NewString(), DeviceID: deviceID}
+			loginRequest := &services.LoginRequest{HostName: uuid.NewString(), DeviceID: deviceID}
 			body, err := json.Marshal(loginRequest)
 			if err != nil {
 				return err
 			}
 
-			var response *LoginResponse
+			var response *services.LoginResponse
 
 			dispatch := net.NewDispatcher(time.Second * 10)
 			url := fmt.Sprintf("%s/stream/login", c.Host)
@@ -167,7 +168,7 @@ func addLoginCommand(a *app) *cobra.Command {
 	return cmd
 }
 
-func WriteConfig(c *Config, response *LoginResponse) error {
+func WriteConfig(c *Config, response *services.LoginResponse) error {
 	c.ActiveProject = response.Group.Name
 	c.ActiveDeviceID = response.Device.UID
 
