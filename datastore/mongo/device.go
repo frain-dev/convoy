@@ -44,6 +44,7 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	update := bson.M{
+		"status":       device.Status,
 		"updated_at":   device.UpdatedAt,
 		"last_seen_at": device.LastSeenAt,
 	}

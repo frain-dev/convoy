@@ -689,18 +689,17 @@ type OrganisationMember struct {
 }
 
 type Device struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	GroupID    string             `json:"group_id" bson:"group_id"`
-	AppID      string             `json:"app_id" bson:"app_id"`
-	HostName   string             `json:"host_name" bson:"host_name"`
-	Status     DeviceStatus       `json:"status" bson:"status"`
-	LastSeenAt primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
-	CreatedAt  primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt  primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt  primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	GroupID        string             `json:"group_id" bson:"group_id"`
+	AppID          string             `json:"app_id" bson:"app_id"`
+	HostName       string             `json:"host_name" bson:"host_name"`
+	Status         DeviceStatus       `json:"status" bson:"status"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	LastSeenAt     primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type DeviceStatus string

@@ -153,7 +153,7 @@ func requireApp(appRepo datastore.ApplicationRepository, cache cache.Cache) func
 	}
 }
 
-func requireAppID() func(next http.Handler) http.Handler {
+func RequireAppID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +169,7 @@ func requireAppID() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
+func RequireAppPortalApplication(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

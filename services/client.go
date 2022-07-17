@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"context"
@@ -9,6 +9,19 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 5 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 2 * time.Second
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
+
+	maxDeviceLastSeenDuration = 2 * time.Minute
 )
 
 // Client is a middleman between the websocket connection and the hub.

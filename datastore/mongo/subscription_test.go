@@ -217,3 +217,30 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 		require.Equal(t, sub.GroupID, "group-id-1")
 	}
 }
+
+func Test_FindSubscriptionByDeviceID(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+
+	subscription := &datastore.Subscription{
+		UID:            uuid.NewString(),
+		Name:           "test_subscription",
+		Type:           datastore.SubscriptionTypeAPI,
+		SourceID:       "source-id-1",
+		DeviceID:       "device-id-1",
+		GroupID:        "group-id-1",
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
+
+	// Fetch sub again
+	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "group-id-1", "device-id-1", "")
+	require.NoError(t, err)
+
+	require.NotEmpty(t, sub.UID)
+	require.Equal(t, sub.DeviceID, "device-id-1")
+	require.Equal(t, sub.GroupID, "group-id-1")
+	require.Equal(t, sub.SourceID, "source-id-1")
+}

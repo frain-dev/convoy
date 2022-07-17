@@ -41,7 +41,7 @@ func indexNewDocuments(collection string, searcher searcher.Searcher) WatcherFn 
 
 type WatcherFn func(convoy.GenericMap) error
 
-func watchCollection(fn WatcherFn, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
+func watchCollection(fn func(convoy.GenericMap) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
