@@ -148,7 +148,7 @@ func addLoginCommand(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			
+
 			err = WriteConfig(c, response)
 			if err != nil {
 				return err
@@ -185,11 +185,6 @@ func WriteConfig(c *Config, response *LoginResponse) error {
 					Name: response.App.Title,
 				},
 			})
-
-			err := c.WriteConfig()
-			if err != nil {
-				return err
-			}
 		} else if c.isNewHost {
 			// if the host is different from the current host in the config file,
 			// the data in the config file is overwritten
@@ -205,16 +200,6 @@ func WriteConfig(c *Config, response *LoginResponse) error {
 					},
 				},
 			}
-
-			err := c.WriteConfig()
-			if err != nil {
-				return err
-			}
-		}
-
-		err := c.WriteConfig()
-		if err != nil {
-			return err
 		}
 	} else {
 		// Make sure the directory holding our config exists
@@ -233,12 +218,11 @@ func WriteConfig(c *Config, response *LoginResponse) error {
 				},
 			},
 		}
+	}
 
-		err := c.WriteConfig()
-		if err != nil {
-			return err
-		}
-
+	err := c.WriteConfig()
+	if err != nil {
+		return err
 	}
 
 	return nil
