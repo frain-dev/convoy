@@ -1,3 +1,3 @@
-<div [class]="'loader ' + (isTransparent ? 'transparent' : '')">
-    <img src="/assets/img/page-loader.gif" alt="loader" />
+<div class="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center bg-[#ffffff] rounded-8px h-full z-[1]" [ngClass]="{ 'opacity-50': isTransparent }">
+	<img src="/assets/img/page-loader.gif" alt="loader" class="w-1/5" />
 </div>

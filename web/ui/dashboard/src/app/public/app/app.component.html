@@ -5,7 +5,7 @@
 	</div>
 
 	<convoy-card className="w-full">
-		<convoy-table-loader id="endpoints_loader" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
+		<convoy-table-loader id="endpoints_loader" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
 
 		<convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
 			<convoy-table-head class="contents">
@@ -109,7 +109,7 @@
 	</div>
 </convoy-page>
 
-<convoy-modal *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
+<convoy-modal size="lg" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
 	<ng-container modalBody>
 		<app-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : getSubscripions()"></app-create-subscription>
 	</ng-container>
@@ -117,7 +117,7 @@
 
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscription()"></app-delete-modal>
 
-<svg display="none">
+<svg display="none" class="hidden">
 	<symbol id="empty-state" width="124" height="108" viewBox="0 0 124 108" fill="none" xmlns="http://www.w3.org/2000/svg">
 		<path d="M28.9344 21.9966C30.2818 21.9966 31.3741 20.9036 31.3741 19.5554C31.3741 18.2072 30.2818 17.1143 28.9344 17.1143C27.5869 17.1143 26.4946 18.2072 26.4946 19.5554C26.4946 20.9036 27.5869 21.9966 28.9344 21.9966Z" fill="#EAEEF9"></path>
 		<path d="M95.7051 29.4475C97.0526 29.4475 98.1449 28.3545 98.1449 27.0063C98.1449 25.6581 97.0526 24.5652 95.7051 24.5652C94.3577 24.5652 93.2654 25.6581 93.2654 27.0063C93.2654 28.3545 94.3577 29.4475 95.7051 29.4475Z" fill="#EAEEF9"></path>
