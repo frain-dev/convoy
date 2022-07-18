@@ -1,15 +1,20 @@
 //go:build integration
 // +build integration
 
-package server
+package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -64,7 +69,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := RequireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 
 				_, err := rw.Write([]byte(`Hello`))
@@ -131,7 +136,7 @@ func TestRequirePermission_Noop(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := requireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := RequireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusUnauthorized)
 
 				_, err := rw.Write([]byte(`Hello`))
@@ -152,5 +157,67 @@ func TestRequirePermission_Noop(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestRateLimitByGroup(t *testing.T) {
+	type test struct {
+		name          string
+		requestsLimit int
+		windowLength  time.Duration
+		groupIDs      []string
+		respCodes     []int
+	}
+	tests := []test{
+		{
+			name:          "no-block",
+			requestsLimit: 3,
+			windowLength:  2 * time.Second,
+			groupIDs:      []string{"a", "a"},
+			respCodes:     []int{200, 200},
+		},
+		{
+			name:          "block-same-group",
+			requestsLimit: 2,
+			windowLength:  5 * time.Second,
+			groupIDs:      []string{"b", "b", "b"},
+			respCodes:     []int{200, 200, 429},
+		},
+		{
+			name:          "no-block-different-group",
+			requestsLimit: 1,
+			windowLength:  1 * time.Second,
+			groupIDs:      []string{"c", "d"},
+			respCodes:     []int{200, 200},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			})
+			router := RateLimitByGroupWithParams(tt.requestsLimit, tt.windowLength)(h)
+
+			for i, code := range tt.respCodes {
+				req := httptest.NewRequest("POST", "/", nil)
+				req = req.Clone(context.WithValue(req.Context(), groupCtx, &datastore.Group{UID: tt.groupIDs[i]}))
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+				if respCode := recorder.Result().StatusCode; respCode != code {
+					t.Errorf("resp.StatusCode(%v) = %v, want %v", i, respCode, code)
+				}
+			}
+		})
+	}
+}
+
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
+	cfg, err := config.Get()
+	if err != nil {
+		t.Errorf("failed to get config: %v", err)
+	}
+
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, cache)
+	if err != nil {
+		t.Errorf("failed to initialize realm chain : %v", err)
 	}
 }

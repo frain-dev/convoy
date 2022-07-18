@@ -7,6 +7,8 @@ import (
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	m "github.com/frain-dev/convoy/pkg/middleware"
 )
 
 // GetOrganisationMembers
@@ -24,17 +26,17 @@ import (
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members [get]
 func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
-	pageable := getPageableFromContext(r.Context())
-	org := getOrganisationFromContext(r.Context())
+	pageable := m.GetPageableFromContext(r.Context())
+	org := m.GetOrganisationFromContext(r.Context())
 
 	members, paginationData, err := a.organisationMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load organisations")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisation members fetched successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Organisation members fetched successfully",
 		pagedResponse{Content: &members, Pagination: &paginationData}, http.StatusOK))
 }
 
@@ -52,15 +54,15 @@ func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 // @Router /ui/organisations/{orgID}/members/{memberID} [get]
 func (a *applicationHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org := getOrganisationFromContext(r.Context())
+	org := m.GetOrganisationFromContext(r.Context())
 
 	member, err := a.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisation member fetched successfully", member, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation member fetched successfully", member, http.StatusOK))
 }
 
 // UpdateOrganisationMember
@@ -80,26 +82,26 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 	var roleUpdate models.UpdateOrganisationMember
 	err := util.ReadJSON(r, &roleUpdate)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	memberID := chi.URLParam(r, "memberID")
-	org := getOrganisationFromContext(r.Context())
+	org := m.GetOrganisationFromContext(r.Context())
 
 	member, err := a.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	organisationMember, err := a.organisationMemberService.UpdateOrganisationMember(r.Context(), member, &roleUpdate.Role)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisation member updated successfully", organisationMember, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation member updated successfully", organisationMember, http.StatusAccepted))
 }
 
 // DeleteOrganisationMember
@@ -116,13 +118,13 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Router /ui/organisations/{orgID}/members/{memberID} [delete]
 func (a *applicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org := getOrganisationFromContext(r.Context())
+	org := m.GetOrganisationFromContext(r.Context())
 
 	err := a.organisationMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisation member deleted successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation member deleted successfully", nil, http.StatusOK))
 }

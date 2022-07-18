@@ -9,10 +9,10 @@ import (
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/pkg/metrics"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 
-	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
@@ -81,7 +81,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 
 			router := chi.NewRouter()
 			router.Handle("/queue/monitoring/*", q.(*redisqueue.RedisQueue).Monitor())
-			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
+			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 
 			srv := &http.Server{
 				Handler: router,

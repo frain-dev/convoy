@@ -37,11 +37,11 @@ func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastor
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
 	if g == nil {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
 	}
 
 	if err := util.Validate(newMessage); err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	var app *datastore.Application
@@ -65,7 +65,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 			}
 
 			log.WithError(err).Error("failed to fetch app")
-			return nil, NewServiceError(statusCode, errors.New(msg))
+			return nil, util.NewServiceError(statusCode, errors.New(msg))
 		}
 
 		err = e.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
@@ -75,7 +75,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	if len(app.Endpoints) == 0 {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("app has no configured endpoints"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("app has no configured endpoints"))
 	}
 
 	event := &datastore.Event{
@@ -91,13 +91,13 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||
 		(g.Config.Strategy != nil && g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
 	}
 
 	taskName := convoy.CreateEventProcessor
 	eventByte, err := json.Marshal(event)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	payload := json.RawMessage(eventByte)
@@ -119,7 +119,7 @@ func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Even
 	taskName := convoy.CreateEventProcessor
 	eventByte, err := json.Marshal(event)
 	if err != nil {
-		return NewServiceError(http.StatusBadRequest, err)
+		return util.NewServiceError(http.StatusBadRequest, err)
 	}
 	payload := json.RawMessage(eventByte)
 
@@ -131,7 +131,7 @@ func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Even
 	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.WithError(err).Error("replay_event: failed to write event to the queue")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to write event to queue"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to write event to queue"))
 	}
 
 	return nil
@@ -141,7 +141,7 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 	event, err := e.eventRepo.FindEventByID(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to find event by id")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find event by id"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find event by id"))
 	}
 
 	return event, nil
@@ -152,13 +152,13 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 	ids, paginationData, err := e.searcher.Search("events", filter)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events from search backend")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, err)
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	events, err = e.eventRepo.FindEventsByIDs(ctx, ids)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events from event ids")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, err)
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return events, paginationData, err
@@ -168,7 +168,7 @@ func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datast
 	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to find event delivery by id")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find event delivery by id"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find event delivery by id"))
 	}
 
 	return eventDelivery, nil
@@ -178,7 +178,7 @@ func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *data
 	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")
-		return 0, 0, NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
+		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
 	}
 
 	failures := 0
@@ -198,7 +198,7 @@ func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter 
 	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching event deliveries")
-		return 0, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
+		return 0, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
 	}
 
 	return count, nil
@@ -208,7 +208,7 @@ func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []str
 	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")
-		return 0, 0, NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
+		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
 	}
 
 	failures := 0
@@ -228,7 +228,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 	events, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter.Group.UID, filter.AppID, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
 	appMap := datastore.AppMap{}
@@ -254,7 +254,7 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 	deliveries, paginationData, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
 	}
 
 	appMap := datastore.AppMap{}
@@ -314,7 +314,7 @@ func (e *EventService) ResendEventDelivery(ctx context.Context, eventDelivery *d
 	err := e.RetryEventDelivery(ctx, eventDelivery, g)
 	if err != nil {
 		log.WithError(err).Error("failed to resend event delivery")
-		return NewServiceError(http.StatusBadRequest, err)
+		return util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return nil

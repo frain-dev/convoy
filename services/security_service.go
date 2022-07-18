@@ -30,7 +30,7 @@ func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastor
 
 func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
 	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
 	}
 
 	role := &auth.Role{
@@ -41,23 +41,23 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	err := role.Validate("api key")
 	if err != nil {
 		log.WithError(err).Error("invalid api key role")
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
 	group, err := ss.groupRepo.FetchGroupByID(ctx, newApiKey.Role.Group)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch group by id")
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("failed to fetch group by id"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch group by id"))
 	}
 
 	// does the group belong to the member's organisation?
 	if group.OrganisationID != member.OrganisationID {
-		return nil, "", NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
+		return nil, "", util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
 	}
 
 	// does the organisation member have access to this group they're trying to create an api key for?
 	if !member.Role.Type.Is(auth.RoleSuperUser) && !member.Role.HasGroup(group.UID) {
-		return nil, "", NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
+		return nil, "", util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -65,7 +65,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	salt, err := util.GenerateSecret()
 	if err != nil {
 		log.WithError(err).Error("failed to generate salt")
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
 	}
 
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
@@ -91,7 +91,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
 		log.WithError(err).Error("failed to create api key")
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
 	}
 
 	return apiKey, key, nil
@@ -99,7 +99,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 
 func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *datastore.Group, app *datastore.Application, baseUrl *string) (*datastore.APIKey, string, error) {
 	if app.GroupID != group.UID {
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("app does not belong to group"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("app does not belong to group"))
 	}
 
 	role := auth.Role{
@@ -113,7 +113,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 
 	if err != nil {
 		log.WithError(err).Error("failed to generate salt")
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
 	}
 
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
@@ -138,7 +138,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
 		log.WithError(err).Error("failed to create api key")
-		return nil, "", NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
 	}
 
 	if !util.IsStringEmpty(*baseUrl) {
@@ -150,26 +150,26 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 
 func (ss *SecurityService) RevokeAPIKey(ctx context.Context, uid string) error {
 	if util.IsStringEmpty(uid) {
-		return NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
 	}
 
 	err := ss.apiKeyRepo.RevokeAPIKeys(ctx, []string{uid})
 	if err != nil {
 		log.WithError(err).Error("failed to revoke api key")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
 	}
 	return nil
 }
 
 func (ss *SecurityService) GetAPIKeyByID(ctx context.Context, uid string) (*datastore.APIKey, error) {
 	if util.IsStringEmpty(uid) {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
 	}
 
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch api key")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
 	return apiKey, nil
@@ -177,35 +177,35 @@ func (ss *SecurityService) GetAPIKeyByID(ctx context.Context, uid string) (*data
 
 func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *auth.Role) (*datastore.APIKey, error) {
 	if util.IsStringEmpty(uid) {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
 	}
 
 	err := role.Validate("api key")
 	if err != nil {
 		log.WithError(err).Error("invalid api key role")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
 	groups, err := ss.groupRepo.FetchGroupsByIDs(ctx, role.Groups)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
 	}
 
 	if len(groups) != len(role.Groups) {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("cannot find group"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("cannot find group"))
 	}
 
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch api key")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
 	apiKey.Role = *role
 	err = ss.apiKeyRepo.UpdateAPIKey(ctx, apiKey)
 	if err != nil {
 		log.WithError(err).Error("failed to update api key")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update api key"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update api key"))
 	}
 
 	return apiKey, nil
@@ -215,7 +215,7 @@ func (ss *SecurityService) GetAPIKeys(ctx context.Context, pageable *datastore.P
 	apiKeys, paginationData, err := ss.apiKeyRepo.LoadAPIKeysPaged(ctx, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("failed to load api keys"))
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load api keys"))
 	}
 
 	return apiKeys, paginationData, nil

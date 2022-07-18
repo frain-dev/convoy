@@ -31,7 +31,7 @@ func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.
 
 func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {
 	if err := util.Validate(newApp); err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	app := &datastore.Application{
@@ -54,13 +54,13 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
 		}
 		log.WithError(err).Error(msg)
-		return nil, NewServiceError(http.StatusBadRequest, errors.New(msg))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create application cache"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create application cache"))
 	}
 
 	return app, nil
@@ -70,7 +70,7 @@ func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q st
 	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(ctx, uid, strings.TrimSpace(q), pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch apps")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps"))
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps"))
 	}
 
 	return apps, paginationData, nil
@@ -79,7 +79,7 @@ func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q st
 func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.UpdateApplication, app *datastore.Application) error {
 	appName := appUpdate.AppName
 	if err := util.Validate(appUpdate); err != nil {
-		return NewServiceError(http.StatusBadRequest, err)
+		return util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	app.Title = *appName
@@ -106,13 +106,13 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
 		}
 		log.WithError(err).Error(msg)
-		return NewServiceError(http.StatusBadRequest, errors.New(msg))
+		return util.NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
 
 	return nil
@@ -122,13 +122,13 @@ func (a *AppService) DeleteApplication(ctx context.Context, app *datastore.Appli
 	err := a.appRepo.DeleteApplication(ctx, app)
 	if err != nil {
 		log.Errorln("failed to delete app - ", err)
-		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Delete(ctx, appCacheKey)
 	if err != nil {
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete application cache"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete application cache"))
 	}
 
 	return nil
@@ -153,7 +153,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	duration, err := time.ParseDuration(e.RateLimitDuration)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err))
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err))
 	}
 
 	endpoint := &datastore.Endpoint{
@@ -172,26 +172,26 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 	if util.IsStringEmpty(e.Secret) {
 		endpoint.Secret, err = util.GenerateSecret()
 		if err != nil {
-			return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
+			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
 		}
 	}
 
 	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
 	if err != nil {
 		log.WithError(err).Error("failed to create application endpoint")
-		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
 
 	app, err = a.appRepo.FindApplicationByID(ctx, app.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to find application")
-		return nil, NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to fetch application to update cache"))
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to fetch application to update cache"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
 
 	return endpoint, nil
@@ -201,19 +201,19 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 
 	endpoints, endpoint, err := updateEndpointIfFound(&app.Endpoints, endPointId, e)
 	if err != nil {
-		return endpoint, NewServiceError(http.StatusBadRequest, err)
+		return endpoint, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	app.Endpoints = *endpoints
 	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
-		return endpoint, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app endpoints"))
+		return endpoint, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app endpoints"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
-		return endpoint, NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+		return endpoint, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
 
 	return endpoint, nil
@@ -231,13 +231,13 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 	err := a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete app endpoint")
-		return NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
 
 	return nil

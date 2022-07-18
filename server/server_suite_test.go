@@ -19,6 +19,7 @@ import (
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -143,7 +144,7 @@ func parseResponse(t *testing.T, w *http.Response, object interface{}) {
 		t.Fatalf("err: %s", err)
 	}
 
-	var sR serverResponse
+	var sR util.ServerResponse
 	err = json.Unmarshal(body, &sR)
 	if err != nil {
 		t.Fatalf("err: %s", err)

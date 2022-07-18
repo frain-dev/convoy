@@ -27,12 +27,12 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// 2. Retrieve source using mask ID.
 	source, err := a.sourceRepo.FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	if source.Type != datastore.HTTPSource {
-		_ = render.Render(w, r, newErrorResponse("Source type needs to be HTTP",
+		_ = render.Render(w, r, util.NewErrorResponse("Source type needs to be HTTP",
 			http.StatusBadRequest))
 		return
 	}
@@ -51,7 +51,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		case datastore.ShopifySourceProvider:
 			v = verifier.NewShopifyVerifier(verifierConfig.HMac.Secret)
 		default:
-			_ = render.Render(w, r, newErrorResponse("Provider type undefined",
+			_ = render.Render(w, r, util.NewErrorResponse("Provider type undefined",
 				http.StatusBadRequest))
 			return
 		}
@@ -77,7 +77,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 				verifierConfig.ApiKey.HeaderName,
 			)
 		default:
-			_ = render.Render(w, r, newErrorResponse("Source must have a valid verifier",
+			_ = render.Render(w, r, util.NewErrorResponse("Source must have a valid verifier",
 				http.StatusBadRequest))
 			return
 		}
@@ -88,12 +88,12 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	body := io.LimitReader(r.Body, config.MaxRequestSize)
 	payload, err := io.ReadAll(body)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	if err = v.VerifyRequest(r, payload); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -117,7 +117,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	eventByte, err := json.Marshal(event)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -133,7 +133,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. Return 200
-	_ = render.Render(w, r, newServerResponse("Event received", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event received", nil, http.StatusOK))
 }
 
 func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +150,7 @@ func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	if source == nil {
 		source, err = a.sourceRepo.FindSourceByMaskID(r.Context(), maskID)
 		if err != nil {
-			_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
 
@@ -162,12 +162,12 @@ func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	}
 
 	if source.Type != datastore.HTTPSource {
-		_ = render.Render(w, r, newErrorResponse("Source type needs to be HTTP", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Source type needs to be HTTP", http.StatusBadRequest))
 		return
 	}
 
 	if util.IsStringEmpty(string(source.Provider)) {
-		_ = render.Render(w, r, newErrorResponse("Provider type undefined", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Provider type undefined", http.StatusBadRequest))
 		return
 	}
 
@@ -177,13 +177,13 @@ func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	case datastore.TwitterSourceProvider:
 		c = crc.NewTwitterCrc(source.Verifier.HMac.Secret)
 	default:
-		_ = render.Render(w, r, newErrorResponse("Provider type is not supported", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Provider type is not supported", http.StatusBadRequest))
 		return
 	}
 
 	err = c.HandleRequest(w, r, source, a.sourceRepo)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 }

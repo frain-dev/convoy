@@ -1,10 +1,8 @@
-package server
+package util
 
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/frain-dev/convoy/services"
 
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
@@ -19,8 +17,8 @@ func (res Response) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func newErrorResponse(msg string, statusCode int) serverResponse {
-	return serverResponse{
+func NewErrorResponse(msg string, statusCode int) ServerResponse {
+	return ServerResponse{
 		Status:  false,
 		Message: msg,
 		Response: Response{
@@ -29,18 +27,35 @@ func newErrorResponse(msg string, statusCode int) serverResponse {
 	}
 }
 
-func newServiceErrResponse(err error) serverResponse {
+type ServiceError struct {
+	errCode int
+	errMsg  error
+}
+
+func NewServiceError(errCode int, errMsg error) *ServiceError {
+	return &ServiceError{errCode: errCode, errMsg: errMsg}
+}
+
+func (s *ServiceError) Error() string {
+	return s.errMsg.Error()
+}
+
+func (s *ServiceError) ErrCode() int {
+	return s.errCode
+}
+
+func NewServiceErrResponse(err error) ServerResponse {
 	msg := ""
 	statusCode := http.StatusBadRequest
 	switch v := err.(type) {
-	case *services.ServiceError:
+	case *ServiceError:
 		msg = v.Error()
 		statusCode = v.ErrCode()
 	case error:
 		msg = v.Error()
 	}
 
-	return serverResponse{
+	return ServerResponse{
 		Status:  false,
 		Message: msg,
 		Response: Response{
@@ -49,14 +64,14 @@ func newServiceErrResponse(err error) serverResponse {
 	}
 }
 
-type serverResponse struct {
+type ServerResponse struct {
 	Response
 	Status  bool            `json:"status"`
 	Message string          `json:"message"`
 	Data    json.RawMessage `json:"data,omitempty"`
 }
 
-func newServerResponse(msg string, object interface{}, statusCode int) serverResponse {
+func NewServerResponse(msg string, object interface{}, statusCode int) ServerResponse {
 	data, err := json.Marshal(object)
 	if err != nil {
 		log.Errorf("Unable to marshal response data - %s", err)
@@ -64,8 +79,8 @@ func newServerResponse(msg string, object interface{}, statusCode int) serverRes
 	return newServerResponseWithStatus(true, msg, data, statusCode)
 }
 
-func newServerResponseWithStatus(status bool, msg string, data json.RawMessage, statusCode int) serverResponse {
-	return serverResponse{
+func newServerResponseWithStatus(status bool, msg string, data json.RawMessage, statusCode int) ServerResponse {
+	return ServerResponse{
 		Status:  status,
 		Message: msg,
 		Data:    data,

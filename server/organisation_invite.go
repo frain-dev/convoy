@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
+
+	m "github.com/frain-dev/convoy/pkg/middleware"
 )
 
 // InviteUserToOrganisation
@@ -30,22 +32,22 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 	var newIV models.OrganisationInvite
 	err := util.ReadJSON(r, &newIV)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	baseUrl := getHostFromContext(r.Context())
-	user := getUserFromContext(r.Context())
-	org := getOrganisationFromContext(r.Context())
+	baseUrl := m.GetHostFromContext(r.Context())
+	user := m.GetUserFromContext(r.Context())
+	org := m.GetOrganisationFromContext(r.Context())
 
 	_, err = a.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("invite created successfully", nil, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("invite created successfully", nil, http.StatusCreated))
 }
 
 // GetPendingOrganisationInvites
@@ -63,17 +65,17 @@ func (a *applicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/pending [get]
 func (a *applicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
-	org := getOrganisationFromContext(r.Context())
-	pageable := getPageableFromContext(r.Context())
+	org := m.GetOrganisationFromContext(r.Context())
+	pageable := m.GetPageableFromContext(r.Context())
 
 	invites, paginationData, err := a.organisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Invites fetched successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Invites fetched successfully",
 		pagedResponse{Content: &invites, Pagination: &paginationData}, http.StatusOK))
 }
 
@@ -95,25 +97,25 @@ func (a *applicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	accepted, err := strconv.ParseBool(r.URL.Query().Get("accepted"))
 	if err != nil {
 		log.WithError(err).Error("failed to process accepted url query")
-		_ = render.Render(w, r, newErrorResponse("badly formed 'accepted' query", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("badly formed 'accepted' query", http.StatusBadRequest))
 		return
 	}
 
 	var newUser *models.User
 	err = util.ReadJSON(r, &newUser)
 	if err != nil && !errors.Is(err, util.ErrEmptyBody) {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	err = a.organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
 	if err != nil {
 		log.WithError(err).Error("failed to process organisation member invite")
-		_ = render.Render(w, r, newServiceErrResponse(errors.New("")))
+		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("")))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("invite processed successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("invite processed successfully", nil, http.StatusOK))
 }
 
 // FindUserByInviteToken
@@ -132,13 +134,13 @@ func (a *applicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 	user, iv, err := a.organisationInviteService.FindUserByInviteToken(r.Context(), token)
 	if err != nil {
 		log.WithError(err).Error("failed to find user by invite token")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	res := models.UserInviteTokenResponse{Token: iv, User: user}
 
-	_ = render.Render(w, r, newServerResponse("retrieved user", res, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("retrieved user", res, http.StatusOK))
 }
 
 // ResendOrganizationInvite
@@ -154,18 +156,18 @@ func (a *applicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/resend [post]
 func (a *applicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	baseUrl := getHostFromContext(r.Context())
-	user := getUserFromContext(r.Context())
-	org := getOrganisationFromContext(r.Context())
+	baseUrl := m.GetHostFromContext(r.Context())
+	user := m.GetUserFromContext(r.Context())
+	org := m.GetOrganisationFromContext(r.Context())
 
 	_, err := a.organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to resend organisation member invite")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("invite resent successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("invite resent successfully", nil, http.StatusOK))
 }
 
 // CancelOrganizationInvite
@@ -184,9 +186,9 @@ func (a *applicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *
 	iv, err := a.organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {
 		log.WithError(err).Error("failed to cancel organisation member invite")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("invite cancelled successfully", iv, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("invite cancelled successfully", iv, http.StatusOK))
 }

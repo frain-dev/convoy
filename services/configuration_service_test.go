@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -82,7 +83,7 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 			config, err := c.CreateConfiguration(tc.args.ctx, tc.args.newConfig)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
 				return
 			}
 			require.Nil(t, err)
@@ -164,7 +165,7 @@ func TestConfigService_UpdateConfiguration(t *testing.T) {
 			config, err := c.UpdateConfiguration(tc.args.ctx, tc.args.newConfig)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
 				return
 			}
 
@@ -226,7 +227,7 @@ func TestConfigService_LoadConfiguration(t *testing.T) {
 			config, err := c.LoadConfiguration(tc.args.ctx)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
 				return
 			}
 
