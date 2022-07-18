@@ -15,7 +15,7 @@
 </div>
 
 <convoy-card>
-	<convoy-table-loader id="sources-loader" [tableHead]="sourcesTableHead" *ngIf="isLoadingSources"></convoy-table-loader>
+	<convoy-table-loader id="sources-loader" [withDate]="false" [tableHead]="sourcesTableHead" *ngIf="isLoadingSources"></convoy-table-loader>
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] flex" id="event-deliveries-table-container" *ngIf="!isLoadingSources && sources.content.length > 0">
 		<convoy-table class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100% - 382px)] desktop:w-0 desktop:hidden': activeSource?.uid }">
 			<convoy-table-head class="contents">

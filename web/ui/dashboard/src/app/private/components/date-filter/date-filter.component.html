@@ -16,7 +16,7 @@
 	<img src="/assets/img/angle-arrow-down.svg" class="ml-16px mr-0px w-14px" alt="arrow down icon" *ngIf="!dateRange.value.startDate && !dateRange.value.endDate" />
 
 	<convoy-button type="icon" *ngIf="dateRange.value.startDate && dateRange.value.endDate" (clickItem)="clearDate($event)" className="ml-16px">
-		<svg width="10" height="10" fill="var(--primary-color)">
+		<svg width="10" height="10" class="fill-primary-100">
 			<use xlink:href="#close-icon"></use>
 		</svg>
 	</convoy-button>
