@@ -9268,6 +9268,9 @@
                 "provider": {
                     "type": "string"
                 },
+                "provider_config": {
+                    "$ref": "#/definitions/datastore.ProviderConfig"
+                },
                 "type": {
                     "type": "string"
                 },

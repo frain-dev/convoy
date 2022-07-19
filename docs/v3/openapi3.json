@@ -1176,6 +1176,9 @@
 					"provider": {
 						"type": "string"
 					},
+					"provider_config": {
+						"$ref": "#/components/schemas/datastore.ProviderConfig"
+					},
 					"type": {
 						"type": "string"
 					},
