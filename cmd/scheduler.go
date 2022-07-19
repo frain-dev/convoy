@@ -6,10 +6,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 
 	"github.com/frain-dev/convoy/server"
@@ -34,50 +31,19 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			if cfg.Queue.Type != config.RedisQueueProvider {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
-			//Initialize queue
-			rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
-			if err != nil {
-				log.WithError(err).Fatalf("Unable to create redis client")
-			}
-			queueNames := map[string]int{
-				string(convoy.DefaultQueue): 10,
-			}
-			opts := queue.QueueOptions{
-				Names:             queueNames,
-				RedisClient:       rdb,
-				RedisAddress:      cfg.Queue.Redis.Dsn,
-				Type:              string(config.RedisQueueProvider),
-				PrometheusAddress: cfg.Prometheus.Dsn,
-			}
-			q := redisqueue.NewQueue(opts)
 			ctx := context.Background()
 
-			//initialize consumer
-			w, err := worker.NewConsumer(q)
-			if err != nil {
-				log.WithError(err).Fatal("error creating consumer")
-			}
 			//initialize scheduler
-			s := worker.NewScheduler(q)
+			s := worker.NewScheduler(a.queue)
 
 			//register tasks
-			w.RegisterHandlers(convoy.TaskName("daily analytics"), analytics.TrackDailyAnalytics(&analytics.Repo{
-				ConfigRepo: a.configRepo,
-				EventRepo:  a.eventRepo,
-				GroupRepo:  a.groupRepo,
-				OrgRepo:    a.orgRepo,
-				UserRepo:   a.userRepo,
-			}, cfg))
-			s.RegisterTask("55 23 * * *", convoy.DefaultQueue, convoy.DailyAnalytics)
+			s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
 
 			// Start scheduler
 			s.Start()
 
-			//start worker
-			w.Start()
-
 			router := chi.NewRouter()
-			router.Handle("/queue/monitoring/*", q.(*redisqueue.RedisQueue).Monitor())
+			router.Handle("/queue/monitoring/*", a.queue.(*redisqueue.RedisQueue).Monitor())
 			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
 
 			srv := &http.Server{

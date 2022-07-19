@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
@@ -46,6 +47,16 @@ func addWorkerCommand(a *app) *cobra.Command {
 			// register tasks.
 			notificationHandler := task.SendNotification(a.emailNotificationSender)
 			consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
+
+			dailyAnalytics := analytics.TrackDailyAnalytics(&analytics.Repo{
+				ConfigRepo: a.configRepo,
+				EventRepo:  a.eventRepo,
+				GroupRepo:  a.groupRepo,
+				OrgRepo:    a.orgRepo,
+				UserRepo:   a.userRepo,
+			}, cfg)
+
+			consumer.RegisterHandlers(convoy.DailyAnalytics, dailyAnalytics)
 
 			log.Infof("Starting Convoy workers...")
 			consumer.Start()
