@@ -9,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/crc"
+	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
