@@ -28,7 +28,11 @@ export class CreateProjectComponent implements OnInit {
 				count: [null],
 				duration: [null]
 			}),
-			disable_endpoint: [null]
+			retention_policy: this.formBuilder.group({
+				policy: [null]
+			}),
+			disable_endpoint: [null],
+			is_retention_policy_enabled: [null]
 		}),
 		type: [null, Validators.required]
 	});
@@ -145,5 +149,6 @@ export class CreateProjectComponent implements OnInit {
 		});
 
 		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;
+		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
 	}
 }
