@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
@@ -44,24 +45,25 @@ func addWorkerCommand(a *app) *cobra.Command {
 
 			notificationHandler := task.SendNotification(a.emailNotificationSender)
 			consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
-
-			//register scheduler
-			scheduler := worker.NewScheduler(a.queue)
-
-			//register scheduler tasks
-			scheduler.RegisterTask("@every 24h", convoy.ScheduleQueue, convoy.TaskName("retention_policies"))
-
-			//register worker tasks
-			consumer.RegisterHandlers(convoy.TaskName("retention_policies"), task.RententionPolicies(
+			dailyAnalytics := analytics.TrackDailyAnalytics(&analytics.Repo{
+				ConfigRepo: a.configRepo,
+				EventRepo:  a.eventRepo,
+				GroupRepo:  a.groupRepo,
+				OrgRepo:    a.orgRepo,
+				UserRepo:   a.userRepo,
+			}, cfg)
+			monitorTwitterSources := task.MonitorTwitterSources(a.sourceRepo, a.subRepo, a.applicationRepo, a.queue)
+			retentionPolicies := task.RententionPolicies(
 				cfg,
 				a.configRepo,
 				a.groupRepo,
 				a.eventRepo,
 				a.eventDeliveryRepo,
-				a.searcher,
-			))
-			//start scheduler
-			scheduler.Start()
+				a.searcher)
+
+			consumer.RegisterHandlers(convoy.DailyAnalytics, dailyAnalytics)
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, monitorTwitterSources)
+			consumer.RegisterHandlers(convoy.RetentionPolicies, retentionPolicies)
 
 			//start worker
 			log.Infof("Starting Convoy workers...")
