@@ -24,8 +24,8 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/frain-dev/convoy/pkg/metrics"
-	m "github.com/frain-dev/convoy/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus"

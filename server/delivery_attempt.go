@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-chi/render"
 
-	m "github.com/frain-dev/convoy/pkg/middleware"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 )
 

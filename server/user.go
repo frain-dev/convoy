@@ -8,7 +8,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 
-	m "github.com/frain-dev/convoy/pkg/middleware"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // LoginUser

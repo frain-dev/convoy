@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 
-	m "github.com/frain-dev/convoy/pkg/middleware"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // GetOrganisationMembers

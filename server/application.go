@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/util"
 
-	m "github.com/frain-dev/convoy/pkg/middleware"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"

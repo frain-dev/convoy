@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 
-	m "github.com/frain-dev/convoy/pkg/middleware"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // InviteUserToOrganisation

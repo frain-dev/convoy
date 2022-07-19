@@ -30,31 +30,31 @@ func TestRequirePermission_Basic(t *testing.T) {
 		{
 			name:       "credentials not provided",
 			statusCode: http.StatusUnauthorized,
-			cfgPath:    "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:    "../../../server/testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:        "invalid credentials",
 			statusCode:  http.StatusUnauthorized,
 			credentials: "Basic --",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "../../../server/testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:        "invalid basic credentials",
 			statusCode:  http.StatusUnauthorized,
 			credentials: "Basic ZGFuaWVs",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "../../../server/testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:        "authorization failed",
 			statusCode:  http.StatusUnauthorized,
 			credentials: "Basic YWRtaW46dGVzdA==",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "../../../server/testdata/Auth_Config/basic-convoy.json",
 		},
 		{
 			name:        "valid credentials",
 			statusCode:  http.StatusOK,
 			credentials: "Basic dGVzdDp0ZXN0",
-			cfgPath:     "./testdata/Auth_Config/basic-convoy.json",
+			cfgPath:     "../../../server/testdata/Auth_Config/basic-convoy.json",
 		},
 	}
 

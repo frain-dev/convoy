@@ -21,7 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/frain-dev/convoy/auth/realm_chain"
