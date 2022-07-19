@@ -199,27 +199,18 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}, cfg)
 		monitorTwitterSources := task.MonitorTwitterSources(a.sourceRepo, a.subRepo, a.applicationRepo, a.queue)
 
-		consumer.RegisterHandlers(convoy.DailyAnalytics, dailyAnalytics)
-		consumer.RegisterHandlers(convoy.MonitorTwitterSources, monitorTwitterSources)
-
-		//register scheduler
-		scheduler := worker.NewScheduler(a.queue)
-
-		//register scheduler tasks
-		scheduler.RegisterTask("@every 24h", convoy.ScheduleQueue, convoy.RetentionPolicies)
-
-		//register worker tasks
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
+		retentionPolicies := task.RententionPolicies(
 			cfg,
 			a.configRepo,
 			a.groupRepo,
 			a.eventRepo,
 			a.eventDeliveryRepo,
 			a.searcher,
-		))
+		)
 
-		//start scheduler
-		scheduler.Start()
+		consumer.RegisterHandlers(convoy.DailyAnalytics, dailyAnalytics)
+		consumer.RegisterHandlers(convoy.MonitorTwitterSources, monitorTwitterSources)
+		consumer.RegisterHandlers(convoy.RetentionPolicies, retentionPolicies)
 
 		//start worker
 		log.Infof("Starting Convoy workers...")
