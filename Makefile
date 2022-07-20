@@ -17,3 +17,5 @@ ui_install:
 integration_tests:
 	go test -tags integration -p 1 ./...
 
+dev:
+	deploy/local-deploy.sh
