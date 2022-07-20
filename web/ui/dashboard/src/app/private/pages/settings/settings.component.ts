@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { InputComponent } from 'src/app/components/input/input.component';
@@ -75,9 +75,10 @@ export class SettingsComponent implements OnInit {
 			})
 		})
 	});
-	constructor(private settingService: SettingsService, private generalService: GeneralService, private formBuilder: FormBuilder, private router: Router) {}
+	constructor(private settingService: SettingsService, private generalService: GeneralService, private formBuilder: FormBuilder, private router: Router, private route:ActivatedRoute) {}
 
 	ngOnInit() {
+		this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'organisation settings');
 		this.getOrganisationDetails();
 		this.fetchConfigSettings();
 	}
@@ -126,22 +127,33 @@ export class SettingsComponent implements OnInit {
 	async fetchConfigSettings() {
 		try {
 			const response = await this.settingService.fetchConfigSettings();
-      const configurations = response.data[0]
-      this.configForm.patchValue(configurations)
+			const configurations = response.data[0];
+			this.configForm.patchValue(configurations);
 		} catch {}
 	}
 
 	async updateConfigSettings() {
-    if(this.configForm.value.storage_policy.type === 'on-prem') delete this.configForm.value.storage_policy.s3
-    if(this.configForm.value.storage_policy.type === 'S3') delete this.configForm.value.storage_policy.on_prem
-		console.log(this.configForm.value);
+		if (this.configForm.value.storage_policy.type === 'on_prem') delete this.configForm.value.storage_policy.s3;
+		if (this.configForm.value.storage_policy.type === 'S3') delete this.configForm.value.storage_policy.on_prem;
 		this.isUpdatingConfig = true;
 		try {
 			const response = await this.settingService.updateConfigSettings(this.configForm.value);
-      this.generalService.showNotification({message: response.message, style: 'success'})
+			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isUpdatingConfig = false;
+			this.fetchConfigSettings()
 		} catch {
 			this.isUpdatingConfig = false;
 		}
+	}
+
+	toggleActivePage(activePage: 'organisation settings' | 'configuration settings') {
+		this.activePage = activePage;
+		if (!this.router.url.split('/')[2]) this.addPageToUrl();
+	}
+
+	addPageToUrl() {
+		const queryParams: any = {};
+		queryParams.activePage = this.activePage;
+		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 }
