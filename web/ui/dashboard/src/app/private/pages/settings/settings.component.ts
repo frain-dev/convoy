@@ -75,12 +75,10 @@ export class SettingsComponent implements OnInit {
 			})
 		})
 	});
-	constructor(private settingService: SettingsService, private generalService: GeneralService, private formBuilder: FormBuilder, private router: Router, private route:ActivatedRoute) {}
+	constructor(private settingService: SettingsService, private generalService: GeneralService, private formBuilder: FormBuilder, private router: Router, private route: ActivatedRoute) {}
 
 	ngOnInit() {
 		this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'organisation settings');
-		this.getOrganisationDetails();
-		this.fetchConfigSettings();
 	}
 
 	async updateOrganisation() {
@@ -140,7 +138,7 @@ export class SettingsComponent implements OnInit {
 			const response = await this.settingService.updateConfigSettings(this.configForm.value);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isUpdatingConfig = false;
-			this.fetchConfigSettings()
+			this.fetchConfigSettings();
 		} catch {
 			this.isUpdatingConfig = false;
 		}
@@ -148,6 +146,7 @@ export class SettingsComponent implements OnInit {
 
 	toggleActivePage(activePage: 'organisation settings' | 'configuration settings') {
 		this.activePage = activePage;
+		this.activePage === 'organisation settings' ? this.getOrganisationDetails() : this.fetchConfigSettings();
 		if (!this.router.url.split('/')[2]) this.addPageToUrl();
 	}
 

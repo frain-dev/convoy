@@ -5,7 +5,11 @@
 				<h3 class="font-semibold">Settings</h3>
 			</div>
 			<ul class="sidemenu--items">
-				<li class="my-30px mx-0 pl-22px" *ngFor="let menu of settingsMenu">
+				<li
+					class="my-30px mx-0 pl-22px"
+					[class]="activePage === menu ? 'relative before:absolute before:w-[3px] before:h-16px before:top-1/2 before:rounded-100px before:left-0 before:bg-primary-100 before:translate-x-0 before:-translate-y-1/2 transition-all duration-200' : ''"
+					*ngFor="let menu of settingsMenu"
+				>
 					<convoy-button type="text" [color]="activePage === menu ? 'primary' : 'grey'" [className]="activePage === menu ? 'font-medium capitalize' : 'capitalize'" (click)="toggleActivePage(menu)">{{ menu }}</convoy-button>
 				</li>
 			</ul>
@@ -39,13 +43,13 @@
 							<h4 class="font-semibold">Analytics</h4>
 							<p class="text-12 text-grey-40">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
 						</div>
-						<convoy-toggle formControlName="is_analytics_enabled" [isChecked]="configForm.value.is_analytics_enabled"></convoy-toggle>
+						<convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
 					</div>
 					<h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2>
 					<div formGroupName="storage_policy">
 						<div class="grid grid-cols-2 gap-24px mb-24px">
-							<convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Store events in a specified path on your device"></convoy-radio>
-							<convoy-radio formControlName="type" label="s3" _name="type" value="S3" _id="s3" description="Upload events to an external aws server"></convoy-radio>
+							<convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
+							<convoy-radio formControlName="type" label="s3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
 						</div>
 						<ng-container *ngIf="configForm.value.storage_policy.type === 'on_prem'">
 							<div formGroupName="on_prem">
