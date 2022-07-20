@@ -98,15 +98,15 @@ copy_configurations() {
 
 	cp convoy/configs/docker-compose.templ.yml .
 	cp convoy/configs/convoy.templ.json .
-	cp convoy/configs/Caddyfile .
+	cp convoy/configs/caddyfile .
 
 }
 
 # 9. Rewrite Caddyfile
 write_configurations() {
 	# rewrite caddyfile
-	rm -f Caddyfile
-envsubst > Caddyfile <<EOF
+	rm -f caddyfile
+envsubst > caddyfile <<EOF
 $DOMAIN, :80, :443 {
 $TLS_BLOCK
 reverse_proxy http://web:5005
