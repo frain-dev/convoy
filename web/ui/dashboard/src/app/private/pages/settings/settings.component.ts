@@ -134,7 +134,7 @@ export class SettingsComponent implements OnInit {
 
 	async updateConfigSettings() {
 		if (this.configForm.value.storage_policy.type === 'on_prem') delete this.configForm.value.storage_policy.s3;
-		if (this.configForm.value.storage_policy.type === 'S3') delete this.configForm.value.storage_policy.on_prem;
+		if (this.configForm.value.storage_policy.type === 's3') delete this.configForm.value.storage_policy.on_prem;
 		this.isUpdatingConfig = true;
 		try {
 			const response = await this.settingService.updateConfigSettings(this.configForm.value);
