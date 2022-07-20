@@ -142,8 +142,6 @@ func NewServer(
 		sourceRepo: sourceRepo,
 	}
 
-	srv.s.Handler = srv.SetupRoutes()
-
 	metrics.RegisterQueueMetrics(queue, cfg)
 	metrics.RegisterDBMetrics(eventDeliveryRepo)
 	prometheus.MustRegister(metrics.RequestDuration())
@@ -566,6 +564,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	})
 	router.HandleFunc("/*", reactRootHandler)
 
+	s.s.Handler = router
 	return router
 }
 
