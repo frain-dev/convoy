@@ -21,7 +21,7 @@ type ConfigurationIntegrationTestSuite struct {
 	suite.Suite
 	DB              datastore.DatabaseClient
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *Server
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -30,8 +30,8 @@ type ConfigurationIntegrationTestSuite struct {
 
 func (c *ConfigurationIntegrationTestSuite) SetupSuite() {
 	c.DB = getDB()
-	c.ConvoyApp = buildApplication()
-	c.Router = buildRoutes(c.ConvoyApp)
+	c.ConvoyApp = buildServer()
+	c.Router = c.ConvoyApp.SetupRoutes()
 }
 
 func (c *ConfigurationIntegrationTestSuite) SetupTest() {

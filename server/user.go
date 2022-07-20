@@ -21,14 +21,14 @@ import (
 // @Success 200 {object} serverResponse{data=models.LoginUserResponse}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /auth/login [post]
-func (a *applicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	user, token, err := a.userService.LoginUser(r.Context(), &newUser)
+	user, token, err := s.userService.LoginUser(r.Context(), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -59,14 +59,14 @@ func (a *applicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} serverResponse{data=models.Token}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /auth/token/refresh [post]
-func (a *applicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
 	if err := util.ReadJSON(r, &refreshToken); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	token, err := a.userService.RefreshToken(r.Context(), &refreshToken)
+	token, err := s.userService.RefreshToken(r.Context(), &refreshToken)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -85,14 +85,14 @@ func (a *applicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /auth/logout [post]
-func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	auth, err := m.GetAuthFromRequest(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 		return
 	}
 
-	err = a.userService.LogoutUser(auth.Token)
+	err = s.userService.LogoutUser(auth.Token)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -112,7 +112,7 @@ func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/{userID}/profile [get]
-func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
 		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
@@ -134,7 +134,7 @@ func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/{userID}/profile [put]
-func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var userUpdate models.UpdateUser
 	err := util.ReadJSON(r, &userUpdate)
 	if err != nil {
@@ -148,7 +148,7 @@ func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err = a.userService.UpdateUser(r.Context(), &userUpdate, user)
+	user, err = s.userService.UpdateUser(r.Context(), &userUpdate, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -169,7 +169,7 @@ func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/{userID}/password [put]
-func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var updatePassword models.UpdatePassword
 	err := util.ReadJSON(r, &updatePassword)
 	if err != nil {
@@ -183,7 +183,7 @@ func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	user, err = a.userService.UpdatePassword(r.Context(), &updatePassword, user)
+	user, err = s.userService.UpdatePassword(r.Context(), &updatePassword, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -203,7 +203,7 @@ func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /users/forgot-password [post]
-func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPassword models.ForgotPassword
 	baseUrl := m.GetHostFromContext(r.Context())
 
@@ -213,7 +213,7 @@ func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = a.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
+	err = s.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -232,7 +232,7 @@ func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /users/reset-password [post]
-func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	var resetPassword models.ResetPassword
 	err := util.ReadJSON(r, &resetPassword)
@@ -241,7 +241,7 @@ func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := a.userService.ResetPassword(r.Context(), token, &resetPassword)
+	user, err := s.userService.ResetPassword(r.Context(), token, &resetPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

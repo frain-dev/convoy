@@ -151,18 +151,18 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(
+	srv := server.NewServer(
 		cfg,
 		a.eventRepo,
 		a.eventDeliveryRepo,
 		a.applicationRepo,
+		a.groupRepo,
 		a.apiKeyRepo,
 		a.subRepo,
-		a.groupRepo,
+		a.sourceRepo,
 		a.orgRepo,
 		a.orgMemberRepo,
 		a.orgInviteRepo,
-		a.sourceRepo,
 		a.userRepo,
 		a.configRepo,
 		a.queue,
@@ -218,11 +218,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
 		log.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-		return srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		return nil
 	}
 
 	log.Infof("Server running on port %v", cfg.Server.HTTP.Port)
-	return srv.ListenAndServe()
+	srv.Listen()
+	return nil
 }
 
 func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) error {

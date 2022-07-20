@@ -27,7 +27,7 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys [post]
-func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	var newApiKey models.APIKey
 	err := json.NewDecoder(r.Body).Decode(&newApiKey)
 	if err != nil {
@@ -36,7 +36,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	member := m.GetOrganisationMemberFromContext(r.Context())
-	apiKey, keyString, err := a.securityService.CreateAPIKey(r.Context(), member, &newApiKey)
+	apiKey, keyString, err := s.securityService.CreateAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
 		log.WithError(err).Error("fff")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -85,12 +85,12 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /security/applications/{appID}/keys [post]
-func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 	app := m.GetApplicationFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
 
-	apiKey, key, err := a.securityService.CreateAppPortalAPIKey(r.Context(), group, app, &baseUrl)
+	apiKey, key, err := s.securityService.CreateAppPortalAPIKey(r.Context(), group, app, &baseUrl)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -121,8 +121,8 @@ func (a *applicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID}/revoke [put]
-func (a *applicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
-	err := a.securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
+func (s *Server) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
+	err := s.securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -143,8 +143,8 @@ func (a *applicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [get]
-func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
-	apiKey, err := a.securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
+func (s *Server) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := s.securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -174,7 +174,7 @@ func (a *applicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [put]
-func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
 	var updateApiKey struct {
 		Role auth.Role `json:"role"`
 	}
@@ -185,7 +185,7 @@ func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiKey, err := a.securityService.UpdateAPIKey(r.Context(), chi.URLParam(r, "keyID"), &updateApiKey.Role)
+	apiKey, err := s.securityService.UpdateAPIKey(r.Context(), chi.URLParam(r, "keyID"), &updateApiKey.Role)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -218,10 +218,10 @@ func (a *applicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys [get]
-func (a *applicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
-	apiKeys, paginationData, err := a.securityService.GetAPIKeys(r.Context(), &pageable)
+	apiKeys, paginationData, err := s.securityService.GetAPIKeys(r.Context(), &pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

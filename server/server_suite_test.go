@@ -93,7 +93,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	return opts, nil
 }
 
-func buildApplication() *applicationHandler {
+func buildServer() *Server {
 	var tracer tracer.Tracer
 	var qOpts queue.QueueOptions
 
@@ -119,7 +119,8 @@ func buildApplication() *applicationHandler {
 	tracer = nil
 	subRepo := db.SubRepo()
 
-	return newApplicationHandler(
+	return NewServer(
+		config.Configuration{},
 		eventRepo, eventDeliveryRepo, appRepo,
 		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
 		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue, logger, tracer, cache, limiter, searcher,

@@ -28,15 +28,15 @@ type ApplicationIntegrationTestSuite struct {
 	suite.Suite
 	DB           datastore.DatabaseClient
 	Router       http.Handler
-	ConvoyApp    *applicationHandler
+	ConvoyApp    *Server
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupTest() {

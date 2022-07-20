@@ -243,6 +243,16 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 	return nil
 }
 
+func (a *AppService) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
+	apps, err := a.appRepo.CountGroupApplications(ctx, groupID)
+	if err != nil {
+		log.WithError(err).Error("failed to count group applications")
+		return 0, util.NewServiceError(http.StatusBadRequest, errors.New("failed to count group applications"))
+	}
+
+	return apps, nil
+}
+
 func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.Endpoint) (*[]datastore.Endpoint, *datastore.Endpoint, error) {
 	for i, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {

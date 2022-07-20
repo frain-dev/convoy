@@ -29,7 +29,7 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [post]
-func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.Event
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
@@ -39,7 +39,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	g := m.GetGroupFromContext(r.Context())
 
-	event, err := a.eventService.CreateAppEvent(r.Context(), &newMessage, g)
+	event, err := s.eventService.CreateAppEvent(r.Context(), &newMessage, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -60,11 +60,11 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/replay [put]
-func (a *applicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
 
-	err := a.eventService.ReplayAppEvent(r.Context(), event, g)
+	err := s.eventService.ReplayAppEvent(r.Context(), event, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -85,7 +85,7 @@ func (a *applicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID} [get]
-func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAppEvent(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("App event fetched successfully",
 		*m.GetEventFromContext(r.Context()), http.StatusOK))
@@ -103,7 +103,7 @@ func (a *applicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/{eventDeliveryID} [get]
-func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
 		*m.GetEventDeliveryFromContext(r.Context()), http.StatusOK))
@@ -121,11 +121,11 @@ func (a *applicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/{eventDeliveryID}/resend [put]
-func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 
-	err := a.eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
+	err := s.eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -147,7 +147,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/batchretry [post]
-func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
+func (s *Server) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 
 	for _, s := range r.URL.Query()["status"] {
@@ -175,7 +175,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 		SearchParams: searchParams,
 	}
 
-	successes, failures, err := a.eventService.BatchRetryEventDelivery(r.Context(), f)
+	successes, failures, err := s.eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -201,7 +201,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/countbatchretryevents [get]
-func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
@@ -223,7 +223,7 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		SearchParams: searchParams,
 	}
 
-	count, err := a.eventService.CountAffectedEventDeliveries(r.Context(), f)
+	count, err := s.eventService.CountAffectedEventDeliveries(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -244,7 +244,7 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/forceresend [post]
-func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
 	err := json.NewDecoder(r.Body).Decode(&eventDeliveryIDs)
@@ -253,7 +253,7 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 		return
 	}
 
-	successes, failures, err := a.eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
+	successes, failures, err := s.eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -279,7 +279,7 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [get]
-func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	config, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -310,7 +310,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	}
 
 	if config.Search.Type == "typesense" && !util.IsStringEmpty(query) {
-		m, paginationData, err := a.eventService.Search(r.Context(), f)
+		m, paginationData, err := s.eventService.Search(r.Context(), f)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -321,7 +321,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	m, paginationData, err := a.eventService.GetEventsPaged(r.Context(), f)
+	m, paginationData, err := s.eventService.GetEventsPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
@@ -350,7 +350,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries [get]
-func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
@@ -373,7 +373,7 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		SearchParams: searchParams,
 	}
 
-	ed, paginationData, err := a.eventService.GetEventDeliveriesPaged(r.Context(), f)
+	ed, paginationData, err := s.eventService.GetEventDeliveriesPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return

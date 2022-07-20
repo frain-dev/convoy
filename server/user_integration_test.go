@@ -24,14 +24,14 @@ type UserIntegrationTestSuite struct {
 	suite.Suite
 	DB        datastore.DatabaseClient
 	Router    http.Handler
-	ConvoyApp *applicationHandler
+	ConvoyApp *Server
 	jwt       *jwt.Jwt
 }
 
 func (u *UserIntegrationTestSuite) SetupSuite() {
 	u.DB = getDB()
-	u.ConvoyApp = buildApplication()
-	u.Router = buildRoutes(u.ConvoyApp)
+	u.ConvoyApp = buildServer()
+	u.Router = u.ConvoyApp.SetupRoutes()
 }
 
 func (u *UserIntegrationTestSuite) SetupTest() {
