@@ -974,27 +974,27 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-func (m *Middleware) fetchGroupApps() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			pageable := GetPageableFromContext(r.Context())
-
-			group := GetGroupFromContext(r.Context())
-
-			apps, paginationData, err := m.appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
-			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
-			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
+//func (m *Middleware) fetchGroupApps() func(next http.Handler) http.Handler {
+//	return func(next http.Handler) http.Handler {
+//
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//
+//			pageable := GetPageableFromContext(r.Context())
+//
+//			group := GetGroupFromContext(r.Context())
+//
+//			apps, paginationData, err := m.appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
+//			if err != nil {
+//				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
+//				return
+//			}
+//
+//			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
+//			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
+//			next.ServeHTTP(w, r)
+//		})
+//	}
+//}
 
 func ShouldAuthRoute(r *http.Request) bool {
 	guestRoutes := []string{
