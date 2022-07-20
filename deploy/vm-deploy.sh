@@ -5,7 +5,7 @@ set -e
 VERSION="latest"
 DOMAIN="localhost"
 
-# 1. Read Convoy version
+# Read Convoy version
 read_version() {
 	echo
 	echo "What version of Convoy would you like to install? (We default to the latest)"
@@ -24,7 +24,7 @@ read_version() {
 	fi
 }
 
-# 2. TLS Certificate.
+# Ask if we should generate tls or not?
 should_setup_tls() {
 	echo
 	while true; do
@@ -39,7 +39,7 @@ should_setup_tls() {
 	done
 }
 
-# 3. DOMAIN
+# Get domain from user.
 get_domain_name() {
 	echo
 	read -p "Domain: " DOMAIN
@@ -47,9 +47,7 @@ get_domain_name() {
 	echo "We will set up certs for https://$DOMAIN"
 }
 
-# 4. NEW RELIC LICENSE KEY
-
-# 5. Collect sudo password
+# Grant installer sudo access
 get_sudo_access() {
 	echo 
 	echo "We will need sudo access so the next question is for you to give us superuser access"
@@ -57,12 +55,12 @@ get_sudo_access() {
 	sudo echo ""
 }
 
-# 6. Stop any running Convoy cluster.
+# Stop any running Convoy cluster.
 stop_containers() {
 	sudo -E docker-compose -f docker-compose.yml stop &> /dev/null || true
 }
 
-# 7. Update apt caches
+# Installer grabs all necessary dependencies.
 get_dependencies() {
 	echo
 	echo "Grabbing latest apt caches"
@@ -83,7 +81,7 @@ get_dependencies() {
 	sudo usermod -aG docker "${USER}"
 }
 
-# 8. Clone Convoy
+# clone convoy repository
 install_convoy() {
 	echo 
 	echo "Installing Convoy from Github"
@@ -102,7 +100,7 @@ copy_configurations() {
 
 }
 
-# 9. Rewrite Caddyfile
+# rewrite convoy.json, caddyfile & docker-compose
 write_configurations() {
 	# rewrite caddyfile
 	rm -f caddyfile
@@ -116,14 +114,16 @@ EOF
 	# rewrite convoy.json
 	echo "Setting up convoy.json ..."
 	echo "$( jq --arg domain "${DOMAIN}" '.host = $domain | .environment = "production"' convoy.templ.json  )" > convoy.json
+	rm convoy.templ.json
 	echo "convoy.json ready"
 	echo
 
 	# rewrite docker compose
 	envsubst < docker-compose.templ.yml > docker-compose.yml
+	rm docker-compose.templ.yml
 }
 
-# 12. Write wait script to ensure databases are ready.
+# setup replica set on mongo db clusters
 setup_replica_set() {
 	echo
 	docker exec mongo1 mongosh --eval "rs.initiate({
@@ -136,16 +136,14 @@ setup_replica_set() {
 	})"
 }
 
-# 15. Send analytics for this installation.
-
-# 16. Start system 
+# start system
 start_containers() {
 	echo
 	echo "Starting containers..."
 	sudo -E docker-compose -f docker-compose.yml up -d
 }
 
-# 17. Check if system is up.
+# check if the server is ready to start receiving requests
 check_if_containers_are_up() {
 	echo
 	echo "We will need to wait ~5-10 minutes for things to settle down and TLS certs to be issued"
