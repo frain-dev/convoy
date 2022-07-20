@@ -156,3 +156,9 @@ services:
 
 networks:
     backendCluster:
+
+volumes:
+    mongo1-data:
+    mongo2-data:
+    mongo3-data:
+    typesense-data:
