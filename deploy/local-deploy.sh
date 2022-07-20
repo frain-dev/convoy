@@ -96,8 +96,8 @@ install_convoy() {
 copy_configurations() {
 	echo 
 
-	cp convoy/configs/docker-compose.tmpl.yml .
-	cp convoy/configs/convoy.tmpl.json .
+	cp convoy/configs/docker-compose.templ.yml .
+	cp convoy/configs/convoy.templ.json .
 	cp convoy/configs/Caddyfile .
 
 }
@@ -115,12 +115,12 @@ EOF
 
 	# rewrite convoy.json
 	echo "Setting up convoy.json ..."
-	echo "$( jq --arg domain "${DOMAIN}" '.host = $domain | .environment = "production"' convoy.tmpl.json  )" > convoy.json
+	echo "$( jq --arg domain "${DOMAIN}" '.host = $domain | .environment = "production"' convoy.templ.json  )" > convoy.json
 	echo "convoy.json ready"
 	echo
 
 	# rewrite docker compose
-	envsubst < docker-compose.tmpl.yml > docker-compose.yml
+	envsubst < docker-compose.templ.yml > docker-compose.yml
 }
 
 # 12. Write wait script to ensure databases are ready.
