@@ -65,7 +65,7 @@
 				</div>
 
 				<div *ngIf="projectForm.value.config.is_retention_policy_enabled === true" formGroupName="retention_policy">
-					<convoy-input label="Retention Period" name="policy" formControlName="policy" placeholder="72h" errorMessage="Enter retention policy value" tooltipContent="This is the interval at which events would be stored for this project." tooltipSize="sm"></convoy-input>
+					<convoy-input label="Retention Period" name="policy" formControlName="policy" placeholder="72h" errorMessage="Enter retention policy value" tooltipContent="This is the interval at which events would be reviewed and retained for this project." tooltipSize="sm"></convoy-input>
 				</div>
 			</div>
 		</div>
