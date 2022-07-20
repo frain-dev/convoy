@@ -86,6 +86,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.isCreatingProject = false;
+			this.projectForm.reset()
 			this.privateService.activeProjectDetails = response.data.group;
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
 			this.apiKey = response.data.api_key.key;
