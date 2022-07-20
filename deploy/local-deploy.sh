@@ -8,7 +8,7 @@ DOMAIN="localhost"
 # 1. Read Convoy version
 read_version() {
 	echo
-	echo "What version of Convoy would you like to install? (We default to the latest"
+	echo "What version of Convoy would you like to install? (We default to the latest)"
 	echo "You can check out available versions here: https://github.com/frain-dev/convoy/releases"
 
 	local version=""

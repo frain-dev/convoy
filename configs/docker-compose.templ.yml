@@ -8,7 +8,7 @@ services:
         hostname: web
         container_name: web
         volumes:
-            - /etc/convoy/convoy.json:/convoy.json
+            - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
             - mongo1
@@ -23,7 +23,7 @@ services:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
         entrypoint: ["./cmd", "index", "--config", "convoy.json"]
         volumes:
-            - /etc/convoy/convoy.json:/convoy.json
+            - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
             - mongo1
@@ -36,7 +36,7 @@ services:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
         entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
-            - /etc/convoy/convoy.json:/convoy.json
+            - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
             - mongo1
@@ -48,7 +48,7 @@ services:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
         entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
-            - /etc/convoy/convoy.json:/convoy.json
+            - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
             - mongo1
@@ -73,7 +73,7 @@ services:
                 "/data/db",
             ]
         volumes:
-            - /var/convoy/data/mongo1:/data/db
+            - mongo1-data:/data/db
         networks:
             - backendCluster
 
@@ -94,7 +94,7 @@ services:
                 "/data/db",
             ]
         volumes:
-            - /var/convoy/data/mongo2:/data/db
+            - mongo2-data:/data/db
         networks:
             - backendCluster
 
@@ -115,7 +115,7 @@ services:
                 "/data/db",
             ]
         volumes:
-            - /var/convoy/data/mongo3:/data/db
+            - mongo3-data:/data/db
         networks:
             - backendCluster
 
@@ -137,7 +137,7 @@ services:
             TYPESENSE_ENABLE_CORS: "true"
             TYPESENSE_API_KEY: "convoy"
         volumes:
-            - /var/convoy/data/typesense:/data/typesense
+            - typesense-data:/data/typesense
         networks:
             - backendCluster
 
@@ -148,7 +148,7 @@ services:
             - "80:80"
             - "443:443"
         volumes:
-            - /etc/convoy/Caddyfile:/etc/caddy/Caddyfile
+            - ./caddyfile:/etc/caddy/Caddyfile
         depends_on:
             - web
         networks:
