@@ -45,11 +45,12 @@
 						</div>
 						<convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
 					</div>
+					<hr class="border-t border-t-grey-10 my-20px">
 					<h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2>
 					<div formGroupName="storage_policy">
 						<div class="grid grid-cols-2 gap-24px mb-24px">
 							<convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
-							<convoy-radio formControlName="type" label="s3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
+							<convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
 						</div>
 						<ng-container *ngIf="configForm.value.storage_policy.type === 'on_prem'">
 							<div formGroupName="on_prem">

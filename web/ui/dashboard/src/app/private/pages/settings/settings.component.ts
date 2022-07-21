@@ -21,8 +21,8 @@ import { SettingsService } from './settings.service';
 	styleUrls: ['./settings.component.scss']
 })
 export class SettingsComponent implements OnInit {
-	activePage: 'organisation settings' | 'configuration settings' = 'organisation settings';
-	settingsMenu: ['organisation settings', 'configuration settings'] = ['organisation settings', 'configuration settings'];
+	activePage: 'organisation settings' | 'configuration settings' = 'configuration settings';
+	settingsMenu: ['configuration settings', 'organisation settings'] = ['configuration settings', 'organisation settings'];
 	regions = [
 		'us-east-2',
 		'us-east-1',
@@ -78,7 +78,7 @@ export class SettingsComponent implements OnInit {
 	constructor(private settingService: SettingsService, private generalService: GeneralService, private formBuilder: FormBuilder, private router: Router, private route: ActivatedRoute) {}
 
 	ngOnInit() {
-		this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'organisation settings');
+		this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'configuration settings');
 	}
 
 	async updateOrganisation() {
