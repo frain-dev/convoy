@@ -39,7 +39,6 @@ publishers:
 
 dockers:
   - image_templates: 
-    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest"
     - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}"
     goos: linux
     goarch: amd64
