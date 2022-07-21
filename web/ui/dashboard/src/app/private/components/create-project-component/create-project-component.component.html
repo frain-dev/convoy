@@ -28,7 +28,7 @@
 					<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash"></convoy-select>
 				</div>
 
-				<h3 class="mt-24px mb-16px flex items-center font-semibold">
+				<h3 class="mt-32px mb-16px flex items-center font-semibold">
 					Retry Logic
 					<convoy-tooltip size="sm" position="right" class="ml-4px">
 						These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry attempt.
@@ -40,7 +40,7 @@
 					<convoy-input type="number" label="Limit" name="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" errorMessage="Please enter a retry limit"></convoy-input>
 				</div>
 
-				<h3 class="mt-24px mb-16px flex items-center font-semibold">
+				<h3 class="mt-32px mb-16px flex items-center font-semibold">
 					Rate Limit Parameters
 					<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 				</h3>
@@ -52,13 +52,13 @@
 			
 				
 
-				<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
+				<h3 class="mt-32px mb-16px font-semibold">Disable Failing Endpoints</h3>
 				<div class="grid grid-cols-2 gap-24px">
 					<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
 					<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
 				</div>
 
-				<h3 class="mt-24px mb-16px font-semibold">Enable Rentention Policy</h3>
+				<h3 class="mt-32px mb-16px font-semibold">Enable Rentention Policy</h3>
 				<div class="grid grid-cols-2 gap-24px mb-24px">
 					<convoy-radio formControlName="is_retention_policy_enabled" label="Enable" _name="is_retention_policy_enabled" [value]="true" _id="enable_retention_policy"></convoy-radio>
 					<convoy-radio formControlName="is_retention_policy_enabled" label="Disable" _name="is_retention_policy_enabled" [value]="false" _id="disable_retention_policy"></convoy-radio>

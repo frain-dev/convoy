@@ -2,10 +2,10 @@
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
 	<convoy-card className="px-24px py-24px">
-		<convoy-input type="text" name="subscription-name" formControlName="name" errorMessage="Enter new subscription name" label="Subscription name" placeholder="e.g paystack-prod"></convoy-input>
+		<convoy-input type="text" name="subscription-name" formControlName="name" errorMessage="Enter new subscription name" label="Subscription name" placeholder="e.g paystack-prod" className="mb-24px"></convoy-input>
 
 		<ng-container *ngIf="projectType === 'incoming' && !token">
-			<convoy-select className="mb-0" [options]="sources" name="source" formControlName="source_id" errorMessage="Select or create a source" label="Source" placeholder="Select source" [required]="true"></convoy-select>
+			<convoy-select [options]="sources" name="source" formControlName="source_id" errorMessage="Select or create a source" label="Source" placeholder="Select source" [required]="true"></convoy-select>
 			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (clickItem)="showCreateSourceModal = true">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
@@ -15,7 +15,7 @@
 		</ng-container>
 
 		<ng-container *ngIf="!token">
-			<convoy-select className="mb-0" [options]="apps" name="application" formControlName="app_id" errorMessage="Select or create an application" label="Application" placeholder="Select application" [required]="true" (onChange)="onUpdateAppSelection()"></convoy-select>
+			<convoy-select [options]="apps" name="application" formControlName="app_id" errorMessage="Select or create an application" label="Application" placeholder="Select application" [required]="true" (onChange)="onUpdateAppSelection()"></convoy-select>
 			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateAppModal = true">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
@@ -25,7 +25,7 @@
 		</ng-container>
 
 		<div [ngClass]="{ 'opacity-50 pointer-events-none': subscriptionForm.get('app_id')?.invalid }">
-			<convoy-select className="mb-0 mt-24px" [options]="endPoints" name="endpoint" formControlName="endpoint_id" errorMessage="Select or create an endpoint" label="Endpoint" placeholder="Select an endpoint" [required]="true"></convoy-select>
+			<convoy-select className="mt-24px" [options]="endPoints" name="endpoint" formControlName="endpoint_id" errorMessage="Select or create an endpoint" label="Endpoint" placeholder="Select an endpoint" [required]="true"></convoy-select>
 			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
