@@ -83,7 +83,7 @@ func (s *Server) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
 	var sub models.Subscription
-	err := util.ReadJSON(r, &s)
+	err := util.ReadJSON(r, &sub)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
