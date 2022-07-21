@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -44,6 +46,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(i.DB)
+	metrics.Reset()
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {

@@ -27,6 +27,11 @@ func Reg() *prometheus.Registry {
 	return reg
 }
 
+func Reset() {
+	requestDuration, reg = nil, nil
+	re, rd = sync.Once{}, sync.Once{}
+}
+
 func RequestDuration() *prometheus.HistogramVec {
 	rd.Do(func() {
 		requestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{

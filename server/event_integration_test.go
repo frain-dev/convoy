@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/google/uuid"
 
 	"github.com/frain-dev/convoy/auth"
@@ -58,6 +60,7 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 func (s *EventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {

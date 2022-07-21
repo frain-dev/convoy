@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -62,6 +64,7 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 
 func (s *ApplicationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {

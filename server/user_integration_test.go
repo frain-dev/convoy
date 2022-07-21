@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -50,6 +52,7 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 
 func (u *UserIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(u.DB)
+	metrics.Reset()
 }
 
 func (u *UserIntegrationTestSuite) Test_LoginUser() {

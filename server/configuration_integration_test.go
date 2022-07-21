@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -62,6 +64,7 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 
 func (c *ConfigurationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(c.DB)
+	metrics.Reset()
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {

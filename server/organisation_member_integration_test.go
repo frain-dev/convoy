@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
@@ -67,6 +68,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 
 func (s *OrganisationMemberIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {

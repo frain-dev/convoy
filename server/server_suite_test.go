@@ -123,7 +123,8 @@ func buildServer() *Server {
 		config.Configuration{},
 		eventRepo, eventDeliveryRepo, appRepo,
 		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
-		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue, logger, tracer, cache, limiter, searcher,
+		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue,
+		logger, tracer, cache, limiter, searcher,
 	)
 }
 

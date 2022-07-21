@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/suite"
 
@@ -72,6 +74,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {

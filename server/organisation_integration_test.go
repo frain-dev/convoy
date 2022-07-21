@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -67,6 +69,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 
 func (s *OrganisationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {

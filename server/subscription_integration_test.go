@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -59,6 +61,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {

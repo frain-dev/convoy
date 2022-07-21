@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -59,6 +60,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 
 func (s *SourceIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
