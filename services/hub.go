@@ -111,49 +111,15 @@ func (h *Hub) StartEventSender() {
 }
 
 func (h *Hub) StartEventWatcher() {
-	lookupStage1 := bson.D{
-		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: m.SubscriptionCollection},
-			{Key: "localField", Value: "subscription_id"},
-			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "subscription"},
-		}},
-	}
-
 	matchStage := bson.D{
 		{Key: "$match",
 			Value: bson.D{
-				{Key: "subscription.type", Value: datastore.SubscriptionTypeCLI},
+				{Key: "cli_metadata", Value: bson.M{"$ne": nil}},
 			},
 		},
 	}
 
-	lookupStage2 := bson.D{
-		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: m.EventCollection},
-			{Key: "localField", Value: "event_id"},
-			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "event"},
-		}},
-	}
-
-	addFieldStage := bson.D{
-		{Key: "$addFields",
-			Value: bson.D{
-				{Key: "event_type", Value: "$event.event_type"},
-			},
-		},
-	}
-
-	unsetStage1 := bson.D{
-		{Key: "$unset", Value: "event"},
-	}
-
-	unsetStage2 := bson.D{
-		{Key: "$unset", Value: "subscription"},
-	}
-
-	pipeline := mongo.Pipeline{lookupStage1, matchStage, lookupStage2, addFieldStage, unsetStage1, unsetStage2}
+	pipeline := mongo.Pipeline{matchStage}
 
 	fn := h.watchEventDeliveriesCollection()
 	err := h.watchCollectionFn(fn, pipeline, m.EventCollection, h.close)
@@ -177,6 +143,11 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error
 			return fmt.Errorf("event delivery metadata has wrong type of: %T", doc["metadata"])
 		}
 
+		cliMetadata, ok := doc["cli_metadata"].(*datastore.CLIMetadata)
+		if !ok {
+			return fmt.Errorf("cli metadata has wrong type of: %T", doc["metadata"])
+		}
+
 		appID, ok := doc["app_id"].(string)
 		if !ok {
 			return fmt.Errorf("event delivery app id has wrong type of: %T", doc["app_id"])
@@ -187,11 +158,6 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error
 			return fmt.Errorf("event delivery group id has wrong type of: %T", doc["group_id"])
 		}
 
-		eventType, ok := doc["event_type"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery event_type has wrong type of: %T", doc["event_type"])
-		}
-
 		deviceID, ok := doc["device_id"].(string)
 		if !ok {
 			return fmt.Errorf("event delivery device id has wrong type of: %T", doc["device_id"])
@@ -199,7 +165,7 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error
 
 		h.events <- &CLIEvent{
 			Data:      metadata.Data,
-			EventType: eventType,
+			EventType: cliMetadata.EventType,
 			AppID:     appID,
 			DeviceID:  deviceID,
 			GroupID:   groupID,

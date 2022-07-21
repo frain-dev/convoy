@@ -495,12 +495,16 @@ type EventDelivery struct {
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
 	Metadata         *Metadata           `json:"metadata" bson:"metadata"`
 	Description      string              `json:"description,omitempty" bson:"description"`
-
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	CLIMetadata      *CLIMetadata        `json:"cli_metadata" bson:"cli_metadata"`
+	CreatedAt        primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt        primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type CLIMetadata struct {
+	EventType string `json:"event_type" bson:"event_type"`
 }
 
 type KeyType string
