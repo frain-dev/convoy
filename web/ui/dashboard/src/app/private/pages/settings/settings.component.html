@@ -25,7 +25,7 @@
 				<form [formGroup]="editOrganisationForm">
 					<convoy-input type="text" autocomplete="name" name="name" formControlName="name" errorMessage="Please enter a name for your organisation" label="Organisation name" placeholder="Organisation name" [required]="true"></convoy-input>
 				</form>
-				<hr class="border-t border-t-grey-10 mt-50px mb-20px" />
+				<hr class="border-t border-t-grey-10 mt-32px mb-20px" />
 				<h2 class="text-danger font-semibold mb-8px">Danger zone</h2>
 				<p class="text-grey-40 text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
 				<convoy-button color="danger" size="sm" className="mt-20px mb-30px" (click)="showDeleteModal = !showDeleteModal">Delete Organisation</convoy-button>
