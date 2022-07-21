@@ -27,9 +27,11 @@ func Reg() *prometheus.Registry {
 	return reg
 }
 
+// Reset is only intended for use in tests
 func Reset() {
 	requestDuration, reg = nil, nil
 	re, rd = sync.Once{}, sync.Once{}
+	prometheus.DefaultRegisterer = prometheus.NewRegistry()
 }
 
 func RequestDuration() *prometheus.HistogramVec {
