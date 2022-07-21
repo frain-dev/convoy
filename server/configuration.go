@@ -32,6 +32,7 @@ func (a *applicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 		c := &models.ConfigurationResponse{
 			UID:                config.UID,
 			IsAnalyticsEnabled: config.IsAnalyticsEnabled,
+			StoragePolicy:      config.StoragePolicy,
 			ApiVersion:         convoy.GetVersion(),
 			CreatedAt:          config.CreatedAt,
 			UpdatedAt:          config.UpdatedAt,
