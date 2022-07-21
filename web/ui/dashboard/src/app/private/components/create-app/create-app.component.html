@@ -2,7 +2,7 @@
 
 <form [formGroup]="addNewAppForm" id="create-app-form">
 	<convoy-card className="px-24px py-24px mt-40px">
-		<convoy-input type="text" autocomplete="app-name" name="app-name" formControlName="name" errorMessage="App name is required" label="Enter App Name" placeholder="App name" className="mb-24px" [required]="true"></convoy-input>
+		<convoy-input type="text" autocomplete="app-name" name="app-name" formControlName="name" errorMessage="App name is required" label="Enter App Name" placeholder="App name" [required]="true"></convoy-input>
 		<div class="grid grid-cols-2 gap-6">
 			<convoy-input
 				type="email"
@@ -38,7 +38,7 @@
 					</convoy-button>
 				</div>
 				<div [formGroupName]="i">
-					<div class="grid grid-cols-2 gap-6 mb-24px">
+					<div class="grid grid-cols-2 gap-6">
 						<convoy-input type="text" autocomplete="description" [name]="'description' + i" formControlName="description" errorMessage="Please provide a description" label="Description" placeholder="Description" [required]="true"></convoy-input>
 						<convoy-input type="url" autocomplete="endpoint-url" [name]="'endpoint-url' + i" formControlName="url" label="Enter Endpoint URL" placeholder="Endpoint url" errorMessage="Please enter endpoint url" [required]="true"></convoy-input>
 					</div>
@@ -52,7 +52,6 @@
 						tooltipSize="sm"
 						tooltipPosition="right"
 						tooltipContent="This specifies how long the socket stays open in the absense of a response."
-						className="mb-24px"
 					></convoy-input>
 				</div>
 			</div>

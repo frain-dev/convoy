@@ -58,7 +58,7 @@
 							</div>
 						</ng-container>
 						<ng-container *ngIf="configForm.value.storage_policy.type === 's3'">
-							<div formGroupName="s3" class="grid grid-cols-2 gap-6">
+							<div formGroupName="s3" class="grid grid-cols-2 gap-x-6">
 								<convoy-input label="Bucket" name="bucket" formControlName="bucket" placeholder="Bucket name" errorMessage="Please enter bucket name" [required]="true"></convoy-input>
 								<convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true"></convoy-select>
 								<convoy-input label="Access Key" name="access_key" formControlName="access_key" placeholder="Access Key" errorMessage="Please enter access key" [required]="true"></convoy-input>
