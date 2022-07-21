@@ -425,14 +425,14 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var dbEndpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
+	var resp datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &resp)
 
 	appRepo := s.DB.AppRepo()
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), dbEndpoint.TargetURL, endpoint.TargetURL)
-	require.Equal(s.T(), dbEndpoint.Secret, endpoint.Secret)
+	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
+	require.Equal(s.T(), dbEndpoint.Secret, resp.Secret)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
