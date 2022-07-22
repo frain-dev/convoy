@@ -36,14 +36,7 @@ export class EventsComponent implements OnInit {
 		endDate: [{ value: new Date(), disabled: true }]
 	});
 
-	constructor(
-		private formBuilder: FormBuilder,
-		private datePipe: DatePipe,
-		private eventsService: EventsService,
-		public privateService: PrivateService,
-		private route: ActivatedRoute,
-		private router: Router
-	) {}
+	constructor(private formBuilder: FormBuilder, private datePipe: DatePipe, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
@@ -86,10 +79,10 @@ export class EventsComponent implements OnInit {
 		}
 	}
 
-	getSelectedDateRange(dateRange: { startDate: Date; endDate: Date }) {
+	getSelectedDateRange(dateRange?: { startDate: Date; endDate: Date }) {
 		this.statsDateRange.patchValue({
-			startDate: dateRange.startDate,
-			endDate: dateRange.endDate
+			startDate: dateRange?.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
+			endDate: dateRange?.endDate || new Date()
 		});
 		this.fetchDashboardData();
 	}
