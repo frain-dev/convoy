@@ -121,8 +121,8 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -134,9 +134,9 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:   auth.RoleSuperUser,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleSuperUser,
+		Group: uuid.NewString(),
+		App:   "",
 	}
 	status := datastore.InviteStatusAccepted
 	updatedAt := primitive.NewDateTimeFromTime(time.Now())
@@ -169,8 +169,8 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -200,8 +200,8 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -232,8 +232,8 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,

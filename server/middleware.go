@@ -159,8 +159,8 @@ func requireAppID() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := getAuthUserFromContext(r.Context())
 
-			if len(authUser.Role.Apps) > 0 {
-				appID := authUser.Role.Apps[0]
+			if !util.IsStringEmpty(authUser.Role.App) {
+				appID := authUser.Role.App
 				r = r.WithContext(setAppIDInContext(r.Context(), appID))
 			}
 
@@ -221,26 +221,21 @@ func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http
 			}
 
 			group := getGroupFromContext(r.Context())
-			for _, v := range authUser.Role.Groups {
-				if group.Name == v || group.UID == v {
+			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
+				if !util.IsStringEmpty(authUser.Role.App) { //we're dealing with an app portal token at this point
+					app := getApplicationFromContext(r.Context())
 
-					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
-						app := getApplicationFromContext(r.Context())
-
-						for _, ap := range authUser.Role.Apps {
-							if app.Title == ap || app.UID == ap {
-								next.ServeHTTP(w, r)
-								return
-							}
-						}
-
-						_ = render.Render(w, r, newErrorResponse("unauthorized access", http.StatusUnauthorized))
+					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
+						next.ServeHTTP(w, r)
 						return
 					}
 
-					next.ServeHTTP(w, r)
+					_ = render.Render(w, r, newErrorResponse("unauthorized access", http.StatusUnauthorized))
 					return
 				}
+
+				next.ServeHTTP(w, r)
+				return
 			}
 
 			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
@@ -396,11 +391,9 @@ func requireOrganisationGroupMember() func(next http.Handler) http.Handler {
 			}
 
 			group := getGroupFromContext(r.Context())
-			for _, g := range member.Role.Groups {
-				if g == group.UID {
-					next.ServeHTTP(w, r)
-					return
-				}
+			if member.Role.Group == group.UID {
+				next.ServeHTTP(w, r)
+				return
 			}
 
 			_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
@@ -553,8 +546,8 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 			if util.IsStringEmpty(groupID) {
 				authUser := getAuthUserFromContext(r.Context())
 
-				if len(authUser.Role.Groups) > 0 && authUser.Credential.Type == auth.CredentialTypeAPIKey {
-					groupID = authUser.Role.Groups[0]
+				if authUser.Credential.Type == auth.CredentialTypeAPIKey {
+					groupID = authUser.Role.Group
 				}
 			}
 
