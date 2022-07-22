@@ -18,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
@@ -59,7 +59,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 
 type Server struct {
 	s                         *http.Server
-	m                         *m.Middleware
+	m                         *middleware.Middleware
 	cache                     cache.Cache
 	queue                     queue.Queuer
 	appService                *services.AppService
@@ -283,7 +283,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(s.m.JsonResponse)
 		uiRouter.Use(s.m.SetupCORS)
-		uiRouter.Use(chiMiddleware.Maybe(s.m.RequireAuth(), m.ShouldAuthRoute))
+		uiRouter.Use(chiMiddleware.Maybe(s.m.RequireAuth(), middleware.ShouldAuthRoute))
 		uiRouter.Use(s.m.RequireBaseUrl())
 
 		uiRouter.Post("/organisations/process_invite", s.ProcessOrganisationMemberInvite)
@@ -607,5 +607,5 @@ func (s *Server) gracefulShutdown() {
 
 	log.Info("Server exiting")
 
-	time.Sleep(2 * time.Second) // allow all websocket connections close themselves
+	time.Sleep(2 * time.Second) // allow all pending connections close themselves
 }
