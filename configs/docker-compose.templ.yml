@@ -73,7 +73,7 @@ services:
                 "/data/db",
             ]
         volumes:
-            - mongo1-data:/data/db
+            - ./mongo1-data:/data/db
         networks:
             - backendCluster
 
@@ -94,7 +94,7 @@ services:
                 "/data/db",
             ]
         volumes:
-            - mongo2-data:/data/db
+            - ./mongo2-data:/data/db
         networks:
             - backendCluster
 
@@ -115,7 +115,7 @@ services:
                 "/data/db",
             ]
         volumes:
-            - mongo3-data:/data/db
+            - ./mongo3-data:/data/db
         networks:
             - backendCluster
 
@@ -137,7 +137,7 @@ services:
             TYPESENSE_ENABLE_CORS: "true"
             TYPESENSE_API_KEY: "convoy"
         volumes:
-            - typesense-data:/data/typesense
+            - ./typesense-data:/data/typesense
         networks:
             - backendCluster
 
@@ -156,9 +156,3 @@ services:
 
 networks:
     backendCluster:
-
-volumes:
-    mongo1-data:
-    mongo2-data:
-    mongo3-data:
-    typesense-data:

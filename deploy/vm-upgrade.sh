@@ -37,8 +37,13 @@ cp convoy/configs/docker-compose.templ.yml $CONFDIR
 envsubst < docker-compose.templ.yml > docker-compose.yml
 rm docker-compose.templ.yml
 
-# backward compatible fix.
-mv Caddyfile caddyfile
+# backward compatible fixes
+[[ -f "Caddyfile" ]] && mv Caddyfile caddyfile
+[[ -d "/var/convoy/data/mongo1" ]] && mv /var/convoy/data/mongo1 ./mongo1-data
+[[ -d "/var/convoy/data/mongo2" ]] && mv /var/convoy/data/mongo2 ./mongo2-data
+[[ -d "/var/convoy/data/mongo3" ]] && mv /var/convoy/data/mongo3 ./mongo3-data
+[[ -d "/var/convoy/data/typesense" ]] && mv /var/convoy/data/typesense ./typesense-data
+
 
 docker-compose pull
 
