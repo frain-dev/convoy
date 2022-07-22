@@ -4,6 +4,8 @@ set -e
 
 VERSION="latest"
 DOMAIN="localhost"
+CONFDIR="/etc/convoy"
+DATADIR="/var/convoy/data"
 
 # Read Convoy version
 read_version() {
@@ -91,13 +93,24 @@ install_convoy() {
 	cd ..
 }
 
+# This enables this script to be backward compatible with previous scripts.
+prepare_directories() {
+	echo 
+	echo "Preparing configuration directories ..."
+
+	mkdir -p $CONFDIR
+	mkdir -p $DATADIR
+
+}
+
 copy_configurations() {
 	echo 
 
-	cp convoy/configs/docker-compose.templ.yml .
-	cp convoy/configs/convoy.templ.json .
-	cp convoy/configs/caddyfile .
+	cp convoy/configs/docker-compose.templ.yml $CONFDIR
+	cp convoy/configs/convoy.templ.json $CONFDIR
+	cp convoy/configs/caddyfile $CONFDIR
 
+	cd $CONFDIR
 }
 
 # rewrite convoy.json, caddyfile & docker-compose
@@ -183,11 +196,17 @@ start() {
 	# Install Convoy
 	install_convoy
 
+	# preprare directories
+	prepare_directories
+
 	# copy configurations
 	copy_configurations
 
 	# setup configuration 
 	write_configurations
+
+	# stop previously running containers
+	stop_containers
 
 	# start containers
 	start_containers

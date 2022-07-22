@@ -2,6 +2,8 @@
 
 set -e 
 
+CONFDIR="/etc/convoy"
+
 echo "Upgrading Convoy. This will cause a few minutes of downtime."
 read -r -p "Do you want to upgarde Convoy? [y/N] " response
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
@@ -19,7 +21,10 @@ git pull
 cd ../
 
 rm -f docker-compose.yml
-cp convoy/configs/docker-compose.templ.yml .
+cp convoy/configs/docker-compose.templ.yml $CONFDIR
+
+cd $CONFDIR
+
 envsubst < docker-compose.templ.yml > docker-compose.yml
 rm docker-compose.templ.yml
 
