@@ -23,7 +23,7 @@ else
 	exit
 fi
 
-[[ -f "convoy.json" ]] && export $(cat convoy.json | xargs) || ( echo "No convoy.json file found. Please ensure you're in the right directory" && exit 1)
+[[ -f "convoy.json" ]] || ( echo "No convoy.json file found. Please ensure you're in the right directory" && exit 1)
 export VERSION="${VERSION:-latest}"
 
 cd $CONFDIR
