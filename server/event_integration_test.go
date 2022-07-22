@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/google/uuid"
 
 	"github.com/frain-dev/convoy/auth"
@@ -24,15 +26,15 @@ type EventIntegrationTestSuite struct {
 	suite.Suite
 	DB           datastore.DatabaseClient
 	Router       http.Handler
-	ConvoyApp    *applicationHandler
+	ConvoyApp    *Server
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
 
 func (s *EventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *EventIntegrationTestSuite) SetupTest() {
@@ -58,6 +60,7 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 func (s *EventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {

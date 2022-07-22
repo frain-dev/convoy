@@ -26,7 +26,7 @@ func NewOrganisationService(orgRepo datastore.OrganisationRepository, orgMemberR
 func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *models.Organisation, user *datastore.User) (*datastore.Organisation, error) {
 	err := util.Validate(newOrg)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	org := &datastore.Organisation{
@@ -41,7 +41,7 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 	err = os.orgRepo.CreateOrganisation(ctx, org)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation"))
 	}
 
 	_, err = NewOrganisationMemberService(os.orgMemberRepo).CreateOrganisationMember(ctx, org, user, &auth.Role{Type: auth.RoleSuperUser})
@@ -56,14 +56,14 @@ func (os *OrganisationService) UpdateOrganisation(ctx context.Context, org *data
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate organisation update")
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	org.Name = update.Name
 	err = os.orgRepo.UpdateOrganisation(ctx, org)
 	if err != nil {
 		log.WithError(err).Error("failed to to update organisation")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation"))
 	}
 
 	return org, nil
@@ -73,7 +73,7 @@ func (os *OrganisationService) FindOrganisationByID(ctx context.Context, id stri
 	org, err := os.orgRepo.FetchOrganisationByID(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation by id")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation by id"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation by id"))
 	}
 	return org, err
 }
@@ -82,7 +82,7 @@ func (os *OrganisationService) LoadOrganisationsPaged(ctx context.Context, pagea
 	orgs, paginationData, err := os.orgRepo.LoadOrganisationsPaged(ctx, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch organisations")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching organisations"))
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching organisations"))
 	}
 
 	return orgs, paginationData, nil
@@ -92,7 +92,7 @@ func (os *OrganisationService) LoadUserOrganisationsPaged(ctx context.Context, u
 	orgs, paginationData, err := os.orgMemberRepo.LoadUserOrganisationsPaged(ctx, user.UID, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch user organisations")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching user organisations"))
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching user organisations"))
 	}
 
 	return orgs, paginationData, nil
@@ -102,7 +102,7 @@ func (os *OrganisationService) DeleteOrganisation(ctx context.Context, id string
 	err := os.orgRepo.DeleteOrganisation(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to delete organisation")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation"))
 	}
 	return err
 }

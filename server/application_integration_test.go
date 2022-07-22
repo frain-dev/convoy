@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -28,15 +30,15 @@ type ApplicationIntegrationTestSuite struct {
 	suite.Suite
 	DB           datastore.DatabaseClient
 	Router       http.Handler
-	ConvoyApp    *applicationHandler
+	ConvoyApp    *Server
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupTest() {
@@ -62,6 +64,7 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 
 func (s *ApplicationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
@@ -422,14 +425,14 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var dbEndpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
+	var resp datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &resp)
 
 	appRepo := s.DB.AppRepo()
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), dbEndpoint.TargetURL, endpoint.TargetURL)
-	require.Equal(s.T(), dbEndpoint.Secret, endpoint.Secret)
+	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
+	require.Equal(s.T(), dbEndpoint.Secret, resp.Secret)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {

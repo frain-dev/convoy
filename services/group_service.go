@@ -45,7 +45,7 @@ func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.Ap
 func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Group, *models.APIKeyResponse, error) {
 	err := util.Validate(newGroup)
 	if err != nil {
-		return nil, nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	groupName := newGroup.Name
@@ -96,10 +96,10 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 	if err != nil {
 		log.WithError(err).Error("failed to create group")
 		if err == datastore.ErrDuplicateGroupName {
-			return nil, nil, NewServiceError(http.StatusBadRequest, err)
+			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		return nil, nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
 	}
 
 	newAPIKey := &models.APIKey{
@@ -137,7 +137,7 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 	err := util.Validate(update)
 	if err != nil {
 		log.WithError(err).Error("failed to validate group update")
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	if !util.IsStringEmpty(update.Name) {
@@ -155,13 +155,13 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 	err = gs.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to to update group")
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	groupCacheKey := convoy.GroupsCacheKey.Get(group.UID).String()
 	err = gs.cache.Set(ctx, groupCacheKey, &group, time.Minute*5)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return group, nil
@@ -171,7 +171,7 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 	groups, err := gs.groupRepo.LoadGroups(ctx, filter.WithNamesTrimmed())
 	if err != nil {
 		log.WithError(err).Error("failed to load groups")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
 	err = gs.FillGroupsStatistics(ctx, groups)
@@ -186,7 +186,7 @@ func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*data
 	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to count group applications")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
 	}
 
 	return nil
@@ -196,14 +196,14 @@ func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 	err := gs.groupRepo.DeleteGroup(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))
 	}
 
 	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
 	err = gs.appRepo.DeleteGroupApps(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group apps")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group apps"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group apps"))
 	}
 	evntFilter := &datastore.EventFilter{
 		GroupID:        id,
@@ -213,7 +213,7 @@ func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 	err = gs.eventRepo.DeleteGroupEvents(ctx, evntFilter, false)
 	if err != nil {
 		log.WithError(err).Error("failed to delete group events")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete group events"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group events"))
 	}
 
 	return nil

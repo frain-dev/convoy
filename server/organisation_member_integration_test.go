@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
@@ -25,7 +26,7 @@ type OrganisationMemberIntegrationTestSuite struct {
 	suite.Suite
 	DB              datastore.DatabaseClient
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *Server
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -34,8 +35,8 @@ type OrganisationMemberIntegrationTestSuite struct {
 
 func (s *OrganisationMemberIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
@@ -67,6 +68,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 
 func (s *OrganisationMemberIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {

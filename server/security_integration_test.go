@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -26,7 +27,7 @@ type SecurityIntegrationTestSuite struct {
 	suite.Suite
 	DB              datastore.DatabaseClient
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *Server
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -35,8 +36,8 @@ type SecurityIntegrationTestSuite struct {
 
 func (s *SecurityIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *SecurityIntegrationTestSuite) SetupTest() {
@@ -352,6 +353,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
 
 func (s *SecurityIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func TestSecurityIntegrationTestSuiteTest(t *testing.T) {

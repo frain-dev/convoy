@@ -12,6 +12,7 @@ import (
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -401,8 +402,8 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			group, apiKey, err := gs.CreateGroup(tc.args.ctx, tc.args.newGroup, tc.args.org, tc.args.member)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -591,8 +592,8 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			group, err := gs.UpdateGroup(tc.args.ctx, tc.args.group, tc.args.update)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -789,8 +790,8 @@ func TestGroupService_GetGroups(t *testing.T) {
 			group, err := gs.GetGroups(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -870,8 +871,8 @@ func TestGroupService_FillGroupsStatistics(t *testing.T) {
 			err := gs.FillGroupsStatistics(tc.args.ctx, []*datastore.Group{tc.args.g})
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -979,8 +980,8 @@ func TestGroupService_DeleteGroup(t *testing.T) {
 			err := gs.DeleteGroup(tc.args.ctx, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

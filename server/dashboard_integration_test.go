@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/suite"
 
@@ -29,7 +31,7 @@ type DashboardIntegrationTestSuite struct {
 	suite.Suite
 	DB              datastore.DatabaseClient
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *Server
 	AuthenticatorFn AuthenticatorFn
 	DefaultUser     *datastore.User
 	DefaultOrg      *datastore.Organisation
@@ -38,8 +40,8 @@ type DashboardIntegrationTestSuite struct {
 
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *DashboardIntegrationTestSuite) SetupTest() {
@@ -72,6 +74,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {

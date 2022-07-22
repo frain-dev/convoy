@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -157,8 +158,8 @@ func TestAppService_CreateApp(t *testing.T) {
 			app, err := as.CreateApp(tc.args.ctx, tc.args.newApp, group)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -255,7 +256,7 @@ func TestAppService_LoadApplicationsPaged(t *testing.T) {
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:    true,
-			wantErrObj: NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps")),
+			wantErrObj: util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps")),
 		},
 		{
 			name: "should_load_apps_trims-whitespaces-from-query",
@@ -505,8 +506,8 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			err := as.UpdateApplication(tt.args.ctx, tt.args.appUpdate, tt.args.app)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -559,7 +560,7 @@ func TestAppService_DeleteApplication(t *testing.T) {
 				a.EXPECT().DeleteApplication(gomock.Any(), &datastore.Application{UID: "abc"}).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:    true,
-			wantErrObj: NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app")),
+			wantErrObj: util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app")),
 		},
 	}
 	for _, tt := range tests {
@@ -616,7 +617,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{UID: "abc"}, nil)
-					
+
 				c, _ := app.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
@@ -742,8 +743,8 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			appEndpoint, err := as.CreateAppEndpoint(tc.args.ctx, tc.args.e, tc.args.app)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -978,8 +979,8 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			appEndpoint, err := as.UpdateAppEndpoint(tc.args.ctx, tc.args.e, tc.args.endPointId, tc.args.app)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -1106,8 +1107,8 @@ func TestAppService_DeleteAppEndpoint(t *testing.T) {
 			err := as.DeleteAppEndpoint(tc.args.ctx, tc.args.e, tc.args.app)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

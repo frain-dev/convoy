@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -25,7 +27,7 @@ type OrganisationIntegrationTestSuite struct {
 	suite.Suite
 	DB              datastore.DatabaseClient
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *Server
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -34,8 +36,8 @@ type OrganisationIntegrationTestSuite struct {
 
 func (s *OrganisationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *OrganisationIntegrationTestSuite) SetupTest() {
@@ -67,6 +69,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 
 func (s *OrganisationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {

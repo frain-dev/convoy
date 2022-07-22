@@ -8,6 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,7 +26,7 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 	err := role.Validate("organisation member")
 	if err != nil {
 		log.WithError(err).Error("failed to validate organisation member role update")
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	member := &datastore.OrganisationMember{
@@ -41,7 +42,7 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 	err = om.orgMemberRepo.CreateOrganisationMember(ctx, member)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member"))
 	}
 
 	return member, nil
@@ -51,7 +52,7 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 	err := role.Validate("organisation member")
 	if err != nil {
 		log.WithError(err).Error("failed to validate organisation member role update")
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	organisationMember.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
@@ -59,7 +60,7 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 	err = om.orgMemberRepo.UpdateOrganisationMember(ctx, organisationMember)
 	if err != nil {
 		log.WithError(err).Error("failed to to update organisation member")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation member"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation member"))
 	}
 
 	return organisationMember, nil
@@ -69,7 +70,7 @@ func (om *OrganisationMemberService) FindOrganisationMemberByID(ctx context.Cont
 	member, err := om.orgMemberRepo.FetchOrganisationMemberByID(ctx, id, org.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation member by id")
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))
 	}
 	return member, err
 }
@@ -78,7 +79,7 @@ func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Co
 	organisationMembers, paginationData, err := om.orgMemberRepo.LoadOrganisationMembersPaged(ctx, org.UID, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch organisation members")
-		return nil, datastore.PaginationData{}, NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation members"))
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation members"))
 	}
 
 	return organisationMembers, paginationData, nil
@@ -89,17 +90,17 @@ func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Contex
 
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation member by id")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))
 	}
 
 	if member.UserID == org.OwnerID {
-		return NewServiceError(http.StatusForbidden, errors.New("cannot deactivate organisation owner"))
+		return util.NewServiceError(http.StatusForbidden, errors.New("cannot deactivate organisation owner"))
 	}
 
 	err = om.orgMemberRepo.DeleteOrganisationMember(ctx, memberID, org.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete organisation member")
-		return NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation member"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation member"))
 	}
 	return err
 }
