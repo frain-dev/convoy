@@ -4,6 +4,16 @@ set -e
 
 CONFDIR="/etc/convoy"
 
+# re-install convoy, again for backward compatibility
+install_convoy() {
+	echo 
+	echo "Installing Convoy from Github"
+	git clone https://github.com/frain-dev/convoy.git &> /dev/null || true
+	cd convoy
+	git pull
+	cd ../
+}
+
 echo "Upgrading Convoy. This will cause a few minutes of downtime."
 read -r -p "Do you want to upgarde Convoy? [y/N] " response
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
@@ -16,14 +26,13 @@ fi
 [[ -f "convoy.json" ]] && export $(cat convoy.json | xargs) || ( echo "No convoy.json file found. Please ensure you're in the right directory" && exit 1)
 export VERSION="${VERSION:-latest}"
 
-cd convoy
-git pull
-cd ../
+cd $CONFDIR
+
+install_convoy
 
 rm -f docker-compose.yml
 cp convoy/configs/docker-compose.templ.yml $CONFDIR
 
-cd $CONFDIR
 
 envsubst < docker-compose.templ.yml > docker-compose.yml
 rm docker-compose.templ.yml
