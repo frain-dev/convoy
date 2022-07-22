@@ -97,7 +97,7 @@ func updateVersion5ToVersion6() {
 
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		log.WithError(err)
+		log.WithError(err).Error("mongo connection error")
 	}
 
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
@@ -110,7 +110,7 @@ func updateVersion5ToVersion6() {
 
 	u, err := url.Parse(cfg.Database.Dsn)
 	if err != nil {
-		log.WithError(err)
+		log.WithError(err).Error("error parsing database uri")
 
 	}
 
@@ -120,13 +120,15 @@ func updateVersion5ToVersion6() {
 
 	update := bson.M{"$rename": bson.M{"role.groups": "role.group", "role.apps": "role.app"}}
 
-	collection.UpdateMany(context.Background(), bson.D{}, update)
-
+	_, err = collection.UpdateMany(context.Background(), bson.D{}, update)
+	if err != nil {
+		log.WithError(err).Error("error updating many")
+	}
 	ops := options.Find()
 
 	cursor, err := collection.Find(context.Background(), bson.D{}, ops)
 	if err != nil {
-		log.WithError(err).Error("Cannot find many")
+		log.WithError(err).Error("error finding many")
 	}
 	for cursor.Next(context.TODO()) {
 		var apiKey APIKey
@@ -163,7 +165,7 @@ func updateVersion5ToVersion6() {
 		}
 		_, err = collection.UpdateOne(context.Background(), filter, bson.M{"$set": update})
 		if err != nil {
-			log.WithError(err)
+			log.WithError(err).Error("error updating one")
 		}
 	}
 	log.Info("Upgrade complete")
