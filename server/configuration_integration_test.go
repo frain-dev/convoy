@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -21,7 +23,7 @@ type ConfigurationIntegrationTestSuite struct {
 	suite.Suite
 	DB              datastore.DatabaseClient
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *Server
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -30,8 +32,8 @@ type ConfigurationIntegrationTestSuite struct {
 
 func (c *ConfigurationIntegrationTestSuite) SetupSuite() {
 	c.DB = getDB()
-	c.ConvoyApp = buildApplication()
-	c.Router = buildRoutes(c.ConvoyApp)
+	c.ConvoyApp = buildServer()
+	c.Router = c.ConvoyApp.SetupRoutes()
 }
 
 func (c *ConfigurationIntegrationTestSuite) SetupTest() {
@@ -62,6 +64,7 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 
 func (c *ConfigurationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(c.DB)
+	metrics.Reset()
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {

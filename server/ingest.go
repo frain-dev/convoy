@@ -20,14 +20,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
+func (s *Server) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	// 1. Retrieve mask ID
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	source, err := a.sourceRepo.FindSourceByMaskID(r.Context(), maskID)
+	source, err := s.sourceService.FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -127,7 +127,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Delay:   0,
 	}
 
-	err = a.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = s.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -136,25 +136,25 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Event received", nil, http.StatusOK))
 }
 
-func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
 	maskID := chi.URLParam(r, "maskID")
 
 	var source *datastore.Source
 	sourceCacheKey := convoy.SourceCacheKey.Get(maskID).String()
 
-	err := a.cache.Get(r.Context(), sourceCacheKey, &source)
+	err := s.cache.Get(r.Context(), sourceCacheKey, &source)
 	if err != nil {
 		log.Error(err)
 	}
 
 	if source == nil {
-		source, err = a.sourceRepo.FindSourceByMaskID(r.Context(), maskID)
+		source, err = s.sourceService.FindSourceByMaskID(r.Context(), maskID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
 
-		err = a.cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
+		err = s.cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
 		if err != nil {
 			log.Error(err)
 		}
@@ -181,7 +181,7 @@ func (a *applicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = c.HandleRequest(w, r, source, a.sourceRepo)
+	err = c.HandleRequest(w, r, source, s.sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

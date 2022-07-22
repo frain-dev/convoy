@@ -1,12 +1,13 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -25,11 +26,11 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members [get]
-func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	org := m.GetOrganisationFromContext(r.Context())
 
-	members, paginationData, err := a.organisationMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
+	members, paginationData, err := s.organisationMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -52,11 +53,11 @@ func (a *applicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members/{memberID} [get]
-func (a *applicationHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
 	org := m.GetOrganisationFromContext(r.Context())
 
-	member, err := a.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
+	member, err := s.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -78,7 +79,7 @@ func (a *applicationHandler) GetOrganisationMember(w http.ResponseWriter, r *htt
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members/{memberID} [put]
-func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	var roleUpdate models.UpdateOrganisationMember
 	err := util.ReadJSON(r, &roleUpdate)
 	if err != nil {
@@ -89,13 +90,13 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 	memberID := chi.URLParam(r, "memberID")
 	org := m.GetOrganisationFromContext(r.Context())
 
-	member, err := a.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
+	member, err := s.organisationMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	organisationMember, err := a.organisationMemberService.UpdateOrganisationMember(r.Context(), member, &roleUpdate.Role)
+	organisationMember, err := s.organisationMemberService.UpdateOrganisationMember(r.Context(), member, &roleUpdate.Role)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -116,11 +117,11 @@ func (a *applicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members/{memberID} [delete]
-func (a *applicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
 	org := m.GetOrganisationFromContext(r.Context())
 
-	err := a.organisationMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
+	err := s.organisationMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

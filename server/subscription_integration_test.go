@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -25,15 +27,15 @@ type SubscriptionIntegrationTestSuite struct {
 	suite.Suite
 	DB           datastore.DatabaseClient
 	Router       http.Handler
-	ConvoyApp    *applicationHandler
+	ConvoyApp    *Server
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.SetupRoutes()
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
@@ -59,6 +61,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {

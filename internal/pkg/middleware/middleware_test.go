@@ -20,7 +20,7 @@ import (
 )
 
 func TestRequirePermission_Basic(t *testing.T) {
-
+	m := &Middleware{}
 	tt := []struct {
 		name        string
 		statusCode  int
@@ -69,7 +69,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := RequireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := m.RequireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 
 				_, err := rw.Write([]byte(`Hello`))
@@ -94,6 +94,8 @@ func TestRequirePermission_Basic(t *testing.T) {
 }
 
 func TestRequirePermission_Noop(t *testing.T) {
+	m := &Middleware{}
+
 	tt := []struct {
 		name        string
 		statusCode  int
@@ -136,7 +138,7 @@ func TestRequirePermission_Noop(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			fn := RequireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			fn := m.RequireAuth()(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusUnauthorized)
 
 				_, err := rw.Write([]byte(`Hello`))
@@ -161,6 +163,8 @@ func TestRequirePermission_Noop(t *testing.T) {
 }
 
 func TestRateLimitByGroup(t *testing.T) {
+	m := &Middleware{}
+
 	type test struct {
 		name          string
 		requestsLimit int
@@ -195,7 +199,7 @@ func TestRateLimitByGroup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			})
-			router := RateLimitByGroupWithParams(tt.requestsLimit, tt.windowLength)(h)
+			router := m.RateLimitByGroupWithParams(tt.requestsLimit, tt.windowLength)(h)
 
 			for i, code := range tt.respCodes {
 				req := httptest.NewRequest("POST", "/", nil)
