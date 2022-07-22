@@ -91,6 +91,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 	require.NotEmpty(c.T(), newConfig[0].UID)
 	require.Equal(c.T(), config.UID, newConfig[0].UID)
 	require.Equal(c.T(), config.IsAnalyticsEnabled, newConfig[0].IsAnalyticsEnabled)
+	require.Equal(c.T(), config.StoragePolicy.OnPrem.Path, convoy.DefaultOnPremDir)
 	require.Equal(c.T(), convoy.GetVersion(), newConfig[0].ApiVersion)
 }
 

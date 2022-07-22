@@ -18,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
@@ -60,7 +59,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 
 type Server struct {
 	s                         *http.Server
-	m                         *middleware.Middleware
+	m                         *m.Middleware
 	cache                     cache.Cache
 	queue                     queue.Queuer
 	appService                *services.AppService
@@ -597,7 +596,7 @@ func (s *Server) gracefulShutdown() {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 
-	log.Info("Stopping websocket server")
+	log.Info("Stopping server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -606,7 +605,7 @@ func (s *Server) gracefulShutdown() {
 		log.WithError(err).Fatal("Server Shutdown")
 	}
 
-	log.Info("Websocket server exiting")
+	log.Info("Server exiting")
 
 	time.Sleep(2 * time.Second) // allow all websocket connections close themselves
 }
