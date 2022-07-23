@@ -65,6 +65,9 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			gracefulShutdown(srv, hub)
 		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 	}
 
 	return cmd
