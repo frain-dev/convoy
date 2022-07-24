@@ -16,14 +16,14 @@ import (
 
 func rateLimitByGroupWithParams(requestLimit int, windowLength time.Duration) func(next http.Handler) http.Handler {
 	return httprate.Limit(requestLimit, windowLength, httprate.WithKeyFuncs(func(req *http.Request) (string, error) {
-		return getGroupFromContext(req.Context()).UID, nil
+		return GetGroupFromContext(req.Context()).UID, nil
 	}))
 }
 
 func rateLimitByGroupID(limiter limiter.RateLimiter) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 
 			var rateLimitDuration time.Duration
 			var err error

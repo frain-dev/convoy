@@ -30,7 +30,7 @@ func (a *applicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	source, err := a.sourceService.CreateSource(r.Context(), &newSource, group)
 	if err != nil {
@@ -56,7 +56,7 @@ func (a *applicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [get]
 func (a *applicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	source, err := a.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -91,7 +91,7 @@ func (a *applicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 	source, err := a.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
@@ -123,7 +123,7 @@ func (a *applicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [delete]
 func (a *applicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 	source, err := a.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
@@ -154,7 +154,7 @@ func (a *applicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // @Router /sources [get]
 func (a *applicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := getPageableFromContext(r.Context())
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	f := &datastore.SourceFilter{
 		Type: r.URL.Query().Get("type"),

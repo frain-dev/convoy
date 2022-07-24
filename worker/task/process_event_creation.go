@@ -123,13 +123,18 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				GroupID:          group.UID,
 				EventID:          event.UID,
 				EndpointID:       s.EndpointID,
+				DeviceID:         s.DeviceID,
 				ForwardedHeaders: event.ForwardedHeaders,
 
-				Status:           getEventDeliveryStatus(s, app),
+				Status:           getEventDeliveryStatus(&s, app),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
+			}
+
+			if s.Type == datastore.SubscriptionTypeCLI {
+				eventDelivery.CLIMetadata = &datastore.CLIMetadata{EventType: string(event.EventType)}
 			}
 
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
@@ -139,7 +144,12 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			}
 
 			taskName := convoy.EventProcessor
-			if eventDelivery.Status != datastore.DiscardedEventStatus {
+
+			// This event delivery will be picked up by the convoy stream command(if it is currently running).
+			// Otherwise, it will be lost to the wind? workaround for this is to disable the subscriptions created
+			// while the command was running, however in that scenario the event deliveries will still be created,
+			// but will be in the datastore.DiscardedEventStatus status, we can also delete the subscription, that is a firmer solution
+			if eventDelivery.Status != datastore.DiscardedEventStatus && s.Type != datastore.SubscriptionTypeCLI {
 				payload := json.RawMessage(eventDelivery.UID)
 
 				job := &queue.Job{
@@ -171,7 +181,7 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 	return matched
 }
 
-func getEventDeliveryStatus(subscription datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
+func getEventDeliveryStatus(subscription *datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
 	if app.IsDisabled || subscription.Status != datastore.ActiveSubscriptionStatus {
 		return datastore.DiscardedEventStatus
 	}

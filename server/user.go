@@ -248,7 +248,7 @@ func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 }
 
 func getUser(r *http.Request) (*datastore.User, bool) {
-	authUser := getAuthUserFromContext(r.Context())
+	authUser := GetAuthUserFromContext(r.Context())
 	user, ok := authUser.Metadata.(*datastore.User)
 
 	return user, ok

@@ -26,6 +26,7 @@ type Client struct {
 	orgMemberRepo     datastore.OrganisationMemberRepository
 	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
+	deviceRepo        datastore.DeviceRepository
 	configRepo        datastore.ConfigurationRepository
 }
 
@@ -113,6 +114,10 @@ func (c *Client) SubRepo() datastore.SubscriptionRepository {
 
 func (c *Client) SourceRepo() datastore.SourceRepository {
 	return c.sourceRepo
+}
+
+func (c *Client) DeviceRepo() datastore.DeviceRepository {
+	return c.deviceRepo
 }
 
 func (c *Client) OrganisationRepo() datastore.OrganisationRepository {

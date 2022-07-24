@@ -35,7 +35,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	g := getGroupFromContext(r.Context())
+	g := GetGroupFromContext(r.Context())
 
 	event, err := a.eventService.CreateAppEvent(r.Context(), &newMessage, g)
 	if err != nil {
@@ -59,7 +59,7 @@ func (a *applicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/replay [put]
 func (a *applicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
-	g := getGroupFromContext(r.Context())
+	g := GetGroupFromContext(r.Context())
 	event := getEventFromContext(r.Context())
 
 	err := a.eventService.ReplayAppEvent(r.Context(), event, g)
@@ -123,7 +123,7 @@ func (a *applicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := getEventDeliveryFromContext(r.Context())
 
-	err := a.eventService.ResendEventDelivery(r.Context(), eventDelivery, getGroupFromContext(r.Context()))
+	err := a.eventService.ResendEventDelivery(r.Context(), eventDelivery, GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
@@ -161,7 +161,7 @@ func (a *applicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:   getGroupFromContext(r.Context()),
+		Group:   GetGroupFromContext(r.Context()),
 		AppID:   r.URL.Query().Get("appId"),
 		EventID: r.URL.Query().Get("eventId"),
 		Status:  status,
@@ -214,7 +214,7 @@ func (a *applicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 	}
 
 	f := &datastore.Filter{
-		Group:        getGroupFromContext(r.Context()),
+		Group:        GetGroupFromContext(r.Context()),
 		AppID:        r.URL.Query().Get("appId"),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
@@ -251,7 +251,7 @@ func (a *applicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 		return
 	}
 
-	successes, failures, err := a.eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, getGroupFromContext(r.Context()))
+	successes, failures, err := a.eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
@@ -291,7 +291,7 @@ func (a *applicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	}
 
 	pageable := getPageableFromContext(r.Context())
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 	query := r.URL.Query().Get("query")
 	app := r.URL.Query().Get("appId")
 
@@ -363,7 +363,7 @@ func (a *applicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:        getGroupFromContext(r.Context()),
+		Group:        GetGroupFromContext(r.Context()),
 		AppID:        r.URL.Query().Get("appId"),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,

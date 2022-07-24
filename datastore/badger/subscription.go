@@ -11,6 +11,10 @@ type subscriptionRepo struct {
 	client *badgerhold.Store
 }
 
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId string, deviceID, sourceID string) (*datastore.Subscription, error) {
+	return nil, nil
+}
+
 func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]datastore.Subscription, error) {
 	return nil, nil
 }

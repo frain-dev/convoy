@@ -23,6 +23,7 @@ const (
 	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
 	AppCollection                 = "applications"
+	DeviceCollection              = "devices"
 	EventCollection               = "events"
 	SourceCollection              = "sources"
 	UserCollection                = "users"
@@ -42,6 +43,7 @@ type Client struct {
 	orgMemberRepo     datastore.OrganisationMemberRepository
 	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
+	deviceRepo        datastore.DeviceRepository
 	configRepo        datastore.ConfigurationRepository
 }
 
@@ -82,6 +84,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 	org_invite := datastore.New(conn, OrganisationInvitesCollection)
 	users := datastore.New(conn, UserCollection)
 	config := datastore.New(conn, ConfigCollection)
+	devices := datastore.New(conn, DeviceCollection)
 	event_delivery := datastore.New(conn, EventDeliveryCollection)
 
 	c := &Client{
@@ -93,6 +96,7 @@ func New(cfg config.Configuration) (datastore.DatabaseClient, error) {
 		eventRepo:         NewEventRepository(conn, events),
 		eventDeliveryRepo: NewEventDeliveryRepository(conn, event_delivery),
 		sourceRepo:        NewSourceRepo(conn, sources),
+		deviceRepo:        NewDeviceRepository(conn, devices),
 		orgRepo:           NewOrgRepo(conn, orgs),
 		orgMemberRepo:     NewOrgMemberRepo(conn, org_member),
 		orgInviteRepo:     NewOrgInviteRepo(conn, org_invite),
@@ -127,6 +131,10 @@ func (c *Client) GroupRepo() datastore.GroupRepository {
 
 func (c *Client) AppRepo() datastore.ApplicationRepository {
 	return c.applicationRepo
+}
+
+func (c *Client) DeviceRepo() datastore.DeviceRepository {
+	return c.deviceRepo
 }
 
 func (c *Client) EventRepo() datastore.EventRepository {
@@ -195,6 +203,8 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureCompoundIndex(EventCollection)
 	c.ensureCompoundIndex(UserCollection)
 	c.ensureCompoundIndex(GroupCollection)
+	c.ensureCompoundIndex(SubscriptionCollection)
+	c.ensureCompoundIndex(DeviceCollection)
 	c.ensureCompoundIndex(EventDeliveryCollection)
 	c.ensureCompoundIndex(OrganisationInvitesCollection)
 	c.ensureCompoundIndex(OrganisationMembersCollection)
@@ -452,6 +462,17 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
+		DeviceCollection: {
+			{
+				Keys: bson.D{
+					{Key: "app_id", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
 		SubscriptionCollection: {
 			{
 				Keys: bson.D{
@@ -459,6 +480,16 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "group_id", Value: 1},
 					{Key: "source_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: bson.D{
+					{Key: "device_id", Value: 1},
+					{Key: "app_id", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "source_id", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),

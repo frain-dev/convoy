@@ -198,6 +198,7 @@ type Endpoint struct {
 }
 
 var ErrOrgNotFound = errors.New("organisation not found")
+var ErrDeviceNotFound = errors.New("device not found")
 var ErrOrgInviteNotFound = errors.New("organisation invite not found")
 var ErrOrgMemberNotFound = errors.New("organisation member not found")
 
@@ -376,6 +377,7 @@ func (e *Event) SetForwardedHeaders(headers []string, r *http.Request) {
 	}
 }
 
+type SubscriptionType string
 type EventDeliveryStatus string
 type HttpHeader map[string]string
 
@@ -408,6 +410,11 @@ func (e EventDeliveryStatus) IsValid() bool {
 		return false
 	}
 }
+
+const (
+	SubscriptionTypeCLI SubscriptionType = "cli"
+	SubscriptionTypeAPI SubscriptionType = "api"
+)
 
 type Metadata struct {
 	// Data to be sent to endpoint.
@@ -476,6 +483,7 @@ type EventDelivery struct {
 	GroupID          string             `json:"group_id,omitempty" bson:"group_id"`
 	EventID          string             `json:"event_id,omitempty" bson:"event_id"`
 	EndpointID       string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
+	DeviceID         string             `json:"device_id" bson:"device_id"`
 	SubscriptionID   string             `json:"subscription_id,omitempty" bson:"subscription_id"`
 	ForwardedHeaders HttpHeader         `json:"forwarded_headers" bson:"forwarded_headers"`
 
@@ -487,12 +495,16 @@ type EventDelivery struct {
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
 	Metadata         *Metadata           `json:"metadata" bson:"metadata"`
 	Description      string              `json:"description,omitempty" bson:"description"`
-
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	CLIMetadata      *CLIMetadata        `json:"cli_metadata" bson:"cli_metadata"`
+	CreatedAt        primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt        primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type CLIMetadata struct {
+	EventType string `json:"event_type" bson:"event_type"`
 }
 
 type KeyType string
@@ -518,12 +530,13 @@ type Subscription struct {
 	ID         primitive.ObjectID `json:"-" bson:"_id"`
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
-	Type       string             `json:"type" bson:"type"`
+	Type       SubscriptionType   `json:"type" bson:"type"`
 	Status     SubscriptionStatus `json:"status" bson:"status"`
 	AppID      string             `json:"-" bson:"app_id"`
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
+	DeviceID   string             `json:"device_id" bson:"device_id"`
 
 	Source   *Source      `json:"source_metadata,omitempty" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
@@ -678,6 +691,28 @@ type OrganisationMember struct {
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
+
+type Device struct {
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	GroupID        string             `json:"group_id" bson:"group_id"`
+	AppID          string             `json:"app_id" bson:"app_id"`
+	HostName       string             `json:"host_name" bson:"host_name"`
+	Status         DeviceStatus       `json:"status" bson:"status"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	LastSeenAt     primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type DeviceStatus string
+
+const (
+	DeviceStatusOffline  DeviceStatus = "offline"
+	DeviceStatusOnline   DeviceStatus = "online"
+	DeviceStatusDisabled DeviceStatus = "disabled"
+)
 
 type UserMetadata struct {
 	UserID    string `json:"-" bson:"user_id"`

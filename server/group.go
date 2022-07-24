@@ -22,7 +22,7 @@ import (
 // @Router /groups/{groupID} [get]
 func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 	err := a.groupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
@@ -45,7 +45,7 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [delete]
 func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
+	group := GetGroupFromContext(r.Context())
 
 	err := a.groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
@@ -113,7 +113,7 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	g := getGroupFromContext(r.Context())
+	g := GetGroupFromContext(r.Context())
 	group, err := a.groupService.UpdateGroup(r.Context(), g, &update)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))

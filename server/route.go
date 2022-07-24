@@ -76,10 +76,10 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 			r.Use(jsonResponse)
-			r.Use(requireAuth())
+			r.Use(RequireAuth())
 
 			r.Route("/applications", func(appRouter chi.Router) {
-				appRouter.Use(requireGroup(app.groupRepo, app.cache))
+				appRouter.Use(RequireGroup(app.groupRepo, app.cache))
 				appRouter.Use(rateLimitByGroupID(app.limiter))
 				appRouter.Use(requirePermission(auth.RoleAdmin))
 
@@ -111,7 +111,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/events", func(eventRouter chi.Router) {
-				eventRouter.Use(requireGroup(app.groupRepo, app.cache))
+				eventRouter.Use(RequireGroup(app.groupRepo, app.cache))
 				eventRouter.Use(rateLimitByGroupID(app.limiter))
 				eventRouter.Use(requirePermission(auth.RoleAdmin))
 
@@ -126,7 +126,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-				eventDeliveryRouter.Use(requireGroup(app.groupRepo, app.cache))
+				eventDeliveryRouter.Use(RequireGroup(app.groupRepo, app.cache))
 				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
 
 				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
@@ -151,7 +151,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			r.Route("/security", func(securityRouter chi.Router) {
 				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
-					securitySubRouter.Use(requireGroup(app.groupRepo, app.cache))
+					securitySubRouter.Use(RequireGroup(app.groupRepo, app.cache))
 					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(requireApp(app.appRepo, app.cache))
 					securitySubRouter.Use(requireBaseUrl())
@@ -160,7 +160,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-				subsriptionRouter.Use(requireGroup(app.groupRepo, app.cache))
+				subsriptionRouter.Use(RequireGroup(app.groupRepo, app.cache))
 				subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
 				subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
 
@@ -173,7 +173,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 			})
 
 			r.Route("/sources", func(sourceRouter chi.Router) {
-				sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
+				sourceRouter.Use(RequireGroup(app.groupRepo, app.cache))
 				sourceRouter.Use(requirePermission(auth.RoleAdmin))
 				sourceRouter.Use(requireBaseUrl())
 
@@ -190,7 +190,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(jsonResponse)
 		uiRouter.Use(setupCORS)
-		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
+		uiRouter.Use(middleware.Maybe(RequireAuth(), shouldAuthRoute))
 		uiRouter.Use(requireBaseUrl())
 
 		uiRouter.Post("/organisations/process_invite", app.ProcessOrganisationMemberInvite)
@@ -268,7 +268,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 					})
 
 					groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-						groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
+						groupSubRouter.Use(RequireGroup(app.groupRepo, app.cache))
 						groupSubRouter.Use(rateLimitByGroupID(app.limiter))
 						groupSubRouter.Use(requireOrganisationGroupMember())
 
@@ -391,12 +391,12 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	router.Route("/portal", func(portalRouter chi.Router) {
 		portalRouter.Use(jsonResponse)
 		portalRouter.Use(setupCORS)
-		portalRouter.Use(requireAuth())
-		portalRouter.Use(requireGroup(app.groupRepo, app.cache))
-		portalRouter.Use(requireAppID())
+		portalRouter.Use(RequireAuth())
+		portalRouter.Use(RequireGroup(app.groupRepo, app.cache))
+		portalRouter.Use(RequireAppID())
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Use(requireAppPortalApplication(app.appRepo))
+			appRouter.Use(RequireAppPortalApplication(app.appRepo))
 			appRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
 
 			appRouter.Get("/", app.GetApp)
@@ -415,7 +415,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Use(requireAppPortalApplication(app.appRepo))
+			eventRouter.Use(RequireAppPortalApplication(app.appRepo))
 			eventRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
 
 			eventRouter.With(pagination).Get("/", app.GetEventsPaged)
@@ -428,7 +428,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-			subsriptionRouter.Use(requireAppPortalApplication(app.appRepo))
+			subsriptionRouter.Use(RequireAppPortalApplication(app.appRepo))
 			subsriptionRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
 
 			subsriptionRouter.Post("/", app.CreateSubscription)
@@ -439,7 +439,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 		})
 
 		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.Use(requireAppPortalApplication(app.appRepo))
+			eventDeliveryRouter.Use(RequireAppPortalApplication(app.appRepo))
 			eventDeliveryRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
 
 			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)

@@ -57,7 +57,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
+		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
 		switch ed.Status {
 		case datastore.ProcessingEventStatus,
