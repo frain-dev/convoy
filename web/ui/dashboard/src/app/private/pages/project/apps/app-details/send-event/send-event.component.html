@@ -2,7 +2,7 @@
 <convoy-modal title="Send Event" (closeModal)="cancel()">
 	<ng-container modalBody>
 		<form [formGroup]="sendEventForm">
-			<convoy-select label="App ID" name="app_id" formControlName="app_id" [options]="apps?.content" [value]="appId" [required]="true" errorMessage="App Id is required"></convoy-select>
+			<convoy-select label="App ID" name="app_id" formControlName="app_id" [options]="apps?.content" [value]="appId" [required]="true" errorMessage="App Id is required" className="mb-24px"></convoy-select>
 			<div class="mb-24px">
 				<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" for="data">
 					Data
@@ -44,7 +44,7 @@
 			</div>
 			<convoy-input label="Event Type" name="event_type" formControlName="event_type" placeholder="Event type" errorMessage="Event type is required"></convoy-input>
 		</form>
-		<div class="flex justify-end mt-24px">
+		<div class="flex justify-end mt-40px">
 			<convoy-button type="outline" className="mr-24px" (clickItem)="cancel()">Discard</convoy-button>
 			<convoy-button [disable]="isSendingNewEvent" (clickItem)="sendNewEvent()">{{ isSendingNewEvent ? 'Sending Event..' : 'Send Event' }}</convoy-button>
 		</div>

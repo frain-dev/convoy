@@ -4,12 +4,13 @@
 			<div class="border-b border-b-grey-10 px-24px pt-16px pb-10px">
 				<h3 class="font-semibold">User Settings</h3>
 			</div>
-			<ul class="sidemenu--items">
-				<li class="my-30px mx-0 pl-22px">
-					<convoy-button type="text" [color]="activePage === 'profile' ? 'primary' : 'grey'" [className]="activePage === 'profile' ? 'font-medium' : ''" (click)="activePage = 'profile'">Profile</convoy-button>
-				</li>
-				<li class="my-30px mx-0 pl-22px">
-					<convoy-button type="text" [color]="activePage === 'security' ? 'primary' : 'grey'" [className]="activePage === 'security' ? 'font-medium' : ''" (click)="activePage = 'security'">Security</convoy-button>
+			<ul>
+				<li
+					class="my-30px mx-0 pl-22px"
+					[class]="activePage === menu ? 'relative before:absolute before:w-[3px] before:h-16px before:top-1/2 before:rounded-100px before:left-0 before:bg-primary-100 before:translate-x-0 before:-translate-y-1/2 transition-all duration-200' : ''"
+					*ngFor="let menu of userSettingsMenu"
+				>
+					<convoy-button type="text" [color]="activePage === menu ? 'primary' : 'grey'" [className]="activePage === menu ? 'font-medium capitalize' : 'capitalize'" (click)="toggleActivePage(menu)">{{ menu }}</convoy-button>
 				</li>
 			</ul>
 		</div>

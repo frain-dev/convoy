@@ -1,6 +1,11 @@
 <label for="convoy-toggle" class="inline-flex relative items-center mb-5 cursor-pointer" [class]="class">
 	<span class="mr-2 font-medium text-14">{{ label }}</span>
-	<input type="checkbox" id="convoy-toggle" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit()" />
+	<ng-container *ngIf="!formControlName">
+		<input type="checkbox" id="convoy-toggle" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit()" />
+	</ng-container>
+	<ng-container *ngIf="formControlName">
+		<input type="checkbox" id="convoy-toggle" class="sr-only peer" [formControl]="control" [checked]="isChecked" (change)="onChange.emit()" />
+	</ng-container>
 	<div
 		class="
 			w-[35px]
