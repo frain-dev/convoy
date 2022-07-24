@@ -113,6 +113,12 @@ const (
 )
 
 const (
+	ProjectKey   KeyType = "project"
+	AppPortalKey KeyType = "app_portal"
+	CLIKey       KeyType = "cli"
+)
+
+const (
 	DefaultStrategyProvider     = LinearStrategyProvider
 	LinearStrategyProvider      = "linear"
 	ExponentialStrategyProvider = "exponential"

@@ -8,10 +8,7 @@
                     "password": "abc",
                     "role": {
                         "type": "abc",
-                        "groups": [
-                            "sendcash-pay",
-                            "buycoins-api"
-                        ]
+                        "groups": "buycoins-api"
                     }
                 }
             ]

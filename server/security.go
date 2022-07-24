@@ -46,7 +46,7 @@ func (a *applicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 			Name: apiKey.Name,
 			Role: models.Role{
 				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Groups[0],
+				Group: apiKey.Role.Group,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),

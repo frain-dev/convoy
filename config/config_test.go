@@ -27,7 +27,7 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 			name:      "Basic Auth (interface)",
 			key:       "CONVOY_BASIC_AUTH_CONFIG",
 			testType:  "interface",
-			envConfig: "[{\"username\": \"some-admin\",\"password\": \"some-password\",\"role\": {\"type\": \"super_user\",\"groups\": []}}]",
+			envConfig: "[{\"username\": \"some-admin\",\"password\": \"some-password\",\"role\": {\"type\": \"super_user\",\"group\": \"\"}}]",
 		},
 	}
 	for _, tc := range tests {
@@ -78,7 +78,7 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 			key:       "CONVOY_BASIC_AUTH_CONFIG",
 			testType:  "interface",
 			envConfig: "",
-			expected:  "[{\"username\": \"admin\",\"password\": \"qwerty\",\"role\": {\"type\": \"super_user\",\"groups\": []}}]",
+			expected:  "[{\"username\": \"admin\",\"password\": \"qwerty\",\"role\": {\"type\": \"super_user\",\"groups\": \"\"}}]",
 		},
 	}
 	for _, tc := range tests {
@@ -307,7 +307,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-groups-for-non-superuser.json",
 			},
 			wantErr:    true,
-			wantErrMsg: "please specify groups for basic auth",
+			wantErrMsg: "please specify group for basic auth",
 		},
 		{
 			name: "should_error_for_empty_group",
@@ -315,7 +315,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/empty-basic-auth-group-name.json",
 			},
 			wantErr:    true,
-			wantErrMsg: "empty group name not allowed for basic auth",
+			wantErrMsg: "please specify group for basic auth",
 		},
 		{
 			name: "should_error_for_empty_api_key",
@@ -332,7 +332,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/empty-api-key-auth-group-name.json",
 			},
 			wantErr:    true,
-			wantErrMsg: "empty group name not allowed for api-key auth",
+			wantErrMsg: "please specify group for api-key auth",
 		},
 	}
 	for _, tt := range tests {

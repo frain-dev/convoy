@@ -3,11 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"net/http"
+	"testing"
+
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"testing"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
@@ -42,9 +43,9 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"123"},
-					Apps:   []string{"abc"},
+					Type:  auth.RoleAdmin,
+					Group: "123",
+					App:   "abc",
 				},
 				user: &datastore.User{UID: "1234"},
 			},
@@ -57,9 +58,9 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				OrganisationID: "1234",
 				UserID:         "1234",
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"123"},
-					Apps:   []string{"abc"},
+					Type:  auth.RoleAdmin,
+					Group: "123",
+					App:   "abc",
 				},
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
@@ -77,7 +78,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify groups for organisation member",
+			wantErrMsg:  "please specify group for organisation member",
 		},
 		{
 			name: "should_fail_to_create_organisation_member",
@@ -85,9 +86,9 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"123"},
-					Apps:   []string{"abc"},
+					Type:  auth.RoleAdmin,
+					Group: "123",
+					App:   "abc",
 				},
 				user: &datastore.User{UID: "1234"},
 			},
@@ -153,15 +154,15 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					OrganisationID: "abc",
 					UserID:         "def",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"111"},
-						Apps:   nil,
+						Type:  auth.RoleAdmin,
+						Group: "111",
+						App:   "",
 					},
 				},
 				role: &auth.Role{
-					Type:   auth.RoleAPI,
-					Groups: []string{"333"},
-					Apps:   nil,
+					Type:  auth.RoleAPI,
+					Group: "333",
+					App:   "",
 				},
 			},
 			want: &datastore.OrganisationMember{
@@ -169,9 +170,9 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				OrganisationID: "abc",
 				UserID:         "def",
 				Role: auth.Role{
-					Type:   auth.RoleAPI,
-					Groups: []string{"333"},
-					Apps:   nil,
+					Type:  auth.RoleAPI,
+					Group: "333",
+					App:   "",
 				},
 			},
 			dbFn: func(os *OrganisationMemberService) {
@@ -187,14 +188,14 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				ctx:                ctx,
 				organisationMember: &datastore.OrganisationMember{},
 				role: &auth.Role{
-					Type:   auth.RoleAPI,
-					Groups: nil,
-					Apps:   nil,
+					Type:  auth.RoleAPI,
+					Group: "",
+					App:   "",
 				},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify groups for organisation member",
+			wantErrMsg:  "please specify group for organisation member",
 		},
 		{
 			name: "should_update_organisation_member",
@@ -205,15 +206,15 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					OrganisationID: "abc",
 					UserID:         "def",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"111"},
-						Apps:   nil,
+						Type:  auth.RoleAdmin,
+						Group: "111",
+						App:   "",
 					},
 				},
 				role: &auth.Role{
-					Type:   auth.RoleAPI,
-					Groups: []string{"333"},
-					Apps:   nil,
+					Type:  auth.RoleAPI,
+					Group: "333",
+					App:   "",
 				},
 			},
 			dbFn: func(os *OrganisationMemberService) {

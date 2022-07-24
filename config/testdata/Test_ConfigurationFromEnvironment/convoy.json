@@ -40,7 +40,7 @@
           "password": "qwerty",
           "role": {
             "type": "super_user",
-            "groups": []
+            "group": ""
           }
         }
       ]

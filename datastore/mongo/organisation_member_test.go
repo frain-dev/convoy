@@ -200,9 +200,9 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:   auth.RoleSuperUser,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleSuperUser,
+		Group: uuid.NewString(),
+		App:   "",
 	}
 	m.Role = role
 

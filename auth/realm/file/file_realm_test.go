@@ -16,32 +16,32 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username1",
 			Password: "password1",
 			Role: auth.Role{
-				Type:   auth.RoleAdmin,
-				Groups: []string{"sendcash-pay"},
+				Type:  auth.RoleAdmin,
+				Group: "sendcash-pay",
 			},
 		},
 		{
 			Username: "username2",
 			Password: "password2",
 			Role: auth.Role{
-				Type:   auth.RoleAdmin,
-				Groups: []string{"buycoins"},
+				Type:  auth.RoleAdmin,
+				Group: "buycoins",
 			},
 		},
 		{
 			Username: "username3",
 			Password: "password3",
 			Role: auth.Role{
-				Type:   auth.RoleSuperUser,
-				Groups: []string{"paystack"},
+				Type:  auth.RoleSuperUser,
+				Group: "paystack",
 			},
 		},
 		{
 			Username: "username4",
 			Password: "password4",
 			Role: auth.Role{
-				Type:   auth.RoleAPI,
-				Groups: []string{"termii"},
+				Type:  auth.RoleAPI,
+				Group: "termii",
 			},
 		},
 	},
@@ -49,8 +49,8 @@ var fileRealmOpt = &config.FileRealmOption{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{
-				Type:   auth.RoleAdmin,
-				Groups: []string{"sendcash-pay"},
+				Type:  auth.RoleAdmin,
+				Group: "sendcash-pay",
 			},
 		},
 	},
@@ -91,8 +91,8 @@ func TestFileRealm_Authenticate(t *testing.T) {
 					Password: "password1",
 				},
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"sendcash-pay"},
+					Type:  auth.RoleAdmin,
+					Group: "sendcash-pay",
 				},
 			},
 			wantErr: false,
@@ -112,8 +112,8 @@ func TestFileRealm_Authenticate(t *testing.T) {
 					APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 				},
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"sendcash-pay"},
+					Type:  auth.RoleAdmin,
+					Group: "sendcash-pay",
 				},
 			},
 			wantErr: false,
@@ -218,32 +218,32 @@ func TestNewFileRealm(t *testing.T) {
 						Username: "username1",
 						Password: "password1",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"sendcash-pay"},
+							Type:  auth.RoleAdmin,
+							Group: "sendcash-pay",
 						},
 					},
 					{
 						Username: "username2",
 						Password: "password2",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"buycoins"},
+							Type:  auth.RoleAdmin,
+							Group: "buycoins",
 						},
 					},
 					{
 						Username: "username3",
 						Password: "password3",
 						Role: auth.Role{
-							Type:   auth.RoleSuperUser,
-							Groups: []string{"paystack"},
+							Type:  auth.RoleSuperUser,
+							Group: "paystack",
 						},
 					},
 					{
 						Username: "username4",
 						Password: "password4",
 						Role: auth.Role{
-							Type:   auth.RoleAPI,
-							Groups: []string{"termii"},
+							Type:  auth.RoleAPI,
+							Group: "termii",
 						},
 					},
 				},
@@ -251,8 +251,8 @@ func TestNewFileRealm(t *testing.T) {
 					{
 						APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"sendcash-pay"},
+							Type:  auth.RoleAdmin,
+							Group: "sendcash-pay",
 						},
 					},
 				},

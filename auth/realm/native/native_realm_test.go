@@ -47,8 +47,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"paystack"},
+						Type:  auth.RoleAdmin,
+						Group: "paystack",
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
@@ -64,8 +64,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"paystack"},
+					Type:  auth.RoleAdmin,
+					Group: "paystack",
 				},
 			},
 			wantErr: false,
@@ -96,8 +96,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"paystack"},
+						Type:  auth.RoleAdmin,
+						Group: "paystack",
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
@@ -137,8 +137,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"paystackx"},
+						Type:  auth.RoleAdmin,
+						Group: "paystackx",
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",

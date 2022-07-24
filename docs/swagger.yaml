@@ -2,14 +2,10 @@ basePath: /api/v1
 definitions:
   auth.Role:
     properties:
-      apps:
-        items:
-          type: string
-        type: array
-      groups:
-        items:
-          type: string
-        type: array
+      app:
+        type: string
+      group:
+        type: string
       type:
         type: string
     type: object
