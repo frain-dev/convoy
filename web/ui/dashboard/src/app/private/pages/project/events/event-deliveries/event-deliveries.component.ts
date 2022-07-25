@@ -234,9 +234,8 @@ export class EventDeliveriesComponent implements OnInit {
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
 			this.showBatchRetryModal = true;
-		} catch (error: any) {
+		} catch (error) {
 			this.fetchingCount = false;
-			this.generalService.showNotification({ message: error.error.message, style: 'error' });
 		}
 	}
 
@@ -254,29 +253,13 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ addToURL: true, fromFilter: true });
 	}
 
-	formatDate(date: Date) {
-		return this.datePipe.transform(date, 'dd/MM/yyyy');
-	}
-
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
-		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
-		if (retryButton) {
-			retryButton.classList.add(['spin', 'disabled']);
-			retryButton.disabled = true;
-		}
 		try {
-			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.appPortalToken });
-			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
-			retryButton.classList.remove(['spin', 'disabled']);
-			retryButton.disabled = false;
+			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.appPortalToken });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
-		} catch (error: any) {
-			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
-			if (retryButton) {
-				retryButton.classList.remove(['spin', 'disabled']);
-				retryButton.disabled = false;
-			}
+		} catch (error) {
 			return error;
 		}
 	}
@@ -284,26 +267,15 @@ export class EventDeliveriesComponent implements OnInit {
 	// force retry successful events
 	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
-		const retryButton: any = document.querySelector(`#event${requestDetails.index} button`);
-		if (retryButton) {
-			retryButton.classList.add(['spin', 'disabled']);
-			retryButton.disabled = true;
-		}
 		const payload = {
 			ids: [requestDetails.eventDeliveryId]
 		};
+
 		try {
-			await this.eventsService.forceRetryEvent({ body: payload, token: this.appPortalToken });
-			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
-			retryButton.classList.remove(['spin', 'disabled']);
-			retryButton.disabled = false;
+			const response = await this.eventsService.forceRetryEvent({ body: payload, token: this.appPortalToken });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
-		} catch (error: any) {
-			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
-			if (retryButton) {
-				retryButton.classList.remove(['spin', 'disabled']);
-				retryButton.disabled = false;
-			}
+		} catch (error) {
 			return error;
 		}
 	}
@@ -330,9 +302,8 @@ export class EventDeliveriesComponent implements OnInit {
 			this.getEventDeliveries();
 			this.showBatchRetryModal = false;
 			this.isRetrying = false;
-		} catch (error: any) {
+		} catch (error) {
 			this.isRetrying = false;
-			this.generalService.showNotification({ message: error?.error?.message, style: 'error' });
 			return error;
 		}
 	}
