@@ -49,6 +49,20 @@ func (mr *MockSearcherMockRecorder) Index(collection, document interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Index", reflect.TypeOf((*MockSearcher)(nil).Index), collection, document)
 }
 
+// Remove mocks base method.
+func (m *MockSearcher) Remove(collection string, filter *datastore.Filter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Remove", collection, filter)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Remove indicates an expected call of Remove.
+func (mr *MockSearcherMockRecorder) Remove(collection, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockSearcher)(nil).Remove), collection, filter)
+}
+
 // Search mocks base method.
 func (m *MockSearcher) Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()

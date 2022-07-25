@@ -72,9 +72,12 @@ const (
 	CreateEventProcessor  TaskName = "CreateEventProcessor"
 	NotificationProcessor TaskName = "NotificationProcessor"
 	DailyAnalytics        TaskName = "daily analytics"
+	MonitorTwitterSources TaskName = "monitor twitter sources"
+	RetentionPolicies     TaskName = "retention_policies"
 	ApplicationsCacheKey  CacheKey = "applications"
 	GroupsCacheKey        CacheKey = "groups"
 	TokenCacheKey         CacheKey = "tokens"
+	SourceCacheKey        CacheKey = "sources"
 )
 
 //queues
@@ -84,6 +87,12 @@ const (
 	PriorityQueue    QueueName = "PriorityQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"
 	DefaultQueue     QueueName = "DefaultQueue"
+)
+
+//Exports dir
+const (
+	DefaultOnPremDir = "/var/convoy/export/"
+	TmpExportDir     = "/tmp/convoy/export/"
 )
 
 const (

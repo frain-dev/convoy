@@ -130,7 +130,7 @@ func (a *applicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = a.sourceService.DeleteSourceByID(r.Context(), group, source.UID)
+	err = a.sourceService.DeleteSource(r.Context(), group, source)
 	if err != nil {
 		_ = render.Render(w, r, newServiceErrResponse(err))
 		return
@@ -179,17 +179,18 @@ func (a *applicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 
 func sourceResponse(s *datastore.Source, baseUrl string) *models.SourceResponse {
 	return &models.SourceResponse{
-		UID:        s.UID,
-		MaskID:     s.MaskID,
-		GroupID:    s.GroupID,
-		Name:       s.Name,
-		Type:       s.Type,
-		Provider:   s.Provider,
-		URL:        fmt.Sprintf("%s/ingest/%s", baseUrl, s.MaskID),
-		IsDisabled: s.IsDisabled,
-		Verifier:   s.Verifier,
-		CreatedAt:  s.CreatedAt,
-		UpdatedAt:  s.UpdatedAt,
-		DeletedAt:  s.DeletedAt,
+		UID:            s.UID,
+		MaskID:         s.MaskID,
+		GroupID:        s.GroupID,
+		Name:           s.Name,
+		Type:           s.Type,
+		Provider:       s.Provider,
+		ProviderConfig: s.ProviderConfig,
+		URL:            fmt.Sprintf("%s/ingest/%s", baseUrl, s.MaskID),
+		IsDisabled:     s.IsDisabled,
+		Verifier:       s.Verifier,
+		CreatedAt:      s.CreatedAt,
+		UpdatedAt:      s.UpdatedAt,
+		DeletedAt:      s.DeletedAt,
 	}
 }

@@ -88,6 +88,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 	require.NotEmpty(c.T(), newConfig[0].UID)
 	require.Equal(c.T(), config.UID, newConfig[0].UID)
 	require.Equal(c.T(), config.IsAnalyticsEnabled, newConfig[0].IsAnalyticsEnabled)
+	require.Equal(c.T(), config.StoragePolicy.OnPrem.Path, convoy.DefaultOnPremDir)
 	require.Equal(c.T(), convoy.GetVersion(), newConfig[0].ApiVersion)
 }
 
@@ -114,6 +115,42 @@ func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 
 	require.NotEmpty(c.T(), config.UID)
 	require.True(c.T(), config.IsAnalyticsEnabled)
+}
+
+func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
+	_, err := testdb.SeedConfiguration(c.DB)
+	require.NoError(c.T(), err)
+
+	// Arrange Request
+	bodyStr := `{
+		"is_analytics_enabled": false,
+		"storage_policy": {
+			"type": "on_prem",
+			"on_prem":{
+				"path":"/tmp"
+			}
+		}
+	}`
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPut, "/ui/configuration", "", body)
+	err = c.AuthenticatorFn(req, c.Router)
+	require.NoError(c.T(), err)
+	w := httptest.NewRecorder()
+
+	// Act
+	c.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(c.T(), http.StatusAccepted, w.Code)
+
+	var config datastore.Configuration
+	parseResponse(c.T(), w.Result(), &config)
+
+	require.NotEmpty(c.T(), config.UID)
+	require.Equal(c.T(), "/tmp", config.StoragePolicy.OnPrem.Path)
+	require.False(c.T(), config.IsAnalyticsEnabled)
+
 }
 
 func TestConfigurationIntegrationTestSuite(t *testing.T) {

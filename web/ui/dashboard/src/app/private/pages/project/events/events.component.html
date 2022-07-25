@@ -1,75 +1,85 @@
-<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase">
-	<a routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</a>
-	<svg width="16" height="16" class="margin-x__4px">
+<div class="text-12 font-medium flex items-center uppercase">
+	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="margin-x__4px">
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="color__primary font__weight-500">Events</span>
-</h1>
-
-<div class="filter without-padding" [ngClass]="{ 'show-calendar': showFilterCalendar }">
-	<date-filter (selectedDateRange)="getSelectedDateRange($event)"></date-filter>
-	<div class="dropdown">
-		<button class="button button__filter button--has-icon icon-right margin-left__16px" (click)="showFilterDropdown = !showFilterDropdown; showOverlay = true">
-			<span class="color__grey margin-right__4px">Filter By:</span>
-			<span class="color__primary text__capitalize">{{ dashboardFrequency }}</span>
-			<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-		</button>
-
-		<div class="dropdown__menu dropdown__menu__push-left" [ngClass]="{ show: showFilterDropdown }">
-			<ul>
-				<li class="text__capitalize" [ngClass]="{ active: dashboardFrequency == filterOption }" *ngFor="let filterOption of filterOptions">
-					<a (click)="dashboardFrequency = filterOption; fetchDashboardData(); showFilterDropdown = false; showOverlay = false">{{ filterOption }}</a>
-				</li>
-			</ul>
-		</div>
-	</div>
+	<span class="text-primary-100 font-medium">Events</span>
 </div>
 
-<div class="card position__relative">
+<div class="py-24px flex items-center">
+	<date-filter (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></date-filter>
+	<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px">
+		<ng-container dropdownToggle>
+			<span class="text-grey-60 mr-4px">Filter By:</span>
+			<span class="text-primary-100 capitalize">{{ dashboardFrequency }}</span>
+			<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px" />
+		</ng-container>
+
+		<ul>
+			<convoy-list-item *ngFor="let filterOption of filterOptions" [className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'">
+				<convoy-button color="grey" type="text" (clickItem)="dashboardFrequency = filterOption; fetchDashboardData(); closeFilterOptions()" className="capitalize text-left w-full !justify-start">
+					{{ filterOption }}
+				</convoy-button>
+			</convoy-list-item>
+		</ul>
+	</convoy-dropdown>
+</div>
+
+<convoy-card className="relative">
 	<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
-	<ul class="metrics">
-		<li class="messages flex flex__align-items-center padding-x__30px padding-y__16px border__right">
-			<img src="/assets/img/message-icon.svg" class="margin-right__30px" alt="message icon" />
-			<div class="metric">
-				<div class="font__16px font__weight-500">{{ dashboardData.events_sent }}</div>
-				<div class="color__grey font__14px font__weight-400">
-					<span class="font__weight-400">Event</span>
-					<span class="font__weight-400" *ngIf="dashboardData.events_sent > 1">s</span>
+
+	<ul class="flex flex-wrap items-center min-h-[76px] metrics">
+		<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:210px] [background-position-y:35px]">
+			<img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
+			<div>
+				<div class="text-16 font-medium">{{ dashboardData.events_sent }}</div>
+				<div class="text-grey-40 text-14">
+					<span class="font-normal">Event</span>
+					<span class="font-normal" *ngIf="dashboardData.events_sent > 1">s</span>
 					Sent
 				</div>
 			</div>
 		</li>
 
-		<li class="apps flex flex__align-items-center padding-x__30px padding-y__16px">
-			<img src="/assets/img/apps-icon.svg" class="margin-right__30px" alt="apps icon" />
-			<div class="metric">
-				<div class="font__16px font__weight-500">{{ dashboardData.apps }}</div>
-				<div class="color__grey font__14px font__weight-400">
-					<span class="font__weight-400">App</span>
-					<span class="font__weight-400" *ngIf="dashboardData.apps > 1">s</span>
+		<li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:210px] [background-position-y:35px]">
+			<img src="/assets/img/apps-icon.svg" class="mr-30px" alt="apps icon" />
+			<div>
+				<div class="text-16 font-medium">{{ dashboardData.apps }}</div>
+				<div class="text-grey-40 text-14">
+					<span class="font-normal">App</span>
+					<span class="font-normal" *ngIf="dashboardData.apps > 1">s</span>
 				</div>
 			</div>
 		</li>
 	</ul>
 
-	<div class="border__top padding-all__30px">
+	<div class="border border-t border-grey-10 p-30px">
 		<canvas id="dahboard_events_chart" width="200" height="100"></canvas>
 	</div>
-</div>
+</convoy-card>
 
-<section class="card margin-top__24px rounded--bottom-left__none rounded--bottom-right__none">
-	<div class="flex flex__align-items-center flex__justify-center">
-		<div class="tabs flex__align-items-center">
+<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
+	<div class="flex items-center justify-center">
+		<ul class="w-full flex items-center">
 			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
-				<button [ngClass]="{ active: activeTab === tab }">
-					<span>{{ tab }}</span>
-				</button>
+				<convoy-button
+					type="clear"
+					color="grey"
+					[className]="
+						activeTab === tab
+							? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
+							: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
+					"
+				>
+					<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+				</convoy-button>
 			</li>
-			<div class="color__grey font__14px font__weight-500 font--nowrap margin-left--auto padding-right__14px">
+
+			<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
 				<span *ngIf="events" [hidden]="activeTab !== 'events'">
 					{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }}
 					<strong>of</strong>
@@ -82,9 +92,9 @@
 					{{ eventDeliveries?.pagination?.total || 0 }}
 				</span>
 			</div>
-		</div>
+		</ul>
 	</div>
-</section>
+</convoy-card>
 
 <div [hidden]="activeTab !== 'events'">
 	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>

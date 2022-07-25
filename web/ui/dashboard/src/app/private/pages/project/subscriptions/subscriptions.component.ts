@@ -24,7 +24,6 @@ export class SubscriptionsComponent implements OnInit {
 	showDeleteSubscriptionModal = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
-		this.route.queryParams.subscribe(params => (this.activeSubscription = this.subscriptions?.content.find(source => source.uid === params?.id)));
 		this.projectId = this.privateService.activeProjectDetails.uid;
 
 		const urlParam = route.snapshot.params.id;
@@ -34,6 +33,7 @@ export class SubscriptionsComponent implements OnInit {
 
 	async ngOnInit() {
 		await this.getSubscriptions();
+		this.route.queryParams.subscribe(params => (this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id)));
 	}
 
 	async getSubscriptions(requestDetails?: { page?: number }) {
@@ -54,7 +54,7 @@ export class SubscriptionsComponent implements OnInit {
 
 	createSubscription(action: any) {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
-		if (action !== 'cancel') this.generalService.showNotification({ message: 'Subscription has been created successfully', style: 'success' });
+		if (action !== 'cancel') this.generalService.showNotification({ message: `Subscription has been ${action}d successfully`, style: 'success' });
 	}
 
 	copyText(text?: string) {
@@ -75,7 +75,7 @@ export class SubscriptionsComponent implements OnInit {
 			const response = await this.subscriptionsService.deleteSubscription(this.activeSubscription?.uid || '');
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
-			this.showDeleteSubscriptionModal = false
+			this.showDeleteSubscriptionModal = false;
 			this.isDeletingSubscription = false;
 		} catch (error) {
 			this.isDeletingSubscription = false;

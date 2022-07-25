@@ -1,4 +1,5 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 @Component({
 	selector: 'app-time-filter',
@@ -6,7 +7,6 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 	styleUrls: ['./time-filter.component.scss']
 })
 export class TimeFilterComponent implements OnInit {
-	showDropdown = false;
 	filterStartHour: number = 0;
 	filterEndHour: number = 23;
 	filterStartMinute: number = 0;
@@ -15,6 +15,7 @@ export class TimeFilterComponent implements OnInit {
 	timeFilterMinutes: number[] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 59];
 	isFilterUpdated = false;
 	@Output('applyFilter') applyFilter: EventEmitter<any> = new EventEmitter();
+	@ViewChild('dropdown') dropdown!: DropdownComponent;
 
 	constructor() {}
 
@@ -34,7 +35,7 @@ export class TimeFilterComponent implements OnInit {
 			startTime,
 			endTime
 		});
-		this.showDropdown = false;
+		this.dropdown.show = false;
 	}
 
 	filterIsActive(): boolean {
@@ -49,7 +50,6 @@ export class TimeFilterComponent implements OnInit {
 		this.filterStartMinute = 0;
 		this.filterEndMinute = 59;
 		this.onApplyFilter();
-		this.showDropdown = false;
 		this.isFilterUpdated = false;
 	}
 }

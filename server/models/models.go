@@ -31,13 +31,15 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
+	IsAnalyticsEnabled *bool                                 `json:"is_analytics_enabled"`
+	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 }
 
 type ConfigurationResponse struct {
-	UID                string `json:"uid"`
-	IsAnalyticsEnabled bool   `json:"is_analytics_enabled"`
-	ApiVersion         string `json:"api_version"`
+	UID                string                                `json:"uid"`
+	IsAnalyticsEnabled bool                                  `json:"is_analytics_enabled"`
+	ApiVersion         string                                `json:"api_version"`
+	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
@@ -98,15 +100,16 @@ type PortalAPIKeyResponse struct {
 }
 
 type SourceResponse struct {
-	UID        string                    `json:"uid"`
-	MaskID     string                    `json:"mask_id"`
-	GroupID    string                    `json:"group_id"`
-	Name       string                    `json:"name"`
-	Type       datastore.SourceType      `json:"type"`
-	URL        string                    `json:"url"`
-	IsDisabled bool                      `json:"is_disabled"`
-	Verifier   *datastore.VerifierConfig `json:"verifier"`
-	Provider   datastore.SourceProvider  `json:"provider"`
+	UID            string                    `json:"uid"`
+	MaskID         string                    `json:"mask_id"`
+	GroupID        string                    `json:"group_id"`
+	Name           string                    `json:"name"`
+	Type           datastore.SourceType      `json:"type"`
+	URL            string                    `json:"url"`
+	IsDisabled     bool                      `json:"is_disabled"`
+	Verifier       *datastore.VerifierConfig `json:"verifier"`
+	Provider       datastore.SourceProvider  `json:"provider"`
+	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
@@ -164,18 +167,20 @@ type UpdateApplication struct {
 }
 
 type Source struct {
-	Name       string                   `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider   datastore.SourceProvider `json:"provider"`
-	IsDisabled bool                     `json:"is_disabled"`
-	Verifier   datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
+	Name           string                   `json:"name" valid:"required~please provide a source name"`
+	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	Provider       datastore.SourceProvider `json:"provider"`
+	IsDisabled     bool                     `json:"is_disabled"`
+	ForwardHeaders []string                 `json:"forward_headers"`
+	Verifier       datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
 }
 
 type UpdateSource struct {
-	Name       *string                  `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled *bool                    `json:"is_disabled"`
-	Verifier   datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
+	Name           *string                  `json:"name" valid:"required~please provide a source name"`
+	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	IsDisabled     *bool                    `json:"is_disabled"`
+	ForwardHeaders []string                 `json:"forward_headers"`
+	Verifier       datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
 }
 
 type Event struct {

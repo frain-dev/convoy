@@ -26,7 +26,7 @@ Convoy includes the following features:
 - **Other features(Coming soon)**: Application Portal; enable you embed Convoy dashboard directly into your dashboard, Rate Limiting, Replay Attacks prevention, Multiple Ingest sources.
 
 ## Installation, Getting Started
-Follow the instructions on our [quick start guide](https://getconvoy.io/docs/guide) to start publishing events with Convoy.
+Follow the instructions on our [overview guide](https://getconvoy.io/docs/overview#how-to-navigate-these-docs) to start publishing events with Convoy.
 
 There are several ways of installing Convoy.
 

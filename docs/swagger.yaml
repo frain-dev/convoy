@@ -163,6 +163,8 @@ definitions:
         type: string
       event_type:
         type: string
+      forwarded_headers:
+        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
       matched_endpoints:
@@ -202,6 +204,8 @@ definitions:
         type: string
       event_metadata:
         $ref: '#/definitions/datastore.Event'
+      forwarded_headers:
+        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
       metadata:
@@ -232,6 +236,8 @@ definitions:
         type: string
       logo_url:
         type: string
+      metadata:
+        $ref: '#/definitions/datastore.GroupMetadata'
       name:
         type: string
       organisation_id:
@@ -254,14 +260,23 @@ definitions:
     properties:
       disable_endpoint:
         type: boolean
+      is_retention_policy_enabled:
+        type: boolean
       ratelimit:
         $ref: '#/definitions/datastore.RateLimitConfiguration'
       replay_attacks:
         type: boolean
+      retention_policy:
+        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
       signature:
         $ref: '#/definitions/datastore.SignatureConfiguration'
       strategy:
         $ref: '#/definitions/datastore.StrategyConfiguration'
+    type: object
+  datastore.GroupMetadata:
+    properties:
+      retained_events:
+        type: integer
     type: object
   datastore.GroupStatistics:
     properties:
@@ -307,6 +322,11 @@ definitions:
       retry_limit:
         type: integer
       strategy:
+        type: string
+    type: object
+  datastore.OnPremStorage:
+    properties:
+      path:
         type: string
     type: object
   datastore.Organisation:
@@ -377,11 +397,21 @@ definitions:
       totalPage:
         type: integer
     type: object
+  datastore.ProviderConfig:
+    properties:
+      twitter:
+        $ref: '#/definitions/datastore.TwitterProviderConfig'
+    type: object
   datastore.RateLimitConfiguration:
     properties:
       count:
         type: integer
       duration:
+        type: string
+    type: object
+  datastore.RetentionPolicyConfiguration:
+    properties:
+      policy:
         type: string
     type: object
   datastore.RetryConfiguration:
@@ -391,6 +421,13 @@ definitions:
       retry_count:
         type: integer
       type:
+        type: string
+    type: object
+  datastore.S3Storage:
+    properties:
+      bucket:
+        type: string
+      region:
         type: string
     type: object
   datastore.SignatureConfiguration:
@@ -406,6 +443,10 @@ definitions:
         type: string
       deleted_at:
         type: string
+      forward_headers:
+        items:
+          type: string
+        type: array
       group_id:
         type: string
       is_disabled:
@@ -416,6 +457,8 @@ definitions:
         type: string
       provider:
         type: string
+      provider_config:
+        $ref: '#/definitions/datastore.ProviderConfig'
       type:
         type: string
       uid:
@@ -424,6 +467,15 @@ definitions:
         type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
+    type: object
+  datastore.StoragePolicyConfiguration:
+    properties:
+      on_prem:
+        $ref: '#/definitions/datastore.OnPremStorage'
+      s3:
+        $ref: '#/definitions/datastore.S3Storage'
+      type:
+        type: string
     type: object
   datastore.StrategyConfiguration:
     properties:
@@ -463,6 +515,11 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  datastore.TwitterProviderConfig:
+    properties:
+      crc_verified_at:
+        type: integer
     type: object
   datastore.User:
     properties:
@@ -548,6 +605,8 @@ definitions:
     properties:
       is_analytics_enabled:
         type: boolean
+      storage_policy:
+        $ref: '#/definitions/datastore.StoragePolicyConfiguration'
     type: object
   models.ConfigurationResponse:
     properties:
@@ -559,6 +618,8 @@ definitions:
         type: integer
       is_analytics_enabled:
         type: boolean
+      storage_policy:
+        $ref: '#/definitions/datastore.StoragePolicyConfiguration'
       uid:
         type: string
       updated_at:
@@ -690,6 +751,10 @@ definitions:
     type: object
   models.Source:
     properties:
+      forward_headers:
+        items:
+          type: string
+        type: array
       is_disabled:
         type: boolean
       name:
@@ -717,6 +782,8 @@ definitions:
         type: string
       provider:
         type: string
+      provider_config:
+        $ref: '#/definitions/datastore.ProviderConfig'
       type:
         type: string
       uid:
@@ -1738,6 +1805,61 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create a configuration
+      tags:
+      - Application
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates configuration
+      parameters:
+      - description: Configuration Details
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Configuration'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ConfigurationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/server.serverResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update configuration
       tags:
       - Application
   /eventdeliveries:

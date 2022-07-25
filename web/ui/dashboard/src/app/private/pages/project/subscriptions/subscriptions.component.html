@@ -1,266 +1,217 @@
-<h1 class="font__12px font__weight-500 flex flex__align-items-center text__uppercase">
-	<span routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</span>
-	<svg width="16" height="16" class="margin-x__4px">
+<div class="text-12 font-medium uppercase flex items-center">
+	<a routerLink="/projects" class="cursor-pointer">Projects</a>
+	<svg width="16" height="16" class="mx-1">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	{{ privateService.activeProjectDetails?.name }}
-
-	<svg width="16" height="16" class="margin-x__4px">
+	<svg width="16" height="16" class="mx-1">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="color__primary font__weight-500">SUBSCRIPTIONS</span>
-</h1>
-
-<div class="main--head width__100 flex flex__justify-end flex__align-items-center margin-y__24px">
-	<a routerLink="./new" class="button button__primary padding-y__8px padding-x__28px">Create a Subscription</a>
+	<span class="text-primary-100">SUBSCRIPTIONS</span>
 </div>
 
-<div>
-	<div class="table has-loader flex flex__align-items-start" id="events-table-container">
-		<div class="table--container" *ngIf="isLoadindingSubscriptions">
-			<div class="card padding-top__16px margin-bottom__16px" *ngFor="let subscription of subscriptionsLoaders">
-				<div class="border__bottom flex flex__align-items-center flex__justify-between padding-bottom__16px border--width__4">
-					<div class="padding-left__16px flex">
-						<div class="skeleton-loader width__120px height__20px"></div>
-						<div class="skeleton-loader width__32px height__20px margin-left__8px"></div>
-					</div>
+<div class="flex justify-end items-center my-6">
+	<convoy-button buttonType="button" size="sm" routerLink="./new">Create a Subscription</convoy-button>
+</div>
 
-					<div class="flex flex__align-items-center">
-						<div class="tags margin-right__16px flex">
-							<div class="skeleton-loader width__100px height__20px"></div>
-							<div class="skeleton-loader width__100px height__20px margin-left__8px"></div>
-						</div>
-					</div>
-				</div>
+<!-- subscriptions loader  -->
+<div class="min-h-[70vh]" *ngIf="isLoadindingSubscriptions">
+	<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptionsLoaders">
+		<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10 px-16px">
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[250px]"></div>
+		</div>
+		<div class="flex items-end justify-between pb-8px px-16px mt-8px" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
+			<div>
+				<div class="text-grey-40 text-10 mb-3">App</div>
 
-				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px padding-left__16px margin-top__8px">
-					<div class="width__100">
-						<div class="color__grey font__10px margin-bottom__12px">
-							<div class="skeleton-loader width__36px height__20px"></div>
-						</div>
-						<div class="skeleton-loader width__100px height__20px"></div>
-					</div>
-					<div class="width__100">
-						<div class="skeleton-loader width__100px height__20px"></div>
-					</div>
-					<div class="width__100">
-						<div class="skeleton-loader width__100px height__20px"></div>
-					</div>
-					<div class="width__50">
-						<div class="skeleton-loader width__100px height__20px"></div>
-					</div>
-				</div>
+				<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[120px]"></div>
 			</div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[150px]"></div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[120px]"></div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[80px]"></div>
 		</div>
 
-		<div class="table--container" *ngIf="!isLoadindingSubscriptions && subscriptions.content.length > 0" [ngClass]="{ smaller: activeSubscription?.uid }">
-			<div class="card padding-top__16px margin-bottom__16px" *ngFor="let subscription of subscriptions?.content">
-				<a routerLink="./" [queryParams]="{ id: subscription.uid }" class="border__bottom flex flex__align-items-center flex__justify-between padding-bottom__16px border--width__4">
-					<h4 class="padding-left__16px font__14px font__weight-500">
+		<div class="flex items-end justify-between pb-8px px-16px mt-8px" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+			<div>
+				<div class="text-grey-40 text-10 mb-3">Source</div>
+
+				<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[120px]"></div>
+			</div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[150px]"></div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[120px]"></div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[80px]"></div>
+		</div>
+	</convoy-card>
+</div>
+
+<div class="min-h-[70vh] w-full min-w-[485px] flex items-start" *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
+	<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100%_-_382px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
+		<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
+			<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10 cursor-pointer" routerLink="./" [queryParams]="{ id: subscription.uid }">
+				<div class="flex items-center">
+					<h4 class="pl-16px font-medium text-14">
 						{{ subscription.name }}
-						<span [class]="'margin-left__4px tag' + ' tag--' + subscription.status">{{ subscription.status }}</span>
 					</h4>
-					<div class="flex flex__align-items-center">
-						<div class="tags margin-right__16px">
-							<span *ngFor="let event of subscription?.filter_config?.event_types" class="tag margin-right__8px">{{ event === '*' ? 'all events' : event }}</span>
-						</div>
-
-						<a class="button button__clear button--has-icon padding-right__16px" routerLink="./" [queryParams]="{ id: subscription.uid }">
-							<svg width="18" height="18" class="margin-left__8px">
-								<use xlink:href="#arrow-right-icon"></use>
-							</svg>
-						</a>
-					</div>
-				</a>
-
-				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px padding-left__16px margin-top__8px" [ngClass]="{ border__bottom: subscription.type === 'incoming' }">
-					<div class="width__100">
-						<div class="color__grey font__10px margin-bottom__12px">App</div>
-						<div class="font__12px font__weight-500">{{ subscription?.app_metadata?.name }}</div>
-					</div>
-					<div class="width__100">
-						<div class="font__12px font__weight-500 url">{{ subscription?.endpoint_metadata?.target_url }}</div>
-					</div>
-					<div class="width__100">
-						<div class="font__12px font__weight-500 position__relative">
-							Endpoint Secret
-							<button class="button button__clear button--has-icon position__absolute" (click)="copyText(subscription.endpoint_metadata.secret)">
-								<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
-								<small *ngIf="textCopied">Copied!</small>
-							</button>
-						</div>
-					</div>
-					<div class="flex flex__align-items-center width__50 flex__justify-end">
-						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/apps/' + subscription.app_metadata?.uid">
-							<div class="font__12px font__weight-500">Go to app</div>
-							<svg width="18" height="18" class="margin-left__8px" fill="var(--primary-color)">
-								<use xlink:href="#arrow-right-icon"></use>
-							</svg>
-						</a>
-					</div>
+					<convoy-tag [type]="subscription.status | statuscolor" className="ml-4px">{{ subscription.status }}</convoy-tag>
 				</div>
+				<div class="flex items-center">
+					<div class="flex items-center mr-16px">
+						<convoy-tag type="grey" className="ml-4px mb-1 first-of-type:mr-0" *ngFor="let event of subscription?.filter_config?.event_types">{{ event === '*' ? 'all events' : event }}</convoy-tag>
+					</div>
 
-				<div class="flex flex__align-items-end flex__justify-between padding-bottom__8px margin-left__16px margin-top__8px" *ngIf="subscription.type === 'incoming'">
-					<div class="width__100">
-						<div class="color__grey font__10px margin-bottom__12px">Source</div>
-						<div class="font__12px font__weight-500">{{ subscription.source_metadata?.name }}</div>
-					</div>
-					<div class="width__100">
-						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
-					</div>
-					<div class="width__100">
-						<div class="font__12px font__weight-500 text__uppercase">{{ subscription.source_metadata?.type }}</div>
-					</div>
-					<div class="flex flex__align-items-center width__50 flex__justify-end">
-						<a class="button button__clear button--has-icon margin-x__16px" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata?.uid }">
-							<div class="font__12px font__weight-500">Go to source</div>
-							<svg width="18" height="18" class="margin-left__8px" fill="var(--primary-color)">
-								<use xlink:href="#arrow-right-icon"></use>
-							</svg>
-						</a>
-					</div>
+					<a class="pr-4" routerLink="./" [queryParams]="{ id: subscription.uid }">
+						<svg width="18" height="18" class="ml-2">
+							<use xlink:href="#arrow-right-icon"></use>
+						</svg>
+					</a>
 				</div>
 			</div>
-		</div>
 
-		<div class="table--sidebar height__100 bg__white margin-left__8px card show" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
-			<div class="modal--head--left flex flex__align-items-center flex__justify-between padding-right__24px">
-				<h2 class="padding-top__24px padding-bottom__16px font__16px font__weight-700">{{ activeSubscription?.name }}</h2>
-				<a
-					[routerLink]="['./']"
-					[queryParams]="{}"
-					class="width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear"
-					tabindex="0"
-					style="background: var(--primary-color-500)"
-				>
-					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-				</a>
-			</div>
-
-			<ul>
-				<li class="list-item list-item__inline padding-right__24px">
-					<div class="width__50 font__14px font__weight-500">Subscription type</div>
-					<div class="width__50 font__14px font__weight-500 color__grey text--right text__capitalize">{{ activeSubscription?.type }}</div>
-				</li>
-
-				<li class="list-item list-item__inline padding-right__24px">
-					<div class="width__50 font__14px font__weight-500">Status</div>
-					<div class="width__50 font__14px font__weight-500 color__grey text--right">
-						<span [class]="'margin-left__4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
+			<div class="flex items-end justify-between pb-8px pl-16px mt-8px" [ngClass]="{ 'border-b border-b-grey-10': subscription.type === 'incoming' }">
+				<div class="w-full">
+					<div class="text-grey-40 text-10 mb-3">App</div>
+					<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
+				</div>
+				<div class="w-full">
+					<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
+						{{ subscription?.endpoint_metadata?.target_url }}
 					</div>
-				</li>
-
-				<li class="list-item list-item__inline padding-right__24px">
-					<div class="width__50 font__14px font__weight-500">Endpoint</div>
-					<div class="width__50 font__14px font__weight-500 color__grey text--right long-text long-text__250px">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
-				</li>
-
-				<li class="list-item list-item__inline padding-right__24px">
-					<div class="width__50 font__14px font__weight-500">App Name</div>
-					<a [routerLink]="'/projects/' + projectId + '/apps/' + activeSubscription?.app_metadata?.uid" class="width__50 font__14px font__weight-500 color__grey text--right text--underline">
-						{{ activeSubscription?.app_metadata?.name }}
+				</div>
+				<div class="w-full">
+					<div class="text-12 flex items-center whitespace-nowrap">
+						Endpoint Secret
+						<convoy-button type="text" className="px-0 py-0 ml-2" (click)="copyText(subscription.endpoint_metadata.secret)">
+							<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
+							<small *ngIf="textCopied">Copied!</small>
+						</convoy-button>
+					</div>
+				</div>
+				<div class="flex items-center justify-end w-[50%]">
+					<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/apps/' + subscription.app_metadata?.uid">
+						<div class="whitespace-nowrap">Go to app</div>
+						<svg width="18" height="18" class="ml-2" fill="#477db3">
+							<use xlink:href="#arrow-right-icon"></use>
+						</svg>
 					</a>
-				</li>
-
-				<li class="list-item list-item__inline padding-right__24px" *ngIf="activeSubscription?.type === 'incoming'">
-					<div class="width__50 font__14px font__weight-500">Source</div>
-					<a [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: activeSubscription?.uid }" class="width__50 font__14px font__weight-500 color__grey text--right text--underline">
-						{{ activeSubscription?.source_metadata?.name }}
-					</a>
-				</li>
-
-				<li class="list-item list-item__inline padding-right__24px">
-					<div class="width__50 font__14px font__weight-500">Created at</div>
-					<div class="width__50 font__14px font__weight-500 color__grey text--right">{{ activeSubscription?.created_at | date }}</div>
-				</li>
-			</ul>
-
-			<div class="button--container margin-top__40px margin-right__24px">
-				<button class="button button__danger button__white button--has-icon icon-right padding-x__12px padding-y__8px color__danger font__12px" (click)="showDeleteSubscriptionModal = true">
-					Delete
-					<svg width="18" height="18" class="margin-left__8px">
-						<use xlink:href="#delete-icon"></use>
-					</svg>
-				</button>
-
-				<a
-					[routerLink]="'/projects/' + projectId + '/subscriptions/' + activeSubscription?.uid"
-					class="button button__primary button--has-icon icon-right padding-x__24px padding-y__8px font__12px margin-left__24px"
-				>
-					Edit
-					<svg width="18" height="18" class="margin-left__8px" fill="var(--color-white)">
-						<use xlink:href="#edit-icon"></use>
-					</svg>
-				</a>
+				</div>
 			</div>
-		</div>
 
-		<div class="card flex flex__column flex__justify-center flex__align-items-center table--container" id="events-empty-state" *ngIf="!isLoadindingSubscriptions && subscriptions.content.length == 0">
-			<img src="/assets/img/empty-state.svg" alt="empty state" class="empty-state-img" />
-			<p class="font__14px font__weight-600 margin-top__0px color__black width__20 text--center">No subscriptions yet</p>
-		</div>
+			<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="subscription.type === 'incoming'">
+				<div class="w-full">
+					<div class="text-grey-40 text-10 mb-10px">Source</div>
+					<div class="text-12">{{ subscription.source_metadata?.name }}</div>
+				</div>
+				<div class="w-full">
+					<div class="text-12 uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
+				</div>
+				<div class="w-full">
+					<div class="text-12 uppercase">{{ subscription.source_metadata?.type }}</div>
+				</div>
+				<div class="flex items-center w-[50%] justify-end">
+					<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata?.uid }">
+						<div class="whitespace-nowrap">Go to Source</div>
+						<svg width="18" height="18" class="ml-2" fill="#477db3">
+							<use xlink:href="#arrow-right-icon"></use>
+						</svg>
+					</a>
+				</div>
+			</div>
+		</convoy-card>
 	</div>
+
+	<convoy-card className="pb-20px ml-8px w-full max-w-[382px] min-w-[310px] border-l border-l-grey-10 desktop:max-w-none desktop:ml-0 transition-all duration-200 min-h-[70vh]" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
+		<div class="flex items-center justify-between border-b border-b-grey-10 px-24px pt-24px pb-16px">
+			<h2 class="font-semibold">{{ activeSubscription?.name }}</h2>
+			<a [routerLink]="['./']" [queryParams]="{}" class="w-32px h-32px bg-primary-500 flex items-center justify-center rounded-[6px]" tabindex="0">
+				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+			</a>
+		</div>
+		<ul>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Subscription type</div>
+				<div class="w-[50%] text-right capitalize">{{ activeSubscription?.type }}</div>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40 font-medium">Status</div>
+				<div class="w-[50%] text-right">
+					<span [class]="'ml-4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
+				</div>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Endpoint</div>
+				<div class="w-[50%] text-right text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">App Name</div>
+				<a [routerLink]="'/projects/' + projectId + '/apps/' + activeSubscription?.app_metadata?.uid" class="w-[50%] font-medium text-primary-100 text-right underline">
+					{{ activeSubscription?.app_metadata?.name }}
+				</a>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px" *ngIf="activeSubscription?.type === 'incoming'">
+				<div class="w-[50%] text-grey-40">Source</div>
+				<a [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: activeSubscription?.uid }" class="w-[50%] font-medium text-primary-100 text-right underline">
+					{{ activeSubscription?.source_metadata?.name }}
+				</a>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Created At</div>
+				<div class="w-[50%] text-right">{{ activeSubscription?.created_at | date }}</div>
+			</convoy-list-item>
+		</ul>
+		<div class="flex items-center justify-end mt-40px mr-24px">
+			<convoy-button size="sm" color="danger" type="outline" className="py-8px px-12px text-12" (click)="showDeleteSubscriptionModal = true">
+				Delete
+				<svg width="18" height="18" class="ml-2">
+					<use xlink:href="#delete-icon"></use>
+				</svg>
+			</convoy-button>
+			<convoy-button size="sm" className="py-8px px-12px text-12 ml-24px" [routerLink]="'/projects/' + projectId + '/subscriptions/' + activeSubscription?.uid">
+				Edit
+				<svg width="18" height="18" class="ml-8px" fill="currentColor">
+					<use xlink:href="#edit-icon"></use>
+				</svg>
+			</convoy-button>
+		</div>
+	</convoy-card>
 </div>
 
-<div class="button-container flex flex__align-items-center margin-top__16px">
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-right__16px padding-left__4px"
+<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No subscriptions yet" className="h-[50vh]" id="subscriptions-empty-state" *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"></convoy-empty-state>
+
+<div class="flex items-center mt-16px" [hidden]="subscriptions?.content?.length === 0">
+	<convoy-button
+		type="outline"
+		size="sm"
+		className="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.prev } : { page: subscriptions?.pagination?.prev }"
-		[disabled]="subscriptions?.pagination?.prev === 0"
+		[disable]="subscriptions?.pagination?.prev === 0"
 		(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="margin-right__8px">
+		<svg width="24" height="24" class="mr-8px">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
-	</button>
-	<button
-		class="button button__white button__primary button__outline button--has-icon icon-left padding-y__4px padding-left__16px padding-right__4px margin-left__16px"
+	</convoy-button>
+	<convoy-button
+		type="outline"
+		size="sm"
+		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.next } : { page: subscriptions?.pagination?.next }"
-		[disabled]="subscriptions?.pagination?.next === 0"
+		[disable]="subscriptions?.pagination?.next === 0"
 		(click)="getSubscriptions({ page: subscriptions?.pagination?.next })"
 	>
 		Next
-		<svg width="24" height="24" class="margin-left__8px" fill="var(--primary-color)">
+		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-	</button>
+	</convoy-button>
 </div>
 
-<div class="modal modal__full" *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal">
-	<div class="modal--head">
-		<div class="flex flex__align-items-center flex__justify-between width__100">
-			<div class="modal--head--left flex flex__align-items-center">
-				<a
-					[routerLink]="'/projects/' + projectId + '/subscriptions'"
-					class="margin-right__16px width__32px height__32px flex flex__align-items-center flex__justify-center rounded__6px button__clear"
-					tabindex="0"
-				>
-					<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-				</a>
-				<h2 class="font__16px font__weight-600">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
-			</div>
-
-			<a class="button--has-icon icon-left" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-				<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-				<span class="font__weight-500 font__14px color__primary">Go to docs</span>
-			</a>
-		</div>
-	</div>
-
-	<div class="modal--body padding-all__0px">
+<convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
+	<ng-container modalBody>
 		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></app-create-subscription>
-	</div>
-</div>
-
-<div class="_overlay" *ngIf="showDeleteSubscriptionModal" (click)="showDeleteSubscriptionModal = false"></div>
-<div class="modal modal__center small" *ngIf="showDeleteSubscriptionModal">
-	<app-delete-modal
-		[isLoading]="isDeletingSubscription"
-		[deleteText]="'delete “' + activeSubscription?.name + '”'"
-		(closeModal)="showDeleteSubscriptionModal = false"
-		(deleteData)="deleteSubscripton()"
-	></app-delete-modal>
-</div>
+	</ng-container>
+</convoy-modal>
+<app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>

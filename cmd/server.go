@@ -181,15 +181,12 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			log.WithError(err).Error("failed to create worker")
 		}
 
-		// register tasks.
 		handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 		consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
-		// register tasks.
 		eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
-		// register tasks.
 		notificationHandler := task.SendNotification(a.emailNotificationSender)
 		consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
 
@@ -200,9 +197,22 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			OrgRepo:    a.orgRepo,
 			UserRepo:   a.userRepo,
 		}, cfg)
+		monitorTwitterSources := task.MonitorTwitterSources(a.sourceRepo, a.subRepo, a.applicationRepo, a.queue)
+
+		retentionPolicies := task.RententionPolicies(
+			cfg,
+			a.configRepo,
+			a.groupRepo,
+			a.eventRepo,
+			a.eventDeliveryRepo,
+			a.searcher,
+		)
 
 		consumer.RegisterHandlers(convoy.DailyAnalytics, dailyAnalytics)
+		consumer.RegisterHandlers(convoy.MonitorTwitterSources, monitorTwitterSources)
+		consumer.RegisterHandlers(convoy.RetentionPolicies, retentionPolicies)
 
+		//start worker
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}

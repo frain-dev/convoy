@@ -16,6 +16,8 @@ type Notification struct {
 	PasswordResetURL  string `json:"reset_url,omitempty"`
 	RecipientName     string `json:"recipient_name,omitempty"`
 	ExpiresAt         string `json:"expires_at,omitempty"`
+	SourceName        string `json:"source_name,omitempty"`
+	CrcVerifiedAt     string `json:"crc_verified_at,omitempty"`
 }
 
 type Sender interface {

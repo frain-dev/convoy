@@ -27,12 +27,7 @@ export class ResetPasswordComponent implements OnInit {
 	}
 
 	async resetPassword() {
-		if (this.resetPasswordForm.invalid) {
-			(<any>Object).values(this.resetPasswordForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.resetPasswordForm.invalid) return this.resetPasswordForm.markAsTouched();
 
 		this.resetingPassword = true;
 		try {

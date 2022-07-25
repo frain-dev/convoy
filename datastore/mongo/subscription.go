@@ -94,7 +94,7 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, groupId strin
 		"uid":      subscription.UID,
 		"group_id": groupId,
 	}
-	return s.store.DeleteOne(ctx, filter)
+	return s.store.DeleteOne(ctx, filter, false)
 }
 
 func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId string, uid string) (*datastore.Subscription, error) {

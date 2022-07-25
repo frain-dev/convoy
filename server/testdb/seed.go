@@ -553,6 +553,7 @@ func SeedConfiguration(db datastore.DatabaseClient) (*datastore.Configuration, e
 	config := &datastore.Configuration{
 		UID:                uuid.NewString(),
 		IsAnalyticsEnabled: true,
+		StoragePolicy:      &datastore.DefaultStoragePolicy,
 		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 

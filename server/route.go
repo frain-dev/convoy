@@ -66,6 +66,7 @@ func buildRoutes(app *applicationHandler) http.Handler {
 	// Ingestion API
 	router.Route("/ingest", func(ingestRouter chi.Router) {
 
+		ingestRouter.Get("/{maskID}", app.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", app.IngestEvent)
 	})
 
@@ -381,6 +382,8 @@ func buildRoutes(app *applicationHandler) http.Handler {
 
 			configRouter.Get("/", app.LoadConfiguration)
 			configRouter.Post("/", app.CreateConfiguration)
+			configRouter.Put("/", app.UpdateConfiguration)
+
 		})
 	})
 

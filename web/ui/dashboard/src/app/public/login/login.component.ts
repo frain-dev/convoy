@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoginService } from './login.service';
 
@@ -21,12 +21,7 @@ export class LoginComponent implements OnInit {
 	ngOnInit(): void {}
 
 	async login() {
-		if (this.loginForm.invalid) {
-			(<any>Object).values(this.loginForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.loginForm.invalid) return this.loginForm.markAsTouched();
 
 		this.disableLoginBtn = true;
 		try {

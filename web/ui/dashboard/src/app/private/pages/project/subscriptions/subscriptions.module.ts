@@ -4,11 +4,18 @@ import { SubscriptionsComponent } from './subscriptions.component';
 import { Routes, RouterModule } from '@angular/router';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
 import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
+import { ButtonComponent } from 'src/app/components/button/button.component';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { CardComponent } from 'src/app/components/card/card.component';
+import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
+import { PipesModule } from 'src/app/pipes/pipes.module';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
 @NgModule({
 	declarations: [SubscriptionsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DeleteModalModule]
+	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DeleteModalModule, PipesModule, ButtonComponent, ModalComponent, CardComponent, ListItemComponent, TagComponent, EmptyStateComponent]
 })
 export class SubscriptionsModule {}

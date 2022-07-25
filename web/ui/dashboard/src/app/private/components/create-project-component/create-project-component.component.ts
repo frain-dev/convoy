@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup, Validators, FormBuilder } from '@angular/forms';
+import { Router } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
@@ -27,7 +28,11 @@ export class CreateProjectComponent implements OnInit {
 				count: [null],
 				duration: [null]
 			}),
-			disable_endpoint: [null]
+			retention_policy: this.formBuilder.group({
+				policy: [null]
+			}),
+			disable_endpoint: [null],
+			is_retention_policy_enabled: [null]
 		}),
 		type: [null, Validators.required]
 	});
@@ -38,14 +43,14 @@ export class CreateProjectComponent implements OnInit {
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
-		{ id: 'linear', type: 'Linear time retry' },
-		{ id: 'exponential', type: 'Exponential time backoff' }
+		{ uid: 'linear', name: 'Linear time retry' },
+		{ uid: 'exponential', name: 'Exponential time backoff' }
 	];
 	@Output('onAction') onAction = new EventEmitter<any>();
 	@Input('action') action: 'create' | 'update' = 'create';
 	projectDetails!: GROUP;
 
-	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService) {}
+	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
 	ngOnInit(): void {
 		if (this.action === 'update') this.getProjectDetails();
@@ -75,6 +80,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.isCreatingProject = false;
+			this.projectForm.reset();
 			this.privateService.activeProjectDetails = response.data.group;
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
 			this.apiKey = response.data.api_key.key;
@@ -120,6 +126,15 @@ export class CreateProjectComponent implements OnInit {
 		configKeys.forEach(configKey => {
 			const configKeyValues = Object.values(configDetails[configKey]);
 			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
+
+			if (configKey === 'strategy' && configDetails?.strategy?.retry_count) {
+				this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
+			}
+
+			if (configKey === 'ratelimit' && configDetails?.ratelimit?.count) {
+				this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
+			}
+
 			if (configKey === 'strategy' && configDetails?.strategy?.duration && this.action !== 'update') {
 				let duration = configDetails.strategy.duration;
 				const [digits, word] = duration.match(/\D+|\d+/g);
@@ -127,6 +142,8 @@ export class CreateProjectComponent implements OnInit {
 				this.projectForm.value.config.strategy.duration = duration;
 			}
 		});
+
 		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;
+		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
 	}
 }

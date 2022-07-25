@@ -1596,6 +1596,109 @@
                     }
                 }
             },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint updates configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Update configuration",
+                "parameters": [
+                    {
+                        "description": "Configuration Details",
+                        "name": "application",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Configuration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.ConfigurationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/server.serverResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -8233,6 +8336,9 @@
                 "event_type": {
                     "type": "string"
                 },
+                "forwarded_headers": {
+                    "$ref": "#/definitions/datastore.HttpHeader"
+                },
                 "group_id": {
                     "type": "string"
                 },
@@ -8285,6 +8391,9 @@
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
                 },
+                "forwarded_headers": {
+                    "$ref": "#/definitions/datastore.HttpHeader"
+                },
                 "group_id": {
                     "type": "string"
                 },
@@ -8331,6 +8440,9 @@
                 "logo_url": {
                     "type": "string"
                 },
+                "metadata": {
+                    "$ref": "#/definitions/datastore.GroupMetadata"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -8364,17 +8476,31 @@
                 "disable_endpoint": {
                     "type": "boolean"
                 },
+                "is_retention_policy_enabled": {
+                    "type": "boolean"
+                },
                 "ratelimit": {
                     "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
                 "replay_attacks": {
                     "type": "boolean"
                 },
+                "retention_policy": {
+                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
+                },
                 "signature": {
                     "$ref": "#/definitions/datastore.SignatureConfiguration"
                 },
                 "strategy": {
                     "$ref": "#/definitions/datastore.StrategyConfiguration"
+                }
+            }
+        },
+        "datastore.GroupMetadata": {
+            "type": "object",
+            "properties": {
+                "retained_events": {
+                    "type": "integer"
                 }
             }
         },
@@ -8437,6 +8563,14 @@
                     "type": "integer"
                 },
                 "strategy": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.OnPremStorage": {
+            "type": "object",
+            "properties": {
+                "path": {
                     "type": "string"
                 }
             }
@@ -8545,6 +8679,14 @@
                 }
             }
         },
+        "datastore.ProviderConfig": {
+            "type": "object",
+            "properties": {
+                "twitter": {
+                    "$ref": "#/definitions/datastore.TwitterProviderConfig"
+                }
+            }
+        },
         "datastore.RateLimitConfiguration": {
             "type": "object",
             "properties": {
@@ -8552,6 +8694,14 @@
                     "type": "integer"
                 },
                 "duration": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.RetentionPolicyConfiguration": {
+            "type": "object",
+            "properties": {
+                "policy": {
                     "type": "string"
                 }
             }
@@ -8566,6 +8716,17 @@
                     "type": "integer"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.S3Storage": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string"
+                },
+                "region": {
                     "type": "string"
                 }
             }
@@ -8590,6 +8751,12 @@
                 "deleted_at": {
                     "type": "string"
                 },
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "group_id": {
                     "type": "string"
                 },
@@ -8605,6 +8772,9 @@
                 "provider": {
                     "type": "string"
                 },
+                "provider_config": {
+                    "$ref": "#/definitions/datastore.ProviderConfig"
+                },
                 "type": {
                     "type": "string"
                 },
@@ -8616,6 +8786,20 @@
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
+                }
+            }
+        },
+        "datastore.StoragePolicyConfiguration": {
+            "type": "object",
+            "properties": {
+                "on_prem": {
+                    "$ref": "#/definitions/datastore.OnPremStorage"
+                },
+                "s3": {
+                    "$ref": "#/definitions/datastore.S3Storage"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -8675,6 +8859,14 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "datastore.TwitterProviderConfig": {
+            "type": "object",
+            "properties": {
+                "crc_verified_at": {
+                    "type": "integer"
                 }
             }
         },
@@ -8806,6 +8998,9 @@
             "properties": {
                 "is_analytics_enabled": {
                     "type": "boolean"
+                },
+                "storage_policy": {
+                    "$ref": "#/definitions/datastore.StoragePolicyConfiguration"
                 }
             }
         },
@@ -8823,6 +9018,9 @@
                 },
                 "is_analytics_enabled": {
                     "type": "boolean"
+                },
+                "storage_policy": {
+                    "$ref": "#/definitions/datastore.StoragePolicyConfiguration"
                 },
                 "uid": {
                     "type": "string"
@@ -9023,6 +9221,12 @@
         "models.Source": {
             "type": "object",
             "properties": {
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -9063,6 +9267,9 @@
                 },
                 "provider": {
                     "type": "string"
+                },
+                "provider_config": {
+                    "$ref": "#/definitions/datastore.ProviderConfig"
                 },
                 "type": {
                     "type": "string"
