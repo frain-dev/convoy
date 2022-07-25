@@ -1,6 +1,6 @@
 <div class="w-full">
 	<div class="flex justify-between h-100px">
-		<div class="mr-2px last-of-type:mr-0 flex items-end relative w-full h-full group" *ngFor="let data of chartData; let i = index">
+		<div class="mr-2px last-of-type:mr-0 flex items-end relative w-full h-full group" *ngFor="let data of paginatedData; let i = index">
 			<div class="min-h-[4px] w-full rounded-4px hover:cursor-ew-resize transition-all duration-300" [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70' : 'bg-grey-20'" [ngStyle]="{ height: data.size }"></div>
 			<div
 				class="
@@ -33,6 +33,18 @@
 			</div>
 		</div>
 	</div>
+    <div class="flex items-center justify-end mt-16px">
+        <convoy-button type="outline" size="sm" className="px-4px py-4px border-primary-300" [disable]="pageNumber === 1" (click)="prevPage()">
+            <svg width="24" height="24">
+                <use xlink:href="#arrow-left-icon"></use>
+            </svg>
+        </convoy-button>
+        <convoy-button type="outline" size="sm" className="px-4px py-4px border-primary-300 ml-16px" [disable]="pageNumber === pages" (click)="nextPage()">
+            <svg width="24" height="24" class="fill-primary-100">
+                <use xlink:href="#arrow-right-icon"></use>
+            </svg>
+        </convoy-button>
+    </div>
 	<!-- <div class="flex justify-between h-100px">
         <div class="loader h-10px  min-w-[10px] w-auto bg-grey-20" *ngFor="let count of counter(30) ;let i = index"></div>
     </div> -->
