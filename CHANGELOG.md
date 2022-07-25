@@ -1,3 +1,13 @@
+## v0.6.0
+
+-   [Feature] Add Support for Custom Sources (Twitter, Shopify) #869, #833, #826
+-   [Feature] Add Support for Retention Policies #839, #879
+-   [Enhancement] Updated UI Architecture to use Tailwind CSS #816
+-   [Enhancement] Optimised UI to reduce initial bundle size #879
+-   [Enhancement] Allow all workers to run in a single cluster #876
+-   [Enhancement] Add cancelled status on org invite #812
+-   [Bugfix] Fixed wrong FindMany query in subscriptions.go #858
+-   [Bugfix] Enabled JWT configuration with env variables #813
 ## v0.6.0-rc.4
 
 -   [Bugfix] Fixed bug in correctly using datastore FindMany method #856
