@@ -10,7 +10,7 @@
 					[class]="activePage === menu ? 'relative before:absolute before:w-[3px] before:h-16px before:top-1/2 before:rounded-100px before:left-0 before:bg-primary-100 before:translate-x-0 before:-translate-y-1/2 transition-all duration-200' : ''"
 					*ngFor="let menu of settingsMenu"
 				>
-					<convoy-button type="text" [color]="activePage === menu ? 'primary' : 'grey'" [className]="activePage === menu ? 'font-medium capitalize' : 'capitalize'" (click)="toggleActivePage(menu)">{{ menu }}</convoy-button>
+					<convoy-button type="text" [color]="activePage === menu ? 'primary' : 'grey'" [className]="activePage === menu ? 'font-medium text-14 capitalize' : 'capitalize text-14 font-light'" (click)="toggleActivePage(menu)">{{ menu }}</convoy-button>
 				</li>
 			</ul>
 		</div>
@@ -45,7 +45,7 @@
 						</div>
 						<convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
 					</div>
-					<hr class="border-t border-t-grey-10 my-20px">
+					<hr class="border-t border-t-grey-10 my-20px" />
 					<h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2>
 					<div formGroupName="storage_policy">
 						<div class="grid grid-cols-2 gap-24px mb-24px">

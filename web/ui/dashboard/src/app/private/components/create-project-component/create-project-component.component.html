@@ -49,24 +49,29 @@
 					<convoy-input type="number" label="Limit" name="rate-limit-count" formControlName="count" placeholder="e.g 5000" errorMessage="Please enter a rate limit"></convoy-input>
 				</div>
 
-			
-				
-
 				<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
 				<div class="grid grid-cols-2 gap-24px">
 					<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
 					<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
 				</div>
 
-				<h3 class="mt-24px mb-16px font-semibold">Enable Rentention Policy</h3>
+				<h3 class="mt-48px mb-16px font-semibold">Enable Rentention Policy</h3>
 				<div class="grid grid-cols-2 gap-24px mb-24px">
 					<convoy-radio formControlName="is_retention_policy_enabled" label="Enable" _name="is_retention_policy_enabled" [value]="true" _id="enable_retention_policy"></convoy-radio>
 					<convoy-radio formControlName="is_retention_policy_enabled" label="Disable" _name="is_retention_policy_enabled" [value]="false" _id="disable_retention_policy"></convoy-radio>
 				</div>
 
-				<ng-container *ngIf="enableMoreConfig && projectForm.value.config.is_retention_policy_enabled" >
+				<ng-container *ngIf="enableMoreConfig && projectForm.value.config.is_retention_policy_enabled">
 					<div formGroupName="retention_policy">
-						<convoy-input label="Retention Period" name="policy" formControlName="policy" placeholder="e.g. 72h" errorMessage="Enter retention policy value" tooltipContent="This is the interval at which events would be reviewed and retained for this project." tooltipSize="sm"></convoy-input>
+						<convoy-input
+							label="Retention Period"
+							name="policy"
+							formControlName="policy"
+							placeholder="e.g. 72h"
+							errorMessage="Enter retention policy value"
+							tooltipContent="This is the interval at which events would be reviewed and retained for this project."
+							tooltipSize="sm"
+						></convoy-input>
 					</div>
 				</ng-container>
 			</div>
