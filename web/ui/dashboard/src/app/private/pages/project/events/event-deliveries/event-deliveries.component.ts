@@ -174,7 +174,7 @@ export class EventDeliveriesComponent implements OnInit {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.appDropdownComponent.show = false;
-		this.dateFilter?.dateRange.patchValue({ startDate: '', endDate: '' });
+		this.dateFilter.clearDate();
 		this.eventDeliveryTimerFilter.filterStartHour = 0;
 		this.eventDeliveryTimerFilter.filterStartMinute = 0;
 		this.eventDeliveryTimerFilter.filterEndHour = 23;
