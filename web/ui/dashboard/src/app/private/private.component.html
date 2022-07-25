@@ -14,6 +14,9 @@
 						<li>
 							<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
 						</li>
+						<li>
+							<a routerLink="/settings" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Settings</a>
+						</li>
 					</ul>
 				</nav>
 			</div>
@@ -69,9 +72,7 @@
 							<li class="py-8px">
 								<a (click)="dropdownComponent.show = false" routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
 							</li>
-							<li class="py-8px" *ngIf="organisations?.length">
-								<a (click)="dropdownComponent.show = false" routerLink="/organisation-settings" class="text-14 pl-24px text-grey-40">Organisation settings</a>
-							</li>
+					
 						</ul>
 						<div class="border-t border-t-grey-10">
 							<convoy-button type="text" color="danger" className="font-medium px-24px py-20px text-14" (click)="logout()">Logout</convoy-button>

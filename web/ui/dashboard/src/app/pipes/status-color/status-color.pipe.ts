@@ -21,6 +21,7 @@ export class StatusColorPipe implements PipeTransform {
 				type = 'warning';
 				break;
 			case 'Failed':
+			case 'Failure':
 				type = 'danger';
 				break;
 
