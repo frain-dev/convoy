@@ -76,7 +76,7 @@ export class EventComponent implements OnInit {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.appDropdownComponent.show = false;
-		this.dateFilter?.dateRange.patchValue({ startDate: '', endDate: '' });
+		this.dateFilter.clearDate();
 		this.timeFilter.filterStartHour = 0;
 		this.timeFilter.filterStartMinute = 0;
 		this.timeFilter.filterEndHour = 23;
