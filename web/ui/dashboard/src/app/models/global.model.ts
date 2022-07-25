@@ -6,6 +6,12 @@ export interface PAGINATION {
 	total: number;
 	totalPage: number;
 }
+export interface CHARTDATA {
+	label: string;
+	index: number;
+	data: number;
+	size: any;
+}
 
 export type STATUS_COLOR = 'grey' | 'success' | 'warning' | 'danger';
 

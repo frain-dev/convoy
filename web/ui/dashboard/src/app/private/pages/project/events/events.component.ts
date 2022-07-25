@@ -1,12 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { format } from 'date-fns';
+import { differenceInCalendarDays, differenceInCalendarMonths, differenceInCalendarWeeks, differenceInCalendarYears, format, getDayOfYear, getMonth, getWeek, getYear, sub } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
-import Chart from 'chart.js/auto';
 import { EventsService } from './events.service';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
-import { PAGINATION } from 'src/app/models/global.model';
+import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
@@ -35,6 +34,8 @@ export class EventsComponent implements OnInit {
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
+    chartLabels!: { date: string; index: number }[];
+	chartData!: CHARTDATA[];
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -78,7 +79,7 @@ export class EventsComponent implements OnInit {
 
 			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
-			this.initChart(dashboardResponse);
+			this.getDateRange(dashboardResponse);
 
 			this.isloadingDashboardData = false;
 		} catch (error: any) {
@@ -101,62 +102,116 @@ export class EventsComponent implements OnInit {
 		return { startDate, endDate };
 	}
 
-	initChart(dashboardResponse: HTTP_RESPONSE) {
+	getEventDeliveries(eventId: string) {
+		this.eventDeliveryFilteredByEventId = eventId;
+		this.toggleActiveTab('event deliveries');
+	}
+
+    initConvoyChart(dashboardResponse: HTTP_RESPONSE) {
 		let labelsDateFormat = '';
+        let chartData: CHARTDATA[] = [];
+		let newChartData: CHARTDATA[] = [];
+
 		if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
 		else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
 		else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'yyyy';
 
-		const chartData = dashboardResponse.data.event_data;
-		const labels = [...chartData.map((label: { data: { date: any } }) => label.data.date)].map(date => {
-			return this.dashboardFrequency === 'weekly' ? date : format(new Date(date), labelsDateFormat);
+		const eventData = dashboardResponse.data.event_data;
+		const dataSet: number[] = eventData.map((data: { count: any }) => data.count);
+		const maxData = Math.max(...dataSet);
+
+
+		eventData.forEach((data: any, index: number) => {
+			chartData.push({
+				label: this.dashboardFrequency === 'weekly' ? data.data.date : format(new Date(data.data.date), labelsDateFormat),
+				data: data.count,
+				index: data.data.index,
+				size: `${Math.round((100 / maxData) * dataSet[index])}px`
+			});
 		});
-		labels.unshift('0');
-		const dataSet = [0, ...chartData.map((label: { count: any }) => label.count)];
-		const data = {
-			labels,
-			datasets: [
-				{
-					data: dataSet,
-					fill: false,
-					borderColor: '#477DB3',
-					tension: 0.5,
-					yAxisID: 'yAxis',
-					xAxisID: 'xAxis'
-				}
-			]
-		};
 
-		const options = {
-			plugins: {
-				legend: {
-					display: false
-				}
-			},
-			scales: {
-				xAxis: {
-					display: true,
-					grid: {
-						display: false
-					}
-				}
-			}
-		};
-
-		if (!Chart.getChart('dahboard_events_chart') || !Chart.getChart('dahboard_events_chart')?.canvas) {
-			new Chart('dahboard_events_chart', { type: 'line', data, options });
-		} else {
-			const currentChart = Chart.getChart('dahboard_events_chart');
-			if (currentChart) {
-				currentChart.data.labels = labels;
-				currentChart.data.datasets[0].data = dataSet;
-				currentChart.update();
-			}
-		}
+		this.chartLabels.forEach(label => {
+			newChartData.push({
+				label: label.date,
+				index: label.index,
+				data: chartData.find(data => data.index === label.index)?.data || 0,
+				size: chartData.find(data => data.index === label.index)?.size || '4px'
+			});
+		});
+		this.chartData = newChartData;
 	}
 
-	getEventDeliveries(eventId: string) {
-		this.eventDeliveryFilteredByEventId = eventId;
-		this.toggleActiveTab('event deliveries');
+	dateRange(startDate: string, endDate: string) {
+		let labelsDateFormat = '';
+		let numOfData;
+		let currentDate = new Date(startDate);
+		let currentEndDate = new Date(endDate);
+		let currentStartDate = currentDate;
+
+		switch (this.dashboardFrequency) {
+			case 'daily':
+				labelsDateFormat = 'do, MMM';
+				numOfData = differenceInCalendarDays(new Date(endDate), new Date(startDate)) + 1;
+				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { days: 20 })) : (currentStartDate = currentDate);
+				break;
+			case 'weekly':
+				labelsDateFormat = 'yyyy-MM';
+				numOfData = differenceInCalendarWeeks(new Date(endDate), new Date(startDate)) + 1;
+				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { weeks: 20 })) : (currentStartDate = currentDate);
+				break;
+			case 'monthly':
+				labelsDateFormat = 'MMM';
+				numOfData = differenceInCalendarMonths(new Date(endDate), new Date(startDate)) + 1;
+				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { months: 20 })) : (currentStartDate = currentDate);
+				break;
+			case 'yearly':
+				labelsDateFormat = 'yyyy';
+				numOfData = differenceInCalendarYears(new Date(endDate), new Date(startDate)) + 1;
+				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { years: 20 })) : (currentStartDate = currentDate);
+				break;
+			default:
+				break;
+		}
+
+		for (var dateArray: any = []; currentStartDate <= currentEndDate; currentStartDate.setDate(currentStartDate.getDate() + 1)) {
+			switch (this.dashboardFrequency) {
+				case 'daily':
+					dateArray.push({
+						index: getDayOfYear(new Date(currentStartDate)),
+						date: format(new Date(currentStartDate), labelsDateFormat)
+					});
+					break;
+				case 'weekly':
+					dateArray.push({
+						index: getWeek(new Date(currentStartDate)),
+						date: format(new Date(currentStartDate), labelsDateFormat)
+					});
+					break;
+				case 'monthly':
+					dateArray.push({
+						index: getMonth(new Date(currentStartDate)) + 1,
+						date: format(new Date(currentStartDate), labelsDateFormat)
+					});
+					break;
+				case 'yearly':
+					dateArray.push({
+						index: getYear(new Date(currentStartDate)),
+						date: format(new Date(currentStartDate), labelsDateFormat)
+					});
+					break;
+				default:
+					break;
+			}
+
+			dateArray = [...new Map(dateArray.map((item: any) => [item['index'], item])).values()];
+		}
+		return dateArray;
+	}
+
+	getDateRange(dashboardResponse: HTTP_RESPONSE) {
+		this.chartLabels = [];
+		const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
+		this.chartLabels = this.dateRange(startDate, endDate);
+		this.initConvoyChart(dashboardResponse);
 	}
 }
