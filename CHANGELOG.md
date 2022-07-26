@@ -1,3 +1,7 @@
+## v0.6.1
+
+-   [Bugfix] Fixed API response for force retry endpoint #892, #897
+-   [Bugfix] Changed create configuration to use a post request #896
 ## v0.6.0
 
 -   [Feature] Add Support for Custom Sources (Twitter, Shopify) #869, #833, #826
