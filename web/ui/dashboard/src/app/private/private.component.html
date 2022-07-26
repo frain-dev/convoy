@@ -1,4 +1,4 @@
-<body class="bg-[#fafafe] min-h-screen overflow-y-auto">
+<div class="bg-[#fafafe] min-h-screen overflow-y-auto">
 	<header class="w-full bg-white-100 border-b border-b-grey-10">
 		<div class="flex items-center justify-between w-full max-w-[1376px] m-auto bg-white-100 px-32px py-12px">
 			<div class="flex items-center">
@@ -72,7 +72,7 @@
 							<li class="py-8px">
 								<a (click)="dropdownComponent.show = false" routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
 							</li>
-					
+
 						</ul>
 						<div class="border-t border-t-grey-10">
 							<convoy-button type="text" color="danger" className="font-medium px-24px py-20px text-14" (click)="logout()">Logout</convoy-button>
@@ -88,4 +88,4 @@
 	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 
 	<router-outlet></router-outlet>
-</body>
+</div>
