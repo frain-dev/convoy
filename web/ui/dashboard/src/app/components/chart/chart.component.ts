@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { CHARTDATA } from 'src/app/models/global.model';
 import { ButtonComponent } from '../button/button.component';
 
@@ -11,18 +11,25 @@ import { ButtonComponent } from '../button/button.component';
 	styleUrls: ['./chart.component.scss']
 })
 export class ChartComponent implements OnInit {
-    @Input('chartData') chartData!: CHARTDATA[];
+	@Input('chartData') chartData!: CHARTDATA[];
 	@Input('isLoading') isLoading: boolean = false;
 	@Input('frequency') frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
-    paginatedData!: CHARTDATA[];
-	pageSize = 30;
+	paginatedData!: CHARTDATA[];
+	pageSize = 31;
 	pageNumber = 1;
 	pages = 1;
+	loaderSizes!: number[];
 
 	constructor() {}
 
 	ngOnInit() {
-		this.paginateChartData();
+		this.generateLoaderHeight();
+	}
+
+	ngOnChanges(changes: SimpleChanges) {
+        this.isLoading = changes?.isLoading?.currentValue
+        this.chartData = changes?.chartData?.currentValue
+        this.paginateChartData()
 	}
 
 	generateRandomHeight(maxHeight: number) {
@@ -31,7 +38,7 @@ export class ChartComponent implements OnInit {
 	}
 
 	paginateChartData() {
-		this.pages = Math.ceil(this.chartData.length / this.pageSize);
+		this.pages = Math.ceil(this.chartData?.length / this.pageSize);
 		this.paginate();
 	}
 
@@ -47,23 +54,10 @@ export class ChartComponent implements OnInit {
 	}
 
 	paginate() {
-		this.paginatedData = this.chartData.slice((this.pageNumber - 1) * this.pageSize, this.pageNumber * this.pageSize);
+		this.paginatedData = this.chartData?.slice((this.pageNumber - 1) * this.pageSize, this.pageNumber * this.pageSize);
 	}
 
-	counter(i: number) {
-		return new Array(i);
+	generateLoaderHeight() {
+		this.loaderSizes = Array.from({ length: 30 }, () => Math.floor(Math.random() * 100));
 	}
-	// generateHeight() {
-	// 	const maxHeight = 100;
-	// 	const loaders = document.querySelectorAll('div.loader');
-	// 	var randomNum;
-	// 	if (loaders !== null) {
-	// 		loaders.forEach(loader => {
-	// 			do {
-	// 				randomNum = this.generateRandomHeight(maxHeight);
-	// 			} while (randomNum < maxHeight);
-	// 			loader.style.height = randomNum + 'px';
-	// 		});
-	// 	}
-	// }
 }
