@@ -20,6 +20,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be force resent")
+
 type EventService struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
@@ -211,6 +213,12 @@ func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []str
 		return 0, 0, NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
 	}
 
+	err = e.validateEventDeliveryStatus(deliveries)
+	if err != nil {
+		log.WithError(err).Error("event delivery status validation failed")
+		return 0, 0, NewServiceError(http.StatusBadRequest, err)
+	}
+
 	failures := 0
 	for _, delivery := range deliveries {
 		err := e.forceResendEventDelivery(ctx, &delivery, g)
@@ -350,10 +358,6 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 }
 
 func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
-	if eventDelivery.Status != datastore.SuccessEventStatus {
-		return errors.New("only successful events can be force resent")
-	}
-
 	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
 	if err != nil {
 		return ErrSubscriptionNotFound
@@ -364,6 +368,16 @@ func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelive
 	}
 
 	return e.requeueEventDelivery(ctx, eventDelivery, g)
+}
+
+func (e *EventService) validateEventDeliveryStatus(deliveries []datastore.EventDelivery) error {
+	for _, delivery := range deliveries {
+		if delivery.Status != datastore.SuccessEventStatus {
+			return ErrInvalidEventDeliveryStatus
+		}
+	}
+
+	return nil
 }
 
 func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {

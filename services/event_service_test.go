@@ -935,7 +935,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			wantFailures:  0,
 		},
 		{
-			name: "should_force_resend_event_deliveries_with_one_failure",
+			name: "should_fail_validation_for_resend_event_deliveries_with_one_failure",
 			args: args{
 				ctx: ctx,
 				ids: []string{"ref", "oop"},
@@ -959,22 +959,10 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 						},
 						nil,
 					)
-
-				a, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				a.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(&datastore.Subscription{
-					Status: datastore.ActiveSubscriptionStatus,
-				}, nil)
-
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil)
-
-				q, _ := es.queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil)
 			},
-			wantSuccesses: 1,
-			wantFailures:  1,
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  ErrInvalidEventDeliveryStatus.Error(),
 		},
 	}
 	for _, tc := range tests {
