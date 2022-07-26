@@ -14,9 +14,11 @@ We maintain a separate branch for each minor release, named `release-<major>.<mi
 
 Note that branch protection kicks in automatically for any branches whose name starts with `release-`. Never use names starting with `release-` for branches that are not release branches.
 
-The usual flow is to merge new features and changes into the main branch and to merge bug fixes into the latest release branch. Bug fixes are then merged into main from the latest release branch. The main branch should always contain all commits from the latest release branch. As long as main hasn't deviated from the release branch, new commits can also go to main, followed by merging main back into the release branch.
-
-If a bug fix got accidentally merged into main after non-bug-fix changes in main, the bug-fix commits have to be cherry-picked into the release branch, which then have to be merged back into main. Try to avoid that situation.
+- Every new feature and change should be merged into the main branch. Bug fixes can be managed in two different ways: 
+   - Bug fixes that need to exist on the release branches should be merged to main and backported to the release branch.
+   - Bug fixes that need not exist on main should be merged to the release branch only. 
+- During a release, the release manager will ensure no PR is forgotten and main and release branches are up to speed with the necessary fixes.
+- In principle, we are treating the main branch and release branches as divergent branches. All commits to main need not exist on the release branch and vice versa. The process above is to help to implement this principle. In cases, where it is not as straightforward to sovle, the release manager will direct based on their best sense of judgement.
 
 Maintaining the release branches for older minor releases happens on a best effort basis.
 
@@ -39,7 +41,7 @@ later follow-up.
 
 TBD.
 
-#### Updating React dependencies
+#### Updating Angular dependencies
 
 TBD.
 
@@ -86,3 +88,11 @@ Once a tag is created, the release process through Github actions will take care
 TODO: A missing step here which should be later automated. A release needs to be created before the assets can be uploaded to match the tag. :)
 
 Finally, wait for the build step for the tag to finish. The point here is to wait for tarballs to be uploaded to the Github release and the container images to be pushed to the Docker Hub and Quay.io. Once that has happened, click _Publish release_, which will make the release publicly visible and create a GitHub notification.
+
+## Release Manager
+The release manager is the individual responsible for the release. The following are the responsibilities of the release manager: 
+
+- Before every release minor or major release, ensure all commits have been properly cherry-picked or backported.
+- Ensure Changelog is up to date in a user readable format. That is, Changelog should be written with the end-user perspective in mind, not blindly copying commit messages. 
+- Ensure website is up to date with release documentation. 
+- Decide what goes into the release and what doesn't go into the release based on best sense of judgement.
