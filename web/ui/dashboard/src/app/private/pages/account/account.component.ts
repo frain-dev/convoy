@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AccountService } from './account.service';
 
@@ -11,6 +11,7 @@ import { AccountService } from './account.service';
 })
 export class AccountComponent implements OnInit {
 	activePage: 'profile' | 'security' = 'profile';
+	userSettingsMenu: ['profile', 'security'] = ['profile', 'security'];
 	isSavingUserDetails = false;
 	isUpdatingPassword = false;
 	isFetchingUserDetails = false;
@@ -26,9 +27,14 @@ export class AccountComponent implements OnInit {
 		password: ['', Validators.required],
 		password_confirmation: ['', Validators.required]
 	});
-	constructor(private accountService: AccountService, private router: Router, private formBuilder: FormBuilder, private generalService: GeneralService) {}
+	constructor(private accountService: AccountService, private router: Router, private formBuilder: FormBuilder, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	ngOnInit() {
+		this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'profile');
+		this.getAuthDetails();
+	}
+
+	getAuthDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		if (authDetails && authDetails !== 'undefined') {
 			const userId = JSON.parse(authDetails)?.uid;
@@ -91,5 +97,16 @@ export class AccountComponent implements OnInit {
 		const confirmPassword = this.changePasswordForm.value.password_confirmation;
 		if (newPassword === confirmPassword) return true;
 		return false;
+	}
+
+	toggleActivePage(activePage: 'profile' | 'security') {
+		this.activePage = activePage;
+		if (!this.router.url.split('/')[2]) this.addPageToUrl();
+	}
+
+	addPageToUrl() {
+		const queryParams: any = {};
+		queryParams.activePage = this.activePage;
+		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 }

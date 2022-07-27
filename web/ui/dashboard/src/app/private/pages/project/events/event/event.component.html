@@ -123,7 +123,7 @@
 
 <div class="flex items-center mt-16px mb-24px">
 	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" (clickItem)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disable]="events?.pagination?.prev === 0">
-		<svg width="24" height="24" class="mr-8px">
+		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous

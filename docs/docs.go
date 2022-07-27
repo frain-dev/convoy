@@ -8107,17 +8107,11 @@ var doc = `{
         "auth.Role": {
             "type": "object",
             "properties": {
-                "apps": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "app": {
+                    "type": "string"
                 },
-                "groups": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "group": {
+                    "type": "string"
                 },
                 "type": {
                     "type": "string"
