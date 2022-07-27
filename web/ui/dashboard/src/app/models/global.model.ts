@@ -8,6 +8,7 @@ export interface PAGINATION {
 }
 export interface CHARTDATA {
 	label: string;
+    rangeLabel?: string;
 	index: number;
 	data: number;
 	size: any;

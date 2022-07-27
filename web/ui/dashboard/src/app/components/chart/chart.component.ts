@@ -27,9 +27,9 @@ export class ChartComponent implements OnInit {
 	}
 
 	ngOnChanges(changes: SimpleChanges) {
-        this.isLoading = changes?.isLoading?.currentValue
-        this.chartData = changes?.chartData?.currentValue
-        this.paginateChartData()
+		this.isLoading = changes?.isLoading?.currentValue;
+		this.chartData = changes?.chartData?.currentValue;
+		this.paginateChartData();
 	}
 
 	generateRandomHeight(maxHeight: number) {
@@ -55,9 +55,19 @@ export class ChartComponent implements OnInit {
 
 	paginate() {
 		this.paginatedData = this.chartData?.slice((this.pageNumber - 1) * this.pageSize, this.pageNumber * this.pageSize);
+        const secondQuartile = Math.round(this.paginatedData?.length / 4)
+        const thirdQuartile = Math.round(this.paginatedData?.length / 2)
+		this.paginatedData?.forEach((item, i) => {
+			if (i === 0) item.rangeLabel = this.paginatedData[0].label;
+			else if (i === this.paginatedData?.length - 1) item.rangeLabel = this.paginatedData[this.paginatedData?.length - 1].label;
+			else if (i === secondQuartile) item.rangeLabel = this.paginatedData[secondQuartile].label;
+			else if (i === thirdQuartile) item.rangeLabel = this.paginatedData[thirdQuartile].label;
+			else item.rangeLabel = '';
+		});
 	}
 
 	generateLoaderHeight() {
 		this.loaderSizes = Array.from({ length: 30 }, () => Math.floor(Math.random() * 100));
 	}
+
 }

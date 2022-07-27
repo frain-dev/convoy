@@ -6,38 +6,41 @@
 	</div>
 
 	<ng-container *ngIf="!isLoading">
-        <div class="flex justify-between h-100px">
-            <div class="mr-2px last-of-type:mr-0 flex items-end relative w-full h-full group" *ngFor="let data of paginatedData; let i = index">
-                <div class="min-h-[4px] w-full rounded-4px hover:cursor-ew-resize transition-all duration-300" [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70' : 'bg-grey-10'" [ngStyle]="{ height: data.size }"></div>
-                <div
-                    class="
-                        absolute
-                        opacity-0
-                        group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto
-                        pointer-events-none
-                        transition-all
-                        duration-300
-                        bg-white-100
-                        border border-grey-20
-                        rounded-8px
-                        w-200px
-                        p-14px
-                        text-black text-12 text-left
-                        top-full
-                        left-1/2
-                        -translate-x-1/2
-                        z-10
-                        before:content-['']
-                        before:absolute
-                        before:-top-[20px]
-                        before:left-[85px]
-                        before:border-[12px] before:border-b-white-100 before:border-t-transparent before:border-x-transparent
-                        before:outline-1 before:outline-grey-20
-                    "
-                >
-                    <h3 class="font-semibold">{{ data.label }}</h3>
-                    <p class="text-14">Events: {{ data.data }}</p>
+        <div class="flex justify-between">
+            <div class="mr-2px last-of-type:mr-0 w-full group" *ngFor="let data of paginatedData; let i = index">
+                <div class="flex items-end h-100px relative">
+                    <div class="min-h-[4px] w-full rounded-4px hover:cursor-ew-resize transition-all duration-300" [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70' : 'bg-grey-10'" [ngStyle]="{ height: data.size }"></div>
+                    <div
+                        class="
+                            absolute
+                            opacity-0
+                            group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto
+                            pointer-events-none
+                            transition-all
+                            duration-300
+                            bg-white-100
+                            border border-grey-20
+                            rounded-8px
+                            w-200px
+                            p-14px
+                            text-black text-12 text-left
+                            top-full
+                            left-1/2
+                            -translate-x-1/2
+                            z-10
+                            before:content-['']
+                            before:absolute
+                            before:-top-[20px]
+                            before:left-[85px]
+                            before:border-[12px] before:border-b-white-100 before:border-t-transparent before:border-x-transparent
+                            before:outline-1 before:outline-grey-20
+                        "
+                    >
+                        <h3 class="font-semibold">{{ data.label }}</h3>
+                        <p class="text-14">Events: {{ data.data }}</p>
+                    </div>
                 </div>
+                <div class="text-12 whitespace-nowrap max-w-[30px] group-last:-ml-12px">{{data.rangeLabel}}</div>
             </div>
         </div>
         <div class="flex items-center justify-end mt-16px" [class]="pages === 1 ? 'hidden' : 'flex'">
