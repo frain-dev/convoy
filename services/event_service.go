@@ -216,7 +216,7 @@ func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []str
 	err = e.validateEventDeliveryStatus(deliveries)
 	if err != nil {
 		log.WithError(err).Error("event delivery status validation failed")
-		return 0, 0, NewServiceError(http.StatusBadRequest, err)
+		return 0, 0, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	failures := 0
