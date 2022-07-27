@@ -441,25 +441,37 @@ func SeedMultipleOrganisations(db datastore.DatabaseClient, ownerID string, num 
 	return orgs, nil
 }
 
-func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*datastore.Source, error) {
+func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
 
-	source := &datastore.Source{
-		UID:     uid,
-		GroupID: g.UID,
-		MaskID:  uuid.NewString(),
-		Name:    "Convoy-Prod",
-		Type:    datastore.HTTPSource,
-		Verifier: &datastore.VerifierConfig{
+	if util.IsStringEmpty(maskID) {
+		maskID = uuid.New().String()
+	}
+
+	if v == nil {
+		v = &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
 			HMac: &datastore.HMac{
 				Header: "X-Convoy-Header",
 				Hash:   "SHA512",
 				Secret: "Convoy-Secret",
 			},
-		},
+		}
+	}
+
+	if util.IsStringEmpty(ds) {
+		ds = "http"
+	}
+
+	source := &datastore.Source{
+		UID:            uid,
+		GroupID:        g.UID,
+		MaskID:         maskID,
+		Name:           "Convoy-Prod",
+		Type:           datastore.SourceType(ds),
+		Verifier:       v,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

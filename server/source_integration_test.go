@@ -80,7 +80,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	sourceID := "123456789"
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID)
+	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
@@ -110,7 +110,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
-		_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, "")
+		_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, "", "", "", nil)
 	}
 
 	// Arrange Request
@@ -224,7 +224,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	sourceID := uuid.New().String()
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID)
+	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
@@ -268,7 +268,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	sourceID := uuid.New().String()
 
 	// Just Before.
-	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID)
+	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
