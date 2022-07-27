@@ -2,11 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { CHARTDATA } from 'src/app/models/global.model';
 import { ButtonComponent } from '../button/button.component';
-
 interface PAGE_DATA extends CHARTDATA {
 	size: string;
 }
-
 @Component({
 	selector: 'convoy-chart',
 	standalone: true,
@@ -32,7 +30,7 @@ export class ChartComponent implements OnInit {
 	ngOnChanges(changes: SimpleChanges) {
 		this.isLoading = changes?.isLoading?.currentValue;
 		this.chartData = changes?.chartData?.currentValue;
-		if (this.chartData) this.paginateChartData();
+		if(this.chartData) this.paginateChartData();
 	}
 
 	paginateChartData() {
@@ -52,7 +50,7 @@ export class ChartComponent implements OnInit {
 	}
 
 	paginate() {
-		const chartData = this.chartData?.slice((this.pageNumber - 1) * this.pageSize, this.pageNumber * this.pageSize);
+		const chartData = this.chartData.slice((this.pageNumber - 1) * this.pageSize, this.pageNumber * this.pageSize);
 		const dataSet: number[] = chartData.map(data => data.data);
 		const maxData = Math.max(...dataSet);
 
@@ -64,4 +62,6 @@ export class ChartComponent implements OnInit {
 	generateLoaderHeight() {
 		this.loaderSizes = Array.from({ length: 30 }, () => Math.floor(Math.random() * 100));
 	}
+
+
 }

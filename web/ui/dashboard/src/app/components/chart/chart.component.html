@@ -1,7 +1,7 @@
 <div class="w-full">
 	<div class="flex justify-between h-100px" *ngIf="isLoading">
 		<div class="loader mr-2px last-of-type:mr-0 flex items-end relative w-full h-full" *ngFor="let size of loaderSizes">
-			<div class="min-h-[4px] w-full bg-grey-10 rounded-4px animate-pulse hover:cursor-ew-resize transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
+			<div class="min-h-[4px] w-full bg-grey-10 rounded-4px animate-pulse hover:cursor-pointer transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
 		</div>
 	</div>
 
@@ -9,7 +9,7 @@
 		<div class="flex justify-between">
 			<div class="mr-2px last-of-type:mr-0 w-full group" *ngFor="let data of paginatedData; let i = index">
 				<div class="flex items-end h-100px relative">
-					<div class="min-h-[4px] w-full rounded-4px hover:cursor-ew-resize transition-all duration-300" [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70' : 'bg-grey-10'" [ngStyle]="{ height: data.size }"></div>
+					<div class="min-h-[4px] w-full rounded-4px hover:cursor-pointer transition-all duration-300" [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70' : 'bg-grey-10'" [ngStyle]="{ height: data.size }"></div>
 					<div
 						class="
 							absolute
@@ -19,21 +19,22 @@
 							transition-all
 							duration-300
 							bg-white-100
-							border border-grey-20
+							shadow-sm
 							rounded-8px
-							w-200px
+							w-120px
 							p-14px
 							text-black text-12 text-left
-							top-full
+							bottom-full
 							left-1/2
 							-translate-x-1/2
 							z-10
-							before:content-['']
-							before:absolute
-							before:-top-[20px]
-							before:left-[85px]
-							before:border-[12px] before:border-b-white-100 before:border-t-transparent before:border-x-transparent
-							before:outline-1 before:outline-grey-20
+							after:content-['']
+							after:absolute
+							after:-bottom-[20px]
+							after:left-1/2
+							after:-translate-x-1/2
+							after:border-[12px] after:border-t-white-100 after:border-b-transparent after:border-x-transparent
+							after:outline-1 after:outline-grey-20
 						"
 					>
 						<h3 class="font-semibold">{{ data.label }}</h3>
@@ -43,7 +44,7 @@
 			</div>
 		</div>
 
-		<div class="line flex items-center justify-between mt-14px border-t border-grey-20 pt-4px">
+		<div class="line flex items-center justify-between mt-14px border-t border-grey-10 pt-4px">
 			<div class="text-grey-40 text-10">{{ paginatedData[0].label }}</div>
 			<div class="text-grey-40 text-10">{{ paginatedData[paginatedData.length - 1].label }}</div>
 		</div>
