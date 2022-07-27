@@ -8,8 +8,8 @@
 	<ng-container *ngIf="!isLoading">
 		<div class="flex justify-between">
 			<div class="mr-2px last-of-type:mr-0 w-full group" *ngFor="let data of paginatedData; let i = index">
-				<div class="flex items-end h-100px relative">
-					<div class="min-h-[4px] w-full rounded-4px hover:cursor-pointer transition-all duration-300" [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70' : 'bg-grey-10'" [ngStyle]="{ height: data.size }"></div>
+				<div class="flex items-end h-100px relative hover:cursor-pointer">
+					<div class="min-h-[4px] w-full rounded-4px transition-all duration-300" [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 group-hover:bg-opacity-100' : 'bg-grey-10 group-hover:bg-grey-40'" [ngStyle]="{ height: data.size }"></div>
 					<div
 						class="
 							absolute
