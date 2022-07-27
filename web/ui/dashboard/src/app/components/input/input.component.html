@@ -19,7 +19,7 @@
 				transition-all
 				duration-[.3s]
 				w-full
-				font-medium
+				font-light
 				text-14
 				placeholder:text-grey-40
 				text-grey-100
@@ -40,11 +40,7 @@
 			"
 		/>
 		<button class="bg-transparent w-18px h-18px absolute top-[55%] right-16px border-none translate-x-0 translate-y-[-50%]" type="button" (click)="showLoginPassword = !showLoginPassword">
-			<img
-				class="w-full"
-				[src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
-				alt="showLoginPassword ? 'hide password icon' : 'view password icon'"
-			/>
+			<img class="w-full" [src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showLoginPassword ? 'hide password icon' : 'view password icon'" />
 		</button>
 	</div>
 
@@ -62,7 +58,7 @@
 			transition-all
 			duration-[.3s]
 			w-full
-			font-medium
+			font-light
 			text-14
 			placeholder:text-grey-40
 			text-grey-100
