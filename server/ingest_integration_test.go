@@ -64,7 +64,6 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_NotHTTPSource() {
-	// TODO(subomi): Do this.
 	maskID := "123456"
 	sourceID := "123456789"
 	expectedStatusCode := http.StatusBadRequest
