@@ -113,8 +113,8 @@ export class EventsComponent implements OnInit {
 			});
 		});
 		this.chartData = chartData;
-		const difference = chartData.length % 6 > 0 ? (chartData.length + 5) / 6 : chartData.length / 6;
-		const periodDiff = [this.chartData[0], this.chartData[difference], this.chartData[difference + 6]];
+		// const difference = chartData.length % 6 > 0 ? (chartData.length + 5) / 6 : chartData.length / 6;
+		// const periodDiff = [this.chartData[0], this.chartData[difference], this.chartData[difference + 6]];
 	}
 
 	dateRange(startDate: string, endDate: string): { date: string; index: number }[] {

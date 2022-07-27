@@ -30,7 +30,8 @@ export class ChartComponent implements OnInit {
 	ngOnChanges(changes: SimpleChanges) {
 		this.isLoading = changes?.isLoading?.currentValue;
 		this.chartData = changes?.chartData?.currentValue;
-		if(this.chartData) this.paginateChartData();
+		if (changes?.isLoading?.previousValue !== changes?.isLoading?.currentValue) this.pageNumber = 1;
+		if (this.chartData) this.paginateChartData();
 	}
 
 	paginateChartData() {
@@ -62,6 +63,4 @@ export class ChartComponent implements OnInit {
 	generateLoaderHeight() {
 		this.loaderSizes = Array.from({ length: 30 }, () => Math.floor(Math.random() * 100));
 	}
-
-
 }
