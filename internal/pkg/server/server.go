@@ -129,11 +129,8 @@ func NewServer(c *CreateServer) *Server {
 	return srv
 }
 
-func (s *Server) SetupRoutes(handler http.Handler) http.Handler {
+func (s *Server) SetHandler(handler http.Handler) {
 	s.s.Handler = handler
-	return handler
-	// s.s.Handler = router
-	// return router
 }
 
 func (s *Server) Listen() {

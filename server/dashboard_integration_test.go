@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/suite"
@@ -31,7 +32,7 @@ type DashboardIntegrationTestSuite struct {
 	suite.Suite
 	DB              datastore.DatabaseClient
 	Router          http.Handler
-	ConvoyApp       *Server
+	ConvoyApp       *server.Server
 	AuthenticatorFn AuthenticatorFn
 	DefaultUser     *datastore.User
 	DefaultOrg      *datastore.Organisation
@@ -41,7 +42,7 @@ type DashboardIntegrationTestSuite struct {
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.SetupRoutes()
+	s.Router = BuildRoutes(s.ConvoyApp)
 }
 
 func (s *DashboardIntegrationTestSuite) SetupTest() {
@@ -69,7 +70,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.Cache)
 }
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
@@ -280,7 +281,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.Cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/groups/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
 			err = s.AuthenticatorFn(req, s.Router)

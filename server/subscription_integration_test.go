@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -27,7 +28,7 @@ type SubscriptionIntegrationTestSuite struct {
 	suite.Suite
 	DB           datastore.DatabaseClient
 	Router       http.Handler
-	ConvoyApp    *Server
+	ConvoyApp    *server.Server
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
@@ -35,7 +36,7 @@ type SubscriptionIntegrationTestSuite struct {
 func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.SetupRoutes()
+	s.Router = BuildRoutes(s.ConvoyApp)
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
@@ -56,7 +57,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.Cache)
 }
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {

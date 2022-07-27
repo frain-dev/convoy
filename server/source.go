@@ -25,7 +25,7 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources [post]
-func (s *Server) CreateSource(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.Source
 	if err := util.ReadJSON(r, &newSource); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -34,7 +34,7 @@ func (s *Server) CreateSource(w http.ResponseWriter, r *http.Request) {
 
 	group := m.GetGroupFromContext(r.Context())
 
-	source, err := s.sourceService.CreateSource(r.Context(), &newSource, group)
+	source, err := a.s.SourceService.CreateSource(r.Context(), &newSource, group)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -57,10 +57,10 @@ func (s *Server) CreateSource(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [get]
-func (s *Server) GetSourceByID(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
-	source, err := s.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := a.s.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -85,7 +85,7 @@ func (s *Server) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [put]
-func (s *Server) UpdateSource(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
 	if err != nil {
@@ -94,13 +94,13 @@ func (s *Server) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	group := m.GetGroupFromContext(r.Context())
-	source, err := s.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := a.s.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	source, err = s.sourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
+	source, err = a.s.SourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -124,15 +124,15 @@ func (s *Server) UpdateSource(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [delete]
-func (s *Server) DeleteSource(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
-	source, err := s.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := a.s.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = s.sourceService.DeleteSource(r.Context(), group, source)
+	err = a.s.SourceService.DeleteSource(r.Context(), group, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -154,7 +154,7 @@ func (s *Server) DeleteSource(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources [get]
-func (s *Server) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 
@@ -162,7 +162,7 @@ func (s *Server) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 		Type: r.URL.Query().Get("type"),
 	}
 
-	sources, paginationData, err := s.sourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
+	sources, paginationData, err := a.s.SourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusInternalServerError))
 		return

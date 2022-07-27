@@ -28,7 +28,7 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites [post]
-func (s *Server) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newIV models.OrganisationInvite
 	err := util.ReadJSON(r, &newIV)
 	if err != nil {
@@ -40,7 +40,7 @@ func (s *Server) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request
 	user := m.GetUserFromContext(r.Context())
 	org := m.GetOrganisationFromContext(r.Context())
 
-	_, err = s.organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
+	_, err = a.s.OrganisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -64,11 +64,11 @@ func (s *Server) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/pending [get]
-func (s *Server) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
 	pageable := m.GetPageableFromContext(r.Context())
 
-	invites, paginationData, err := s.organisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
+	invites, paginationData, err := a.s.OrganisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -92,7 +92,7 @@ func (s *Server) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Re
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/process_invite [post]
-func (s *Server) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	accepted, err := strconv.ParseBool(r.URL.Query().Get("accepted"))
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Server) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.
 		return
 	}
 
-	err = s.organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
+	err = a.s.OrganisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
 	if err != nil {
 		log.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("")))
@@ -129,9 +129,9 @@ func (s *Server) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/token [get]
-func (s *Server) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	user, iv, err := s.organisationInviteService.FindUserByInviteToken(r.Context(), token)
+	user, iv, err := a.s.OrganisationInviteService.FindUserByInviteToken(r.Context(), token)
 	if err != nil {
 		log.WithError(err).Error("failed to find user by invite token")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -155,12 +155,12 @@ func (s *Server) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/resend [post]
-func (s *Server) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
 	baseUrl := m.GetHostFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
 	org := m.GetOrganisationFromContext(r.Context())
 
-	_, err := s.organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
+	_, err := a.s.OrganisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -182,8 +182,8 @@ func (s *Server) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/cancel [post]
-func (s *Server) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	iv, err := s.organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
+func (a *ApplicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
+	iv, err := a.s.OrganisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {
 		log.WithError(err).Error("failed to cancel organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

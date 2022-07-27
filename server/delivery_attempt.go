@@ -22,7 +22,7 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
-func (s *Server) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempt fetched successfully",
 		*m.GetDeliveryAttemptFromContext(r.Context()), http.StatusOK))
@@ -40,7 +40,7 @@ func (s *Server) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
-func (s *Server) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempts fetched successfully",
 		*m.GetDeliveryAttemptsFromContext(r.Context()), http.StatusOK))

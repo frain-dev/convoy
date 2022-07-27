@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -21,14 +22,14 @@ type IngestIntegrationTestSuite struct {
 	suite.Suite
 	DB           datastore.DatabaseClient
 	Router       http.Handler
-	ConvoyApp    *Server
+	ConvoyApp    *server.Server
 	DefaultGroup *datastore.Group
 }
 
 func (s *IngestIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.SetupRoutes()
+	s.Router = BuildRoutes(s.ConvoyApp)
 }
 
 func (i *IngestIntegrationTestSuite) SetupTest() {
@@ -41,7 +42,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
-	initRealmChain(i.T(), i.DB.APIRepo(), i.DB.UserRepo(), i.ConvoyApp.cache)
+	initRealmChain(i.T(), i.DB.APIRepo(), i.DB.UserRepo(), i.ConvoyApp.Cache)
 }
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {

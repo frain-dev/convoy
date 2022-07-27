@@ -25,7 +25,7 @@ type ViewableConfiguration struct {
 	Signature datastore.SignatureConfiguration `json:"signature"`
 }
 
-func (s *Server) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	format := "2006-01-02T15:04:05"
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
@@ -80,7 +80,7 @@ func (s *Server) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 
 	var data *models.DashboardSummary
 
-	err = s.cache.Get(r.Context(), qs, &data)
+	err = a.s.Cache.Get(r.Context(), qs, &data)
 
 	if err != nil {
 		log.Error(err)
@@ -92,13 +92,13 @@ func (s *Server) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apps, err := s.appService.CountGroupApplications(r.Context(), group.UID)
+	apps, err := a.s.AppService.CountGroupApplications(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
 	}
 
-	eventsSent, messages, err := s.m.ComputeDashboardMessages(r.Context(), group.UID, searchParams, p)
+	eventsSent, messages, err := a.s.M.ComputeDashboardMessages(r.Context(), group.UID, searchParams, p)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 		return
@@ -111,7 +111,7 @@ func (s *Server) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		PeriodData:   &messages,
 	}
 
-	err = s.cache.Set(r.Context(), qs, dashboard, time.Minute)
+	err = a.s.Cache.Set(r.Context(), qs, dashboard, time.Minute)
 
 	if err != nil {
 		log.Error(err)
@@ -121,13 +121,13 @@ func (s *Server) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		dashboard, http.StatusOK))
 }
 
-func (s *Server) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("Logged in successfully",
 		m.GetAuthLoginFromContext(r.Context()), http.StatusOK))
 }
 
-func (s *Server) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
 
 	g := m.GetGroupFromContext(r.Context())
 

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
@@ -26,14 +27,14 @@ type UserIntegrationTestSuite struct {
 	suite.Suite
 	DB        datastore.DatabaseClient
 	Router    http.Handler
-	ConvoyApp *Server
+	ConvoyApp *server.Server
 	jwt       *jwt.Jwt
 }
 
 func (u *UserIntegrationTestSuite) SetupSuite() {
 	u.DB = getDB()
 	u.ConvoyApp = buildServer()
-	u.Router = u.ConvoyApp.SetupRoutes()
+	u.Router = BuildRoutes(u.ConvoyApp)
 }
 
 func (u *UserIntegrationTestSuite) SetupTest() {
@@ -45,9 +46,9 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 	config, err := config.Get()
 	require.NoError(u.T(), err)
 
-	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.ConvoyApp.cache)
+	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.ConvoyApp.Cache)
 
-	initRealmChain(u.T(), u.DB.APIRepo(), u.DB.UserRepo(), u.ConvoyApp.cache)
+	initRealmChain(u.T(), u.DB.APIRepo(), u.DB.UserRepo(), u.ConvoyApp.Cache)
 }
 
 func (u *UserIntegrationTestSuite) TearDownTest() {

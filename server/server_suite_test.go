@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 
@@ -93,7 +94,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	return opts, nil
 }
 
-func buildServer() *Server {
+func buildServer() *server.Server {
 	var tracer tracer.Tracer
 	var qOpts queue.QueueOptions
 
@@ -119,13 +120,27 @@ func buildServer() *Server {
 	tracer = nil
 	subRepo := db.SubRepo()
 
-	return NewServer(
-		config.Configuration{},
-		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
-		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue,
-		logger, tracer, cache, limiter, searcher,
-	)
+	return server.NewServer(&server.CreateServer{
+		Cfg:               config.Configuration{},
+		EventRepo:         eventRepo,
+		EventDeliveryRepo: eventDeliveryRepo,
+		AppRepo:           appRepo,
+		GroupRepo:         groupRepo,
+		ApiKeyRepo:        apiKeyRepo,
+		SubRepo:           subRepo,
+		SourceRepo:        sourceRepo,
+		OrgRepo:           orgRepo,
+		OrgMemberRepo:     orgMemberRepo,
+		OrgInviteRepo:     orgInviteRepo,
+		UserRepo:          userRepo,
+		ConfigRepo:        configRepo,
+		Queue:             queue,
+		Logger:            logger,
+		Tracer:            tracer,
+		Cache:             cache,
+		Limiter:           limiter,
+		Searcher:          searcher,
+	})
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {

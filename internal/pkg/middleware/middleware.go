@@ -78,12 +78,44 @@ type Middleware struct {
 	tracer            tracer.Tracer
 }
 
-func NewMiddleware(eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, apiKeyRepo datastore.APIKeyRepository, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, orgRepo datastore.OrganisationRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository, userRepo datastore.UserRepository, configRepo datastore.ConfigurationRepository, cache cache.Cache, logger logger.Logger, limiter limiter.RateLimiter, tracer tracer.Tracer) *Middleware {
-	return &Middleware{eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, appRepo: appRepo, groupRepo: groupRepo, apiKeyRepo: apiKeyRepo, subRepo: subRepo, sourceRepo: sourceRepo, orgRepo: orgRepo, orgMemberRepo: orgMemberRepo, orgInviteRepo: orgInviteRepo, userRepo: userRepo, configRepo: configRepo, cache: cache, logger: logger, limiter: limiter, tracer: tracer}
+type CreateMiddleware struct {
+	EventRepo         datastore.EventRepository
+	EventDeliveryRepo datastore.EventDeliveryRepository
+	AppRepo           datastore.ApplicationRepository
+	GroupRepo         datastore.GroupRepository
+	ApiKeyRepo        datastore.APIKeyRepository
+	SubRepo           datastore.SubscriptionRepository
+	SourceRepo        datastore.SourceRepository
+	OrgRepo           datastore.OrganisationRepository
+	OrgMemberRepo     datastore.OrganisationMemberRepository
+	OrgInviteRepo     datastore.OrganisationInviteRepository
+	UserRepo          datastore.UserRepository
+	ConfigRepo        datastore.ConfigurationRepository
+	Cache             cache.Cache
+	Logger            logger.Logger
+	Limiter           limiter.RateLimiter
+	Tracer            tracer.Tracer
 }
 
-func (m *Middleware) NewMiddleware(eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, apiKeyRepo datastore.APIKeyRepository, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, orgRepo datastore.OrganisationRepository, orgMemberRepo datastore.OrganisationMemberRepository, orgInviteRepo datastore.OrganisationInviteRepository, userRepo datastore.UserRepository, configRepo datastore.ConfigurationRepository) *Middleware {
-	return &Middleware{eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, appRepo: appRepo, groupRepo: groupRepo, apiKeyRepo: apiKeyRepo, subRepo: subRepo, sourceRepo: sourceRepo, orgRepo: orgRepo, orgMemberRepo: orgMemberRepo, orgInviteRepo: orgInviteRepo, userRepo: userRepo, configRepo: configRepo}
+func NewMiddleware(cs *CreateMiddleware) *Middleware {
+	return &Middleware{
+		eventRepo:         cs.EventRepo,
+		eventDeliveryRepo: cs.EventDeliveryRepo,
+		appRepo:           cs.AppRepo,
+		groupRepo:         cs.GroupRepo,
+		apiKeyRepo:        cs.ApiKeyRepo,
+		subRepo:           cs.SubRepo,
+		sourceRepo:        cs.SourceRepo,
+		orgRepo:           cs.OrgRepo,
+		orgMemberRepo:     cs.OrgMemberRepo,
+		orgInviteRepo:     cs.OrgInviteRepo,
+		userRepo:          cs.UserRepo,
+		configRepo:        cs.ConfigRepo,
+		cache:             cs.Cache,
+		logger:            cs.Logger,
+		limiter:           cs.Limiter,
+		tracer:            cs.Tracer,
+	}
 }
 
 type AuthorizedLogin struct {

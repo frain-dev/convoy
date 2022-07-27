@@ -8,7 +8,8 @@ import (
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server"
+	"github.com/frain-dev/convoy/internal/pkg/server"
+	route "github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
@@ -152,28 +153,27 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.NewServer(
-		cfg,
-		a.eventRepo,
-		a.eventDeliveryRepo,
-		a.applicationRepo,
-		a.groupRepo,
-		a.apiKeyRepo,
-		a.subRepo,
-		a.sourceRepo,
-		a.orgRepo,
-		a.orgMemberRepo,
-		a.orgInviteRepo,
-		a.userRepo,
-		a.configRepo,
-		a.queue,
-		a.logger,
-		a.tracer,
-		a.cache,
-		a.limiter,
-		a.searcher,
-	)
-	srv.SetupRoutes()
+	srv := server.NewServer(&server.CreateServer{
+		Cfg:               cfg,
+		EventRepo:         a.eventRepo,
+		EventDeliveryRepo: a.eventDeliveryRepo,
+		AppRepo:           a.applicationRepo,
+		GroupRepo:         a.groupRepo,
+		ApiKeyRepo:        a.apiKeyRepo,
+		SubRepo:           a.subRepo,
+		SourceRepo:        a.sourceRepo,
+		OrgRepo:           a.orgRepo,
+		OrgMemberRepo:     a.orgMemberRepo,
+		OrgInviteRepo:     a.orgInviteRepo,
+		UserRepo:          a.userRepo,
+		ConfigRepo:        a.configRepo,
+		Queue:             a.queue,
+		Logger:            a.logger,
+		Tracer:            a.tracer,
+		Cache:             a.cache,
+		Limiter:           a.limiter,
+		Searcher:          a.searcher,
+	})
 
 	if withWorkers {
 		// register worker.
@@ -217,6 +217,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}
+
+	srv.SetHandler(route.BuildRoutes(srv))
 
 	log.Infof("Started convoy server in %s", time.Since(start))
 

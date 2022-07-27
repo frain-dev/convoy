@@ -28,11 +28,11 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions [get]
-func (s *Server) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 
-	apps, paginationData, err := s.subService.LoadSubscriptionsPaged(r.Context(), group.UID, pageable)
+	apps, paginationData, err := a.s.SubService.LoadSubscriptionsPaged(r.Context(), group.UID, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load subscriptions")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -55,11 +55,11 @@ func (s *Server) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [get]
-func (s *Server) GetSubscription(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
 	group := m.GetGroupFromContext(r.Context())
 
-	subscription, err := s.subService.FindSubscriptionByID(r.Context(), group, subId, false)
+	subscription, err := a.s.SubService.FindSubscriptionByID(r.Context(), group, subId, false)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -79,7 +79,7 @@ func (s *Server) GetSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions [post]
-func (s *Server) CreateSubscription(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
 	var sub models.Subscription
@@ -91,7 +91,7 @@ func (s *Server) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 
 	sub.Type = string(group.Type)
 
-	subscription, err := s.subService.CreateSubscription(r.Context(), group, &sub)
+	subscription, err := a.s.SubService.CreateSubscription(r.Context(), group, &sub)
 	if err != nil {
 		log.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -113,16 +113,16 @@ func (s *Server) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [delete]
-func (s *Server) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
-	sub, err := s.subService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
+	sub, err := a.s.SubService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = s.subService.DeleteSubscription(r.Context(), group.UID, sub)
+	err = a.s.SubService.DeleteSubscription(r.Context(), group.UID, sub)
 	if err != nil {
 		log.Errorln("failed to delete subscription - ", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -144,7 +144,7 @@ func (s *Server) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [put]
-func (s *Server) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateSubscription
 	err := util.ReadJSON(r, &update)
 	if err != nil {
@@ -156,7 +156,7 @@ func (s *Server) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
-	sub, err := s.subService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
+	sub, err := a.s.SubService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -176,11 +176,11 @@ func (s *Server) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID}/toggle_status [put]
-func (s *Server) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
-	sub, err := s.subService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
+	sub, err := a.s.SubService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
