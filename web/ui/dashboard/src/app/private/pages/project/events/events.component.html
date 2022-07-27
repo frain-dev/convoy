@@ -30,7 +30,6 @@
 </div>
 
 <convoy-card className="relative">
-
 	<ul class="flex flex-wrap items-center min-h-[76px] metrics">
 		<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:160px] [background-position-y:35px] min-w-[220px]">
 			<img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
@@ -50,7 +49,7 @@
 
 		<li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:160px] [background-position-y:35px] min-w-[220px]">
 			<img src="/assets/img/apps-icon.svg" class="mr-30px" alt="apps icon" />
-            <div *ngIf="isloadingDashboardData">
+			<div *ngIf="isloadingDashboardData">
 				<convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
 				<convoy-skeleton-loader className="w-100px h-16px"></convoy-skeleton-loader>
 			</div>
@@ -65,7 +64,7 @@
 	</ul>
 
 	<div class="border border-t border-grey-10 p-16px">
-		<convoy-chart [frequency]="dashboardFrequency" [chartData]="chartData" [isLoading]="isloadingDashboardData"></convoy-chart>
+		<convoy-chart [chartData]="chartData" [isLoading]="isloadingDashboardData"></convoy-chart>
 	</div>
 </convoy-card>
 

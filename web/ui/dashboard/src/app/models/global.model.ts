@@ -8,12 +8,9 @@ export interface PAGINATION {
 }
 export interface CHARTDATA {
 	label: string;
-    rangeLabel?: string;
-	index: number;
 	data: number;
-	size: any;
 }
 
 export type STATUS_COLOR = 'grey' | 'success' | 'warning' | 'danger';
 
-export type NOTIFICATION_STATUS = 'warning' | 'info'| 'success' | 'error';
+export type NOTIFICATION_STATUS = 'warning' | 'info' | 'success' | 'error';

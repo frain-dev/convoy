@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
 
 @Component({
 	selector: 'convoy-badge',
 	standalone: true,
 	imports: [CommonModule],
 	templateUrl: './badge.component.html',
-	styleUrls: ['./badge.component.scss']
+	styleUrls: ['./badge.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BadgeComponent implements OnInit {
 	@Input('texture') texture: 'dark' | 'light' = 'light';

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { differenceInCalendarDays, differenceInCalendarMonths, differenceInCalendarWeeks, differenceInCalendarYears, format, getDayOfYear, getMonth, getWeek, getYear, sub } from 'date-fns';
@@ -9,6 +8,11 @@ import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+
+interface LABELS {
+	date: string;
+	index: number;
+}
 
 @Component({
 	selector: 'app-events',
@@ -34,14 +38,14 @@ export class EventsComponent implements OnInit {
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
-    chartLabels!: { date: string; index: number }[];
 	chartData!: CHARTDATA[];
 
-	constructor(private formBuilder: FormBuilder, private datePipe: DatePipe, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router) {
+		this.fetchDashboardData();
+	}
 
 	async ngOnInit() {
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
-		await this.fetchDashboardData();
 	}
 
 	closeFilterOptions() {
@@ -61,10 +65,6 @@ export class EventsComponent implements OnInit {
 		this.addTabToUrl();
 	}
 
-	formatDate(date: Date) {
-		return this.datePipe.transform(date, 'dd/MM/yyyy');
-	}
-
 	async fetchDashboardData() {
 		try {
 			this.isloadingDashboardData = true;
@@ -72,7 +72,8 @@ export class EventsComponent implements OnInit {
 
 			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
-			this.getDateRange(dashboardResponse);
+			const chatLabels = this.getDateRange();
+			this.initConvoyChart(dashboardResponse, chatLabels);
 
 			this.isloadingDashboardData = false;
 		} catch (error: any) {
@@ -100,43 +101,25 @@ export class EventsComponent implements OnInit {
 		this.toggleActiveTab('event deliveries');
 	}
 
-    initConvoyChart(dashboardResponse: HTTP_RESPONSE) {
-		let labelsDateFormat = '';
-        let chartData: CHARTDATA[] = [];
-		let newChartData: CHARTDATA[] = [];
-
-		if (this.dashboardFrequency === 'daily') labelsDateFormat = 'do, MMM';
-		else if (this.dashboardFrequency === 'monthly') labelsDateFormat = 'MMM';
-		else if (this.dashboardFrequency === 'yearly') labelsDateFormat = 'yyyy';
+	initConvoyChart(dashboardResponse: HTTP_RESPONSE, chatLabels: LABELS[]) {
+		let chartData: { label: string; data: any }[] = [];
 
 		const eventData = dashboardResponse.data.event_data;
-		const dataSet: number[] = eventData.map((data: { count: any }) => data.count);
-		const maxData = Math.max(...dataSet);
 
-
-		eventData.forEach((data: any, index: number) => {
+		chatLabels.forEach(label => {
 			chartData.push({
-				label: this.dashboardFrequency === 'weekly' ? data.data.date : format(new Date(data.data.date), labelsDateFormat),
-				data: data.count,
-				index: data.data.index,
-				size: `${Math.round((100 / maxData) * dataSet[index])}px`
-			});
-		});
-
-		this.chartLabels.forEach(label => {
-			newChartData.push({
 				label: label.date,
-				index: label.index,
-				data: chartData.find(data => data.index === label.index)?.data || 0,
-				size: chartData.find(data => data.index === label.index)?.size || '4px'
+				data: eventData.find((data: { data: { index: number } }) => data.data.index === label.index)?.count || 0
 			});
 		});
-		this.chartData = newChartData;
+		this.chartData = chartData;
+		const difference = chartData.length % 6 > 0 ? (chartData.length + 5) / 6 : chartData.length / 6;
+		const periodDiff = [this.chartData[0], this.chartData[difference], this.chartData[difference + 6]];
 	}
 
-	dateRange(startDate: string, endDate: string) {
+	dateRange(startDate: string, endDate: string): { date: string; index: number }[] {
 		let labelsDateFormat = '';
-		let numOfData;
+		let periodDifference;
 		let currentDate = new Date(startDate);
 		let currentEndDate = new Date(endDate);
 		let currentStartDate = currentDate;
@@ -144,23 +127,23 @@ export class EventsComponent implements OnInit {
 		switch (this.dashboardFrequency) {
 			case 'daily':
 				labelsDateFormat = 'do, MMM';
-				numOfData = differenceInCalendarDays(new Date(endDate), new Date(startDate)) + 1;
-				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { days: 20 })) : (currentStartDate = currentDate);
+				periodDifference = differenceInCalendarDays(new Date(endDate), new Date(startDate)) + 1;
+				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { days: 30 })) : (currentStartDate = currentDate);
 				break;
 			case 'weekly':
 				labelsDateFormat = 'yyyy-MM';
-				numOfData = differenceInCalendarWeeks(new Date(endDate), new Date(startDate)) + 1;
-				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { weeks: 20 })) : (currentStartDate = currentDate);
+				periodDifference = differenceInCalendarWeeks(new Date(endDate), new Date(startDate)) + 1;
+				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { weeks: 30 })) : (currentStartDate = currentDate);
 				break;
 			case 'monthly':
 				labelsDateFormat = 'MMM';
-				numOfData = differenceInCalendarMonths(new Date(endDate), new Date(startDate)) + 1;
-				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { months: 20 })) : (currentStartDate = currentDate);
+				periodDifference = differenceInCalendarMonths(new Date(endDate), new Date(startDate)) + 1;
+				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { months: 30 })) : (currentStartDate = currentDate);
 				break;
 			case 'yearly':
 				labelsDateFormat = 'yyyy';
-				numOfData = differenceInCalendarYears(new Date(endDate), new Date(startDate)) + 1;
-				numOfData && numOfData < 20 ? (currentStartDate = sub(currentEndDate, { years: 20 })) : (currentStartDate = currentDate);
+				periodDifference = differenceInCalendarYears(new Date(endDate), new Date(startDate)) + 1;
+				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { years: 30 })) : (currentStartDate = currentDate);
 				break;
 			default:
 				break;
@@ -201,10 +184,8 @@ export class EventsComponent implements OnInit {
 		return dateArray;
 	}
 
-	getDateRange(dashboardResponse: HTTP_RESPONSE) {
-		this.chartLabels = [];
+	getDateRange() {
 		const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
-		this.chartLabels = this.dateRange(startDate, endDate);
-		this.initConvoyChart(dashboardResponse);
+		return this.dateRange(startDate, endDate);
 	}
 }

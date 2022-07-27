@@ -3,6 +3,10 @@ import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { CHARTDATA } from 'src/app/models/global.model';
 import { ButtonComponent } from '../button/button.component';
 
+interface PAGE_DATA extends CHARTDATA {
+	size: string;
+}
+
 @Component({
 	selector: 'convoy-chart',
 	standalone: true,
@@ -13,8 +17,7 @@ import { ButtonComponent } from '../button/button.component';
 export class ChartComponent implements OnInit {
 	@Input('chartData') chartData!: CHARTDATA[];
 	@Input('isLoading') isLoading: boolean = false;
-	@Input('frequency') frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
-	paginatedData!: CHARTDATA[];
+	paginatedData!: PAGE_DATA[];
 	pageSize = 31;
 	pageNumber = 1;
 	pages = 1;
@@ -29,12 +32,7 @@ export class ChartComponent implements OnInit {
 	ngOnChanges(changes: SimpleChanges) {
 		this.isLoading = changes?.isLoading?.currentValue;
 		this.chartData = changes?.chartData?.currentValue;
-		this.paginateChartData();
-	}
-
-	generateRandomHeight(maxHeight: number) {
-		const randomNum = Math.floor(Math.random() * maxHeight);
-		return randomNum;
+		if (this.chartData) this.paginateChartData();
 	}
 
 	paginateChartData() {
@@ -54,20 +52,16 @@ export class ChartComponent implements OnInit {
 	}
 
 	paginate() {
-		this.paginatedData = this.chartData?.slice((this.pageNumber - 1) * this.pageSize, this.pageNumber * this.pageSize);
-        const secondQuartile = Math.round(this.paginatedData?.length / 4)
-        const thirdQuartile = Math.round(this.paginatedData?.length / 2)
-		this.paginatedData?.forEach((item, i) => {
-			if (i === 0) item.rangeLabel = this.paginatedData[0].label;
-			else if (i === this.paginatedData?.length - 1) item.rangeLabel = this.paginatedData[this.paginatedData?.length - 1].label;
-			else if (i === secondQuartile) item.rangeLabel = this.paginatedData[secondQuartile].label;
-			else if (i === thirdQuartile) item.rangeLabel = this.paginatedData[thirdQuartile].label;
-			else item.rangeLabel = '';
+		const chartData = this.chartData?.slice((this.pageNumber - 1) * this.pageSize, this.pageNumber * this.pageSize);
+		const dataSet: number[] = chartData.map(data => data.data);
+		const maxData = Math.max(...dataSet);
+
+		this.paginatedData = chartData.map(data => {
+			return { ...data, size: `${Math.round((100 / maxData) * data.data) || 4}px` };
 		});
 	}
 
 	generateLoaderHeight() {
 		this.loaderSizes = Array.from({ length: 30 }, () => Math.floor(Math.random() * 100));
 	}
-
 }
