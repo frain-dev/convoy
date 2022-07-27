@@ -4,7 +4,7 @@
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	{{ privateService.activeProjectDetails?.name }}
+	{{ privateService.activeProjectDetails.name }}
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -13,7 +13,7 @@
 
 <app-create-project-component [action]="'update'"></app-create-project-component>
 
-<convoy-card className="p-24px my-24px max-w-[600px]">
+<convoy-card className="p-24px my-24px">
 	<h1 class="text-danger-100">Danger Zone</h1>
 	<p class="text-grey-80 max-w-[500px] mt-16px">
 		Deleting this project will delete all of it's data including events, apps, subscriptions and config.

@@ -173,6 +173,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		a.limiter,
 		a.searcher,
 	)
+	srv.SetupRoutes()
 
 	if withWorkers {
 		// register worker.

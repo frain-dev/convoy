@@ -28,7 +28,11 @@ export class CreateProjectComponent implements OnInit {
 				count: [null],
 				duration: [null]
 			}),
-			disable_endpoint: [null]
+			retention_policy: this.formBuilder.group({
+				policy: [null]
+			}),
+			disable_endpoint: [null],
+			is_retention_policy_enabled: [null]
 		}),
 		type: [null, Validators.required]
 	});
@@ -82,6 +86,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.isCreatingProject = false;
+			this.projectForm.reset()
 			this.privateService.activeProjectDetails = response.data.group;
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
 			this.apiKey = response.data.api_key.key;
@@ -145,5 +150,6 @@ export class CreateProjectComponent implements OnInit {
 		});
 
 		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;
+		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
 	}
 }
