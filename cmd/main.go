@@ -251,17 +251,12 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 		app.searcher = se
 		app.emailNotificationSender = em
 
-		fmt.Printf("\n[pre run] app: %+v\n", app)
-		fmt.Printf("\n[pre run] db: %+v\n", db)
-
 		return ensureDefaultUser(context.Background(), app)
 	}
 }
 
 func postRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("\n[post run] app: %+v\n", app)
-		fmt.Printf("\n[post run] db: %+v\n", db)
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)
