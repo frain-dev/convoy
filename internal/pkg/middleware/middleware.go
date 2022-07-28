@@ -1,24 +1,28 @@
-package server
+package middleware
 
 import (
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/tracer"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
-	"github.com/frain-dev/convoy/tracer"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -31,6 +35,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 )
 
@@ -54,17 +59,82 @@ const (
 	appIdCtx            contextKey = "appId"
 )
 
-func instrumentPath(path string) func(http.Handler) http.Handler {
+type Middleware struct {
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
+	appRepo           datastore.ApplicationRepository
+	groupRepo         datastore.GroupRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	subRepo           datastore.SubscriptionRepository
+	sourceRepo        datastore.SourceRepository
+	orgRepo           datastore.OrganisationRepository
+	orgMemberRepo     datastore.OrganisationMemberRepository
+	orgInviteRepo     datastore.OrganisationInviteRepository
+	userRepo          datastore.UserRepository
+	configRepo        datastore.ConfigurationRepository
+	cache             cache.Cache
+	logger            logger.Logger
+	limiter           limiter.RateLimiter
+	tracer            tracer.Tracer
+}
+
+type CreateMiddleware struct {
+	EventRepo         datastore.EventRepository
+	EventDeliveryRepo datastore.EventDeliveryRepository
+	AppRepo           datastore.ApplicationRepository
+	GroupRepo         datastore.GroupRepository
+	ApiKeyRepo        datastore.APIKeyRepository
+	SubRepo           datastore.SubscriptionRepository
+	SourceRepo        datastore.SourceRepository
+	OrgRepo           datastore.OrganisationRepository
+	OrgMemberRepo     datastore.OrganisationMemberRepository
+	OrgInviteRepo     datastore.OrganisationInviteRepository
+	UserRepo          datastore.UserRepository
+	ConfigRepo        datastore.ConfigurationRepository
+	Cache             cache.Cache
+	Logger            logger.Logger
+	Limiter           limiter.RateLimiter
+	Tracer            tracer.Tracer
+}
+
+func NewMiddleware(cs *CreateMiddleware) *Middleware {
+	return &Middleware{
+		eventRepo:         cs.EventRepo,
+		eventDeliveryRepo: cs.EventDeliveryRepo,
+		appRepo:           cs.AppRepo,
+		groupRepo:         cs.GroupRepo,
+		apiKeyRepo:        cs.ApiKeyRepo,
+		subRepo:           cs.SubRepo,
+		sourceRepo:        cs.SourceRepo,
+		orgRepo:           cs.OrgRepo,
+		orgMemberRepo:     cs.OrgMemberRepo,
+		orgInviteRepo:     cs.OrgInviteRepo,
+		userRepo:          cs.UserRepo,
+		configRepo:        cs.ConfigRepo,
+		cache:             cs.Cache,
+		logger:            cs.Logger,
+		limiter:           cs.Limiter,
+		tracer:            cs.Tracer,
+	}
+}
+
+type AuthorizedLogin struct {
+	Username   string    `json:"username,omitempty"`
+	Token      string    `json:"token"`
+	ExpiryTime time.Time `json:"expiry_time"`
+}
+
+func (m *Middleware) InstrumentPath(path string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			m := httpsnoop.CaptureMetrics(next, w, r)
-			requestDuration.WithLabelValues(r.Method, path,
+			metrics.RequestDuration().WithLabelValues(r.Method, path,
 				strconv.Itoa(m.Code)).Observe(m.Duration.Seconds())
 		})
 	}
 }
 
-func instrumentRequests(tr tracer.Tracer) func(next http.Handler) http.Handler {
+func (m *Middleware) InstrumentRequests() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			txn, r, w := apm.StartWebTransaction(r.URL.Path, r, w)
@@ -75,14 +145,14 @@ func instrumentRequests(tr tracer.Tracer) func(next http.Handler) http.Handler {
 	}
 }
 
-func writeRequestIDHeader(next http.Handler) http.Handler {
+func (m *Middleware) WriteRequestIDHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Request-ID", r.Context().Value(middleware.RequestIDKey).(string))
 		next.ServeHTTP(w, r)
 	})
 }
 
-func setupCORS(next http.Handler) http.Handler {
+func (m *Middleware) SetupCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cfg, err := config.Get()
 		if err != nil {
@@ -103,14 +173,14 @@ func setupCORS(next http.Handler) http.Handler {
 	})
 }
 
-func jsonResponse(next http.Handler) http.Handler {
+func (m *Middleware) JsonResponse(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
 }
 
-func requireApp(appRepo datastore.ApplicationRepository, cache cache.Cache) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,26 +193,26 @@ func requireApp(appRepo datastore.ApplicationRepository, cache cache.Cache) func
 			event := "an error occurred while retrieving app details"
 			statusCode := http.StatusBadRequest
 
-			err := cache.Get(r.Context(), appCacheKey, &app)
+			err := m.cache.Get(r.Context(), appCacheKey, &app)
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse(err.Error(), statusCode))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 				return
 			}
 
 			if app == nil {
-				app, err = appRepo.FindApplicationByID(r.Context(), appID)
+				app, err = m.appRepo.FindApplicationByID(r.Context(), appID)
 				if err != nil {
 					if errors.Is(err, datastore.ErrApplicationNotFound) {
 						event = err.Error()
 						statusCode = http.StatusNotFound
 					}
-					_ = render.Render(w, r, newErrorResponse(event, statusCode))
+					_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
 					return
 				}
 
-				err = cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
+				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
 				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(err.Error(), statusCode))
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 					return
 				}
 			}
@@ -153,11 +223,11 @@ func requireApp(appRepo datastore.ApplicationRepository, cache cache.Cache) func
 	}
 }
 
-func requireAppID() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 
 			if !util.IsStringEmpty(authUser.Role.App) {
 				appID := authUser.Role.App
@@ -169,7 +239,7 @@ func requireAppID() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +254,7 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 				appID = getAppIDFromContext(r.Context())
 			}
 
-			app, err := appRepo.FindApplicationByID(r.Context(), appID)
+			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
 			if err != nil {
 
 				event := "an error occurred while retrieving app details"
@@ -195,7 +265,7 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 					statusCode = http.StatusBadRequest
 				}
 
-				_ = render.Render(w, r, newErrorResponse(event, statusCode))
+				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
 				return
 			}
 
@@ -205,10 +275,10 @@ func requireAppPortalApplication(appRepo datastore.ApplicationRepository) func(n
 	}
 }
 
-func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 			if authUser.Role.Type.Is(auth.RoleSuperUser) {
 				// superuser has access to everything
 				next.ServeHTTP(w, r)
@@ -216,21 +286,21 @@ func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http
 			}
 
 			if !authUser.Role.Type.Is(role) {
-				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
 				return
 			}
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
 				if !util.IsStringEmpty(authUser.Role.App) { //we're dealing with an app portal token at this point
-					app := getApplicationFromContext(r.Context())
+					app := GetApplicationFromContext(r.Context())
 
 					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
 						next.ServeHTTP(w, r)
 						return
 					}
 
-					_ = render.Render(w, r, newErrorResponse("unauthorized access", http.StatusUnauthorized))
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
 					return
 				}
 
@@ -238,12 +308,12 @@ func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http
 				return
 			}
 
-			_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
 		})
 	}
 }
 
-func filterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
+func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
 	activeEndpoints := make([]datastore.Endpoint, 0)
 	for _, endpoint := range endpoints {
 		if endpoint.DeletedAt == 0 {
@@ -253,7 +323,7 @@ func filterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint
 	return activeEndpoints
 }
 
-func parseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
+func ParseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
 	var e models.Endpoint
 	err := util.ReadJSON(r, &e)
 	if err != nil {
@@ -273,17 +343,17 @@ func parseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
 	return e, nil
 }
 
-func requireAppEndpoint() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			app := getApplicationFromContext(r.Context())
+			app := GetApplicationFromContext(r.Context())
 			endPointId := chi.URLParam(r, "endpointID")
 
-			endpoint, err := findEndpoint(&app.Endpoints, endPointId)
+			endpoint, err := m.findEndpoint(&app.Endpoints, endPointId)
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
 			}
 
@@ -293,14 +363,14 @@ func requireAppEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			eventId := chi.URLParam(r, "eventID")
 
-			event, err := eventRepo.FindEventByID(r.Context(), eventId)
+			event, err := m.eventRepo.FindEventByID(r.Context(), eventId)
 			if err != nil {
 
 				event := "an error occurred while retrieving event details"
@@ -311,7 +381,7 @@ func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) h
 					statusCode = http.StatusNotFound
 				}
 
-				_ = render.Render(w, r, newErrorResponse(event, statusCode))
+				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
 				return
 			}
 
@@ -321,17 +391,17 @@ func requireEvent(eventRepo datastore.EventRepository) func(next http.Handler) h
 	}
 }
 
-func requireOrganisation(orgRepo datastore.OrganisationRepository) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			orgID := chi.URLParam(r, "orgID")
 
-			org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
+			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
 			if err != nil {
 				log.WithError(err).Error("failed to fetch organisation")
-				_ = render.Render(w, r, newErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 				return
 			}
 
@@ -341,15 +411,15 @@ func requireOrganisation(orgRepo datastore.OrganisationRepository) func(next htt
 	}
 }
 
-func requireAuthUserMetadata() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAuthUserMetadata() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 			user, ok := authUser.Metadata.(*datastore.User)
 			if !ok {
 				log.Error("metadata missing in auth user object")
-				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 
@@ -359,17 +429,17 @@ func requireAuthUserMetadata() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireOrganisationMembership(orgMemberRepo datastore.OrganisationMemberRepository) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user := getUserFromContext(r.Context())
-			org := getOrganisationFromContext(r.Context())
+			user := GetUserFromContext(r.Context())
+			org := GetOrganisationFromContext(r.Context())
 
-			member, err := orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 			if err != nil {
 				log.WithError(err).Error("failed to find organisation member by user id")
-				_ = render.Render(w, r, newErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
 				return
 			}
 
@@ -379,33 +449,33 @@ func requireOrganisationMembership(orgMemberRepo datastore.OrganisationMemberRep
 	}
 }
 
-func requireOrganisationGroupMember() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			member := getOrganisationMemberFromContext(r.Context())
+			member := GetOrganisationMemberFromContext(r.Context())
 			if member.Role.Type.Is(auth.RoleSuperUser) {
 				//superuser has access to everything
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			if member.Role.Group == group.UID {
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		})
 	}
 }
 
-func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			member := getOrganisationMemberFromContext(r.Context())
+			member := GetOrganisationMemberFromContext(r.Context())
 			if member.Role.Type.Is(auth.RoleSuperUser) {
 				//superuser has access to everything
 				next.ServeHTTP(w, r)
@@ -413,7 +483,7 @@ func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handle
 			}
 
 			if member.Role.Type != roleType {
-				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 
@@ -422,12 +492,12 @@ func requireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handle
 	}
 }
 
-func requireEventDelivery(eventDeliveryRepo datastore.EventDeliveryRepository, appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
 
-			eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
 			if err != nil {
 
 				eventDelivery := "an error occurred while retrieving event delivery details"
@@ -438,11 +508,11 @@ func requireEventDelivery(eventDeliveryRepo datastore.EventDeliveryRepository, a
 					statusCode = http.StatusNotFound
 				}
 
-				_ = render.Render(w, r, newErrorResponse(eventDelivery, statusCode))
+				_ = render.Render(w, r, util.NewErrorResponse(eventDelivery, statusCode))
 				return
 			}
 
-			a, err := appRepo.FindApplicationByID(r.Context(), eventDelivery.AppID)
+			a, err := m.appRepo.FindApplicationByID(r.Context(), eventDelivery.AppID)
 			if err == nil {
 				app := &datastore.Application{
 					UID:          a.UID,
@@ -453,7 +523,7 @@ func requireEventDelivery(eventDeliveryRepo datastore.EventDeliveryRepository, a
 				eventDelivery.App = app
 			}
 
-			ev, err := eventRepo.FindEventByID(r.Context(), eventDelivery.EventID)
+			ev, err := m.eventRepo.FindEventByID(r.Context(), eventDelivery.EventID)
 			if err == nil {
 				event := &datastore.Event{
 					UID:       ev.UID,
@@ -462,7 +532,7 @@ func requireEventDelivery(eventDeliveryRepo datastore.EventDeliveryRepository, a
 				eventDelivery.Event = event
 			}
 
-			en, err := appRepo.FindApplicationEndpointByID(r.Context(), eventDelivery.AppID, eventDelivery.EndpointID)
+			en, err := m.appRepo.FindApplicationEndpointByID(r.Context(), eventDelivery.AppID, eventDelivery.EndpointID)
 			if err == nil {
 				endpoint := &datastore.Endpoint{
 					UID:               en.UID,
@@ -482,18 +552,17 @@ func requireEventDelivery(eventDeliveryRepo datastore.EventDeliveryRepository, a
 	}
 }
 
-func requireDeliveryAttempt() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			id := chi.URLParam(r, "deliveryAttemptID")
-
-			attempts := getDeliveryAttemptsFromContext(r.Context())
+			attempts := GetDeliveryAttemptsFromContext(r.Context())
 
 			attempt, err := findMessageDeliveryAttempt(attempts, id)
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
 			}
 
@@ -503,7 +572,7 @@ func requireDeliveryAttempt() func(next http.Handler) http.Handler {
 	}
 }
 
-func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
+func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
 	for _, endpoint := range *endpoints {
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			return &endpoint, nil
@@ -512,7 +581,7 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 	return nil, datastore.ErrEndpointNotFound
 }
 
-func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
+func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
 
 	groups, err := groupRepo.LoadGroups(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
 	if err != nil {
@@ -526,7 +595,7 @@ func getDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*dat
 	return groups[0], err
 }
 
-func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var group *datastore.Group
@@ -544,7 +613,7 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 			}
 
 			if util.IsStringEmpty(groupID) {
-				authUser := getAuthUserFromContext(r.Context())
+				authUser := GetAuthUserFromContext(r.Context())
 
 				if authUser.Credential.Type == auth.CredentialTypeAPIKey {
 					groupID = authUser.Role.Group
@@ -553,35 +622,35 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 
 			if !util.IsStringEmpty(groupID) {
 				groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
-				err = cache.Get(r.Context(), groupCacheKey, &group)
+				err = m.cache.Get(r.Context(), groupCacheKey, &group)
 				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 					return
 				}
 
 				if group == nil {
-					group, err = groupRepo.FetchGroupByID(r.Context(), groupID)
+					group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
 					if err != nil {
-						_ = render.Render(w, r, newErrorResponse("failed to fetch group by id", http.StatusNotFound))
+						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
 						return
 					}
-					err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+					err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
 					if err != nil {
-						_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+						_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 						return
 					}
 				}
 			} else {
 				// TODO(all): maybe we should only use default-group if require_auth is false?
 				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
-				err = cache.Get(r.Context(), groupCacheKey, &group)
+				err = m.cache.Get(r.Context(), groupCacheKey, &group)
 				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusNotFound))
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 					return
 				}
 
 				if group == nil {
-					group, err = getDefaultGroup(r, groupRepo)
+					group, err = m.GetDefaultGroup(r, m.groupRepo)
 					if err != nil {
 						event := "an error occurred while loading default group"
 						statusCode := http.StatusBadRequest
@@ -591,14 +660,14 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 							statusCode = http.StatusNotFound
 						}
 
-						_ = render.Render(w, r, newErrorResponse(event, statusCode))
+						_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
 						return
 					}
 				}
 
-				err = cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
 				if err != nil {
-					_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 					return
 				}
 			}
@@ -609,27 +678,27 @@ func requireGroup(groupRepo datastore.GroupRepository, cache cache.Cache) func(n
 	}
 }
 
-func requireAuth() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			creds, err := getAuthFromRequest(r)
+			creds, err := GetAuthFromRequest(r)
 			if err != nil {
 				log.WithError(err).Error("failed to get auth from request")
-				_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 				return
 			}
 
 			rc, err := realm_chain.Get()
 			if err != nil {
 				log.WithError(err).Error("failed to get realm chain")
-				_ = render.Render(w, r, newErrorResponse("internal server error", http.StatusInternalServerError))
+				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
 				return
 			}
 
 			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
 				log.WithError(err).Error("failed to authenticate")
-				_ = render.Render(w, r, newErrorResponse("authorization failed", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("authorization failed", http.StatusUnauthorized))
 				return
 			}
 
@@ -639,27 +708,27 @@ func requireAuth() func(next http.Handler) http.Handler {
 	}
 }
 
-func requireAuthorizedUser(userRepo datastore.UserRepository) func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAuthorizedUser() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 			user, ok := authUser.Metadata.(*datastore.User)
 
 			if !ok {
 				log.Error("metadata missing in auth user object")
-				_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 
 			userID := chi.URLParam(r, "userID")
-			dbUser, err := userRepo.FindUserByID(r.Context(), userID)
+			dbUser, err := m.userRepo.FindUserByID(r.Context(), userID)
 			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("failed to fetch user by id", http.StatusNotFound))
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch user by id", http.StatusNotFound))
 				return
 			}
 
 			if user.UID != dbUser.UID {
-				_ = render.Render(w, r, newErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
+				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
 				return
 			}
 
@@ -669,7 +738,7 @@ func requireAuthorizedUser(userRepo datastore.UserRepository) func(next http.Han
 	}
 }
 
-func requireBaseUrl() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireBaseUrl() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cfg, err := config.Get()
@@ -684,24 +753,24 @@ func requireBaseUrl() func(next http.Handler) http.Handler {
 	}
 }
 
-func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler {
+func (m *Middleware) RequirePermission(role auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := getAuthUserFromContext(r.Context())
+			authUser := GetAuthUserFromContext(r.Context())
 
 			if !authUser.Role.Type.Is(role) {
-				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
 				return
 			}
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			if group == nil {
-				_ = render.Render(w, r, newErrorResponse("unauthorized role", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
 				return
 			}
 
 			if !authUser.Role.HasGroup(group.UID) {
-				_ = render.Render(w, r, newErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
 				return
 			}
 
@@ -710,7 +779,7 @@ func requirePermission(role auth.RoleType) func(next http.Handler) http.Handler 
 	}
 }
 
-func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
+func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	val := r.Header.Get("Authorization")
 	authInfo := strings.Split(val, " ")
 
@@ -764,7 +833,7 @@ func getAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	}
 }
 
-func pagination(next http.Handler) http.Handler {
+func (m *Middleware) Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
 		rawPage := r.URL.Query().Get("page")
@@ -806,13 +875,13 @@ func pagination(next http.Handler) http.Handler {
 	})
 }
 
-func logHttpRequest(log logger.Logger) func(next http.Handler) http.Handler {
+func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-			if logger.CanLogHttpRequest(log) {
+			if logger.CanLogHttpRequest(m.logger) {
 				start := time.Now()
 
 				defer func() {
@@ -824,7 +893,7 @@ func logHttpRequest(log logger.Logger) func(next http.Handler) http.Handler {
 						"httpResponse": responseFields,
 					}
 
-					log.WithLogger().WithFields(logFields).Log(statusLevel(ww.Status()), requestFields["requestURL"])
+					m.logger.WithLogger().WithFields(logFields).Log(m.statusLevel(ww.Status()), requestFields["requestURL"])
 				}()
 
 			}
@@ -894,7 +963,7 @@ func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]
 	return responseFields
 }
 
-func statusLevel(status int) log.Level {
+func (m *Middleware) statusLevel(status int) log.Level {
 	switch {
 	case status <= 0:
 		return log.WarnLevel
@@ -930,29 +999,29 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-func fetchGroupApps(appRepo datastore.ApplicationRepository) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
+//func (m *Middleware) fetchGroupApps() func(next http.Handler) http.Handler {
+//	return func(next http.Handler) http.Handler {
+//
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//
+//			pageable := GetPageableFromContext(r.Context())
+//
+//			group := GetGroupFromContext(r.Context())
+//
+//			apps, paginationData, err := m.appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
+//			if err != nil {
+//				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
+//				return
+//			}
+//
+//			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
+//			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
+//			next.ServeHTTP(w, r)
+//		})
+//	}
+//}
 
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			pageable := getPageableFromContext(r.Context())
-
-			group := getGroupFromContext(r.Context())
-
-			apps, paginationData, err := appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
-			if err != nil {
-				_ = render.Render(w, r, newErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
-				return
-			}
-
-			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
-			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func shouldAuthRoute(r *http.Request) bool {
+func ShouldAuthRoute(r *http.Request) bool {
 	guestRoutes := []string{
 		"/ui/auth/login",
 		"/ui/auth/token/refresh",
@@ -971,7 +1040,7 @@ func shouldAuthRoute(r *http.Request) bool {
 	return true
 }
 
-func ensurePeriod(start time.Time, end time.Time) error {
+func EnsurePeriod(start time.Time, end time.Time) error {
 	if start.Unix() > end.Unix() {
 		return errors.New("startDate cannot be greater than endDate")
 	}
@@ -979,11 +1048,11 @@ func ensurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func computeDashboardMessages(ctx context.Context, orgId string, eventRepo datastore.EventRepository, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
+func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 
 	var messagesSent uint64
 
-	messages, err := eventRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
+	messages, err := m.eventRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
 	if err != nil {
 		log.Errorln("failed to load message intervals - ", err)
 		return 0, nil, err
@@ -996,12 +1065,73 @@ func computeDashboardMessages(ctx context.Context, orgId string, eventRepo datas
 	return messagesSent, messages, nil
 }
 
+func (m *Middleware) RateLimitByGroupWithParams(requestLimit int, windowLength time.Duration) func(next http.Handler) http.Handler {
+	return httprate.Limit(requestLimit, windowLength, httprate.WithKeyFuncs(func(req *http.Request) (string, error) {
+		return GetGroupFromContext(req.Context()).UID, nil
+	}))
+}
+
+func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			group := GetGroupFromContext(r.Context())
+
+			var rateLimitDuration time.Duration
+			var err error
+			if util.IsStringEmpty(group.RateLimitDuration) {
+				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
+					return
+				}
+			} else {
+				rateLimitDuration, err = time.ParseDuration(group.RateLimitDuration)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
+					return
+				}
+			}
+
+			var rateLimit int
+			if group.RateLimit == 0 {
+				rateLimit = convoy.RATE_LIMIT
+			} else {
+				rateLimit = group.RateLimit
+			}
+
+			res, err := m.limiter.Allow(r.Context(), group.UID, rateLimit, int(rateLimitDuration))
+			if err != nil {
+				message := "an error occured while getting rate limit"
+				log.WithError(err).Error(message)
+				_ = render.Render(w, r, util.NewErrorResponse(message, http.StatusBadRequest))
+				return
+			}
+
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", int(math.Max(0, float64(res.Limit.Rate-1)))))
+			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", int(math.Max(0, float64(res.Remaining-1)))))
+			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%v", res.ResetAfter))
+
+			// the Retry-After header should only be set when the rate limit has been reached
+			if res.RetryAfter > time.Nanosecond {
+				w.Header().Set("Retry-After", fmt.Sprintf("%v", res.RetryAfter))
+			}
+
+			if res.Remaining == 0 {
+				_ = render.Render(w, r, util.NewErrorResponse("Too Many Requests", http.StatusTooManyRequests))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func setApplicationInContext(ctx context.Context,
 	app *datastore.Application) context.Context {
 	return context.WithValue(ctx, appCtx, app)
 }
 
-func getApplicationFromContext(ctx context.Context) *datastore.Application {
+func GetApplicationFromContext(ctx context.Context) *datastore.Application {
 	return ctx.Value(appCtx).(*datastore.Application)
 }
 
@@ -1010,7 +1140,7 @@ func setOrganisationInContext(ctx context.Context,
 	return context.WithValue(ctx, orgCtx, org)
 }
 
-func getOrganisationFromContext(ctx context.Context) *datastore.Organisation {
+func GetOrganisationFromContext(ctx context.Context) *datastore.Organisation {
 	return ctx.Value(orgCtx).(*datastore.Organisation)
 }
 
@@ -1019,7 +1149,7 @@ func setOrganisationMemberInContext(ctx context.Context,
 	return context.WithValue(ctx, orgMemberCtx, organisationMember)
 }
 
-func getOrganisationMemberFromContext(ctx context.Context) *datastore.OrganisationMember {
+func GetOrganisationMemberFromContext(ctx context.Context) *datastore.OrganisationMember {
 	return ctx.Value(orgMemberCtx).(*datastore.OrganisationMember)
 }
 
@@ -1028,7 +1158,7 @@ func setEventInContext(ctx context.Context,
 	return context.WithValue(ctx, eventCtx, event)
 }
 
-func getEventFromContext(ctx context.Context) *datastore.Event {
+func GetEventFromContext(ctx context.Context) *datastore.Event {
 	return ctx.Value(eventCtx).(*datastore.Event)
 }
 
@@ -1037,7 +1167,7 @@ func setEventDeliveryInContext(ctx context.Context,
 	return context.WithValue(ctx, eventDeliveryCtx, eventDelivery)
 }
 
-func getEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
+func GetEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
 	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
 }
 
@@ -1046,7 +1176,7 @@ func setApplicationsInContext(ctx context.Context,
 	return context.WithValue(ctx, appCtx, apps)
 }
 
-func getApplicationsFromContext(ctx context.Context) *[]datastore.Application {
+func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
 	return ctx.Value(appCtx).(*[]datastore.Application)
 }
 
@@ -1055,7 +1185,7 @@ func setApplicationEndpointInContext(ctx context.Context,
 	return context.WithValue(ctx, endpointCtx, endpoint)
 }
 
-func getApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
+func GetApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
 	return ctx.Value(endpointCtx).(*datastore.Endpoint)
 }
 
@@ -1063,7 +1193,7 @@ func setGroupInContext(ctx context.Context, group *datastore.Group) context.Cont
 	return context.WithValue(ctx, groupCtx, group)
 }
 
-func getGroupFromContext(ctx context.Context) *datastore.Group {
+func GetGroupFromContext(ctx context.Context) *datastore.Group {
 	return ctx.Value(groupCtx).(*datastore.Group)
 }
 
@@ -1071,7 +1201,7 @@ func setPageableInContext(ctx context.Context, pageable datastore.Pageable) cont
 	return context.WithValue(ctx, pageableCtx, pageable)
 }
 
-func getPageableFromContext(ctx context.Context) datastore.Pageable {
+func GetPageableFromContext(ctx context.Context) datastore.Pageable {
 	return ctx.Value(pageableCtx).(datastore.Pageable)
 }
 
@@ -1079,7 +1209,7 @@ func setPaginationDataInContext(ctx context.Context, p *datastore.PaginationData
 	return context.WithValue(ctx, pageDataCtx, p)
 }
 
-func getPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {
+func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {
 	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
 }
 
@@ -1088,16 +1218,16 @@ func setDeliveryAttemptInContext(ctx context.Context,
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
-func getDeliveryAttemptFromContext(ctx context.Context) *datastore.DeliveryAttempt {
+func GetDeliveryAttemptFromContext(ctx context.Context) *datastore.DeliveryAttempt {
 	return ctx.Value(deliveryAttemptsCtx).(*datastore.DeliveryAttempt)
 }
 
-func setDeliveryAttemptsInContext(ctx context.Context,
+func SetDeliveryAttemptsInContext(ctx context.Context,
 	attempts *[]datastore.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
 }
 
-func getDeliveryAttemptsFromContext(ctx context.Context) *[]datastore.DeliveryAttempt {
+func GetDeliveryAttemptsFromContext(ctx context.Context) *[]datastore.DeliveryAttempt {
 	return ctx.Value(deliveryAttemptsCtx).(*[]datastore.DeliveryAttempt)
 }
 
@@ -1105,7 +1235,7 @@ func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) contex
 	return context.WithValue(ctx, authUserCtx, a)
 }
 
-func getAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
+func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(authUserCtx).(*auth.AuthenticatedUser)
 }
 
@@ -1113,11 +1243,11 @@ func setUserInContext(ctx context.Context, a *datastore.User) context.Context {
 	return context.WithValue(ctx, userCtx, a)
 }
 
-func getUserFromContext(ctx context.Context) *datastore.User {
+func GetUserFromContext(ctx context.Context) *datastore.User {
 	return ctx.Value(userCtx).(*datastore.User)
 }
 
-func getAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
+func GetAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
 	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
 }
 
@@ -1125,7 +1255,7 @@ func setHostInContext(ctx context.Context, baseUrl string) context.Context {
 	return context.WithValue(ctx, hostCtx, baseUrl)
 }
 
-func getHostFromContext(ctx context.Context) string {
+func GetHostFromContext(ctx context.Context) string {
 	return ctx.Value(hostCtx).(string)
 }
 
@@ -1141,4 +1271,13 @@ func getAppIDFromContext(ctx context.Context) string {
 	}
 
 	return appID
+}
+
+func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
+	for _, a := range *attempts {
+		if a.UID == id {
+			return &a, nil
+		}
+	}
+	return nil, datastore.ErrEventDeliveryAttemptNotFound
 }

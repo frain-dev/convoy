@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -116,8 +117,8 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 			member, err := om.CreateOrganisationMember(tt.args.ctx, tt.args.org, tt.args.user, tt.args.role)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -241,8 +242,8 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 			member, err := om.UpdateOrganisationMember(tt.args.ctx, tt.args.organisationMember, tt.args.role)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -317,8 +318,8 @@ func TestOrganisationMemberService_FindOrganisationMemberByID(t *testing.T) {
 			member, err := om.FindOrganisationMemberByID(tt.args.ctx, tt.args.org, tt.args.id)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -430,8 +431,8 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 			members, paginationData, err := om.LoadOrganisationMembersPaged(tt.args.ctx, tt.args.org, tt.args.pageable)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -529,8 +530,8 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 			err := om.DeleteOrganisationMember(tt.args.ctx, tt.args.id, tt.args.org)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

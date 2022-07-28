@@ -12,11 +12,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
@@ -27,9 +30,9 @@ import (
 
 type DashboardIntegrationTestSuite struct {
 	suite.Suite
-	DB              datastore.DatabaseClient
+	DB              convoyMongo.Client
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultUser     *datastore.User
 	DefaultOrg      *datastore.Organisation
@@ -38,8 +41,8 @@ type DashboardIntegrationTestSuite struct {
 
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
 func (s *DashboardIntegrationTestSuite) SetupTest() {
@@ -67,11 +70,12 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
 }
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
@@ -277,7 +281,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/groups/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
 			err = s.AuthenticatorFn(req, s.Router)
