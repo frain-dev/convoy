@@ -57,7 +57,7 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 	q := r.URL.Query().Get("q")
 
-	apps, paginationData, err := a.s.AppService.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
+	apps, paginationData, err := a.S.AppService.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
@@ -90,7 +90,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	group := m.GetGroupFromContext(r.Context())
-	app, err := a.s.AppService.CreateApp(r.Context(), &newApp, group)
+	app, err := a.S.AppService.CreateApp(r.Context(), &newApp, group)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -122,7 +122,7 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	app := m.GetApplicationFromContext(r.Context())
 
-	err = a.s.AppService.UpdateApplication(r.Context(), &appUpdate, app)
+	err = a.S.AppService.UpdateApplication(r.Context(), &appUpdate, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -145,7 +145,7 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Router /applications/{appID} [delete]
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
-	err := a.s.AppService.DeleteApplication(r.Context(), app)
+	err := a.S.AppService.DeleteApplication(r.Context(), app)
 	if err != nil {
 		log.Errorln("failed to delete app - ", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -178,7 +178,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	app := m.GetApplicationFromContext(r.Context())
 
-	endpoint, err := a.s.AppService.CreateAppEndpoint(r.Context(), e, app)
+	endpoint, err := a.S.AppService.CreateAppEndpoint(r.Context(), e, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -249,7 +249,7 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 	app := m.GetApplicationFromContext(r.Context())
 	endPointId := chi.URLParam(r, "endpointID")
 
-	endpoint, err := a.s.AppService.UpdateAppEndpoint(r.Context(), e, endPointId, app)
+	endpoint, err := a.S.AppService.UpdateAppEndpoint(r.Context(), e, endPointId, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -275,7 +275,7 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 	app := m.GetApplicationFromContext(r.Context())
 	e := m.GetApplicationEndpointFromContext(r.Context())
 
-	err := a.s.AppService.DeleteAppEndpoint(r.Context(), e, app)
+	err := a.S.AppService.DeleteAppEndpoint(r.Context(), e, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

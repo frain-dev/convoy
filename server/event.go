@@ -39,7 +39,7 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	g := m.GetGroupFromContext(r.Context())
 
-	event, err := a.s.EventService.CreateAppEvent(r.Context(), &newMessage, g)
+	event, err := a.S.EventService.CreateAppEvent(r.Context(), &newMessage, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -64,7 +64,7 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 	g := m.GetGroupFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
 
-	err := a.s.EventService.ReplayAppEvent(r.Context(), event, g)
+	err := a.S.EventService.ReplayAppEvent(r.Context(), event, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -125,7 +125,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 
-	err := a.s.EventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
+	err := a.S.EventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -175,7 +175,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 		SearchParams: searchParams,
 	}
 
-	successes, failures, err := a.s.EventService.BatchRetryEventDelivery(r.Context(), f)
+	successes, failures, err := a.S.EventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -223,7 +223,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		SearchParams: searchParams,
 	}
 
-	count, err := a.s.EventService.CountAffectedEventDeliveries(r.Context(), f)
+	count, err := a.S.EventService.CountAffectedEventDeliveries(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -253,7 +253,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 		return
 	}
 
-	successes, failures, err := a.s.EventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
+	successes, failures, err := a.S.EventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -310,7 +310,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	}
 
 	if config.Search.Type == "typesense" && !util.IsStringEmpty(query) {
-		m, paginationData, err := a.s.EventService.Search(r.Context(), f)
+		m, paginationData, err := a.S.EventService.Search(r.Context(), f)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -321,7 +321,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	m, paginationData, err := a.s.EventService.GetEventsPaged(r.Context(), f)
+	m, paginationData, err := a.S.EventService.GetEventsPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
@@ -373,7 +373,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		SearchParams: searchParams,
 	}
 
-	ed, paginationData, err := a.s.EventService.GetEventDeliveriesPaged(r.Context(), f)
+	ed, paginationData, err := a.S.EventService.GetEventDeliveriesPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return

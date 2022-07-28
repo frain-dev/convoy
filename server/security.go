@@ -36,7 +36,7 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	member := m.GetOrganisationMemberFromContext(r.Context())
-	apiKey, keyString, err := a.s.SecurityService.CreateAPIKey(r.Context(), member, &newApiKey)
+	apiKey, keyString, err := a.S.SecurityService.CreateAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
 		log.WithError(err).Error("fff")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -90,7 +90,7 @@ func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 	app := m.GetApplicationFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
 
-	apiKey, key, err := a.s.SecurityService.CreateAppPortalAPIKey(r.Context(), group, app, &baseUrl)
+	apiKey, key, err := a.S.SecurityService.CreateAppPortalAPIKey(r.Context(), group, app, &baseUrl)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -122,7 +122,7 @@ func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID}/revoke [put]
 func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
-	err := a.s.SecurityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
+	err := a.S.SecurityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -144,7 +144,7 @@ func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [get]
 func (a *ApplicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
-	apiKey, err := a.s.SecurityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
+	apiKey, err := a.S.SecurityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -185,7 +185,7 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiKey, err := a.s.SecurityService.UpdateAPIKey(r.Context(), chi.URLParam(r, "keyID"), &updateApiKey.Role)
+	apiKey, err := a.S.SecurityService.UpdateAPIKey(r.Context(), chi.URLParam(r, "keyID"), &updateApiKey.Role)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -221,7 +221,7 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
-	apiKeys, paginationData, err := a.s.SecurityService.GetAPIKeys(r.Context(), &pageable)
+	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), &pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

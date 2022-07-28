@@ -28,7 +28,7 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, token, err := a.s.UserService.LoginUser(r.Context(), &newUser)
+	user, token, err := a.S.UserService.LoginUser(r.Context(), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -66,7 +66,7 @@ func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	token, err := a.s.UserService.RefreshToken(r.Context(), &refreshToken)
+	token, err := a.S.UserService.RefreshToken(r.Context(), &refreshToken)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -92,7 +92,7 @@ func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = a.s.UserService.LogoutUser(auth.Token)
+	err = a.S.UserService.LogoutUser(auth.Token)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -148,7 +148,7 @@ func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err = a.s.UserService.UpdateUser(r.Context(), &userUpdate, user)
+	user, err = a.S.UserService.UpdateUser(r.Context(), &userUpdate, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -183,7 +183,7 @@ func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	user, err = a.s.UserService.UpdatePassword(r.Context(), &updatePassword, user)
+	user, err = a.S.UserService.UpdatePassword(r.Context(), &updatePassword, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -213,7 +213,7 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = a.s.UserService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
+	err = a.S.UserService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -241,7 +241,7 @@ func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := a.s.UserService.ResetPassword(r.Context(), token, &resetPassword)
+	user, err := a.S.UserService.ResetPassword(r.Context(), token, &resetPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

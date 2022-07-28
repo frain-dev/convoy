@@ -21,7 +21,7 @@ import (
 // @Security ApiKeyAuth
 // @Router /configuration [get]
 func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
-	config, err := a.s.ConfigService.LoadConfiguration(r.Context())
+	config, err := a.S.ConfigService.LoadConfiguration(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -63,7 +63,7 @@ func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 		return
 	}
 
-	config, err := a.s.ConfigService.CreateConfiguration(r.Context(), &newConfig)
+	config, err := a.S.ConfigService.CreateConfiguration(r.Context(), &newConfig)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -100,7 +100,7 @@ func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.
 		return
 	}
 
-	config, err := a.s.ConfigService.UpdateConfiguration(r.Context(), &newConfig)
+	config, err := a.S.ConfigService.UpdateConfiguration(r.Context(), &newConfig)
 	if err != nil {
 		log.Println(err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

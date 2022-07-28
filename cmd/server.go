@@ -153,27 +153,30 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.NewServer(&server.CreateServer{
-		Cfg:               cfg,
-		EventRepo:         a.eventRepo,
-		EventDeliveryRepo: a.eventDeliveryRepo,
-		AppRepo:           a.applicationRepo,
-		GroupRepo:         a.groupRepo,
-		ApiKeyRepo:        a.apiKeyRepo,
-		SubRepo:           a.subRepo,
-		SourceRepo:        a.sourceRepo,
-		OrgRepo:           a.orgRepo,
-		OrgMemberRepo:     a.orgMemberRepo,
-		OrgInviteRepo:     a.orgInviteRepo,
-		UserRepo:          a.userRepo,
-		ConfigRepo:        a.configRepo,
-		Queue:             a.queue,
-		Logger:            a.logger,
-		Tracer:            a.tracer,
-		Cache:             a.cache,
-		Limiter:           a.limiter,
-		Searcher:          a.searcher,
-	})
+	srv := server.NewServer(&server.CreateServer{Cfg: cfg})
+
+	handler := route.NewApplicationHandler(
+		route.Repos{
+			EventRepo:         a.eventRepo,
+			EventDeliveryRepo: a.eventDeliveryRepo,
+			AppRepo:           a.applicationRepo,
+			GroupRepo:         a.groupRepo,
+			ApiKeyRepo:        a.apiKeyRepo,
+			SubRepo:           a.subRepo,
+			SourceRepo:        a.sourceRepo,
+			OrgRepo:           a.orgRepo,
+			OrgMemberRepo:     a.orgMemberRepo,
+			OrgInviteRepo:     a.orgInviteRepo,
+			UserRepo:          a.userRepo,
+			ConfigRepo:        a.configRepo,
+		}, route.Services{
+			Queue:    a.queue,
+			Logger:   a.logger,
+			Tracer:   a.tracer,
+			Cache:    a.cache,
+			Limiter:  a.limiter,
+			Searcher: a.searcher,
+		})
 
 	if withWorkers {
 		// register worker.
@@ -218,7 +221,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.Start()
 	}
 
-	srv.SetHandler(route.BuildRoutes(srv))
+	srv.SetHandler(handler.BuildRoutes())
 
 	log.Infof("Started convoy server in %s", time.Since(start))
 

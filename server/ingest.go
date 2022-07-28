@@ -26,7 +26,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	source, err := a.s.SourceService.FindSourceByMaskID(r.Context(), maskID)
+	source, err := a.S.SourceService.FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -128,7 +128,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Delay:   0,
 	}
 
-	err = a.s.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = a.S.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -143,19 +143,19 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	var source *datastore.Source
 	sourceCacheKey := convoy.SourceCacheKey.Get(maskID).String()
 
-	err := a.s.Cache.Get(r.Context(), sourceCacheKey, &source)
+	err := a.S.Cache.Get(r.Context(), sourceCacheKey, &source)
 	if err != nil {
 		log.Error(err)
 	}
 
 	if source == nil {
-		source, err = a.s.SourceService.FindSourceByMaskID(r.Context(), maskID)
+		source, err = a.S.SourceService.FindSourceByMaskID(r.Context(), maskID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
 
-		err = a.s.Cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
+		err = a.S.Cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
 		if err != nil {
 			log.Error(err)
 		}
@@ -182,7 +182,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = c.HandleRequest(w, r, source, a.s.SourceRepo)
+	err = c.HandleRequest(w, r, source, a.R.SourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
