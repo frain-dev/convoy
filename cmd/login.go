@@ -101,7 +101,7 @@ func addLoginCommand(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:               "login",
-		Short:             "Logins to your Convoy instance using your CLI API Key",
+		Short:             "Logs into your Convoy instance using your CLI API Key",
 		PersistentPreRun:  func(cmd *cobra.Command, args []string) {},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
