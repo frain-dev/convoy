@@ -153,7 +153,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.NewServer(&server.CreateServer{Cfg: cfg})
+	srv := server.NewServer(cfg.Server.HTTP.Port)
 
 	handler := route.NewApplicationHandler(
 		route.Repos{

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -22,17 +21,13 @@ type Server struct {
 	M *middleware.Middleware
 }
 
-type CreateServer struct {
-	Cfg config.Configuration
-}
-
-func NewServer(c *CreateServer) *Server {
+func NewServer(port uint32) *Server {
 
 	srv := &Server{
 		s: &http.Server{
 			ReadTimeout:  time.Second * 30,
 			WriteTimeout: time.Second * 30,
-			Addr:         fmt.Sprintf(":%d", c.Cfg.Server.HTTP.Port),
+			Addr:         fmt.Sprintf(":%d", port),
 		},
 	}
 
