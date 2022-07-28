@@ -10,12 +10,10 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -38,9 +36,6 @@ func NewServer(c *CreateServer) *Server {
 		},
 	}
 
-	// metrics.RegisterQueueMetrics(c.Queue, c.Cfg)
-	// metrics.RegisterDBMetrics(c.EventDeliveryRepo)
-	prometheus.MustRegister(metrics.RequestDuration())
 	return srv
 }
 

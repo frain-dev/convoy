@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
@@ -570,5 +571,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 	router.Handle("/queue/monitoring/*", a.S.Queue.(*redisqueue.RedisQueue).Monitor())
 	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 	router.HandleFunc("/*", reactRootHandler)
+
+	metrics.RegisterQueueMetrics(a.S.Queue)
+	metrics.RegisterDBMetrics(a.R.EventDeliveryRepo)
+	prometheus.MustRegister(metrics.RequestDuration())
+
 	return router
 }
