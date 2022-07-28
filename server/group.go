@@ -25,7 +25,7 @@ import (
 func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	group := m.GetGroupFromContext(r.Context())
-	err := a.s.GroupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
+	err := a.S.GroupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -49,7 +49,7 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
-	err := a.s.GroupService.DeleteGroup(r.Context(), group.UID)
+	err := a.S.GroupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -81,7 +81,7 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 
 	org := m.GetOrganisationFromContext(r.Context())
 	member := m.GetOrganisationMemberFromContext(r.Context())
-	group, apiKey, err := a.s.GroupService.CreateGroup(r.Context(), &newGroup, org, member)
+	group, apiKey, err := a.S.GroupService.CreateGroup(r.Context(), &newGroup, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -116,7 +116,7 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	g := m.GetGroupFromContext(r.Context())
-	group, err := a.s.GroupService.UpdateGroup(r.Context(), g, &update)
+	group, err := a.S.GroupService.UpdateGroup(r.Context(), g, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -143,7 +143,7 @@ func (a *ApplicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	filter := &datastore.GroupFilter{OrgID: org.UID}
 	filter.Names = append(filter.Names, name)
 
-	groups, err := a.s.GroupService.GetGroups(r.Context(), filter)
+	groups, err := a.S.GroupService.GetGroups(r.Context(), filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

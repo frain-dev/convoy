@@ -34,7 +34,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 
 	group := m.GetGroupFromContext(r.Context())
 
-	source, err := a.s.SourceService.CreateSource(r.Context(), &newSource, group)
+	source, err := a.S.SourceService.CreateSource(r.Context(), &newSource, group)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -60,7 +60,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
-	source, err := a.s.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -94,13 +94,13 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	group := m.GetGroupFromContext(r.Context())
-	source, err := a.s.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	source, err = a.s.SourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
+	source, err = a.S.SourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -126,13 +126,13 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Router /sources/{sourceID} [delete]
 func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
-	source, err := a.s.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = a.s.SourceService.DeleteSource(r.Context(), group, source)
+	err = a.S.SourceService.DeleteSource(r.Context(), group, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -162,7 +162,7 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 		Type: r.URL.Query().Get("type"),
 	}
 
-	sources, paginationData, err := a.s.SourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
+	sources, paginationData, err := a.S.SourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusInternalServerError))
 		return

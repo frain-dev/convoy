@@ -45,7 +45,7 @@ func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 	pageable := m.GetPageableFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
 
-	organisations, paginationData, err := a.s.OrganisationService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
+	organisations, paginationData, err := a.S.OrganisationService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -77,7 +77,7 @@ func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 
 	user := m.GetUserFromContext(r.Context())
 
-	organisation, err := a.s.OrganisationService.CreateOrganisation(r.Context(), &newOrg, user)
+	organisation, err := a.S.OrganisationService.CreateOrganisation(r.Context(), &newOrg, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -106,7 +106,7 @@ func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	org, err := a.s.OrganisationService.UpdateOrganisation(r.Context(), m.GetOrganisationFromContext(r.Context()), &orgUpdate)
+	org, err := a.S.OrganisationService.UpdateOrganisation(r.Context(), m.GetOrganisationFromContext(r.Context()), &orgUpdate)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -128,7 +128,7 @@ func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 // @Router /ui/organisations/{orgID} [delete]
 func (a *ApplicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
-	err := a.s.OrganisationService.DeleteOrganisation(r.Context(), org.UID)
+	err := a.S.OrganisationService.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

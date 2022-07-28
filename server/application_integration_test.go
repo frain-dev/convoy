@@ -15,23 +15,24 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/server"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/jaswdr/faker"
 	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/suite"
 )
 
 type ApplicationIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
+	DB           convoyMongo.Client
 	Router       http.Handler
-	ConvoyApp    *server.Server
+	ConvoyApp    *ApplicationHandler
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
@@ -39,7 +40,7 @@ type ApplicationIntegrationTestSuite struct {
 func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = BuildRoutes(s.ConvoyApp)
+	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupTest() {
@@ -60,7 +61,7 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.Cache)
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
 }
 
 func (s *ApplicationIntegrationTestSuite) TearDownTest() {

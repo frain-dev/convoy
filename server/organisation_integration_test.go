@@ -12,11 +12,11 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/server"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
@@ -26,9 +26,9 @@ import (
 
 type OrganisationIntegrationTestSuite struct {
 	suite.Suite
-	DB              datastore.DatabaseClient
+	DB              convoyMongo.Client
 	Router          http.Handler
-	ConvoyApp       *server.Server
+	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -38,7 +38,7 @@ type OrganisationIntegrationTestSuite struct {
 func (s *OrganisationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = BuildRoutes(s.ConvoyApp)
+	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
 func (s *OrganisationIntegrationTestSuite) SetupTest() {
@@ -65,7 +65,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.Cache)
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
 }
 
 func (s *OrganisationIntegrationTestSuite) TearDownTest() {

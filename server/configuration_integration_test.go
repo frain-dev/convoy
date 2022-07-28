@@ -9,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/server"
+
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -22,9 +23,9 @@ import (
 
 type ConfigurationIntegrationTestSuite struct {
 	suite.Suite
-	DB              datastore.DatabaseClient
+	DB              convoyMongo.Client
 	Router          http.Handler
-	ConvoyApp       *server.Server
+	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -34,7 +35,7 @@ type ConfigurationIntegrationTestSuite struct {
 func (c *ConfigurationIntegrationTestSuite) SetupSuite() {
 	c.DB = getDB()
 	c.ConvoyApp = buildServer()
-	c.Router = BuildRoutes(c.ConvoyApp)
+	c.Router = c.ConvoyApp.BuildRoutes()
 }
 
 func (c *ConfigurationIntegrationTestSuite) SetupTest() {
@@ -60,7 +61,7 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(c.T(), err)
 
-	initRealmChain(c.T(), c.DB.APIRepo(), c.DB.UserRepo(), c.ConvoyApp.Cache)
+	initRealmChain(c.T(), c.DB.APIRepo(), c.DB.UserRepo(), c.ConvoyApp.S.Cache)
 }
 
 func (c *ConfigurationIntegrationTestSuite) TearDownTest() {

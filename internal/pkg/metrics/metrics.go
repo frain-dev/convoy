@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -46,11 +45,7 @@ func RequestDuration() *prometheus.HistogramVec {
 	return requestDuration
 }
 
-func RegisterQueueMetrics(q queue.Queuer, cfg config.Configuration) {
-
-	if cfg.Queue.Type != config.RedisQueueProvider {
-		return
-	}
+func RegisterQueueMetrics(q queue.Queuer) {
 	Reg().MustRegister(
 		metrics.NewQueueMetricsCollector(q.(*redisqueue.RedisQueue).Inspector()),
 	)

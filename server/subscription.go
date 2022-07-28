@@ -32,7 +32,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 
-	apps, paginationData, err := a.s.SubService.LoadSubscriptionsPaged(r.Context(), group.UID, pageable)
+	apps, paginationData, err := a.S.SubService.LoadSubscriptionsPaged(r.Context(), group.UID, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load subscriptions")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -59,7 +59,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 	subId := chi.URLParam(r, "subscriptionID")
 	group := m.GetGroupFromContext(r.Context())
 
-	subscription, err := a.s.SubService.FindSubscriptionByID(r.Context(), group, subId, false)
+	subscription, err := a.S.SubService.FindSubscriptionByID(r.Context(), group, subId, false)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -91,7 +91,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 
 	sub.Type = string(group.Type)
 
-	subscription, err := a.s.SubService.CreateSubscription(r.Context(), group, &sub)
+	subscription, err := a.S.SubService.CreateSubscription(r.Context(), group, &sub)
 	if err != nil {
 		log.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -116,13 +116,13 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
-	sub, err := a.s.SubService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
+	sub, err := a.S.SubService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = a.s.SubService.DeleteSubscription(r.Context(), group.UID, sub)
+	err = a.S.SubService.DeleteSubscription(r.Context(), group.UID, sub)
 	if err != nil {
 		log.Errorln("failed to delete subscription - ", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -156,7 +156,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	g := m.GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
-	sub, err := a.s.SubService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
+	sub, err := a.S.SubService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -180,7 +180,7 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 	g := m.GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
-	sub, err := a.s.SubService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
+	sub, err := a.S.SubService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
