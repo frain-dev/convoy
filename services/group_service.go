@@ -120,7 +120,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 			Name: apiKey.Name,
 			Role: models.Role{
 				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Groups[0],
+				Group: apiKey.Role.Group,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),

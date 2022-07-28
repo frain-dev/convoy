@@ -50,8 +50,8 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{s.DefaultGroup.UID},
+		Type:  auth.RoleAdmin,
+		Group: s.DefaultGroup.UID,
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")

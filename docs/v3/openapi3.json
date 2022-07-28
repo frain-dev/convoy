@@ -3,17 +3,11 @@
 		"schemas": {
 			"auth.Role": {
 				"properties": {
-					"apps": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
+					"app": {
+						"type": "string"
 					},
-					"groups": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
+					"group": {
+						"type": "string"
 					},
 					"type": {
 						"type": "string"

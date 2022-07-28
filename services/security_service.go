@@ -34,8 +34,8 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	}
 
 	role := &auth.Role{
-		Type:   newApiKey.Role.Type,
-		Groups: []string{newApiKey.Role.Group},
+		Type:  newApiKey.Role.Type,
+		Group: newApiKey.Role.Group,
 	}
 
 	err := role.Validate("api key")
@@ -103,9 +103,9 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	}
 
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{group.UID},
-		Apps:   []string{app.UID},
+		Type:  auth.RoleAdmin,
+		Group: group.UID,
+		App:   app.UID,
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -125,7 +125,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
 		Name:           app.Title,
-		Type:           "app_portal",
+		Type:           datastore.AppPortalKey,
 		Role:           role,
 		Hash:           encodedKey,
 		Salt:           salt,
@@ -186,13 +186,9 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	groups, err := ss.groupRepo.FetchGroupsByIDs(ctx, role.Groups)
+	_, err = ss.groupRepo.FetchGroupByID(ctx, role.Group)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
-	}
-
-	if len(groups) != len(role.Groups) {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("cannot find group"))
 	}
 
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)

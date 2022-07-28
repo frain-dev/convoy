@@ -47,8 +47,8 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{s.DefaultGroup.UID},
+		Type:  auth.RoleAdmin,
+		Group: s.DefaultGroup.UID,
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
@@ -118,8 +118,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{group.UID},
+		Type:  auth.RoleAdmin,
+		Group: group.UID,
 	}
 
 	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")
@@ -369,8 +369,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{group.UID},
+		Type:  auth.RoleAdmin,
+		Group: group.UID,
 	}
 
 	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")

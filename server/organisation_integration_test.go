@@ -217,9 +217,9 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.DB, org, s.DefaultUser, &auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleAdmin,
+		Group: uuid.NewString(),
+		App:   "",
 	})
 	require.NoError(s.T(), err)
 

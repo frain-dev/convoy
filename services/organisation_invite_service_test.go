@@ -54,8 +54,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				newIV: &models.OrganisationInvite{
 					InviteeEmail: "test@example.com",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"abc"},
+						Type:  auth.RoleAdmin,
+						Group: "abc",
 					},
 				},
 				user:    &datastore.User{},
@@ -73,8 +73,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				OrganisationID: "123",
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"abc"},
+					Type:  auth.RoleAdmin,
+					Group: "abc",
 				},
 				Status:         datastore.InviteStatusPending,
 				DocumentStatus: datastore.ActiveDocumentStatus,
@@ -89,8 +89,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				newIV: &models.OrganisationInvite{
 					InviteeEmail: "",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"abc"},
+						Type:  auth.RoleAdmin,
+						Group: "abc",
 					},
 				},
 				user:    &datastore.User{},
@@ -116,7 +116,7 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify groups for organisation member",
+			wantErrMsg:  "please specify group for organisation member",
 		},
 		{
 			name: "should_fail_to_create_organisation_member_invite",
@@ -126,8 +126,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				newIV: &models.OrganisationInvite{
 					InviteeEmail: "test@example.com",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"abc"},
+						Type:  auth.RoleAdmin,
+						Group: "abc",
 					},
 				},
 				user:    nil,
@@ -206,9 +206,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -219,9 +219,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"ref"},
-						Apps:   nil,
+						Type:  auth.RoleAdmin,
+						Group: "ref",
+						App:   "",
 					},
 				}).Times(1).Return(nil)
 
@@ -261,9 +261,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						Status:         datastore.InviteStatusAccepted,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -290,9 +290,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						Status:         datastore.InviteStatusDeclined,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -320,9 +320,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)),
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -367,9 +367,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -380,9 +380,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"ref"},
-						Apps:   nil,
+						Type:  auth.RoleAdmin,
+						Group: "ref",
+						App:   "",
 					},
 				}).Times(1).Return(nil)
 			},
@@ -406,9 +406,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -444,9 +444,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -457,9 +457,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"ref"},
-						Apps:   nil,
+						Type:  auth.RoleAdmin,
+						Group: "ref",
+						App:   "",
 					},
 				}).Times(1).Return(nil)
 
@@ -498,9 +498,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -537,9 +537,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -576,9 +576,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -612,9 +612,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -654,9 +654,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -702,9 +702,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					},
 					nil,
@@ -715,9 +715,9 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					ExpiresAt:      expiry,
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
-						Type:   auth.RoleAdmin,
-						Groups: []string{"ref"},
-						Apps:   nil,
+						Type:  auth.RoleAdmin,
+						Group: "ref",
+						App:   "",
 					},
 				}).Times(1).Return(errors.New("failed"))
 
@@ -1045,9 +1045,9 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@example.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					}, nil)
 
@@ -1061,8 +1061,8 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 				OrganisationID: "123",
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"ref"},
+					Type:  auth.RoleAdmin,
+					Group: "ref",
 				},
 				Status: datastore.InviteStatusPending,
 			},
@@ -1129,9 +1129,9 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@example.com",
 						Role: auth.Role{
-							Type:   auth.RoleAdmin,
-							Groups: []string{"ref"},
-							Apps:   nil,
+							Type:  auth.RoleAdmin,
+							Group: "ref",
+							App:   "",
 						},
 					}, nil)
 
@@ -1143,9 +1143,9 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 				Status:         datastore.InviteStatusCancelled,
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"ref"},
-					Apps:   nil,
+					Type:  auth.RoleAdmin,
+					Group: "ref",
+					App:   "",
 				},
 			},
 			wantErr: false,

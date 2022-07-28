@@ -229,8 +229,8 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
 
-			if len(authUser.Role.Apps) > 0 {
-				appID := authUser.Role.Apps[0]
+			if !util.IsStringEmpty(authUser.Role.App) {
+				appID := authUser.Role.App
 				r = r.WithContext(setAppIDInContext(r.Context(), appID))
 			}
 
@@ -291,26 +291,21 @@ func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next ht
 			}
 
 			group := GetGroupFromContext(r.Context())
-			for _, v := range authUser.Role.Groups {
-				if group.Name == v || group.UID == v {
+			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
+				if !util.IsStringEmpty(authUser.Role.App) { //we're dealing with an app portal token at this point
+					app := GetApplicationFromContext(r.Context())
 
-					if len(authUser.Role.Apps) > 0 { //we're dealing with an app portal token at this point
-						app := GetApplicationFromContext(r.Context())
-
-						for _, ap := range authUser.Role.Apps {
-							if app.Title == ap || app.UID == ap {
-								next.ServeHTTP(w, r)
-								return
-							}
-						}
-
-						_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
+					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
+						next.ServeHTTP(w, r)
 						return
 					}
 
-					next.ServeHTTP(w, r)
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
 					return
 				}
+
+				next.ServeHTTP(w, r)
+				return
 			}
 
 			_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
@@ -466,11 +461,9 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 			}
 
 			group := GetGroupFromContext(r.Context())
-			for _, g := range member.Role.Groups {
-				if g == group.UID {
-					next.ServeHTTP(w, r)
-					return
-				}
+			if member.Role.Group == group.UID {
+				next.ServeHTTP(w, r)
+				return
 			}
 
 			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
@@ -622,8 +615,8 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 			if util.IsStringEmpty(groupID) {
 				authUser := GetAuthUserFromContext(r.Context())
 
-				if len(authUser.Role.Groups) > 0 && authUser.Credential.Type == auth.CredentialTypeAPIKey {
-					groupID = authUser.Role.Groups[0]
+				if authUser.Credential.Type == auth.CredentialTypeAPIKey {
+					groupID = authUser.Role.Group
 				}
 			}
 

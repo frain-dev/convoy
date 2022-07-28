@@ -79,9 +79,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleAdmin,
+		Group: uuid.NewString(),
+		App:   "",
 	})
 	require.NoError(s.T(), err)
 
@@ -132,9 +132,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleAdmin,
+		Group: uuid.NewString(),
+		App:   "",
 	})
 
 	// Arrange.
@@ -174,16 +174,16 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleAdmin,
+		Group: uuid.NewString(),
+		App:   "",
 	})
 	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 
-	body := strings.NewReader(`{"role":{ "type":"api", "groups":["123"]}}`)
+	body := strings.NewReader(`{"role":{ "type":"api", "group":"123"}}`)
 	req := createRequest(http.MethodPut, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -202,7 +202,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	parseResponse(s.T(), w.Result(), &m)
 
 	require.Equal(s.T(), member.UID, m.UID)
-	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Groups: []string{"123"}}, m.Role)
+	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Group: "123"}, m.Role)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember() {
@@ -212,9 +212,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleAdmin,
+		Group: uuid.NewString(),
+		App:   "",
 	})
 
 	// Arrange.
