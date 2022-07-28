@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -13,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/notification/noop"
 
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/searcher"
@@ -55,7 +53,7 @@ func main() {
 	}
 
 	app := &app{}
-	var db datastore.DatabaseClient
+	db := &mongo.Client{}
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
@@ -130,26 +128,7 @@ func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
 }
 
-func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
-	switch cfg.Database.Type {
-	case config.MongodbDatabaseProvider:
-		db, err := mongo.New(cfg)
-		if err != nil {
-			return nil, err
-		}
-		return db, nil
-	case config.InMemoryDatabaseProvider:
-		bolt, err := badger.New(cfg)
-		if err != nil {
-			return nil, err
-		}
-		return bolt, nil
-	default:
-		return nil, errors.New("invalid database type")
-	}
-}
-
-func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
+func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -185,7 +164,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 
 		apm.SetApplication(nRApp)
 
-		db, err := NewDB(cfg)
+		db, err = mongo.New(cfg)
 		if err != nil {
 			return err
 		}
@@ -272,12 +251,17 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 		app.searcher = se
 		app.emailNotificationSender = em
 
+		fmt.Printf("\n[pre run] app: %+v\n", app)
+		fmt.Printf("\n[pre run] db: %+v\n", db)
+
 		return ensureDefaultUser(context.Background(), app)
 	}
 }
 
-func postRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
+func postRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		fmt.Printf("\n[post run] app: %+v\n", app)
+		fmt.Printf("\n[post run] db: %+v\n", db)
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)
@@ -312,7 +296,7 @@ type ConvoyCli struct {
 	cmd *cobra.Command
 }
 
-func NewCli(app *app, db datastore.DatabaseClient) ConvoyCli {
+func NewCli(app *app, db *mongo.Client) ConvoyCli {
 	cmd := &cobra.Command{
 		Use:     "Convoy",
 		Version: convoy.GetVersion(),
