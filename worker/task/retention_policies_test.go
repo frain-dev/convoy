@@ -13,7 +13,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+
 	"github.com/frain-dev/convoy/searcher"
 	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
 	"github.com/hibiken/asynq"
@@ -28,7 +29,7 @@ import (
 
 type RetentionPoliciesIntegrationTestSuite struct {
 	suite.Suite
-	DB        datastore.DatabaseClient
+	DB        convoyMongo.Client
 	ConvoyApp *applicationHandler
 }
 
@@ -185,15 +186,15 @@ func getConfig() config.Configuration {
 	}
 }
 
-func getDB() datastore.DatabaseClient {
+func getDB() convoyMongo.Client {
 
-	db, err := mongoStore.New(getConfig())
+	db, err := convoyMongo.New(getConfig())
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
 	}
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
-	return db.(*mongoStore.Client)
+	return *db
 }
 
 func buildApplication() *applicationHandler {
@@ -220,7 +221,7 @@ type applicationHandler struct {
 	searcher          searcher.Searcher
 }
 
-func seedEvent(db datastore.DatabaseClient, appID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
+func seedEvent(db convoyMongo.Client, appID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -245,7 +246,7 @@ func seedEvent(db datastore.DatabaseClient, appID string, groupID string, uid, e
 	return ev, nil
 }
 
-func seedEventDelivery(db datastore.DatabaseClient, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(db convoyMongo.Client, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -272,7 +273,7 @@ func seedEventDelivery(db datastore.DatabaseClient, appID string, eventID string
 	return eventDelivery, nil
 }
 
-func seedConfiguration(db datastore.DatabaseClient) (*datastore.Configuration, error) {
+func seedConfiguration(db convoyMongo.Client) (*datastore.Configuration, error) {
 	defaultStorage := &datastore.DefaultStoragePolicy
 	defaultStorage.OnPrem.Path = "/tmp/convoy/export/"
 

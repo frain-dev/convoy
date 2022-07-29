@@ -7,9 +7,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-
-	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -46,7 +45,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 
 			router := chi.NewRouter()
 			router.Handle("/queue/monitoring/*", a.queue.(*redisqueue.RedisQueue).Monitor())
-			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
+			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 
 			srv := &http.Server{
 				Handler: router,

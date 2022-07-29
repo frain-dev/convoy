@@ -10,9 +10,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
@@ -22,16 +25,16 @@ import (
 
 type UserIntegrationTestSuite struct {
 	suite.Suite
-	DB        datastore.DatabaseClient
+	DB        convoyMongo.Client
 	Router    http.Handler
-	ConvoyApp *applicationHandler
+	ConvoyApp *ApplicationHandler
 	jwt       *jwt.Jwt
 }
 
 func (u *UserIntegrationTestSuite) SetupSuite() {
 	u.DB = getDB()
-	u.ConvoyApp = buildApplication()
-	u.Router = buildRoutes(u.ConvoyApp)
+	u.ConvoyApp = buildServer()
+	u.Router = u.ConvoyApp.BuildRoutes()
 }
 
 func (u *UserIntegrationTestSuite) SetupTest() {
@@ -43,13 +46,14 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 	config, err := config.Get()
 	require.NoError(u.T(), err)
 
-	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.ConvoyApp.cache)
+	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.ConvoyApp.S.Cache)
 
-	initRealmChain(u.T(), u.DB.APIRepo(), u.DB.UserRepo(), u.ConvoyApp.cache)
+	initRealmChain(u.T(), u.DB.APIRepo(), u.DB.UserRepo(), u.ConvoyApp.S.Cache)
 }
 
 func (u *UserIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(u.DB)
+	metrics.Reset()
 }
 
 func (u *UserIntegrationTestSuite) Test_LoginUser() {
