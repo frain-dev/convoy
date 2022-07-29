@@ -89,7 +89,7 @@
 </form>
 
 <convoy-modal
-	size="large"
+	size="lg"
 	[title]="showCreateAppModal ? 'Create New App' : showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'"
 	*ngIf="showCreateAppModal || showCreateSourceModal || showCreateEndpointModal"
 	(closeModal)="showCreateAppModal = false; showCreateSourceModal = false; showCreateEndpointModal = false"

@@ -1,12 +1,9 @@
 package task
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -149,31 +146,13 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return nil
 		}
 
-		buff := bytes.NewBuffer([]byte{})
-		encoder := json.NewEncoder(buff)
-		encoder.SetEscapeHTML(false)
-		if err := encoder.Encode(ed.Metadata.Data); err != nil {
-			log.WithError(err).Error("Failed to encode data")
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
-		bStr := strings.TrimSuffix(buff.String(), "\n")
-
 		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
-		var signedPayload strings.Builder
-		var timestamp string
-		if g.Config.ReplayAttacks {
-			timestamp = fmt.Sprint(time.Now().Unix())
-			signedPayload.WriteString(timestamp)
-			signedPayload.WriteString(",")
-		}
-		signedPayload.WriteString(bStr)
 
-		hmac, err := util.ComputeJSONHmac(g.Config.Signature.Hash, signedPayload.String(), secret, false)
+		sig, err := util.GenerateSignatureHeader(g.Config.ReplayAttacks, g.Config.Signature.Hash, secret, ed.Metadata.Data)
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -182,7 +161,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), []byte(bStr), g, hmac, timestamp, int64(cfg.MaxResponseSize), ed.ForwardedHeaders)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.EncodedData, g, sig.Hmac, sig.Timestamp, int64(cfg.MaxResponseSize), ed.ForwardedHeaders)
 		status := "-"
 		statusCode := 0
 		if resp != nil {

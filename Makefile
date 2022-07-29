@@ -16,4 +16,3 @@ ui_install:
 
 integration_tests:
 	go test -tags integration -p 1 ./...
-

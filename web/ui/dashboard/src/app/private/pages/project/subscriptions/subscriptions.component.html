@@ -50,7 +50,7 @@
 		<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
 			<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10 cursor-pointer" routerLink="./" [queryParams]="{ id: subscription.uid }">
 				<div class="flex items-center">
-					<h4 class="pl-16px font-medium">
+					<h4 class="pl-16px font-medium text-14">
 						{{ subscription.name }}
 					</h4>
 					<convoy-tag [type]="subscription.status | statuscolor" className="ml-4px">{{ subscription.status }}</convoy-tag>
@@ -71,15 +71,15 @@
 			<div class="flex items-end justify-between pb-8px pl-16px mt-8px" [ngClass]="{ 'border-b border-b-grey-10': subscription.type === 'incoming' }">
 				<div class="w-full">
 					<div class="text-grey-40 text-10 mb-3">App</div>
-					<div class="text-12 font-medium">{{ subscription?.app_metadata?.name }}</div>
+					<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
 				</div>
 				<div class="w-full">
-					<div class="text-12 font-medium max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
+					<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
 						{{ subscription?.endpoint_metadata?.target_url }}
 					</div>
 				</div>
 				<div class="w-full">
-					<div class="text-12 font-medium flex items-center whitespace-nowrap">
+					<div class="text-12 flex items-center whitespace-nowrap">
 						Endpoint Secret
 						<convoy-button type="text" className="px-0 py-0 ml-2" (click)="copyText(subscription.endpoint_metadata.secret)">
 							<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
@@ -100,13 +100,13 @@
 			<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="subscription.type === 'incoming'">
 				<div class="w-full">
 					<div class="text-grey-40 text-10 mb-10px">Source</div>
-					<div class="text-12 font-medium">{{ subscription.source_metadata?.name }}</div>
+					<div class="text-12">{{ subscription.source_metadata?.name }}</div>
 				</div>
 				<div class="w-full">
-					<div class="text-12 font-medium uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
+					<div class="text-12 uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
 				</div>
 				<div class="w-full">
-					<div class="text-12 font-medium uppercase">{{ subscription.source_metadata?.type }}</div>
+					<div class="text-12 uppercase">{{ subscription.source_metadata?.type }}</div>
 				</div>
 				<div class="flex items-center w-[50%] justify-end">
 					<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata?.uid }">
@@ -122,41 +122,41 @@
 
 	<convoy-card className="pb-20px ml-8px w-full max-w-[382px] min-w-[310px] border-l border-l-grey-10 desktop:max-w-none desktop:ml-0 transition-all duration-200 min-h-[70vh]" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
 		<div class="flex items-center justify-between border-b border-b-grey-10 px-24px pt-24px pb-16px">
-			<h2 class="font-bold">{{ activeSubscription?.name }}</h2>
+			<h2 class="font-semibold">{{ activeSubscription?.name }}</h2>
 			<a [routerLink]="['./']" [queryParams]="{}" class="w-32px h-32px bg-primary-500 flex items-center justify-center rounded-[6px]" tabindex="0">
 				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 			</a>
 		</div>
 		<ul>
-			<convoy-list-item className="text-14 font-medium py-2 px-24px">
-				<div class="w-[50%] font-medium">Subscription type</div>
-				<div class="w-[50%] text-grey-40 text-right capitalize">{{ activeSubscription?.type }}</div>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Subscription type</div>
+				<div class="w-[50%] text-right capitalize">{{ activeSubscription?.type }}</div>
 			</convoy-list-item>
-			<convoy-list-item className="text-14 font-medium py-2 px-24px">
-				<div class="w-[50%] font-medium">Status</div>
-				<div class="w-[50%] text-grey-40 text-right">
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40 font-medium">Status</div>
+				<div class="w-[50%] text-right">
 					<span [class]="'ml-4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
 				</div>
 			</convoy-list-item>
-			<convoy-list-item className="text-14 font-medium py-2 px-24px">
-				<div class="w-[50%] font-medium">Endpoint</div>
-				<div class="w-[50%] text-grey-40 text-right capitalize text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Endpoint</div>
+				<div class="w-[50%] text-right text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
 			</convoy-list-item>
-			<convoy-list-item className="text-14 font-medium py-2 px-24px">
-				<div class="w-[50%] font-medium">App Name</div>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">App Name</div>
 				<a [routerLink]="'/projects/' + projectId + '/apps/' + activeSubscription?.app_metadata?.uid" class="w-[50%] font-medium text-primary-100 text-right underline">
 					{{ activeSubscription?.app_metadata?.name }}
 				</a>
 			</convoy-list-item>
-			<convoy-list-item className="text-14 font-medium py-2 px-24px" *ngIf="activeSubscription?.type === 'incoming'">
-				<div class="w-[50%] font-medium">Source</div>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px" *ngIf="activeSubscription?.type === 'incoming'">
+				<div class="w-[50%] text-grey-40">Source</div>
 				<a [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: activeSubscription?.uid }" class="w-[50%] font-medium text-primary-100 text-right underline">
 					{{ activeSubscription?.source_metadata?.name }}
 				</a>
 			</convoy-list-item>
-			<convoy-list-item className="text-14 font-medium py-2 px-24px">
-				<div class="w-[50%] font-medium">Created At</div>
-				<div class="w-[50%] text-grey-40 text-right">{{ activeSubscription?.created_at | date }}</div>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Created At</div>
+				<div class="w-[50%] text-right">{{ activeSubscription?.created_at | date }}</div>
 			</convoy-list-item>
 		</ul>
 		<div class="flex items-center justify-end mt-40px mr-24px">
@@ -188,7 +188,7 @@
 		[disable]="subscriptions?.pagination?.prev === 0"
 		(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="mr-8px">
+		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous

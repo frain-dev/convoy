@@ -11,11 +11,11 @@ import { ButtonComponent } from '../button/button.component';
 })
 export class ModalComponent implements OnInit {
 	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
-	@Input('size') size: 'small' | 'medium' | 'large' = 'medium';
+	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
 	@Input('title') title!: string;
 	@Input('className') class!: string;
 	@Output('closeModal') closeModal = new EventEmitter<any>();
-	modalSizes = { small: 'max-w-[380px]', medium: 'max-w-[460px]', large: 'max-w-[600px]' };
+	modalSizes = { sm: 'max-w-[380px]', md: 'max-w-[460px]', lg: 'max-w-[600px]' };
 	modalType = {
 		full: `h-screen w-screen top-0 right-0 bottom-0 overflow-y-auto translate-x-0`,
 		left: `h-screen top-0 left-0 bottom-0 overflow-y-auto translate-x-0`,

@@ -73,6 +73,7 @@ const (
 	NotificationProcessor TaskName = "NotificationProcessor"
 	DailyAnalytics        TaskName = "daily analytics"
 	MonitorTwitterSources TaskName = "monitor twitter sources"
+	RetentionPolicies     TaskName = "retention_policies"
 	ApplicationsCacheKey  CacheKey = "applications"
 	GroupsCacheKey        CacheKey = "groups"
 	TokenCacheKey         CacheKey = "tokens"

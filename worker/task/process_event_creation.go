@@ -133,6 +133,10 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 			}
 
+			if s.Type == datastore.SubscriptionTypeCLI {
+				eventDelivery.CLIMetadata = &datastore.CLIMetadata{EventType: string(event.EventType)}
+			}
+
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
 			if err != nil {
 				log.WithError(err).Error("error occurred creating event delivery")
