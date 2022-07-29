@@ -89,7 +89,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	sub.Type = string(group.Type)
+	// sub.Type = string(group.Type)
 
 	subscription, err := a.S.SubService.CreateSubscription(r.Context(), group, &sub)
 	if err != nil {

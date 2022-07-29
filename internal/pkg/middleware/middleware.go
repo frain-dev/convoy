@@ -217,7 +217,7 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 				}
 			}
 
-			r = r.WithContext(SetApplicationInContext(r.Context(), app))
+			r = r.WithContext(setApplicationInContext(r.Context(), app))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -269,7 +269,7 @@ func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.
 				return
 			}
 
-			r = r.WithContext(SetApplicationInContext(r.Context(), app))
+			r = r.WithContext(setApplicationInContext(r.Context(), app))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -1171,11 +1171,6 @@ func GetEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
 	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
 }
 
-func setApplicationsInContext(ctx context.Context,
-	apps *[]datastore.Application) context.Context {
-	return context.WithValue(ctx, appCtx, apps)
-}
-
 func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
 	return ctx.Value(appCtx).(*[]datastore.Application)
 }
@@ -1203,10 +1198,6 @@ func setPageableInContext(ctx context.Context, pageable datastore.Pageable) cont
 
 func GetPageableFromContext(ctx context.Context) datastore.Pageable {
 	return ctx.Value(pageableCtx).(datastore.Pageable)
-}
-
-func setPaginationDataInContext(ctx context.Context, p *datastore.PaginationData) context.Context {
-	return context.WithValue(ctx, pageDataCtx, p)
 }
 
 func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {

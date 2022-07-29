@@ -437,7 +437,7 @@ func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 	}
 }
 
-func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
+func FindMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
 	for _, a := range *attempts {
 		if a.UID == id {
 			return &a, nil

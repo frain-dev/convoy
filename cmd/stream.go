@@ -8,11 +8,11 @@ import (
 	"os/signal"
 	"time"
 
+	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/services"
 	"github.com/go-chi/chi/v5"
 	log "github.com/sirupsen/logrus"
@@ -39,13 +39,19 @@ func addStreamCommand(a *app) *cobra.Command {
 			go hub.StartEventWatcher()
 			go hub.StartEventSender()
 
+			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
+				AppRepo:   a.applicationRepo,
+				GroupRepo: a.groupRepo,
+				Cache:     a.cache,
+			})
+
 			router := chi.NewRouter()
 			router.Use(middleware.Recoverer)
 			router.Route("/stream", func(streamRouter chi.Router) {
-				streamRouter.Use(server.RequireAuth())
-				streamRouter.Use(server.RequireGroup(a.groupRepo, a.cache))
-				streamRouter.Use(server.RequireAppID())
-				streamRouter.Use(server.RequireAppPortalApplication(a.applicationRepo))
+				streamRouter.Use(m.RequireAuth())
+				streamRouter.Use(m.RequireGroup())
+				streamRouter.Use(m.RequireAppID())
+				streamRouter.Use(m.RequireAppPortalApplication())
 
 				streamRouter.Get("/listen", hub.ListenHandler)
 				streamRouter.Post("/login", hub.LoginHandler)
