@@ -220,8 +220,7 @@ func requireAppPortalPermission(role auth.RoleType) func(next http.Handler) http
 				return
 			}
 
-
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
 				if !util.IsStringEmpty(authUser.Role.App) { //we're dealing with an app portal token at this point
 					app := getApplicationFromContext(r.Context())
@@ -390,7 +389,7 @@ func requireOrganisationGroupMember() func(next http.Handler) http.Handler {
 				return
 			}
 
-			group := getGroupFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
 			if member.Role.Group == group.UID {
 				next.ServeHTTP(w, r)
 				return

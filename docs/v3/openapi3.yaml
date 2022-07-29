@@ -82,6 +82,11 @@ components:
         username:
           type: string
       type: object
+    datastore.CLIMetadata:
+      properties:
+        event_type:
+          type: string
+      type: object
     datastore.DeliveryAttempt:
       properties:
         api_version:
@@ -186,6 +191,8 @@ components:
           type: string
         app_metadata:
           $ref: '#/components/schemas/datastore.Application'
+        cli_metadata:
+          $ref: '#/components/schemas/datastore.CLIMetadata'
         created_at:
           type: string
         deleted_at:
