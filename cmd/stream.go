@@ -48,10 +48,12 @@ func addStreamCommand(a *app) *cobra.Command {
 			router := chi.NewRouter()
 			router.Use(middleware.Recoverer)
 			router.Route("/stream", func(streamRouter chi.Router) {
-				streamRouter.Use(m.RequireAuth())
-				streamRouter.Use(m.RequireGroup())
-				streamRouter.Use(m.RequireAppID())
-				streamRouter.Use(m.RequireAppPortalApplication())
+				streamRouter.Use(
+					m.RequireAuth(),
+					m.RequireGroup(),
+					m.RequireAppID(),
+					m.RequireAppPortalApplication(),
+				)
 
 				streamRouter.Get("/listen", hub.ListenHandler)
 				streamRouter.Post("/login", hub.LoginHandler)

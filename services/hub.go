@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -248,8 +249,8 @@ func (h *Hub) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := getGroupFromContext(r.Context())
-	app, _ := getApplicationFromContext(r.Context())
+	group := middleware.GetGroupFromContext(r.Context())
+	app := middleware.GetApplicationFromContext(r.Context())
 
 	device, err := h.login(r.Context(), group, app, loginRequest)
 	if err != nil {
@@ -322,8 +323,8 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := getGroupFromContext(r.Context())
-	app, _ := getApplicationFromContext(r.Context())
+	group := middleware.GetGroupFromContext(r.Context())
+	app := middleware.GetApplicationFromContext(r.Context())
 
 	device, err := h.listen(r.Context(), group, app, listenRequest)
 	if err != nil {
@@ -440,14 +441,4 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	if err != nil {
 		log.WithError(err).Error("failed to write response data")
 	}
-}
-
-// the app may not exist, so we have to check like this to avoid panic
-func getApplicationFromContext(ctx context.Context) (*datastore.Application, bool) {
-	app, ok := ctx.Value("app").(*datastore.Application)
-	return app, ok
-}
-
-func getGroupFromContext(ctx context.Context) *datastore.Group {
-	return ctx.Value("group").(*datastore.Group)
 }

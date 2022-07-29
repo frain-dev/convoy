@@ -19,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -639,36 +638,6 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 						_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 						return
 					}
-				}
-			} else {
-				// TODO(all): maybe we should only use default-group if require_auth is false?
-				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
-				err = m.cache.Get(r.Context(), groupCacheKey, &group)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
-					return
-				}
-
-				if group == nil {
-					group, err = m.GetDefaultGroup(r, m.groupRepo)
-					if err != nil {
-						event := "an error occurred while loading default group"
-						statusCode := http.StatusBadRequest
-
-						if errors.Is(err, mongo.ErrNoDocuments) {
-							event = err.Error()
-							statusCode = http.StatusNotFound
-						}
-
-						_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
-						return
-					}
-				}
-
-				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-					return
 				}
 			}
 
