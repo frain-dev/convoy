@@ -31,6 +31,7 @@ require (
 	github.com/hibiken/asynqmon v0.7.1
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jaswdr/faker v1.10.2
+	github.com/jedib0t/go-pretty/v6 v6.3.5
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
@@ -49,7 +50,7 @@ require (
 	github.com/slack-go/slack v0.10.2
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.4
 	github.com/swaggo/swag v1.8.2
 	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/typesense/typesense-go v0.4.0
