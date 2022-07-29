@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -28,7 +29,7 @@ type Hub struct {
 	subscriptionRepo datastore.SubscriptionRepository
 	sourceRepo       datastore.SourceRepository
 	appRepo          datastore.ApplicationRepository
-	groupRepo        datastore.GroupRepository
+	// groupRepo        datastore.GroupRepository
 
 	lock sync.RWMutex // prevent data race on deviceClients
 
@@ -248,12 +249,12 @@ func (h *Hub) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := getGroupFromContext(r.Context())
-	app, _ := getApplicationFromContext(r.Context())
+	group := middleware.GetGroupFromContext(r.Context())
+	app := middleware.GetApplicationFromContext(r.Context())
 
 	device, err := h.login(r.Context(), group, app, loginRequest)
 	if err != nil {
-		respond(w, err.(*ServiceError).errCode, err.Error())
+		respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 		return
 	}
 
@@ -274,22 +275,22 @@ func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.
 		device, err = h.deviceRepo.FetchDeviceByID(ctx, loginRequest.DeviceID, appID, group.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to find device by id")
-			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find device by id"))
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find device by id"))
 		}
 
 		if device.GroupID != group.UID {
-			return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
 		}
 
 		if device.AppID != appID {
-			return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
 		}
 
 		if device.Status != datastore.DeviceStatusOnline {
 			device.Status = datastore.DeviceStatusOnline
 			err = h.deviceRepo.UpdateDevice(ctx, device, device.AppID, device.GroupID)
 			if err != nil {
-				return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
 			}
 		}
 	} else {
@@ -307,7 +308,7 @@ func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.
 
 		err = h.deviceRepo.CreateDevice(ctx, device)
 		if err != nil {
-			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create new device"))
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create new device"))
 		}
 	}
 
@@ -322,12 +323,12 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := getGroupFromContext(r.Context())
-	app, _ := getApplicationFromContext(r.Context())
+	group := middleware.GetGroupFromContext(r.Context())
+	app := middleware.GetApplicationFromContext(r.Context())
 
 	device, err := h.listen(r.Context(), group, app, listenRequest)
 	if err != nil {
-		respond(w, err.(*ServiceError).errCode, err.Error())
+		respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 		return
 	}
 
@@ -364,26 +365,26 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 
 	device, err := h.deviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, appID, group.UID)
 	if err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("device not found"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("device not found"))
 	}
 
 	if device.GroupID != group.UID {
-		return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
 	}
 
 	if device.AppID != appID {
-		return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
 	}
 
 	if !util.IsStringEmpty(listenRequest.SourceID) {
 		source, err := h.sourceRepo.FindSourceByID(ctx, "", listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
-			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))
 		}
 
 		if source.GroupID != group.UID {
-			return nil, NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access source"))
+			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access source"))
 		}
 	}
 
@@ -408,10 +409,10 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 
 		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, s)
 		if err != nil {
-			return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to create new subscription"))
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create new subscription"))
 		}
 	default:
-		return nil, NewServiceError(http.StatusBadRequest, errors.New("failed to find subscription by id"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find subscription by id"))
 	}
 
 	return device, nil
@@ -440,14 +441,4 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	if err != nil {
 		log.WithError(err).Error("failed to write response data")
 	}
-}
-
-// the app may not exist, so we have to check like this to avoid panic
-func getApplicationFromContext(ctx context.Context) (*datastore.Application, bool) {
-	app, ok := ctx.Value("app").(*datastore.Application)
-	return app, ok
-}
-
-func getGroupFromContext(ctx context.Context) *datastore.Group {
-	return ctx.Value("group").(*datastore.Group)
 }

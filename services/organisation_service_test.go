@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -96,8 +97,8 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 			org, err := os.CreateOrganisation(tt.args.ctx, tt.args.newOrg, tt.args.user)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -181,8 +182,8 @@ func TestOrganisationService_UpdateOrganisation(t *testing.T) {
 			org, err := os.UpdateOrganisation(tt.args.ctx, tt.args.org, tt.args.update)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -252,8 +253,8 @@ func TestOrganisationService_FindOrganisationByID(t *testing.T) {
 			org, err := os.FindOrganisationByID(tt.args.ctx, tt.args.id)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -321,8 +322,8 @@ func TestOrganisationService_DeleteOrganisation(t *testing.T) {
 			err := os.DeleteOrganisation(tt.args.ctx, tt.args.id)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -440,8 +441,8 @@ func TestOrganisationService_LoadOrganisationsPaged(t *testing.T) {
 			orgs, paginationData, err := os.LoadOrganisationsPaged(tt.args.ctx, tt.args.pageable)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -564,8 +565,8 @@ func TestOrganisationService_LoadUserOrganisationsPaged(t *testing.T) {
 			orgs, paginationData, err := os.LoadUserOrganisationsPaged(tt.args.ctx, tt.args.user, tt.args.pageable)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

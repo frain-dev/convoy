@@ -9,6 +9,8 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // CreateSource
@@ -23,24 +25,24 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources [post]
-func (a *applicationHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.Source
 	if err := util.ReadJSON(r, &newSource); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	group := GetGroupFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
 
-	source, err := a.sourceService.CreateSource(r.Context(), &newSource, group)
+	source, err := a.S.SourceService.CreateSource(r.Context(), &newSource, group)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	baseUrl := getHostFromContext(r.Context())
-	s := sourceResponse(source, baseUrl)
-	_ = render.Render(w, r, newServerResponse("Source created successfully", s, http.StatusCreated))
+	baseUrl := m.GetHostFromContext(r.Context())
+	sr := sourceResponse(source, baseUrl)
+	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", sr, http.StatusCreated))
 }
 
 // GetSource
@@ -55,19 +57,19 @@ func (a *applicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [get]
-func (a *applicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	group := GetGroupFromContext(r.Context())
+func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
+	group := m.GetGroupFromContext(r.Context())
 
-	source, err := a.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	baseUrl := getHostFromContext(r.Context())
-	s := sourceResponse(source, baseUrl)
+	baseUrl := m.GetHostFromContext(r.Context())
+	sr := sourceResponse(source, baseUrl)
 
-	_ = render.Render(w, r, newServerResponse("Source fetched successfully", s, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", sr, http.StatusOK))
 }
 
 // UpdateSource
@@ -83,31 +85,31 @@ func (a *applicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [put]
-func (a *applicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	group := GetGroupFromContext(r.Context())
-	source, err := a.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	group := m.GetGroupFromContext(r.Context())
+	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	source, err = a.sourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
+	source, err = a.S.SourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	baseUrl := getHostFromContext(r.Context())
-	s := sourceResponse(source, baseUrl)
+	baseUrl := m.GetHostFromContext(r.Context())
+	sr := sourceResponse(source, baseUrl)
 
-	_ = render.Render(w, r, newServerResponse("Source updated successfully", s, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", sr, http.StatusAccepted))
 }
 
 // DeleteSource
@@ -122,21 +124,21 @@ func (a *applicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources/{sourceID} [delete]
-func (a *applicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	group := GetGroupFromContext(r.Context())
-	source, err := a.sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
+	group := m.GetGroupFromContext(r.Context())
+	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = a.sourceService.DeleteSource(r.Context(), group, source)
+	err = a.S.SourceService.DeleteSource(r.Context(), group, source)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Source deleted successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Source deleted successfully", nil, http.StatusOK))
 }
 
 // LoadSourcesPaged
@@ -152,29 +154,29 @@ func (a *applicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /sources [get]
-func (a *applicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
-	pageable := getPageableFromContext(r.Context())
-	group := GetGroupFromContext(r.Context())
+func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
+	pageable := m.GetPageableFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
 
 	f := &datastore.SourceFilter{
 		Type: r.URL.Query().Get("type"),
 	}
 
-	sources, paginationData, err := a.sourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
+	sources, paginationData, err := a.S.SourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching sources", http.StatusInternalServerError))
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusInternalServerError))
 		return
 	}
 
 	sourcesResponse := []*models.SourceResponse{}
-	baseUrl := getHostFromContext(r.Context())
+	baseUrl := m.GetHostFromContext(r.Context())
 
 	for _, source := range sources {
 		s := sourceResponse(&source, baseUrl)
 		sourcesResponse = append(sourcesResponse, s)
 	}
 
-	_ = render.Render(w, r, newServerResponse("Sources fetched successfully", pagedResponse{Content: sourcesResponse, Pagination: &paginationData}, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sourcesResponse, Pagination: &paginationData}, http.StatusOK))
 }
 
 func sourceResponse(s *datastore.Source, baseUrl string) *models.SourceResponse {

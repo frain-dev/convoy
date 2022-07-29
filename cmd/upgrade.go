@@ -59,7 +59,7 @@ func updateVersion4ToVersion5() {
 		log.WithError(err).Fatalf("Error fetching the config.")
 	}
 
-	db, err := NewDB(cfg)
+	db, err := convoyMongo.New(cfg)
 	if err != nil {
 		log.WithError(err).Fatalf("Error connecting to the db.")
 	}

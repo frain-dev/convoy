@@ -1,11 +1,14 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
-	"net/http"
+
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // GetOrganisation
@@ -19,10 +22,10 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [get]
-func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, newServerResponse("Organisation fetched successfully",
-		getOrganisationFromContext(r.Context()), http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully",
+		m.GetOrganisationFromContext(r.Context()), http.StatusOK))
 }
 
 // GetOrganisationsPaged
@@ -38,18 +41,18 @@ func (a *applicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations [get]
-func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { //TODO: change to GetUserOrganisationsPaged
-	pageable := getPageableFromContext(r.Context())
-	user := getUserFromContext(r.Context())
+func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { //TODO: change to GetUserOrganisationsPaged
+	pageable := m.GetPageableFromContext(r.Context())
+	user := m.GetUserFromContext(r.Context())
 
-	organisations, paginationData, err := a.organisationService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
+	organisations, paginationData, err := a.S.OrganisationService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load organisations")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisations fetched successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
 		pagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
 }
 
@@ -64,23 +67,23 @@ func (a *applicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations [post]
-func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newOrg models.Organisation
 	err := util.ReadJSON(r, &newOrg)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user := m.GetUserFromContext(r.Context())
 
-	organisation, err := a.organisationService.CreateOrganisation(r.Context(), &newOrg, user)
+	organisation, err := a.S.OrganisationService.CreateOrganisation(r.Context(), &newOrg, user)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisation created successfully", organisation, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation created successfully", organisation, http.StatusCreated))
 }
 
 // UpdateOrganisation
@@ -95,21 +98,21 @@ func (a *applicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [put]
-func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var orgUpdate models.Organisation
 	err := util.ReadJSON(r, &orgUpdate)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	org, err := a.organisationService.UpdateOrganisation(r.Context(), getOrganisationFromContext(r.Context()), &orgUpdate)
+	org, err := a.S.OrganisationService.UpdateOrganisation(r.Context(), m.GetOrganisationFromContext(r.Context()), &orgUpdate)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisation updated successfully", org, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation updated successfully", org, http.StatusAccepted))
 }
 
 // DeleteOrganisation
@@ -123,14 +126,14 @@ func (a *applicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [delete]
-func (a *applicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
-	org := getOrganisationFromContext(r.Context())
-	err := a.organisationService.DeleteOrganisation(r.Context(), org.UID)
+func (a *ApplicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
+	org := m.GetOrganisationFromContext(r.Context())
+	err := a.S.OrganisationService.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete organisation")
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Organisation deleted successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation deleted successfully", nil, http.StatusOK))
 }

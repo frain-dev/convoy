@@ -19,6 +19,7 @@ import (
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -26,7 +27,7 @@ import (
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	mongoStore "github.com/frain-dev/convoy/datastore/mongo"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
@@ -59,15 +60,15 @@ func getConfig() config.Configuration {
 	}
 }
 
-func getDB() datastore.DatabaseClient {
+func getDB() convoyMongo.Client {
 
-	db, err := mongoStore.New(getConfig())
+	db, err := convoyMongo.New(getConfig())
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
 	}
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
-	return db.(*mongoStore.Client)
+	return *db
 }
 
 func getQueueOptions(name string) (queue.QueueOptions, error) {
@@ -92,7 +93,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	return opts, nil
 }
 
-func buildApplication() *applicationHandler {
+func buildServer() *ApplicationHandler {
 	var tracer tracer.Tracer
 	var qOpts queue.QueueOptions
 
@@ -118,11 +119,28 @@ func buildApplication() *applicationHandler {
 	tracer = nil
 	subRepo := db.SubRepo()
 
-	return newApplicationHandler(
-		eventRepo, eventDeliveryRepo, appRepo,
-		groupRepo, apiKeyRepo, subRepo, sourceRepo, orgRepo,
-		orgMemberRepo, orgInviteRepo, userRepo, configRepo, queue, logger, tracer, cache, limiter, searcher,
-	)
+	return NewApplicationHandler(
+		Repos{
+			EventRepo:         eventRepo,
+			EventDeliveryRepo: eventDeliveryRepo,
+			AppRepo:           appRepo,
+			GroupRepo:         groupRepo,
+			ApiKeyRepo:        apiKeyRepo,
+			SubRepo:           subRepo,
+			SourceRepo:        sourceRepo,
+			OrgRepo:           orgRepo,
+			OrgMemberRepo:     orgMemberRepo,
+			OrgInviteRepo:     orgInviteRepo,
+			UserRepo:          userRepo,
+			ConfigRepo:        configRepo,
+		}, Services{
+			Queue:    queue,
+			Logger:   logger,
+			Tracer:   tracer,
+			Cache:    cache,
+			Limiter:  limiter,
+			Searcher: searcher,
+		})
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
@@ -143,7 +161,7 @@ func parseResponse(t *testing.T, w *http.Response, object interface{}) {
 		t.Fatalf("err: %s", err)
 	}
 
-	var sR serverResponse
+	var sR util.ServerResponse
 	err = json.Unmarshal(body, &sR)
 	if err != nil {
 		t.Fatalf("err: %s", err)

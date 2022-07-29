@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -415,8 +416,8 @@ func TestHub_listen(t *testing.T) {
 			device, err := h.listen(tt.args.ctx, tt.args.group, tt.args.app, tt.args.listenRequest)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -697,8 +698,8 @@ func TestHub_login(t *testing.T) {
 			device, err := h.login(tt.args.ctx, tt.args.group, tt.args.app, tt.args.loginRequest)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/frain-dev/convoy/util"
 	"github.com/spf13/cobra"
@@ -29,12 +30,12 @@ func addSwitchCommand() *cobra.Command {
 			}
 
 			if util.IsStringEmpty(projectId) {
-				return errors.New("project ID is required")
+				return errors.New("project name is required")
 			}
 
-			project := FindProjectByID(c.Projects, projectId)
+			project := FindProjectByName(c.Projects, projectId)
 			if project == nil {
-				return fmt.Errorf("project with ID :%s not found", projectId)
+				return fmt.Errorf("project with name: %s not found", projectId)
 			}
 
 			c.ActiveProject = project.Name
@@ -47,21 +48,22 @@ func addSwitchCommand() *cobra.Command {
 			}
 
 			log.Info("Switch is successful")
-			log.Infof("Project with ID: %s is now the active project", projectId)
+			log.Infof("Project with name: %s is now the active project", projectId)
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&projectId, "project-id", "", "Project ID")
+	cmd.Flags().StringVar(&projectId, "project-name", "", "Project Name")
 
 	return cmd
 }
 
-func FindProjectByID(projects []Project, projectId string) *Project {
+func FindProjectByName(projects []Project, projectName string) *Project {
 	var project *Project
 
 	for _, project := range projects {
-		if project.UID == projectId {
+		if strings.TrimSpace(strings.ToLower(project.Name)) ==
+			strings.TrimSpace(strings.ToLower(projectName)) {
 			return &project
 		}
 	}

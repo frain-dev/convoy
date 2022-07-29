@@ -94,12 +94,6 @@ type Project struct {
 	Name     string `yaml:"name"`
 	ApiKey   string `yaml:"api_key"`
 	DeviceID string `yaml:"device_id"`
-	App      App    `yaml:"app"`
-}
-
-type App struct {
-	UID  string `yaml:"uid"`
-	Name string `yaml:"name"`
 }
 
 func addLoginCommand() *cobra.Command {
@@ -108,7 +102,7 @@ func addLoginCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:               "login",
-		Short:             "Logs into your Convoy instance using your CLI API Key",
+		Short:             "Logs into your Convoy instance using a CLI API Key",
 		PersistentPreRun:  func(cmd *cobra.Command, args []string) {},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -170,7 +164,8 @@ func addLoginCommand() *cobra.Command {
 }
 
 func WriteConfig(c *Config, response *services.LoginResponse) error {
-	c.ActiveProject = response.Group.Name
+	projectName := fmt.Sprintf("%s (%s)", response.Group.Name, response.App.Title)
+	c.ActiveProject = projectName
 	c.ActiveDeviceID = response.Device.UID
 
 	if c.hasDefaultConfigFile {
@@ -179,13 +174,9 @@ func WriteConfig(c *Config, response *services.LoginResponse) error {
 			// we append the project returned to the list of projects within the config
 			c.Projects = append(c.Projects, Project{
 				UID:      response.Group.UID,
-				Name:     response.Group.Name,
+				Name:     projectName,
 				ApiKey:   c.ActiveApiKey,
 				DeviceID: response.Device.UID,
-				App: App{
-					UID:  response.App.UID,
-					Name: response.App.Title,
-				},
 			})
 		} else if c.isNewHost {
 			// if the host is different from the current host in the config file,
@@ -193,13 +184,9 @@ func WriteConfig(c *Config, response *services.LoginResponse) error {
 			c.Projects = []Project{
 				{
 					UID:      response.Group.UID,
-					Name:     response.Group.Name,
+					Name:     projectName,
 					ApiKey:   c.ActiveApiKey,
 					DeviceID: response.Device.UID,
-					App: App{
-						UID:  response.App.UID,
-						Name: response.App.Title,
-					},
 				},
 			}
 		}
@@ -211,13 +198,9 @@ func WriteConfig(c *Config, response *services.LoginResponse) error {
 		c.Projects = []Project{
 			{
 				UID:      response.Group.UID,
-				Name:     response.Group.Name,
+				Name:     projectName,
 				ApiKey:   c.ActiveApiKey,
 				DeviceID: response.Device.UID,
-				App: App{
-					UID:  response.App.UID,
-					Name: response.App.Title,
-				},
 			},
 		}
 	}
