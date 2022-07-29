@@ -125,14 +125,14 @@
 						<convoy-table-cell class="contents">{{ event.metadata?.retry_limit }}</convoy-table-cell>
 						<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-button size="xs" texture="light" (clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })">
+							<convoy-button size="xs" texture="light" [disable]="event.status !== 'Success' && event.status !== 'Failure'" (clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })">
 								<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 								{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
 							</convoy-button>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">
 							<convoy-button size="xs" type="icon" [routerLink]="'./delivery/' + event.uid">
-								<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" />
+								<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
 							</convoy-button>
 						</convoy-table-cell>
 					</convoy-table-row>
@@ -154,7 +154,7 @@
 		[disable]="eventDeliveries?.pagination?.prev === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="mr-8px">
+		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
@@ -176,8 +176,8 @@
 	</convoy-button>
 </div>
 
-<convoy-modal position="center" size="small" *ngIf="showBatchRetryModal">
-	<div class="text-center" modalBody>
+<convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
+	<div class="text-center py-30px" modalBody>
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>

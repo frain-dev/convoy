@@ -44,23 +44,23 @@
 	<div class="flex items-center justify-between flex-wrap mb-32px" *ngIf="!isLoadingAppDetails">
 		<div>
 			<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
-			<p class="text-black text-14 font-medium">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
-			<p class="text-black text-14 font-medium">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">UPDATED</p>
-			<p class="text-black text-14 font-medium">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">EVENTS</p>
-			<p class="text-black text-14 font-medium">{{ appsDetailsItem?.events || 0 }}</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.events || 0 }}</p>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">ENDPOINTS</p>
-			<p class="text-black text-14 font-medium">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
 		</div>
 	</div>
 
@@ -95,11 +95,12 @@
 			<div class="flex items-center justify-between" *ngIf="!isLoadingAppDetails">
 				<h3 class="font-medium">App Event Endpoints</h3>
 				<div class="flex items-center">
-					<convoy-button size="sm" type="text"  (clickItem)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</convoy-button>
+					<convoy-button size="sm" type="text" (clickItem)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</convoy-button>
 					<div class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
 					<convoy-button size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
 				</div>
 			</div>
+
 			<ul class="mt-20px" *ngIf="isLoadingAppDetails">
 				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px">
 					<div>
@@ -140,12 +141,13 @@
 					</div>
 				</li>
 			</ul>
+
 			<ul class="mt-20px" *ngIf="!isLoadingAppDetails">
 				<ng-container *ngIf="appsDetailsItem?.endpoints">
 					<li class="relative bg-[#f9f9fb] p-16px rounded-8px mb-24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
 						<div>
 							<div class="flex items-center">
-								<h5 class="text-black text-14px font-normal">{{ endpoint.description }}</h5>
+								<h5 class="text-black text-14 font-medium">{{ endpoint.description }}</h5>
 								<convoy-button type="text" size="sm" className="ml-16px" (clickItem)="viewEndpointSecretKey(endpoint.secret)">
 									View Secret
 									<img src="/assets/img/arrow-up-right.svg" alt="link out" class="h-14px ml-6px" />
@@ -175,8 +177,8 @@
 				</ng-container>
 			</ul>
 			<convoy-empty-state imgSrc="/assets/img/empty-state-img.svg" description="No endpoint has been added for selected app yet" className="h-[20vh]" *ngIf="!isLoadingAppDetails && appsDetailsItem?.endpoints?.length === 0"></convoy-empty-state>
-		
 		</div>
+
 		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
 			<div *ngIf="loadingAppPotalToken">
 				<h3 class="font-medium">App Portal</h3>
@@ -199,20 +201,21 @@
 			<div *ngIf="!loadingAppPotalToken">
 				<h3 class="font-medium">App Portal</h3>
 				<ul class="mt-10px">
-					<convoy-list-item className="border-none">
+					<convoy-list-item className="border-none !py-8px">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
 						<a class="text-14 text-primary-100 flex items-center" [href]="appPortalLink" target="_blank">
 							Open Link
 							<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 						</a>
 					</convoy-list-item>
-					<convoy-list-item className="border-none">
+					<convoy-list-item className="border-none !py-8px">
 						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
 						<a class="text-14 text-primary-100 flex items-center" href="https://getconvoy.io/docs/app-portal" target="_blank">
 							See Documentation
 							<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 						</a>
 					</convoy-list-item>
+
 					<div class="bg-white-100 border-2 border-primary-500 rounded-[10px] p-16px mt-16px">
 						<div class="text-14 text-grey-40 overflow-x-scroll">{{ appPortalIframe }}</div>
 						<div class="flex justify-end">
@@ -230,13 +233,11 @@
 
 <app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
 
-
 <convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false">
 	<ng-container modalBody>
 		<app-create-endpoint [selectedEndpoint]="selectedEndpoint" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? closeEditEndpointModal() : getAppDetails(appsDetailsItem.uid); closeEditEndpointModal()"></app-create-endpoint>
 	</ng-container>
 </convoy-modal>
-
 
 <convoy-modal *ngIf="showEndpointSecret" title="Endpoint Secret" (closeModal)="showEndpointSecret = false">
 	<ng-container modalBody>
@@ -251,5 +252,3 @@
 </convoy-modal>
 
 <app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
-
-

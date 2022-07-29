@@ -88,7 +88,9 @@ brews:
     url_template: https://dl.cloudsmith.io/public/convoy/convoy/raw/versions/{{.Version}}/{{ .ArtifactName }}
 
 dockers:
-  - image_templates: ["docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}"]
+  - image_templates: 
+    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest"
+    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}"
     goos: linux
     goarch: amd64
     dockerfile: release.Dockerfile

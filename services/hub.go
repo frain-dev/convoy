@@ -28,6 +28,7 @@ type Hub struct {
 	subscriptionRepo datastore.SubscriptionRepository
 	sourceRepo       datastore.SourceRepository
 	appRepo          datastore.ApplicationRepository
+	groupRepo        datastore.GroupRepository
 
 	lock sync.RWMutex // prevent data race on deviceClients
 
@@ -95,12 +96,19 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			err := client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			j, err := json.Marshal(ev)
 			if err != nil {
-				log.WithError(err).Error("failed to set write deadline")
+				log.WithError(err).Error("failed to marshal cli event")
+				continue
 			}
 
-			err = client.conn.WriteMessage(websocket.TextMessage, ev.Data)
+			err = client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				log.WithError(err).Error("failed to set write deadline")
+				continue
+			}
+
+			err = client.conn.WriteMessage(websocket.BinaryMessage, j)
 			if err != nil {
 				log.WithError(err).Error("failed to write pong message")
 			}
@@ -111,49 +119,15 @@ func (h *Hub) StartEventSender() {
 }
 
 func (h *Hub) StartEventWatcher() {
-	lookupStage1 := bson.D{
-		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: m.SubscriptionCollection},
-			{Key: "localField", Value: "subscription_id"},
-			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "subscription"},
-		}},
-	}
-
 	matchStage := bson.D{
 		{Key: "$match",
 			Value: bson.D{
-				{Key: "subscription.type", Value: datastore.SubscriptionTypeCLI},
+				{Key: "cli_metadata", Value: bson.M{"$ne": nil}},
 			},
 		},
 	}
 
-	lookupStage2 := bson.D{
-		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: m.EventCollection},
-			{Key: "localField", Value: "event_id"},
-			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "event"},
-		}},
-	}
-
-	addFieldStage := bson.D{
-		{Key: "$addFields",
-			Value: bson.D{
-				{Key: "event_type", Value: "$event.event_type"},
-			},
-		},
-	}
-
-	unsetStage1 := bson.D{
-		{Key: "$unset", Value: "event"},
-	}
-
-	unsetStage2 := bson.D{
-		{Key: "$unset", Value: "subscription"},
-	}
-
-	pipeline := mongo.Pipeline{lookupStage1, matchStage, lookupStage2, addFieldStage, unsetStage1, unsetStage2}
+	pipeline := mongo.Pipeline{matchStage}
 
 	fn := h.watchEventDeliveriesCollection()
 	err := h.watchCollectionFn(fn, pipeline, m.EventCollection, h.close)
@@ -163,11 +137,14 @@ func (h *Hub) StartEventWatcher() {
 }
 
 type CLIEvent struct {
-	Data      json.RawMessage
-	EventType string
-	DeviceID  string
-	AppID     string
-	GroupID   string
+	ForwardedHeaders datastore.HttpHeader `json:"forwarded_headers" bson:"forwarded_headers"`
+	Data             json.RawMessage      `json:"data"`
+
+	// for filtering this event delivery
+	EventType string `json:"-"`
+	DeviceID  string `json:"-"`
+	AppID     string `json:"-"`
+	GroupID   string `json:"-"`
 }
 
 func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error {
@@ -175,6 +152,11 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error
 		metadata, ok := doc["metadata"].(*datastore.Metadata)
 		if !ok {
 			return fmt.Errorf("event delivery metadata has wrong type of: %T", doc["metadata"])
+		}
+
+		cliMetadata, ok := doc["cli_metadata"].(*datastore.CLIMetadata)
+		if !ok {
+			return fmt.Errorf("cli metadata has wrong type of: %T", doc["metadata"])
 		}
 
 		appID, ok := doc["app_id"].(string)
@@ -187,22 +169,23 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error
 			return fmt.Errorf("event delivery group id has wrong type of: %T", doc["group_id"])
 		}
 
-		eventType, ok := doc["event_type"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery event_type has wrong type of: %T", doc["event_type"])
-		}
-
 		deviceID, ok := doc["device_id"].(string)
 		if !ok {
 			return fmt.Errorf("event delivery device id has wrong type of: %T", doc["device_id"])
 		}
 
+		forwardedHeaders, ok := doc["forwarded_headers"].(datastore.HttpHeader)
+		if !ok {
+			return fmt.Errorf("event delivery forwarded headers has wrong type of: %T", doc["device_id"])
+		}
+
 		h.events <- &CLIEvent{
-			Data:      metadata.Data,
-			EventType: eventType,
-			AppID:     appID,
-			DeviceID:  deviceID,
-			GroupID:   groupID,
+			Data:             metadata.Data,
+			ForwardedHeaders: forwardedHeaders,
+			EventType:        cliMetadata.EventType,
+			AppID:            appID,
+			DeviceID:         deviceID,
+			GroupID:          groupID,
 		}
 
 		return nil

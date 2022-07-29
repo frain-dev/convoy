@@ -5,7 +5,7 @@
 		<img class="ml-16px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" *ngIf="!filterIsActive()" alt="arrow down icon" />
 
 		<convoy-button type="icon" *ngIf="filterIsActive()" (clickItem)="clearFilter($event)" className="ml-16px">
-			<svg width="10" height="10" fill="var(--primary-color)">
+			<svg width="10" height="10" class="fill-primary-100">
 				<use xlink:href="#close-icon"></use>
 			</svg>
 		</convoy-button>

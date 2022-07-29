@@ -8,10 +8,7 @@
                     "password": "default",
                     "role": {
                         "type": "super_user",
-                        "groups": [
-                            "sendcash-pay",
-                            "buycoins-api"
-                        ]
+                        "groups": "buycoins-api"
                     }
                 }
             ]
