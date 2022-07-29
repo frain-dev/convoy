@@ -8,7 +8,8 @@ import (
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server"
+	"github.com/frain-dev/convoy/internal/pkg/server"
+	route "github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
@@ -152,27 +153,30 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	srv := server.New(
-		cfg,
-		a.eventRepo,
-		a.eventDeliveryRepo,
-		a.applicationRepo,
-		a.apiKeyRepo,
-		a.subRepo,
-		a.groupRepo,
-		a.orgRepo,
-		a.orgMemberRepo,
-		a.orgInviteRepo,
-		a.sourceRepo,
-		a.userRepo,
-		a.configRepo,
-		a.queue,
-		a.logger,
-		a.tracer,
-		a.cache,
-		a.limiter,
-		a.searcher,
-	)
+	srv := server.NewServer(cfg.Server.HTTP.Port)
+
+	handler := route.NewApplicationHandler(
+		route.Repos{
+			EventRepo:         a.eventRepo,
+			EventDeliveryRepo: a.eventDeliveryRepo,
+			AppRepo:           a.applicationRepo,
+			GroupRepo:         a.groupRepo,
+			ApiKeyRepo:        a.apiKeyRepo,
+			SubRepo:           a.subRepo,
+			SourceRepo:        a.sourceRepo,
+			OrgRepo:           a.orgRepo,
+			OrgMemberRepo:     a.orgMemberRepo,
+			OrgInviteRepo:     a.orgInviteRepo,
+			UserRepo:          a.userRepo,
+			ConfigRepo:        a.configRepo,
+		}, route.Services{
+			Queue:    a.queue,
+			Logger:   a.logger,
+			Tracer:   a.tracer,
+			Cache:    a.cache,
+			Limiter:  a.limiter,
+			Searcher: a.searcher,
+		})
 
 	if withWorkers {
 		// register worker.
@@ -217,16 +221,20 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.Start()
 	}
 
+	srv.SetHandler(handler.BuildRoutes())
+
 	log.Infof("Started convoy server in %s", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
 		log.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-		return srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		return nil
 	}
 
 	log.Infof("Server running on port %v", cfg.Server.HTTP.Port)
-	return srv.ListenAndServe()
+	srv.Listen()
+	return nil
 }
 
 func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) error {

@@ -12,9 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -23,17 +26,17 @@ import (
 
 type SubscriptionIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
+	DB           convoyMongo.Client
 	Router       http.Handler
-	ConvoyApp    *applicationHandler
+	ConvoyApp    *ApplicationHandler
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
@@ -44,8 +47,8 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{s.DefaultGroup.UID},
+		Type:  auth.RoleAdmin,
+		Group: s.DefaultGroup.UID,
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
@@ -54,11 +57,12 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
 }
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
@@ -114,8 +118,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{group.UID},
+		Type:  auth.RoleAdmin,
+		Group: group.UID,
 	}
 
 	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")
@@ -365,8 +369,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{group.UID},
+		Type:  auth.RoleAdmin,
+		Group: group.UID,
 	}
 
 	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")

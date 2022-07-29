@@ -9,25 +9,29 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/suite"
 )
 
 type IngestIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
+	DB           convoyMongo.Client
 	Router       http.Handler
-	ConvoyApp    *applicationHandler
+	ConvoyApp    *ApplicationHandler
 	DefaultGroup *datastore.Group
 }
 
 func (s *IngestIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
 func (i *IngestIntegrationTestSuite) SetupTest() {
@@ -40,11 +44,12 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
-	initRealmChain(i.T(), i.DB.APIRepo(), i.DB.UserRepo(), i.ConvoyApp.cache)
+	initRealmChain(i.T(), i.DB.APIRepo(), i.DB.UserRepo(), i.ConvoyApp.S.Cache)
 }
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(i.DB)
+	metrics.Reset()
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {

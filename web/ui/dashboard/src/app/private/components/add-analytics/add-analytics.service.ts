@@ -13,7 +13,7 @@ export class AddAnalyticsService {
 			try {
 				const response = await this.http.request({
 					url: `/configuration`,
-					method: 'put',
+					method: 'post',
 					body: requestDetails
 				});
 
