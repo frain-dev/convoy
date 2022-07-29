@@ -3,8 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/frain-dev/convoy/util"
 	"github.com/spf13/cobra"
@@ -21,13 +19,7 @@ func addSwitchCommand() *cobra.Command {
 		PersistentPreRun:  func(cmd *cobra.Command, args []string) {},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			homedir, err := os.UserHomeDir()
-			if err != nil {
-				return err
-			}
-
-			path := filepath.Join(homedir, defaultConfigDir)
-			c, err := NewConfig("", "", path)
+			c, err := NewConfig("", "")
 			if err != nil {
 				return err
 			}
