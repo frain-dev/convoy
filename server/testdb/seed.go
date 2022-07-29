@@ -442,7 +442,7 @@ func SeedMultipleOrganisations(db convoyMongo.Client, ownerID string, num int) (
 	return orgs, nil
 }
 
-func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
+func SeedSource(db convoyMongo.Client, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
 
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
