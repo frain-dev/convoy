@@ -8,8 +8,6 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
-	github.com/dgraph-io/badger/v3 v3.2103.1
-	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dukex/mixpanel v0.0.0-20220410140740-e82251311162
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
@@ -24,6 +22,7 @@ require (
 	github.com/gobeam/mongo-go-pagination v0.0.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/hibiken/asynq v0.23.0
@@ -31,6 +30,7 @@ require (
 	github.com/hibiken/asynqmon v0.7.1
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jaswdr/faker v1.10.2
+	github.com/jedib0t/go-pretty/v6 v6.3.2
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
@@ -51,7 +51,6 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.1
 	github.com/swaggo/swag v1.8.2
-	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/typesense/typesense-go v0.4.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2

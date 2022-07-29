@@ -36,7 +36,14 @@ type Config struct {
 	isNewHost            bool
 }
 
-func NewConfig(host, apiKey, path string) (*Config, error) {
+func NewConfig(host, apiKey string) (*Config, error) {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	path := filepath.Join(homedir, defaultConfigDir)
+
 	c := &Config{path: path}
 	c.hasDefaultConfigFile = HasDefaultConfigFile(path)
 
@@ -89,7 +96,7 @@ type Project struct {
 	DeviceID string `yaml:"device_id"`
 }
 
-func addLoginCommand(a *app) *cobra.Command {
+func addLoginCommand() *cobra.Command {
 	var apiKey string
 	var host string
 
@@ -99,13 +106,7 @@ func addLoginCommand(a *app) *cobra.Command {
 		PersistentPreRun:  func(cmd *cobra.Command, args []string) {},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			homedir, err := os.UserHomeDir()
-			if err != nil {
-				return err
-			}
-
-			path := filepath.Join(homedir, defaultConfigDir)
-			c, err := NewConfig(host, apiKey, path)
+			c, err := NewConfig(host, apiKey)
 			if err != nil {
 				return err
 			}
