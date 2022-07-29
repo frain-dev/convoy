@@ -8217,6 +8217,14 @@
                 }
             }
         },
+        "datastore.CLIMetadata": {
+            "type": "object",
+            "properties": {
+                "event_type": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.DeliveryAttempt": {
             "type": "object",
             "properties": {
@@ -8363,6 +8371,9 @@
                 },
                 "app_metadata": {
                     "$ref": "#/definitions/datastore.Application"
+                },
+                "cli_metadata": {
+                    "$ref": "#/definitions/datastore.CLIMetadata"
                 },
                 "created_at": {
                     "type": "string"

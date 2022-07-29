@@ -82,6 +82,11 @@ definitions:
       username:
         type: string
     type: object
+  datastore.CLIMetadata:
+    properties:
+      event_type:
+        type: string
+    type: object
   datastore.DeliveryAttempt:
     properties:
       api_version:
@@ -186,6 +191,8 @@ definitions:
         type: string
       app_metadata:
         $ref: '#/definitions/datastore.Application'
+      cli_metadata:
+        $ref: '#/definitions/datastore.CLIMetadata'
       created_at:
         type: string
       deleted_at:
