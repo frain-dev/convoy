@@ -54,7 +54,7 @@ func (i *IngestIntegrationTestSuite) TearDownTest() {
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {
 	maskID := "12345"
-	expectedStatusCode := http.StatusBadRequest
+	expectedStatusCode := http.StatusNotFound
 
 	// Arrange Request.
 	url := fmt.Sprintf("/ingest/%s", maskID)
