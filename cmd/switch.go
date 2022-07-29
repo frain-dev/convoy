@@ -21,9 +21,9 @@ func addSwitchCommand() *cobra.Command {
 		PersistentPreRun:  func(cmd *cobra.Command, args []string) {},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			homedir := os.Getenv("HOME")
-			if util.IsStringEmpty(homedir) {
-				return errors.New("No $HOME environment variable found, required to fetch Config Directory")
+			homedir, err := os.UserHomeDir()
+			if err != nil {
+				return err
 			}
 
 			path := filepath.Join(homedir, defaultConfigDir)
