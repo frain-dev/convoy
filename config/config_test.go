@@ -349,11 +349,79 @@ func TestLoadConfig(t *testing.T) {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return
 			}
-			require.Nil(t, err)
 
 			require.Nil(t, err)
-
 			require.Equal(t, tt.wantCfg, cfg)
+		})
+	}
+}
+
+func TestOverride(t *testing.T) {
+	type args struct {
+		path string
+	}
+
+	tests := []struct {
+		name       string
+		args       args
+		config     *Configuration
+		configType string
+	}{
+		{
+			name: "should_override_database_configuration",
+			args: args{
+				path: "./testdata/Config/valid-convoy.json",
+			},
+			config: &Configuration{
+				Database: DatabaseConfiguration{
+					Type: MongodbDatabaseProvider,
+					Dsn:  "localhost",
+				},
+			},
+			configType: "database",
+		},
+		{
+			name: "should_override_queue_configuration",
+			args: args{
+				path: "./testdata/Config/valid-convoy.json",
+			},
+			config: &Configuration{
+				Database: DatabaseConfiguration{
+					Type: MongodbDatabaseProvider,
+					Dsn:  "localhost",
+				},
+				Queue: QueueConfiguration{
+					Type: RedisQueueProvider,
+					Redis: RedisQueueConfiguration{
+						Dsn: "localhost:6379",
+					},
+				},
+			},
+			configType: "queue",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange.
+			// Setup Global Config.
+			err := LoadConfig(tc.args.path)
+			require.NoError(t, err)
+
+			// Act.
+			err = Override(tc.config)
+
+			// Assert.
+			c, err := Get()
+			require.Nil(t, err)
+
+			switch tc.configType {
+			case "database":
+				require.Equal(t, c.Database, tc.config.Database)
+			case "queue":
+				require.Equal(t, c.Queue, tc.config.Queue)
+			default:
+			}
 		})
 	}
 }
