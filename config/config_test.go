@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,12 +20,6 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 			key:       "PORT",
 			testType:  "number",
 			envConfig: "8080",
-		},
-		{
-			name:      "Basic Auth (interface)",
-			key:       "CONVOY_BASIC_AUTH_CONFIG",
-			testType:  "interface",
-			envConfig: "[{\"username\": \"some-admin\",\"password\": \"some-password\",\"role\": {\"type\": \"super_user\",\"group\": \"\"}}]",
 		},
 	}
 	for _, tc := range tests {
@@ -48,11 +40,6 @@ func Test_EnvironmentTakesPrecedence(t *testing.T) {
 				port, e := strconv.ParseInt(tc.envConfig, 10, 64)
 				require.NoError(t, e)
 				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
-			case "interface":
-				basicAuth := BasicAuthConfig{}
-				e := basicAuth.Decode(tc.envConfig)
-				require.NoError(t, e)
-				require.Equal(t, basicAuth, cfg.Auth.File.Basic)
 			}
 		})
 	}
@@ -73,13 +60,6 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 			envConfig: "0",
 			expected:  "8080",
 		},
-		{
-			name:      "Basic Auth (interface)",
-			key:       "CONVOY_BASIC_AUTH_CONFIG",
-			testType:  "interface",
-			envConfig: "",
-			expected:  "[{\"username\": \"admin\",\"password\": \"qwerty\",\"role\": {\"type\": \"super_user\",\"groups\": \"\"}}]",
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -97,11 +77,6 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 				port, e := strconv.ParseInt(tc.expected, 10, 64)
 				require.NoError(t, e)
 				require.Equal(t, port, int64(cfg.Server.HTTP.Port))
-			case "interface":
-				basicAuth := BasicAuthConfig{}
-				e := basicAuth.Decode(tc.expected)
-				require.NoError(t, e)
-				require.Equal(t, basicAuth, cfg.Auth.File.Basic)
 			}
 		})
 	}
@@ -209,48 +184,6 @@ func TestLoadConfig(t *testing.T) {
 			wantErrMsg: "",
 		},
 		{
-			name: "should_allow_zero_groups_for_superuser",
-			args: args{
-				path: "./testdata/Config/zero-groups-for-superuser.json",
-			},
-			wantCfg: Configuration{
-				Host: "localhost:5005",
-				Database: DatabaseConfiguration{
-					Type: MongodbDatabaseProvider,
-					Dsn:  "mongodb://inside-config-file",
-				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Redis: RedisQueueConfiguration{
-						Dsn: "redis://localhost:8379",
-					},
-				},
-				Server: ServerConfiguration{
-					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						WorkerPort: 5006,
-					},
-				},
-				MaxResponseSize: MaxResponseSize,
-				Auth: AuthConfiguration{
-					File: FileRealmOption{
-						Basic: []BasicAuth{
-							{
-								Username: "123",
-								Password: "abc",
-								Role: auth.Role{
-									Type: "super_user",
-								},
-							},
-						},
-					},
-				},
-				Environment:     DevelopmentEnvironment,
-				MultipleTenants: false,
-			},
-			wantErr: false,
-		},
-		{
 			name: "should_error_for_empty_ssl_key_file",
 			args: args{
 				path: "./testdata/Config/empty-ssl-key-file.json",
@@ -283,55 +216,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "unsupported queue type: abc",
-		},
-		{
-			name: "should_error_for_empty_password_for_basic_auth",
-			args: args{
-				path: "./testdata/Config/empty-password-for-basic-auth.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "username and password are required for basic auth config",
-		},
-		{
-			name: "should_error_for_invalid_role",
-			args: args{
-				path: "./testdata/Config/invalid-role.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "invalid role type: abc",
-		},
-		{
-			name: "should_error_for_zero_groups",
-			args: args{
-				path: "./testdata/Config/zero-groups-for-non-superuser.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "please specify group for basic auth",
-		},
-		{
-			name: "should_error_for_empty_group",
-			args: args{
-				path: "./testdata/Config/empty-basic-auth-group-name.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "please specify group for basic auth",
-		},
-		{
-			name: "should_error_for_empty_api_key",
-			args: args{
-				path: "./testdata/Config/empty-api-key.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "api-key is required for api-key auth config",
-		},
-
-		{
-			name: "should_error_for_empty_api_key_group_name",
-			args: args{
-				path: "./testdata/Config/empty-api-key-auth-group-name.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "please specify group for api-key auth",
 		},
 	}
 	for _, tt := range tests {

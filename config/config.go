@@ -288,33 +288,6 @@ func LoadConfig(p string) error {
 	return nil
 }
 
-func ensureAuthConfig(authCfg AuthConfiguration) error {
-	var err error
-	for _, r := range authCfg.File.Basic {
-		if r.Username == "" || r.Password == "" {
-			return errors.New("username and password are required for basic auth config")
-		}
-
-		err = r.Role.Validate("basic auth")
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, r := range authCfg.File.APIKey {
-		if r.APIKey == "" {
-			return errors.New("api-key is required for api-key auth config")
-		}
-
-		err = r.Role.Validate("api-key auth")
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func ensureSSL(s ServerConfiguration) error {
 	if s.HTTP.SSL {
 		if s.HTTP.SSLCertFile == "" || s.HTTP.SSLKeyFile == "" {
@@ -353,10 +326,6 @@ func ensureMaxResponseSize(c *Configuration) {
 func validate(c *Configuration) error {
 
 	ensureMaxResponseSize(c)
-
-	if err := ensureAuthConfig(c.Auth); err != nil {
-		return err
-	}
 
 	if err := ensureQueueConfig(c.Queue); err != nil {
 		return err
