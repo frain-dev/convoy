@@ -152,7 +152,9 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 			return err
 		}
 
-		config.Override(cliConfig)
+		if err = config.Override(cliConfig); err != nil {
+			return err
+		}
 
 		nwCfg := cfg.Tracer.NewRelic
 		nRApp, err := newrelic.NewApplication(

@@ -79,7 +79,9 @@ func addServerCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			config.Override(cliConfig)
+			if err = config.Override(cliConfig); err != nil {
+				return err
+			}
 
 			err = StartConvoyServer(a, c, withWorkers)
 
