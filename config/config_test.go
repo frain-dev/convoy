@@ -300,6 +300,7 @@ func TestOverride(t *testing.T) {
 
 			// Act.
 			err = Override(tc.config)
+			require.NoError(t, err)
 
 			// Assert.
 			c, err := Get()
