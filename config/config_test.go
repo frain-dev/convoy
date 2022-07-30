@@ -124,9 +124,10 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:80",
+				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Dsn: "mongodb://inside-config-file",
+					Type: MongodbDatabaseProvider,
+					Dsn:  "mongodb://inside-config-file",
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -136,7 +137,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port: 80,
+						Port:       80,
+						WorkerPort: 5006,
 					},
 				},
 				MaxResponseSize: 40 * 1024,
@@ -152,9 +154,10 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/too-large-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:80",
+				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Dsn: "mongodb://inside-config-file",
+					Type: MongodbDatabaseProvider,
+					Dsn:  "mongodb://inside-config-file",
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -164,7 +167,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port: 80,
+						Port:       80,
+						WorkerPort: 5006,
 					},
 				},
 				MaxResponseSize: MaxResponseSize,
@@ -180,9 +184,10 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:80",
+				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Dsn: "mongodb://inside-config-file",
+					Type: MongodbDatabaseProvider,
+					Dsn:  "mongodb://inside-config-file",
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -192,7 +197,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port: 80,
+						Port:       80,
+						WorkerPort: 5006,
 					},
 				},
 				MaxResponseSize: MaxResponseSize,
@@ -208,9 +214,10 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-groups-for-superuser.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:80",
+				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Dsn: "mongodb://inside-config-file",
+					Type: MongodbDatabaseProvider,
+					Dsn:  "mongodb://inside-config-file",
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -220,7 +227,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port: 80,
+						Port:       80,
+						WorkerPort: 5006,
 					},
 				},
 				MaxResponseSize: MaxResponseSize,
@@ -241,15 +249,6 @@ func TestLoadConfig(t *testing.T) {
 				MultipleTenants: false,
 			},
 			wantErr: false,
-		},
-		{
-			name: "should_error_for_zero_port",
-			args: args{
-				path: "./testdata/Config/no-port-convoy.json",
-			},
-			wantCfg:    Configuration{},
-			wantErr:    true,
-			wantErrMsg: "http port cannot be zero",
 		},
 		{
 			name: "should_error_for_empty_ssl_key_file",
@@ -338,22 +337,29 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := LoadConfig(tt.args.path)
-			require.NoError(t, err)
 
-			cfg, err := Get()
-			require.NoError(t, err)
-
-			err = SetServerConfigDefaults(&cfg)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return
 			}
 
-			require.Nil(t, err)
+			require.NoError(t, err)
+
+			cfg, err := Get()
+			require.NoError(t, err)
 			require.Equal(t, tt.wantCfg, cfg)
 		})
 	}
+}
+
+func TestConfigDefaults(t *testing.T) {
+	err := LoadConfig("./testdata/Config/empty-config")
+	require.NoError(t, err)
+
+	cfg, err := Get()
+	require.NoError(t, err)
+	require.Equal(t, DefaultConfiguration, cfg)
 }
 
 func TestOverride(t *testing.T) {

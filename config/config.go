@@ -17,9 +17,34 @@ const (
 	MaxResponseSizeKb = 50                       // in kilobytes
 	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
 	MaxRequestSize    = MaxResponseSize
+
+	DefaultHost = "localhost:5005"
 )
 
 var cfgSingleton atomic.Value
+
+var DefaultConfiguration = Configuration{
+	Host:            DefaultHost,
+	Environment:     DevelopmentEnvironment,
+	MaxResponseSize: MaxResponseSize,
+	Server: ServerConfiguration{
+		HTTP: HTTPServerConfiguration{
+			SSL:        false,
+			Port:       5005,
+			WorkerPort: 5006,
+		},
+	},
+	Database: DatabaseConfiguration{
+		Type: MongodbDatabaseProvider,
+		Dsn:  "mongodb://localhost:27017/convoy",
+	},
+	Queue: QueueConfiguration{
+		Type: RedisQueueProvider,
+		Redis: RedisQueueConfiguration{
+			Dsn: "redis://localhost:6378",
+		},
+	},
+}
 
 type DatabaseConfiguration struct {
 	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
@@ -173,15 +198,15 @@ type Configuration struct {
 	Queue           QueueConfiguration      `json:"queue"`
 	Prometheus      PrometheusConfiguration `json:"prometheus"`
 	Server          ServerConfiguration     `json:"server"`
-	MaxResponseSize uint64                  `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE" default:"50"`
+	MaxResponseSize uint64                  `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
 	SMTP            SMTPConfiguration       `json:"smtp"`
-	Environment     string                  `json:"env" envconfig:"CONVOY_ENV" required:"true" default:"development"`
+	Environment     string                  `json:"env" envconfig:"CONVOY_ENV"`
 	MultipleTenants bool                    `json:"multiple_tenants"`
 	Logger          LoggerConfiguration     `json:"logger"`
 	Tracer          TracerConfiguration     `json:"tracer"`
 	Cache           CacheConfiguration      `json:"cache"`
 	Limiter         LimiterConfiguration    `json:"limiter"`
-	Host            string                  `json:"host" envconfig:"CONVOY_HOST" default:"localhost"`
+	Host            string                  `json:"host" envconfig:"CONVOY_HOST"`
 	Search          SearchConfiguration     `json:"search"`
 }
 
@@ -231,7 +256,7 @@ func Override(newCfg *Configuration) error {
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
 func LoadConfig(p string) error {
-	c := &Configuration{}
+	c := DefaultConfiguration
 
 	if _, err := os.Stat(p); err == nil {
 		f, err := os.Open(p)
@@ -249,15 +274,17 @@ func LoadConfig(p string) error {
 		log.Info("convoy config.json not detected, will look for env vars or cli args")
 	}
 
-	ec := &Configuration{}
-
-	// load config from environment variables
-	err := envconfig.Process(envPrefix, ec)
+	// override config from environment variables
+	err := envconfig.Process(envPrefix, &c)
 	if err != nil {
 		return err
 	}
 
-	cfgSingleton.Store(c)
+	if err = validate(&c); err != nil {
+		return err
+	}
+
+	cfgSingleton.Store(&c)
 	return nil
 }
 
