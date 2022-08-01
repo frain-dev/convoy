@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/require"
@@ -63,6 +64,11 @@ func (d *DeviceIntegrationTestSuite) SetupTest() {
 	require.NoError(d.T(), err)
 
 	initRealmChain(d.T(), d.DB.APIRepo(), d.DB.UserRepo(), d.ConvoyApp.S.Cache)
+}
+
+func (d *DeviceIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(d.DB)
+	metrics.Reset()
 }
 
 func (d *DeviceIntegrationTestSuite) Test_GetDevices() {
