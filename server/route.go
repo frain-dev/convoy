@@ -45,6 +45,7 @@ type Repos struct {
 	OrgInviteRepo     datastore.OrganisationInviteRepository
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
+	DeviceRepo        datastore.DeviceRepository
 }
 
 type Services struct {
@@ -66,6 +67,7 @@ type Services struct {
 	OrganisationService       *services.OrganisationService
 	OrganisationMemberService *services.OrganisationMemberService
 	OrganisationInviteService *services.OrganisationInviteService
+	DeviceService             *services.DeviceService
 }
 
 //go:embed ui/build
@@ -102,6 +104,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 	ois := services.NewOrganisationInviteService(r.OrgRepo, r.UserRepo, r.OrgMemberRepo, r.OrgInviteRepo, s.Queue)
 	om := services.NewOrganisationMemberService(r.OrgMemberRepo)
 	cs := services.NewConfigService(r.ConfigRepo)
+	ds := services.NewDeviceService(r.DeviceRepo)
 
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		EventRepo:         r.EventRepo,
@@ -137,6 +140,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 			OrgInviteRepo:     r.OrgInviteRepo,
 			UserRepo:          r.UserRepo,
 			ConfigRepo:        r.ConfigRepo,
+			DeviceRepo:        r.DeviceRepo,
 		},
 		S: Services{
 			Queue:                     s.Queue,
@@ -156,6 +160,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 			OrganisationService:       os,
 			OrganisationMemberService: om,
 			OrganisationInviteService: ois,
+			DeviceService:             ds,
 		},
 	}
 }
@@ -475,6 +480,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						groupSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 							dashboardRouter.Get("/summary", a.GetDashboardSummary)
 							dashboardRouter.Get("/config", a.GetAllConfigDetails)
+						})
+
+						groupSubRouter.Route("/devices", func(deviceRouter chi.Router) {
+							deviceRouter.With(a.M.Pagination).Get("/", a.LoadDevicesPaged)
 						})
 					})
 

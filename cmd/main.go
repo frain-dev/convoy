@@ -244,6 +244,7 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 		app.orgRepo = db.OrganisationRepo()
 		app.orgMemberRepo = db.OrganisationMemberRepo()
 		app.orgInviteRepo = db.OrganisationInviteRepo()
+		app.deviceRepo = db.DeviceRepo()
 
 		app.queue = q
 		app.logger = lo

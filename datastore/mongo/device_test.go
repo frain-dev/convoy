@@ -152,3 +152,98 @@ func Test_FetchDeviceByID(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, device, d)
 }
+
+func Test_LoadDevicesPaged(t *testing.T) {
+	type Expected struct {
+		paginationData datastore.PaginationData
+	}
+
+	tests := []struct {
+		name     string
+		pageData datastore.Pageable
+		count    int
+		expected Expected
+	}{
+		{
+			name:     "Load Devices Paged - 10 records",
+			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
+			count:    10,
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					Total:     10,
+					TotalPage: 4,
+					Page:      1,
+					PerPage:   3,
+					Prev:      0,
+					Next:      2,
+				},
+			},
+		},
+
+		{
+			name:     "Load Sources Paged - 12 records",
+			pageData: datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
+			count:    12,
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					Total:     12,
+					TotalPage: 3,
+					Page:      2,
+					PerPage:   4,
+					Prev:      1,
+					Next:      3,
+				},
+			},
+		},
+
+		{
+			name:     "Load Sources Paged - 5 records",
+			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
+			count:    5,
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					Total:     5,
+					TotalPage: 2,
+					Page:      1,
+					PerPage:   3,
+					Prev:      0,
+					Next:      2,
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, closeFn := getDB(t)
+			defer closeFn()
+
+			store := getStore(db, DeviceCollection)
+			deviceRepo := NewDeviceRepository(db, store)
+			groupId := uuid.NewString()
+
+			for i := 0; i < tc.count; i++ {
+				device := &datastore.Device{
+					UID:            uuid.NewString(),
+					GroupID:        groupId,
+					AppID:          uuid.NewString(),
+					HostName:       "",
+					Status:         datastore.DeviceStatusOnline,
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				}
+				require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
+			}
+
+			_, pageable, err := deviceRepo.LoadDevicesPaged(context.Background(), groupId, tc.pageData)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expected.paginationData.Total, pageable.Total)
+			require.Equal(t, tc.expected.paginationData.TotalPage, pageable.TotalPage)
+			require.Equal(t, tc.expected.paginationData.Page, pageable.Page)
+			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
+			require.Equal(t, tc.expected.paginationData.Prev, pageable.Prev)
+			require.Equal(t, tc.expected.paginationData.Next, pageable.Next)
+
+		})
+	}
+}

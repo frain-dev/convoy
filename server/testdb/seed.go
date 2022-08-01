@@ -567,6 +567,26 @@ func SeedConfiguration(db convoyMongo.Client) (*datastore.Configuration, error) 
 	return config, nil
 }
 
+func SeedMultipleDevices(db convoyMongo.Client, g *datastore.Group, count int) error {
+	for i := 0; i < count; i++ {
+		device := &datastore.Device{
+			UID:            uuid.NewString(),
+			GroupID:        g.UID,
+			AppID:          uuid.NewString(),
+			HostName:       "",
+			Status:         datastore.DeviceStatusOnline,
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		}
+
+		err := db.DeviceRepo().CreateDevice(context.TODO(), device)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(db convoyMongo.Client) {
