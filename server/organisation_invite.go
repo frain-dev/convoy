@@ -24,8 +24,8 @@ import (
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param invite body models.OrganisationInvite true "Organisation Invite Details"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites [post]
 func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -60,8 +60,8 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param orgID path string true "organisation id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/pending [get]
 func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
@@ -88,8 +88,8 @@ func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter
 // @Param token query string true "invite token"
 // @Param accepted query string true "email"
 // @Param user body models.User false "User Details"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/process_invite [post]
 func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {
@@ -125,8 +125,8 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 // @Accept  json
 // @Produce  json
 // @Param token query string true "invite token"
-// @Success 200 {object} serverResponse{data=datastore.User}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/token [get]
 func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
@@ -151,8 +151,8 @@ func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param inviteID path string true "invite id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/resend [post]
 func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
@@ -178,8 +178,8 @@ func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param inviteID path string true "invite id"
-// @Success 200 {object} serverResponse{data=datastore.OrganisationInvite}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.OrganisationInvite}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/cancel [post]
 func (a *ApplicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
