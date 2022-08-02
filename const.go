@@ -2,6 +2,7 @@ package convoy
 
 const (
 	HttpPost HttpMethod = "POST"
+	HttpGet  HttpMethod = "GET"
 )
 
 const (

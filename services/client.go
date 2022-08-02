@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -16,7 +17,7 @@ const (
 	writeWait = 5 * time.Second
 
 	// Time allowed to read the next pong message from the peer.
-	pongWait = 2 * time.Second
+	pongWait = 10 * time.Second
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
@@ -45,16 +46,16 @@ type Client struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *Client) readPump() {
-	defer c.Close()
+	// TODO: [raymond & dotun] why is close being called here
+	// defer c.Close()
 
 	c.conn.SetReadLimit(maxMessageSize)
 
-	err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	if err != nil {
-		return
-	}
-
-	c.conn.SetPongHandler(func(string) error { return nil })
+	// TODO: [raymond & dotun] figure out how to use the pong deadline
+	// err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	// if err != nil {
+	// 	return
+	// }
 
 	c.conn.SetPingHandler(func(string) error {
 		c.lock.Lock()
@@ -77,9 +78,12 @@ func (c *Client) readPump() {
 	for {
 		select {
 		case <-c.hub.close:
+			println("close??")
 			return
 		default:
-			_, _, err := c.conn.ReadMessage()
+			messageType, message, err := c.conn.ReadMessage()
+			fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
+
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					log.WithError(err).WithField("device_id", c.deviceID).Error("unexpected close error")

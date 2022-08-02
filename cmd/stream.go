@@ -47,6 +47,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			router := chi.NewRouter()
 			router.Use(middleware.Recoverer)
+
 			router.Route("/stream", func(streamRouter chi.Router) {
 				streamRouter.Use(
 					m.RequireAuth(),

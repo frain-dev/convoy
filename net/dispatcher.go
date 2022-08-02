@@ -98,10 +98,62 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	return r, nil
 }
 
-func (d *Dispatcher) SendCliRequest(endpoint string, method convoy.HttpMethod, apiKey string, jsonData json.RawMessage) (*Response, error) {
+func (d *Dispatcher) SendCliRequest(url string, method convoy.HttpMethod, apiKey string, jsonData json.RawMessage) (*Response, error) {
 	r := &Response{}
 
-	req, err := http.NewRequest(string(method), endpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(string(method), url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.WithError(err).Error("error occurred while creating request")
+		return r, err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("User-Agent", defaultUserAgent())
+	req.Header.Add("Authorization", fmt.Sprintf(" Bearer %s", apiKey))
+
+	r.RequestHeader = req.Header
+	r.URL = req.URL
+	r.Method = req.Method
+
+	trace := &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			r.IP = connInfo.Conn.RemoteAddr().String()
+			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
+		},
+	}
+
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+
+	response, err := d.client.Do(req)
+	if err != nil {
+		log.WithError(err).Error("error sending request to API endpoint")
+		r.Error = err.Error()
+		return r, err
+	}
+	updateDispatchHeaders(r, response)
+
+	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
+	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
+	// if it is greater than maxResponseSize. body.Read will return io.EOF,
+	// if it is equal to maxResponseSize. body.Read will return io.EOF,
+	// in all cases, io.ReadAll ignores io.EOF.
+	body := io.LimitReader(response.Body, config.MaxRequestSize)
+	buf, err := io.ReadAll(body)
+	r.Body = buf
+
+	if err != nil {
+		log.WithError(err).Error("couldn't parse response body")
+		return r, err
+	}
+	defer response.Body.Close()
+
+	return r, nil
+}
+
+func (d *Dispatcher) SendListenRequest(url string, method convoy.HttpMethod, apiKey string, jsonData json.RawMessage) (*Response, error) {
+	r := &Response{}
+
+	req, err := http.NewRequest(string(method), url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err

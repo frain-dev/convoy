@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -17,7 +16,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson"
+
+	// "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -48,7 +48,7 @@ type Hub struct {
 	close  chan struct{}
 }
 
-type WatchCollectionFn func(fn func(doc convoy.GenericMap) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error
+type WatchCollectionFn func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error
 
 var ug = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -74,6 +74,8 @@ func (h *Hub) StartEventSender() {
 	for {
 		select {
 		case ev := <-h.events:
+			// fmt.Printf("\n[StartEventSender] -> %+v\n\n", ev)
+
 			h.lock.RLock()
 			client := h.deviceClients[ev.DeviceID]
 			h.lock.RUnlock()
@@ -93,6 +95,7 @@ func (h *Hub) StartEventSender() {
 				}
 			}
 
+			fmt.Printf("\n[Client] %+v \n\n", client.Device)
 			if !client.HasEventType(ev.EventType) {
 				continue
 			}
@@ -111,7 +114,7 @@ func (h *Hub) StartEventSender() {
 
 			err = client.conn.WriteMessage(websocket.BinaryMessage, j)
 			if err != nil {
-				log.WithError(err).Error("failed to write pong message")
+				log.WithError(err).Error("failed to write event to socket")
 			}
 		case <-h.close:
 			return
@@ -120,18 +123,18 @@ func (h *Hub) StartEventSender() {
 }
 
 func (h *Hub) StartEventWatcher() {
-	matchStage := bson.D{
-		{Key: "$match",
-			Value: bson.D{
-				{Key: "cli_metadata", Value: bson.M{"$ne": nil}},
-			},
-		},
-	}
+	// matchStage := bson.D{
+	// 	{Key: "$match",
+	// 		Value: bson.D{
+	// 			{Key: "cli_metadata", Value: bson.M{"$ne": nil}},
+	// 		},
+	// 	},
+	// }
 
-	pipeline := mongo.Pipeline{matchStage}
+	// pipeline := mongo.Pipeline{matchStage}
 
 	fn := h.watchEventDeliveriesCollection()
-	err := h.watchCollectionFn(fn, pipeline, m.EventCollection, h.close)
+	err := h.watchCollectionFn(fn, mongo.Pipeline{}, m.EventDeliveryCollection, h.close)
 	if err != nil {
 		log.WithError(err).Error("database collection watcher exited unexpectedly")
 	}
@@ -148,45 +151,28 @@ type CLIEvent struct {
 	GroupID   string `json:"-"`
 }
 
-func (h *Hub) watchEventDeliveriesCollection() func(doc convoy.GenericMap) error {
-	return func(doc convoy.GenericMap) error {
-		metadata, ok := doc["metadata"].(*datastore.Metadata)
-		if !ok {
-			return fmt.Errorf("event delivery metadata has wrong type of: %T", doc["metadata"])
+func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) error {
+	return func(doc map[string]interface{}) error {
+		var ed *datastore.EventDelivery
+		b, err := json.Marshal(doc)
+		if err != nil {
+			return err
 		}
 
-		cliMetadata, ok := doc["cli_metadata"].(*datastore.CLIMetadata)
-		if !ok {
-			return fmt.Errorf("cli metadata has wrong type of: %T", doc["metadata"])
+		err = json.Unmarshal(b, &ed)
+		if err != nil {
+			return err
 		}
 
-		appID, ok := doc["app_id"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery app id has wrong type of: %T", doc["app_id"])
-		}
-
-		groupID, ok := doc["group_id"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery group id has wrong type of: %T", doc["group_id"])
-		}
-
-		deviceID, ok := doc["device_id"].(string)
-		if !ok {
-			return fmt.Errorf("event delivery device id has wrong type of: %T", doc["device_id"])
-		}
-
-		forwardedHeaders, ok := doc["forwarded_headers"].(datastore.HttpHeader)
-		if !ok {
-			return fmt.Errorf("event delivery forwarded headers has wrong type of: %T", doc["device_id"])
-		}
+		// fmt.Printf("\n[watchEventDeliveriesCollection] -> %+v\n\n", ed)
 
 		h.events <- &CLIEvent{
-			Data:             metadata.Data,
-			ForwardedHeaders: forwardedHeaders,
-			EventType:        cliMetadata.EventType,
-			AppID:            appID,
-			DeviceID:         deviceID,
-			GroupID:          groupID,
+			Data:             ed.Metadata.Data,
+			ForwardedHeaders: ed.ForwardedHeaders,
+			EventType:        ed.CLIMetadata.EventType,
+			AppID:            ed.AppID,
+			DeviceID:         ed.DeviceID,
+			GroupID:          ed.GroupID,
 		}
 
 		return nil
@@ -317,7 +303,7 @@ func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.
 
 func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 	listenRequest := &ListenRequest{}
-	err := util.ReadJSON(r, &listenRequest)
+	err := json.Unmarshal([]byte(r.Header.Get("Body")), &listenRequest)
 	if err != nil {
 		respond(w, http.StatusBadRequest, "empty request body")
 		return
@@ -353,8 +339,6 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 
 	client.hub.register <- client
 	go client.readPump()
-
-	respond(w, http.StatusOK, "")
 }
 
 func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore.Application, listenRequest *ListenRequest) (*datastore.Device, error) {
