@@ -76,13 +76,16 @@ func (d *DeviceIntegrationTestSuite) Test_GetDevices() {
 	totalApps := rand.Intn(5)
 	expectedStatusCode := http.StatusOK
 
+	app, err := testdb.SeedApplication(d.DB, d.DefaultGroup, "", "", false)
+	require.NoError(d.T(), err)
+
 	// Just Before.
 	_ = testdb.SeedMultipleDevices(d.DB, d.DefaultGroup, totalApps)
 
 	// Arrange
-	url := fmt.Sprintf("/ui/organisations/%s/groups/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s/apps/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, app.UID)
 	req := createRequest(http.MethodGet, url, d.APIKey, nil)
-	err := d.AuthenticatorFn(req, d.Router)
+	err = d.AuthenticatorFn(req, d.Router)
 	require.NoError(d.T(), err)
 	w := httptest.NewRecorder()
 

@@ -24,6 +24,7 @@ func TestDeviceService_LoadSourcesPaged(t *testing.T) {
 	type args struct {
 		ctx      context.Context
 		group    *datastore.Group
+		filter   *datastore.DeviceFilter
 		pageable datastore.Pageable
 	}
 
@@ -40,8 +41,9 @@ func TestDeviceService_LoadSourcesPaged(t *testing.T) {
 		{
 			name: "should_load_devices",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				ctx:    ctx,
+				group:  &datastore.Group{UID: "12345"},
+				filter: &datastore.DeviceFilter{AppID: ""},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -63,7 +65,7 @@ func TestDeviceService_LoadSourcesPaged(t *testing.T) {
 			dbFn: func(d *DeviceService) {
 				dr, _ := d.deviceRepo.(*mocks.MockDeviceRepository)
 				dr.EXPECT().
-					LoadDevicesPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					LoadDevicesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Device{
 						{UID: "12345"},
 						{UID: "123456"},
@@ -91,7 +93,7 @@ func TestDeviceService_LoadSourcesPaged(t *testing.T) {
 			},
 			dbFn: func(d *DeviceService) {
 				dr, _ := d.deviceRepo.(*mocks.MockDeviceRepository)
-				dr.EXPECT().LoadDevicesPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+				dr.EXPECT().LoadDevicesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -111,14 +113,14 @@ func TestDeviceService_LoadSourcesPaged(t *testing.T) {
 				tc.dbFn(ds)
 			}
 
-			devices, paginationData, err := ds.LoadDevicesPaged(tc.args.ctx, tc.args.group, tc.args.pageable)
+			devices, paginationData, err := ds.LoadDevicesPaged(tc.args.ctx, tc.args.group, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
 				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
-			
+
 			require.Nil(t, err)
 			require.Equal(t, tc.wantDevices, devices)
 			require.Equal(t, tc.wantPaginationData, paginationData)

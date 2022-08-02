@@ -14,3 +14,7 @@ type SourceFilter struct {
 	Type     string
 	Provider string
 }
+
+type DeviceFilter struct {
+	AppID string
+}

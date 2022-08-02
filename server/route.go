@@ -417,6 +417,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Delete("/", a.DeleteAppEndpoint)
 									})
 								})
+
+								appSubRouter.Route("/devices", func(deviceRouter chi.Router) {
+									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+								})
 							})
 						})
 
@@ -480,10 +484,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						groupSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 							dashboardRouter.Get("/summary", a.GetDashboardSummary)
 							dashboardRouter.Get("/config", a.GetAllConfigDetails)
-						})
-
-						groupSubRouter.Route("/devices", func(deviceRouter chi.Router) {
-							deviceRouter.With(a.M.Pagination).Get("/", a.LoadDevicesPaged)
 						})
 					})
 

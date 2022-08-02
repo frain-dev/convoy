@@ -106,10 +106,14 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 	return device, nil
 }
 
-func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
+func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *datastore.DeviceFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
 	var devices []datastore.Device
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID}
+
+	if !util.IsStringEmpty(f.AppID) {
+		filter["app_id"] = f.AppID
+	}
 
 	paginatedData, err := pager.New(d.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&devices).Find()
 	if err != nil {

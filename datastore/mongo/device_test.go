@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -162,12 +163,16 @@ func Test_LoadDevicesPaged(t *testing.T) {
 		name     string
 		pageData datastore.Pageable
 		count    int
+		groupID  string
+		filter   *datastore.DeviceFilter
 		expected Expected
 	}{
 		{
 			name:     "Load Devices Paged - 10 records",
 			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    10,
+			groupID:  uuid.NewString(),
+			filter:   &datastore.DeviceFilter{AppID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     10,
@@ -181,9 +186,11 @@ func Test_LoadDevicesPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Sources Paged - 12 records",
+			name:     "Load Devices Paged - 12 records",
 			pageData: datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
 			count:    12,
+			groupID:  uuid.NewString(),
+			filter:   &datastore.DeviceFilter{AppID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     12,
@@ -197,9 +204,11 @@ func Test_LoadDevicesPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Sources Paged - 5 records",
+			name:     "Load Devices Paged - 5 records",
 			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    5,
+			groupID:  uuid.NewString(),
+			filter:   &datastore.DeviceFilter{AppID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     5,
@@ -208,6 +217,24 @@ func Test_LoadDevicesPaged(t *testing.T) {
 					PerPage:   3,
 					Prev:      0,
 					Next:      2,
+				},
+			},
+		},
+
+		{
+			name:     "Load Devices Paged - 1 record",
+			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
+			count:    1,
+			groupID:  uuid.NewString(),
+			filter:   &datastore.DeviceFilter{AppID: uuid.NewString()},
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					Total:     1,
+					TotalPage: 1,
+					Page:      1,
+					PerPage:   3,
+					Prev:      0,
+					Next:      0,
 				},
 			},
 		},
@@ -220,21 +247,25 @@ func Test_LoadDevicesPaged(t *testing.T) {
 
 			store := getStore(db, DeviceCollection)
 			deviceRepo := NewDeviceRepository(db, store)
-			groupId := uuid.NewString()
 
 			for i := 0; i < tc.count; i++ {
 				device := &datastore.Device{
 					UID:            uuid.NewString(),
-					GroupID:        groupId,
+					GroupID:        tc.groupID,
 					AppID:          uuid.NewString(),
 					HostName:       "",
 					Status:         datastore.DeviceStatusOnline,
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				}
+
+				if !util.IsStringEmpty(tc.filter.AppID) {
+					device.AppID = tc.filter.AppID
+				}
+
 				require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 			}
 
-			_, pageable, err := deviceRepo.LoadDevicesPaged(context.Background(), groupId, tc.pageData)
+			_, pageable, err := deviceRepo.LoadDevicesPaged(context.Background(), tc.groupID, tc.filter, tc.pageData)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expected.paginationData.Total, pageable.Total)
