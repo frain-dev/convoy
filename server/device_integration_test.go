@@ -8,9 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
-
-	"math/rand"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -71,16 +68,14 @@ func (d *DeviceIntegrationTestSuite) TearDownTest() {
 	metrics.Reset()
 }
 
-func (d *DeviceIntegrationTestSuite) Test_GetDevices() {
-	rand.Seed(time.Now().UnixNano())
-	totalApps := rand.Intn(5)
+func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByAppID() {
 	expectedStatusCode := http.StatusOK
 
 	app, err := testdb.SeedApplication(d.DB, d.DefaultGroup, "", "", false)
 	require.NoError(d.T(), err)
 
 	// Just Before.
-	_ = testdb.SeedMultipleDevices(d.DB, d.DefaultGroup, totalApps)
+	_ = testdb.SeedDevice(d.DB, d.DefaultGroup, app.UID)
 
 	// Arrange
 	url := fmt.Sprintf("/ui/organisations/%s/groups/%s/apps/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, app.UID)
@@ -98,7 +93,7 @@ func (d *DeviceIntegrationTestSuite) Test_GetDevices() {
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(d.T(), w.Result(), &resp)
-	require.Equal(d.T(), int64(totalApps), resp.Pagination.Total)
+	require.Equal(d.T(), int64(1), resp.Pagination.Total)
 }
 
 func TestDeviceIntegrationTestSuite(t *testing.T) {
