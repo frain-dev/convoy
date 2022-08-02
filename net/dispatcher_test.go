@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/jarcoal/httpmock"
 
 	"github.com/frain-dev/convoy/config"
@@ -28,13 +29,13 @@ func TestDispatcher_SendRequest(t *testing.T) {
 	_, _ = rand.Read(buf)
 	timestamp := fmt.Sprint(time.Now().Unix())
 	type args struct {
-		endpoint         string
-		method           string
-		jsonData         json.RawMessage
-		forwardedHeaders datastore.HttpHeader
-		group            *datastore.Group
-		convoyTimestamp  string
-		hmac             string
+		endpoint        string
+		method          string
+		jsonData        json.RawMessage
+		headers         httpheader.HTTPHeader
+		group           *datastore.Group
+		convoyTimestamp string
+		hmac            string
 	}
 	tests := []struct {
 		name    string
@@ -94,8 +95,8 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				endpoint: "https://google.com",
 				method:   http.MethodPost,
 				jsonData: bytes.NewBufferString("testing").Bytes(),
-				forwardedHeaders: map[string]string{
-					"X-test-sig": "abcdef",
+				headers: map[string][]string{
+					"X-Test-Sig": []string{"abcdef"},
 				},
 				group: &datastore.Group{
 					UID: "12345",
@@ -317,7 +318,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize, tt.args.forwardedHeaders)
+			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize, tt.args.headers)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)

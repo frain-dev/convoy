@@ -48,7 +48,6 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		GroupID:        g.UID,
 		MaskID:         uniuri.NewLen(16),
 		Name:           newSource.Name,
-		ForwardHeaders: newSource.ForwardHeaders,
 		Type:           newSource.Type,
 		Provider:       datastore.SourceProvider(newSource.Provider),
 		Verifier:       &newSource.Verifier,
@@ -60,7 +59,6 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	if source.Provider == datastore.TwitterSourceProvider {
 		source.ProviderConfig = &datastore.ProviderConfig{Twitter: &datastore.TwitterProviderConfig{}}
 	}
-	setDefaultForwardHeaders(source)
 
 	err := s.sourceRepo.CreateSource(ctx, source)
 	if err != nil {
@@ -68,27 +66,6 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	}
 
 	return source, nil
-}
-
-func setDefaultForwardHeaders(s *datastore.Source) {
-	if len(s.ForwardHeaders) > 0 {
-		return
-	}
-
-	switch s.Provider {
-	case datastore.ShopifySourceProvider:
-		s.ForwardHeaders = []string{
-			"X-Shopify-Topic",
-			"X-Shopify-Hmac-Sha256",
-			"X-Shopify-Shop-Domain",
-			"X-Shopify-API-Version",
-			"X-Shopify-Webhook-Id",
-		}
-	case datastore.TwitterSourceProvider:
-		s.ForwardHeaders = []string{
-			"X-Twitter-Webhooks-Signature",
-		}
-	}
 }
 
 func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, sourceUpdate *models.UpdateSource, source *datastore.Source) (*datastore.Source, error) {
@@ -119,8 +96,6 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, so
 	if sourceUpdate.ForwardHeaders != nil {
 		source.ForwardHeaders = sourceUpdate.ForwardHeaders
 	}
-
-	setDefaultForwardHeaders(source)
 
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)
 	if err != nil {
