@@ -1803,14 +1803,14 @@
                 }
             }
         },
-        "/devices": {
+        "/devices/{appID}": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches multiple devices",
+                "description": "This endpoint fetches devices for an app",
                 "consumes": [
                     "application/json"
                 ],
@@ -1820,7 +1820,7 @@
                 "tags": [
                     "Source"
                 ],
-                "summary": "Fetch multiple devices",
+                "summary": "Fetch devices for an app",
                 "parameters": [
                     {
                         "type": "string",
@@ -1839,6 +1839,13 @@
                         "description": "sort order",
                         "name": "sort",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "app id",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {

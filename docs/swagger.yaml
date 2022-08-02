@@ -1890,11 +1890,11 @@ paths:
       summary: Update configuration
       tags:
       - Application
-  /devices:
+  /devices/{appID}:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches multiple devices
+      description: This endpoint fetches devices for an app
       parameters:
       - description: results per page
         in: query
@@ -1907,6 +1907,11 @@ paths:
       - description: sort order
         in: query
         name: sort
+        type: string
+      - description: app id
+        in: path
+        name: appID
+        required: true
         type: string
       produces:
       - application/json
@@ -1956,7 +1961,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Fetch multiple devices
+      summary: Fetch devices for an app
       tags:
       - Source
   /eventdeliveries:
