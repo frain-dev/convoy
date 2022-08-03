@@ -95,9 +95,9 @@ func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByMaskID(arg0, arg1 interf
 }
 
 // LoadAPIKeysPaged mocks base method.
-func (m *MockAPIKeyRepository) LoadAPIKeysPaged(arg0 context.Context, arg1 *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+func (m *MockAPIKeyRepository) LoadAPIKeysPaged(arg0 context.Context, arg1 *datastore.ApiKeyFilter, arg2 *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", arg0, arg1)
+	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]datastore.APIKey)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -105,9 +105,9 @@ func (m *MockAPIKeyRepository) LoadAPIKeysPaged(arg0 context.Context, arg1 *data
 }
 
 // LoadAPIKeysPaged indicates an expected call of LoadAPIKeysPaged.
-func (mr *MockAPIKeyRepositoryMockRecorder) LoadAPIKeysPaged(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) LoadAPIKeysPaged(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepository)(nil).LoadAPIKeysPaged), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepository)(nil).LoadAPIKeysPaged), arg0, arg1, arg2)
 }
 
 // RevokeAPIKeys mocks base method.

@@ -121,7 +121,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"key_type":"app_portal"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
@@ -168,10 +168,10 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"key_type":"cli"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
-	url := fmt.Sprintf("/api/v1/security/applications/%s/keys?type=%s", app.UID, "cli")
+	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
@@ -396,6 +396,40 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
 	pagedResp := &pagedResponse{Content: &apiKeyResponse}
 	parseResponse(s.T(), w.Result(), pagedResp)
 	require.Equal(s.T(), 3, len(apiKeyResponse))
+}
+
+func (s *SecurityIntegrationTestSuite) Test_GetAppAPIKeys() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "test-app", true)
+
+	role := auth.Role{
+		Type:  auth.RoleAdmin,
+		Group: s.DefaultGroup.UID,
+		App:   app.UID,
+	}
+
+	_, _, _ = testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", string(datastore.CLIKey))
+	_, _, _ = testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", string(datastore.AppPortalKey))
+
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s/apps/%s/keys", s.DefaultOrg.UID, s.DefaultGroup.UID, app.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var apiKeyResponse []models.APIKeyByIDResponse
+	pagedResp := &pagedResponse{Content: &apiKeyResponse}
+	parseResponse(s.T(), w.Result(), pagedResp)
+	require.Equal(s.T(), 1, len(apiKeyResponse))
 }
 
 func (s *SecurityIntegrationTestSuite) TearDownTest() {

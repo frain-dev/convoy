@@ -11,7 +11,7 @@ type APIKeyRepository interface {
 	FindAPIKeyByMaskID(context.Context, string) (*APIKey, error)
 	FindAPIKeyByHash(context.Context, string) (*APIKey, error)
 	RevokeAPIKeys(context.Context, []string) error
-	LoadAPIKeysPaged(context.Context, *Pageable) ([]APIKey, PaginationData, error)
+	LoadAPIKeysPaged(context.Context, *ApiKeyFilter, *Pageable) ([]APIKey, PaginationData, error)
 }
 
 type EventDeliveryRepository interface {

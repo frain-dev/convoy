@@ -287,5 +287,5 @@ type CreateAppApiKey struct {
 	Group   *datastore.Group
 	App     *datastore.Application
 	BaseUrl *string
-	KeyType datastore.KeyType
+	KeyType datastore.KeyType `json:"key_type"`
 }

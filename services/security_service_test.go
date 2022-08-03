@@ -768,6 +768,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx      context.Context
+		filter   *datastore.ApiKeyFilter
 		pageable *datastore.Pageable
 	}
 	tests := []struct {
@@ -784,6 +785,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			name: "should_fetch_api_keys",
 			args: args{
 				ctx: ctx,
+				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
@@ -792,7 +794,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), &datastore.Pageable{
+				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any(), &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
 					Sort:    1,
@@ -853,9 +855,10 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			},
 		},
 		{
-			name: "should_fetch_api_keys",
+			name: "should_fail_fetch_api_keys",
 			args: args{
 				ctx: ctx,
+				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
@@ -864,7 +867,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), &datastore.Pageable{
+				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any(), &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
 					Sort:    1,
@@ -891,7 +894,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			apiKeys, paginationData, err := ss.GetAPIKeys(tc.args.ctx, tc.args.pageable)
+			apiKeys, paginationData, err := ss.GetAPIKeys(tc.args.ctx, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

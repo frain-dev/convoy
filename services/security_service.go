@@ -207,8 +207,8 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 	return apiKey, nil
 }
 
-func (ss *SecurityService) GetAPIKeys(ctx context.Context, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
-	apiKeys, paginationData, err := ss.apiKeyRepo.LoadAPIKeysPaged(ctx, pageable)
+func (ss *SecurityService) GetAPIKeys(ctx context.Context, f *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+	apiKeys, paginationData, err := ss.apiKeyRepo.LoadAPIKeysPaged(ctx, f, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load api keys"))
