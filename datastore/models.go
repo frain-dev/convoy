@@ -118,6 +118,15 @@ const (
 	CLIKey       KeyType = "cli"
 )
 
+func (k KeyType) IsValidAppKey() bool {
+	switch k {
+	case AppPortalKey, CLIKey:
+		return true
+	default:
+		return false
+	}
+}
+
 const (
 	DefaultStrategyProvider     = LinearStrategyProvider
 	LinearStrategyProvider      = "linear"

@@ -97,15 +97,15 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	return apiKey, key, nil
 }
 
-func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *datastore.Group, app *datastore.Application, baseUrl *string) (*datastore.APIKey, string, error) {
-	if app.GroupID != group.UID {
+func (ss *SecurityService) CreateAppAPIKey(ctx context.Context, d *models.CreateAppApiKey) (*datastore.APIKey, string, error) {
+	if d.App.GroupID != d.Group.UID {
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("app does not belong to group"))
 	}
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
-		Group: group.UID,
-		App:   app.UID,
+		Group: d.Group.UID,
+		App:   d.App.UID,
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -124,8 +124,8 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	apiKey := &datastore.APIKey{
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
-		Name:           app.Title,
-		Type:           datastore.AppPortalKey,
+		Name:           d.App.Title,
+		Type:           d.KeyType,
 		Role:           role,
 		Hash:           encodedKey,
 		Salt:           salt,
@@ -141,8 +141,8 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
 	}
 
-	if !util.IsStringEmpty(*baseUrl) {
-		*baseUrl = fmt.Sprintf("%s/app-portal/%s?groupID=%s&appId=%s", *baseUrl, key, group.UID, app.UID)
+	if !util.IsStringEmpty(*d.BaseUrl) && d.KeyType == datastore.AppPortalKey {
+		*d.BaseUrl = fmt.Sprintf("%s/app-portal/%s?groupID=%s&appId=%s", *d.BaseUrl, key, d.Group.UID, d.App.UID)
 	}
 
 	return apiKey, key, nil

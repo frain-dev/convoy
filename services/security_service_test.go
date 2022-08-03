@@ -280,34 +280,65 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 	}
 }
 
-func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
+func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx     context.Context
-		group   *datastore.Group
-		app     *datastore.Application
-		baseUrl *string
+		ctx       context.Context
+		newApiKey *models.CreateAppApiKey
 	}
 	tests := []struct {
-		name        string
-		args        args
-		wantAPIKey  *datastore.APIKey
-		dbFn        func(ss *SecurityService)
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
+		name          string
+		args          args
+		wantAPIKey    *datastore.APIKey
+		dbFn          func(ss *SecurityService)
+		verifyBaseUrl bool
+		wantErr       bool
+		wantErrCode   int
+		wantErrMsg    string
 	}{
 		{
 			name: "should_create_app_portal_api_key",
 			args: args{
-				ctx:     ctx,
-				group:   &datastore.Group{UID: "1234"},
-				app:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-				baseUrl: stringPtr("https://getconvoy.io"),
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group:   &datastore.Group{UID: "1234"},
+					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					KeyType: datastore.AppPortalKey,
+					BaseUrl: stringPtr("https://getconvoy.io"),
+				},
 			},
 			wantAPIKey: &datastore.APIKey{
 				Name: "test_app",
-				Type: "app_portal",
+				Type: datastore.AppPortalKey,
+				Role: auth.Role{
+					Type:  auth.RoleAdmin,
+					Group: "1234",
+					App:   "abc",
+				},
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+			},
+			verifyBaseUrl: true,
+		},
+
+		{
+			name: "should_create_cli_api_key",
+			args: args{
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group:   &datastore.Group{UID: "1234"},
+					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					KeyType: datastore.CLIKey,
+					BaseUrl: stringPtr("https://getconvoy.io"),
+				},
+			},
+			wantAPIKey: &datastore.APIKey{
+				Name: "test_app",
+				Type: datastore.CLIKey,
 				Role: auth.Role{
 					Type:  auth.RoleAdmin,
 					Group: "1234",
@@ -321,12 +352,15 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 					Times(1).Return(nil)
 			},
 		},
+
 		{
 			name: "should_error_for_app_not_belong_to_group_api_key",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{GroupID: "12345"},
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group: &datastore.Group{UID: "1234"},
+					App:   &datastore.Application{GroupID: "12345"},
+				},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -335,10 +369,12 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 		{
 			name: "should_fail_to_create_app_portal_api_key",
 			args: args{
-				ctx:     ctx,
-				group:   &datastore.Group{UID: "1234"},
-				app:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-				baseUrl: stringPtr("https://getconvoy.io"),
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group:   &datastore.Group{UID: "1234"},
+					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					BaseUrl: stringPtr("https://getconvoy.io"),
+				},
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -360,7 +396,7 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			apiKey, keyString, err := ss.CreateAppPortalAPIKey(tc.args.ctx, tc.args.group, tc.args.app, tc.args.baseUrl)
+			apiKey, keyString, err := ss.CreateAppAPIKey(tc.args.ctx, tc.args.newApiKey)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -379,7 +415,9 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 			require.NotEmpty(t, keyString)
 			require.Empty(t, apiKey.DeletedAt)
 
-			require.True(t, strings.HasSuffix(*tc.args.baseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.group.UID, tc.args.app.UID)))
+			if tc.verifyBaseUrl {
+				require.True(t, strings.HasSuffix(*tc.args.newApiKey.BaseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.newApiKey.Group.UID, tc.args.newApiKey.App.UID)))
+			}
 
 			stripVariableFields(t, "apiKey", apiKey)
 			apiKey.ExpiresAt = 0

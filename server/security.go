@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/frain-dev/convoy/auth"
@@ -85,12 +86,34 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /security/applications/{appID}/keys [post]
-func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Request) {
+	var keyType datastore.KeyType
+
 	group := m.GetGroupFromContext(r.Context())
 	app := m.GetApplicationFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
+	k := r.URL.Query().Get("type")
 
-	apiKey, key, err := a.S.SecurityService.CreateAppPortalAPIKey(r.Context(), group, app, &baseUrl)
+	if util.IsStringEmpty(k) {
+		keyType = datastore.AppPortalKey
+	}
+
+	if !util.IsStringEmpty(k) {
+		keyType = datastore.KeyType(k)
+		if !keyType.IsValidAppKey() {
+			_ = render.Render(w, r, util.NewErrorResponse(errors.New("type is not supported").Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
+	d := &models.CreateAppApiKey{
+		Group:   group,
+		App:     app,
+		BaseUrl: &baseUrl,
+		KeyType: keyType,
+	}
+
+	apiKey, key, err := a.S.SecurityService.CreateAppAPIKey(r.Context(), d)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
