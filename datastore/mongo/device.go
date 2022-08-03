@@ -63,6 +63,7 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 		filter["app_id"] = appID
 	}
 
+	device.Status = datastore.DeviceStatusOnline
 	device.LastSeenAt = primitive.NewDateTimeFromTime(time.Now())
 	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 

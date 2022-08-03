@@ -79,6 +79,10 @@ func addListenCommand(a *app) *cobra.Command {
 				log.Fatal("Error connecting to Websocket Server:", err)
 			}
 
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+
 			defer conn.Close()
 			go receiveHandler(conn)
 
@@ -102,6 +106,9 @@ func addListenCommand(a *app) *cobra.Command {
 				case <-interrupt:
 					// We received a SIGINT (Ctrl + C). Terminate gracefully...
 					log.Println("Received SIGINT interrupt signal. Closing all pending connections")
+
+					// stop the health checks
+					ticker.Stop()
 
 					// Close our websocket connection
 					err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
@@ -134,6 +141,13 @@ func receiveHandler(connection *websocket.Conn) {
 	for {
 		_, msg, err := connection.ReadMessage()
 		if err != nil {
+			if !websocket.IsUnexpectedCloseError(err,
+				websocket.CloseNormalClosure,
+				websocket.CloseGoingAway,
+				websocket.CloseAbnormalClosure) {
+				return
+			}
+
 			log.Println("Error in receive:", err)
 			return
 		}

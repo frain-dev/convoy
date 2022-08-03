@@ -70,8 +70,12 @@ func (c *Client) readPump() {
 			messageType, message, err := c.conn.ReadMessage()
 			fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
 
+			if messageType == websocket.CloseMessage {
+				c.Close()
+			}
+
 			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					log.WithError(err).WithField("device_id", c.deviceID).Error("unexpected close error")
 				}
 				return
@@ -99,6 +103,7 @@ func (c *Client) GoOffline() {
 	}
 
 	c.lock.Unlock()
+	log.Println("[GoOffline]: close")
 	c.Close()
 }
 
