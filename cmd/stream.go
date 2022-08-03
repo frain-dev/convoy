@@ -47,6 +47,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			router := chi.NewRouter()
 			router.Use(middleware.Recoverer)
+
 			router.Route("/stream", func(streamRouter chi.Router) {
 				streamRouter.Use(
 					m.RequireAuth(),
@@ -72,9 +73,6 @@ func addStreamCommand(a *app) *cobra.Command {
 			}()
 
 			gracefulShutdown(srv, hub)
-		},
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
 		},
 	}
 

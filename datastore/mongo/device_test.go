@@ -91,8 +91,7 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 	}
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	device.Status = datastore.DeviceStatusOffline
-	err := deviceRepo.UpdateDeviceLastSeen(context.Background(), device, device.AppID, device.GroupID)
+	err := deviceRepo.UpdateDeviceLastSeen(context.Background(), device, device.AppID, device.GroupID, datastore.DeviceStatusOffline)
 	require.NoError(t, err)
 
 	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)

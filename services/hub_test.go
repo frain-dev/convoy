@@ -11,7 +11,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
@@ -25,7 +24,7 @@ func provideHub(ctrl *gomock.Controller) *Hub {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
-	fn := func(fn func(doc convoy.GenericMap) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
+	fn := func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
 		return nil
 	}
 

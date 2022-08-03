@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -99,13 +100,15 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
-			if err != nil {
-				log.Errorf("Error fetching endpoint %s", err)
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
+			if s.Type == datastore.SubscriptionTypeAPI {
+				endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
+				if err != nil {
+					log.Errorf("Error fetching endpoint %s", err)
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
 
-			s.Endpoint = endpoint
+				s.Endpoint = endpoint
+			}
 
 			metadata := &datastore.Metadata{
 				NumTrials:       0,
@@ -142,6 +145,8 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				log.WithError(err).Error("error occurred creating event delivery")
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
+
+			fmt.Printf("\n[Event Delivery]%+v\n\n", eventDelivery)
 
 			taskName := convoy.EventProcessor
 
