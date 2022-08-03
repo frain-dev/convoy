@@ -1454,17 +1454,17 @@ func (mr *MockDeviceRepositoryMockRecorder) UpdateDevice(ctx, device, appID, gro
 }
 
 // UpdateDeviceLastSeen mocks base method.
-func (m *MockDeviceRepository) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, appID, groupID string) error {
+func (m *MockDeviceRepository) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, appID, groupID string, status datastore.DeviceStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateDeviceLastSeen", ctx, device, appID, groupID)
+	ret := m.ctrl.Call(m, "UpdateDeviceLastSeen", ctx, device, appID, groupID, status)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateDeviceLastSeen indicates an expected call of UpdateDeviceLastSeen.
-func (mr *MockDeviceRepositoryMockRecorder) UpdateDeviceLastSeen(ctx, device, appID, groupID interface{}) *gomock.Call {
+func (mr *MockDeviceRepositoryMockRecorder) UpdateDeviceLastSeen(ctx, device, appID, groupID, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceLastSeen", reflect.TypeOf((*MockDeviceRepository)(nil).UpdateDeviceLastSeen), ctx, device, appID, groupID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceLastSeen", reflect.TypeOf((*MockDeviceRepository)(nil).UpdateDeviceLastSeen), ctx, device, appID, groupID, status)
 }
 
 // MockUserRepository is a mock of UserRepository interface.
