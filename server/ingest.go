@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -107,13 +108,10 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		SourceID:       source.UID,
 		GroupID:        source.GroupID,
 		Data:           payload,
+		Headers:        httpheader.HTTPHeader(r.Header),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	if len(source.ForwardHeaders) > 0 {
-		event.SetForwardedHeaders(source.ForwardHeaders, r)
 	}
 
 	eventByte, err := json.Marshal(event)
