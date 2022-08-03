@@ -47,7 +47,7 @@ func (c *Client) readPump() {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID)
+		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID, datastore.DeviceStatusOnline)
 		if err != nil {
 			log.WithError(err).Error("failed to update device last seen")
 			return errors.New("failed to update device last seen")
