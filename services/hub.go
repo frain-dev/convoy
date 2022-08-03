@@ -74,8 +74,6 @@ func (h *Hub) StartEventSender() {
 	for {
 		select {
 		case ev := <-h.events:
-			// fmt.Printf("\n[StartEventSender] -> %+v\n\n", ev)
-
 			h.lock.RLock()
 			client := h.deviceClients[ev.DeviceID]
 			h.lock.RUnlock()
@@ -95,7 +93,6 @@ func (h *Hub) StartEventSender() {
 				}
 			}
 
-			fmt.Printf("\n[Client] %+v \n\n", client.Device)
 			if !client.HasEventType(ev.EventType) {
 				continue
 			}
@@ -106,12 +103,7 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			err = client.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err != nil {
-				log.WithError(err).Error("failed to set write deadline")
-				continue
-			}
-
+			fmt.Printf("\n[Payload] %+v \n\n", string(j))
 			err = client.conn.WriteMessage(websocket.BinaryMessage, j)
 			if err != nil {
 				log.WithError(err).Error("failed to write event to socket")
@@ -163,8 +155,6 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 		if err != nil {
 			return err
 		}
-
-		// fmt.Printf("\n[watchEventDeliveriesCollection] -> %+v\n\n", ed)
 
 		h.events <- &CLIEvent{
 			Data:             ed.Metadata.Data,

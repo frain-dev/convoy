@@ -46,17 +46,9 @@ type Client struct {
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
 func (c *Client) readPump() {
-	// TODO: [raymond & dotun] why is close being called here
-	// defer c.Close()
+	defer c.Close()
 
 	c.conn.SetReadLimit(maxMessageSize)
-
-	// TODO: [raymond & dotun] figure out how to use the pong deadline
-	// err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	// if err != nil {
-	// 	return
-	// }
-
 	c.conn.SetPingHandler(func(string) error {
 		c.lock.Lock()
 		defer c.lock.Unlock()
@@ -72,13 +64,13 @@ func (c *Client) readPump() {
 			log.WithError(err).Error("failed to write pong message")
 			return errors.New("failed to write pong message")
 		}
+
 		return nil
 	})
 
 	for {
 		select {
 		case <-c.hub.close:
-			println("close??")
 			return
 		default:
 			messageType, message, err := c.conn.ReadMessage()

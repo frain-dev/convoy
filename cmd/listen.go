@@ -27,7 +27,7 @@ const (
 	writeWait = 10 * time.Second
 
 	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
+	pongWait = 10 * time.Second
 
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
@@ -90,7 +90,11 @@ func addListenCommand(a *app) *cobra.Command {
 			for {
 				select {
 				case <-ticker.C:
-					conn.SetWriteDeadline(time.Now().Add(writeWait))
+					err := conn.SetWriteDeadline(time.Now().Add(writeWait))
+					if err != nil {
+						log.Println(err)
+					}
+
 					if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 						return
 					}
