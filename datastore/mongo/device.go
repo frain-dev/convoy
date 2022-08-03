@@ -52,7 +52,7 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	return d.store.UpdateOne(ctx, filter, update)
 }
 
-func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, appID, groupID string) error {
+func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, appID, groupID string, status datastore.DeviceStatus) error {
 	filter := bson.M{
 		"uid":             device.UID,
 		"group_id":        groupID,
@@ -63,6 +63,7 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 		filter["app_id"] = appID
 	}
 
+	device.Status = status
 	device.LastSeenAt = primitive.NewDateTimeFromTime(time.Now())
 	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 

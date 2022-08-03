@@ -34,14 +34,14 @@ func addIndexCommand(a *app) *cobra.Command {
 }
 
 func indexNewDocuments(collection string, searcher searcher.Searcher) WatcherFn {
-	return func(doc convoy.GenericMap) error {
+	return func(doc map[string]interface{}) error {
 		return searcher.Index(collection, doc)
 	}
 }
 
-type WatcherFn func(convoy.GenericMap) error
+type WatcherFn func(map[string]interface{}) error
 
-func watchCollection(fn func(convoy.GenericMap) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
+func watchCollection(fn func(map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err

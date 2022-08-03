@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,12 +13,6 @@ import (
 )
 
 const (
-	// Time allowed to write a message to the peer.
-	writeWait = 5 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 2 * time.Second
-
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
 
@@ -48,19 +43,11 @@ func (c *Client) readPump() {
 	defer c.Close()
 
 	c.conn.SetReadLimit(maxMessageSize)
-
-	err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	if err != nil {
-		return
-	}
-
-	c.conn.SetPongHandler(func(string) error { return nil })
-
 	c.conn.SetPingHandler(func(string) error {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID)
+		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID, datastore.DeviceStatusOnline)
 		if err != nil {
 			log.WithError(err).Error("failed to update device last seen")
 			return errors.New("failed to update device last seen")
@@ -71,6 +58,7 @@ func (c *Client) readPump() {
 			log.WithError(err).Error("failed to write pong message")
 			return errors.New("failed to write pong message")
 		}
+
 		return nil
 	})
 
@@ -79,9 +67,15 @@ func (c *Client) readPump() {
 		case <-c.hub.close:
 			return
 		default:
-			_, _, err := c.conn.ReadMessage()
+			messageType, message, err := c.conn.ReadMessage()
+			fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
+
+			if messageType == websocket.CloseMessage {
+				c.Close()
+			}
+
 			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					log.WithError(err).WithField("device_id", c.deviceID).Error("unexpected close error")
 				}
 				return
@@ -109,6 +103,7 @@ func (c *Client) GoOffline() {
 	}
 
 	c.lock.Unlock()
+	log.Println("[GoOffline]: close")
 	c.Close()
 }
 

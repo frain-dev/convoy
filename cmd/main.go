@@ -53,7 +53,7 @@ func main() {
 	}
 
 	app := &app{}
-	db := &mongo.Client{}
+	var db *mongo.Client
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
@@ -259,6 +259,10 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 
 func postRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		if db == nil {
+			return nil
+		}
+
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)
@@ -291,6 +295,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addLoginCommand())
 	cmd.AddCommand(addSwitchCommand())
 	cmd.AddCommand(addProjectCommand())
+	cmd.AddCommand(addListenCommand(app))
 }
 
 type ConvoyCli struct {

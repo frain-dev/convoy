@@ -98,10 +98,10 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	return r, nil
 }
 
-func (d *Dispatcher) SendCliRequest(endpoint string, method convoy.HttpMethod, apiKey string, jsonData json.RawMessage) (*Response, error) {
+func (d *Dispatcher) SendCliRequest(url string, method convoy.HttpMethod, apiKey string, jsonData json.RawMessage) (*Response, error) {
 	r := &Response{}
 
-	req, err := http.NewRequest(string(method), endpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(string(method), url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err
