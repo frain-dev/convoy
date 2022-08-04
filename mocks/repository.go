@@ -1439,6 +1439,22 @@ func (mr *MockDeviceRepositoryMockRecorder) FetchDeviceByID(ctx, uid, appID, gro
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchDeviceByID", reflect.TypeOf((*MockDeviceRepository)(nil).FetchDeviceByID), ctx, uid, appID, groupID)
 }
 
+// LoadDevicesPaged mocks base method.
+func (m *MockDeviceRepository) LoadDevicesPaged(ctx context.Context, groupID string, filter *datastore.DeviceFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadDevicesPaged", ctx, groupID, filter, pageable)
+	ret0, _ := ret[0].([]datastore.Device)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadDevicesPaged indicates an expected call of LoadDevicesPaged.
+func (mr *MockDeviceRepositoryMockRecorder) LoadDevicesPaged(ctx, groupID, filter, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDevicesPaged", reflect.TypeOf((*MockDeviceRepository)(nil).LoadDevicesPaged), ctx, groupID, filter, pageable)
+}
+
 // UpdateDevice mocks base method.
 func (m *MockDeviceRepository) UpdateDevice(ctx context.Context, device *datastore.Device, appID, groupID string) error {
 	m.ctrl.T.Helper()

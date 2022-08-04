@@ -27,8 +27,8 @@ type pagedResponse struct {
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse{data=datastore.Application}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Application}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [get]
 func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
@@ -48,8 +48,8 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param sort query string false "sort order"
 // @Param q query string false "app title"
 // @Param groupId query string true "group id"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Application}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Application}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [get]
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
@@ -76,8 +76,8 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse{data=datastore.Application}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Application}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications [post]
 func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
@@ -108,8 +108,8 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param application body models.Application true "Application Details"
-// @Success 200 {object} serverResponse{data=datastore.Application}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Application}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [put]
 func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
@@ -139,8 +139,8 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID} [delete]
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
@@ -164,8 +164,8 @@ func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [post]
 func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -196,8 +196,8 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
-// @Success 200 {object} serverResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -213,8 +213,8 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param appID path string true "application id"
-// @Success 200 {object} serverResponse{data=[]datastore.Endpoint}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints [get]
 func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
@@ -234,8 +234,8 @@ func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} serverResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [put]
 func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -267,8 +267,8 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Param groupId query string true "group id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /applications/{appID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
