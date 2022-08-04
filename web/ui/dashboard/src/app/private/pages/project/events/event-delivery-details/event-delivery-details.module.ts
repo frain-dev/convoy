@@ -9,10 +9,11 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { PipesModule } from 'src/app/pipes/pipes.module';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
 
 @NgModule({
 	declarations: [EventDeliveryDetailsComponent],
-	imports: [CommonModule, RouterModule, PrismModule, LoaderModule, CardComponent, ButtonComponent, TagComponent, PipesModule, SkeletonLoaderComponent],
+	imports: [CommonModule, RouterModule, PrismModule, LoaderModule, CardComponent, ButtonComponent, TagComponent, PipesModule, SkeletonLoaderComponent, ModalComponent],
 	exports: [EventDeliveryDetailsComponent]
 })
 export class EventDeliveryDetailsModule {}

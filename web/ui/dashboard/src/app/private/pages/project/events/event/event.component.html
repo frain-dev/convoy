@@ -105,7 +105,9 @@
 				<ng-container *ngIf="!isloadingEvents">
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
 					<prism language="json" [code]="getCodeSnippetString()" title="Event"></prism>
-
+					<div class="flex justify-end" *ngIf="getCodeSnippetString().length > 390">
+                        <convoy-button size="sm" type="text" (click)="showPayload = !showPayload">Expand payload</convoy-button>
+                    </div>
 					<h3 class="text-16 font-bold mb-16px mt-26px" *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">Deliveries Overview</h3>
 					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
 						<convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery.endpoint_metadata?.target_url">
@@ -145,3 +147,10 @@
 		</svg>
 	</convoy-button>
 </div>
+
+
+<convoy-modal position="full" title="event payload" *ngIf="showPayload" (closeModal)="showPayload = false">
+    <div class="py-40px" modalBody>
+        <prism language="json" [code]="getCodeSnippetString()"></prism>
+    </div>
+</convoy-modal>
