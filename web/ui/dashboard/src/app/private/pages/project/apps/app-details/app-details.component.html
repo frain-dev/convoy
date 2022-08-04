@@ -88,16 +88,16 @@
 				<h3 class="font-medium">App Event Endpoints</h3>
 				<div class="flex items-center">
 					<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
-					<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
-					<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
+					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
+					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
 				</div>
 			</div>
 			<div class="flex items-center justify-between" *ngIf="!isLoadingAppDetails">
 				<h3 class="font-medium">App Event Endpoints</h3>
 				<div class="flex items-center">
 					<convoy-button size="sm" type="text" (clickItem)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</convoy-button>
-					<div class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
-					<convoy-button size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
+					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
+					<convoy-button *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
 				</div>
 			</div>
 
