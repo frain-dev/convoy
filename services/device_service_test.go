@@ -18,7 +18,7 @@ func provideDeviceService(ctrl *gomock.Controller) *DeviceService {
 	return NewDeviceService(deviceRepo)
 }
 
-func TestDeviceService_LoadSourcesPaged(t *testing.T) {
+func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
