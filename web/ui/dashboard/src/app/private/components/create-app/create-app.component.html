@@ -41,18 +41,26 @@
 					<div class="grid grid-cols-2 gap-6">
 						<convoy-input type="text" autocomplete="description" [name]="'description' + i" formControlName="description" errorMessage="Please provide a description" label="Description" placeholder="Description" [required]="true"></convoy-input>
 						<convoy-input type="url" autocomplete="endpoint-url" [name]="'endpoint-url' + i" formControlName="url" label="Enter Endpoint URL" placeholder="Endpoint url" errorMessage="Please enter endpoint url" [required]="true"></convoy-input>
+						<convoy-input
+							type="text"
+							autocomplete="secret"
+							[name]="'secret' + i"
+							formControlName="secret"
+							label="Secret"
+							placeholder="********"
+						></convoy-input>
+						<convoy-input
+							type="text"
+							autocomplete="http-timeout"
+							[name]="'http-timeout' + i"
+							formControlName="http_timeout"
+							label="HTTP Timeout"
+							placeholder="e.g. 10s"
+							tooltipSize="sm"
+							tooltipPosition="right"
+							tooltipContent="This specifies how long the socket stays open in the absense of a response."
+						></convoy-input>
 					</div>
-					<convoy-input
-						type="text"
-						autocomplete="http-timeout"
-						[name]="'http-timeout' + i"
-						formControlName="http_timeout"
-						label="HTTP Timeout"
-						placeholder="e.g. 10s"
-						tooltipSize="sm"
-						tooltipPosition="right"
-						tooltipContent="This specifies how long the socket stays open in the absense of a response."
-					></convoy-input>
 				</div>
 			</div>
 			<convoy-button (click)="addEndpoint()" type="text" className="px-0 font-medium">

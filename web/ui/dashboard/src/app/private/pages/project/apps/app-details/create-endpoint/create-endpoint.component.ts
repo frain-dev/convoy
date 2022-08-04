@@ -17,6 +17,7 @@ export class CreateEndpointComponent implements OnInit {
 	savingEndpoint = false;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		url: ['', Validators.required],
+		secret: [null],
 		http_timeout: [null],
 		description: ['', Validators.required]
 	});
@@ -37,7 +38,7 @@ export class CreateEndpointComponent implements OnInit {
 				? await this.appDetailsService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid || '', body: this.addNewEndpointForm.value, token: this.token })
 				: await this.appDetailsService.addNewEndpoint({ appId: this.appId, body: this.addNewEndpointForm.value, token: this.token });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.onAction.emit({ action: 'savedEndpoint' });
+			this.onAction.emit({ action: 'savedEndpoint', data: response.data});
 			this.addNewEndpointForm.reset();
 			this.savingEndpoint = false;
 			return;
@@ -60,6 +61,6 @@ export class CreateEndpointComponent implements OnInit {
 	}
 
 	cancel() {
-		this.onAction.emit({ action: 'discardEndpointForm' });
+		this.onAction.emit({ action: 'close' });
 	}
 }
