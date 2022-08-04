@@ -25,10 +25,11 @@ import (
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
-	deviceRepo       datastore.DeviceRepository
-	subscriptionRepo datastore.SubscriptionRepository
-	sourceRepo       datastore.SourceRepository
-	appRepo          datastore.ApplicationRepository
+	deviceRepo        datastore.DeviceRepository
+	subscriptionRepo  datastore.SubscriptionRepository
+	sourceRepo        datastore.SourceRepository
+	appRepo           datastore.ApplicationRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
 	// groupRepo        datastore.GroupRepository
 
 	lock sync.RWMutex // prevent data race on deviceClients
@@ -55,13 +56,14 @@ var ug = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, appRepo datastore.ApplicationRepository, watchCollectionFn WatchCollectionFn) *Hub {
+func NewHub(deviceRepo datastore.DeviceRepository, subscriptionRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, watchCollectionFn WatchCollectionFn) *Hub {
 	return &Hub{
 		watchCollectionFn: watchCollectionFn,
 		appRepo:           appRepo,
 		deviceRepo:        deviceRepo,
 		subscriptionRepo:  subscriptionRepo,
 		sourceRepo:        sourceRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
 		deviceClients:     map[string]*Client{},
 		register:          make(chan *Client, 1),
 		unregister:        make(chan *Client, 1),
@@ -133,6 +135,7 @@ func (h *Hub) StartEventWatcher() {
 }
 
 type CLIEvent struct {
+	UID              string               `json:"uid"`
 	ForwardedHeaders datastore.HttpHeader `json:"forwarded_headers" bson:"forwarded_headers"`
 	Data             json.RawMessage      `json:"data"`
 
@@ -157,6 +160,7 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 		}
 
 		h.events <- &CLIEvent{
+			UID:              ed.UID,
 			Data:             ed.Metadata.Data,
 			ForwardedHeaders: ed.ForwardedHeaders,
 			EventType:        ed.CLIMetadata.EventType,
@@ -199,6 +203,18 @@ func (h *Hub) Stop() {
 	close(h.close)
 }
 
+func (h *Hub) UpdateEventDeliveryStatus(id string) {
+	ed, err := h.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), id)
+	if err != nil {
+		log.WithError(err).WithField("event_delivery_id", id).Error("failed to find event delivery")
+	}
+
+	err = h.eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.SuccessEventStatus)
+	if err != nil {
+		log.WithError(err).WithField("event_delivery_id", id).Error("failed to update event delivery status")
+	}
+}
+
 type ListenRequest struct {
 	HostName   string   `json:"host_name"`
 	DeviceID   string   `json:"device_id"`
@@ -215,6 +231,10 @@ type LoginResponse struct {
 	Device *datastore.Device      `json:"device"`
 	Group  *datastore.Group       `json:"group"`
 	App    *datastore.Application `json:"app"`
+}
+
+type AckEventDelivery struct {
+	UID string `json:"uid"`
 }
 
 func (h *Hub) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -351,7 +371,7 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 	}
 
 	if !util.IsStringEmpty(listenRequest.SourceID) {
-		source, err := h.sourceRepo.FindSourceByID(ctx, "", listenRequest.SourceID)
+		source, err := h.sourceRepo.FindSourceByID(ctx, device.GroupID, listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))

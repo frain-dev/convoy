@@ -153,6 +153,26 @@ func receiveHandler(connection *websocket.Conn) {
 		}
 		// do some stuff here
 		log.Printf("Received: %s\n", msg)
+		var event services.CLIEvent
+		err = json.Unmarshal(msg, &event)
+		if err != nil {
+			log.Println("Error in reading json:", err)
+			continue
+		}
+
+		ak := &services.AckEventDelivery{UID: event.UID}
+		j, err := json.Marshal(ak)
+		if err != nil {
+			log.Println("Error in marshalling json:", err)
+			continue
+		}
+
+		// write an ack message back to the connection here
+		err = connection.WriteMessage(websocket.TextMessage, j)
+		if err != nil {
+			log.Println("Error in writing to websocket connection")
+		}
+
 	}
 }
 

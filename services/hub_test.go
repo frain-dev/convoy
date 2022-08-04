@@ -24,11 +24,13 @@ func provideHub(ctrl *gomock.Controller) *Hub {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
+	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+
 	fn := func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
 		return nil
 	}
 
-	return NewHub(deviceRepo, subRepo, sourceRepo, appRepo, fn)
+	return NewHub(deviceRepo, subRepo, sourceRepo, appRepo, eventDeliveryRepo, fn)
 }
 
 func TestHub_listen(t *testing.T) {
