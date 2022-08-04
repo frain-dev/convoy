@@ -26,7 +26,7 @@
 
 		<div [ngClass]="{ 'opacity-50 pointer-events-none': subscriptionForm.get('app_id')?.invalid }">
 			<convoy-select className="mb-0 mt-24px" [options]="endPoints" name="endpoint" formControlName="endpoint_id" errorMessage="Select or create an endpoint" label="Endpoint" placeholder="Select an endpoint" [required]="true"></convoy-select>
-			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true">
+			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true" *ngIf="!token">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
