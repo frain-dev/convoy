@@ -1,3 +1,8 @@
+## v0.6.2
+- [Feature] Added Proxy Events without Verification #906
+- [Enhancement] Reliably forward Incoming events request headers #895
+- [Bugfix] Fixed force retry bug #891 #890
+
 ## v0.6.1
 
 -   [Bugfix] Fixed API response for force retry endpoint #892, #897
