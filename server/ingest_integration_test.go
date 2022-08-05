@@ -296,6 +296,33 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadBasicAuth() {
 	require.Equal(i.T(), expectedStatusCode, w.Code)
 }
 
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
+	maskID := "123456"
+	sourceID := "123456789"
+	expectedStatusCode := http.StatusOK
+
+	// Just Before
+	v := &datastore.VerifierConfig{
+		Type: datastore.NoopVerifier,
+	}
+	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+
+	bodyStr := `{ "name": "convoy" }`
+	body := serialize(bodyStr)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	i.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(i.T(), expectedStatusCode, w.Code)
+}
+
 func TestIngestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IngestIntegrationTestSuite))
 }

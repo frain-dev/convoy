@@ -79,9 +79,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 				verifierConfig.ApiKey.HeaderName,
 			)
 		default:
-			_ = render.Render(w, r, util.NewErrorResponse("Source must have a valid verifier",
-				http.StatusBadRequest))
-			return
+			v = &verifier.NoopVerifier{}
 		}
 	}
 

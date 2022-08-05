@@ -93,6 +93,7 @@ const (
 )
 
 const (
+	NoopVerifier      VerifierType = "noop"
 	HMacVerifier      VerifierType = "hmac"
 	BasicAuthVerifier VerifierType = "basic_auth"
 	APIKeyVerifier    VerifierType = "api_key"
