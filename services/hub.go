@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -135,9 +136,9 @@ func (h *Hub) StartEventWatcher() {
 }
 
 type CLIEvent struct {
-	UID              string               `json:"uid"`
-	ForwardedHeaders datastore.HttpHeader `json:"forwarded_headers" bson:"forwarded_headers"`
-	Data             json.RawMessage      `json:"data"`
+	UID              string                `json:"uid"`
+	ForwardedHeaders httpheader.HTTPHeader `json:"forwarded_headers" bson:"forwarded_headers"`
+	Data             json.RawMessage       `json:"data"`
 
 	// for filtering this event delivery
 	EventType string `json:"-"`
