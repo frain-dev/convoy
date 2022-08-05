@@ -8,7 +8,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
@@ -69,10 +69,10 @@ func addWorkerCommand(a *app) *cobra.Command {
 			log.Infof("Starting Convoy workers...")
 			consumer.Start()
 
-			server.RegisterQueueMetrics(a.queue, cfg)
+			metrics.RegisterQueueMetrics(a.queue)
 
 			router := chi.NewRouter()
-			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
+			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				render.JSON(w, r, "Convoy")
 			})

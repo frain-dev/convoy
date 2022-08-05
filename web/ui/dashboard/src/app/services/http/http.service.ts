@@ -36,7 +36,7 @@ export class HttpService {
 					},
 					error => {
 						if (axios.isAxiosError(error)) {
-							if (error.response?.status == 401) {
+							if (error.response?.status == 401 && this.router.url.split('/')[1] !== 'app') {
 								this.router.navigate(['/login'], { replaceUrl: true });
 								localStorage.removeItem('CONVOY_AUTH');
 								return Promise.reject(error);

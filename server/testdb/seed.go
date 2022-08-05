@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ import (
 )
 
 // SeedApplication is create random application for integration tests.
-func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid, title string, disabled bool) (*datastore.Application, error) {
+func SeedApplication(db convoyMongo.Client, g *datastore.Group, uid, title string, disabled bool) (*datastore.Application, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -50,7 +51,7 @@ func SeedApplication(db datastore.DatabaseClient, g *datastore.Group, uid, title
 	return app, nil
 }
 
-func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, count int) error {
+func SeedMultipleApplications(db convoyMongo.Client, g *datastore.Group, count int) error {
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Application{
@@ -71,7 +72,7 @@ func SeedMultipleApplications(db datastore.DatabaseClient, g *datastore.Group, c
 	return nil
 }
 
-func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, groupID string) (*datastore.Endpoint, error) {
+func SeedEndpoint(db convoyMongo.Client, app *datastore.Application, groupID string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{
 		UID:            uuid.New().String(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -89,7 +90,7 @@ func SeedEndpoint(db datastore.DatabaseClient, app *datastore.Application, group
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Application, groupID string, events []string, count int) ([]datastore.Endpoint, error) {
+func SeedMultipleEndpoints(db convoyMongo.Client, app *datastore.Application, groupID string, events []string, count int) ([]datastore.Endpoint, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
@@ -110,7 +111,7 @@ func SeedMultipleEndpoints(db datastore.DatabaseClient, app *datastore.Applicati
 }
 
 // seed default group
-func SeedDefaultGroup(db datastore.DatabaseClient, orgID string) (*datastore.Group, error) {
+func SeedDefaultGroup(db convoyMongo.Client, orgID string) (*datastore.Group, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
@@ -153,7 +154,7 @@ func SeedDefaultGroup(db datastore.DatabaseClient, orgID string) (*datastore.Gro
 const DefaultUserPassword = "password"
 
 // seed default user
-func SeedDefaultUser(db datastore.DatabaseClient) (*datastore.User, error) {
+func SeedDefaultUser(db convoyMongo.Client) (*datastore.User, error) {
 	p := datastore.Password{Plaintext: DefaultUserPassword}
 	err := p.GenerateHash()
 	if err != nil {
@@ -181,7 +182,7 @@ func SeedDefaultUser(db datastore.DatabaseClient) (*datastore.User, error) {
 }
 
 // seed default organisation
-func SeedDefaultOrganisation(db datastore.DatabaseClient, user *datastore.User) (*datastore.Organisation, error) {
+func SeedDefaultOrganisation(db convoyMongo.Client, user *datastore.User) (*datastore.Organisation, error) {
 	p := datastore.Password{Plaintext: DefaultUserPassword}
 	err := p.GenerateHash()
 	if err != nil {
@@ -222,7 +223,7 @@ func SeedDefaultOrganisation(db datastore.DatabaseClient, user *datastore.User) 
 }
 
 // seed organisation member
-func SeedOrganisationMember(db datastore.DatabaseClient, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
+func SeedOrganisationMember(db convoyMongo.Client, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
 	member := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: org.UID,
@@ -242,7 +243,7 @@ func SeedOrganisationMember(db datastore.DatabaseClient, org *datastore.Organisa
 }
 
 // seed organisation invite
-func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
+func SeedOrganisationInvite(db convoyMongo.Client, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
 	if expiry == 0 {
 		expiry = primitive.NewDateTimeFromTime(time.Now())
 	}
@@ -269,7 +270,7 @@ func SeedOrganisationInvite(db datastore.DatabaseClient, org *datastore.Organisa
 }
 
 // SeedAPIKey creates random api key for integration tests.
-func SeedAPIKey(db datastore.DatabaseClient, role auth.Role, uid, name, keyType string) (*datastore.APIKey, string, error) {
+func SeedAPIKey(db convoyMongo.Client, role auth.Role, uid, name, keyType string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -305,7 +306,7 @@ func SeedAPIKey(db datastore.DatabaseClient, role auth.Role, uid, name, keyType 
 }
 
 // seed default group
-func SeedGroup(db datastore.DatabaseClient, uid, name, orgID string, groupType datastore.GroupType, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+func SeedGroup(db convoyMongo.Client, uid, name, orgID string, groupType datastore.GroupType, cfg *datastore.GroupConfig) (*datastore.Group, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
@@ -333,7 +334,7 @@ func SeedGroup(db datastore.DatabaseClient, uid, name, orgID string, groupType d
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, groupID string, uid, eventType string, data []byte) (*datastore.Event, error) {
+func SeedEvent(db convoyMongo.Client, app *datastore.Application, groupID string, uid, eventType string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -359,7 +360,7 @@ func SeedEvent(db datastore.DatabaseClient, app *datastore.Application, groupID 
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(db convoyMongo.Client, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -387,7 +388,7 @@ func SeedEventDelivery(db datastore.DatabaseClient, app *datastore.Application, 
 }
 
 // SeedOrganisation is create random Organisation for integration tests.
-func SeedOrganisation(db datastore.DatabaseClient, uid, ownerID, name string) (*datastore.Organisation, error) {
+func SeedOrganisation(db convoyMongo.Client, uid, ownerID, name string) (*datastore.Organisation, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -415,7 +416,7 @@ func SeedOrganisation(db datastore.DatabaseClient, uid, ownerID, name string) (*
 }
 
 // SeedMultipleOrganisations is creates random Organisations for integration tests.
-func SeedMultipleOrganisations(db datastore.DatabaseClient, ownerID string, num int) ([]*datastore.Organisation, error) {
+func SeedMultipleOrganisations(db convoyMongo.Client, ownerID string, num int) ([]*datastore.Organisation, error) {
 	orgs := []*datastore.Organisation{}
 
 	for i := 0; i < num; i++ {
@@ -441,25 +442,38 @@ func SeedMultipleOrganisations(db datastore.DatabaseClient, ownerID string, num 
 	return orgs, nil
 }
 
-func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*datastore.Source, error) {
+func SeedSource(db convoyMongo.Client, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
+
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
 
-	source := &datastore.Source{
-		UID:     uid,
-		GroupID: g.UID,
-		MaskID:  uuid.NewString(),
-		Name:    "Convoy-Prod",
-		Type:    datastore.HTTPSource,
-		Verifier: &datastore.VerifierConfig{
+	if util.IsStringEmpty(maskID) {
+		maskID = uuid.New().String()
+	}
+
+	if v == nil {
+		v = &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
 			HMac: &datastore.HMac{
 				Header: "X-Convoy-Header",
 				Hash:   "SHA512",
 				Secret: "Convoy-Secret",
 			},
-		},
+		}
+	}
+
+	if util.IsStringEmpty(ds) {
+		ds = "http"
+	}
+
+	source := &datastore.Source{
+		UID:            uid,
+		GroupID:        g.UID,
+		MaskID:         maskID,
+		Name:           "Convoy-Prod",
+		Type:           datastore.SourceType(ds),
+		Verifier:       v,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
@@ -472,7 +486,7 @@ func SeedSource(db datastore.DatabaseClient, g *datastore.Group, uid string) (*d
 	return source, nil
 }
 
-func SeedSubscription(db datastore.DatabaseClient,
+func SeedSubscription(db convoyMongo.Client,
 	app *datastore.Application,
 	g *datastore.Group,
 	uid string,
@@ -520,7 +534,7 @@ func SeedSubscription(db datastore.DatabaseClient,
 	return subscription, nil
 }
 
-func SeedUser(db datastore.DatabaseClient, email, password string) (*datastore.User, error) {
+func SeedUser(db convoyMongo.Client, email, password string) (*datastore.User, error) {
 	p := &datastore.Password{Plaintext: password}
 	err := p.GenerateHash()
 	if err != nil {
@@ -549,7 +563,7 @@ func SeedUser(db datastore.DatabaseClient, email, password string) (*datastore.U
 	return user, nil
 }
 
-func SeedConfiguration(db datastore.DatabaseClient) (*datastore.Configuration, error) {
+func SeedConfiguration(db convoyMongo.Client) (*datastore.Configuration, error) {
 	config := &datastore.Configuration{
 		UID:                uuid.NewString(),
 		IsAnalyticsEnabled: true,
@@ -568,7 +582,7 @@ func SeedConfiguration(db datastore.DatabaseClient) (*datastore.Configuration, e
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
-func PurgeDB(db datastore.DatabaseClient) {
+func PurgeDB(db convoyMongo.Client) {
 	client := db.Client().(*mongo.Database)
 	err := client.Drop(context.TODO())
 	if err != nil {
