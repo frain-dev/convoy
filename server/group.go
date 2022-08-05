@@ -7,6 +7,8 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
+
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // GetGroup
@@ -20,16 +22,16 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [get]
-func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
-	group := getGroupFromContext(r.Context())
-	err := a.groupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
+	group := m.GetGroupFromContext(r.Context())
+	err := a.S.GroupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Group fetched successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Group fetched successfully",
 		group, http.StatusOK))
 }
 
@@ -44,16 +46,16 @@ func (a *applicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [delete]
-func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-	group := getGroupFromContext(r.Context())
+func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+	group := m.GetGroupFromContext(r.Context())
 
-	err := a.groupService.DeleteGroup(r.Context(), group.UID)
+	err := a.S.GroupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Group deleted successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Group deleted successfully",
 		nil, http.StatusOK))
 }
 
@@ -69,19 +71,19 @@ func (a *applicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups [post]
-func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	var newGroup models.Group
 	err := util.ReadJSON(r, &newGroup)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	org := getOrganisationFromContext(r.Context())
-	member := getOrganisationMemberFromContext(r.Context())
-	group, apiKey, err := a.groupService.CreateGroup(r.Context(), &newGroup, org, member)
+	org := m.GetOrganisationFromContext(r.Context())
+	member := m.GetOrganisationMemberFromContext(r.Context())
+	group, apiKey, err := a.S.GroupService.CreateGroup(r.Context(), &newGroup, org, member)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -90,7 +92,7 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		Group:  group,
 	}
 
-	_ = render.Render(w, r, newServerResponse("Group created successfully", resp, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Group created successfully", resp, http.StatusCreated))
 }
 
 // UpdateGroup
@@ -105,22 +107,22 @@ func (a *applicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [put]
-func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateGroup
 	err := util.ReadJSON(r, &update)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	g := getGroupFromContext(r.Context())
-	group, err := a.groupService.UpdateGroup(r.Context(), g, &update)
+	g := m.GetGroupFromContext(r.Context())
+	group, err := a.S.GroupService.UpdateGroup(r.Context(), g, &update)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Group updated successfully", group, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Group updated successfully", group, http.StatusAccepted))
 }
 
 // GetGroups
@@ -134,18 +136,18 @@ func (a *applicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups [get]
-func (a *applicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
-	org := getOrganisationFromContext(r.Context())
+func (a *ApplicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
+	org := m.GetOrganisationFromContext(r.Context())
 	name := r.URL.Query().Get("name")
 
 	filter := &datastore.GroupFilter{OrgID: org.UID}
 	filter.Names = append(filter.Names, name)
 
-	groups, err := a.groupService.GetGroups(r.Context(), filter)
+	groups, err := a.S.GroupService.GetGroups(r.Context(), filter)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Groups fetched successfully", groups, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Groups fetched successfully", groups, http.StatusOK))
 }

@@ -20,10 +20,10 @@ import (
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [get]
-func (a *applicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
-	config, err := a.configService.LoadConfiguration(r.Context())
+func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
+	config, err := a.S.ConfigService.LoadConfiguration(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -42,7 +42,7 @@ func (a *applicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 		configResponse = append(configResponse, c)
 	}
 
-	_ = render.Render(w, r, newServerResponse("Configuration fetched successfully", configResponse, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Configuration fetched successfully", configResponse, http.StatusOK))
 }
 
 // CreateConfiguration
@@ -56,16 +56,16 @@ func (a *applicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [post]
-func (a *applicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	config, err := a.configService.CreateConfiguration(r.Context(), &newConfig)
+	config, err := a.S.ConfigService.CreateConfiguration(r.Context(), &newConfig)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -79,7 +79,7 @@ func (a *applicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 		DeletedAt:          config.DeletedAt,
 	}
 
-	_ = render.Render(w, r, newServerResponse("Configuration created successfully", c, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Configuration created successfully", c, http.StatusCreated))
 }
 
 // UpdateConfiguration
@@ -93,17 +93,17 @@ func (a *applicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [put]
-func (a *applicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	config, err := a.configService.UpdateConfiguration(r.Context(), &newConfig)
+	config, err := a.S.ConfigService.UpdateConfiguration(r.Context(), &newConfig)
 	if err != nil {
 		log.Println(err)
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -117,5 +117,5 @@ func (a *applicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.
 		DeletedAt:          config.DeletedAt,
 	}
 
-	_ = render.Render(w, r, newServerResponse("Configuration updated successfully", c, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Configuration updated successfully", c, http.StatusAccepted))
 }

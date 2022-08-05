@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -92,6 +93,7 @@ const (
 )
 
 const (
+	NoopVerifier      VerifierType = "noop"
 	HMacVerifier      VerifierType = "hmac"
 	BasicAuthVerifier VerifierType = "basic_auth"
 	APIKeyVerifier    VerifierType = "api_key"
@@ -110,6 +112,12 @@ const (
 const (
 	S3     StorageType = "s3"
 	OnPrem StorageType = "on_prem"
+)
+
+const (
+	ProjectKey   KeyType = "project"
+	AppPortalKey KeyType = "app_portal"
+	CLIKey       KeyType = "cli"
 )
 
 const (
@@ -350,12 +358,12 @@ type Event struct {
 	// with your internal systems.
 	// This is optional
 	// If not provided, we will generate one for you
-	ProviderID       string       `json:"provider_id,omitempty" bson:"provider_id"`
-	SourceID         string       `json:"source_id,omitempty" bson:"source_id"`
-	GroupID          string       `json:"group_id,omitempty" bson:"group_id"`
-	AppID            string       `json:"app_id,omitempty" bson:"app_id"`
-	ForwardedHeaders HttpHeader   `json:"forwarded_headers" bson:"forwarded_headers"`
-	App              *Application `json:"app_metadata,omitempty" bson:"-"`
+	ProviderID string                `json:"provider_id,omitempty" bson:"provider_id"`
+	SourceID   string                `json:"source_id,omitempty" bson:"source_id"`
+	GroupID    string                `json:"group_id,omitempty" bson:"group_id"`
+	AppID      string                `json:"app_id,omitempty" bson:"app_id"`
+	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	App        *Application          `json:"app_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -366,14 +374,6 @@ type Event struct {
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
-}
-
-func (e *Event) SetForwardedHeaders(headers []string, r *http.Request) {
-	e.ForwardedHeaders = map[string]string{}
-	for _, header := range headers {
-		value := r.Header.Get(header)
-		e.ForwardedHeaders[header] = value
-	}
 }
 
 type EventDeliveryStatus string
@@ -470,14 +470,14 @@ type DeliveryAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID               primitive.ObjectID `json:"-" bson:"_id"`
-	UID              string             `json:"uid" bson:"uid"`
-	AppID            string             `json:"app_id,omitempty" bson:"app_id"`
-	GroupID          string             `json:"group_id,omitempty" bson:"group_id"`
-	EventID          string             `json:"event_id,omitempty" bson:"event_id"`
-	EndpointID       string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	SubscriptionID   string             `json:"subscription_id,omitempty" bson:"subscription_id"`
-	ForwardedHeaders HttpHeader         `json:"forwarded_headers" bson:"forwarded_headers"`
+	ID             primitive.ObjectID    `json:"-" bson:"_id"`
+	UID            string                `json:"uid" bson:"uid"`
+	AppID          string                `json:"app_id,omitempty" bson:"app_id"`
+	GroupID        string                `json:"group_id,omitempty" bson:"group_id"`
+	EventID        string                `json:"event_id,omitempty" bson:"event_id"`
+	EndpointID     string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
+	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
+	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
 	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`

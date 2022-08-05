@@ -14,29 +14,33 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/jaswdr/faker"
 	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/suite"
 )
 
 type ApplicationIntegrationTestSuite struct {
 	suite.Suite
-	DB           datastore.DatabaseClient
+	DB           convoyMongo.Client
 	Router       http.Handler
-	ConvoyApp    *applicationHandler
+	ConvoyApp    *ApplicationHandler
 	DefaultGroup *datastore.Group
 	APIKey       string
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
-	s.ConvoyApp = buildApplication()
-	s.Router = buildRoutes(s.ConvoyApp)
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupTest() {
@@ -47,8 +51,8 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:   auth.RoleAdmin,
-		Groups: []string{s.DefaultGroup.UID},
+		Type:  auth.RoleAdmin,
+		Group: s.DefaultGroup.UID,
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
@@ -57,11 +61,12 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.cache)
+	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
 }
 
 func (s *ApplicationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
+	metrics.Reset()
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
@@ -422,14 +427,14 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var dbEndpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
+	var resp datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &resp)
 
 	appRepo := s.DB.AppRepo()
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), dbEndpoint.TargetURL, endpoint.TargetURL)
-	require.Equal(s.T(), dbEndpoint.Secret, endpoint.Secret)
+	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
+	require.Equal(s.T(), dbEndpoint.Secret, resp.Secret)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {

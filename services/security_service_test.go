@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -64,8 +65,8 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				Name: "test_api_key",
 				Type: "api",
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
 				},
 				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
 				DocumentStatus: datastore.ActiveDocumentStatus,
@@ -257,8 +258,8 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 			apiKey, keyString, err := ss.CreateAPIKey(tc.args.ctx, tc.args.member, tc.args.newApiKey)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -308,9 +309,9 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 				Name: "test_app",
 				Type: "app_portal",
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234"},
-					Apps:   []string{"abc"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
+					App:   "abc",
 				},
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
@@ -362,8 +363,8 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 			apiKey, keyString, err := ss.CreateAppPortalAPIKey(tc.args.ctx, tc.args.group, tc.args.app, tc.args.baseUrl)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -452,8 +453,8 @@ func TestSecurityService_RevokeAPIKey(t *testing.T) {
 			err := ss.RevokeAPIKey(tc.args.ctx, tc.args.uid)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -529,8 +530,8 @@ func TestSecurityService_GetAPIKeyByID(t *testing.T) {
 			apiKey, err := ss.GetAPIKeyByID(tc.args.ctx, tc.args.uid)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -562,17 +563,15 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234", "abc"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234", "abc"}).
-					Times(1).Return([]datastore.Group{
-					{UID: "1234"},
-					{UID: "abc"},
-				}, nil)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234"},
+					nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
@@ -580,9 +579,9 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:   auth.RoleAPI,
-							Groups: []string{"avs"},
-							Apps:   nil,
+							Type:  auth.RoleAPI,
+							Group: "avs",
+							App:   "",
 						},
 					}, nil)
 
@@ -592,8 +591,8 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 			wantAPIKey: &datastore.APIKey{
 				UID: "ref",
 				Role: auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234", "abc"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
 				},
 			},
 		},
@@ -603,8 +602,8 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "",
 				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234", "abc"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
 				},
 			},
 			wantErr:     true,
@@ -625,18 +624,18 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 			wantErrMsg:  "invalid api key role",
 		},
 		{
-			name: "should_fail_to_fetch_groups",
+			name: "should_fail_to_fetch_group",
 			args: args{
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234", "abc"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234", "abc"}).
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -644,43 +643,20 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 			wantErrMsg:  "invalid group",
 		},
 		{
-			name: "should_error_for_group_length_mismatch",
-			args: args{
-				ctx: ctx,
-				uid: "1234",
-				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234", "abc"},
-				},
-			},
-			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234", "abc"}).
-					Times(1).Return([]datastore.Group{
-					{UID: "1234"},
-				}, nil)
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "cannot find group",
-		},
-		{
 			name: "should_fail_find_api_key_by_id",
 			args: args{
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234", "abc"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234", "abc"}).
-					Times(1).Return([]datastore.Group{
-					{UID: "1234"},
-					{UID: "abc"},
-				}, nil)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234"},
+					nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
@@ -696,17 +672,15 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:   auth.RoleAdmin,
-					Groups: []string{"1234", "abc"},
+					Type:  auth.RoleAdmin,
+					Group: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupsByIDs(gomock.Any(), []string{"1234", "abc"}).
-					Times(1).Return([]datastore.Group{
-					{UID: "1234"},
-					{UID: "abc"},
-				}, nil)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Group{UID: "1234"},
+					nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
@@ -714,9 +688,9 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:   auth.RoleAPI,
-							Groups: []string{"avs"},
-							Apps:   nil,
+							Type:  auth.RoleAPI,
+							Group: "avs",
+							App:   "",
 						},
 					}, nil)
 
@@ -741,8 +715,8 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 			apiKey, err := ss.UpdateAPIKey(tc.args.ctx, tc.args.uid, tc.args.role)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -790,17 +764,17 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 						{
 							UID: "ref",
 							Role: auth.Role{
-								Type:   auth.RoleAPI,
-								Groups: []string{"avs"},
-								Apps:   nil,
+								Type:  auth.RoleAPI,
+								Group: "avs",
+								App:   "",
 							},
 						},
 						{
 							UID: "abc",
 							Role: auth.Role{
-								Type:   auth.RoleAPI,
-								Groups: []string{"123"},
-								Apps:   nil,
+								Type:  auth.RoleAPI,
+								Group: "123",
+								App:   "",
 							},
 						},
 					},
@@ -817,17 +791,17 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				{
 					UID: "ref",
 					Role: auth.Role{
-						Type:   auth.RoleAPI,
-						Groups: []string{"avs"},
-						Apps:   nil,
+						Type:  auth.RoleAPI,
+						Group: "avs",
+						App:   "",
 					},
 				},
 				{
 					UID: "abc",
 					Role: auth.Role{
-						Type:   auth.RoleAPI,
-						Groups: []string{"123"},
-						Apps:   nil,
+						Type:  auth.RoleAPI,
+						Group: "123",
+						App:   "",
 					},
 				},
 			},
@@ -882,8 +856,8 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			apiKeys, paginationData, err := ss.GetAPIKeys(tc.args.ctx, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

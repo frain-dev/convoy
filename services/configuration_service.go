@@ -28,7 +28,7 @@ func (c *ConfigService) LoadConfiguration(ctx context.Context) (*datastore.Confi
 			return config, nil
 		}
 
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	return config, nil
@@ -36,7 +36,7 @@ func (c *ConfigService) LoadConfiguration(ctx context.Context) (*datastore.Confi
 
 func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *models.Configuration) (*datastore.Configuration, error) {
 	if err := util.Validate(newConfig); err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	storagePolicy := newConfig.StoragePolicy
@@ -58,7 +58,7 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 
 	err := c.configRepo.CreateConfiguration(ctx, config)
 	if err != nil {
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	return config, nil
@@ -67,12 +67,12 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 
 func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.Configuration) (*datastore.Configuration, error) {
 	if err := util.Validate(config); err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	cfg, err := c.configRepo.LoadConfiguration(ctx)
 	if err != nil {
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	if config.IsAnalyticsEnabled != nil {
@@ -85,7 +85,7 @@ func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.
 
 	err = c.configRepo.UpdateConfiguration(ctx, cfg)
 	if err != nil {
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	return cfg, nil

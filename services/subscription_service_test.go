@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -365,8 +366,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			subscription, err := ss.CreateSubscription(tc.args.ctx, tc.args.group, tc.args.newSubscription)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
@@ -477,8 +478,8 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 			subscription, err := ss.UpdateSubscription(tc.args.ctx, tc.args.group.UID, tc.args.subscriptionId, tc.args.update)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
@@ -723,8 +724,8 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			subscriptions, paginationData, err := ss.LoadSubscriptionsPaged(tc.args.ctx, tc.args.group.UID, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
@@ -812,8 +813,8 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 			err := ss.DeleteSubscription(tc.args.ctx, tc.args.group.UID, tc.args.newSubscription)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
@@ -937,8 +938,8 @@ func TestSubcriptionService_ToggleSubscriptionStatus(t *testing.T) {
 			got, err := ss.ToggleSubscriptionStatus(tt.args.ctx, tt.args.groupId, tt.args.subscriptionId)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
