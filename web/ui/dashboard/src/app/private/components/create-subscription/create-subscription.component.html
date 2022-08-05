@@ -34,7 +34,7 @@
 			</convoy-button>
 		</div>
 
-		<div class="mt-24px" *ngIf="projectType === 'outgoing'">
+		<div class="mt-24px" *ngIf="projectType === 'outgoing' || token">
 			<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
 			<div (click)="focusInput()" class="w-full font-medium text-14 text-grey-100 border border-primary-500 outline-none rounded-4px bg-[#F7F9FC] pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
 				<div *ngFor="let tag of eventTags" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
