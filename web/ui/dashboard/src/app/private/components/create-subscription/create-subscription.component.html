@@ -88,6 +88,11 @@
 	</div>
 </form>
 
+<div class="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] text-white-100 flex-col" *ngIf="showError">
+	<p>An error occured while fetching app details</p>
+	<convoy-button size="sm" className="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</convoy-button>
+</div>
+
 <convoy-modal
 	size="lg"
 	[title]="showCreateAppModal ? 'Create New App' : showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'"

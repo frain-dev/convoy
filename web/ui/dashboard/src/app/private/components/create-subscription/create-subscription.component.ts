@@ -52,6 +52,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	subscriptionId = this.route.snapshot.params.id;
 	isloadingAppPortalAppDetails = false;
 	token: string = this.route.snapshot.params.token;
+	showError = false;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -69,9 +70,11 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue({ app_id: apps.data.uid, group_id: apps.data.group_id, type: 'outgoing' });
 			this.modifyEndpointData(apps.data.endpoints);
 			this.isloadingAppPortalAppDetails = false;
+			this.showError = false;
 			return;
 		} catch (error) {
 			this.isloadingAppPortalAppDetails = false;
+			this.showError = true;
 			return error;
 		}
 	}
@@ -147,7 +150,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateSource(newSource: SOURCE) {
-		console.log('🚀 ~ file: create-subscription.component.ts ~ line 150 ~ CreateSubscriptionComponent ~ onCreateSource ~ newSource', newSource);
 		await this.getSources();
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
 	}
