@@ -25,7 +25,7 @@
 				<convoy-table-row class="contents" *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }" [active]="source.uid === activeSource?.uid">
 					<convoy-table-cell class="contents" className="pl-16px">{{ source.name }}</convoy-table-cell>
 					<convoy-table-cell class="contents" className="min-w-[40px]">{{ getDataReadableValue('sourceType', source.type)?.viewValue }}</convoy-table-cell>
-					<convoy-table-cell class="contents">{{ getDataReadableValue('verifier', source.verifier.type)?.viewValue }}</convoy-table-cell>
+					<convoy-table-cell class="contents capitalize">{{ source.provider || getDataReadableValue('verifier', source.verifier.type)?.viewValue }}</convoy-table-cell>
 					<convoy-table-cell class="contents" className="w-220px overflow-hidden overflow-ellipsis relative pr-16px">
 						{{ source.url }}
 						<convoy-button type="icon" size="sm" className="absolute top-[50%] translate-y-[-50%] right-2px" (click)="copyText(source.url, source.name, $event)">

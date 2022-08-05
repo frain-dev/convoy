@@ -30,7 +30,8 @@ export class SourcesComponent implements OnInit {
 	httpTypes = [
 		{ value: 'hmac', viewValue: 'HMAC' },
 		{ value: 'basic_auth', viewValue: 'Basic Auth' },
-		{ value: 'api_key', viewValue: 'API Key' }
+		{ value: 'api_key', viewValue: 'API Key' },
+		{ value: 'noop', viewValue: 'None' }
 	];
 
 	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
