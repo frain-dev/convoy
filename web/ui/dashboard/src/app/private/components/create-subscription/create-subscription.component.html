@@ -46,6 +46,10 @@
 			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
 		</div>
 
+		<div class="flex justify-end mt-20px">
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
+		</div>
+
 		<div [hidden]="!enableMoreConfig">
 			<h2 class="font-semibold flex items-center mb-20px mt-30px">
 				Retry Logic
@@ -71,15 +75,11 @@
 				<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
 			</div>
 		</div>
-
-		<div class="flex justify-end mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
-		</div>
 	</convoy-card>
 
 	<div class="flex justify-end mt-32px">
-		<convoy-button className="mr-16px" type="outline" buttonType="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</convoy-button>
-		<convoy-button>
+		<convoy-button className="mr-16px text-14" type="outline" buttonType="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</convoy-button>
+		<convoy-button className="text-14">
 			{{ action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>

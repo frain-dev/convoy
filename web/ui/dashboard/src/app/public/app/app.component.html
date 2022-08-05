@@ -1,7 +1,7 @@
 <convoy-page>
 	<div class="flex items-center justify-between mb-20px">
 		<h3 class="mb-10px">Subscriptions</h3>
-		<convoy-button size="sm" (click)="showCreateSubscriptionModal = true">Create Subscription</convoy-button>
+		<convoy-button *ngIf="showCreateSubscription" size="sm" (click)="showCreateSubscriptionModal = true">Create Subscription</convoy-button>
 	</div>
 
 	<convoy-card className="w-full">

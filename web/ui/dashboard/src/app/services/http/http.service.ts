@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { environment } from 'src/environments/environment';
 import axios from 'axios';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from '../general/general.service';
 
 @Injectable({
@@ -12,7 +12,7 @@ export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal`;
 
-	constructor(private router: Router, private generalService: GeneralService) {}
+	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
@@ -36,7 +36,7 @@ export class HttpService {
 					},
 					error => {
 						if (axios.isAxiosError(error)) {
-							if (error.response?.status == 401) {
+							if (error.response?.status == 401 && this.route.snapshot.url[0]?.path !== 'app') {
 								this.router.navigate(['/login'], { replaceUrl: true });
 								localStorage.removeItem('CONVOY_AUTH');
 								return Promise.reject(error);
