@@ -1,0 +1,74 @@
+<convoy-card className="mb-20px min-h-[50vh]">
+
+    <!-- tab  -->
+	<div class="flex items-center justify-center border-b border-grey-10">
+		<ul class="w-full flex items-center">
+			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+				<convoy-button
+					type="clear"
+					color="grey"
+					[className]="
+						activeTab === tab
+							? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
+							: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
+					"
+				>
+					<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+				</convoy-button>
+			</li>
+
+			<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
+				<convoy-button size="sm" type="outline" (click)="generateNewKey()">Generate New Key</convoy-button>
+			</div>
+		</ul>
+	</div>
+
+	<!-- empty state for both devices and api keys  -->
+	<ng-container *ngIf="(activeTab === 'api keys' && apiKeys?.length === 0) || (activeTab === 'devices' && devices?.length === 0)">
+		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" [heading]="activeTab === 'api keys' ? 'No api keys have been generated for this application' : 'No devices have been registered under this application'" className="h-[50vh]" id="empty-state"></convoy-empty-state>
+	</ng-container>
+
+	<!-- loader for both devices and api keys  -->
+	<ng-container *ngIf="(activeTab === 'api keys' && isFetchingApiKeys) || (activeTab === 'devices' && isFetchingDevices)">
+		<div class="flex justify-between items-center p-18px" *ngFor="let index of loaderIndex">
+			<div>
+				<div class="flex items-center mb-8px">
+					<convoy-skeleton-loader className="h-20px w-100px"></convoy-skeleton-loader>
+					<convoy-skeleton-loader className="h-14px w-60px ml-10px"></convoy-skeleton-loader>
+				</div>
+				<convoy-skeleton-loader className="h-14px w-120px"></convoy-skeleton-loader>
+			</div>
+			<convoy-skeleton-loader className="h-14px w-120px"></convoy-skeleton-loader>
+		</div>
+	</ng-container>
+
+	<!-- fetched api keys  -->
+	<ng-container *ngIf="activeTab === 'api keys' && !isFetchingApiKeys && apiKeys">
+		<div class="flex justify-between items-center p-18px" *ngFor="let key of apiKeys">
+			<div>
+				<div class="flex items-center">
+					<h3 class="font-semibold mr-14px">{{ key.name }}</h3>
+					<convoy-tag type="grey">{{ key.key_type }}</convoy-tag>
+				</div>
+				<p class="text-grey-40 text-10 mt-8px">Created: {{ key.created_at | date: 'medium' }}</p>
+			</div>
+		</div>
+	</ng-container>
+
+	<!-- fetched devices  -->
+	<ng-container *ngIf="activeTab === 'devices' && !isFetchingDevices && devices">
+		<div class="flex justify-between items-center p-18px" *ngFor="let device of devices">
+			<div>
+				<div class="flex items-center">
+					<h3 class="font-semibold mr-14px">{{ device.host_name }}</h3>
+					<convoy-tag [type]="device.status | statuscolor">{{ device.status }}</convoy-tag>
+				</div>
+			</div>
+
+			<div>
+				<p class="text-grey-40 text-10 mt-8px">Last Seen: {{ device.last_seen_at | date: 'medium' }}</p>
+			</div>
+		</div>
+	</ng-container>
+
+</convoy-card>
