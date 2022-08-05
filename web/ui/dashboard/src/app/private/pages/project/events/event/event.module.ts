@@ -21,7 +21,6 @@ import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableComponent } from 'src/app/components/table/table.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
 
 @NgModule({
 	declarations: [EventComponent],
@@ -47,8 +46,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 		TableHeadCellComponent,
 		TableRowComponent,
 		TableCellComponent,
-		TableComponent,
-        ModalComponent
+		TableComponent
 	],
 	exports: [EventComponent]
 })

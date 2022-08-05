@@ -16,7 +16,6 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
 	shouldRenderSmallSize = false;
-	showPayload = false;
 	eventDeliveryId = this.route.snapshot.params?.id;
 	screenWidth = window.innerWidth;
 	appPortalToken = this.route.snapshot.params?.token;
@@ -82,9 +81,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req' | 'error') {
 		if (type === 'event_delivery') {
 			if (!this.eventDelsDetails?.metadata?.data) return 'No event data was sent';
-			const payload = JSON.stringify(this.eventDelsDetails.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-			if (payload.length > 400 && !this.showPayload) return payload.substring(0, 400).concat('...');
-			return payload;
+			return JSON.stringify(this.eventDelsDetails.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
 			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt?.response_data) return 'No response body was sent';
 			return this.eventDeliveryAtempt?.response_data;

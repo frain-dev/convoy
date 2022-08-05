@@ -29,7 +29,6 @@ export class EventComponent implements OnInit {
 	eventApp?: string;
 	showEventFilterCalendar: boolean = false;
 	showOverlay: boolean = false;
-	showPayload: boolean = false;
 	showEventsAppsDropdown: boolean = false;
 	isloadingEvents: boolean = false;
 	selectedEventsDateOption: string = '';
@@ -129,9 +128,7 @@ export class EventComponent implements OnInit {
 
 	getCodeSnippetString() {
 		if (!this.eventsDetailsItem?.data) return 'No event data was sent';
-		const payload = JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		if (payload.length > 400 && !this.showPayload) return payload.substring(0, 400).concat('...');
-		return payload;
+		return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 	}
 
 	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {

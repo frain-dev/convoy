@@ -6,6 +6,8 @@ import 'prismjs/components/prism-yaml';
 import 'prismjs/components/prism-scss';
 import 'prismjs/components/prism-json';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ButtonComponent } from 'src/app/components/button/button.component';
 
 
 @NgModule({
@@ -13,7 +15,9 @@ import 'prismjs/plugins/line-numbers/prism-line-numbers';
     PrismComponent
   ],
   imports: [
-    CommonModule
+    CommonModule,
+    ModalComponent,
+    ButtonComponent
   ],
   exports: [
     PrismComponent
