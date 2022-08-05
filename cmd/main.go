@@ -263,6 +263,10 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 
 func postRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		if *db == (mongo.Client{}) {
+			return nil
+		}
+
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)
