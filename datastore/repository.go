@@ -11,7 +11,7 @@ type APIKeyRepository interface {
 	FindAPIKeyByMaskID(context.Context, string) (*APIKey, error)
 	FindAPIKeyByHash(context.Context, string) (*APIKey, error)
 	RevokeAPIKeys(context.Context, []string) error
-	LoadAPIKeysPaged(context.Context, *Pageable) ([]APIKey, PaginationData, error)
+	LoadAPIKeysPaged(context.Context, *ApiKeyFilter, *Pageable) ([]APIKey, PaginationData, error)
 }
 
 type EventDeliveryRepository interface {
@@ -118,7 +118,7 @@ type DeviceRepository interface {
 	UpdateDeviceLastSeen(ctx context.Context, device *Device, appID, groupID string, status DeviceStatus) error
 	DeleteDevice(ctx context.Context, uid string, appID, groupID string) error
 	FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*Device, error)
-	LoadDevicesPaged(ctx context.Context, groupID string, filter *DeviceFilter, pageable Pageable) ([]Device, PaginationData, error)
+	LoadDevicesPaged(ctx context.Context, groupID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
 }
 
 type UserRepository interface {

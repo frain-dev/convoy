@@ -28,7 +28,7 @@ func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.R
 	group := m.GetGroupFromContext(r.Context())
 	app := m.GetApplicationFromContext(r.Context())
 
-	f := &datastore.DeviceFilter{
+	f := &datastore.ApiKeyFilter{
 		AppID: app.UID,
 	}
 

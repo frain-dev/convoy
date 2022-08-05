@@ -24,7 +24,7 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 	type args struct {
 		ctx      context.Context
 		group    *datastore.Group
-		filter   *datastore.DeviceFilter
+		filter   *datastore.ApiKeyFilter
 		pageable datastore.Pageable
 	}
 
@@ -43,7 +43,7 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				group:  &datastore.Group{UID: "12345"},
-				filter: &datastore.DeviceFilter{AppID: ""},
+				filter: &datastore.ApiKeyFilter{AppID: ""},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,

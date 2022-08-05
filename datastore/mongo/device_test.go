@@ -163,7 +163,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 		pageData datastore.Pageable
 		count    int
 		groupID  string
-		filter   *datastore.DeviceFilter
+		filter   *datastore.ApiKeyFilter
 		expected Expected
 	}{
 		{
@@ -171,7 +171,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    10,
 			groupID:  uuid.NewString(),
-			filter:   &datastore.DeviceFilter{AppID: ""},
+			filter:   &datastore.ApiKeyFilter{AppID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     10,
@@ -189,7 +189,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			pageData: datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
 			count:    12,
 			groupID:  uuid.NewString(),
-			filter:   &datastore.DeviceFilter{AppID: ""},
+			filter:   &datastore.ApiKeyFilter{AppID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     12,
@@ -207,7 +207,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    5,
 			groupID:  uuid.NewString(),
-			filter:   &datastore.DeviceFilter{AppID: ""},
+			filter:   &datastore.ApiKeyFilter{AppID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     5,
@@ -225,7 +225,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    1,
 			groupID:  uuid.NewString(),
-			filter:   &datastore.DeviceFilter{AppID: uuid.NewString()},
+			filter:   &datastore.ApiKeyFilter{AppID: uuid.NewString()},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     1,

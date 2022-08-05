@@ -107,7 +107,7 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 	return device, nil
 }
 
-func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *datastore.DeviceFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
+func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
 	var devices []datastore.Device
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID}

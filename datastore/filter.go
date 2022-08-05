@@ -15,6 +15,8 @@ type SourceFilter struct {
 	Provider string
 }
 
-type DeviceFilter struct {
-	AppID string
+type ApiKeyFilter struct {
+	GroupID string
+	AppID   string
+	KeyType KeyType
 }

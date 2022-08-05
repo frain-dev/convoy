@@ -265,7 +265,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(a.M.RequireApp())
 					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.Post("/", a.CreateAppPortalAPIKey)
+					securitySubRouter.Post("/", a.CreateAppAPIKey)
 				})
 			})
 
@@ -402,7 +402,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.Post("/", a.CreateAppPortalAPIKey)
+									keySubRouter.Post("/", a.CreateAppAPIKey)
+									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
 								})
 
 								appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {

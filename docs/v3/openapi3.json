@@ -188,6 +188,38 @@
 				},
 				"type": "object"
 			},
+			"datastore.Device": {
+				"properties": {
+					"app_id": {
+						"type": "string"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"group_id": {
+						"type": "string"
+					},
+					"host_name": {
+						"type": "string"
+					},
+					"last_seen_at": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.Endpoint": {
 				"properties": {
 					"created_at": {
@@ -1314,7 +1346,7 @@
 				},
 				"type": "object"
 			},
-			"server.serverResponse": {
+			"util.ServerResponse": {
 				"properties": {
 					"data": {
 						"items": {
@@ -1410,7 +1442,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1447,7 +1479,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1469,7 +1501,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1491,7 +1523,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1550,7 +1582,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1572,7 +1604,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1594,7 +1626,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1616,7 +1648,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1674,7 +1706,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1696,7 +1728,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1718,7 +1750,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1740,7 +1772,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1796,7 +1828,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1818,7 +1850,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1840,7 +1872,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1862,7 +1894,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1930,7 +1962,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1952,7 +1984,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1974,7 +2006,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1996,7 +2028,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2054,7 +2086,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2079,7 +2111,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2101,7 +2133,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2123,7 +2155,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2191,7 +2223,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2213,7 +2245,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2235,7 +2267,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2257,7 +2289,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2324,7 +2356,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2346,7 +2378,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2368,7 +2400,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2390,7 +2422,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2455,7 +2487,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2477,7 +2509,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2499,7 +2531,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2521,7 +2553,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2598,7 +2630,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2620,7 +2652,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2642,7 +2674,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2664,7 +2696,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2714,7 +2746,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2736,7 +2768,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2758,7 +2790,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2780,7 +2812,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2813,7 +2845,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2835,7 +2867,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2857,7 +2889,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2879,7 +2911,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2929,7 +2961,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2951,7 +2983,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2973,7 +3005,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2995,7 +3027,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3028,7 +3060,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3065,7 +3097,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3087,7 +3119,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3109,7 +3141,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3157,7 +3189,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3179,7 +3211,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3201,7 +3233,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3223,7 +3255,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3271,7 +3303,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3293,7 +3325,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3315,7 +3347,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3337,7 +3369,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3362,6 +3394,160 @@
 				"summary": "Update configuration",
 				"tags": [
 					"Application"
+				]
+			}
+		},
+		"/devices/{appID}": {
+			"get": {
+				"description": "This endpoint fetches devices for an app",
+				"parameters": [
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "app id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/server.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"$ref": "#/components/schemas/datastore.Device"
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Fetch devices for an app",
+				"tags": [
+					"Source"
 				]
 			}
 		},
@@ -3453,7 +3639,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3502,7 +3688,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3524,7 +3710,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3546,7 +3732,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3622,7 +3808,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3644,7 +3830,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3666,7 +3852,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3688,7 +3874,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3785,7 +3971,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3819,7 +4005,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3841,7 +4027,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3863,7 +4049,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3939,7 +4125,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3961,7 +4147,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3983,7 +4169,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4005,7 +4191,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4063,7 +4249,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4097,7 +4283,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4119,7 +4305,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4141,7 +4327,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4199,7 +4385,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4233,7 +4419,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4255,7 +4441,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4277,7 +4463,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4374,7 +4560,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4423,7 +4609,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4445,7 +4631,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4467,7 +4653,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4526,7 +4712,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4560,7 +4746,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4582,7 +4768,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4604,7 +4790,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4662,7 +4848,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4696,7 +4882,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4718,7 +4904,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4740,7 +4926,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4798,7 +4984,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4823,7 +5009,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4845,7 +5031,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4867,7 +5053,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4934,7 +5120,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4956,7 +5142,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4978,7 +5164,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5000,7 +5186,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5058,7 +5244,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5092,7 +5278,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5114,7 +5300,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5136,7 +5322,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5184,7 +5370,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5209,7 +5395,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5231,7 +5417,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5253,7 +5439,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5302,7 +5488,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5324,7 +5510,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5346,7 +5532,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5368,7 +5554,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5415,7 +5601,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5437,7 +5623,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5459,7 +5645,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5481,7 +5667,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5540,7 +5726,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5562,7 +5748,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5584,7 +5770,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5606,7 +5792,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5655,7 +5841,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5677,7 +5863,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5699,7 +5885,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5721,7 +5907,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5785,7 +5971,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5822,7 +6008,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5844,7 +6030,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5866,7 +6052,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5925,7 +6111,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5947,7 +6133,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5969,7 +6155,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5991,7 +6177,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6049,7 +6235,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6071,7 +6257,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6093,7 +6279,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6115,7 +6301,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6171,7 +6357,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6193,7 +6379,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6215,7 +6401,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6237,7 +6423,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6305,7 +6491,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6327,7 +6513,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6349,7 +6535,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6371,7 +6557,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6452,7 +6638,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6489,7 +6675,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6511,7 +6697,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6533,7 +6719,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6580,7 +6766,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6617,7 +6803,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6639,7 +6825,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6661,7 +6847,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6719,7 +6905,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6741,7 +6927,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6763,7 +6949,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6785,7 +6971,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6841,7 +7027,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6863,7 +7049,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6885,7 +7071,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6907,7 +7093,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6966,7 +7152,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6988,7 +7174,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7010,7 +7196,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7032,7 +7218,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7081,7 +7267,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7103,7 +7289,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7125,7 +7311,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7147,7 +7333,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7211,7 +7397,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7248,7 +7434,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7270,7 +7456,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7292,7 +7478,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7340,7 +7526,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7362,7 +7548,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7384,7 +7570,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7406,7 +7592,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7475,7 +7661,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7497,7 +7683,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7519,7 +7705,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7541,7 +7727,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7590,7 +7776,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7612,7 +7798,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7634,7 +7820,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7656,7 +7842,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7703,7 +7889,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7725,7 +7911,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7747,7 +7933,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7769,7 +7955,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7828,7 +8014,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7850,7 +8036,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7872,7 +8058,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7894,7 +8080,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7955,7 +8141,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7977,7 +8163,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7999,7 +8185,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8021,7 +8207,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8082,7 +8268,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8104,7 +8290,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8126,7 +8312,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8148,7 +8334,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8221,7 +8407,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8243,7 +8429,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8265,7 +8451,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8287,7 +8473,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8345,7 +8531,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8367,7 +8553,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8389,7 +8575,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8411,7 +8597,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8469,7 +8655,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8491,7 +8677,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8513,7 +8699,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8535,7 +8721,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8608,7 +8794,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8645,7 +8831,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8667,7 +8853,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8689,7 +8875,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8747,7 +8933,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8769,7 +8955,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8791,7 +8977,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8813,7 +8999,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8869,7 +9055,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8891,7 +9077,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8913,7 +9099,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8935,7 +9121,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9003,7 +9189,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9025,7 +9211,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9047,7 +9233,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9069,7 +9255,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9142,7 +9328,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9179,7 +9365,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9201,7 +9387,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9223,7 +9409,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9282,7 +9468,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9304,7 +9490,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9326,7 +9512,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9348,7 +9534,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9406,7 +9592,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9428,7 +9614,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9450,7 +9636,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9472,7 +9658,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9528,7 +9714,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9550,7 +9736,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9572,7 +9758,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9594,7 +9780,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9652,7 +9838,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9674,7 +9860,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9696,7 +9882,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9718,7 +9904,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9768,7 +9954,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9790,7 +9976,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9812,7 +9998,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9834,7 +10020,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9890,7 +10076,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9912,7 +10098,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9934,7 +10120,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9956,7 +10142,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10000,7 +10186,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10022,7 +10208,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10044,7 +10230,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10066,7 +10252,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10127,7 +10313,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10149,7 +10335,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10171,7 +10357,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10193,7 +10379,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10242,7 +10428,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10264,7 +10450,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10286,7 +10472,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10308,7 +10494,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10367,7 +10553,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10389,7 +10575,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10411,7 +10597,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10433,7 +10619,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {

@@ -282,3 +282,10 @@ type ResetPassword struct {
 	Password             string `json:"password" valid:"required~please provide the password field"`
 	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
 }
+
+type CreateAppApiKey struct {
+	Group   *datastore.Group
+	App     *datastore.Application
+	BaseUrl *string
+	KeyType datastore.KeyType `json:"key_type"`
+}

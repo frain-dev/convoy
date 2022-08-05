@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/frain-dev/convoy/auth"
@@ -61,9 +62,9 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
-// CreateAppPortalAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
-// @Summary Create an api key for app portal (UI)
-// @Description This endpoint creates an api key that will be used by app portal
+// CreateAppAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
+// @Summary Create an api key for app portal or the cli (UI)
+// @Description This endpoint creates an api key that will be used by app portal or the cli
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
@@ -74,9 +75,9 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [post]
 
-// CreateAppPortalAPIKey
-// @Summary Create an api key for app portal (API)
-// @Description This endpoint creates an api key that will be used by app portal
+// CreateAppAPIKey
+// @Summary Create an api key for app portal or the cli (API)
+// @Description This endpoint creates an api key that will be used by app portal or the cli
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
@@ -85,12 +86,41 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /security/applications/{appID}/keys [post]
-func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Request) {
+	var keyType datastore.KeyType
+	var newApiKey models.CreateAppApiKey
+
+	if err := util.ReadJSON(r, &newApiKey); err != nil {
+		// Disregard the ErrEmptyBody err to ensure backward compatibility
+		if !errors.Is(err, util.ErrEmptyBody) {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
 	group := m.GetGroupFromContext(r.Context())
 	app := m.GetApplicationFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
+	k := string(newApiKey.KeyType)
 
-	apiKey, key, err := a.S.SecurityService.CreateAppPortalAPIKey(r.Context(), group, app, &baseUrl)
+	if util.IsStringEmpty(k) {
+		keyType = datastore.AppPortalKey
+	}
+
+	if !util.IsStringEmpty(k) {
+		keyType = datastore.KeyType(k)
+		if !keyType.IsValidAppKey() {
+			_ = render.Render(w, r, util.NewErrorResponse(errors.New("type is not supported").Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
+	newApiKey.Group = group
+	newApiKey.App = app
+	newApiKey.BaseUrl = &baseUrl
+	newApiKey.KeyType = keyType
+
+	apiKey, key, err := a.S.SecurityService.CreateAppAPIKey(r.Context(), &newApiKey)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -106,6 +136,42 @@ func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
+
+}
+
+// LoadAppAPIKeysPaged
+// @Summary Fetch multiple api keys belonging to an app
+// @Description This endpoint fetches multiple api keys belonging to an app
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "Organisation id"
+// @Param appID path string true "application ID"
+// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [get]
+func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.Request) {
+	group := m.GetGroupFromContext(r.Context())
+	app := m.GetApplicationFromContext(r.Context())
+	pageable := m.GetPageableFromContext(r.Context())
+
+	f := &datastore.ApiKeyFilter{
+		GroupID: group.UID,
+		AppID:   app.UID,
+		KeyType: datastore.CLIKey,
+	}
+
+	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), f, &pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to load api keys")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
+	_ = render.Render(w, r, util.NewServerResponse("api keys fetched successfully",
+		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
 
 }
 
@@ -221,7 +287,9 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
-	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), &pageable)
+	f := &datastore.ApiKeyFilter{}
+
+	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
