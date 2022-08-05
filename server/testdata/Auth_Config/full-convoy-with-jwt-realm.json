@@ -25,7 +25,7 @@
                     "username": "test-group-filter",
                     "password": "test-group-filter",
                     "role": {
-                        "groups": ["abcdef"],
+                        "group": "abcdef",
                         "type": "super_user"
                     }
                 }

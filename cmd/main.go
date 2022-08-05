@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -11,9 +10,9 @@ import (
 	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/notification/email"
 	"github.com/frain-dev/convoy/notification/noop"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/datastore/badger"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/searcher"
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	app := &app{}
-	var db datastore.DatabaseClient
+	db := &mongo.Client{}
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
@@ -130,26 +129,7 @@ func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
 }
 
-func NewDB(cfg config.Configuration) (datastore.DatabaseClient, error) {
-	switch cfg.Database.Type {
-	case config.MongodbDatabaseProvider:
-		db, err := mongo.New(cfg)
-		if err != nil {
-			return nil, err
-		}
-		return db, nil
-	case config.InMemoryDatabaseProvider:
-		bolt, err := badger.New(cfg)
-		if err != nil {
-			return nil, err
-		}
-		return bolt, nil
-	default:
-		return nil, errors.New("invalid database type")
-	}
-}
-
-func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
+func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -166,8 +146,13 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 			return err
 		}
 
-		err = config.OverrideConfigWithCliFlags(cmd, &cfg)
+		// Override with CLI Flags
+		cliConfig, err := buildCliConfiguration(cmd)
 		if err != nil {
+			return err
+		}
+
+		if err = config.Override(cliConfig); err != nil {
 			return err
 		}
 
@@ -185,7 +170,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 
 		apm.SetApplication(nRApp)
 
-		db, err := NewDB(cfg)
+		db, err = mongo.New(cfg)
 		if err != nil {
 			return err
 		}
@@ -276,7 +261,7 @@ func preRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args
 	}
 }
 
-func postRun(app *app, db datastore.DatabaseClient) func(cmd *cobra.Command, args []string) error {
+func postRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := db.Disconnect(context.Background())
 		if err == nil {
@@ -306,13 +291,14 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addUpgradeCommand(app))
 	cmd.AddCommand(addIndexCommand(app))
+	cmd.AddCommand(addConfigCommand(app))
 }
 
 type ConvoyCli struct {
 	cmd *cobra.Command
 }
 
-func NewCli(app *app, db datastore.DatabaseClient) ConvoyCli {
+func NewCli(app *app, db *mongo.Client) ConvoyCli {
 	cmd := &cobra.Command{
 		Use:     "Convoy",
 		Version: convoy.GetVersion(),
@@ -332,4 +318,42 @@ func (c *ConvoyCli) SetArgs(args []string) {
 
 func (c *ConvoyCli) Execute() error {
 	return c.cmd.Execute()
+}
+
+func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
+	c := &config.Configuration{}
+
+	// CONVOY_DB_DSN, CONVOY_DB_TYPE
+	dbDsn, err := cmd.Flags().GetString("db")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(dbDsn) {
+		c.Database = config.DatabaseConfiguration{
+			Type: config.MongodbDatabaseProvider,
+			Dsn:  dbDsn,
+		}
+	}
+
+	// CONVOY_REDIS_DSN
+	redisDsn, err := cmd.Flags().GetString("redis")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_PROVIDER
+	queueDsn, err := cmd.Flags().GetString("queue")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(queueDsn) {
+		c.Queue.Type = config.QueueProvider(queueDsn)
+		if queueDsn == "redis" && !util.IsStringEmpty(redisDsn) {
+			c.Queue.Redis.Dsn = redisDsn
+		}
+	}
+
+	return c, nil
 }
