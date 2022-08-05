@@ -24,8 +24,8 @@ import (
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param apiKey body models.APIKey true "API Key"
-// @Success 200 {object} serverResponse{data=models.APIKeyResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=models.APIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys [post]
 func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -70,8 +70,8 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param appID path string true "application ID"
-// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [post]
 
@@ -82,8 +82,8 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application ID"
-// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /security/applications/{appID}/keys [post]
 func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -183,8 +183,8 @@ func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID}/revoke [put]
 func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -205,8 +205,8 @@ func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
-// @Success 200 {object} serverResponse{data=datastore.APIKey}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.APIKey}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [get]
 func (a *ApplicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
@@ -236,8 +236,8 @@ func (a *ApplicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
-// @Success 200 {object} serverResponse{data=datastore.APIKey}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.APIKey}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [put]
 func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -280,8 +280,8 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.APIKey}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.APIKey}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys [get]
 func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {

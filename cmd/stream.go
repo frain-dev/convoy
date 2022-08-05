@@ -33,7 +33,7 @@ func addStreamCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
 
-			hub := services.NewHub(a.deviceRepo, a.subRepo, a.sourceRepo, a.applicationRepo, watchCollection)
+			hub := services.NewHub(a.deviceRepo, a.subRepo, a.sourceRepo, a.applicationRepo, a.eventDeliveryRepo, watchCollection)
 			go hub.StartRegister()
 			go hub.StartUnregister()
 			go hub.StartEventWatcher()

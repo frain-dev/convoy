@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -72,6 +73,16 @@ func (c *Client) readPump() {
 
 			if messageType == websocket.CloseMessage {
 				c.Close()
+			}
+
+			if messageType == websocket.TextMessage {
+				var ed AckEventDelivery
+				err := json.Unmarshal(message, &ed)
+				if err != nil {
+					log.WithError(err).Error("failed to unmarshal text message")
+					continue
+				}
+				go c.hub.UpdateEventDeliveryStatus(ed.UID)
 			}
 
 			if err != nil {
