@@ -59,7 +59,7 @@
 				</convoy-tooltip>
 			</h2>
 
-			<div class="grid grid-cols-2 gap-6" formGroupName="retry_config">
+			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
 				<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism"></convoy-select>
 
 				<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3s"></convoy-input>
