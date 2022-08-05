@@ -1440,7 +1440,7 @@ func (mr *MockDeviceRepositoryMockRecorder) FetchDeviceByID(ctx, uid, appID, gro
 }
 
 // LoadDevicesPaged mocks base method.
-func (m *MockDeviceRepository) LoadDevicesPaged(ctx context.Context, groupID string, filter *datastore.DeviceFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
+func (m *MockDeviceRepository) LoadDevicesPaged(ctx context.Context, groupID string, filter *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadDevicesPaged", ctx, groupID, filter, pageable)
 	ret0, _ := ret[0].([]datastore.Device)
