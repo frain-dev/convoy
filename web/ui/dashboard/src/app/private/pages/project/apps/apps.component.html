@@ -104,8 +104,9 @@
 			</tbody>
 		</convoy-table>
 	</div>
+
+	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No app to show here" className="h-[50vh]" id="events-empty-state" *ngIf="!isloadingApps && displayedApps?.length === 0"></convoy-empty-state>
 </convoy-card>
-<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No app to show here" className="h-[50vh]" id="events-empty-state" *ngIf="!isloadingApps && displayedApps?.length === 0"></convoy-empty-state>
 
 <div class="flex items-center mt-16px">
 	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev }" [disable]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
@@ -121,7 +122,6 @@
 		</svg>
 	</convoy-button>
 </div>
-
 
 <app-delete-modal *ngIf="showDeleteAppModal" [isLoading]="isDeletingApp" [deleteText]="'delete “' + appsDetailsItem?.name + '”'" (closeModal)="showDeleteAppModal = false" (deleteData)="deleteApp()"></app-delete-modal>
 
