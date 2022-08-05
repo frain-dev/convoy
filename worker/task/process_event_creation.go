@@ -120,14 +120,14 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			}
 
 			eventDelivery := &datastore.EventDelivery{UID: uuid.New().String(),
-				SubscriptionID:   s.UID,
-				AppID:            app.UID,
-				Metadata:         metadata,
-				GroupID:          group.UID,
-				EventID:          event.UID,
-				EndpointID:       s.EndpointID,
-				DeviceID:         s.DeviceID,
-				ForwardedHeaders: event.ForwardedHeaders,
+				SubscriptionID: s.UID,
+				AppID:          app.UID,
+				Metadata:       metadata,
+				GroupID:        group.UID,
+				EventID:        event.UID,
+				EndpointID:     s.EndpointID,
+				DeviceID:       s.DeviceID,
+				Headers:        event.Headers,
 
 				Status:           getEventDeliveryStatus(&s, app),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},

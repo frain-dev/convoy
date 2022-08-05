@@ -39,6 +39,7 @@ export class CreateSourceComponent implements OnInit {
 		{ value: 'db_change_stream', viewValue: 'DB Change Stream (Coming Soon)', description: 'Trigger webhook event from your DB change stream' }
 	];
 	httpTypes = [
+		{ value: 'noop', viewValue: 'None' },
 		{ value: 'hmac', viewValue: 'HMAC' },
 		{ value: 'basic_auth', viewValue: 'Basic Auth' },
 		{ value: 'api_key', viewValue: 'API Key' },
@@ -77,6 +78,7 @@ export class CreateSourceComponent implements OnInit {
 		if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
 		if (this.sourceForm.get('verifier.type')?.value === 'shopify') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Shopify-Hmac-SHA256', hash: 'SHA256' });
 		if (this.sourceForm.get('verifier.type')?.value === 'twitter') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Twitter-Webhooks-Signature', hash: 'SHA256' });
+
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
 		const sourceData = {
 			...this.sourceForm.value,
@@ -107,17 +109,13 @@ export class CreateSourceComponent implements OnInit {
 	isSourceFormValid(): boolean {
 		if (this.sourceForm.get('name')?.invalid || this.sourceForm.get('type')?.invalid) return false;
 
-		if (this.sourceForm.get('verifier')?.value.type === 'api_key' && this.sourceForm.get('verifier.api_key')?.valid) {
-			return true;
-		}
+		if (this.sourceForm.get('verifier')?.value.type === 'noop') return true;
 
-		if (this.sourceForm.get('verifier')?.value.type === 'basic_auth' && this.sourceForm.get('verifier.basic_auth')?.valid) {
-			return true;
-		}
+		if (this.sourceForm.get('verifier')?.value.type === 'api_key' && this.sourceForm.get('verifier.api_key')?.valid) return true;
 
-		if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) {
-			return true;
-		}
+		if (this.sourceForm.get('verifier')?.value.type === 'basic_auth' && this.sourceForm.get('verifier.basic_auth')?.valid) return true;
+
+		if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) return true;
 
 		return false;
 	}

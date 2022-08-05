@@ -74,13 +74,12 @@ func addServerCommand(a *app) *cobra.Command {
 			}
 
 			// override config with cli flags
-			err = loadServerConfigFromCliFlags(cmd, &c)
+			cliConfig, err := buildServerCliConfiguration(cmd)
 			if err != nil {
 				return err
 			}
 
-			err = config.SetServerConfigDefaults(&c)
-			if err != nil {
+			if err = config.Override(cliConfig); err != nil {
 				return err
 			}
 
@@ -238,11 +237,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	return nil
 }
 
-func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) error {
+func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
+	c := &config.Configuration{}
+
 	// CONVOY_ENV
 	env, err := cmd.Flags().GetString("env")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(env) {
@@ -252,21 +253,11 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_HOST
 	host, err := cmd.Flags().GetString("host")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(host) {
 		c.Host = host
-	}
-
-	// CONVOY_SENTRY_DSN
-	sentryDsn, err := cmd.Flags().GetString("sentry")
-	if err != nil {
-		return err
-	}
-
-	if !util.IsStringEmpty(sentryDsn) {
-		c.Sentry.Dsn = sentryDsn
 	}
 
 	// CONVOY_MULTIPLE_TENANTS
@@ -274,7 +265,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if isMTSet {
 		multipleTenants, err := cmd.Flags().GetBool("multi-tenant")
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		c.MultipleTenants = multipleTenants
@@ -283,13 +274,13 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_REDIS_DSN
 	redis, err := cmd.Flags().GetString("redis")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// CONVOY_LIMITER_PROVIDER
 	rateLimiter, err := cmd.Flags().GetString("limiter")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(rateLimiter) {
@@ -302,7 +293,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_CACHE_PROVIDER
 	cache, err := cmd.Flags().GetString("cache")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(cache) {
@@ -315,7 +306,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_LOGGER_LEVEL
 	logLevel, err := cmd.Flags().GetString("log-level")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(logLevel) {
@@ -325,7 +316,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_LOGGER_PROVIDER
 	logger, err := cmd.Flags().GetString("logger")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(logger) {
@@ -337,7 +328,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if isSslSet {
 		ssl, err := cmd.Flags().GetBool("ssl")
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		c.Server.HTTP.SSL = ssl
@@ -346,7 +337,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// PORT
 	port, err := cmd.Flags().GetUint32("port")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if port != 0 {
@@ -356,7 +347,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// WORKER_PORT
 	workerPort, err := cmd.Flags().GetUint32("worker-port")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if workerPort != 0 {
@@ -366,7 +357,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SSL_KEY_FILE
 	sslKeyFile, err := cmd.Flags().GetString("ssl-key-file")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(sslKeyFile) {
@@ -376,7 +367,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SSL_CERT_FILE
 	sslCertFile, err := cmd.Flags().GetString("ssl-cert-file")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(sslCertFile) {
@@ -386,7 +377,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SMTP_PROVIDER
 	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(smtpProvider) {
@@ -396,7 +387,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SMTP_URL
 	smtpUrl, err := cmd.Flags().GetString("smtp-url")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(smtpUrl) {
@@ -406,7 +397,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SMTP_USERNAME
 	smtpUsername, err := cmd.Flags().GetString("smtp-username")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(smtpUsername) {
@@ -416,7 +407,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SMTP_PASSWORDvar configFile string
 	smtpPassword, err := cmd.Flags().GetString("smtp-password")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(smtpPassword) {
@@ -426,7 +417,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SMTP_FROM
 	smtpFrom, err := cmd.Flags().GetString("smtp-from")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(smtpFrom) {
@@ -436,7 +427,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SMTP_REPLY_TO
 	smtpReplyTo, err := cmd.Flags().GetString("smtp-reply-to")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(smtpReplyTo) {
@@ -446,7 +437,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SMTP_PORT
 	smtpPort, err := cmd.Flags().GetUint32("smtp-port")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if smtpPort != 0 {
@@ -456,7 +447,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_MAX_RESPONSE_SIZE
 	maxResponseSize, err := cmd.Flags().GetUint64("max-response-size")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if maxResponseSize != 0 {
@@ -468,7 +459,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_NEWRELIC_APP_NAME
 	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(newReplicApp) {
@@ -478,7 +469,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_NEWRELIC_LICENSE_KEY
 	newReplicKey, err := cmd.Flags().GetString("new-relic-key")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(newReplicKey) {
@@ -488,7 +479,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_SEARCH_TYPE
 	searcher, err := cmd.Flags().GetString("searcher")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(searcher) {
@@ -498,7 +489,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_TYPESENSE_HOST
 	typesenseHost, err := cmd.Flags().GetString("typesense-host")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(typesenseHost) {
@@ -508,7 +499,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_TYPESENSE_API_KEY
 	typesenseApiKey, err := cmd.Flags().GetString("typesense-api-key")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(typesenseApiKey) {
@@ -520,7 +511,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if isNRCESet {
 		newReplicConfigEnabled, err := cmd.Flags().GetBool("new-relic-config-enabled")
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
@@ -531,7 +522,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if isNRTESet {
 		newReplicTracerEnabled, err := cmd.Flags().GetBool("new-relic-tracer-enabled")
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
@@ -542,7 +533,7 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	if isNativeRealmSet {
 		nativeRealmEnabled, err := cmd.Flags().GetBool("native")
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		c.Auth.Native.Enabled = nativeRealmEnabled
@@ -551,14 +542,14 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_API_KEY_CONFIG
 	apiKeyAuthConfig, err := cmd.Flags().GetString("api-auth")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(apiKeyAuthConfig) {
 		config := config.APIKeyAuthConfig{}
 		err = config.Decode(apiKeyAuthConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		c.Auth.File.APIKey = config
@@ -567,18 +558,18 @@ func loadServerConfigFromCliFlags(cmd *cobra.Command, c *config.Configuration) e
 	// CONVOY_BASIC_AUTH_CONFIG
 	basicAuthConfig, err := cmd.Flags().GetString("basic-auth")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !util.IsStringEmpty(basicAuthConfig) {
 		config := config.BasicAuthConfig{}
 		err = config.Decode(basicAuthConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		c.Auth.File.Basic = config
 	}
 
-	return nil
+	return c, nil
 }

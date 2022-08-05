@@ -162,7 +162,7 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 		h.events <- &CLIEvent{
 			UID:              ed.UID,
 			Data:             ed.Metadata.Data,
-			ForwardedHeaders: ed.ForwardedHeaders,
+			ForwardedHeaders: ed.Headers,
 			EventType:        ed.CLIMetadata.EventType,
 			AppID:            ed.AppID,
 			DeviceID:         ed.DeviceID,

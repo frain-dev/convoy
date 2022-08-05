@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/notification"
 	"github.com/frain-dev/convoy/notification/email"
 	"github.com/frain-dev/convoy/notification/noop"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
@@ -146,8 +147,13 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 			return err
 		}
 
-		err = config.OverrideConfigWithCliFlags(cmd, &cfg)
+		// Override with CLI Flags
+		cliConfig, err := buildCliConfiguration(cmd)
 		if err != nil {
+			return err
+		}
+
+		if err = config.Override(cliConfig); err != nil {
 			return err
 		}
 
@@ -297,6 +303,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSwitchCommand())
 	cmd.AddCommand(addProjectCommand())
 	cmd.AddCommand(addListenCommand(app))
+	cmd.AddCommand(addConfigCommand(app))
 }
 
 type ConvoyCli struct {
@@ -323,4 +330,42 @@ func (c *ConvoyCli) SetArgs(args []string) {
 
 func (c *ConvoyCli) Execute() error {
 	return c.cmd.Execute()
+}
+
+func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
+	c := &config.Configuration{}
+
+	// CONVOY_DB_DSN, CONVOY_DB_TYPE
+	dbDsn, err := cmd.Flags().GetString("db")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(dbDsn) {
+		c.Database = config.DatabaseConfiguration{
+			Type: config.MongodbDatabaseProvider,
+			Dsn:  dbDsn,
+		}
+	}
+
+	// CONVOY_REDIS_DSN
+	redisDsn, err := cmd.Flags().GetString("redis")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_PROVIDER
+	queueDsn, err := cmd.Flags().GetString("queue")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(queueDsn) {
+		c.Queue.Type = config.QueueProvider(queueDsn)
+		if queueDsn == "redis" && !util.IsStringEmpty(redisDsn) {
+			c.Queue.Redis.Dsn = redisDsn
+		}
+	}
+
+	return c, nil
 }
