@@ -14,6 +14,10 @@ import { InputComponent } from 'src/app/components/input/input.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
+import { PipesModule } from 'src/app/pipes/pipes.module';
+import { CliComponent } from './cli/cli.component';
+import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 
 const routes: Routes = [
 	{
@@ -22,7 +26,26 @@ const routes: Routes = [
 	}
 ];
 @NgModule({
-	declarations: [AppDetailsComponent, SendEventComponent],
-	imports: [CommonModule, ReactiveFormsModule, FormsModule, DeleteModalModule, CardComponent, ButtonComponent, EmptyStateComponent, ListItemComponent, InputComponent, SelectComponent, ModalComponent, TooltipComponent, RouterModule.forChild(routes), CreateEndpointModule]
+	declarations: [AppDetailsComponent, SendEventComponent, CliComponent],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		FormsModule,
+		DeleteModalModule,
+		CardComponent,
+		ButtonComponent,
+		EmptyStateComponent,
+		ListItemComponent,
+		InputComponent,
+		SelectComponent,
+		ModalComponent,
+		TooltipComponent,
+		CreateEndpointModule,
+		TagComponent,
+        PipesModule,
+        EmptyStateComponent,
+        SkeletonLoaderComponent,
+		RouterModule.forChild(routes)
+	]
 })
 export class AppDetailsModule {}

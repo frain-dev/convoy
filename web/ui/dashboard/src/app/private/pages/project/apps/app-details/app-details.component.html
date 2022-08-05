@@ -1,4 +1,4 @@
-<h1 class="text-12 font-medium flex items-center mb-24px uppercase">
+<div class="text-12 font-medium flex items-center mb-24px uppercase">
 	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
@@ -12,13 +12,15 @@
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	<span class="font-medium text-primary-100">{{ appsDetailsItem?.name || 'App' }}</span>
-</h1>
+</div>
 
 <convoy-card className="p-32px mb-20px">
 	<div class="flex justify-between items-center mb-24px">
 		<h3 class="font-medium">Overview</h3>
 		<convoy-button size="sm" type="outline" [disable]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</convoy-button>
 	</div>
+
+	<!-- app details overview  -->
 	<div class="flex items-center flex-wrap justify-between mb-32px" *ngIf="isLoadingAppDetails">
 		<div>
 			<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
@@ -77,6 +79,7 @@
     </div> -->
 
 	<div class="flex flex-wrap justify-between border-t border-t-grey-10 mt-22px">
+		<!-- app endpoints  -->
 		<div
 			class="pt-32px"
 			[ngClass]="{
@@ -176,9 +179,16 @@
 					</li>
 				</ng-container>
 			</ul>
-			<convoy-empty-state imgSrc="/assets/img/empty-state-img.svg" description="No endpoint has been added for selected app yet" className="h-[20vh]" *ngIf="!isLoadingAppDetails && appsDetailsItem?.endpoints?.length === 0"></convoy-empty-state>
+
+			<convoy-empty-state
+				imgSrc="/assets/img/empty-state-img.svg"
+				description="No endpoint has been added for selected app yet"
+				className="h-[20vh]"
+				*ngIf="!isLoadingAppDetails && (!appsDetailsItem?.endpoints || appsDetailsItem?.endpoints?.length === 0)"
+			></convoy-empty-state>
 		</div>
 
+		<!-- app portal  -->
 		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
 			<div *ngIf="loadingAppPotalToken">
 				<h3 class="font-medium">App Portal</h3>
@@ -198,6 +208,7 @@
 					<div class="skeleton-loader code mt-16px"></div>
 				</ul>
 			</div>
+
 			<div *ngIf="!loadingAppPotalToken">
 				<h3 class="font-medium">App Portal</h3>
 				<ul class="mt-10px">
@@ -231,14 +242,20 @@
 	</div>
 </convoy-card>
 
+<!-- app api keys and devices list  -->
+<convoy-cli></convoy-cli>
+
+<!-- send event form  -->
 <app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
 
+<!-- create endpoint form  -->
 <convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false">
 	<ng-container modalBody>
 		<app-create-endpoint [selectedEndpoint]="selectedEndpoint" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? closeEditEndpointModal() : getAppDetails(appsDetailsItem.uid); closeEditEndpointModal()"></app-create-endpoint>
 	</ng-container>
 </convoy-modal>
 
+<!-- endpoint secret  -->
 <convoy-modal *ngIf="showEndpointSecret" title="Endpoint Secret" (closeModal)="showEndpointSecret = false">
 	<ng-container modalBody>
 		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px">
@@ -251,4 +268,5 @@
 	</ng-container>
 </convoy-modal>
 
+<!-- delete modal  -->
 <app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
