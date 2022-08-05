@@ -30,6 +30,7 @@ export class AppComponent implements OnInit {
 	isDeletingSubscription = false;
 	subscriptionId = this.route.snapshot.params.id;
 	showCreateSubscription = false;
+	showSubscriptionError = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
@@ -60,7 +61,9 @@ export class AppComponent implements OnInit {
 			this.subscriptions = subscriptions.data;
 			this.isloadingSubscriptions = false;
 			this.showCreateSubscriptionModal = false;
+			this.showSubscriptionError = false;
 		} catch (_error) {
+			this.showSubscriptionError = true;
 			this.isloadingSubscriptions = false;
 		}
 	}
