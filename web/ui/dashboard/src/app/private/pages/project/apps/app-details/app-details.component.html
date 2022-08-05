@@ -180,26 +180,21 @@
 		</div>
 
 		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
-			<div *ngIf="loadingAppPotalToken">
-				<h3 class="font-medium">App Portal</h3>
+            <h3 class="font-medium">App Portal</h3>
+			<div *ngIf="loadingAppPotalToken" >
 				<ul class="mt-10px">
-					<convoy-list-item>
+					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
 						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
 					</convoy-list-item>
-					<convoy-list-item>
+					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
 						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
 					</convoy-list-item>
-					<convoy-list-item>
-						<div class="text-14 text-grey-40 font-light">Embed Iframe portal</div>
-						<div></div>
-					</convoy-list-item>
-					<div class="skeleton-loader code mt-16px"></div>
+					<div class="bg-grey-10 animate-pulse rounded-8px w-full h-100px mt-16px"></div>
 				</ul>
 			</div>
 			<div *ngIf="!loadingAppPotalToken">
-				<h3 class="font-medium">App Portal</h3>
 				<ul class="mt-10px">
 					<convoy-list-item className="border-none !py-8px">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
