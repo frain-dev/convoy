@@ -63,7 +63,7 @@
 			</tbody>
 		</convoy-table>
 
-		<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No endpoints to show here" *ngIf="!isloadingSubscriptions && subscriptions.content.length === 0"></convoy-empty-state>
+		<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No endpoints to show here" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length === 0"></convoy-empty-state>
 	</convoy-card>
 
 	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
