@@ -29,7 +29,7 @@
 			</div>
 		</convoy-card>
 
-		<app-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
+		<app-create-source *ngIf="projectStage === 'createSource'" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
 
 		<app-create-app
 			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails.uid"

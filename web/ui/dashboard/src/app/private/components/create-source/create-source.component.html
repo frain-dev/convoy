@@ -4,22 +4,24 @@
 
 		<convoy-input type="text" autocomplete="source-name" name="name" formControlName="name" errorMessage="Enter new source name" label="Source name" placeholder="Enter source name" [required]="true"></convoy-input>
 
-		<h2 class="font-semibold mb-12px">Select source type</h2>
+		<ng-container *ngIf="privateService.activeProjectDetails.type === 'outgoing'">
+			<h2 class="font-semibold mb-12px">Select source type</h2>
 
-		<div class="grid grid-cols-2 gap-6">
-			<convoy-radio
-				*ngFor="let sourceType of sourceTypes"
-				formControlName="type"
-				[tooltipContent]="sourceType.value === 'http' ? sourceType.description : ''"
-				[label]="sourceType.viewValue"
-				[_name]="sourceType.value"
-				[value]="sourceType.value"
-				[_id]="sourceType.value"
-				[checked]="sourceForm.value.type === sourceType.value"
-				[ngClass]="{ 'pointer-events-none opacity-50': sourceType.value !== 'http' }"
-				className="mb-0"
-			></convoy-radio>
-		</div>
+			<div class="grid grid-cols-2 gap-6">
+				<convoy-radio
+					*ngFor="let sourceType of sourceTypes"
+					formControlName="type"
+					[tooltipContent]="sourceType.value === 'pub_sub' ? sourceType.description : ''"
+					[label]="sourceType.viewValue"
+					[_name]="sourceType.value"
+					[value]="sourceType.value"
+					[_id]="sourceType.value"
+					[checked]="sourceForm.value.type === sourceType.value"
+					[ngClass]="{ 'pointer-events-none opacity-50': sourceType.value !== 'pub_sub' }"
+					className="mb-0"
+				></convoy-radio>
+			</div>
+		</ng-container>
 	</convoy-card>
 
 	<div formGroupName="verifier">
@@ -70,7 +72,7 @@
 					[required]="true"
 					className="mb-0"
 				></convoy-input>
-				
+
 				<convoy-input type="text" autocomplete="secret" name="secret" formControlName="secret" errorMessage="Enter webhook signing secret" label="Webhook signing secret" placeholder="Secret goes here" [required]="true" className="mb-0"></convoy-input>
 			</div>
 		</convoy-card>

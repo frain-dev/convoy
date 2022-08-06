@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { CreateSourceService } from './create-source.service';
+import { PrivateService } from '../../private.service';
 
 @Component({
 	selector: 'app-create-source',
@@ -34,8 +35,7 @@ export class CreateSourceComponent implements OnInit {
 		})
 	});
 	sourceTypes = [
-		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Trigger webhook event from a thirdparty webhook event' },
-		{ value: 'pub_sub', viewValue: 'Pub/Sub (Coming Soon)', description: 'Trigger webhook event from your Pub/Sub messaging system' },
+		{ value: 'pub_sub', viewValue: 'Pub/Sub', description: 'Trigger webhook event from your Pub/Sub messaging system' },
 		{ value: 'db_change_stream', viewValue: 'DB Change Stream (Coming Soon)', description: 'Trigger webhook event from your DB change stream' }
 	];
 	httpTypes = [
@@ -52,10 +52,11 @@ export class CreateSourceComponent implements OnInit {
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
 
-	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private route: ActivatedRoute, public privateService: PrivateService) {}
 
 	ngOnInit(): void {
 		this.action === 'update' && this.getSourceDetails();
+		if (this.privateService.activeProjectDetails.type === 'incoming') this.sourceForm.patchValue({ type: 'http' });
 	}
 
 	async getSourceDetails() {

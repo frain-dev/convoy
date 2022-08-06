@@ -4,7 +4,6 @@ import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 
-
 export type STAGES = 'createProject' | 'createSource' | 'createApplication' | 'createSubscription';
 @Component({
 	selector: 'app-create-project',
@@ -12,7 +11,7 @@ export type STAGES = 'createProject' | 'createSource' | 'createApplication' | 'c
 	styleUrls: ['./create-project.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	projectStage: STAGES = 'createProject';
+	projectStage: STAGES = 'createSource';
 	projectStages = [
 		{ projectStage: 'Create Application', currentStage: 'pending', id: 'createApplication' },
 		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
@@ -23,7 +22,7 @@ export class CreateProjectComponent implements OnInit {
 		{ id: 'linear', type: 'Linear time retry' },
 		{ id: 'exponential', type: 'Exponential time backoff' }
 	];
-	projectType: 'incoming' | 'outgoing' = 'outgoing';
+	projectType: 'incoming' | 'outgoing' = 'incoming';
 
 	constructor(private router: Router, public privateService: PrivateService, private generalService: GeneralService) {}
 
