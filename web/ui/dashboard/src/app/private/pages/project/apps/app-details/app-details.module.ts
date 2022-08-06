@@ -14,6 +14,7 @@ import { InputComponent } from 'src/app/components/input/input.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 const routes: Routes = [
 	{
@@ -23,6 +24,6 @@ const routes: Routes = [
 ];
 @NgModule({
 	declarations: [AppDetailsComponent, SendEventComponent],
-	imports: [CommonModule, ReactiveFormsModule, FormsModule, DeleteModalModule, CardComponent, ButtonComponent, EmptyStateComponent, ListItemComponent, InputComponent, SelectComponent, ModalComponent, TooltipComponent, RouterModule.forChild(routes), CreateEndpointModule]
+	imports: [CommonModule, ReactiveFormsModule, FormsModule, DeleteModalModule, CardComponent, ButtonComponent, EmptyStateComponent, ListItemComponent, InputComponent, SelectComponent, ModalComponent, TooltipComponent, CopyButtonComponent, RouterModule.forChild(routes), CreateEndpointModule]
 })
 export class AppDetailsModule {}

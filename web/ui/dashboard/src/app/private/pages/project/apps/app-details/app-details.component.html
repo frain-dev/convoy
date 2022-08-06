@@ -214,10 +214,7 @@
 					<div class="bg-white-100 border-2 border-primary-500 rounded-[10px] p-16px mt-16px">
 						<div class="text-14 text-grey-40 overflow-x-scroll">{{ appPortalIframe }}</div>
 						<div class="flex justify-end">
-							<convoy-button type="text" size="sm" (clickItem)="copyText(appPortalLink)">
-								<img src="/assets/img/copy.svg" class="w-14px" alt="copy" />
-								<small *ngIf="textCopied">Copied!</small>
-							</convoy-button>
+                            <convoy-copy-button [text]="appPortalLink"></convoy-copy-button>
 						</div>
 					</div>
 				</ul>
@@ -238,10 +235,7 @@
 	<ng-container modalBody>
 		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px">
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecretKey }}</span>
-			<convoy-button type="text" size="sm" (clickItem)="copyText(endpointSecretKey)">
-				<img src="/assets/img/copy.svg" class="h-20px w-20px" alt="copy" />
-				<small *ngIf="textCopied">Copied!</small>
-			</convoy-button>
+			<convoy-copy-button [text]="endpointSecretKey"></convoy-copy-button>
 		</div>
 	</ng-container>
 </convoy-modal>

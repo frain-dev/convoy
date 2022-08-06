@@ -20,7 +20,6 @@ export class SubscriptionsComponent implements OnInit {
 	isLoadindingSubscriptions = false;
 	isDeletingSubscription = false;
 	showUpdateSubscriptionModal = false;
-	textCopied = false;
 	showDeleteSubscriptionModal = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
@@ -57,15 +56,8 @@ export class SubscriptionsComponent implements OnInit {
 		if (action !== 'cancel') this.generalService.showNotification({ message: `Subscription has been ${action}d successfully`, style: 'success' });
 	}
 
-	copyText(text?: string) {
-		if (!text) return;
-		const el = document.createElement('textarea');
-		el.value = text;
-		document.body.appendChild(el);
-		el.select();
-		document.execCommand('copy');
+	copyText() {
 		this.generalService.showNotification({ message: `Endpoint secret has been copied to clipboard`, style: 'info' });
-		document.body.removeChild(el);
 	}
 
 	async deleteSubscripton() {

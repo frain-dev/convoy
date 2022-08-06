@@ -26,11 +26,11 @@
 					<convoy-table-cell class="contents" className="pl-16px">{{ source.name }}</convoy-table-cell>
 					<convoy-table-cell class="contents" className="min-w-[40px]">{{ getDataReadableValue('sourceType', source.type)?.viewValue }}</convoy-table-cell>
 					<convoy-table-cell class="contents">{{ getDataReadableValue('verifier', source.verifier.type)?.viewValue }}</convoy-table-cell>
-					<convoy-table-cell class="contents" className="w-220px overflow-hidden overflow-ellipsis relative pr-16px">
-						{{ source.url }}
-						<convoy-button type="icon" size="sm" className="absolute top-[50%] translate-y-[-50%] right-2px" (click)="copyText(source.url, source.name, $event)">
-							<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
-						</convoy-button>
+					<convoy-table-cell class="contents" className="flex flex-row items-center pr-16px">
+						<div class="w-220px overflow-hidden overflow-ellipsis">
+							{{ source.url }}
+						</div>
+						<convoy-copy-button [text]="source.url" size="md" className="ml-2px" (copyText)="copyText(source.name)"></convoy-copy-button>
 					</convoy-table-cell>
 					<convoy-table-cell class="contents">{{ source.created_at | date }}</convoy-table-cell>
 					<convoy-table-cell class="contents">
