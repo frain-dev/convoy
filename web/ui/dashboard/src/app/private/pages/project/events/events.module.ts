@@ -11,6 +11,8 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { CardComponent } from 'src/app/components/card/card.component';
+import { ChartComponent } from 'src/app/components/chart/chart.component';
+import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
@@ -20,14 +22,15 @@ const routes: Routes = [{ path: '', component: EventsComponent }];
 		CommonModule,
 		ReactiveFormsModule,
 		DateFilterModule,
-		LoaderModule,
 		RouterModule.forChild(routes),
 		EventModule,
 		EventDeliveriesModule,
 		DropdownComponent,
 		ButtonComponent,
 		ListItemComponent,
-		CardComponent
+		CardComponent,
+        ChartComponent,
+        SkeletonLoaderComponent
 	],
 	providers: [DatePipe]
 })

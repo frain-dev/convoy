@@ -67,6 +67,7 @@ export class SubscriptionsComponent implements OnInit {
 			const response = await this.subscriptionsService.deleteSubscription(this.activeSubscription?.uid || '');
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
+			delete this.activeSubscription;
 			this.showDeleteSubscriptionModal = false;
 			this.isDeletingSubscription = false;
 		} catch (error) {

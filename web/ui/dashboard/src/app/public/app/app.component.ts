@@ -29,11 +29,29 @@ export class AppComponent implements OnInit {
 	showDeleteSubscriptionModal = false;
 	isDeletingSubscription = false;
 	subscriptionId = this.route.snapshot.params.id;
+	showCreateSubscription = false;
+	showSubscriptionError = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
 		this.getSubscripions();
+
+		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
+		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
+
+		switch (subscribeButtonState) {
+			case 'true':
+				this.showCreateSubscription = true;
+				break;
+			case 'false':
+				this.showCreateSubscription = false;
+				break;
+
+			default:
+				this.showCreateSubscription = true;
+				break;
+		}
 	}
 
 	async getSubscripions() {
@@ -43,7 +61,9 @@ export class AppComponent implements OnInit {
 			this.subscriptions = subscriptions.data;
 			this.isloadingSubscriptions = false;
 			this.showCreateSubscriptionModal = false;
+			this.showSubscriptionError = false;
 		} catch (_error) {
+			this.showSubscriptionError = true;
 			this.isloadingSubscriptions = false;
 		}
 	}

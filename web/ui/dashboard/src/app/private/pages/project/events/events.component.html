@@ -30,12 +30,14 @@
 </div>
 
 <convoy-card className="relative">
-	<convoy-loader id="dashboard_summary_loader" *ngIf="isloadingDashboardData"></convoy-loader>
-
 	<ul class="flex flex-wrap items-center min-h-[76px] metrics">
-		<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:210px] [background-position-y:35px]">
+		<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:160px] [background-position-y:35px] min-w-[220px]">
 			<img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
-			<div>
+			<div *ngIf="isloadingDashboardData">
+				<convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
+			</div>
+			<div *ngIf="!isloadingDashboardData">
 				<div class="text-16 font-medium">{{ dashboardData.events_sent }}</div>
 				<div class="text-grey-40 text-14">
 					<span class="font-normal">Event</span>
@@ -45,9 +47,13 @@
 			</div>
 		</li>
 
-		<li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:210px] [background-position-y:35px]">
+		<li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:160px] [background-position-y:35px] min-w-[220px]">
 			<img src="/assets/img/apps-icon.svg" class="mr-30px" alt="apps icon" />
-			<div>
+			<div *ngIf="isloadingDashboardData">
+				<convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="w-100px h-16px"></convoy-skeleton-loader>
+			</div>
+			<div *ngIf="!isloadingDashboardData">
 				<div class="text-16 font-medium">{{ dashboardData.apps }}</div>
 				<div class="text-grey-40 text-14">
 					<span class="font-normal">App</span>
@@ -57,8 +63,8 @@
 		</li>
 	</ul>
 
-	<div class="border border-t border-grey-10 p-30px">
-		<canvas id="dahboard_events_chart" width="200" height="100"></canvas>
+	<div class="border border-t border-grey-10 p-16px">
+		<convoy-chart [chartData]="chartData" [isLoading]="isloadingDashboardData"></convoy-chart>
 	</div>
 </convoy-card>
 

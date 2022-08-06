@@ -1,0 +1,66 @@
+<div class="w-full">
+	<div class="flex justify-between h-100px" *ngIf="isLoading">
+		<div class="loader mr-2px last-of-type:mr-0 flex items-end relative w-full h-full" *ngFor="let size of loaderSizes">
+			<div class="min-h-[4px] w-full bg-grey-10 rounded-4px animate-pulse hover:cursor-pointer transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
+		</div>
+	</div>
+
+	<ng-container *ngIf="!isLoading">
+		<div class="flex justify-between">
+			<div class="mr-2px last-of-type:mr-0 w-full group" *ngFor="let data of paginatedData; let i = index">
+				<div class="flex items-end h-100px hover:cursor-pointer">
+					<div [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 group-hover:bg-opacity-100' : 'bg-grey-10 group-hover:bg-grey-40'" class="min-h-[4px] w-full rounded-4px transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
+						<div
+							class="
+								absolute
+								opacity-0
+								group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto
+								pointer-events-none
+								transition-all
+								duration-300
+								bg-white-100
+								shadow-sm
+								rounded-8px
+								w-120px
+								p-14px
+								text-black text-12 text-left
+								bottom-[calc(100%+15px)]
+								left-1/2
+								-translate-x-1/2
+								z-10
+								after:content-['']
+								after:absolute
+								after:-bottom-[20px]
+								after:left-1/2
+								after:-translate-x-1/2
+								after:border-[12px] after:border-t-white-100 after:border-b-transparent after:border-x-transparent
+								after:outline-1 after:outline-grey-20
+							"
+						>
+							<h3 class="font-semibold">{{ data.label }}</h3>
+							<p class="text-14">Events: {{ data.data }}</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="line flex items-center justify-between mt-14px border-t border-grey-10 pt-4px">
+			<div class="text-grey-40 text-10">{{ paginatedData[0].label }}</div>
+			<div class="text-grey-40 text-10">{{ paginatedData[paginatedData.length - 1].label }}</div>
+		</div>
+
+		<div class="flex items-center justify-end mt-16px" [class]="pages === 1 ? 'hidden' : 'flex'">
+			<convoy-button type="outline" size="sm" className="px-4px py-4px border-primary-300" [disable]="pageNumber === 1" (click)="prevPage()">
+				<svg width="24" height="24" class="fill-primary-100">
+					<use xlink:href="#arrow-left-icon"></use>
+				</svg>
+			</convoy-button>
+			<convoy-button type="outline" size="sm" className="px-4px py-4px border-primary-300 ml-16px" [disable]="pageNumber === pages" (click)="nextPage()">
+				<svg width="24" height="24" class="fill-primary-100">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</convoy-button>
+		</div>
+	</ng-container>
+</div>
