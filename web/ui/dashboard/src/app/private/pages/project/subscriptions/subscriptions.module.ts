@@ -9,14 +9,14 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
-import { PipesModule } from 'src/app/pipes/pipes.module';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
 @NgModule({
 	declarations: [SubscriptionsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DeleteModalModule, PipesModule, ButtonComponent, ModalComponent, CardComponent, ListItemComponent, TagComponent, EmptyStateComponent, CopyButtonComponent]
+	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DeleteModalModule, StatusColorModule, ButtonComponent, ModalComponent, CardComponent, ListItemComponent, TagComponent, EmptyStateComponent, CopyButtonComponent]
 })
 export class SubscriptionsModule {}

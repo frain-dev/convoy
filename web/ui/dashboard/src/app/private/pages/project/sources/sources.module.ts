@@ -17,11 +17,31 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { SourceValueModule } from 'src/app/pipes/source-value/source-value.module';
 
 const routes: Routes = [{ path: '', component: SourcesComponent }];
 
 @NgModule({
 	declarations: [SourcesComponent],
-	imports: [CommonModule, TableLoaderModule, RouterModule.forChild(routes), CreateSourceModule, DeleteModalModule, TableHeadComponent, TableHeadCellComponent, TableRowComponent, TableCellComponent, TableComponent, TagComponent, ButtonComponent, ListItemComponent, EmptyStateComponent, CardComponent, ModalComponent, CopyButtonComponent]
+	imports: [
+		CommonModule,
+		TableLoaderModule,
+		RouterModule.forChild(routes),
+		CreateSourceModule,
+		DeleteModalModule,
+		TableHeadComponent,
+		TableHeadCellComponent,
+		TableRowComponent,
+		TableCellComponent,
+		TableComponent,
+		TagComponent,
+		ButtonComponent,
+		ListItemComponent,
+		EmptyStateComponent,
+		CardComponent,
+		ModalComponent,
+		CopyButtonComponent,
+		SourceValueModule
+	]
 })
 export class SourcesModule {}
