@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -69,7 +68,7 @@ func (c *Client) readPump() {
 			return
 		default:
 			messageType, message, err := c.conn.ReadMessage()
-			fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
+			// fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
 
 			if messageType == websocket.CloseMessage {
 				c.Close()

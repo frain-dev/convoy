@@ -106,7 +106,6 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			fmt.Printf("\n[Payload] %+v \n\n", string(j))
 			err = client.conn.WriteMessage(websocket.BinaryMessage, j)
 			if err != nil {
 				log.WithError(err).Error("failed to write event to socket")
@@ -118,16 +117,6 @@ func (h *Hub) StartEventSender() {
 }
 
 func (h *Hub) StartEventWatcher() {
-	// matchStage := bson.D{
-	// 	{Key: "$match",
-	// 		Value: bson.D{
-	// 			{Key: "cli_metadata", Value: bson.M{"$ne": nil}},
-	// 		},
-	// 	},
-	// }
-
-	// pipeline := mongo.Pipeline{matchStage}
-
 	fn := h.watchEventDeliveriesCollection()
 	err := h.watchCollectionFn(fn, mongo.Pipeline{}, m.EventDeliveryCollection, h.close)
 	if err != nil {
@@ -158,6 +147,10 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 		err = json.Unmarshal(b, &ed)
 		if err != nil {
 			return err
+		}
+
+		if ed.CLIMetadata == nil {
+			return nil
 		}
 
 		h.events <- &CLIEvent{
@@ -325,6 +318,7 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 
 	device, err := h.listen(r.Context(), group, app, listenRequest)
 	if err != nil {
+		// TODO: we don't need to do interface conversion here
 		respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 		return
 	}
@@ -396,6 +390,7 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 			GroupID:        group.UID,
 			SourceID:       listenRequest.SourceID,
 			DeviceID:       device.UID,
+			FilterConfig:   &datastore.FilterConfiguration{EventTypes: []string{"*"}},
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			Status:         datastore.ActiveSubscriptionStatus,
