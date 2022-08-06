@@ -3,7 +3,7 @@ name: DigitalOcean Deploy
 on:
     push:
         branches:
-            - raymond/feat/add-digitalocean-deployer
+            - main
     workflow_dispatch:
         inputs:
             name:
