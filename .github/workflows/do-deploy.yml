@@ -1,0 +1,34 @@
+name: DigitalOcean Deploy
+
+on:
+    push:
+        branches:
+            - raymond/feat/add-digitalocean-deployer
+    workflow_dispatch:
+        inputs:
+            name:
+                description: "DigitalOcean Deploy Name"
+                required: true
+
+jobs:
+    deploy:
+        runs-on: "ubuntu-latest"
+        env:
+            REPO: registry.digitalocean.com/convoy-deployer
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+
+            - name: Build image
+              run: docker build -f Dockerfile.server -t $REPO/convoy:edge .
+
+            - name: Install doctl
+              uses: digitalocean/action-doctl@v2
+              with:
+                  token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+            - name: Log in to DigitalOcean Container Registry with short-lived credentials
+              run: doctl registry login --expiry-seconds 60
+
+            - name: Push image to DigitalOcean Container Registry
+              run: docker push $REPO/convoy:edge
