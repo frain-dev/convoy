@@ -12,7 +12,6 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 	@Input() language?: string;
 	@Input('title') title?: string;
 	showPayload = false;
-    modifiedCode?:string;
 
 	constructor() {}
 
@@ -22,13 +21,8 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 
 	ngOnChanges(): void {
 		if (this.codeEle?.nativeElement) {
-			this.codeEle.nativeElement.textContent = this.getCodeSnippet();
+			this.codeEle.nativeElement.textContent = this.code;
 			Prism.highlightElement(this.codeEle.nativeElement);
 		}
 	}
-
-    getCodeSnippet(){
-        if(this.code && this.code.length > 400 && !this.showPayload) return this.code.substring(0, 400).concat('...')
-        return this.code;
-    }
 }
