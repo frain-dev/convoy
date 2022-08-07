@@ -1,7 +1,7 @@
 <convoy-card className="mb-20px min-h-[50vh]">
 
     <!-- tab  -->
-	<div class="flex items-center justify-center border-b border-grey-10">
+	<div class="flex items-center justify-center border-b border-grey-10 mb-18px">
 		<ul class="w-full flex items-center">
 			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
 				<convoy-button
@@ -25,12 +25,12 @@
 
 	<!-- empty state for both devices and api keys  -->
 	<ng-container *ngIf="(activeTab === 'api keys' && apiKeys?.length === 0) || (activeTab === 'devices' && devices?.length === 0)">
-		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" [heading]="activeTab === 'api keys' ? 'No api keys have been generated for this application' : 'No devices have been registered under this application'" className="h-[50vh]" id="empty-state"></convoy-empty-state>
+		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" [heading]="activeTab === 'api keys' ? 'No API keys yet' : 'No CLI devices yet'" type="table" className="h-[50vh]" id="empty-state"></convoy-empty-state>
 	</ng-container>
 
 	<!-- loader for both devices and api keys  -->
 	<ng-container *ngIf="(activeTab === 'api keys' && isFetchingApiKeys) || (activeTab === 'devices' && isFetchingDevices)">
-		<div class="flex justify-between items-center p-18px" *ngFor="let index of loaderIndex">
+		<div class="flex justify-between items-center p-22px" *ngFor="let index of loaderIndex">
 			<div>
 				<div class="flex items-center mb-8px">
 					<convoy-skeleton-loader className="h-20px w-100px"></convoy-skeleton-loader>
@@ -44,7 +44,7 @@
 
 	<!-- fetched api keys  -->
 	<ng-container *ngIf="activeTab === 'api keys' && !isFetchingApiKeys && apiKeys">
-		<div class="flex justify-between items-center p-18px" *ngFor="let key of apiKeys">
+		<div class="flex justify-between items-center p-22px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of apiKeys">
 			<div>
 				<div class="flex items-center">
 					<h3 class="font-semibold mr-14px">{{ key.name }}</h3>
@@ -57,7 +57,7 @@
 
 	<!-- fetched devices  -->
 	<ng-container *ngIf="activeTab === 'devices' && !isFetchingDevices && devices">
-		<div class="flex justify-between items-center p-18px" *ngFor="let device of devices">
+		<div class="flex justify-between items-center p-22px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let device of devices">
 			<div>
 				<div class="flex items-center">
 					<h3 class="font-semibold mr-14px">{{ device.host_name }}</h3>
