@@ -24,23 +24,23 @@
 	<div class="flex items-center flex-wrap justify-between mb-32px" *ngIf="isLoadingAppDetails">
 		<div>
 			<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">UPDATED</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">EVENTS</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">ENDPOINTS</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 	</div>
 	<div class="flex items-center justify-between flex-wrap mb-32px" *ngIf="!isLoadingAppDetails">
@@ -90,9 +90,9 @@
 			<div class="flex items-center justify-between" *ngIf="isLoadingAppDetails">
 				<h3 class="font-medium">App Event Endpoints</h3>
 				<div class="flex items-center">
-					<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
+					<convoy-skeleton-loader className="mt-10px w-100px h-20px"></convoy-skeleton-loader>
 					<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
-					<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
+					<convoy-skeleton-loader className="mt-10px w-100px h-20px"></convoy-skeleton-loader>
 				</div>
 			</div>
 			<div class="flex items-center justify-between" *ngIf="!isLoadingAppDetails">
@@ -105,41 +105,22 @@
 			</div>
 
 			<ul class="mt-20px" *ngIf="isLoadingAppDetails">
-				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px">
+				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px" *ngFor="let index of [0, 1, 2]">
 					<div>
 						<div class="flex items-center mb-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-80px h-20px ml-14px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-100px h-20px"></convoy-skeleton-loader>
+							<convoy-skeleton-loader className="bg-grey-20 w-80px h-20px ml-14px"></convoy-skeleton-loader>
 						</div>
 
 						<div class="flex items-center">
 							<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-300px h-20px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-300px h-20px"></convoy-skeleton-loader>
 						</div>
 
 						<div class="flex items-center mt-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-100px h-20px"></convoy-skeleton-loader>
 							<div class="w-[1px] h-22px mr-16px border-l border-l-grey-10"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-						</div>
-					</div>
-				</li>
-				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px">
-					<div>
-						<div class="flex items-center mb-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-80px h-20px ml-14px"></div>
-						</div>
-
-						<div class="flex items-center">
-							<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-300px h-20px"></div>
-						</div>
-
-						<div class="flex items-center mt-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-							<div class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-100px h-20px"></convoy-skeleton-loader>
 						</div>
 					</div>
 				</li>
@@ -195,11 +176,11 @@
 				<ul class="mt-10px">
 					<convoy-list-item>
 						<div class="text-14 text-grey-40 font-light">App Page</div>
-						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
+						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
 					</convoy-list-item>
 					<convoy-list-item>
 						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
-						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
+						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
 					</convoy-list-item>
 					<convoy-list-item>
 						<div class="text-14 text-grey-40 font-light">Embed Iframe portal</div>
