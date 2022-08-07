@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -69,14 +70,14 @@ func addListenCommand(a *app) *cobra.Command {
 				log.Fatal("Error marshalling json:", err)
 			}
 
-			url := "ws://localhost:5008/stream/listen"
-			conn, _, err := websocket.DefaultDialer.Dial(url, http.Header{
+			url := url.URL{Scheme: "ws", Host: "localhost:5008", Path: "/stream/listen"}
+			conn, _, err := websocket.DefaultDialer.Dial(url.String(), http.Header{
 				"Authorization": []string{"Bearer " + c.ActiveApiKey},
 				"Body":          []string{string(body)},
 			})
 
 			if err != nil {
-				log.Fatal("Error connecting to Websocket Server:", err)
+				log.Fatal("Error connecting to Websocket Server: ", err)
 			}
 
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -151,8 +152,7 @@ func receiveHandler(connection *websocket.Conn) {
 			log.Println("Error in receive:", err)
 			return
 		}
-		// do some stuff here
-		log.Printf("Received: %s\n", msg)
+
 		var event services.CLIEvent
 		err = json.Unmarshal(msg, &event)
 		if err != nil {
