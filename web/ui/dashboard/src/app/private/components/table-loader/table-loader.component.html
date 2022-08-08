@@ -1,21 +1,23 @@
-<convoy-table class="contents">
-	<convoy-table-head class="contents">
-		<convoy-table-head-cell class="contents" *ngFor="let head of tableHead; let i = index" [className]="i === 0 ? 'pl-16px uppercase' : 'uppercase'">{{ head }}</convoy-table-head-cell>
-	</convoy-table-head>
-	<tbody>
-		
-		<convoy-table-row [forDate]="true" class="contents" *ngIf="withDate">
-			<convoy-table-cell class="contents" [forDate]="true"><convoy-skeleton-loader className="w-160px h-20px"></convoy-skeleton-loader></convoy-table-cell>
-			<convoy-table-cell class="contents" [forDate]="true" *ngFor="let head of tableHead.slice(1)"></convoy-table-cell>
-		</convoy-table-row>
-		<convoy-table-row class="contents" *ngFor="let index of loaderIndex">
-			<convoy-table-cell class="contents" className="pl-16px">
-				<convoy-skeleton-loader className="w-120px h-20px"></convoy-skeleton-loader>
-			</convoy-table-cell>
-			<convoy-table-cell class="contents" *ngFor="let head of tableHead.slice(1)">
-				<convoy-skeleton-loader className="w-100px h-20px"></convoy-skeleton-loader>
-			</convoy-table-cell>
-		</convoy-table-row>
+<div class="min-h-[60vh]">
+    <convoy-table class="contents">
+        <convoy-table-head class="contents">
+            <convoy-table-head-cell class="contents" *ngFor="let head of tableHead; let i = index" [className]="i === 0 ? 'pl-16px uppercase' : 'uppercase'">{{ head }}</convoy-table-head-cell>
+        </convoy-table-head>
+        <tbody>
 
-	</tbody>
-</convoy-table>
+            <convoy-table-row [forDate]="true" class="contents" *ngIf="withDate">
+                <convoy-table-cell class="contents" [forDate]="true"><convoy-skeleton-loader className="w-160px h-20px"></convoy-skeleton-loader></convoy-table-cell>
+                <convoy-table-cell class="contents" [forDate]="true" *ngFor="let head of tableHead.slice(1)"></convoy-table-cell>
+            </convoy-table-row>
+            <convoy-table-row class="contents" *ngFor="let index of loaderIndex">
+                <convoy-table-cell class="contents" className="pl-16px">
+                    <convoy-skeleton-loader className="w-120px h-20px"></convoy-skeleton-loader>
+                </convoy-table-cell>
+                <convoy-table-cell class="contents" *ngFor="let head of tableHead.slice(1)">
+                    <convoy-skeleton-loader className="w-100px h-20px"></convoy-skeleton-loader>
+                </convoy-table-cell>
+            </convoy-table-row>
+
+        </tbody>
+    </convoy-table>
+</div>

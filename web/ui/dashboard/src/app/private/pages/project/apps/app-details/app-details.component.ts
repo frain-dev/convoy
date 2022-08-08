@@ -16,7 +16,6 @@ export class AppDetailsComponent implements OnInit {
 	showAddEndpointModal = false;
 	showAddEventModal = false;
 	showEndpointSecret = false;
-	textCopied = false;
 	isSendingNewEvent = false;
 	savingEndpoint = false;
 	loadingAppPotalToken = false;
@@ -53,20 +52,6 @@ export class AppDetailsComponent implements OnInit {
 		this.location.back();
 	}
 
-	copyText(key: string) {
-		const text = key;
-		const el = document.createElement('textarea');
-		el.value = text;
-		document.body.appendChild(el);
-		el.select();
-		document.execCommand('copy');
-		this.textCopied = true;
-		setTimeout(() => {
-			this.textCopied = false;
-		}, 3000);
-		document.body.removeChild(el);
-	}
-
 	viewEndpointSecretKey(secretKey: string) {
 		this.showEndpointSecret = !this.showEndpointSecret;
 		this.endpointSecretKey = secretKey;
@@ -88,7 +73,7 @@ export class AppDetailsComponent implements OnInit {
 
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		if (this.privateService.activeProjectDetails?.type === 'incoming') return;
-		
+
 		this.loadingAppPotalToken = true;
 
 		try {

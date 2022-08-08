@@ -38,7 +38,6 @@ export class CreateProjectComponent implements OnInit {
 	});
 	isCreatingProject = false;
 	showApiKey = false;
-	showSecretCopyText = false;
 	enableMoreConfig = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
@@ -105,20 +104,6 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
-	copyKey(key: string) {
-		const text = key;
-		const el = document.createElement('textarea');
-		el.value = text;
-		document.body.appendChild(el);
-		el.select();
-		document.execCommand('copy');
-		this.showSecretCopyText = true;
-		setTimeout(() => {
-			this.showSecretCopyText = false;
-		}, 3000);
-
-		document.body.removeChild(el);
-	}
 
 	checkProjectConfig() {
 		const configDetails = this.projectForm.value.config;

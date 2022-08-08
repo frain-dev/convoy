@@ -1,10 +1,10 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { StatusColorPipe } from './status-color/status-color.pipe';
+import { StatusColorPipe } from './status-color.pipe';
 
 @NgModule({
 	declarations: [StatusColorPipe],
 	imports: [CommonModule],
 	exports: [StatusColorPipe]
 })
-export class PipesModule {}
+export class StatusColorModule {}

@@ -2,8 +2,17 @@
 	<form [formGroup]="addNewEndpointForm">
 		<convoy-input type="text" autocomplete="description" name="description" formControlName="description" errorMessage="Please provide a description" label="Description" placeholder="Description" className="mb-24px" [required]="true"></convoy-input>
 		<convoy-input type="url" autocomplete="url" name="url" formControlName="url" errorMessage="Endpoint URL is required" label="Enter Url" placeholder="Enter url" className="mb-24px" [required]="true"></convoy-input>
-		<convoy-input type="text" autocomplete="http_timeout" name="http_timeout" formControlName="http_timeout" label="Http Timeout" placeholder="e.g 10s" tooltipContent="This specifies how long the socket stays open in the absense of a response." tooltipSize="sm"></convoy-input>
-		
+		<convoy-input type="text" autocomplete="secret" name="secret" formControlName="secret" label="Secret" placeholder="********"></convoy-input>
+		<convoy-input
+			type="text"
+			autocomplete="http_timeout"
+			name="http_timeout"
+			formControlName="http_timeout"
+			label="Http Timeout"
+			placeholder="e.g 10s"
+			tooltipContent="This specifies how long the socket stays open in the absense of a response."
+			tooltipSize="sm"
+		></convoy-input>
 	</form>
 
 	<div class="flex justify-end mt-40px">
@@ -16,5 +25,3 @@
 		</convoy-button>
 	</div>
 </div>
-
-
