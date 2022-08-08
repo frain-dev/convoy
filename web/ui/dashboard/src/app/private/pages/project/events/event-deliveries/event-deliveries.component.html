@@ -98,7 +98,7 @@
 
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
-	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
+	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0">
 		<convoy-table>
 			<convoy-table-head class="contents">
 				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventDelTableHead; let i = index">{{ head }}</convoy-table-head-cell>
@@ -146,7 +146,7 @@
 		</convoy-table>
 	</div>
 
-	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!displayedEventDeliveries || displayedEventDeliveries?.length === 0"></convoy-empty-state>
+	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)"></convoy-empty-state>
 </convoy-card>
 
 <div class="flex items-center mt-16px mb-24px">

@@ -154,6 +154,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
 	}
 
+    async onCreateEndpoint(newEndpoint: ENDPOINT) {
+		await this.getApps();
+		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
+	}
+
 	async saveSubscription() {
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }

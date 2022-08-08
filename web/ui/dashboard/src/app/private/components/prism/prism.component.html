@@ -1,8 +1,11 @@
 <div>
 	<div class="">
 		<h4 *ngIf="title" class="bg-[#f3f3f8] py-8px px-22px rounded-tl-8px rounded-tr-8px -mb-2px text-14">{{ title }}</h4>
-		<pre *ngIf="language" class="language-{{ language }} line-numbers">
+		<pre *ngIf="language" class="language-{{ language }} line-numbers" [class]="showPayload && code && code.length > 300 ? 'h-[520px] overflow-y-auto' : 'max-h-[300px] overflow-y-hidden'">
 <code #codeEle class="language-{{ language }} line-numbers">{{code}}</code>
 </pre>
+	</div>
+	<div class="flex justify-end" *ngIf="code && code.length > 300">
+		<convoy-button size="sm" type="text" (click)="showPayload = !showPayload">{{ showPayload ? 'Hide' : 'Show more' }} lines</convoy-button>
 	</div>
 </div>
