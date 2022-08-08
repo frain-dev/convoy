@@ -1,12 +1,19 @@
+## v0.6.3
+
+-   [Enhancement] change app portal url from `/app-portal` to `/app` #924
+-   [Enhancement] App portal improvements #918
+
 ## v0.6.2
-- [Feature] Added Proxy Events without Verification #906
-- [Enhancement] Reliably forward Incoming events request headers #895
-- [Bugfix] Fixed force retry bug #891 #890
+
+-   [Feature] Added Proxy Events without Verification #906
+-   [Enhancement] Reliably forward Incoming events request headers #895
+-   [Bugfix] Fixed force retry bug #891 #890
 
 ## v0.6.1
 
 -   [Bugfix] Fixed API response for force retry endpoint #892, #897
 -   [Bugfix] Changed create configuration to use a post request #896
+
 ## v0.6.0
 
 -   [Feature] Add Support for Custom Sources (Twitter, Shopify) #869, #833, #826
@@ -17,6 +24,7 @@
 -   [Enhancement] Add cancelled status on org invite #812
 -   [Bugfix] Fixed wrong FindMany query in subscriptions.go #858
 -   [Bugfix] Enabled JWT configuration with env variables #813
+
 ## v0.6.0-rc.4
 
 -   [Bugfix] Fixed bug in correctly using datastore FindMany method #856
