@@ -11,6 +11,7 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 	@Input() code?: string;
 	@Input() language?: string;
 	@Input('title') title?: string;
+	showPayload = false;
 
 	constructor() {}
 

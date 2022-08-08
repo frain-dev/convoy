@@ -14,13 +14,13 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
-import { PipesModule } from 'src/app/pipes/pipes.module';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
 import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { TableComponent } from 'src/app/components/table/table.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 
 @NgModule({
 	declarations: [EventDeliveriesComponent],
@@ -40,7 +40,7 @@ import { TableComponent } from 'src/app/components/table/table.component';
 		ListItemComponent,
 		EmptyStateComponent,
 		TagComponent,
-		PipesModule,
+		StatusColorModule,
 		ModalComponent,
 		TableHeadComponent,
 		TableHeadCellComponent,

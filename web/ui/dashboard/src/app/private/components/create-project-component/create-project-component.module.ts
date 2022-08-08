@@ -9,10 +9,11 @@ import { SelectComponent } from 'src/app/components/select/select.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
-	imports: [CommonModule, ReactiveFormsModule, TooltipComponent, RadioComponent, ToggleComponent, InputComponent, SelectComponent, ButtonComponent, ModalComponent],
+	imports: [CommonModule, ReactiveFormsModule, TooltipComponent, RadioComponent, ToggleComponent, InputComponent, SelectComponent, ButtonComponent, ModalComponent, CopyButtonComponent],
 	exports: [CreateProjectComponent]
 })
 export class CreateProjectComponentModule {}
