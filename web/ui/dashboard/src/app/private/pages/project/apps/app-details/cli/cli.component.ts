@@ -17,7 +17,7 @@ export class CliComponent implements OnInit {
 	isFetchingApiKeys = false;
 	apiKeys!: API_KEY[];
 	devices!: DEVICE[];
-    loaderIndex: number[] = [0, 1, 2];
+	loaderIndex: number[] = [0, 1, 2];
 	appId: string = this.route.snapshot.params.id;
 
 	constructor(private appDetailsService: AppDetailsService, private route: ActivatedRoute, private generalService: GeneralService) {}
@@ -60,13 +60,19 @@ export class CliComponent implements OnInit {
 
 		try {
 			const response = await this.appDetailsService.generateKey({ appId: this.appId, body: payload });
-            this.getApiKeys()
+			this.getApiKeys();
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isGeneratingNewKey = false;
 		} catch {
 			this.isGeneratingNewKey = false;
 			return;
 		}
+	}
+
+	getKeyStatus(expiryDate: Date): string {
+		const currentDate = new Date();
+		if (currentDate > new Date(expiryDate)) return 'disabled';
+		return 'active';
 	}
 
 	toggleActiveTab(tab: 'api keys' | 'devices') {

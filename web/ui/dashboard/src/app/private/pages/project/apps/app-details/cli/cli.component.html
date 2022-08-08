@@ -48,7 +48,7 @@
 			<div>
 				<div class="flex items-center">
 					<h3 class="font-semibold mr-14px">{{ key.name }}</h3>
-					<convoy-tag type="grey">{{ key.key_type }}</convoy-tag>
+					<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{getKeyStatus(key.expires_at)}}</convoy-tag>
 				</div>
 				<p class="text-grey-40 text-10 mt-8px">Created: {{ key.created_at | date: 'medium' }}</p>
 			</div>
