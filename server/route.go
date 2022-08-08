@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/tracer"
@@ -477,7 +476,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							dashboardRouter.Get("/config", a.GetAllConfigDetails)
 						})
 					})
-
 				})
 			})
 		})
@@ -568,7 +566,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		})
 	})
 
-	router.Handle("/queue/monitoring/*", a.S.Queue.(*redisqueue.RedisQueue).Monitor())
 	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 	router.HandleFunc("/*", reactRootHandler)
 
