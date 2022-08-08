@@ -1,7 +1,7 @@
 ## v0.6.3
 
 -   [Enhancement] change app portal url from `/app-portal` to `/app` #924
--   [Enhancement] App portal improments #918
+-   [Enhancement] App portal improvements #918
 
 ## v0.6.2
 
