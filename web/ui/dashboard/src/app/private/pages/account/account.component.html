@@ -1,155 +1,76 @@
-<div class="page">
-	<div class="card flex padding-all__0px">
-		<div class="sidemenu">
-			<div class="border__bottom padding-x__24px padding-top__16px padding-bottom__10px">
-				<h3>User Settings</h3>
+<convoy-page size="small">
+	<convoy-card className="flex p-0">
+		<div class="border-r border-r-grey-10 w-full max-w-[260px]">
+			<div class="border-b border-b-grey-10 px-24px pt-16px pb-10px">
+				<h3 class="font-semibold">User Settings</h3>
 			</div>
-			<ul class="sidemenu--items">
-				<li class="sidemenu--item" [ngClass]="{ active: activePage === 'profile' }">
-					<button class="button__clear" (click)="activePage = 'profile'">Profile</button>
-				</li>
-				<li class="sidemenu--item" [ngClass]="{ active: activePage === 'security' }">
-					<button class="button__clear" (click)="activePage = 'security'">Security</button>
-				</li>
-				<hr class="border__top" />
-				<li class="sidemenu--item font__14px color__danger font-weight__600" (click)="logout()">
-					<a href="">Logout</a>
+			<ul>
+				<li
+					class="my-30px mx-0 pl-22px"
+					[class]="activePage === menu ? 'relative before:absolute before:w-[3px] before:h-16px before:top-1/2 before:rounded-100px before:left-0 before:bg-primary-100 before:translate-x-0 before:-translate-y-1/2 transition-all duration-200' : ''"
+					*ngFor="let menu of userSettingsMenu"
+				>
+					<convoy-button type="text" [color]="activePage === menu ? 'primary' : 'grey'" [className]="activePage === menu ? 'font-medium capitalize' : 'capitalize'" (click)="toggleActivePage(menu)">{{ menu }}</convoy-button>
 				</li>
 			</ul>
 		</div>
 
-		<div class="page__small--view">
+		<div class="p-32px w-full">
 			<ng-container *ngIf="activePage === 'profile'">
-				<div class="flex flex__justify-between flex__align-items-center margin-bottom__28px">
-					<h3>Basic Info</h3>
+				<div class="flex justify-between items-center mb-18px">
+					<h3 class="font-semibold">Basic Info</h3>
 
-					<button class="button button__primary button__small" [disabled]="isSavingUserDetails" (click)="editBasicUserInfo()">{{ isSavingUserDetails ? 'Saving changes...' : 'Save Changes' }}</button>
+					<convoy-button size="sm" [disable]="isSavingUserDetails" (clickItem)="editBasicUserInfo()">{{ isSavingUserDetails ? 'Saving changes...' : 'Save Changes' }}</convoy-button>
 				</div>
-				<hr class="margin-bottom__22px" />
+				<hr class="mb-22px border-t border-t-grey-10" />
 
 				<form [formGroup]="editBasicInfoForm">
-					<div class="input smaller">
-						<label for="firstname">Firstname</label>
-						<input type="text" formControlName="first_name" id="firstname" required />
-						<div class="input__error input__error__danger" *ngIf="editBasicInfoForm.controls.first_name.touched && editBasicInfoForm.controls.first_name.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter your first name</span>
-						</div>
+					<div class="grid grid-cols-2 gap-4">
+						<convoy-input type="text" autocomplete="first_name" name="first_name" formControlName="first_name" errorMessage="Please enter your first name" label="Firstname" placeholder="Firstname" [required]="true"></convoy-input>
+						<convoy-input type="text" autocomplete="last_name" name="last_name" formControlName="last_name" errorMessage="Please enter your last name" label="Lastname" placeholder="Lastname" [required]="true"></convoy-input>
 					</div>
-					<div class="input smaller">
-						<label for="lastname">Lastname</label>
-						<input type="text" formControlName="last_name" id="lastname" required />
-						<div class="input__error input__error__danger" *ngIf="editBasicInfoForm.controls.last_name.touched && editBasicInfoForm.controls.last_name.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter your last name</span>
-						</div>
-					</div>
-
-					<div class="input">
-						<label for="email">Email Address</label>
-						<input type="email" formControlName="email" id="email" required />
-						<div class="input__error input__error__danger" *ngIf="editBasicInfoForm.controls.email.touched && editBasicInfoForm.controls.email.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Please enter a valid email</span>
-						</div>
-					</div>
+					<convoy-input type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Please enter a valid email" label="Email Description" placeholder="Email" [required]="true"></convoy-input>
 				</form>
 			</ng-container>
 
 			<ng-container *ngIf="activePage === 'security'">
-				<div class="flex flex__justify-between flex__align-items-center margin-bottom__28px">
-					<h2 class="color__black">Change Password</h2>
-				
-					<button class="button button__primary button__small " [disabled]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
+				<div class="flex justify-between items-center mb-28px">
+					<h2 class="font-semibold">Change Password</h2>
+					<convoy-button size="sm" [disable]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</convoy-button>
 				</div>
+
 				<form [formGroup]="changePasswordForm" (ngSubmit)="changePassword()">
-					<div class="input margin-bottom__0px">
-						<label for="current_password">Current Password</label>
-						<div class="input--password">
-							<input [type]="passwordToggle.oldPassword ? 'text' : 'password'" id="current_password" name="current_password" formControlName="current_password" />
-							<button class="input--password__view-toggle" (click)="passwordToggle.oldPassword = !passwordToggle.oldPassword" type="button">
-								<img
-									[src]="!passwordToggle.oldPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
-									[alt]="passwordToggle.oldPassword ? 'hide password icon' : 'view password icon'"
-								/>
-							</button>
-						</div>
-						<div class="input__error input__error__danger" *ngIf="changePasswordForm.controls.current_password.touched && changePasswordForm.controls.current_password.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter current password</span>
-						</div>
+					<convoy-input className="mb-0" type="password" autocomplete="current_password" name="current_password" formControlName="current_password" errorMessage="Enter current password" label="Current Password" placeholder="********" [required]="true"></convoy-input>
+					<div class="text-12 mt-8px mb-24px">
+						<span>Forgot password?</span>
+						<a class="text-primary-100 text-12 ml-8px" routerLink="/forgot-password">Reset it here</a>
 					</div>
-					<p class="color__black font__12px margin-top__8px">
-						Forgot password?
-						<button class="button__clear color__primary font__12px" type="button" [routerLink]="['/forgot-password']">Reset it here</button>
-					</p>
-					<div class="input margin-top__24px">
-						<label for="password">New Password</label>
-						<div class="input--password">
-							<input [type]="passwordToggle.newPassword ? 'text' : 'password'" id="password" name="password" formControlName="password" />
-							<button class="input--password__view-toggle" (click)="passwordToggle.newPassword = !passwordToggle.newPassword" type="button">
-								<img
-									[src]="!passwordToggle.newPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
-									[alt]="passwordToggle.newPassword ? 'hide password icon' : 'view password icon'"
-								/>
-							</button>
-						</div>
-						<div class="input__error input__error__danger" *ngIf="changePasswordForm.controls.password.touched && changePasswordForm.controls.password.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Enter new password</span>
-						</div>
-					</div>
-					<div class="input">
-						<label for="password_confirmation">Confirm Password</label>
-						<div class="input--password">
-							<input
-								[type]="passwordToggle.confirmPassword ? 'text' : 'password'"
-								id="password_confirmation"
-								name="password_confirmation"
-								autocomplete="password_confirmation"
-								formControlName="password_confirmation"
-								[ngClass]="{
-									danger:
-										(changePasswordForm.controls.password_confirmation.touched && changePasswordForm.controls.password_confirmation.invalid) ||
-										(changePasswordForm.controls.password.valid &&
-											changePasswordForm.controls.password_confirmation.valid &&
-											changePasswordForm.controls.password_confirmation.touched &&
-											!checkPassword())
-								}"
-							/>
-							<button class="input--password__view-toggle" (click)="passwordToggle.confirmPassword = !passwordToggle.confirmPassword" type="button">
-								<img
-									[src]="!passwordToggle.confirmPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'"
-									[alt]="passwordToggle.confirmPassword ? 'hide password icon' : 'view password icon'"
-								/>
-							</button>
-						</div>
-						<div class="input__error input__error__danger" *ngIf="changePasswordForm.controls.password_confirmation.touched && changePasswordForm.controls.password_confirmation.invalid">
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Confirm new password</span>
-						</div>
-						<div
-							class="input__error input__error__danger"
-							*ngIf="
-								changePasswordForm.controls.password.valid &&
-								changePasswordForm.controls.password_confirmation.valid &&
-								changePasswordForm.controls.password_confirmation.touched &&
-								!checkPassword()
-							"
-						>
-							<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-							<span>Passwords do not match</span>
-						</div>
+					<convoy-input type="password" autocomplete="password" name="password" formControlName="password" errorMessage="Enter new password" label="New Password" placeholder="********" [required]="true"></convoy-input>
+					<convoy-input
+						className="mb-0"
+						type="password"
+						autocomplete="password_confirmation"
+						name="password_confirmation"
+						formControlName="password_confirmation"
+						errorMessage="Please confirm password"
+						label="Confirm Password"
+						placeholder="********"
+						[required]="true"
+					></convoy-input>
+					<div
+						class="flex items-center text-12 text-danger-100 mt-8px mb-24px"
+						*ngIf="changePasswordForm.controls.password.valid && changePasswordForm.controls.password_confirmation.valid && changePasswordForm.controls.password_confirmation.touched && !checkPassword()"
+					>
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Password should have at least one special character</span>
 					</div>
 				</form>
 
-				<div class="alert alert__info width__100 width-unset-max">
-					<img src="/assets/img/ideas.svg" alt="idea" />
-					<div>
-						<p>Use a strong password with at least 8 characters long, and having a mixed of letters, numbers, and symbols.</p>
-					</div>
+				<div class="flex items-start bg-primary-500 border border-dashed border-primary-100 rounded-8px py-10px px-16px mt-24px w-full max-w-[576px]">
+					<img src="/assets/img/ideas.svg" alt="idea" class="mr-20px" />
+					<p class="text-14">Use a strong password with at least 8 characters long, and having a mixed of letters, numbers, and symbols.</p>
 				</div>
 			</ng-container>
 		</div>
-	</div>
-</div>
+	</convoy-card>
+</convoy-page>

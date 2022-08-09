@@ -6,9 +6,10 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/auth"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/auth"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
@@ -19,8 +20,9 @@ import (
 func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
-
-	inviteRepo := NewOrgInviteRepo(db)
+	inviteStore := getStore(db, OrganisationInvitesCollection)
+	orgStore := getStore(db, OrganisationCollection)
+	inviteRepo := NewOrgInviteRepo(db, inviteStore)
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
 		Name:           "test_org",
@@ -29,7 +31,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
+	err := NewOrgRepo(db, orgStore).CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
 	uids := []string{}
@@ -84,8 +86,8 @@ func TestCreateOrganisationInvite(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	inviteRepo := NewOrgInviteRepo(db)
-
+	inviteStore := getStore(db, OrganisationInvitesCollection)
+	inviteRepo := NewOrgInviteRepo(db, inviteStore)
 	iv := &datastore.OrganisationInvite{
 		UID:            uuid.NewString(),
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
@@ -111,15 +113,16 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	inviteRepo := NewOrgInviteRepo(db)
+	inviteStore := getStore(db, OrganisationInvitesCollection)
+	inviteRepo := NewOrgInviteRepo(db, inviteStore)
 
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -131,9 +134,9 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:   auth.RoleSuperUser,
-		Groups: []string{uuid.NewString()},
-		Apps:   nil,
+		Type:  auth.RoleSuperUser,
+		Group: uuid.NewString(),
+		App:   "",
 	}
 	status := datastore.InviteStatusAccepted
 	updatedAt := primitive.NewDateTimeFromTime(time.Now())
@@ -158,15 +161,16 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	inviteRepo := NewOrgInviteRepo(db)
+	inviteStore := getStore(db, OrganisationInvitesCollection)
+	inviteRepo := NewOrgInviteRepo(db, inviteStore)
 
 	org := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -188,14 +192,16 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	inviteRepo := NewOrgInviteRepo(db)
+	inviteStore := getStore(db, OrganisationInvitesCollection)
+	inviteRepo := NewOrgInviteRepo(db, inviteStore)
+
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -218,14 +224,16 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	inviteRepo := NewOrgInviteRepo(db)
+	inviteStore := getStore(db, OrganisationInvitesCollection)
+	inviteRepo := NewOrgInviteRepo(db, inviteStore)
+
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:   auth.RoleAdmin,
-			Groups: []string{uuid.NewString()},
+			Type:  auth.RoleAdmin,
+			Group: uuid.NewString(),
 		},
 		Status:         datastore.InviteStatusPending,
 		DocumentStatus: datastore.ActiveDocumentStatus,

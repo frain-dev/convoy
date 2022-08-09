@@ -7,16 +7,16 @@ import (
 )
 
 type OrganisationAnalytics struct {
-	orgRepo datastore.OrganisationRepository
-	client  AnalyticsClient
-	host    string
+	orgRepo    datastore.OrganisationRepository
+	client     AnalyticsClient
+	instanceID string
 }
 
-func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient, host string) *OrganisationAnalytics {
+func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *OrganisationAnalytics {
 	return &OrganisationAnalytics{
-		orgRepo: orgRepo,
-		client:  client,
-		host:    host,
+		orgRepo:    orgRepo,
+		client:     client,
+		instanceID: instanceID,
 	}
 }
 
@@ -26,7 +26,7 @@ func (o *OrganisationAnalytics) Track() error {
 		return err
 	}
 
-	return o.client.Export(o.Name(), Event{"Count": pagination.Total, "Host": o.host})
+	return o.client.Export(o.Name(), Event{"Count": pagination.Total, "instanceID": o.instanceID})
 }
 
 func (o *OrganisationAnalytics) Name() string {

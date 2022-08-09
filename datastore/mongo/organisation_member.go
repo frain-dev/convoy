@@ -3,6 +3,8 @@ package mongo
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
@@ -10,18 +12,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 type orgMemberRepo struct {
 	innerDB *mongo.Database
 	inner   *mongo.Collection
+	store   datastore.Store
 }
 
-func NewOrgMemberRepo(db *mongo.Database) datastore.OrganisationMemberRepository {
+func NewOrgMemberRepo(db *mongo.Database, store datastore.Store) datastore.OrganisationMemberRepository {
 	return &orgMemberRepo{
 		innerDB: db,
 		inner:   db.Collection(OrganisationMembersCollection),
+		store:   store,
 	}
 }
 
@@ -112,19 +115,9 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 			},
 		},
 	}
-
-	data, err := o.inner.Aggregate(ctx, mongo.Pipeline{matchStage1, sortStage, skipStage, limitStage, lookupStage, unwindStage, replaceRootStage, matchStage2})
-	if err != nil {
-		log.WithError(err).Error("failed to run user organisations aggregation")
-		return nil, datastore.PaginationData{}, err
-	}
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
 	organisations := make([]datastore.Organisation, 0)
 
-	err = data.All(ctx, &organisations)
+	err := o.store.Aggregate(ctx, mongo.Pipeline{matchStage1, sortStage, skipStage, limitStage, lookupStage, unwindStage, replaceRootStage, matchStage2}, &organisations, false)
 	if err != nil {
 		log.WithError(err).Error("failed to run user organisations aggregation")
 		return nil, datastore.PaginationData{}, err
@@ -135,28 +128,26 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	member.ID = primitive.NewObjectID()
-	_, err := o.inner.InsertOne(ctx, member)
+	err := o.store.Save(ctx, member, nil)
 	return err
 }
 
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	member.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+	update := bson.D{
 		primitive.E{Key: "role", Value: member.Role},
 		primitive.E{Key: "updated_at", Value: member.UpdatedAt},
-	}}}
+	}
 
-	_, err := o.inner.UpdateOne(ctx, bson.M{"uid": member.UID}, update)
+	err := o.store.UpdateOne(ctx, bson.M{"uid": member.UID}, update)
 	return err
 }
 
 func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID string) error {
 	update := bson.M{
-		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
-		},
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.DeletedDocumentStatus,
 	}
 
 	filter := bson.M{
@@ -164,7 +155,7 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 		"organisation_id": orgID,
 	}
 
-	_, err := o.inner.UpdateOne(ctx, filter, update)
+	err := o.store.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
@@ -181,7 +172,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, or
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	err := o.inner.FindOne(ctx, filter).Decode(&member)
+	err := o.store.FindOne(ctx, filter, nil, member)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, datastore.ErrOrgMemberNotFound
 	}
@@ -198,7 +189,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 	}
 
 	member := new(datastore.OrganisationMember)
-	err := o.inner.FindOne(ctx, filter).Decode(member)
+	err := o.store.FindOne(ctx, filter, nil, member)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, datastore.ErrOrgMemberNotFound
 	}
@@ -263,16 +254,11 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 				{Key: "email", Value: "$email"},
 			}},
 	}
+	var userMetadata []datastore.UserMetadata
 
-	data, err := o.inner.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage, projectStage1, replaceRootStage, projectStage2})
+	err := o.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage, projectStage1, replaceRootStage, projectStage2}, &userMetadata, false)
 	if err != nil {
 		log.WithError(err).Error("failed to run user metadata for organisation members aggregation")
-		return err
-	}
-
-	var userMetadata []datastore.UserMetadata
-	if err = data.All(ctx, &userMetadata); err != nil {
-		log.WithError(err).Error("failed to marshal user metadata for organisation members")
 		return err
 	}
 

@@ -7,6 +7,8 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
+
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // LoginUser
@@ -19,16 +21,16 @@ import (
 // @Success 200 {object} serverResponse{data=models.LoginUserResponse}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /auth/login [post]
-func (a *applicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	user, token, err := a.userService.LoginUser(r.Context(), &newUser)
+	user, token, err := a.S.UserService.LoginUser(r.Context(), &newUser)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -44,7 +46,7 @@ func (a *applicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		DeletedAt: user.DeletedAt,
 	}
 
-	_ = render.Render(w, r, newServerResponse("Login successful", u, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
 }
 
 // RefreshToken
@@ -57,20 +59,20 @@ func (a *applicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} serverResponse{data=models.Token}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /auth/token/refresh [post]
-func (a *applicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
 	if err := util.ReadJSON(r, &refreshToken); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	token, err := a.userService.RefreshToken(r.Context(), &refreshToken)
+	token, err := a.S.UserService.RefreshToken(r.Context(), &refreshToken)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Token refresh successful", token, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Token refresh successful", token, http.StatusOK))
 }
 
 // LogoutUser
@@ -83,20 +85,20 @@ func (a *applicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /auth/logout [post]
-func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
-	auth, err := getAuthFromRequest(r)
+func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
+	auth, err := m.GetAuthFromRequest(r)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 		return
 	}
 
-	err = a.userService.LogoutUser(auth.Token)
+	err = a.S.UserService.LogoutUser(auth.Token)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Logout successful", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Logout successful", nil, http.StatusOK))
 }
 
 // GetUser
@@ -110,14 +112,14 @@ func (a *applicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/{userID}/profile [get]
-func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
-		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("User fetched successfully", user, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("User fetched successfully", user, http.StatusOK))
 }
 
 // UpdateUser
@@ -132,27 +134,27 @@ func (a *applicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/{userID}/profile [put]
-func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var userUpdate models.UpdateUser
 	err := util.ReadJSON(r, &userUpdate)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	user, ok := getUser(r)
 	if !ok {
-		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
-	user, err = a.userService.UpdateUser(r.Context(), &userUpdate, user)
+	user, err = a.S.UserService.UpdateUser(r.Context(), &userUpdate, user)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("User updated successfully", user, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("User updated successfully", user, http.StatusOK))
 }
 
 // UpdatePassword
@@ -167,27 +169,27 @@ func (a *applicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /users/{userID}/password [put]
-func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var updatePassword models.UpdatePassword
 	err := util.ReadJSON(r, &updatePassword)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	user, ok := getUser(r)
 	if !ok {
-		_ = render.Render(w, r, newErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
-	user, err = a.userService.UpdatePassword(r.Context(), &updatePassword, user)
+	user, err = a.S.UserService.UpdatePassword(r.Context(), &updatePassword, user)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, newServerResponse("Password updated successfully", user, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Password updated successfully", user, http.StatusOK))
 
 }
 
@@ -201,22 +203,22 @@ func (a *applicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /users/forgot-password [post]
-func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPassword models.ForgotPassword
-	baseUrl := getHostFromContext(r.Context())
+	baseUrl := m.GetHostFromContext(r.Context())
 
 	err := util.ReadJSON(r, &forgotPassword)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	err = a.userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
+	err = a.S.UserService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, newServerResponse("Password reset token has been sent succesfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent succesfully", nil, http.StatusOK))
 }
 
 // ResetPassword
@@ -230,25 +232,25 @@ func (a *applicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} serverResponse{data=datastore.User}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Router /users/reset-password [post]
-func (a *applicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	var resetPassword models.ResetPassword
 	err := util.ReadJSON(r, &resetPassword)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	user, err := a.userService.ResetPassword(r.Context(), token, &resetPassword)
+	user, err := a.S.UserService.ResetPassword(r.Context(), token, &resetPassword)
 	if err != nil {
-		_ = render.Render(w, r, newServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, newServerResponse("password reset succesful", user, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("password reset succesful", user, http.StatusOK))
 }
 
 func getUser(r *http.Request) (*datastore.User, bool) {
-	authUser := getAuthUserFromContext(r.Context())
+	authUser := m.GetAuthUserFromContext(r.Context())
 	user, ok := authUser.Metadata.(*datastore.User)
 
 	return user, ok

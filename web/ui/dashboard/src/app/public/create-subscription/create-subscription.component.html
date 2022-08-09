@@ -1,7 +1,3 @@
-<div class="_overlay"></div>
-<div class="modal modal__center padding-top__36px">
-	<div class="modal--body flex flex__column flex__justify-center flex__align-items-center">
-		<h2 class="font__16px font__weight-600 margin-bottom__16px">Create Webhook Subscription</h2>
-		<app-create-subscription (onAction)="closeCreateSubscriptionModal()"></app-create-subscription>
-	</div>
-</div>
+<convoy-modal title="Create Webhook Subscription" position="center" className="px-20px max-h-[620px] overflow-auto" (closeModal)="closeCreateSubscriptionModal()">
+	<app-create-subscription (onAction)="closeCreateSubscriptionModal()"></app-create-subscription>
+</convoy-modal>

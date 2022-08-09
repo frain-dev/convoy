@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { APP } from 'src/app/models/app.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -31,7 +32,6 @@ export class EventComponent implements OnInit {
 	showEventsAppsDropdown: boolean = false;
 	isloadingEvents: boolean = false;
 	selectedEventsDateOption: string = '';
-	filteredApps!: APP[];
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
@@ -46,9 +46,10 @@ export class EventComponent implements OnInit {
 	eventsDetailsItem: any;
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-	@ViewChild('eventsTimeFilter', { static: true }) eventsTimerFilter!: TimeFilterComponent;
+	@ViewChild('timeFilter', { static: true }) timeFilter!: TimeFilterComponent;
+	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
-	@ViewChild(DateFilterComponent) dateFilterComponent!: DateFilterComponent;
+	@ViewChild(DropdownComponent) appDropdownComponent!: DropdownComponent;
 	eventsAppsFilter$!: Observable<APP[]>;
 	appPortalToken = this.route.snapshot.params?.token;
 
@@ -74,6 +75,12 @@ export class EventComponent implements OnInit {
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
+		this.appDropdownComponent.show = false;
+		this.dateFilter.clearDate();
+		this.timeFilter.filterStartHour = 0;
+		this.timeFilter.filterStartMinute = 0;
+		this.timeFilter.filterEndHour = 23;
+		this.timeFilter.filterEndMinute = 59;
 
 		switch (filterType) {
 			case 'eventsApp':
@@ -90,12 +97,11 @@ export class EventComponent implements OnInit {
 				break;
 		}
 
-		this.dateFilterComponent.dateRange.patchValue({ startDate: '', endDate: '' });
 		this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
 		this.eventsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 		this.eventApp = undefined;
 		this.eventsSearchString = undefined;
-		this.eventsTimerFilter.clearFilter();
+		this.timeFilter.clearFilter();
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
@@ -137,8 +143,8 @@ export class EventComponent implements OnInit {
 		if (dates.startDate) {
 			const hour = new Date(dates.startDate).getHours();
 			const minute = new Date(dates.startDate).getMinutes();
-			this.eventsTimerFilter.filterStartHour = hour;
-			this.eventsTimerFilter.filterStartMinute = minute;
+			this.timeFilter.filterStartHour = hour;
+			this.timeFilter.filterStartMinute = minute;
 			response.startTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:00`;
 		} else {
 			response.startTime = 'T00:00:00';
@@ -147,8 +153,8 @@ export class EventComponent implements OnInit {
 		if (dates.endDate) {
 			const hour = new Date(dates.endDate).getHours();
 			const minute = new Date(dates.endDate).getMinutes();
-			this.eventsTimerFilter.filterEndHour = hour;
-			this.eventsTimerFilter.filterEndMinute = minute;
+			this.timeFilter.filterEndHour = hour;
+			this.timeFilter.filterEndMinute = minute;
 			response.endTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:59`;
 		} else {
 			response.endTime = 'T23:59:59';
@@ -156,6 +162,7 @@ export class EventComponent implements OnInit {
 
 		return response;
 	}
+
 	// fetch filters from url
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
@@ -185,6 +192,11 @@ export class EventComponent implements OnInit {
 		this.isloadingEvents = true;
 
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
+		if (page <= 1) {
+			delete this.eventsDetailsItem;
+			this.sidebarEventDeliveries = [];
+		}
+
 		if (requestDetails?.appId) this.eventApp = requestDetails.appId;
 		if (requestDetails?.addToURL) this.addFilterToURL();
 
@@ -215,6 +227,8 @@ export class EventComponent implements OnInit {
 	}
 
 	async getEventDeliveriesForSidebar(eventId: string) {
+		this.sidebarEventDeliveries = [];
+
 		const response = await this.eventsService.getEventDeliveries({
 			eventId,
 			startDate: '',
@@ -225,6 +239,7 @@ export class EventComponent implements OnInit {
 			token: this.appPortalToken
 		});
 		this.sidebarEventDeliveries = response.data.content;
+		return;
 	}
 
 	openDeliveriesTab(eventId: string) {

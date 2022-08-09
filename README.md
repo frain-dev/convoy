@@ -26,7 +26,7 @@ Convoy includes the following features:
 - **Other features(Coming soon)**: Application Portal; enable you embed Convoy dashboard directly into your dashboard, Rate Limiting, Replay Attacks prevention, Multiple Ingest sources.
 
 ## Installation, Getting Started
-Follow the instructions on our [quick start guide](https://getconvoy.io/docs/guide) to start publishing events with Convoy.
+Follow the instructions on our [overview guide](https://getconvoy.io/docs/overview#how-to-navigate-these-docs) to start publishing events with Convoy.
 
 There are several ways of installing Convoy.
 
@@ -43,7 +43,7 @@ $ docker run \
 	-p 5005:5005 \
 	--name convoy-server \
 	-v `pwd`/convoy.json:/convoy.json \
-	packages.getconvoy.io/frain-dev/convoy:v0.4.9
+	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.6.0-rc.1
 ```
 
 You can view a sample configuration here - [convoy.json](https://github.com/frain-dev/convoy/blob/main/convoy.json.example).

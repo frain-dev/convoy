@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'convoy-app/lib/models/http.model';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { HttpService } from 'src/app/services/http/http.service';
 
@@ -18,7 +18,7 @@ export class SettingsService {
 				});
 
 				return resolve(sourceResponse);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

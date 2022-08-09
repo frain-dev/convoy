@@ -17,11 +17,13 @@ import (
 
 type eventRepo struct {
 	inner *mongo.Collection
+	store datastore.Store
 }
 
-func NewEventRepository(db *mongo.Database) datastore.EventRepository {
+func NewEventRepository(db *mongo.Database, store datastore.Store) datastore.EventRepository {
 	return &eventRepo{
 		inner: db.Collection(EventCollection),
+		store: store,
 	}
 }
 
@@ -41,7 +43,7 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 		message.UID = uuid.New().String()
 	}
 
-	_, err := db.inner.InsertOne(ctx, message)
+	err := db.store.Save(ctx, message, nil)
 	return err
 }
 
@@ -51,7 +53,7 @@ func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (in
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	count, err := db.inner.CountDocuments(ctx, filter)
+	count, err := db.store.Count(ctx, filter)
 	if err != nil {
 		log.WithError(err).Errorf("failed to count events in group %s", groupID)
 		return 0, err
@@ -59,20 +61,25 @@ func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (in
 	return count, nil
 }
 
-func (db *eventRepo) DeleteGroupEvents(ctx context.Context, groupID string) error {
+func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
 	update := bson.M{
-		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.ActiveDocumentStatus,
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.DeletedDocumentStatus,
+	}
+
+	f := bson.M{
+		"group_id":        filter.GroupID,
+		"document_status": datastore.ActiveDocumentStatus,
+		"created_at": bson.M{
+			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
+			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
 		},
 	}
 
-	filter := bson.M{"group_id": groupID}
-	_, err := db.inner.UpdateMany(ctx, filter, update)
+	err := db.store.DeleteMany(ctx, f, update, hardDelete)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -130,15 +137,11 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 		},
 	}
 	sortStage := bson.D{{Key: "$sort", Value: bson.D{primitive.E{Key: "_id", Value: 1}}}}
+	var eventsIntervals []datastore.EventInterval
 
-	data, err := db.inner.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, sortStage})
+	err := db.store.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, sortStage}, &eventsIntervals, false)
 	if err != nil {
 		log.WithError(err).Errorln("aggregate error")
-		return nil, err
-	}
-	var eventsIntervals []datastore.EventInterval
-	if err = data.All(ctx, &eventsIntervals); err != nil {
-		log.WithError(err).Error("marshal error")
 		return nil, err
 	}
 	if eventsIntervals == nil {
@@ -151,10 +154,8 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
 	m := new(datastore.Event)
 
-	filter := bson.M{"uid": id, "document_status": datastore.ActiveDocumentStatus}
+	err := db.store.FindByID(ctx, id, nil, m)
 
-	err := db.inner.FindOne(ctx, filter).
-		Decode(&m)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrEventNotFound
 	}
@@ -167,16 +168,10 @@ func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datas
 
 	filter := bson.M{"uid": bson.M{"$in": ids}, "document_status": datastore.ActiveDocumentStatus}
 
-	cursor, err := db.inner.Find(ctx, filter)
+	err := db.store.FindMany(ctx, filter, nil, nil, 0, 0, &m)
 	if err != nil {
 		return nil, err
 	}
-
-	err = cursor.All(ctx, &m)
-	if err != nil {
-		return nil, err
-	}
-
 	return m, err
 }
 

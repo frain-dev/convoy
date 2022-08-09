@@ -10,6 +10,8 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
+
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 type AuthorizedLogin struct {
@@ -23,30 +25,30 @@ type ViewableConfiguration struct {
 	Signature datastore.SignatureConfiguration `json:"signature"`
 }
 
-func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	format := "2006-01-02T15:04:05"
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
 	if len(startDate) == 0 {
-		_ = render.Render(w, r, newErrorResponse("please specify a startDate query", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("please specify a startDate query", http.StatusBadRequest))
 		return
 	}
 
 	startT, err := time.Parse(format, startDate)
 	if err != nil {
 		log.Errorln("error parsing startDate - ", err)
-		_ = render.Render(w, r, newErrorResponse("please specify a startDate in the format "+format, http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("please specify a startDate in the format "+format, http.StatusBadRequest))
 		return
 	}
 
 	period := r.URL.Query().Get("type")
 	if util.IsStringEmpty(period) {
-		_ = render.Render(w, r, newErrorResponse("please specify a type query", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("please specify a type query", http.StatusBadRequest))
 		return
 	}
 
 	if !datastore.IsValidPeriod(period) {
-		_ = render.Render(w, r, newErrorResponse("please specify a type query in (daily, weekly, monthly, yearly)", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("please specify a type query in (daily, weekly, monthly, yearly)", http.StatusBadRequest))
 		return
 	}
 
@@ -56,14 +58,14 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 	} else {
 		endT, err = time.Parse(format, endDate)
 		if err != nil {
-			_ = render.Render(w, r, newErrorResponse("please specify an endDate in the format "+format+" or none at all", http.StatusBadRequest))
+			_ = render.Render(w, r, util.NewErrorResponse("please specify an endDate in the format "+format+" or none at all", http.StatusBadRequest))
 			return
 		}
 	}
 
 	p := datastore.PeriodValues[period]
-	if err := ensurePeriod(startT, endT); err != nil {
-		_ = render.Render(w, r, newErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
+	if err := m.EnsurePeriod(startT, endT); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
 		return
 	}
 
@@ -72,33 +74,33 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	group := getGroupFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
 
 	qs := fmt.Sprintf("%v:%v:%v:%v", group.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
 	var data *models.DashboardSummary
 
-	err = a.cache.Get(r.Context(), qs, &data)
+	err = a.S.Cache.Get(r.Context(), qs, &data)
 
 	if err != nil {
 		log.Error(err)
 	}
 
 	if data != nil {
-		_ = render.Render(w, r, newServerResponse("Dashboard summary fetched successfully",
+		_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 			data, http.StatusOK))
 		return
 	}
 
-	apps, err := a.appRepo.CountGroupApplications(r.Context(), group.UID)
+	apps, err := a.S.AppService.CountGroupApplications(r.Context(), group.UID)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
 	}
 
-	eventsSent, messages, err := computeDashboardMessages(r.Context(), group.UID, a.eventRepo, searchParams, p)
+	eventsSent, messages, err := a.M.ComputeDashboardMessages(r.Context(), group.UID, searchParams, p)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 		return
 	}
 
@@ -109,31 +111,31 @@ func (a *applicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		PeriodData:   &messages,
 	}
 
-	err = a.cache.Set(r.Context(), qs, dashboard, time.Minute)
+	err = a.S.Cache.Set(r.Context(), qs, dashboard, time.Minute)
 
 	if err != nil {
 		log.Error(err)
 	}
 
-	_ = render.Render(w, r, newServerResponse("Dashboard summary fetched successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 		dashboard, http.StatusOK))
 }
 
-func (a *applicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
 
-	_ = render.Render(w, r, newServerResponse("Logged in successfully",
-		getAuthLoginFromContext(r.Context()), http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Logged in successfully",
+		m.GetAuthLoginFromContext(r.Context()), http.StatusOK))
 }
 
-func (a *applicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
 
-	g := getGroupFromContext(r.Context())
+	g := m.GetGroupFromContext(r.Context())
 
 	viewableConfig := ViewableConfiguration{
 		Strategy:  *g.Config.Strategy,
 		Signature: *g.Config.Signature,
 	}
 
-	_ = render.Render(w, r, newServerResponse("Config details fetched successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Config details fetched successfully",
 		viewableConfig, http.StatusOK))
 }

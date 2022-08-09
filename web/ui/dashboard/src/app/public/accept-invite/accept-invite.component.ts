@@ -58,6 +58,7 @@ export class AcceptInviteComponent implements OnInit {
 		if (this.userDetailsAvailable) {
 			delete this.acceptInviteForm.value.password;
 		}
+
 		this.loading = true;
 		try {
 			const response = await this.acceptInviteService.acceptInvite({ token: this.token, body: this.acceptInviteForm.value });

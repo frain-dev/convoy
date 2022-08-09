@@ -54,6 +54,7 @@ func init() {
 
 	govalidator.TagMap["supported_verifier"] = govalidator.Validator(func(verifier string) bool {
 		verifiers := map[string]bool{
+			string(datastore.NoopVerifier):      true,
 			string(datastore.HMacVerifier):      true,
 			string(datastore.BasicAuthVerifier): true,
 			string(datastore.APIKeyVerifier):    true,
@@ -83,6 +84,19 @@ func init() {
 		encoders := map[string]bool{
 			string(datastore.LinearStrategyProvider):      true,
 			string(datastore.ExponentialStrategyProvider): true,
+		}
+
+		if _, ok := encoders[encoder]; !ok {
+			return false
+		}
+
+		return true
+	})
+
+	govalidator.TagMap["supported_storage"] = govalidator.Validator(func(encoder string) bool {
+		encoders := map[string]bool{
+			string(datastore.S3):     true,
+			string(datastore.OnPrem): true,
 		}
 
 		if _, ok := encoders[encoder]; !ok {

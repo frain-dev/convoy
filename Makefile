@@ -9,11 +9,10 @@ mockgen:
 
 setup: init-hooks
 
-ui_install:
+ui_install: 
 	cd web/ui/dashboard && \
-	npm install && \
+	npm ci && \
  	 npm run build
 
 integration_tests:
 	go test -tags integration -p 1 ./...
-

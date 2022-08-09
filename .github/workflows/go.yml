@@ -51,7 +51,7 @@ jobs:
               run: go mod download && go mod verify
 
             - name: Build app to make sure there are zero issues
-              run: go build -o hookcamp ./cmd
+              run: go build -o convoy ./cmd
 
             - name: Go vet
               run: go vet ./...

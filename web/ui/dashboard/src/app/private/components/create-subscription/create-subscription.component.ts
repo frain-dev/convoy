@@ -34,15 +34,15 @@ export class CreateSubscriptionComponent implements OnInit {
 	});
 	apps!: APP[];
 	sources!: SOURCE[];
-	endPoints?: ENDPOINT[];
+	endPoints: ENDPOINT[] = [];
 	eventTags: string[] = [];
 	showCreateAppModal = false;
 	showCreateSourceModal = false;
 	showCreateEndpointModal = false;
 	enableMoreConfig = false;
 	retryLogicTypes = [
-		{ id: 'linear', type: 'Linear time retry' },
-		{ id: 'exponential', type: 'Exponential time backoff' }
+		{ uid: 'linear', name: 'Linear time retry' },
+		{ uid: 'exponential', name: 'Exponential time backoff' }
 	];
 	isCreatingSubscription = false;
 	@Output() onAction = new EventEmitter();
@@ -52,8 +52,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	subscriptionId = this.route.snapshot.params.id;
 	isloadingAppPortalAppDetails = false;
 	token: string = this.route.snapshot.params.token;
+	showError = false;
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -66,12 +67,14 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		try {
 			const apps = await this.createSubscriptionService.getAppPortalApp(this.token);
-			this.subscriptionForm.patchValue({ app_id: apps.data.uid, group_id: apps.data.group_id });
-			this.endPoints = apps.data.endpoints;
+			this.subscriptionForm.patchValue({ app_id: apps.data.uid, group_id: apps.data.group_id, type: 'outgoing' });
+			this.modifyEndpointData(apps.data.endpoints);
 			this.isloadingAppPortalAppDetails = false;
+			this.showError = false;
 			return;
 		} catch (error) {
 			this.isloadingAppPortalAppDetails = false;
+			this.showError = true;
 			return error;
 		}
 	}
@@ -85,7 +88,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			if (!this.token) this.onUpdateAppSelection();
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
-
+			if (this.token) this.projectType = 'outgoing';
 			return;
 		} catch (error) {
 			return error;
@@ -97,13 +100,15 @@ export class CreateSubscriptionComponent implements OnInit {
 			await this.getAppPortalApp();
 			return;
 		}
-		if (this.privateService.activeProjectDetails.type === 'incoming') return;
 
 		try {
 			const appsResponse = await this.privateService.getApps();
 			this.apps = appsResponse.data.content;
 
-			if (this.subscriptionForm.value.app_id) this.endPoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
+			if (this.subscriptionForm.value.app_id) {
+				const endpoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
+				this.modifyEndpointData(endpoints);
+			}
 			return;
 		} catch (error) {
 			return error;
@@ -138,9 +143,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	onUpdateAppSelection() {
+	async onUpdateAppSelection() {
+		await this.getApps();
 		const app = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id);
-		this.endPoints = app?.endpoints;
+		this.modifyEndpointData(app?.endpoints);
 	}
 
 	async onCreateSource(newSource: SOURCE) {
@@ -148,24 +154,22 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
 	}
 
+    async onCreateEndpoint(newEndpoint: ENDPOINT) {
+		await this.getApps();
+		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
+	}
+
 	async saveSubscription() {
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
+
 		if (this.projectType === 'incoming' && this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
-		if (
-			this.token &&
-			(this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('app_id')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid)
-		) {
+		if (this.token && (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('app_id')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid)) {
 			return this.subscriptionForm.markAllAsTouched();
 		}
-		if (
-			this.subscriptionForm.get('name')?.invalid ||
-			this.subscriptionForm.get('type')?.invalid ||
-			this.subscriptionForm.get('app_id')?.invalid ||
-			this.subscriptionForm.get('endpoint_id')?.invalid ||
-			this.subscriptionForm.get('group_id')?.invalid
-		) {
+
+		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('type')?.invalid || this.subscriptionForm.get('app_id')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid) {
 			return this.subscriptionForm.markAllAsTouched();
 		}
 
@@ -174,14 +178,15 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (!this.enableMoreConfig) {
 			delete subscription.alert_config;
 			delete subscription.retry_config;
+		} else {
+			this.subscriptionForm.get('alert_config.count')?.patchValue(parseInt(this.subscriptionForm.get('alert_config.count')?.value));
+			this.subscriptionForm.get('retry_config.retry_count')?.patchValue(parseInt(this.subscriptionForm.get('retry_config.retry_count')?.value));
 		}
-		this.isCreatingSubscription = true;
 
+		this.isCreatingSubscription = true;
 		try {
 			const response =
-				this.action == 'update'
-					? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token })
-					: await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
+				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
 			this.isCreatingSubscription = false;
 			this.onAction.emit(response.data);
 		} catch (error) {
@@ -192,7 +197,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	async onCreateNewApp(newApp: APP) {
 		await this.getApps();
 		this.subscriptionForm.patchValue({ app_id: newApp.uid });
-		this.onUpdateAppSelection()
+		this.onUpdateAppSelection();
 	}
 
 	removeEventTag(tag: string) {
@@ -224,5 +229,19 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	focusInput() {
 		document.getElementById('tagInput')?.focus();
+	}
+
+	modifyEndpointData(endpoints?: ENDPOINT[]) {
+		if (endpoints) {
+			const endpointData = endpoints;
+			endpointData.forEach(data => {
+				data.name = data.description;
+			});
+			this.endPoints = endpointData;
+		}
+	}
+
+	goToSubsriptionsPage() {
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
 	}
 }

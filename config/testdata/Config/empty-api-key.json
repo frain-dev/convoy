@@ -7,7 +7,7 @@
           "api_key": "",
           "role": {
             "type": "super_user",
-            "groups": ["sendcash-pay"]
+            "group": "sendcash-pay"
           }
         }
       ]

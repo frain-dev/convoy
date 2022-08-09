@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { DropdownComponent } from '../components/dropdown/dropdown.component';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
 import { PrivateService } from './private.service';
@@ -10,6 +11,8 @@ import { PrivateService } from './private.service';
 	styleUrls: ['./private.component.scss']
 })
 export class PrivateComponent implements OnInit {
+	@ViewChild('accountDropdown') dropdownComponent!: DropdownComponent;
+	@ViewChild('organisationDropdown') organisationDropdown!: DropdownComponent;
 	showDropdown = false;
 	showOrgDropdown = false;
 	showMoreDropdown = false;
@@ -42,7 +45,7 @@ export class PrivateComponent implements OnInit {
 	async getConfiguration() {
 		try {
 			const response = await this.privateService.getConfiguration();
-			if (response.data.length === 0) this.showAddAnalytics = true;
+			if (response.data.length === 0 && !this.router.url.includes('app-portal')) this.showAddAnalytics = true;
 		} catch {}
 	}
 
@@ -50,15 +53,7 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
-			const setOrg = localStorage.getItem('CONVOY_ORG');
-			if (!setOrg || setOrg === 'undefined') {
-				this.privateService.organisationDetails = this.organisations[0];
-				this.userOrganization = this.organisations[0];
-				localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
-			} else {
-				this.privateService.organisationDetails = JSON.parse(setOrg);
-				this.userOrganization = JSON.parse(setOrg);
-			}
+			this.checkForSelectedOrganisation();
 		} catch (error) {
 			return error;
 		}
@@ -70,6 +65,20 @@ export class PrivateComponent implements OnInit {
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
 		this.router.url.includes('/projects/') ? this.router.navigateByUrl('/projects') : location.reload();
+	}
+
+	checkForSelectedOrganisation() {
+		if (!this.organisations?.length) return;
+
+		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
+		if (!selectedOrganisation || selectedOrganisation === 'undefined') {
+			this.privateService.organisationDetails = this.organisations[0];
+			this.userOrganization = this.organisations[0];
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+		} else {
+			this.privateService.organisationDetails = JSON.parse(selectedOrganisation);
+			this.userOrganization = JSON.parse(selectedOrganisation);
+		}
 	}
 
 	closeAddOrganisationModal(event?: { action: 'created' | 'cancel' }) {

@@ -25,6 +25,7 @@ type EventDeliveryRepository interface {
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 	CountEventDeliveries(context.Context, string, string, string, []EventDeliveryStatus, SearchParams) (int64, error)
+	DeleteGroupEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(context.Context, string, string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
 }
 
@@ -35,7 +36,7 @@ type EventRepository interface {
 	FindEventsByIDs(context.Context, []string) ([]Event, error)
 	CountGroupMessages(ctx context.Context, groupID string) (int64, error)
 	LoadEventsPaged(context.Context, string, string, SearchParams, Pageable) ([]Event, PaginationData, error)
-	DeleteGroupEvents(context.Context, string) error
+	DeleteGroupEvents(context.Context, *EventFilter, bool) error
 }
 
 type GroupRepository interface {
@@ -95,8 +96,8 @@ type SubscriptionRepository interface {
 	LoadSubscriptionsPaged(context.Context, string, Pageable) ([]Subscription, PaginationData, error)
 	DeleteSubscription(context.Context, string, *Subscription) error
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
-	FindSubscriptionByEventType(context.Context, string, string, EventType) ([]Subscription, error)
-	FindSubscriptionBySourceIDs(context.Context, string, string) ([]Subscription, error)
+	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
+	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
 	FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]Subscription, error)
 	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
 }

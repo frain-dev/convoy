@@ -1,23 +1,29 @@
 # Releases
-This page describes the release process for hookcamp.
+
+This page describes the release process for convoy.
 
 ## How to cut an Individual release
+
 These instruction is currently only valid for this repo.
 
 ### Branch management and versioning strategy
+
 We use [Semantic Versioning](https://semver.org/).
 
 We maintain a separate branch for each minor release, named `release-<major>.<minor>`, e.g. `release-1.1`, `release-2.0`.
 
 Note that branch protection kicks in automatically for any branches whose name starts with `release-`. Never use names starting with `release-` for branches that are not release branches.
 
-The usual flow is to merge new features and changes into the main branch and to merge bug fixes into the latest release branch. Bug fixes are then merged into main from the latest release branch. The main branch should always contain all commits from the latest release branch. As long as main hasn't deviated from the release branch, new commits can also go to main, followed by merging main back into the release branch.
-
-If a bug fix got accidentally merged into main after non-bug-fix changes in main, the bug-fix commits have to be cherry-picked into the release branch, which then have to be merged back into main. Try to avoid that situation.
+- Every new feature and change should be merged into the main branch with the exception of bug fixes. This can be managed in two different ways: 
+   - Bug fixes that need to exist on the release branches should be merged to main and backported to the release branch.
+   - Bug fixes that need not exist on main should be merged to the release branch only. 
+- During a release, the release manager will ensure no PR is forgotten in the release branch.
+- In principle, we treat the main branch and release branches as divergent branches. All commits to main need not exist on the release branch and vice versa. The process above is to help to implement this principle. In cases, where it is not as straightforward to resolve, the release manager will direct based on their best sense of judgement.
 
 Maintaining the release branches for older minor releases happens on a best effort basis.
 
 ### 0. Updating dependencies
+
 A few days before a major or minor release, consider updating the dependencies.
 
 Then create a pull request against the main branch.
@@ -32,9 +38,11 @@ case, you have to create an issue or pull request in the GitHub project for
 later follow-up.
 
 #### Updating Go dependencies
+
 TBD.
 
-#### Updating React dependencies
+#### Updating Angular dependencies
+
 TBD.
 
 ### 1. Prepare your release
@@ -51,10 +59,10 @@ For release candidates still update `CHANGELOG.md`, but when you cut the final r
 
 Entries in the `CHANGELOG.md` are meant to be in this order:
 
-* `[CHANGE]`
-* `[FEATURE]`
-* `[ENHANCEMENT]`
-* `[BUGFIX]`
+-   `[CHANGE]`
+-   `[FEATURE]`
+-   `[ENHANCEMENT]`
+-   `[BUGFIX]`
 
 ### 2. Draft the new release
 
@@ -75,9 +83,16 @@ Optionally, you can use this handy `.gitconfig` alias.
 
 Then release with `git tag-release`.
 
-Once a tag is created, the release process through Github actions will take care of the rest. 
+Once a tag is created, the release process through Github actions will take care of the rest.
 
 TODO: A missing step here which should be later automated. A release needs to be created before the assets can be uploaded to match the tag. :)
 
 Finally, wait for the build step for the tag to finish. The point here is to wait for tarballs to be uploaded to the Github release and the container images to be pushed to the Docker Hub and Quay.io. Once that has happened, click _Publish release_, which will make the release publicly visible and create a GitHub notification.
 
+## Release Manager
+The release manager is the individual responsible for the release. The following are the responsibilities of the release manager: 
+
+- Decides what goes into the release and what doesn't go into the release using their best sense of judgement. He/She should ensure that features well tested and only well tested features are released.
+- Before every release minor or major release, ensure all commits have been properly cherry-picked or backported.
+- Ensure Changelog is up to date in a user readable format. That is, Changelog should be written with the end-user perspective in mind, not blindly copying commit messages. 
+- Ensure website is up to date with release documentation. 

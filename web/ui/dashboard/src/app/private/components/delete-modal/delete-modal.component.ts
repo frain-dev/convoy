@@ -10,6 +10,7 @@ export class DeleteModalComponent implements OnInit {
 	@Output() deleteData = new EventEmitter<any>();
 	@Input() isLoading: boolean = false;
 	@Input() deleteText!: string;
+	@Input() deleteButtonText!: string;
 	constructor() {}
 
 	ngOnInit(): void {}

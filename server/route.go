@@ -2,34 +2,70 @@ package server
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
-	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/logger"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/searcher"
-	"github.com/frain-dev/convoy/tracer"
-
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	limiter "github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/go-chi/chi/v5/middleware"
-
-	"github.com/go-chi/render"
+	"github.com/frain-dev/convoy/searcher"
+	"github.com/frain-dev/convoy/services"
+	"github.com/frain-dev/convoy/tracer"
+	"github.com/go-chi/chi/v5"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/go-chi/chi/v5"
 )
+
+type ApplicationHandler struct {
+	M *middleware.Middleware
+	S Services
+	R Repos
+}
+
+type Repos struct {
+	EventRepo         datastore.EventRepository
+	EventDeliveryRepo datastore.EventDeliveryRepository
+	AppRepo           datastore.ApplicationRepository
+	GroupRepo         datastore.GroupRepository
+	ApiKeyRepo        datastore.APIKeyRepository
+	SubRepo           datastore.SubscriptionRepository
+	SourceRepo        datastore.SourceRepository
+	OrgRepo           datastore.OrganisationRepository
+	OrgMemberRepo     datastore.OrganisationMemberRepository
+	OrgInviteRepo     datastore.OrganisationInviteRepository
+	UserRepo          datastore.UserRepository
+	ConfigRepo        datastore.ConfigurationRepository
+}
+
+type Services struct {
+	Queue    queue.Queuer
+	Logger   logger.Logger
+	Tracer   tracer.Tracer
+	Cache    cache.Cache
+	Limiter  limiter.RateLimiter
+	Searcher searcher.Searcher
+
+	AppService                *services.AppService
+	EventService              *services.EventService
+	GroupService              *services.GroupService
+	SecurityService           *services.SecurityService
+	SourceService             *services.SourceService
+	ConfigService             *services.ConfigService
+	UserService               *services.UserService
+	SubService                *services.SubcriptionService
+	OrganisationService       *services.OrganisationService
+	OrganisationMemberService *services.OrganisationMemberService
+	OrganisationInviteService *services.OrganisationInviteService
+}
 
 //go:embed ui/build
 var reactFS embed.FS
@@ -53,474 +89,489 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 }
 
-func buildRoutes(app *applicationHandler) http.Handler {
+func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
+	as := services.NewAppService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Cache)
+	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo)
+	gs := services.NewGroupService(r.ApiKeyRepo, r.AppRepo, r.GroupRepo, r.EventRepo, r.EventDeliveryRepo, s.Limiter, s.Cache)
+	ss := services.NewSecurityService(r.GroupRepo, r.ApiKeyRepo)
+	os := services.NewOrganisationService(r.OrgRepo, r.OrgMemberRepo)
+	rs := services.NewSubscriptionService(r.SubRepo, r.AppRepo, r.SourceRepo)
+	sos := services.NewSourceService(r.SourceRepo, s.Cache)
+	us := services.NewUserService(r.UserRepo, s.Cache, s.Queue)
+	ois := services.NewOrganisationInviteService(r.OrgRepo, r.UserRepo, r.OrgMemberRepo, r.OrgInviteRepo, s.Queue)
+	om := services.NewOrganisationMemberService(r.OrgMemberRepo)
+	cs := services.NewConfigService(r.ConfigRepo)
 
+	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
+		EventRepo:         r.EventRepo,
+		EventDeliveryRepo: r.EventDeliveryRepo,
+		AppRepo:           r.AppRepo,
+		GroupRepo:         r.GroupRepo,
+		ApiKeyRepo:        r.ApiKeyRepo,
+		SubRepo:           r.SubRepo,
+		SourceRepo:        r.SourceRepo,
+		OrgRepo:           r.OrgRepo,
+		OrgMemberRepo:     r.OrgMemberRepo,
+		OrgInviteRepo:     r.OrgInviteRepo,
+		UserRepo:          r.UserRepo,
+		ConfigRepo:        r.ConfigRepo,
+		Cache:             s.Cache,
+		Logger:            s.Logger,
+		Limiter:           s.Limiter,
+		Tracer:            s.Tracer,
+	})
+
+	return &ApplicationHandler{
+		M: m,
+		R: Repos{
+			EventRepo:         r.EventRepo,
+			EventDeliveryRepo: r.EventDeliveryRepo,
+			AppRepo:           r.AppRepo,
+			GroupRepo:         r.GroupRepo,
+			ApiKeyRepo:        r.ApiKeyRepo,
+			SubRepo:           r.SubRepo,
+			SourceRepo:        r.SourceRepo,
+			OrgRepo:           r.OrgRepo,
+			OrgMemberRepo:     r.OrgMemberRepo,
+			OrgInviteRepo:     r.OrgInviteRepo,
+			UserRepo:          r.UserRepo,
+			ConfigRepo:        r.ConfigRepo,
+		},
+		S: Services{
+			Queue:                     s.Queue,
+			Cache:                     s.Cache,
+			Searcher:                  s.Searcher,
+			Logger:                    s.Logger,
+			Tracer:                    s.Tracer,
+			Limiter:                   s.Limiter,
+			AppService:                as,
+			EventService:              es,
+			GroupService:              gs,
+			SecurityService:           ss,
+			SourceService:             sos,
+			ConfigService:             cs,
+			UserService:               us,
+			SubService:                rs,
+			OrganisationService:       os,
+			OrganisationMemberService: om,
+			OrganisationInviteService: ois,
+		},
+	}
+}
+
+func (a *ApplicationHandler) BuildRoutes() http.Handler {
 	router := chi.NewRouter()
 
-	router.Use(middleware.RequestID)
-	router.Use(middleware.Recoverer)
-	router.Use(writeRequestIDHeader)
-	router.Use(instrumentRequests(app.tracer))
-	router.Use(logHttpRequest(app.logger))
+	router.Use(chiMiddleware.RequestID)
+	router.Use(chiMiddleware.Recoverer)
+	router.Use(a.M.WriteRequestIDHeader)
+	router.Use(a.M.InstrumentRequests())
+	router.Use(a.M.LogHttpRequest())
 
 	// Ingestion API
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-
-		ingestRouter.Post("/{maskID}", app.IngestEvent)
+		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
+		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 
 		v1Router.Route("/v1", func(r chi.Router) {
-			r.Use(middleware.AllowContentType("application/json"))
-			r.Use(jsonResponse)
-			r.Use(requireAuth())
+			r.Use(chiMiddleware.AllowContentType("application/json"))
+			r.Use(a.M.JsonResponse)
+			r.Use(a.M.RequireAuth())
 
 			r.Route("/applications", func(appRouter chi.Router) {
-				appRouter.Use(requireGroup(app.groupRepo, app.cache))
-				appRouter.Use(rateLimitByGroupID(app.limiter))
-				appRouter.Use(requirePermission(auth.RoleAdmin))
+				appRouter.Use(a.M.RequireGroup())
+				appRouter.Use(a.M.RateLimitByGroupID())
+				appRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 
 				appRouter.Route("/", func(appSubRouter chi.Router) {
-					appSubRouter.Post("/", app.CreateApp)
-					appRouter.With(pagination).Get("/", app.GetApps)
+					appSubRouter.Post("/", a.CreateApp)
+					appRouter.With(a.M.Pagination).Get("/", a.GetApps)
 				})
 
 				appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-					appSubRouter.Use(requireApp(app.appRepo, app.cache))
+					appSubRouter.Use(a.M.RequireApp())
 
-					appSubRouter.Get("/", app.GetApp)
-					appSubRouter.Put("/", app.UpdateApp)
-					appSubRouter.Delete("/", app.DeleteApp)
+					appSubRouter.Get("/", a.GetApp)
+					appSubRouter.Put("/", a.UpdateApp)
+					appSubRouter.Delete("/", a.DeleteApp)
 
 					appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-						endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
-						endpointAppSubRouter.Get("/", app.GetAppEndpoints)
+						endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
+						endpointAppSubRouter.Get("/", a.GetAppEndpoints)
 
 						endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-							e.Use(requireAppEndpoint())
+							e.Use(a.M.RequireAppEndpoint())
 
-							e.Get("/", app.GetAppEndpoint)
-							e.Put("/", app.UpdateAppEndpoint)
-							e.Delete("/", app.DeleteAppEndpoint)
+							e.Get("/", a.GetAppEndpoint)
+							e.Put("/", a.UpdateAppEndpoint)
+							e.Delete("/", a.DeleteAppEndpoint)
 						})
 					})
 				})
 			})
 
 			r.Route("/events", func(eventRouter chi.Router) {
-				eventRouter.Use(requireGroup(app.groupRepo, app.cache))
-				eventRouter.Use(rateLimitByGroupID(app.limiter))
-				eventRouter.Use(requirePermission(auth.RoleAdmin))
+				eventRouter.Use(a.M.RequireGroup())
+				eventRouter.Use(a.M.RateLimitByGroupID())
+				eventRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 
-				eventRouter.With(instrumentPath("/events")).Post("/", app.CreateAppEvent)
-				eventRouter.With(pagination).Get("/", app.GetEventsPaged)
+				eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateAppEvent)
+				eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-					eventSubRouter.Use(requireEvent(app.eventRepo))
-					eventSubRouter.Get("/", app.GetAppEvent)
-					eventSubRouter.Put("/replay", app.ReplayAppEvent)
+					eventSubRouter.Use(a.M.RequireEvent())
+					eventSubRouter.Get("/", a.GetAppEvent)
+					eventSubRouter.Put("/replay", a.ReplayAppEvent)
 				})
 			})
 
 			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-				eventDeliveryRouter.Use(requireGroup(app.groupRepo, app.cache))
-				eventDeliveryRouter.Use(requirePermission(auth.RoleAdmin))
+				eventDeliveryRouter.Use(a.M.RequireGroup())
+				eventDeliveryRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 
-				eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
-				eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
-				eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
-				eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
+				eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+				eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
+				eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
+				eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
 
 				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-					eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
+					eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
 
-					eventDeliverySubRouter.Get("/", app.GetEventDelivery)
-					eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
+					eventDeliverySubRouter.Get("/", a.GetEventDelivery)
+					eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 					eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 						deliveryRouter.Use(fetchDeliveryAttempts())
 
-						deliveryRouter.Get("/", app.GetDeliveryAttempts)
-						deliveryRouter.With(requireDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetDeliveryAttempt)
+						deliveryRouter.Get("/", a.GetDeliveryAttempts)
+						deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 					})
 				})
 			})
 
 			r.Route("/security", func(securityRouter chi.Router) {
 				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
-					securitySubRouter.Use(requireGroup(app.groupRepo, app.cache))
-					securitySubRouter.Use(requirePermission(auth.RoleAdmin))
-					securitySubRouter.Use(requireApp(app.appRepo, app.cache))
-					securitySubRouter.Use(requireBaseUrl())
-					securitySubRouter.Post("/", app.CreateAppPortalAPIKey)
+					securitySubRouter.Use(a.M.RequireGroup())
+					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
+					securitySubRouter.Use(a.M.RequireApp())
+					securitySubRouter.Use(a.M.RequireBaseUrl())
+					securitySubRouter.Post("/", a.CreateAppPortalAPIKey)
 				})
 			})
 
-			r.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-				subsriptionRouter.Use(requireGroup(app.groupRepo, app.cache))
-				subsriptionRouter.Use(rateLimitByGroupID(app.limiter))
-				subsriptionRouter.Use(requirePermission(auth.RoleAdmin))
+			r.Route("/subscriptions", func(subscriptionRouter chi.Router) {
+				subscriptionRouter.Use(a.M.RequireGroup())
+				subscriptionRouter.Use(a.M.RateLimitByGroupID())
+				subscriptionRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 
-				subsriptionRouter.Post("/", app.CreateSubscription)
-				subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
-				subsriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
-				subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
-				subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
-				subsriptionRouter.Put("/{subscriptionID}/toggle_status", app.ToggleSubscriptionStatus)
+				subscriptionRouter.Post("/", a.CreateSubscription)
+				subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+				subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+				subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+				subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
+				subscriptionRouter.Put("/{subscriptionID}/toggle_status", a.ToggleSubscriptionStatus)
 			})
 
 			r.Route("/sources", func(sourceRouter chi.Router) {
-				sourceRouter.Use(requireGroup(app.groupRepo, app.cache))
-				sourceRouter.Use(requirePermission(auth.RoleAdmin))
-				sourceRouter.Use(requireBaseUrl())
+				sourceRouter.Use(a.M.RequireGroup())
+				sourceRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
+				sourceRouter.Use(a.M.RequireBaseUrl())
 
-				sourceRouter.Post("/", app.CreateSource)
-				sourceRouter.Get("/{sourceID}", app.GetSourceByID)
-				sourceRouter.With(pagination).Get("/", app.LoadSourcesPaged)
-				sourceRouter.Put("/{sourceID}", app.UpdateSource)
-				sourceRouter.Delete("/{sourceID}", app.DeleteSource)
+				sourceRouter.Post("/", a.CreateSource)
+				sourceRouter.Get("/{sourceID}", a.GetSourceByID)
+				sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
+				sourceRouter.Put("/{sourceID}", a.UpdateSource)
+				sourceRouter.Delete("/{sourceID}", a.DeleteSource)
 			})
 		})
 	})
 
 	// UI API.
 	router.Route("/ui", func(uiRouter chi.Router) {
-		uiRouter.Use(jsonResponse)
-		uiRouter.Use(setupCORS)
-		uiRouter.Use(middleware.Maybe(requireAuth(), shouldAuthRoute))
-		uiRouter.Use(requireBaseUrl())
+		uiRouter.Use(a.M.JsonResponse)
+		uiRouter.Use(a.M.SetupCORS)
+		uiRouter.Use(chiMiddleware.Maybe(a.M.RequireAuth(), middleware.ShouldAuthRoute))
+		uiRouter.Use(a.M.RequireBaseUrl())
 
-		uiRouter.Post("/organisations/process_invite", app.ProcessOrganisationMemberInvite)
-		uiRouter.Get("/users/token", app.FindUserByInviteToken)
+		uiRouter.Post("/organisations/process_invite", a.ProcessOrganisationMemberInvite)
+		uiRouter.Get("/users/token", a.FindUserByInviteToken)
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
-			userRouter.Use(requireAuthUserMetadata())
+			userRouter.Use(a.M.RequireAuthUserMetadata())
 			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
-				userSubRouter.Use(requireAuthorizedUser(app.userRepo))
-				userSubRouter.Get("/profile", app.GetUser)
-				userSubRouter.Put("/profile", app.UpdateUser)
-				userSubRouter.Put("/password", app.UpdatePassword)
+				userSubRouter.Use(a.M.RequireAuthorizedUser())
+				userSubRouter.Get("/profile", a.GetUser)
+				userSubRouter.Put("/profile", a.UpdateUser)
+				userSubRouter.Put("/password", a.UpdatePassword)
 			})
 		})
 
-		uiRouter.Post("/users/forgot-password", app.ForgotPassword)
-		uiRouter.Post("/users/reset-password", app.ResetPassword)
+		uiRouter.Post("/users/forgot-password", a.ForgotPassword)
+		uiRouter.Post("/users/reset-password", a.ResetPassword)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.Post("/login", app.LoginUser)
-			authRouter.Post("/token/refresh", app.RefreshToken)
-			authRouter.Post("/logout", app.LogoutUser)
+			authRouter.Post("/login", a.LoginUser)
+			authRouter.Post("/token/refresh", a.RefreshToken)
+			authRouter.Post("/logout", a.LogoutUser)
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
-			orgRouter.Use(requireAuthUserMetadata())
-			orgRouter.Use(requireBaseUrl())
+			orgRouter.Use(a.M.RequireAuthUserMetadata())
+			orgRouter.Use(a.M.RequireBaseUrl())
 
-			orgRouter.Post("/", app.CreateOrganisation)
-			orgRouter.With(pagination).Get("/", app.GetOrganisationsPaged)
+			orgRouter.Post("/", a.CreateOrganisation)
+			orgRouter.With(a.M.Pagination).Get("/", a.GetOrganisationsPaged)
 
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
-				orgSubRouter.Use(requireOrganisation(app.orgRepo))
-				orgSubRouter.Use(requireOrganisationMembership(app.orgMemberRepo))
+				orgSubRouter.Use(a.M.RequireOrganisation())
+				orgSubRouter.Use(a.M.RequireOrganisationMembership())
 
-				orgSubRouter.Get("/", app.GetOrganisation)
-				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateOrganisation)
-				orgSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", app.DeleteOrganisation)
+				orgSubRouter.Get("/", a.GetOrganisation)
+				orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateOrganisation)
+				orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteOrganisation)
 
 				orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
-					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", app.InviteUserToOrganisation)
-					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/resend", app.ResendOrganizationInvite)
-					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/cancel", app.CancelOrganizationInvite)
-					orgInvitesRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).With(pagination).Get("/pending", app.GetPendingOrganisationInvites)
+					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.InviteUserToOrganisation)
+					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/resend", a.ResendOrganizationInvite)
+					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/cancel", a.CancelOrganizationInvite)
+					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).With(a.M.Pagination).Get("/pending", a.GetPendingOrganisationInvites)
 				})
 
 				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
-					orgMemberRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+					orgMemberRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
 
-					orgMemberRouter.With(pagination).Get("/", app.GetOrganisationMembers)
+					orgMemberRouter.With(a.M.Pagination).Get("/", a.GetOrganisationMembers)
 
 					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
 
-						orgMemberSubRouter.Get("/", app.GetOrganisationMember)
-						orgMemberSubRouter.Put("/", app.UpdateOrganisationMember)
-						orgMemberSubRouter.Delete("/", app.DeleteOrganisationMember)
+						orgMemberSubRouter.Get("/", a.GetOrganisationMember)
+						orgMemberSubRouter.Put("/", a.UpdateOrganisationMember)
+						orgMemberSubRouter.Delete("/", a.DeleteOrganisationMember)
 
 					})
 				})
 
 				orgSubRouter.Route("/security", func(securityRouter chi.Router) {
-					securityRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+					securityRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
 
-					securityRouter.Post("/keys", app.CreateAPIKey)
-					securityRouter.With(pagination).Get("/keys", app.GetAPIKeys)
-					securityRouter.Get("/keys/{keyID}", app.GetAPIKeyByID)
-					securityRouter.Put("/keys/{keyID}", app.UpdateAPIKey)
-					securityRouter.Put("/keys/{keyID}/revoke", app.RevokeAPIKey)
+					securityRouter.Post("/keys", a.CreateAPIKey)
+					securityRouter.With(a.M.Pagination).Get("/keys", a.GetAPIKeys)
+					securityRouter.Get("/keys/{keyID}", a.GetAPIKeyByID)
+					securityRouter.Put("/keys/{keyID}", a.UpdateAPIKey)
+					securityRouter.Put("/keys/{keyID}/revoke", a.RevokeAPIKey)
 				})
 
 				orgSubRouter.Route("/groups", func(groupRouter chi.Router) {
 					groupRouter.Route("/", func(orgSubRouter chi.Router) {
-						groupRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", app.CreateGroup)
-						groupRouter.Get("/", app.GetGroups)
+						groupRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateGroup)
+						groupRouter.Get("/", a.GetGroups)
 					})
 
 					groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
-						groupSubRouter.Use(requireGroup(app.groupRepo, app.cache))
-						groupSubRouter.Use(rateLimitByGroupID(app.limiter))
-						groupSubRouter.Use(requireOrganisationGroupMember())
+						groupSubRouter.Use(a.M.RequireGroup())
+						groupSubRouter.Use(a.M.RateLimitByGroupID())
+						groupSubRouter.Use(a.M.RequireOrganisationGroupMember())
 
-						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", app.GetGroup)
-						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", app.UpdateGroup)
-						groupSubRouter.With(requireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", app.DeleteGroup)
+						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", a.GetGroup)
+						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateGroup)
+						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteGroup)
 
 						groupSubRouter.Route("/apps", func(appRouter chi.Router) {
-							appRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+							appRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
 
 							appRouter.Route("/", func(appSubRouter chi.Router) {
-								appSubRouter.Post("/", app.CreateApp)
-								appRouter.With(pagination).Get("/", app.GetApps)
+								appSubRouter.Post("/", a.CreateApp)
+								appRouter.With(a.M.Pagination).Get("/", a.GetApps)
 							})
 
 							appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-								appSubRouter.Use(requireApp(app.appRepo, app.cache))
-								appSubRouter.Get("/", app.GetApp)
-								appSubRouter.Put("/", app.UpdateApp)
-								appSubRouter.Delete("/", app.DeleteApp)
+								appSubRouter.Use(a.M.RequireApp())
+								appSubRouter.Get("/", a.GetApp)
+								appSubRouter.Put("/", a.UpdateApp)
+								appSubRouter.Delete("/", a.DeleteApp)
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
-									keySubRouter.Use(requireBaseUrl())
-									keySubRouter.Post("/", app.CreateAppPortalAPIKey)
+									keySubRouter.Use(a.M.RequireBaseUrl())
+									keySubRouter.Post("/", a.CreateAppPortalAPIKey)
 								})
 
 								appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-									endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
-									endpointAppSubRouter.Get("/", app.GetAppEndpoints)
+									endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
+									endpointAppSubRouter.Get("/", a.GetAppEndpoints)
 
 									endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-										e.Use(requireAppEndpoint())
+										e.Use(a.M.RequireAppEndpoint())
 
-										e.Get("/", app.GetAppEndpoint)
-										e.Put("/", app.UpdateAppEndpoint)
-										e.Delete("/", app.DeleteAppEndpoint)
+										e.Get("/", a.GetAppEndpoint)
+										e.Put("/", a.UpdateAppEndpoint)
+										e.Delete("/", a.DeleteAppEndpoint)
 									})
 								})
 							})
 						})
 
 						groupSubRouter.Route("/events", func(eventRouter chi.Router) {
-							eventRouter.Use(requireOrganisationMemberRole(auth.RoleAdmin))
+							eventRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
-							eventRouter.Post("/", app.CreateAppEvent)
-							eventRouter.With(pagination).Get("/", app.GetEventsPaged)
+							eventRouter.Post("/", a.CreateAppEvent)
+							eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-								eventSubRouter.Use(requireEvent(app.eventRepo))
-								eventSubRouter.Get("/", app.GetAppEvent)
-								eventSubRouter.Put("/replay", app.ReplayAppEvent)
+								eventSubRouter.Use(a.M.RequireEvent())
+								eventSubRouter.Get("/", a.GetAppEvent)
+								eventSubRouter.Put("/replay", a.ReplayAppEvent)
 							})
 						})
 
 						groupSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-							eventDeliveryRouter.Use(requireOrganisationMemberRole(auth.RoleSuperUser))
+							eventDeliveryRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
 
-							eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
-							eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
-							eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
-							eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
+							eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+							eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
+							eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
+							eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-								eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
+								eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
 
-								eventDeliverySubRouter.Get("/", app.GetEventDelivery)
-								eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
+								eventDeliverySubRouter.Get("/", a.GetEventDelivery)
+								eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 								eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 									deliveryRouter.Use(fetchDeliveryAttempts())
 
-									deliveryRouter.Get("/", app.GetDeliveryAttempts)
-									deliveryRouter.With(requireDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetDeliveryAttempt)
+									deliveryRouter.Get("/", a.GetDeliveryAttempts)
+									deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 								})
 							})
 						})
 
 						groupSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-							subscriptionRouter.Use(requireOrganisationMemberRole(auth.RoleAdmin))
+							subscriptionRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
-							subscriptionRouter.Post("/", app.CreateSubscription)
-							subscriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
-							subscriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
-							subscriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
-							subscriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+							subscriptionRouter.Post("/", a.CreateSubscription)
+							subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+							subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+							subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+							subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
 						})
 
 						groupSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-							sourceRouter.Use(requireOrganisationMemberRole(auth.RoleAdmin))
-							sourceRouter.Use(requireBaseUrl())
+							sourceRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
+							sourceRouter.Use(a.M.RequireBaseUrl())
 
-							sourceRouter.Post("/", app.CreateSource)
-							sourceRouter.Get("/{sourceID}", app.GetSourceByID)
-							sourceRouter.With(pagination).Get("/", app.LoadSourcesPaged)
-							sourceRouter.Put("/{sourceID}", app.UpdateSource)
-							sourceRouter.Delete("/{sourceID}", app.DeleteSource)
+							sourceRouter.Post("/", a.CreateSource)
+							sourceRouter.Get("/{sourceID}", a.GetSourceByID)
+							sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
+							sourceRouter.Put("/{sourceID}", a.UpdateSource)
+							sourceRouter.Delete("/{sourceID}", a.DeleteSource)
 						})
 
 						groupSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
-							dashboardRouter.Get("/summary", app.GetDashboardSummary)
-							dashboardRouter.Get("/config", app.GetAllConfigDetails)
+							dashboardRouter.Get("/summary", a.GetDashboardSummary)
+							dashboardRouter.Get("/config", a.GetAllConfigDetails)
 						})
 					})
-
 				})
 			})
 		})
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
-			configRouter.Use(requireAuthUserMetadata())
+			configRouter.Use(a.M.RequireAuthUserMetadata())
 
-			configRouter.Get("/", app.LoadConfiguration)
-			configRouter.Post("/", app.CreateConfiguration)
+			configRouter.Get("/", a.LoadConfiguration)
+			configRouter.Post("/", a.CreateConfiguration)
+			configRouter.Put("/", a.UpdateConfiguration)
+
 		})
 	})
 
 	//App Portal API.
 	router.Route("/portal", func(portalRouter chi.Router) {
-		portalRouter.Use(jsonResponse)
-		portalRouter.Use(setupCORS)
-		portalRouter.Use(requireAuth())
-		portalRouter.Use(requireGroup(app.groupRepo, app.cache))
-		portalRouter.Use(requireAppID())
+		portalRouter.Use(a.M.JsonResponse)
+		portalRouter.Use(a.M.SetupCORS)
+		portalRouter.Use(a.M.RequireAuth())
+		portalRouter.Use(a.M.RequireGroup())
+		portalRouter.Use(a.M.RequireAppID())
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Use(requireAppPortalApplication(app.appRepo))
-			appRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
+			appRouter.Use(a.M.RequireAppPortalApplication())
+			appRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
-			appRouter.Get("/", app.GetApp)
+			appRouter.Get("/", a.GetApp)
 
 			appRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-				endpointAppSubRouter.Get("/", app.GetAppEndpoints)
-				endpointAppSubRouter.Post("/", app.CreateAppEndpoint)
+				endpointAppSubRouter.Get("/", a.GetAppEndpoints)
+				endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
 
 				endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-					e.Use(requireAppEndpoint())
+					e.Use(a.M.RequireAppEndpoint())
 
-					e.Get("/", app.GetAppEndpoint)
-					e.Put("/", app.UpdateAppEndpoint)
+					e.Get("/", a.GetAppEndpoint)
+					e.Put("/", a.UpdateAppEndpoint)
 				})
 			})
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Use(requireAppPortalApplication(app.appRepo))
-			eventRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
+			eventRouter.Use(a.M.RequireAppPortalApplication())
+			eventRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
-			eventRouter.With(pagination).Get("/", app.GetEventsPaged)
+			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-				eventSubRouter.Use(requireEvent(app.eventRepo))
-				eventSubRouter.Get("/", app.GetAppEvent)
-				eventSubRouter.Put("/replay", app.ReplayAppEvent)
+				eventSubRouter.Use(a.M.RequireEvent())
+				eventSubRouter.Get("/", a.GetAppEvent)
+				eventSubRouter.Put("/replay", a.ReplayAppEvent)
 			})
 		})
 
 		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-			subsriptionRouter.Use(requireAppPortalApplication(app.appRepo))
-			subsriptionRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
+			subsriptionRouter.Use(a.M.RequireAppPortalApplication())
+			subsriptionRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
-			subsriptionRouter.Post("/", app.CreateSubscription)
-			subsriptionRouter.With(pagination).Get("/", app.GetSubscriptions)
-			subsriptionRouter.Delete("/{subscriptionID}", app.DeleteSubscription)
-			subsriptionRouter.Get("/{subscriptionID}", app.GetSubscription)
-			subsriptionRouter.Put("/{subscriptionID}", app.UpdateSubscription)
+			subsriptionRouter.Post("/", a.CreateSubscription)
+			subsriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+			subsriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+			subsriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+			subsriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
 		})
 
 		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.Use(requireAppPortalApplication(app.appRepo))
-			eventDeliveryRouter.Use(requireAppPortalPermission(auth.RoleAdmin))
+			eventDeliveryRouter.Use(a.M.RequireAppPortalApplication())
+			eventDeliveryRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
-			eventDeliveryRouter.With(pagination).Get("/", app.GetEventDeliveriesPaged)
-			eventDeliveryRouter.Post("/forceresend", app.ForceResendEventDeliveries)
-			eventDeliveryRouter.Post("/batchretry", app.BatchRetryEventDelivery)
-			eventDeliveryRouter.Get("/countbatchretryevents", app.CountAffectedEventDeliveries)
+			eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+			eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
+			eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
+			eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-				eventDeliverySubRouter.Use(requireEventDelivery(app.eventDeliveryRepo, app.appRepo, app.eventRepo))
+				eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
 
-				eventDeliverySubRouter.Get("/", app.GetEventDelivery)
-				eventDeliverySubRouter.Put("/resend", app.ResendEventDelivery)
+				eventDeliverySubRouter.Get("/", a.GetEventDelivery)
+				eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 					deliveryRouter.Use(fetchDeliveryAttempts())
 
-					deliveryRouter.Get("/", app.GetDeliveryAttempts)
-					deliveryRouter.With(requireDeliveryAttempt()).Get("/{deliveryAttemptID}", app.GetDeliveryAttempt)
+					deliveryRouter.Get("/", a.GetDeliveryAttempts)
+					deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 				})
 			})
 		})
 	})
 
-	router.Handle("/queue/monitoring/*", app.queue.(*redisqueue.RedisQueue).Monitor())
-	router.Handle("/metrics", promhttp.HandlerFor(Reg, promhttp.HandlerOpts{}))
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		_ = render.Render(w, r, newServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
-	})
+	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 	router.HandleFunc("/*", reactRootHandler)
 
+	metrics.RegisterQueueMetrics(a.S.Queue)
+	metrics.RegisterDBMetrics(a.R.EventDeliveryRepo)
+	prometheus.MustRegister(metrics.RequestDuration())
+
 	return router
-}
-
-func New(cfg config.Configuration,
-	eventRepo datastore.EventRepository,
-	eventDeliveryRepo datastore.EventDeliveryRepository,
-	appRepo datastore.ApplicationRepository,
-	apiKeyRepo datastore.APIKeyRepository,
-	subRepo datastore.SubscriptionRepository,
-	groupRepo datastore.GroupRepository,
-	orgRepo datastore.OrganisationRepository,
-	orgMemberRepo datastore.OrganisationMemberRepository,
-	orgInviteRepo datastore.OrganisationInviteRepository,
-	sourceRepo datastore.SourceRepository,
-	userRepo datastore.UserRepository,
-	configRepo datastore.ConfigurationRepository,
-	queue queue.Queuer,
-	logger logger.Logger,
-	tracer tracer.Tracer,
-	cache cache.Cache,
-	limiter limiter.RateLimiter,
-	searcher searcher.Searcher,
-) *http.Server {
-
-	app := newApplicationHandler(
-		eventRepo,
-		eventDeliveryRepo,
-		appRepo,
-		groupRepo,
-		apiKeyRepo,
-		subRepo,
-		sourceRepo,
-		orgRepo,
-		orgMemberRepo,
-		orgInviteRepo,
-		userRepo,
-		configRepo,
-		queue,
-		logger,
-		tracer,
-		cache,
-		limiter,
-		searcher,
-	)
-
-	srv := &http.Server{
-		Handler:      buildRoutes(app),
-		ReadTimeout:  time.Second * 30,
-		WriteTimeout: time.Second * 30,
-		Addr:         fmt.Sprintf(":%d", cfg.Server.HTTP.Port),
-	}
-
-	RegisterQueueMetrics(app.queue, cfg)
-	RegisterDBMetrics(app)
-	prometheus.MustRegister(requestDuration)
-	return srv
 }

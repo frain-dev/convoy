@@ -3,6 +3,7 @@ package typesense
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -163,5 +164,28 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 		return err
 	}
 
+	return nil
+}
+
+func (t *Typesense) Remove(collection string, f *datastore.Filter) error {
+	filterByBuilder := new(strings.Builder)
+
+	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", f.Group.UID))
+
+	// CreatedAtEnd and CreatedAtStart are in epoch seconds, but the search records are indexed in milliseconds
+	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart*1000, f.SearchParams.CreatedAtEnd*1000))
+
+	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart*1000, f.SearchParams.CreatedAtEnd*1000))
+	filterBy := filterByBuilder.String()
+	batchsize := 100
+
+	filter := &api.DeleteDocumentsParams{
+		FilterBy:  &filterBy,
+		BatchSize: &batchsize}
+	c, err := t.client.Collection(collection).Documents().Delete(filter)
+	if err != nil {
+		return err
+	}
+	log.Printf("Num of docs deleted %d", c)
 	return nil
 }

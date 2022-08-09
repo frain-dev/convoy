@@ -8,6 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
+	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -19,9 +23,9 @@ import (
 
 type ConfigurationIntegrationTestSuite struct {
 	suite.Suite
-	DB              datastore.DatabaseClient
+	DB              convoyMongo.Client
 	Router          http.Handler
-	ConvoyApp       *applicationHandler
+	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
 	DefaultGroup    *datastore.Group
@@ -30,8 +34,8 @@ type ConfigurationIntegrationTestSuite struct {
 
 func (c *ConfigurationIntegrationTestSuite) SetupSuite() {
 	c.DB = getDB()
-	c.ConvoyApp = buildApplication()
-	c.Router = buildRoutes(c.ConvoyApp)
+	c.ConvoyApp = buildServer()
+	c.Router = c.ConvoyApp.BuildRoutes()
 }
 
 func (c *ConfigurationIntegrationTestSuite) SetupTest() {
@@ -57,11 +61,12 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(c.T(), err)
 
-	initRealmChain(c.T(), c.DB.APIRepo(), c.DB.UserRepo(), c.ConvoyApp.cache)
+	initRealmChain(c.T(), c.DB.APIRepo(), c.DB.UserRepo(), c.ConvoyApp.S.Cache)
 }
 
 func (c *ConfigurationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(c.DB)
+	metrics.Reset()
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
@@ -88,6 +93,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 	require.NotEmpty(c.T(), newConfig[0].UID)
 	require.Equal(c.T(), config.UID, newConfig[0].UID)
 	require.Equal(c.T(), config.IsAnalyticsEnabled, newConfig[0].IsAnalyticsEnabled)
+	require.Equal(c.T(), config.StoragePolicy.OnPrem.Path, convoy.DefaultOnPremDir)
 	require.Equal(c.T(), convoy.GetVersion(), newConfig[0].ApiVersion)
 }
 
@@ -114,6 +120,42 @@ func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 
 	require.NotEmpty(c.T(), config.UID)
 	require.True(c.T(), config.IsAnalyticsEnabled)
+}
+
+func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
+	_, err := testdb.SeedConfiguration(c.DB)
+	require.NoError(c.T(), err)
+
+	// Arrange Request
+	bodyStr := `{
+		"is_analytics_enabled": false,
+		"storage_policy": {
+			"type": "on_prem",
+			"on_prem":{
+				"path":"/tmp"
+			}
+		}
+	}`
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPut, "/ui/configuration", "", body)
+	err = c.AuthenticatorFn(req, c.Router)
+	require.NoError(c.T(), err)
+	w := httptest.NewRecorder()
+
+	// Act
+	c.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(c.T(), http.StatusAccepted, w.Code)
+
+	var config datastore.Configuration
+	parseResponse(c.T(), w.Result(), &config)
+
+	require.NotEmpty(c.T(), config.UID)
+	require.Equal(c.T(), "/tmp", config.StoragePolicy.OnPrem.Path)
+	require.False(c.T(), config.IsAnalyticsEnabled)
+
 }
 
 func TestConfigurationIntegrationTestSuite(t *testing.T) {

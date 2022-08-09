@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -30,7 +30,7 @@ export class CreateAppComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
-		if(!this.editAppMode) this.endpoints.push(this.newEndpoint());
+		if (!this.editAppMode) this.endpoints.push(this.newEndpoint());
 		if (this.editAppMode) await this.getAppDetails();
 	}
 
@@ -46,9 +46,8 @@ export class CreateAppComponent implements OnInit {
 		return this.formBuilder.group({
 			url: ['', Validators.required],
 			description: ['', Validators.required],
-			http_timeout: [null],
-			rate_limit: [null],
-			rate_limit_duration: [null]
+			secret: [null],
+			http_timeout: [null]
 		});
 	}
 
@@ -63,13 +62,7 @@ export class CreateAppComponent implements OnInit {
 	async saveApp() {
 		if (this.editAppMode) delete this.addNewAppForm.value.endpoints;
 
-		if (this.addNewAppForm.invalid) {
-			(<any>Object).values(this.addNewAppForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
-
+		if (this.addNewAppForm.invalid) return this.addNewAppForm.markAsTouched();
 		this.isSavingApp = true;
 		let requests: any[] = [];
 

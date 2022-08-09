@@ -1,110 +1,78 @@
 <convoy-loader *ngIf="isLoadingAppDetails"></convoy-loader>
 
-<div *ngIf="!isLoadingAppDetails">
-	<form [formGroup]="addNewAppForm" id="create-app-form" class="card padding-all__24px">
-		<div class="grid grid__col-2 grid--gap__20px">
-			<div class="input">
-				<label class="flex flex__justify-between" for="app-name">
-					Enter App Name
-					<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-				</label>
-				<input id="app-name" type="text" formControlName="name" [ngClass]="{ danger: addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid }" />
-				<div class="input__error input__error__danger" *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">
-					<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-					<span>App name is required</span>
-				</div>
-			</div>
-
-			<div class="input">
-				<label for="app-description">Description</label>
-				<input type="text" id="app-description" formControlName="description" />
-			</div>
-		</div>
-		<div class="grid grid__col-2 grid--gap__20px">
-			<div class="input margin-bottom__0px">
-				<label class="flex flex__align-items-center" for="app-email">
-					Support Email
-					<app-tooltip [position]="'right'" [size]="'small'" class="margin-left__4px">We use this to send an email notifcation for when a failure happens</app-tooltip>
-				</label>
-				<input type="email" id="app-email" formControlName="support_email" />
-			</div>
-			<div class="input margin-bottom__0px">
-				<label class="flex flex__align-items-center" for="app-slack-url">
-					Slack webhook url
-					<app-tooltip [size]="'small'" class="margin-left__4px">We use this to send notifications to your slack channel for when a failure happens</app-tooltip>
-				</label>
-				<input id="app-slack-url" type="url" formControlName="slack_webhook_url" />
-			</div>
+<form [formGroup]="addNewAppForm" id="create-app-form">
+	<convoy-card className="px-24px py-24px mt-40px">
+		<convoy-input type="text" autocomplete="app-name" name="app-name" formControlName="name" errorMessage="App name is required" label="Enter App Name" placeholder="App name" [required]="true"></convoy-input>
+		<div class="grid grid-cols-2 gap-6">
+			<convoy-input
+				type="email"
+				autocomplete="app-slack-url"
+				name="app-slack-url"
+				formControlName="support_email"
+				label="Support Email"
+				placeholder="Support email"
+				tooltipPosition="right"
+				tooltipSize="sm"
+				tooltipContent="We use this to send an email notifcation for when a failure happens"
+			></convoy-input>
+			<convoy-input
+				type="url"
+				autocomplete="app-email"
+				name="app-email"
+				formControlName="slack_webhook_url"
+				label="Slack webhook url"
+				placeholder="Slack webhook url"
+				tooltipSize="sm"
+				tooltipContent="We use this to send notifications to your slack channel when a failure happens"
+			></convoy-input>
 		</div>
 
-		<div class="margin-top__32px" *ngIf="!editAppMode" formArrayName="endpoints">
-			<div class="margin-top__40px" *ngFor="let endpoint of endpoints.controls; let i = index">
-				<div class="flex flex__align-items-center flex__justify-between margin-bottom__12px">
-					<h3>Endpoint {{ i > 0 ? i + 1 : '' }}</h3>
-					<div class="flex flex__justify-end margin-bottom__16px">
-						<button (click)="removeEndpoint(i)" class="button__clear color__danger button--has-icon icon-left font__weight-500">
-							<img src="/assets/img/trash-icon.svg" alt="close icon" />
-							Remove Endpoint
-						</button>
-					</div>
+		<div class="mt-32px" *ngIf="!editAppMode" formArrayName="endpoints">
+			<div class="mt-40px" *ngFor="let endpoint of endpoints.controls; let i = index">
+				<div class="flex justify-between items-center mb-16px">
+					<h2 class="font-semibold">Endpoint {{ i > 0 ? i + 1 : '' }}</h2>
+
+					<convoy-button (click)="removeEndpoint(i)" type="text" color="danger" className="px-0 font-medium text-12">
+						<img src="/assets/img/trash-icon.svg" alt="close icon" class="mr-2" />
+						Remove Endpoint
+					</convoy-button>
 				</div>
 				<div [formGroupName]="i">
-					<div class="grid grid__col-2 grid--gap__20px">
-						<div class="input">
-							<label class="flex__justify-between" [for]="'description' + i">
-								Description
-								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-							</label>
-							<input [id]="'description' + i" type="text" formControlName="description" required />
-							<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).description.touched && getSingleEndpoint(i).description.invalid">
-								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-								<span>Please provide a description</span>
-							</div>
-						</div>
-
-						<div class="input">
-							<label class="flex flex__justify-between" [for]="'endpoint-url' + i">
-								Enter Endpoint URL
-								<span class="bg__grey__light rounded__4px padding-x__4px position__absolute position--right__0px font__10px font__weight-400">required</span>
-							</label>
-							<input [id]="'endpoint-url' + i" type="text" formControlName="url" required />
-							<div class="input__error input__error__danger" *ngIf="getSingleEndpoint(i).url.touched && getSingleEndpoint(i).url.invalid">
-								<img src="assets/img/input-error-icon.svg" alt="input error icon" />
-								<span>Please provide an endpoint URL</span>
-							</div>
-						</div>
-
-						<div class="input">
-							<label for="rate-limit-count">Rate Limit</label>
-							<input type="number" id="rate-limit-count" placeholder="e.g 5000" formControlName="rate_limit" />
-						</div>
-
-						<div class="input">
-							<label for="rate-limit-duration">Rate Limit Duration</label>
-							<input type="text" id="rate-limit-duration" placeholder="e.g 1m" formControlName="rate_limit_duration" />
-						</div>
-					</div>
-					<div class="input">
-						<label class="flex flex__align-items-center" for="http-timeout">
-							HTTP Timeout
-							<app-tooltip [size]="'small'" position="right" class="margin-left__4px">This specifies how long the socket stays open in the absense of a response.</app-tooltip>
-						</label>
-						<input id="http-timeout" type="text" formControlName="http_timeout" placeholder="e.g. 10s" />
+					<div class="grid grid-cols-2 gap-6">
+						<convoy-input type="text" autocomplete="description" [name]="'description' + i" formControlName="description" errorMessage="Please provide a description" label="Description" placeholder="Description" [required]="true"></convoy-input>
+						<convoy-input type="url" autocomplete="endpoint-url" [name]="'endpoint-url' + i" formControlName="url" label="Enter Endpoint URL" placeholder="Endpoint url" errorMessage="Please enter endpoint url" [required]="true"></convoy-input>
+						<convoy-input
+							type="text"
+							autocomplete="secret"
+							[name]="'secret' + i"
+							formControlName="secret"
+							label="Secret"
+							placeholder="********"
+						></convoy-input>
+						<convoy-input
+							type="text"
+							autocomplete="http-timeout"
+							[name]="'http-timeout' + i"
+							formControlName="http_timeout"
+							label="HTTP Timeout"
+							placeholder="e.g. 10s"
+							tooltipSize="sm"
+							tooltipPosition="right"
+							tooltipContent="This specifies how long the socket stays open in the absense of a response."
+						></convoy-input>
 					</div>
 				</div>
 			</div>
-			<div>
-				<button (click)="addEndpoint()" class="button__clear button--has-icon icon-left font__weight-500">
-					<img src="/assets/img/add-icon.svg" alt="close icon" />
-					Add Endpoint
-				</button>
-			</div>
+			<convoy-button (click)="addEndpoint()" type="text" className="px-0 font-medium">
+				<img src="/assets/img/add-icon.svg" alt="close icon" class="mr-2" />
+				Add Endpoint
+			</convoy-button>
 		</div>
-	</form>
-	<div class="flex flex__justify-end padding-all__24px">
-		<button class="button button__white button--large" (click)="closeAppInstance(); editAppMode = false; addNewAppForm.reset()">Discard</button>
-		<button id="create-app-button" class="button button__primary margin-left__24px" [disabled]="isSavingApp" (click)="saveApp()">
+	</convoy-card>
+	<div class="flex justify-end mt-6 mb-16">
+		<convoy-button buttonType="button" (click)="closeAppInstance()" type="outline" className="mr-3">Discard</convoy-button>
+		<convoy-button [disable]="isSavingApp" (click)="saveApp()">
 			{{ editAppMode ? 'Edit App' : 'Create App' }}
-		</button>
+		</convoy-button>
 	</div>
-</div>
+</form>

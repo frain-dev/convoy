@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -359,8 +360,8 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 			event, err := es.CreateAppEvent(tc.args.ctx, tc.args.newMessage, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -439,8 +440,8 @@ func TestEventService_GetAppEvent(t *testing.T) {
 			event, err := es.GetAppEvent(tc.args.ctx, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -509,8 +510,8 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 			err := es.ReplayAppEvent(tc.args.ctx, tc.args.event, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -576,8 +577,8 @@ func TestEventService_GetEventDelivery(t *testing.T) {
 			eventDelivery, err := es.GetEventDelivery(tc.args.ctx, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -760,8 +761,8 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			successes, failures, err := es.BatchRetryEventDelivery(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -863,8 +864,8 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 			count, err := es.CountAffectedEventDeliveries(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -935,7 +936,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			wantFailures:  0,
 		},
 		{
-			name: "should_force_resend_event_deliveries_with_one_failure",
+			name: "should_fail_validation_for_resend_event_deliveries_with_one_failure",
 			args: args{
 				ctx: ctx,
 				ids: []string{"ref", "oop"},
@@ -959,22 +960,10 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 						},
 						nil,
 					)
-
-				a, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				a.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(&datastore.Subscription{
-					Status: datastore.ActiveSubscriptionStatus,
-				}, nil)
-
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil)
-
-				q, _ := es.queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil)
 			},
-			wantSuccesses: 1,
-			wantFailures:  1,
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  ErrInvalidEventDeliveryStatus.Error(),
 		},
 	}
 	for _, tc := range tests {
@@ -990,8 +979,8 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			successes, failures, err := es.ForceResendEventDeliveries(tc.args.ctx, tc.args.ids, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -1128,8 +1117,8 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			events, paginationData, err := es.GetEventsPaged(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -1244,8 +1233,8 @@ func TestEventService_SearchEvents(t *testing.T) {
 			events, paginationData, err := es.Search(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -1416,8 +1405,8 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			eventDeliveries, paginationData, err := es.GetEventDeliveriesPaged(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -1492,7 +1481,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 			err := es.ResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

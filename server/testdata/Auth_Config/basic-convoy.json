@@ -18,10 +18,7 @@
                     "password": "test",
                     "role": {
                         "type": "admin",
-                        "groups": [
-                            "sendcash-pay",
-                            "buycoins-api"
-                        ]
+                        "group":"sendcash-pay"
                     }
                 },
                 {

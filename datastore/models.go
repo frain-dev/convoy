@@ -5,10 +5,13 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strings"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -74,6 +77,8 @@ type VerifierType string
 
 type EncodingType string
 
+type StorageType string
+
 const (
 	HTTPSource     SourceType = "http"
 	RestApiSource  SourceType = "rest_api"
@@ -82,10 +87,13 @@ const (
 )
 
 const (
-	GithubSourceProvider SourceProvider = "github"
+	GithubSourceProvider  SourceProvider = "github"
+	TwitterSourceProvider SourceProvider = "twitter"
+	ShopifySourceProvider SourceProvider = "shopify"
 )
 
 const (
+	NoopVerifier      VerifierType = "noop"
 	HMacVerifier      VerifierType = "hmac"
 	BasicAuthVerifier VerifierType = "basic_auth"
 	APIKeyVerifier    VerifierType = "api_key"
@@ -99,6 +107,17 @@ const (
 const (
 	OutgoingGroup GroupType = "outgoing"
 	IncomingGroup GroupType = "incoming"
+)
+
+const (
+	S3     StorageType = "s3"
+	OnPrem StorageType = "on_prem"
+)
+
+const (
+	ProjectKey   KeyType = "project"
+	AppPortalKey KeyType = "app_portal"
+	CLIKey       KeyType = "cli"
 )
 
 const (
@@ -133,6 +152,12 @@ var (
 	DefaultAlertConfig = AlertConfiguration{
 		Count:     4,
 		Threshold: "1h",
+	}
+	DefaultStoragePolicy = StoragePolicyConfiguration{
+		Type: OnPrem,
+		OnPrem: &OnPremStorage{
+			Path: convoy.DefaultOnPremDir,
+		},
 	}
 )
 
@@ -195,8 +220,9 @@ type Group struct {
 	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
-	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Metadata          *GroupMetadata `json:"metadata" bson:"metadata"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -205,12 +231,18 @@ type Group struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
+type GroupMetadata struct {
+	RetainedEvents int `json:"retained_events" bson:"retained_events"`
+}
+
 type GroupConfig struct {
-	RateLimit       *RateLimitConfiguration `json:"ratelimit"`
-	Strategy        *StrategyConfiguration  `json:"strategy"`
-	Signature       *SignatureConfiguration `json:"signature"`
-	DisableEndpoint bool                    `json:"disable_endpoint" bson:"disable_endpoint"`
-	ReplayAttacks   bool                    `json:"replay_attacks" bson:"replay_attacks"`
+	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
+	Strategy                 *StrategyConfiguration        `json:"strategy"`
+	Signature                *SignatureConfiguration       `json:"signature"`
+	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
+	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
+	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
+	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
 }
 
 type RateLimitConfiguration struct {
@@ -234,6 +266,10 @@ type SignatureValues struct {
 	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 }
 
+type RetentionPolicyConfiguration struct {
+	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
+}
+
 type GroupStatistics struct {
 	GroupID      string `json:"-" bson:"group_id"`
 	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
@@ -243,6 +279,19 @@ type GroupStatistics struct {
 type GroupFilter struct {
 	OrgID string   `json:"org_id" bson:"org_id"`
 	Names []string `json:"name" bson:"name"`
+}
+
+type EventFilter struct {
+	GroupID        string         `json:"group_id" bson:"group_id"`
+	DocumentStatus DocumentStatus `json:"document_status" bson:"document_status"`
+	CreatedAtStart int64          `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64          `json:"created_at_end" bson:"created_at_end"`
+}
+
+type EventDeliveryFilter struct {
+	GroupID        string `json:"group_id" bson:"group_id"`
+	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
 func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
@@ -257,6 +306,11 @@ func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
 	}
 
 	return &f
+}
+
+func (g *GroupFilter) ToGenericMap() map[string]interface{} {
+	m := map[string]interface{}{"name": g.Names}
+	return m
 }
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }
@@ -304,12 +358,12 @@ type Event struct {
 	// with your internal systems.
 	// This is optional
 	// If not provided, we will generate one for you
-	ProviderID string `json:"provider_id,omitempty" bson:"provider_id"`
-	SourceID   string `json:"source_id,omitempty" bson:"source_id"`
-	GroupID    string `json:"group_id,omitempty" bson:"group_id"`
-	AppID      string `json:"app_id,omitempty" bson:"app_id"`
-
-	App *Application `json:"app_metadata,omitempty" bson:"-"`
+	ProviderID string                `json:"provider_id,omitempty" bson:"provider_id"`
+	SourceID   string                `json:"source_id,omitempty" bson:"source_id"`
+	GroupID    string                `json:"group_id,omitempty" bson:"group_id"`
+	AppID      string                `json:"app_id,omitempty" bson:"app_id"`
+	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	App        *Application          `json:"app_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -324,6 +378,12 @@ type Event struct {
 
 type EventDeliveryStatus string
 type HttpHeader map[string]string
+
+func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
+	for k, v := range h {
+		r.Header.Set(k, v)
+	}
+}
 
 const (
 	// ScheduledEventStatus : when  a Event has been scheduled for delivery
@@ -410,13 +470,14 @@ type DeliveryAttempt struct {
 
 //Event defines a payload to be sent to an application
 type EventDelivery struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	AppID          string             `json:"app_id,omitempty" bson:"app_id"`
-	GroupID        string             `json:"group_id,omitempty" bson:"group_id"`
-	EventID        string             `json:"event_id,omitempty" bson:"event_id"`
-	EndpointID     string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	SubscriptionID string             `json:"subscription_id,omitempty" bson:"subscription_id"`
+	ID             primitive.ObjectID    `json:"-" bson:"_id"`
+	UID            string                `json:"uid" bson:"uid"`
+	AppID          string                `json:"app_id,omitempty" bson:"app_id"`
+	GroupID        string                `json:"group_id,omitempty" bson:"group_id"`
+	EventID        string                `json:"event_id,omitempty" bson:"event_id"`
+	EndpointID     string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
+	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
+	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
 	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
@@ -481,15 +542,17 @@ type Subscription struct {
 }
 
 type Source struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	GroupID    string             `json:"group_id" bson:"group_id"`
-	MaskID     string             `json:"mask_id" bson:"mask_id"`
-	Name       string             `json:"name" bson:"name"`
-	Type       SourceType         `json:"type" bson:"type"`
-	Provider   SourceProvider     `json:"provider" bson:"provider"`
-	IsDisabled bool               `json:"is_disabled" bson:"is_disabled"`
-	Verifier   *VerifierConfig    `json:"verifier" bson:"verifier"`
+	ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string             `json:"uid" bson:"uid"`
+	GroupID        string             `json:"group_id" bson:"group_id"`
+	MaskID         string             `json:"mask_id" bson:"mask_id"`
+	Name           string             `json:"name" bson:"name"`
+	Type           SourceType         `json:"type" bson:"type"`
+	Provider       SourceProvider     `json:"provider" bson:"provider"`
+	IsDisabled     bool               `json:"is_disabled" bson:"is_disabled"`
+	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
+	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
+	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
@@ -530,6 +593,14 @@ type FilterConfiguration struct {
 	EventTypes []string `json:"event_types" bson:"event_types,omitempty"`
 }
 
+type ProviderConfig struct {
+	Twitter *TwitterProviderConfig `json:"twitter" bson:"twitter"`
+}
+
+type TwitterProviderConfig struct {
+	CrcVerifiedAt primitive.DateTime `json:"crc_verified_at" bson:"crc_verified_at"`
+}
+
 type VerifierConfig struct {
 	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
 	HMac      *HMac        `json:"hmac" bson:"hmac"`
@@ -566,14 +637,33 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	ID                 primitive.ObjectID `json:"-" bson:"_id"`
-	UID                string             `json:"uid" bson:"uid"`
-	IsAnalyticsEnabled bool               `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
-	DocumentStatus     DocumentStatus     `json:"-" bson:"document_status"`
+	ID                 primitive.ObjectID          `json:"-" bson:"_id"`
+	UID                string                      `json:"uid" bson:"uid"`
+	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" bson:"storage_policy"`
+	DocumentStatus     DocumentStatus              `json:"-" bson:"document_status"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type StoragePolicyConfiguration struct {
+	Type   StorageType    `json:"type,omitempty" bson:"type" valid:"supported_storage~please provide a valid storage type,required"`
+	S3     *S3Storage     `json:"s3" bson:"s3"`
+	OnPrem *OnPremStorage `json:"on_prem" bson:"on_prem"`
+}
+
+type S3Storage struct {
+	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
+	AccessKey    string `json:"-" bson:"access_key" valid:"required~please provide an access key"`
+	SecretKey    string `json:"-" bson:"secret_key" valid:"required~please provide a secret key"`
+	SessionToken string `json:"-" bson:"session_token"`
+	Region       string `json:"region" bson:"region" valid:"required~please provide AWS bucket region"`
+}
+
+type OnPremStorage struct {
+	Path string `json:"path" bson:"path"`
 }
 
 type OrganisationMember struct {
@@ -599,9 +689,10 @@ type UserMetadata struct {
 type InviteStatus string
 
 const (
-	InviteStatusAccepted InviteStatus = "accepted"
-	InviteStatusDeclined InviteStatus = "declined"
-	InviteStatusPending  InviteStatus = "pending"
+	InviteStatusAccepted  InviteStatus = "accepted"
+	InviteStatusDeclined  InviteStatus = "declined"
+	InviteStatusPending   InviteStatus = "pending"
+	InviteStatusCancelled InviteStatus = "cancelled"
 )
 
 func (i InviteStatus) String() string {
