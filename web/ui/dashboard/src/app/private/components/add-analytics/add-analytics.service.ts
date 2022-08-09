@@ -18,7 +18,7 @@ export class AddAnalyticsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

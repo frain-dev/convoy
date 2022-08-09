@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
@@ -13,6 +14,7 @@ type PAGE_TABS = 'events' | 'event deliveries';
 	styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
+	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status', ''];
 	token: string = this.route.snapshot.params.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
@@ -20,15 +22,36 @@ export class AppComponent implements OnInit {
 	activeTab: PAGE_TABS = 'events';
 	events!: { content: EVENT[]; pagination: PAGINATION };
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
+	activeSubscription?: SUBSCRIPTION;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
 	showCreateSubscriptionModal = false;
+	showDeleteSubscriptionModal = false;
+	isDeletingSubscription = false;
 	subscriptionId = this.route.snapshot.params.id;
+	showCreateSubscription = false;
+	showSubscriptionError = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
 		this.getSubscripions();
+
+		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
+		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
+
+		switch (subscribeButtonState) {
+			case 'true':
+				this.showCreateSubscription = true;
+				break;
+			case 'false':
+				this.showCreateSubscription = false;
+				break;
+
+			default:
+				this.showCreateSubscription = true;
+				break;
+		}
 	}
 
 	async getSubscripions() {
@@ -38,7 +61,9 @@ export class AppComponent implements OnInit {
 			this.subscriptions = subscriptions.data;
 			this.isloadingSubscriptions = false;
 			this.showCreateSubscriptionModal = false;
+			this.showSubscriptionError = false;
 		} catch (_error) {
+			this.showSubscriptionError = true;
 			this.isloadingSubscriptions = false;
 		}
 	}
@@ -52,12 +77,14 @@ export class AppComponent implements OnInit {
 		this.toggleActiveTab('event deliveries');
 	}
 
-	async deleteSubscription(subscriptionId: string) {
+	async deleteSubscription() {
+		this.isDeletingSubscription = true;
 		try {
-			await this.appService.deleteSubscription(this.token, subscriptionId);
+			await this.appService.deleteSubscription(this.token, this.activeSubscription?.uid || '');
 			this.getSubscripions();
+			this.isDeletingSubscription = false;
 		} catch (error) {
-			console.log(error);
+			this.isDeletingSubscription = false;
 		}
 	}
 

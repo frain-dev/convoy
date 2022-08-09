@@ -11,7 +11,7 @@ export class AppDetailsService {
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	async getApps(): Promise<HTTP_RESPONSE> {
+	getApps(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -20,13 +20,13 @@ export class AppDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async getAppPortalToken(requestDetails: { appId: string }): Promise<HTTP_RESPONSE> {
+	getAppPortalToken(requestDetails: { appId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -36,13 +36,13 @@ export class AppDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async getApp(appId: string): Promise<HTTP_RESPONSE> {
+	getApp(appId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -51,13 +51,13 @@ export class AppDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async addNewEndpoint(requestDetails: { appId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
+	addNewEndpoint(requestDetails: { appId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -68,13 +68,13 @@ export class AppDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async editEndpoint(requestDetails: { appId: string; endpointId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
+	editEndpoint(requestDetails: { appId: string; endpointId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -85,13 +85,13 @@ export class AppDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async deleteEndpoint(requestDetails: { appId: string; endpointId: string }): Promise<HTTP_RESPONSE> {
+	deleteEndpoint(requestDetails: { appId: string; endpointId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -100,13 +100,13 @@ export class AppDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});
 	}
 
-	async sendEvent(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
+	sendEvent(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -116,7 +116,7 @@ export class AppDetailsService {
 				});
 
 				return resolve(response);
-			} catch (error: any) {
+			} catch (error) {
 				return reject(error);
 			}
 		});

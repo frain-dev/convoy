@@ -28,50 +28,65 @@ func (c *ConfigService) LoadConfiguration(ctx context.Context) (*datastore.Confi
 			return config, nil
 		}
 
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	return config, nil
 }
 
-func (c *ConfigService) CreateOrUpdateConfiguration(ctx context.Context, newConfig *models.Configuration) (*datastore.Configuration, error) {
+func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *models.Configuration) (*datastore.Configuration, error) {
 	if err := util.Validate(newConfig); err != nil {
-		return nil, NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	config, err := c.configRepo.LoadConfiguration(ctx)
-	if err != nil {
-		if errors.Is(err, datastore.ErrConfigNotFound) {
-			config := &datastore.Configuration{
-				UID:            uuid.New().String(),
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: datastore.ActiveDocumentStatus,
-			}
+	storagePolicy := newConfig.StoragePolicy
+	if storagePolicy == nil {
+		newConfig.StoragePolicy = &datastore.DefaultStoragePolicy
+	}
 
-			if newConfig.IsAnalyticsEnabled != nil {
-				config.IsAnalyticsEnabled = *newConfig.IsAnalyticsEnabled
-			}
-
-			err := c.configRepo.CreateConfiguration(ctx, config)
-			if err != nil {
-				return nil, NewServiceError(http.StatusInternalServerError, err)
-			}
-
-			return config, nil
-		}
-		return nil, NewServiceError(http.StatusInternalServerError, err)
+	config := &datastore.Configuration{
+		UID:            uuid.New().String(),
+		StoragePolicy:  newConfig.StoragePolicy,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	if newConfig.IsAnalyticsEnabled != nil {
 		config.IsAnalyticsEnabled = *newConfig.IsAnalyticsEnabled
-		err := c.configRepo.UpdateConfiguration(ctx, config)
-		if err != nil {
-			return nil, NewServiceError(http.StatusInternalServerError, err)
-		}
+	}
 
-		return config, nil
+	err := c.configRepo.CreateConfiguration(ctx, config)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	return config, nil
+
+}
+
+func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.Configuration) (*datastore.Configuration, error) {
+	if err := util.Validate(config); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	cfg, err := c.configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	if config.IsAnalyticsEnabled != nil {
+		cfg.IsAnalyticsEnabled = *config.IsAnalyticsEnabled
+	}
+
+	if config.StoragePolicy != nil {
+		cfg.StoragePolicy = config.StoragePolicy
+	}
+
+	err = c.configRepo.UpdateConfiguration(ctx, cfg)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return cfg, nil
 }

@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { PAGINATION } from 'src/app/models/global.model';
 import { TEAMS } from 'src/app/models/teams.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -12,6 +13,7 @@ import { TeamsService } from './teams.service';
 	styleUrls: ['./teams.component.scss']
 })
 export class TeamsComponent implements OnInit {
+	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
 	filterOptions: ['active', 'pending'] = ['active', 'pending'];
 	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new');
@@ -91,11 +93,11 @@ export class TeamsComponent implements OnInit {
 		};
 		try {
 			const response = await this.teamService.deactivateTeamMember(requestOptions);
-			if (response.status) this.showDeactivateModal = false;
+			this.showDeactivateModal = false;
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.fetchTeamMembers();
 			this.deactivatingUser = false;
-		} catch {
+		} catch (error) {
 			this.deactivatingUser = false;
 		}
 	}
@@ -107,12 +109,7 @@ export class TeamsComponent implements OnInit {
 	}
 
 	async inviteUser() {
-		if (this.inviteUserForm.invalid) {
-			(<any>this.inviteUserForm).values(this.inviteUserForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.inviteUserForm.invalid) return this.inviteUserForm.markAsTouched();
 		this.invitingUser = true;
 		try {
 			const response = await this.teamService.inviteUserToOrganisation(this.inviteUserForm.value);
@@ -145,5 +142,13 @@ export class TeamsComponent implements OnInit {
 		} catch {
 			this.cancelingInvite = false;
 		}
+	}
+
+	goToTeams() {
+		this.router.navigateByUrl('/team');
+	}
+
+	openCreateTeamModal() {
+		this.router.navigateByUrl('/team/new');
 	}
 }

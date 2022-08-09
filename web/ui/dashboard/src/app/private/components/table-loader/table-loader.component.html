@@ -1,102 +1,23 @@
-<table [ngClass]="'table ' + tableClass">
-	<thead>
-		<tr class="table--head">
-			<th *ngFor="let head of tableHead" scope="col">{{ head }}</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr class="table--date-row" *ngIf="!tableClass">
-			<td>
-				<div>
-					<div class="skeleton-loader smaller padding-top--unset padding-bottom--unset"></div>
-				</div>
-			</td>
-			<td></td>
-			<td></td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-			<td *ngFor="let head of tableHead.slice(1)">
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-			<td *ngFor="let head of tableHead.slice(1)">
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-			<td *ngFor="let head of tableHead.slice(1)">
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-			<td *ngFor="let head of tableHead.slice(1)">
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-		</tr>
+<div class="min-h-[60vh]">
+    <convoy-table class="contents">
+        <convoy-table-head class="contents">
+            <convoy-table-head-cell class="contents" *ngFor="let head of tableHead; let i = index" [className]="i === 0 ? 'pl-16px uppercase' : 'uppercase'">{{ head }}</convoy-table-head-cell>
+        </convoy-table-head>
+        <tbody>
 
-		<tr class="table--date-row" *ngIf="!tableClass">
-			<td>
-				<div>
-					<div class="skeleton-loader smaller padding-top--unset padding-bottom--unset"></div>
-				</div>
-			</td>
-			<td></td>
-			<td></td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-			<td *ngFor="let head of tableHead.slice(1)">
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-			<td *ngFor="let head of tableHead.slice(1)">
-				<div>
-					<div class="skeleton-loader data"></div>
-				</div>
-			</td>
-		</tr>
-	</tbody>
-</table>
+            <convoy-table-row [forDate]="true" class="contents" *ngIf="withDate">
+                <convoy-table-cell class="contents" [forDate]="true"><convoy-skeleton-loader className="w-160px h-20px"></convoy-skeleton-loader></convoy-table-cell>
+                <convoy-table-cell class="contents" [forDate]="true" *ngFor="let head of tableHead.slice(1)"></convoy-table-cell>
+            </convoy-table-row>
+            <convoy-table-row class="contents" *ngFor="let index of loaderIndex">
+                <convoy-table-cell class="contents" className="pl-16px">
+                    <convoy-skeleton-loader className="w-120px h-20px"></convoy-skeleton-loader>
+                </convoy-table-cell>
+                <convoy-table-cell class="contents" *ngFor="let head of tableHead.slice(1)">
+                    <convoy-skeleton-loader className="w-100px h-20px"></convoy-skeleton-loader>
+                </convoy-table-cell>
+            </convoy-table-row>
+
+        </tbody>
+    </convoy-table>
+</div>

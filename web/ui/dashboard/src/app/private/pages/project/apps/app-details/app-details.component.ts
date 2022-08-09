@@ -16,7 +16,6 @@ export class AppDetailsComponent implements OnInit {
 	showAddEndpointModal = false;
 	showAddEventModal = false;
 	showEndpointSecret = false;
-	textCopied = false;
 	isSendingNewEvent = false;
 	savingEndpoint = false;
 	loadingAppPotalToken = false;
@@ -44,27 +43,13 @@ export class AppDetailsComponent implements OnInit {
 
 	ngOnInit() {
 		this.isLoadingAppDetails = true;
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.loadingAppPotalToken = true;
 		this.checkScreenSize();
 		this.getAppDetails(this.route.snapshot.params.id);
 	}
 
 	goBack() {
 		this.location.back();
-	}
-
-
-	copyText(key: string) {
-		const text = key;
-		const el = document.createElement('textarea');
-		el.value = text;
-		document.body.appendChild(el);
-		el.select();
-		document.execCommand('copy');
-		this.textCopied = true;
-		setTimeout(() => {
-			this.textCopied = false;
-		}, 3000);
-		document.body.removeChild(el);
 	}
 
 	viewEndpointSecretKey(secretKey: string) {
@@ -87,6 +72,8 @@ export class AppDetailsComponent implements OnInit {
 	}
 
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
+		if (this.privateService.activeProjectDetails?.type === 'incoming') return;
+
 		this.loadingAppPotalToken = true;
 
 		try {
@@ -123,6 +110,10 @@ export class AppDetailsComponent implements OnInit {
 		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
 
+	closeEditEndpointModal() {
+		this.showAddEndpointModal = false;
+		this.selectedEndpoint = undefined;
+	}
 	focusInput() {
 		document.getElementById('tagInput')?.focus();
 	}

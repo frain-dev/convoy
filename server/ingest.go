@@ -9,6 +9,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/crc"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -19,19 +21,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
+	// s.AppService.CountGroupApplications()
 	// 1. Retrieve mask ID
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	source, err := a.sourceRepo.FindSourceByMaskID(r.Context(), maskID)
+	source, err := a.S.SourceService.FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	if source.Type != datastore.HTTPSource {
-		_ = render.Render(w, r, newErrorResponse("Source type needs to be HTTP",
+		_ = render.Render(w, r, util.NewErrorResponse("Source type needs to be HTTP",
 			http.StatusBadRequest))
 		return
 	}
@@ -45,8 +48,12 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		switch source.Provider {
 		case datastore.GithubSourceProvider:
 			v = verifier.NewGithubVerifier(verifierConfig.HMac.Secret)
+		case datastore.TwitterSourceProvider:
+			v = verifier.NewTwitterVerifier(verifierConfig.HMac.Secret)
+		case datastore.ShopifySourceProvider:
+			v = verifier.NewShopifyVerifier(verifierConfig.HMac.Secret)
 		default:
-			_ = render.Render(w, r, newErrorResponse("Provider type undefined",
+			_ = render.Render(w, r, util.NewErrorResponse("Provider type undefined",
 				http.StatusBadRequest))
 			return
 		}
@@ -72,9 +79,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 				verifierConfig.ApiKey.HeaderName,
 			)
 		default:
-			_ = render.Render(w, r, newErrorResponse("Source must have a valid verifier",
-				http.StatusBadRequest))
-			return
+			v = &verifier.NoopVerifier{}
 		}
 	}
 
@@ -83,12 +88,12 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	body := io.LimitReader(r.Body, config.MaxRequestSize)
 	payload, err := io.ReadAll(body)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	if err = v.VerifyRequest(r, payload); err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -101,6 +106,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		SourceID:       source.UID,
 		GroupID:        source.GroupID,
 		Data:           payload,
+		Headers:        httpheader.HTTPHeader(r.Header),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -108,7 +114,7 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	eventByte, err := json.Marshal(event)
 	if err != nil {
-		_ = render.Render(w, r, newErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -118,11 +124,63 @@ func (a *applicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Delay:   0,
 	}
 
-	err = a.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = a.S.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
 
 	// 4. Return 200
-	_ = render.Render(w, r, newServerResponse("Event received", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event received", nil, http.StatusOK))
+}
+
+func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
+	maskID := chi.URLParam(r, "maskID")
+
+	var source *datastore.Source
+	sourceCacheKey := convoy.SourceCacheKey.Get(maskID).String()
+
+	err := a.S.Cache.Get(r.Context(), sourceCacheKey, &source)
+	if err != nil {
+		log.Error(err)
+	}
+
+	if source == nil {
+		source, err = a.S.SourceService.FindSourceByMaskID(r.Context(), maskID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		err = a.S.Cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
+		if err != nil {
+			log.Error(err)
+		}
+
+	}
+
+	if source.Type != datastore.HTTPSource {
+		_ = render.Render(w, r, util.NewErrorResponse("Source type needs to be HTTP", http.StatusBadRequest))
+		return
+	}
+
+	if util.IsStringEmpty(string(source.Provider)) {
+		_ = render.Render(w, r, util.NewErrorResponse("Provider type undefined", http.StatusBadRequest))
+		return
+	}
+
+	var c crc.Crc
+
+	switch source.Provider {
+	case datastore.TwitterSourceProvider:
+		c = crc.NewTwitterCrc(source.Verifier.HMac.Secret)
+	default:
+		_ = render.Render(w, r, util.NewErrorResponse("Provider type is not supported", http.StatusBadRequest))
+		return
+	}
+
+	err = c.HandleRequest(w, r, source, a.R.SourceRepo)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 }

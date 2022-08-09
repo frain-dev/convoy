@@ -1,0 +1,1283 @@
+package middleware
+
+import (
+	"context"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"math"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/frain-dev/convoy/tracer"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/logger"
+	"github.com/newrelic/go-agent/v3/newrelic"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
+	"github.com/felixge/httpsnoop"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
+	"github.com/go-chi/render"
+)
+
+type contextKey string
+
+const (
+	groupCtx            contextKey = "group"
+	appCtx              contextKey = "app"
+	orgCtx              contextKey = "organisation"
+	orgMemberCtx        contextKey = "organisation_member"
+	endpointCtx         contextKey = "endpoint"
+	eventCtx            contextKey = "event"
+	eventDeliveryCtx    contextKey = "eventDelivery"
+	authLoginCtx        contextKey = "authLogin"
+	authUserCtx         contextKey = "authUser"
+	userCtx             contextKey = "user"
+	pageableCtx         contextKey = "pageable"
+	pageDataCtx         contextKey = "pageData"
+	deliveryAttemptsCtx contextKey = "deliveryAttempts"
+	hostCtx             contextKey = "host"
+	appIdCtx            contextKey = "appId"
+)
+
+type Middleware struct {
+	eventRepo         datastore.EventRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
+	appRepo           datastore.ApplicationRepository
+	groupRepo         datastore.GroupRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	subRepo           datastore.SubscriptionRepository
+	sourceRepo        datastore.SourceRepository
+	orgRepo           datastore.OrganisationRepository
+	orgMemberRepo     datastore.OrganisationMemberRepository
+	orgInviteRepo     datastore.OrganisationInviteRepository
+	userRepo          datastore.UserRepository
+	configRepo        datastore.ConfigurationRepository
+	cache             cache.Cache
+	logger            logger.Logger
+	limiter           limiter.RateLimiter
+	tracer            tracer.Tracer
+}
+
+type CreateMiddleware struct {
+	EventRepo         datastore.EventRepository
+	EventDeliveryRepo datastore.EventDeliveryRepository
+	AppRepo           datastore.ApplicationRepository
+	GroupRepo         datastore.GroupRepository
+	ApiKeyRepo        datastore.APIKeyRepository
+	SubRepo           datastore.SubscriptionRepository
+	SourceRepo        datastore.SourceRepository
+	OrgRepo           datastore.OrganisationRepository
+	OrgMemberRepo     datastore.OrganisationMemberRepository
+	OrgInviteRepo     datastore.OrganisationInviteRepository
+	UserRepo          datastore.UserRepository
+	ConfigRepo        datastore.ConfigurationRepository
+	Cache             cache.Cache
+	Logger            logger.Logger
+	Limiter           limiter.RateLimiter
+	Tracer            tracer.Tracer
+}
+
+func NewMiddleware(cs *CreateMiddleware) *Middleware {
+	return &Middleware{
+		eventRepo:         cs.EventRepo,
+		eventDeliveryRepo: cs.EventDeliveryRepo,
+		appRepo:           cs.AppRepo,
+		groupRepo:         cs.GroupRepo,
+		apiKeyRepo:        cs.ApiKeyRepo,
+		subRepo:           cs.SubRepo,
+		sourceRepo:        cs.SourceRepo,
+		orgRepo:           cs.OrgRepo,
+		orgMemberRepo:     cs.OrgMemberRepo,
+		orgInviteRepo:     cs.OrgInviteRepo,
+		userRepo:          cs.UserRepo,
+		configRepo:        cs.ConfigRepo,
+		cache:             cs.Cache,
+		logger:            cs.Logger,
+		limiter:           cs.Limiter,
+		tracer:            cs.Tracer,
+	}
+}
+
+type AuthorizedLogin struct {
+	Username   string    `json:"username,omitempty"`
+	Token      string    `json:"token"`
+	ExpiryTime time.Time `json:"expiry_time"`
+}
+
+func (m *Middleware) InstrumentPath(path string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			m := httpsnoop.CaptureMetrics(next, w, r)
+			metrics.RequestDuration().WithLabelValues(r.Method, path,
+				strconv.Itoa(m.Code)).Observe(m.Duration.Seconds())
+		})
+	}
+}
+
+func (m *Middleware) InstrumentRequests() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			txn, r, w := apm.StartWebTransaction(r.URL.Path, r, w)
+			defer txn.End()
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) WriteRequestIDHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Request-ID", r.Context().Value(middleware.RequestIDKey).(string))
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) SetupCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg, err := config.Get()
+		if err != nil {
+			log.WithError(err).Error("failed to load configuration")
+			return
+		}
+
+		if env := cfg.Environment; string(env) == "development" {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		}
+
+		if r.Method == "OPTIONS" {
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) JsonResponse(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			appID := chi.URLParam(r, "appID")
+
+			var app *datastore.Application
+			appCacheKey := convoy.ApplicationsCacheKey.Get(appID).String()
+
+			event := "an error occurred while retrieving app details"
+			statusCode := http.StatusBadRequest
+
+			err := m.cache.Get(r.Context(), appCacheKey, &app)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
+				return
+			}
+
+			if app == nil {
+				app, err = m.appRepo.FindApplicationByID(r.Context(), appID)
+				if err != nil {
+					if errors.Is(err, datastore.ErrApplicationNotFound) {
+						event = err.Error()
+						statusCode = http.StatusNotFound
+					}
+					_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
+					return
+				}
+
+				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
+					return
+				}
+			}
+
+			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+
+			if !util.IsStringEmpty(authUser.Role.App) {
+				appID := authUser.Role.App
+				r = r.WithContext(setAppIDInContext(r.Context(), appID))
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			appID := chi.URLParam(r, "appID")
+
+			if util.IsStringEmpty(appID) {
+				appID = r.URL.Query().Get("appId")
+			}
+
+			if util.IsStringEmpty(appID) {
+				appID = getAppIDFromContext(r.Context())
+			}
+
+			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
+			if err != nil {
+
+				event := "an error occurred while retrieving app details"
+				statusCode := http.StatusBadRequest
+
+				if errors.Is(err, datastore.ErrApplicationNotFound) {
+					event = err.Error()
+					statusCode = http.StatusBadRequest
+				}
+
+				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
+				return
+			}
+
+			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				// superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
+
+			group := GetGroupFromContext(r.Context())
+			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
+				if !util.IsStringEmpty(authUser.Role.App) { //we're dealing with an app portal token at this point
+					app := GetApplicationFromContext(r.Context())
+
+					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
+						next.ServeHTTP(w, r)
+						return
+					}
+
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
+					return
+				}
+
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+		})
+	}
+}
+
+func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
+	activeEndpoints := make([]datastore.Endpoint, 0)
+	for _, endpoint := range endpoints {
+		if endpoint.DeletedAt == 0 {
+			activeEndpoints = append(activeEndpoints, endpoint)
+		}
+	}
+	return activeEndpoints
+}
+
+func ParseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
+	var e models.Endpoint
+	err := util.ReadJSON(r, &e)
+	if err != nil {
+		return e, err
+	}
+
+	description := e.Description
+	if util.IsStringEmpty(description) {
+		return e, errors.New("please provide a description")
+	}
+
+	e.URL, err = util.CleanEndpoint(e.URL)
+	if err != nil {
+		return e, err
+	}
+
+	return e, nil
+}
+
+func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			app := GetApplicationFromContext(r.Context())
+			endPointId := chi.URLParam(r, "endpointID")
+
+			endpoint, err := m.findEndpoint(&app.Endpoints, endPointId)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setApplicationEndpointInContext(r.Context(), endpoint))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			eventId := chi.URLParam(r, "eventID")
+
+			event, err := m.eventRepo.FindEventByID(r.Context(), eventId)
+			if err != nil {
+
+				event := "an error occurred while retrieving event details"
+				statusCode := http.StatusInternalServerError
+
+				if errors.Is(err, datastore.ErrEventNotFound) {
+					event = err.Error()
+					statusCode = http.StatusNotFound
+				}
+
+				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
+				return
+			}
+
+			r = r.WithContext(setEventInContext(r.Context(), event))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			orgID := chi.URLParam(r, "orgID")
+
+			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
+			if err != nil {
+				log.WithError(err).Error("failed to fetch organisation")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setOrganisationInContext(r.Context(), org))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAuthUserMetadata() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			user, ok := authUser.Metadata.(*datastore.User)
+			if !ok {
+				log.Error("metadata missing in auth user object")
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			r = r.WithContext(setUserInContext(r.Context(), user))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user := GetUserFromContext(r.Context())
+			org := GetOrganisationFromContext(r.Context())
+
+			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			if err != nil {
+				log.WithError(err).Error("failed to find organisation member by user id")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			member := GetOrganisationMemberFromContext(r.Context())
+			if member.Role.Type.Is(auth.RoleSuperUser) {
+				//superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			group := GetGroupFromContext(r.Context())
+			if member.Role.Group == group.UID {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		})
+	}
+}
+
+func (m *Middleware) RequireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			member := GetOrganisationMemberFromContext(r.Context())
+			if member.Role.Type.Is(auth.RoleSuperUser) {
+				//superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if member.Role.Type != roleType {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
+
+			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			if err != nil {
+
+				eventDelivery := "an error occurred while retrieving event delivery details"
+				statusCode := http.StatusInternalServerError
+
+				if errors.Is(err, datastore.ErrEventDeliveryNotFound) {
+					eventDelivery = err.Error()
+					statusCode = http.StatusNotFound
+				}
+
+				_ = render.Render(w, r, util.NewErrorResponse(eventDelivery, statusCode))
+				return
+			}
+
+			a, err := m.appRepo.FindApplicationByID(r.Context(), eventDelivery.AppID)
+			if err == nil {
+				app := &datastore.Application{
+					UID:          a.UID,
+					Title:        a.Title,
+					GroupID:      a.GroupID,
+					SupportEmail: a.SupportEmail,
+				}
+				eventDelivery.App = app
+			}
+
+			ev, err := m.eventRepo.FindEventByID(r.Context(), eventDelivery.EventID)
+			if err == nil {
+				event := &datastore.Event{
+					UID:       ev.UID,
+					EventType: ev.EventType,
+				}
+				eventDelivery.Event = event
+			}
+
+			en, err := m.appRepo.FindApplicationEndpointByID(r.Context(), eventDelivery.AppID, eventDelivery.EndpointID)
+			if err == nil {
+				endpoint := &datastore.Endpoint{
+					UID:               en.UID,
+					TargetURL:         en.TargetURL,
+					DocumentStatus:    en.DocumentStatus,
+					Secret:            en.Secret,
+					HttpTimeout:       en.HttpTimeout,
+					RateLimit:         en.RateLimit,
+					RateLimitDuration: en.RateLimitDuration,
+				}
+				eventDelivery.Endpoint = endpoint
+			}
+
+			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			id := chi.URLParam(r, "deliveryAttemptID")
+			attempts := GetDeliveryAttemptsFromContext(r.Context())
+
+			attempt, err := findMessageDeliveryAttempt(attempts, id)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			r = r.WithContext(setDeliveryAttemptInContext(r.Context(), attempt))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
+	for _, endpoint := range *endpoints {
+		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+			return &endpoint, nil
+		}
+	}
+	return nil, datastore.ErrEndpointNotFound
+}
+
+func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
+
+	groups, err := groupRepo.LoadGroups(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
+	if err != nil {
+		return nil, err
+	}
+
+	if !(len(groups) > 0) {
+		return nil, errors.New("no default group, please your config")
+	}
+
+	return groups[0], err
+}
+
+func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var group *datastore.Group
+			var err error
+			var groupID string
+
+			groupID = r.URL.Query().Get("groupId")
+
+			if util.IsStringEmpty(groupID) {
+				groupID = r.URL.Query().Get("groupID")
+			}
+
+			if util.IsStringEmpty(groupID) {
+				groupID = chi.URLParam(r, "groupID")
+			}
+
+			if util.IsStringEmpty(groupID) {
+				authUser := GetAuthUserFromContext(r.Context())
+
+				if authUser.Credential.Type == auth.CredentialTypeAPIKey {
+					groupID = authUser.Role.Group
+				}
+			}
+
+			if !util.IsStringEmpty(groupID) {
+				groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
+				err = m.cache.Get(r.Context(), groupCacheKey, &group)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
+
+				if group == nil {
+					group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
+					if err != nil {
+						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+						return
+					}
+					err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+					if err != nil {
+						_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+						return
+					}
+				}
+			} else {
+				// TODO(all): maybe we should only use default-group if require_auth is false?
+				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
+				err = m.cache.Get(r.Context(), groupCacheKey, &group)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+					return
+				}
+
+				if group == nil {
+					group, err = m.GetDefaultGroup(r, m.groupRepo)
+					if err != nil {
+						event := "an error occurred while loading default group"
+						statusCode := http.StatusBadRequest
+
+						if errors.Is(err, mongo.ErrNoDocuments) {
+							event = err.Error()
+							statusCode = http.StatusNotFound
+						}
+
+						_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
+						return
+					}
+				}
+
+				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
+			}
+
+			r = r.WithContext(setGroupInContext(r.Context(), group))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			creds, err := GetAuthFromRequest(r)
+			if err != nil {
+				log.WithError(err).Error("failed to get auth from request")
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+				return
+			}
+
+			rc, err := realm_chain.Get()
+			if err != nil {
+				log.WithError(err).Error("failed to get realm chain")
+				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
+				return
+			}
+
+			authUser, err := rc.Authenticate(r.Context(), creds)
+			if err != nil {
+				log.WithError(err).Error("failed to authenticate")
+				_ = render.Render(w, r, util.NewErrorResponse("authorization failed", http.StatusUnauthorized))
+				return
+			}
+
+			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAuthorizedUser() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			user, ok := authUser.Metadata.(*datastore.User)
+
+			if !ok {
+				log.Error("metadata missing in auth user object")
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			userID := chi.URLParam(r, "userID")
+			dbUser, err := m.userRepo.FindUserByID(r.Context(), userID)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch user by id", http.StatusNotFound))
+				return
+			}
+
+			if user.UID != dbUser.UID {
+				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+
+		})
+	}
+}
+
+func (m *Middleware) RequireBaseUrl() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+			if err != nil {
+				log.WithError(err).Error("failed to load configuration")
+				return
+			}
+
+			r = r.WithContext(setHostInContext(r.Context(), cfg.Host))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequirePermission(role auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
+
+			group := GetGroupFromContext(r.Context())
+			if group == nil {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
+
+			if !authUser.Role.HasGroup(group.UID) {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
+	val := r.Header.Get("Authorization")
+	authInfo := strings.Split(val, " ")
+
+	if len(authInfo) != 2 {
+		err := errors.New("invalid header structure")
+		apm.NoticeError(r.Context(), err)
+		return nil, err
+	}
+
+	credType := auth.CredentialType(strings.ToUpper(authInfo[0]))
+	switch credType {
+	case auth.CredentialTypeBasic:
+
+		credentials, err := base64.StdEncoding.DecodeString(authInfo[1])
+		if err != nil {
+			return nil, errors.New("invalid credentials")
+		}
+
+		creds := strings.Split(string(credentials), ":")
+
+		if len(creds) != 2 {
+			return nil, errors.New("invalid basic credentials")
+		}
+
+		return &auth.Credential{
+			Type:     auth.CredentialTypeBasic,
+			Username: creds[0],
+			Password: creds[1],
+		}, nil
+	case auth.CredentialTypeAPIKey:
+		authToken := authInfo[1]
+
+		if util.IsStringEmpty(authToken) {
+			return nil, errors.New("empty api key or token")
+		}
+
+		prefix := fmt.Sprintf("%s%s", util.Prefix, util.Seperator)
+		if strings.HasPrefix(authToken, prefix) {
+			return &auth.Credential{
+				Type:   auth.CredentialTypeAPIKey,
+				APIKey: authToken,
+			}, nil
+		}
+
+		return &auth.Credential{
+			Type:  auth.CredentialTypeJWT,
+			Token: authToken}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
+	}
+}
+
+func (m *Middleware) Pagination(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rawPerPage := r.URL.Query().Get("perPage")
+		rawPage := r.URL.Query().Get("page")
+		rawSort := r.URL.Query().Get("sort")
+
+		if len(rawPerPage) == 0 {
+			rawPerPage = "20"
+		}
+		if len(rawPage) == 0 {
+			rawPage = "0"
+		}
+		if len(rawSort) == 0 {
+			rawSort = "-1"
+		}
+
+		var err error
+		var sort = -1 // desc by default
+		order := strings.ToLower(rawSort)
+		if order == "asc" {
+			sort = 1
+		}
+
+		var perPage int
+		if perPage, err = strconv.Atoi(rawPerPage); err != nil {
+			perPage = 20
+		}
+
+		var page int
+		if page, err = strconv.Atoi(rawPage); err != nil {
+			page = 0
+		}
+		pageable := datastore.Pageable{
+			Page:    page,
+			PerPage: perPage,
+			Sort:    sort,
+		}
+		r = r.WithContext(setPageableInContext(r.Context(), pageable))
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			if logger.CanLogHttpRequest(m.logger) {
+				start := time.Now()
+
+				defer func() {
+					requestFields := requestLogFields(r)
+					responseFields := responseLogFields(ww, start)
+
+					logFields := map[string]interface{}{
+						"httpRequest":  requestFields,
+						"httpResponse": responseFields,
+					}
+
+					m.logger.WithLogger().WithFields(logFields).Log(m.statusLevel(ww.Status()), requestFields["requestURL"])
+				}()
+
+			}
+			next.ServeHTTP(ww, r)
+		})
+	}
+}
+
+func requestLogFields(r *http.Request) map[string]interface{} {
+	scheme := "http"
+
+	if r.TLS != nil {
+		scheme = "https"
+	}
+
+	requestURL := fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
+
+	requestFields := map[string]interface{}{
+		"requestURL":    requestURL,
+		"requestMethod": r.Method,
+		"requestPath":   r.URL.Path,
+		"remoteIP":      r.RemoteAddr,
+		"proto":         r.Proto,
+		"scheme":        scheme,
+	}
+
+	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
+		requestFields["x-request-id"] = reqID
+	}
+
+	if len(r.Header) > 0 {
+		requestFields["header"] = headerFields(r.Header)
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load configuration")
+		return nil
+	}
+
+	if cfg.Tracer.Type == config.NewRelicTracerProvider {
+		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
+
+		if cfg.Tracer.NewRelic.DistributedTracerEnabled {
+			requestFields["traceID"] = txn.TraceID
+			requestFields["spanID"] = txn.SpanID
+		}
+
+		requestFields["entityGUID"] = txn.EntityGUID
+		requestFields["entityType"] = txn.EntityType
+	}
+
+	return requestFields
+}
+
+func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]interface{} {
+	responseFields := map[string]interface{}{
+		"status":  w.Status(),
+		"byes":    w.BytesWritten(),
+		"latency": time.Since(t),
+	}
+
+	if len(w.Header()) > 0 {
+		responseFields["header"] = headerFields(w.Header())
+	}
+
+	return responseFields
+}
+
+func (m *Middleware) statusLevel(status int) log.Level {
+	switch {
+	case status <= 0:
+		return log.WarnLevel
+	case status < 400:
+		return log.InfoLevel
+	case status >= 400 && status < 500:
+		return log.WarnLevel
+	case status >= 500:
+		return log.ErrorLevel
+	default:
+		return log.InfoLevel
+	}
+}
+
+func headerFields(header http.Header) map[string]string {
+	headerField := map[string]string{}
+
+	for k, v := range header {
+		k = strings.ToLower(k)
+		switch {
+		case len(v) == 0:
+			continue
+		case len(v) == 1:
+			headerField[k] = v[0]
+		default:
+			headerField[k] = fmt.Sprintf("[%s]", strings.Join(v, "], ["))
+		}
+		if k == "authorization" || k == "cookie" || k == "set-cookie" {
+			headerField[k] = "***"
+		}
+	}
+
+	return headerField
+}
+
+//func (m *Middleware) fetchGroupApps() func(next http.Handler) http.Handler {
+//	return func(next http.Handler) http.Handler {
+//
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//
+//			pageable := GetPageableFromContext(r.Context())
+//
+//			group := GetGroupFromContext(r.Context())
+//
+//			apps, paginationData, err := m.appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
+//			if err != nil {
+//				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
+//				return
+//			}
+//
+//			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
+//			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
+//			next.ServeHTTP(w, r)
+//		})
+//	}
+//}
+
+func ShouldAuthRoute(r *http.Request) bool {
+	guestRoutes := []string{
+		"/ui/auth/login",
+		"/ui/auth/token/refresh",
+		"/ui/organisations/process_invite",
+		"/ui/users/token",
+		"/ui/users/forgot-password",
+		"/ui/users/reset-password",
+	}
+
+	for _, route := range guestRoutes {
+		if r.URL.Path == route {
+			return false
+		}
+	}
+
+	return true
+}
+
+func EnsurePeriod(start time.Time, end time.Time) error {
+	if start.Unix() > end.Unix() {
+		return errors.New("startDate cannot be greater than endDate")
+	}
+
+	return nil
+}
+
+func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
+
+	var messagesSent uint64
+
+	messages, err := m.eventRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
+	if err != nil {
+		log.Errorln("failed to load message intervals - ", err)
+		return 0, nil, err
+	}
+
+	for _, m := range messages {
+		messagesSent += m.Count
+	}
+
+	return messagesSent, messages, nil
+}
+
+func (m *Middleware) RateLimitByGroupWithParams(requestLimit int, windowLength time.Duration) func(next http.Handler) http.Handler {
+	return httprate.Limit(requestLimit, windowLength, httprate.WithKeyFuncs(func(req *http.Request) (string, error) {
+		return GetGroupFromContext(req.Context()).UID, nil
+	}))
+}
+
+func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			group := GetGroupFromContext(r.Context())
+
+			var rateLimitDuration time.Duration
+			var err error
+			if util.IsStringEmpty(group.RateLimitDuration) {
+				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
+					return
+				}
+			} else {
+				rateLimitDuration, err = time.ParseDuration(group.RateLimitDuration)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
+					return
+				}
+			}
+
+			var rateLimit int
+			if group.RateLimit == 0 {
+				rateLimit = convoy.RATE_LIMIT
+			} else {
+				rateLimit = group.RateLimit
+			}
+
+			res, err := m.limiter.Allow(r.Context(), group.UID, rateLimit, int(rateLimitDuration))
+			if err != nil {
+				message := "an error occured while getting rate limit"
+				log.WithError(err).Error(message)
+				_ = render.Render(w, r, util.NewErrorResponse(message, http.StatusBadRequest))
+				return
+			}
+
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", int(math.Max(0, float64(res.Limit.Rate-1)))))
+			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", int(math.Max(0, float64(res.Remaining-1)))))
+			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%v", res.ResetAfter))
+
+			// the Retry-After header should only be set when the rate limit has been reached
+			if res.RetryAfter > time.Nanosecond {
+				w.Header().Set("Retry-After", fmt.Sprintf("%v", res.RetryAfter))
+			}
+
+			if res.Remaining == 0 {
+				_ = render.Render(w, r, util.NewErrorResponse("Too Many Requests", http.StatusTooManyRequests))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func setApplicationInContext(ctx context.Context,
+	app *datastore.Application) context.Context {
+	return context.WithValue(ctx, appCtx, app)
+}
+
+func GetApplicationFromContext(ctx context.Context) *datastore.Application {
+	return ctx.Value(appCtx).(*datastore.Application)
+}
+
+func setOrganisationInContext(ctx context.Context,
+	org *datastore.Organisation) context.Context {
+	return context.WithValue(ctx, orgCtx, org)
+}
+
+func GetOrganisationFromContext(ctx context.Context) *datastore.Organisation {
+	return ctx.Value(orgCtx).(*datastore.Organisation)
+}
+
+func setOrganisationMemberInContext(ctx context.Context,
+	organisationMember *datastore.OrganisationMember) context.Context {
+	return context.WithValue(ctx, orgMemberCtx, organisationMember)
+}
+
+func GetOrganisationMemberFromContext(ctx context.Context) *datastore.OrganisationMember {
+	return ctx.Value(orgMemberCtx).(*datastore.OrganisationMember)
+}
+
+func setEventInContext(ctx context.Context,
+	event *datastore.Event) context.Context {
+	return context.WithValue(ctx, eventCtx, event)
+}
+
+func GetEventFromContext(ctx context.Context) *datastore.Event {
+	return ctx.Value(eventCtx).(*datastore.Event)
+}
+
+func setEventDeliveryInContext(ctx context.Context,
+	eventDelivery *datastore.EventDelivery) context.Context {
+	return context.WithValue(ctx, eventDeliveryCtx, eventDelivery)
+}
+
+func GetEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
+	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
+}
+
+func setApplicationsInContext(ctx context.Context,
+	apps *[]datastore.Application) context.Context {
+	return context.WithValue(ctx, appCtx, apps)
+}
+
+func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
+	return ctx.Value(appCtx).(*[]datastore.Application)
+}
+
+func setApplicationEndpointInContext(ctx context.Context,
+	endpoint *datastore.Endpoint) context.Context {
+	return context.WithValue(ctx, endpointCtx, endpoint)
+}
+
+func GetApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
+	return ctx.Value(endpointCtx).(*datastore.Endpoint)
+}
+
+func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
+	return context.WithValue(ctx, groupCtx, group)
+}
+
+func GetGroupFromContext(ctx context.Context) *datastore.Group {
+	return ctx.Value(groupCtx).(*datastore.Group)
+}
+
+func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
+	return context.WithValue(ctx, pageableCtx, pageable)
+}
+
+func GetPageableFromContext(ctx context.Context) datastore.Pageable {
+	return ctx.Value(pageableCtx).(datastore.Pageable)
+}
+
+func setPaginationDataInContext(ctx context.Context, p *datastore.PaginationData) context.Context {
+	return context.WithValue(ctx, pageDataCtx, p)
+}
+
+func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {
+	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
+}
+
+func setDeliveryAttemptInContext(ctx context.Context,
+	attempt *datastore.DeliveryAttempt) context.Context {
+	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
+}
+
+func GetDeliveryAttemptFromContext(ctx context.Context) *datastore.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*datastore.DeliveryAttempt)
+}
+
+func SetDeliveryAttemptsInContext(ctx context.Context,
+	attempts *[]datastore.DeliveryAttempt) context.Context {
+	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
+}
+
+func GetDeliveryAttemptsFromContext(ctx context.Context) *[]datastore.DeliveryAttempt {
+	return ctx.Value(deliveryAttemptsCtx).(*[]datastore.DeliveryAttempt)
+}
+
+func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
+	return context.WithValue(ctx, authUserCtx, a)
+}
+
+func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
+	return ctx.Value(authUserCtx).(*auth.AuthenticatedUser)
+}
+
+func setUserInContext(ctx context.Context, a *datastore.User) context.Context {
+	return context.WithValue(ctx, userCtx, a)
+}
+
+func GetUserFromContext(ctx context.Context) *datastore.User {
+	return ctx.Value(userCtx).(*datastore.User)
+}
+
+func GetAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
+	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
+}
+
+func setHostInContext(ctx context.Context, baseUrl string) context.Context {
+	return context.WithValue(ctx, hostCtx, baseUrl)
+}
+
+func GetHostFromContext(ctx context.Context) string {
+	return ctx.Value(hostCtx).(string)
+}
+
+func setAppIDInContext(ctx context.Context, appId string) context.Context {
+	return context.WithValue(ctx, appIdCtx, appId)
+}
+
+func getAppIDFromContext(ctx context.Context) string {
+	var appID string
+
+	if appID, ok := ctx.Value(appIdCtx).(string); ok {
+		return appID
+	}
+
+	return appID
+}
+
+func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
+	for _, a := range *attempts {
+		if a.UID == id {
+			return &a, nil
+		}
+	}
+	return nil, datastore.ErrEventDeliveryAttemptNotFound
+}

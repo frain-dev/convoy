@@ -76,8 +76,9 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 
 			subscriptions = matchSubscriptions(string(event.EventType), subs)
 		} else if group.Type == datastore.IncomingGroup {
-			subscriptions, err = subRepo.FindSubscriptionBySourceIDs(ctx, group.UID, event.SourceID)
+			subscriptions, err = subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
 			if err != nil {
+				log.Errorf("error fetching subscriptions for this source %s", err)
 				return &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 			}
 		}
@@ -115,14 +116,14 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			}
 
-			eventDelivery := &datastore.EventDelivery{
-				UID:            uuid.New().String(),
+			eventDelivery := &datastore.EventDelivery{UID: uuid.New().String(),
 				SubscriptionID: s.UID,
 				AppID:          app.UID,
 				Metadata:       metadata,
 				GroupID:        group.UID,
 				EventID:        event.UID,
 				EndpointID:     s.EndpointID,
+				Headers:        event.Headers,
 
 				Status:           getEventDeliveryStatus(s, app),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},

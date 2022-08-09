@@ -1,7 +1,6 @@
 code[class*='language-'],
 pre[class*='language-'] {
 	color: #000624;
-	background: rgb(220, 220, 220, 0.1);
 	font-size: 1em;
 	text-align: left;
 	white-space: pre;
@@ -10,7 +9,7 @@ pre[class*='language-'] {
 	word-wrap: normal;
 	font-weight: 500;
 	font-size: 14px;
-	line-height: 28px;
+	line-height: 22px;
 	-moz-tab-size: 4;
 	-o-tab-size: 4;
 	tab-size: 4;
@@ -23,7 +22,6 @@ pre[class*='language-'] {
 pre[class*='language-'] {
 	padding: 1em;
 	margin: 3px 0;
-	overflow: auto;
 	border-radius: 0.3em;
 }
 
@@ -119,6 +117,7 @@ pre.line-numbers {
 	padding-left: 3.8em;
 	counter-reset: linenumber;
 }
+
 .eventDelivery {
 	pre.line-numbers {
 		max-width: 474px;
@@ -140,6 +139,7 @@ pre.line-numbers > code {
 	left: -3.8em;
 	width: 3em; /* works for line-numbers below 1000 lines */
 	letter-spacing: -1px;
+	line-height: 22.9px;
 
 	-webkit-user-select: none;
 	-moz-user-select: none;

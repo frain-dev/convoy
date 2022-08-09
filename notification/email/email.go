@@ -20,6 +20,7 @@ const (
 	TemplateEndpointUpdate     TemplateName = "endpoint.update"
 	TemplateOrganisationInvite TemplateName = "organisation.invite"
 	TemplateResetPassword      TemplateName = "reset.password"
+	TemplateTwitterSource      TemplateName = "twitter.source"
 )
 
 func (t TemplateName) String() string {

@@ -8,16 +8,18 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class ResetPasswordService {
 	constructor(private http: HttpService) {}
 
-	async resetPassword(requestDetails: { token: string; body: { email: string; password: string; password_confirmation: string } }): Promise<HTTP_RESPONSE> {
-		try {
-			const response = await this.http.request({
-				url: `/users/reset-password?token=${requestDetails.token}`,
-				body: requestDetails.body,
-				method: 'post'
-			});
-			return response;
-		} catch (error: any) {
-			return error;
-		}
+	resetPassword(requestDetails: { token: string; body: { email: string; password: string; password_confirmation: string } }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/reset-password?token=${requestDetails.token}`,
+					body: requestDetails.body,
+					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 }

@@ -6,8 +6,9 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/server"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
@@ -30,30 +31,48 @@ func addWorkerCommand(a *app) *cobra.Command {
 			}
 			ctx := context.Background()
 
+			// register worker.
 			consumer, err := worker.NewConsumer(a.queue)
 			if err != nil {
 				log.WithError(err).Error("failed to create worker")
 			}
 
-			// register tasks.
 			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 			consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
-			// register tasks.
 			eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo)
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
-			// register tasks.
 			notificationHandler := task.SendNotification(a.emailNotificationSender)
 			consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
+			dailyAnalytics := analytics.TrackDailyAnalytics(&analytics.Repo{
+				ConfigRepo: a.configRepo,
+				EventRepo:  a.eventRepo,
+				GroupRepo:  a.groupRepo,
+				OrgRepo:    a.orgRepo,
+				UserRepo:   a.userRepo,
+			}, cfg)
+			monitorTwitterSources := task.MonitorTwitterSources(a.sourceRepo, a.subRepo, a.applicationRepo, a.queue)
+			retentionPolicies := task.RententionPolicies(
+				cfg,
+				a.configRepo,
+				a.groupRepo,
+				a.eventRepo,
+				a.eventDeliveryRepo,
+				a.searcher)
 
+			consumer.RegisterHandlers(convoy.DailyAnalytics, dailyAnalytics)
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, monitorTwitterSources)
+			consumer.RegisterHandlers(convoy.RetentionPolicies, retentionPolicies)
+
+			//start worker
 			log.Infof("Starting Convoy workers...")
 			consumer.Start()
 
-			server.RegisterQueueMetrics(a.queue, cfg)
+			metrics.RegisterQueueMetrics(a.queue)
 
 			router := chi.NewRouter()
-			router.Handle("/metrics", promhttp.HandlerFor(server.Reg, promhttp.HandlerOpts{}))
+			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				render.JSON(w, r, "Convoy")
 			})

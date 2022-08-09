@@ -1,66 +1,66 @@
-<h1 class="font__12px font__weight-500 flex flex__align-items-center margin-bottom__24px text__uppercase">
-	<a routerLink="/projects" class="font__weight-500 pointer-cursor">Projects</a>
-	<svg width="16" height="16" class="margin-x__4px">
+<h1 class="text-12 font-medium flex items-center mb-24px uppercase">
+	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="margin-x__4px">
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<a class="pointer-cursor font__weight-500" (click)="goBack()">Apps</a>
-	<svg width="16" height="16" class="margin-x__4px">
+	<a class="cursor-pointer font-medium" (click)="goBack()">Apps</a>
+	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="font__weight-500 color__primary">{{ appsDetailsItem?.name || 'App' }}</span>
+	<span class="font-medium text-primary-100">{{ appsDetailsItem?.name || 'App' }}</span>
 </h1>
 
-<div class="card padding-all__32px margin-bottom__20px">
-	<div class="flex flex__justify-between flex__align-items-center margin-bottom__24px">
-		<h3>Overview</h3>
-		<button class="button button__white button__small" [disabled]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</button>
+<convoy-card className="p-32px mb-20px">
+	<div class="flex justify-between items-center mb-24px">
+		<h3 class="font-medium">Overview</h3>
+		<convoy-button size="sm" type="outline" [disable]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</convoy-button>
 	</div>
-	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px" *ngIf="isLoadingAppDetails">
+	<div class="flex items-center flex-wrap justify-between mb-32px" *ngIf="isLoadingAppDetails">
 		<div>
-			<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
-			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+			<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
+			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">SUPPORT EMAIL</p>
-			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+			<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
+			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">UPDATED</p>
-			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+			<p class="text-grey-40 text-12 font-light">UPDATED</p>
+			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">EVENTS</p>
-			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+			<p class="text-grey-40 text-12 font-light">EVENTS</p>
+			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
-			<div class="skeleton-loader margin-top__10px width__120px height__20px"></div>
+			<p class="text-grey-40 text-12 font-light">ENDPOINTS</p>
+			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
 		</div>
 	</div>
-	<div class="flex flex__align-items-center flex__wrap flex__justify-between margin-bottom__32px" *ngIf="!isLoadingAppDetails">
+	<div class="flex items-center justify-between flex-wrap mb-32px" *ngIf="!isLoadingAppDetails">
 		<div>
-			<p class="color__grey font__12px font__weight-300">DATE CREATED</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
+			<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.created_at | date: 'mediumDate' }}</p>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">SUPPORT EMAIL</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
+			<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.support_email || '...no support email provided' }}</p>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">UPDATED</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
+			<p class="text-grey-40 text-12 font-light">UPDATED</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.updated_at | date: 'mediumDate' }}</p>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">EVENTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.events || 0 }}</p>
+			<p class="text-grey-40 text-12 font-light">EVENTS</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.events || 0 }}</p>
 		</div>
 		<div>
-			<p class="color__grey font__12px font__weight-300">ENDPOINTS</p>
-			<p class="color__black font__14px font__weight-500">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
+			<p class="text-grey-40 text-12 font-light">ENDPOINTS</p>
+			<p class="text-black text-14 font-normal">{{ appsDetailsItem?.endpoints?.length || 0 }}</p>
 		</div>
 	</div>
 
@@ -76,211 +76,168 @@
         </label>
     </div> -->
 
-	<div class="flex flex__justify-between flex__wrap border__top margin-top__22px">
-		<div class="padding-top__32px" [ngClass]="{ 'width__50 border__right padding-right__32px': !shouldRenderSmallSize, width__100: shouldRenderSmallSize }">
-			<div class="flex flex__align-items-center flex__justify-between" *ngIf="isLoadingAppDetails">
-				<h3>App Event Endpoints</h3>
-				<div class="flex flex__align-items-center">
-					<div class="skeleton-loader margin-top__10px width__100px height__20px"></div>
-					<div class="line margin-right__16px margin-left__16px border__left"></div>
-					<div class="skeleton-loader margin-top__10px width__100px height__20px"></div>
+	<div class="flex flex-wrap justify-between border-t border-t-grey-10 mt-22px">
+		<div
+			class="pt-32px"
+			[ngClass]="{
+				'w-1/2 border-r border-r-grey-10 pr-32px': !shouldRenderSmallSize && privateService.activeProjectDetails?.type === 'outgoing',
+				'w-full': shouldRenderSmallSize || privateService.activeProjectDetails?.type === 'incoming'
+			}"
+		>
+			<div class="flex items-center justify-between" *ngIf="isLoadingAppDetails">
+				<h3 class="font-medium">App Event Endpoints</h3>
+				<div class="flex items-center">
+					<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
+					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
+					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
 				</div>
 			</div>
-			<div class="flex flex__align-items-center flex__justify-between" *ngIf="!isLoadingAppDetails">
-				<h3>App Event Endpoints</h3>
-				<div class="flex flex__align-items-center">
-					<button class="button__clear font__12px" (click)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</button>
-					<div class="line margin-right__16px margin-left__16px border__left"></div>
-					<button class="button__clear font__12px" [disabled]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (click)="showAddEventModal = true">Send Event</button>
+			<div class="flex items-center justify-between" *ngIf="!isLoadingAppDetails">
+				<h3 class="font-medium">App Event Endpoints</h3>
+				<div class="flex items-center">
+					<convoy-button size="sm" type="text" (clickItem)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</convoy-button>
+					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
+					<convoy-button *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
 				</div>
 			</div>
-			<ul class="margin-top__20px" *ngIf="isLoadingAppDetails">
-				<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px">
+
+			<ul class="mt-20px" *ngIf="isLoadingAppDetails">
+				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px">
 					<div>
-						<div class="flex flex__align-items-center margin-bottom__16px">
-							<div class="skeleton-loader endpoint width__100px height__20px"></div>
-							<div class="skeleton-loader endpoint width__80px height__20px margin-left__14px"></div>
+						<div class="flex items-center mb-16px">
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-80px h-20px ml-14px"></div>
 						</div>
 
-						<div class="flex flex__align-items-center">
-							<img src="/assets/img/link-icon.svg" alt="link icon" class="margin-right__8px" />
-							<div class="skeleton-loader endpoint width__80 height__20px"></div>
+						<div class="flex items-center">
+							<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-300px h-20px"></div>
 						</div>
 
-						<div class="flex flex__align-items-center margin-top__16px">
-							<div class="skeleton-loader endpoint width__100px height__20px"></div>
-							<div class="line margin-right__16px margin-left__16px border__left"></div>
-							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+						<div class="flex items-center mt-16px">
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<div class="w-[1px] h-22px mr-16px border-l border-l-grey-10"></div>
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
 						</div>
 					</div>
 				</li>
-				<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px">
+				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px">
 					<div>
-						<div class="flex flex__align-items-center margin-bottom__16px">
-							<div class="skeleton-loader endpoint width__100px height__20px"></div>
-							<div class="skeleton-loader endpoint width__80px height__20px margin-left__14px"></div>
+						<div class="flex items-center mb-16px">
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-80px h-20px ml-14px"></div>
 						</div>
 
-						<div class="flex flex__align-items-center">
-							<img src="/assets/img/link-icon.svg" alt="link icon" class="margin-right__8px" />
-							<div class="skeleton-loader endpoint width__80 height__20px"></div>
+						<div class="flex items-center">
+							<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-300px h-20px"></div>
 						</div>
 
-						<div class="flex flex__align-items-center margin-top__16px">
-							<div class="skeleton-loader endpoint width__100px height__20px"></div>
-							<div class="line margin-right__16px margin-left__16px border__left"></div>
-							<div class="skeleton-loader endpoint width__100px height__20px"></div>
+						<div class="flex items-center mt-16px">
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<div class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
+							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
 						</div>
 					</div>
 				</li>
 			</ul>
-			<ul class="margin-top__20px" *ngIf="!isLoadingAppDetails">
+
+			<ul class="mt-20px" *ngIf="!isLoadingAppDetails">
 				<ng-container *ngIf="appsDetailsItem?.endpoints">
-					<li class="app-details bg__grey-fade padding-all__16px rounded__8px margin-bottom__24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
+					<li class="relative bg-[#f9f9fb] p-16px rounded-8px mb-24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
 						<div>
-							<div class="flex flex__align-items-center">
-								<h5 class="color__black font__14px font__weight-400">{{ endpoint.description }}</h5>
-								<button
-									class="margin-left__16px margin-top__2px button__clear font__12px color__primary button--has-icon icon-right smaller-icon"
-									(click)="viewEndpointSecretKey(endpoint.secret)"
-								>
+							<div class="flex items-center">
+								<h5 class="text-black text-14 font-medium">{{ endpoint.description }}</h5>
+								<convoy-button type="text" size="sm" className="ml-16px" (clickItem)="viewEndpointSecretKey(endpoint.secret)">
 									View Secret
-									<img src="/assets/img/arrow-up-right.svg" alt="link out" class="margin-left__6px" />
-								</button>
+									<img src="/assets/img/arrow-up-right.svg" alt="link out" class="h-14px ml-6px" />
+								</convoy-button>
 							</div>
-							<p class="flex flex__align-items-center font__14px color__black font__weight-300 margin-top__16px">
-								<img src="/assets/img/link-icon.svg" alt="link icon" class="margin-right__8px" />
+							<p class="flex items-center text-14 text-black font-light mt-16px">
+								<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
 								{{ endpoint.target_url }}
 							</p>
 
-							<div class="flex flex__align-items-center margin-top__16px">
-								<button class="button__clear font__12px" (click)="selectedEndpoint = endpoint; showAddEndpointModal = true">Edit</button>
-								<div class="line margin-right__16px margin-left__16px border__left"></div>
-								<button class="button__clear font__12px" (click)="selectedEndpoint = endpoint; showDeleteModal = true">Delete</button>
+							<div class="flex items-center mt-16px">
+								<convoy-button size="sm" type="text" (clickItem)="selectedEndpoint = endpoint; showAddEndpointModal = true">Edit</convoy-button>
+								<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
+								<convoy-button size="sm" type="text" (clickItem)="selectedEndpoint = endpoint; showDeleteModal = true">Delete</convoy-button>
 							</div>
 						</div>
-						<div class="app-details--inactive flex flex__align-items-center flex__column flex__justify-center padding-all__24px" *ngIf="endpoint.status == 'inactive'">
-							<div class="icon flex flex__align-items-center flex__justify-center margin-bottom__8px padding-all__10px">
-								<img src="/assets/img/lock.svg" alt="lock icon" />
+						<div class="absolute backdrop-blur-sm rounded-8px top-0 w-full h-full -ml-[15px] bg-primary-500 bg-opacity-50 flex items-center flex-col justify-center p-24px" *ngIf="endpoint.status == 'inactive'">
+							<div class="bg-white-100 shadow-grey-10 rounded-[4.5px] h-36px w-36px flex items-center justify-center mb-8px p-10px">
+								<img src="/assets/img/lock.svg" alt="lock icon" class="w-[13px]" />
 							</div>
-							<p class="color__dark font__16px font__weight-600">Endpoint Disabled</p>
+							<p class="text-black text-16 font-semibold">Endpoint Disabled</p>
 
 							<!-- pending till this is figured out by backend -->
-							<!-- <a class="color__primary font__14px font__weight-500 margin-bottom__10px">Click here to learn how to enable this endpoint</a> -->
+							<!-- <a class="text-primary-500 text-14 font-semibold mb-10px">Click here to learn how to enable this endpoint</a> -->
 						</div>
 					</li>
 				</ng-container>
 			</ul>
-			<div class="empty-state smaller-table" *ngIf="!isLoadingAppDetails && appsDetailsItem?.endpoints?.length === 0">
-				<img src="/assets/img/empty-state-img.svg" alt="empty state" />
-				<p>No endpoint has been added for selected app yet</p>
-			</div>
+			<convoy-empty-state imgSrc="/assets/img/empty-state-img.svg" description="No endpoint has been added for selected app yet" className="h-[20vh]" *ngIf="!isLoadingAppDetails && appsDetailsItem?.endpoints?.length === 0"></convoy-empty-state>
 		</div>
-		<div class="padding-top__32px" [ngClass]="{ 'width__50 padding-left__32px': !shouldRenderSmallSize, 'border__top width__100': shouldRenderSmallSize }">
-			<div *ngIf="loadingAppPotalToken">
-				<h3>App Portal</h3>
-				<ul class="margin-top__10px">
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">App Page</div>
-						<div class="skeleton-loader width__80px height__20px"></div>
-					</li>
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">Embed into your platform</div>
-						<div class="skeleton-loader width__100px height__20px"></div>
-					</li>
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">Embed Iframe portal</div>
-						<div class="list-item__inline--item"></div>
-					</li>
-					<div class="skeleton-loader code margin-top__16px"></div>
+
+		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
+            <h3 class="font-medium">App Portal</h3>
+			<div *ngIf="loadingAppPotalToken" >
+				<ul class="mt-10px">
+					<convoy-list-item className="border-none">
+						<div class="text-14 text-grey-40 font-light">App Page</div>
+						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
+					</convoy-list-item>
+					<convoy-list-item className="border-none">
+						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
+						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
+					</convoy-list-item>
+					<div class="bg-grey-10 animate-pulse rounded-8px w-full h-100px mt-16px"></div>
 				</ul>
 			</div>
 			<div *ngIf="!loadingAppPotalToken">
-				<h3>App Portal</h3>
-				<ul class="margin-top__10px">
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">App Page</div>
-						<a class="list-item__inline--item link" [href]="appPortalLink" target="_blank">
+				<ul class="mt-10px">
+					<convoy-list-item className="border-none !py-8px">
+						<div class="text-14 text-grey-40 font-light">App Page</div>
+						<a class="text-14 text-primary-100 flex items-center" [href]="appPortalLink" target="_blank">
 							Open Link
-							<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+							<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 						</a>
-					</li>
-					<li class="list-item__inline">
-						<div class="list-item__inline--label">Embed into your platform</div>
-						<a class="list-item__inline--item link" href="https://getconvoy.io/docs/app-portal" target="_blank">
+					</convoy-list-item>
+					<convoy-list-item className="border-none !py-8px">
+						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
+						<a class="text-14 text-primary-100 flex items-center" href="https://getconvoy.io/docs/app-portal" target="_blank">
 							See Documentation
-							<img src="/assets/img/arrow-up-right.svg" alt="link out" />
+							<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 						</a>
-					</li>
-					<div class="bg__white-100 border__all__2 rounded__10px padding-all__16px margin-top__16px">
-						<div class="text font__14px color__grey overflow--scroll__x">{{ appPortalIframe }}</div>
-						<div class="flex flex__justify-end">
-							<button class="button__clear button--has-icon icon-left" (click)="copyText(appPortalLink)">
-								<img src="/assets/img/copy.svg" alt="copy" />
-								<small *ngIf="textCopied">Copied!</small>
-							</button>
+					</convoy-list-item>
+
+					<div class="bg-white-100 border-2 border-primary-500 rounded-[10px] p-16px mt-16px">
+						<div class="text-14 text-grey-40 overflow-x-scroll">{{ appPortalIframe }}</div>
+						<div class="flex justify-end">
+                            <convoy-copy-button [text]="appPortalLink"></convoy-copy-button>
 						</div>
 					</div>
 				</ul>
 			</div>
 		</div>
 	</div>
-</div>
+</convoy-card>
 
-<!-- dark overlay  -->
-<div
-	class="_overlay"
-	*ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret || showDeleteModal"
-	(click)="showAddEndpointModal = false; showAddEventModal = false; showEndpointSecret = false; showDeleteModal = false"
-></div>
+<app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
 
-<!-- create app, add new endpoint, add event modals  -->
-<div class="modal modal__right" *ngIf="showAddEndpointModal || showAddEventModal || showEndpointSecret">
-	<!-- add endpoint modal  -->
-	<ng-container *ngIf="showAddEndpointModal">
-		<div class="modal--head">
-			<h2>{{ selectedEndpoint ? 'Update' : 'Add' }} Endpoint</h2>
-			<a (click)="showAddEndpointModal = false">
-				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-			</a>
-		</div>
-		<app-create-endpoint
-			[selectedEndpoint]="selectedEndpoint"
-			[appId]="appsDetailsItem.uid"
-			(onAction)="$event.action == 'cancel' ? (showAddEndpointModal = false) : getAppDetails(appsDetailsItem.uid); showAddEndpointModal = false"
-		></app-create-endpoint>
+<convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false">
+	<ng-container modalBody>
+		<app-create-endpoint [selectedEndpoint]="selectedEndpoint" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? closeEditEndpointModal() : getAppDetails(appsDetailsItem.uid); closeEditEndpointModal()"></app-create-endpoint>
 	</ng-container>
+</convoy-modal>
 
-	<!-- add event modal  -->
-	<app-send-event
-		*ngIf="showAddEventModal"
-		[appId]="appsDetailsItem.uid"
-		(onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"
-	></app-send-event>
-
-	<!-- endpoint secret modal  -->
-	<div class="modal--head" *ngIf="showEndpointSecret">
-		<h2>Endpoint Secret</h2>
-		<a (click)="showEndpointSecret = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-		</a>
-	</div>
-	<div class="modal--body" *ngIf="showEndpointSecret">
-		<div class="key">
-			<span>{{ endpointSecretKey }}</span>
-			<button (click)="copyText(endpointSecretKey)">
-				<img src="/assets/img/copy.svg" alt="copy" />
-				<small *ngIf="textCopied">Copied!</small>
-			</button>
+<convoy-modal *ngIf="showEndpointSecret" title="Endpoint Secret" (closeModal)="showEndpointSecret = false">
+	<ng-container modalBody>
+		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px">
+			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecretKey }}</span>
+			<convoy-copy-button [text]="endpointSecretKey"></convoy-copy-button>
 		</div>
-	</div>
-</div>
+	</ng-container>
+</convoy-modal>
 
-<div class="modal modal__center small" *ngIf="showDeleteModal">
-	<app-delete-modal
-		[isLoading]="isDeletingEndpoint"
-		[deleteText]="'“' + selectedEndpoint?.description + '”'"
-		(closeModal)="showDeleteModal = false"
-		(deleteData)="deleteEndpoint()"
-	></app-delete-modal>
-</div>
+<app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>

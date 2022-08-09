@@ -4,13 +4,15 @@ import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 
+
+export type STAGES = 'createProject' | 'createSource' | 'createApplication' | 'createSubscription';
 @Component({
 	selector: 'app-create-project',
 	templateUrl: './create-project.component.html',
 	styleUrls: ['./create-project.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	projectStage: 'createProject' | 'createSource' | 'createApplication' | 'createSubscription' = 'createProject';
+	projectStage: STAGES = 'createProject';
 	projectStages = [
 		{ projectStage: 'Create Application', currentStage: 'pending', id: 'createApplication' },
 		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
@@ -43,7 +45,7 @@ export class CreateProjectComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid);
 	}
 
-	toggleActiveStage(stageDetails: { project: 'createSource' | 'createApplication' | 'createSubscription'; prevStage?: 'createSource' | 'createApplication' | 'createSubscription' }) {
+	toggleActiveStage(stageDetails: { project: STAGES; prevStage?: STAGES }) {
 		this.projectStage = stageDetails.project;
 		this.projectStages.forEach(item => {
 			if (item.id === stageDetails.project) item.currentStage = 'current';

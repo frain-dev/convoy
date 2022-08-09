@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AccountService } from './account.service';
 
@@ -11,6 +11,7 @@ import { AccountService } from './account.service';
 })
 export class AccountComponent implements OnInit {
 	activePage: 'profile' | 'security' = 'profile';
+	userSettingsMenu: ['profile', 'security'] = ['profile', 'security'];
 	isSavingUserDetails = false;
 	isUpdatingPassword = false;
 	isFetchingUserDetails = false;
@@ -26,9 +27,14 @@ export class AccountComponent implements OnInit {
 		password: ['', Validators.required],
 		password_confirmation: ['', Validators.required]
 	});
-	constructor(private accountService: AccountService, private router: Router, private formBuilder: FormBuilder, private generalService: GeneralService) {}
+	constructor(private accountService: AccountService, private router: Router, private formBuilder: FormBuilder, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	ngOnInit() {
+		this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'profile');
+		this.getAuthDetails();
+	}
+
+	getAuthDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		if (authDetails && authDetails !== 'undefined') {
 			const userId = JSON.parse(authDetails)?.uid;
@@ -61,12 +67,7 @@ export class AccountComponent implements OnInit {
 	}
 
 	async editBasicUserInfo() {
-		if (this.editBasicInfoForm.invalid) {
-			(<any>Object).values(this.editBasicInfoForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.editBasicInfoForm.invalid) return this.editBasicInfoForm.markAllAsTouched();
 		this.isSavingUserDetails = true;
 		try {
 			const response = await this.accountService.editBasicInfo({ userId: this.userId, body: this.editBasicInfoForm.value });
@@ -79,19 +80,12 @@ export class AccountComponent implements OnInit {
 	}
 
 	async changePassword() {
-		if (this.changePasswordForm.invalid) {
-			(<any>Object).values(this.changePasswordForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
+		if (this.changePasswordForm.invalid) return this.changePasswordForm.markAllAsTouched();
 		this.isUpdatingPassword = true;
 		try {
 			const response = await this.accountService.changePassword({ userId: this.userId, body: this.changePasswordForm.value });
-			if (response.status === true) {
-				this.generalService.showNotification({ style: 'success', message: response.message });
-				this.changePasswordForm.reset();
-			}
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.changePasswordForm.reset();
 			this.isUpdatingPassword = false;
 		} catch {
 			this.isUpdatingPassword = false;
@@ -101,10 +95,18 @@ export class AccountComponent implements OnInit {
 	checkPassword(): boolean {
 		const newPassword = this.changePasswordForm.value.password;
 		const confirmPassword = this.changePasswordForm.value.password_confirmation;
-		if (newPassword === confirmPassword) {
-			return true;
-		} else {
-			return false;
-		}
+		if (newPassword === confirmPassword) return true;
+		return false;
+	}
+
+	toggleActivePage(activePage: 'profile' | 'security') {
+		this.activePage = activePage;
+		if (!this.router.url.split('/')[2]) this.addPageToUrl();
+	}
+
+	addPageToUrl() {
+		const queryParams: any = {};
+		queryParams.activePage = this.activePage;
+		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 }

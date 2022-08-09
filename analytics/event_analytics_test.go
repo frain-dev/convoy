@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var TestHost = "http://test-host.com"
+var TestInstanceID = "3d9c49ce-8367-43ec-8884-568c8d43faec"
 
 func provideEventAnalytics(ctrl *gomock.Controller) *EventAnalytics {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
@@ -18,7 +18,7 @@ func provideEventAnalytics(ctrl *gomock.Controller) *EventAnalytics {
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newEventAnalytics(eventRepo, groupRepo, orgRepo, client, TestHost)
+	return newEventAnalytics(eventRepo, groupRepo, orgRepo, client, TestInstanceID)
 }
 
 func Test_TrackEventAnalytics(t *testing.T) {
@@ -34,17 +34,20 @@ func Test_TrackEventAnalytics(t *testing.T) {
 				groupRepo := ea.groupRepo.(*mocks.MockGroupRepository)
 				eventRepo := ea.eventRepo.(*mocks.MockEventRepository)
 				orgRepo := ea.orgRepo.(*mocks.MockOrganisationRepository)
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test-group"}}, nil)
-				eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil)
-				orgRepo.EXPECT().FetchOrganisationByID(gomock.Any(), gomock.Any()).Return(&datastore.Organisation{UID: "123456", Name: "test-org"}, nil)
+				gomock.InOrder(
+					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return([]datastore.Organisation{{UID: "123"}}, datastore.PaginationData{}, nil),
+					groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test-group"}}, nil),
+					eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
+					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
+				)
 			},
 		},
 
 		{
 			name: "should_fail_to_track_event_analytics",
 			dbFn: func(ea *EventAnalytics) {
-				groupRepo := ea.groupRepo.(*mocks.MockGroupRepository)
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed"))
+				orgRepo := ea.orgRepo.(*mocks.MockOrganisationRepository)
+				orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr: true,
 		},

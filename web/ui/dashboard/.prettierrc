@@ -1,7 +1,7 @@
 {
 	"singleQuote": true,
 	"tabWidth": 4,
-	"printWidth": 210,
+	"printWidth": 280,
 	"semi": true,
 	"endOfLine": "auto",
 	"arrowParens": "avoid",

@@ -21,6 +21,8 @@ const (
 	DailyUserCount         string = "Daily User Count"
 	MixPanelDevToken       string = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
 	MixPanelProdToken      string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
+	PerPage                int    = 20
+	Page                   int    = 1
 )
 
 type Tracker interface {
@@ -45,10 +47,10 @@ type Repo struct {
 }
 
 type Analytics struct {
-	Repo     *Repo
-	trackers analyticsMap
-	client   AnalyticsClient
-	host     string
+	Repo       *Repo
+	trackers   analyticsMap
+	client     AnalyticsClient
+	instanceID string
 }
 
 func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
@@ -58,7 +60,22 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	}
 
 	a := &Analytics{Repo: Repo, client: client}
-	a.host = cfg.Host
+
+	config, err := a.Repo.ConfigRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		if errors.Is(err, datastore.ErrConfigNotFound) {
+			return nil, err
+		}
+
+		log.WithError(err).Error("failed to track metrics")
+		return nil, err
+	}
+
+	if !config.IsAnalyticsEnabled {
+		return nil, nil
+	}
+
+	a.instanceID = config.UID
 
 	a.RegisterTrackers()
 	return a, nil
@@ -68,7 +85,8 @@ func TrackDailyAnalytics(Repo *Repo, cfg config.Configuration) func(context.Cont
 	return func(ctx context.Context, t *asynq.Task) error {
 		a, err := newAnalytics(Repo, cfg)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Error("Failed to initialize analytics")
+			return nil
 		}
 
 		a.trackDailyAnalytics()
@@ -78,19 +96,6 @@ func TrackDailyAnalytics(Repo *Repo, cfg config.Configuration) func(context.Cont
 }
 
 func (a *Analytics) trackDailyAnalytics() {
-	config, err := a.Repo.ConfigRepo.LoadConfiguration(context.Background())
-	if err != nil {
-		if errors.Is(err, datastore.ErrConfigNotFound) {
-			return
-		}
-
-		log.WithError(err).Error("failed to track metrics")
-	}
-
-	if !config.IsAnalyticsEnabled {
-		return
-	}
-
 	for _, tracker := range a.trackers {
 		go func(tracker Tracker) {
 			err := tracker.Track()
@@ -103,11 +108,11 @@ func (a *Analytics) trackDailyAnalytics() {
 
 func (a *Analytics) RegisterTrackers() {
 	a.trackers = analyticsMap{
-		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.Repo.GroupRepo, a.Repo.OrgRepo, a.client, a.host),
-		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client, a.host),
-		DailyGroupCount:        newGroupAnalytics(a.Repo.GroupRepo, a.client, a.host),
-		DailyActiveGroupCount:  newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.client, a.host),
-		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client, a.host),
+		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.Repo.GroupRepo, a.Repo.OrgRepo, a.client, a.instanceID),
+		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client, a.instanceID),
+		DailyGroupCount:        newGroupAnalytics(a.Repo.GroupRepo, a.client, a.instanceID),
+		DailyActiveGroupCount: newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.Repo.OrgRepo, a.client, a.instanceID),
+		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client, a.instanceID),
 	}
 
 }

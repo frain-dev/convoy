@@ -9,13 +9,15 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
 func provideSourceService(ctrl *gomock.Controller) *SourceService {
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
-	return NewSourceService(sourceRepo)
+	cache := mocks.NewMockCache(ctrl)
+	return NewSourceService(sourceRepo, cache)
 }
 
 func TestSourceService_CreateSource(t *testing.T) {
@@ -58,6 +60,50 @@ func TestSourceService_CreateSource(t *testing.T) {
 			wantSource: &datastore.Source{
 				Name: "Convoy-Prod",
 				Type: datastore.HTTPSource,
+				Verifier: &datastore.VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &datastore.HMac{
+						Header: "X-Convoy-Header",
+						Hash:   "SHA512",
+						Secret: "Convoy-Secret",
+					},
+				},
+			},
+			dbFn: func(so *SourceService) {
+				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
+				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
+		{
+			name: "should_set_default_forward_header_for_shopify_source",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name:     "Convoy-Prod",
+					Type:     datastore.HTTPSource,
+					Provider: datastore.ShopifySourceProvider,
+					Verifier: datastore.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &datastore.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
+						},
+					},
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantSource: &datastore.Source{
+				Name: "Convoy-Prod",
+				Type: datastore.HTTPSource,
+				ForwardHeaders: []string{
+					"X-Shopify-Topic",
+					"X-Shopify-Hmac-Sha256",
+					"X-Shopify-Shop-Domain",
+					"X-Shopify-API-Version",
+					"X-Shopify-Webhook-Id",
+				},
 				Verifier: &datastore.VerifierConfig{
 					Type: datastore.HMacVerifier,
 					HMac: &datastore.HMac{
@@ -137,8 +183,8 @@ func TestSourceService_CreateSource(t *testing.T) {
 			source, err := so.CreateSource(tc.args.ctx, tc.args.newSource, tc.args.group)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
@@ -255,8 +301,8 @@ func TestSourceService_UpdateSource(t *testing.T) {
 			source, err := so.UpdateSource(tc.args.ctx, tc.args.group, tc.args.update, tc.args.source)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -334,8 +380,8 @@ func TestSourceService_FindSourceByID(t *testing.T) {
 			source, err := so.FindSourceByID(tc.args.ctx, tc.args.group, tc.args.uid)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
@@ -344,85 +390,12 @@ func TestSourceService_FindSourceByID(t *testing.T) {
 	}
 }
 
-// func TestSourceService_FindSourceByMaskID(t *testing.T) {
-// 	ctx := context.Background()
-
-// 	type args struct {
-// 		ctx    context.Context
-// 		maskID string
-// 		group  *datastore.Group
-// 	}
-
-// 	tests := []struct {
-// 		name        string
-// 		args        args
-// 		wantSource  *datastore.Source
-// 		dbFn        func(so *SourceService)
-// 		wantErr     bool
-// 		wantErrCode int
-// 		wantErrMsg  string
-// 	}{
-// 		{
-// 			name: "should_find_source_by_id",
-// 			args: args{
-// 				ctx:    ctx,
-// 				maskID: "1234",
-// 				group:  &datastore.Group{UID: "12345"},
-// 			},
-// 			wantSource: &datastore.Source{MaskID: "1234"},
-// 			dbFn: func(so *SourceService) {
-// 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
-// 				s.EXPECT().FindSourceByMaskID(gomock.Any(), "1234").Times(1).Return(&datastore.Source{MaskID: "1234"}, nil)
-// 			},
-// 		},
-
-// 		{
-// 			name: "should_fail_to_find_source_by_id",
-// 			args: args{
-// 				ctx:    ctx,
-// 				maskID: "1234",
-// 				group:  &datastore.Group{UID: "12345"},
-// 			},
-// 			dbFn: func(so *SourceService) {
-// 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
-// 				s.EXPECT().FindSourceByMaskID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
-// 			},
-// 			wantErr:     true,
-// 			wantErrCode: http.StatusBadRequest,
-// 			wantErrMsg:  "error retrieving source",
-// 		},
-// 	}
-
-// 	for _, tc := range tests {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
-
-// 			so := provideSourceService(ctrl)
-
-// 			if tc.dbFn != nil {
-// 				tc.dbFn(so)
-// 			}
-
-// 			source, err := so.FindSourceByMaskID(tc.args.ctx, tc.args.group, tc.args.maskID)
-// 			if tc.wantErr {
-// 				require.NotNil(t, err)
-// 				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-// 				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
-// 				return
-// 			}
-// 			require.Nil(t, err)
-// 			require.Equal(t, tc.wantSource, source)
-// 		})
-// 	}
-// }
-
-func TestSourceService_DeleteSourceByID(t *testing.T) {
+func TestSourceService_DeleteSource(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx   context.Context
-		id    string
-		group *datastore.Group
+		ctx    context.Context
+		source *datastore.Source
+		group  *datastore.Group
 	}
 
 	tests := []struct {
@@ -436,9 +409,9 @@ func TestSourceService_DeleteSourceByID(t *testing.T) {
 		{
 			name: "should_delete_source",
 			args: args{
-				ctx:   ctx,
-				id:    "12345",
-				group: &datastore.Group{UID: "12345"},
+				ctx:    ctx,
+				source: &datastore.Source{UID: "12345", Provider: ""},
+				group:  &datastore.Group{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -447,11 +420,27 @@ func TestSourceService_DeleteSourceByID(t *testing.T) {
 		},
 
 		{
+			name: "should_delete_twitter_custom_source_from_cache",
+			args: args{
+				ctx:    ctx,
+				source: &datastore.Source{UID: "12345", MaskID: "abcd", Provider: datastore.TwitterSourceProvider},
+				group:  &datastore.Group{UID: "12345"},
+			},
+			dbFn: func(so *SourceService) {
+				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
+				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345").Times(1).Return(nil)
+
+				c, _ := so.cache.(*mocks.MockCache)
+				c.EXPECT().Delete(gomock.Any(), gomock.Any())
+			},
+		},
+
+		{
 			name: "should_fail_to_delete_source",
 			args: args{
-				ctx:   ctx,
-				id:    "12345",
-				group: &datastore.Group{UID: "12345"},
+				ctx:    ctx,
+				source: &datastore.Source{UID: "12345", Provider: ""},
+				group:  &datastore.Group{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -474,11 +463,11 @@ func TestSourceService_DeleteSourceByID(t *testing.T) {
 				tc.dbFn(so)
 			}
 
-			err := so.DeleteSourceByID(tc.args.ctx, tc.args.group, tc.args.id)
+			err := so.DeleteSource(tc.args.ctx, tc.args.group, tc.args.source)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 
@@ -590,8 +579,8 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 			sources, paginationData, err := so.LoadSourcesPaged(tc.args.ctx, tc.args.group, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
