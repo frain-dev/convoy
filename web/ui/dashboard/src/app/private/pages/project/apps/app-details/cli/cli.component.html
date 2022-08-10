@@ -1,6 +1,5 @@
 <convoy-card className="mb-20px min-h-[50vh]">
-
-    <!-- tab  -->
+	<!-- tab  -->
 	<div class="flex items-center justify-center border-b border-grey-10 mb-18px">
 		<ul class="w-full flex items-center">
 			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
@@ -48,7 +47,7 @@
 			<div>
 				<div class="flex items-center">
 					<h3 class="font-semibold mr-14px">{{ key.name }}</h3>
-					<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{getKeyStatus(key.expires_at)}}</convoy-tag>
+					<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 				</div>
 				<p class="text-grey-40 text-10 mt-8px">Created: {{ key.created_at | date: 'medium' }}</p>
 			</div>
@@ -70,5 +69,21 @@
 			</div>
 		</div>
 	</ng-container>
-
 </convoy-card>
+
+<convoy-modal *ngIf="showApiKey">
+	<div class="flex flex-col items-center justify-center min-h-[80vh] px-30px" modalBody>
+		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
+		<h2 class="font-semibold mt-16px">Api Key Generated Successfully</h2>
+		<p class="text-14 text-grey-60 font-normal text-center mb-16px mt-8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
+		<p class="text-14 text-danger-100 mb-40px text-center">For security reasons, we cannot show it to you again</p>
+		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px mb-32px">
+			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ apiKey }}</span>
+			<convoy-button type="text" size="sm" (click)="copyKey(apiKey)">
+				<img src="/assets/img/copy.svg" alt="copy" />
+				<small *ngIf="showSecretCopyText">Copied!</small>
+			</convoy-button>
+		</div>
+		<convoy-button (click)="showApiKey = false; getApiKeys()" buttonType="button">Done</convoy-button>
+	</div>
+</convoy-modal>
