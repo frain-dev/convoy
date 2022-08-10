@@ -70,7 +70,12 @@ func addListenCommand(a *app) *cobra.Command {
 				log.Fatal("Error marshalling json:", err)
 			}
 
-			url := url.URL{Scheme: "ws", Host: "localhost:5008", Path: "/stream/listen"}
+			hostInfo, err := url.Parse(c.Host)
+			if err != nil {
+				log.Fatal("Error parsing host URL: ", err)
+			}
+
+			url := url.URL{Scheme: "ws", Host: hostInfo.Host, Path: "/stream/listen"}
 			conn, _, err := websocket.DefaultDialer.Dial(url.String(), http.Header{
 				"Authorization": []string{"Bearer " + c.ActiveApiKey},
 				"Body":          []string{string(body)},
@@ -160,8 +165,8 @@ func receiveHandler(connection *websocket.Conn) {
 			continue
 		}
 
-		ak := &services.AckEventDelivery{UID: event.UID}
-		j, err := json.Marshal(ak)
+		ack := &services.AckEventDelivery{UID: event.UID}
+		j, err := json.Marshal(ack)
 		if err != nil {
 			log.Println("Error in marshalling json:", err)
 			continue

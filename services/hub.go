@@ -18,13 +18,11 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	// "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// Hub maintains the set of active clients and broadcasts messages to the
-// clients.
+// Hub maintains the set of active clients and broadcasts messages to the clients.
 type Hub struct {
 	deviceRepo        datastore.DeviceRepository
 	subscriptionRepo  datastore.SubscriptionRepository
@@ -80,6 +78,11 @@ func (h *Hub) StartEventSender() {
 			h.lock.RLock()
 			client := h.deviceClients[ev.DeviceID]
 			h.lock.RUnlock()
+
+			// there is no valid client for this event delivery, so skip it
+			if client == nil {
+				continue
+			}
 
 			if !client.IsOnline() {
 				client.GoOffline()
@@ -235,7 +238,7 @@ func (h *Hub) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	loginRequest := &LoginRequest{}
 	err := util.ReadJSON(r, &loginRequest)
 	if err != nil {
-		respond(w, http.StatusBadRequest, "device id is required in request body")
+		respond(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -265,40 +268,65 @@ func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.
 		device, err = h.deviceRepo.FetchDeviceByID(ctx, loginRequest.DeviceID, appID, group.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to find device by id")
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find device by id"))
+			return nil, err
 		}
 
 		if device.GroupID != group.UID {
-			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this project"))
 		}
 
 		if device.AppID != appID {
-			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
 		}
 
 		if device.Status != datastore.DeviceStatusOnline {
 			device.Status = datastore.DeviceStatusOnline
 			err = h.deviceRepo.UpdateDevice(ctx, device, device.AppID, device.GroupID)
 			if err != nil {
-				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
+				return nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
 		}
 	} else {
-		device = &datastore.Device{
-			UID:            uuid.NewString(),
-			GroupID:        group.UID,
-			AppID:          appID,
-			HostName:       loginRequest.HostName,
-			Status:         datastore.DeviceStatusOnline,
-			DocumentStatus: datastore.ActiveDocumentStatus,
-			LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		device, err = h.deviceRepo.FetchDeviceByHostName(ctx, loginRequest.HostName, appID, group.UID)
+		if err != nil {
+			log.WithError(err).Error("failed to find device by the hostname")
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		err = h.deviceRepo.CreateDevice(ctx, device)
-		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create new device"))
+		if device != nil {
+			d := &datastore.Device{
+				AppID:    appID,
+				GroupID:  group.UID,
+				HostName: loginRequest.HostName,
+			}
+
+			err = h.deviceRepo.UpdateDevice(ctx, d, appID, group.UID)
+			if err != nil {
+				log.WithError(err).Error("failed to update device")
+				return nil, util.NewServiceError(http.StatusBadRequest, err)
+			}
+
+			device.HostName = d.HostName
+			device.GroupID = d.GroupID
+			device.AppID = d.AppID
+
+		} else {
+			device = &datastore.Device{
+				AppID:          appID,
+				GroupID:        group.UID,
+				UID:            uuid.NewString(),
+				HostName:       loginRequest.HostName,
+				Status:         datastore.DeviceStatusOnline,
+				DocumentStatus: datastore.ActiveDocumentStatus,
+				LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			}
+
+			err = h.deviceRepo.CreateDevice(ctx, device)
+			if err != nil {
+				return nil, util.NewServiceError(http.StatusBadRequest, err)
+			}
 		}
 	}
 
@@ -309,7 +337,8 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 	listenRequest := &ListenRequest{}
 	err := json.Unmarshal([]byte(r.Header.Get("Body")), &listenRequest)
 	if err != nil {
-		respond(w, http.StatusBadRequest, "empty request body")
+		log.WithError(err).Error("failed to marshal data")
+		respond(w, http.StatusBadRequest, "failed to marshal response: "+err.Error())
 		return
 	}
 
@@ -318,7 +347,6 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 
 	device, err := h.listen(r.Context(), group, app, listenRequest)
 	if err != nil {
-		// TODO: we don't need to do interface conversion here
 		respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 		return
 	}
@@ -326,7 +354,7 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := ug.Upgrade(w, r, nil)
 	if err != nil {
 		log.WithError(err).Error("failed to upgrade connection to websocket connection")
-		respond(w, http.StatusBadRequest, "failed to upgrade connection to websocket connection")
+		respond(w, http.StatusBadRequest, "failed to upgrade connection to websocket connection: "+err.Error())
 		return
 	}
 
@@ -354,26 +382,26 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 
 	device, err := h.deviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, appID, group.UID)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("device not found"))
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	if device.GroupID != group.UID {
-		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this project"))
 	}
 
 	if device.AppID != appID {
-		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access device"))
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
 	}
 
 	if !util.IsStringEmpty(listenRequest.SourceID) {
 		source, err := h.sourceRepo.FindSourceByID(ctx, device.GroupID, listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
 		if source.GroupID != group.UID {
-			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access source"))
+			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this source"))
 		}
 	}
 
@@ -384,7 +412,7 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 	case datastore.ErrSubscriptionNotFound:
 		s := &datastore.Subscription{
 			UID:            uuid.NewString(),
-			Name:           fmt.Sprintf("device-%s-subscription", device.UID),
+			Name:           fmt.Sprintf("%v-subscription", device.HostName),
 			Type:           datastore.SubscriptionTypeCLI,
 			AppID:          appID,
 			GroupID:        group.UID,
@@ -399,10 +427,10 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 
 		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, s)
 		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create new subscription"))
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 	default:
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find subscription by id"))
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return device, nil
@@ -421,7 +449,7 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal data")
-		respond(w, http.StatusInternalServerError, "failed to marshal response")
+		respond(w, http.StatusInternalServerError, "failed to marshal response: "+err.Error())
 		return
 	}
 

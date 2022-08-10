@@ -467,6 +467,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "app_id", Value: 1},
 					{Key: "group_id", Value: 1},
+					{Key: "host_name", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
@@ -479,17 +480,8 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "app_id", Value: 1},
 					{Key: "group_id", Value: 1},
 					{Key: "source_id", Value: 1},
-					{Key: "endpoint_id", Value: 1},
-					{Key: "document_status", Value: 1},
-				},
-				Options: options.Index().SetUnique(true),
-			},
-			{
-				Keys: bson.D{
 					{Key: "device_id", Value: 1},
-					{Key: "app_id", Value: 1},
-					{Key: "group_id", Value: 1},
-					{Key: "source_id", Value: 1},
+					{Key: "endpoint_id", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
