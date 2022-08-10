@@ -268,7 +268,7 @@ func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.
 		device, err = h.deviceRepo.FetchDeviceByID(ctx, loginRequest.DeviceID, appID, group.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to find device by id")
-			return nil, err
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
 		if device.GroupID != group.UID {
@@ -325,6 +325,7 @@ func (h *Hub) login(ctx context.Context, group *datastore.Group, app *datastore.
 
 			err = h.deviceRepo.CreateDevice(ctx, device)
 			if err != nil {
+				log.Println(err)
 				return nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
 		}
