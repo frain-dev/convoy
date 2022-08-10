@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -49,7 +48,7 @@ func NewConfig(host, apiKey string) (*Config, error) {
 	c.hasDefaultConfigFile = HasDefaultConfigFile(path)
 
 	if c.hasDefaultConfigFile {
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +82,7 @@ func (c *Config) WriteConfig() error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(c.path, []byte(d), 0644); err != nil {
+	if err := os.WriteFile(c.path, []byte(d), 0644); err != nil {
 		return err
 	}
 

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -197,7 +196,7 @@ func loadConfig() (*Config, error) {
 	}
 
 	if c.hasDefaultConfigFile {
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
