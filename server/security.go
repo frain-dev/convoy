@@ -73,7 +73,7 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [post]
+// @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys [post]
 
 // CreateAppAPIKey
 // @Summary Create an api key for app portal or the cli (API)
@@ -195,6 +195,45 @@ func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
+}
+
+// RevokeAppAPIKey
+// @Summary Revoke an App's API Key
+// @Description This endpoint revokes app's an api key
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "Organisation id"
+// @Param groupID path string true "Group id"
+// @Param appID path string true "application id"
+// @Param keyID path string true "API Key id"
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke [put]
+func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Request) {
+	app := m.GetApplicationFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
+
+	key, err := a.S.SecurityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if key.Role.Group != group.UID || key.Role.App != app.UID {
+		_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
+		return
+	}
+
+	err = a.S.SecurityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
+
 }
 
 // GetAPIKeyByID
