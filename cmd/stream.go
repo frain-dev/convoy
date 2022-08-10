@@ -80,7 +80,7 @@ func addStreamCommand(a *app) *cobra.Command {
 }
 
 func gracefulShutdown(srv *http.Server, hub *services.Hub) {
-	//Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds
+	// Wait for interrupt signal to gracepfully shutdown the server with a timeout of 10 seconds
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit

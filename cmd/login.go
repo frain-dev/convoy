@@ -1,19 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/net"
+	convoyNet "github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -119,9 +120,13 @@ func addLoginCommand() *cobra.Command {
 				return errors.New("api key is required")
 			}
 
-			deviceID := FindDeviceID(c)
+			deviceID := findDeviceID(c)
+			hostName, err := generateDeviceHostName()
+			if err != nil {
+				return err
+			}
 
-			loginRequest := &services.LoginRequest{HostName: uuid.NewString(), DeviceID: deviceID}
+			loginRequest := &services.LoginRequest{HostName: hostName, DeviceID: deviceID}
 			body, err := json.Marshal(loginRequest)
 			if err != nil {
 				return err
@@ -129,7 +134,7 @@ func addLoginCommand() *cobra.Command {
 
 			var response *services.LoginResponse
 
-			dispatch := net.NewDispatcher(time.Second * 10)
+			dispatch := convoyNet.NewDispatcher(time.Second * 10)
 			url := fmt.Sprintf("%s/stream/login", c.Host)
 			resp, err := dispatch.SendCliRequest(url, convoy.HttpPost, c.ActiveApiKey, body)
 			if err != nil {
@@ -236,7 +241,7 @@ func IsNewApiKey(c *Config, apiKey string) bool {
 	return true
 }
 
-func FindDeviceID(c *Config) string {
+func findDeviceID(c *Config) string {
 	var deviceID string
 
 	for _, project := range c.Projects {
@@ -246,4 +251,38 @@ func FindDeviceID(c *Config) string {
 	}
 
 	return deviceID
+}
+
+// generateDeviceHostName uses the machine's host name and the mac address to generate a predictable unique id per device
+func generateDeviceHostName() (string, error) {
+	name, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+
+	var mac uint64
+	for _, i := range interfaces {
+		if i.Flags&net.FlagUp != 0 && !bytes.Equal(i.HardwareAddr, nil) {
+
+			// Skip virtual MAC addresses (Locally Administered Addresses).
+			if i.HardwareAddr[0]&2 == 2 {
+				continue
+			}
+
+			for j, b := range i.HardwareAddr {
+				if j >= 8 {
+					break
+				}
+				mac <<= 8
+				mac += uint64(b)
+			}
+		}
+	}
+
+	return fmt.Sprintf("%v-%v", name, mac), nil
 }

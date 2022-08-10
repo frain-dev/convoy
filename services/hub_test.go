@@ -131,7 +131,7 @@ func TestHub_listen(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "unauthorized to access device",
+			wantErrMsg:  "this device cannot access this project",
 		},
 		{
 			name: "should_error_for_wrong_device_app_id",
@@ -163,7 +163,7 @@ func TestHub_listen(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "unauthorized to access device",
+			wantErrMsg:  "this device cannot access this application",
 		},
 		{
 			name: "should_fail_to_find_device",
@@ -180,7 +180,7 @@ func TestHub_listen(t *testing.T) {
 			},
 			dbFn: func(h *Hub) {
 				d := h.deviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(nil, errors.New("failed"))
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(nil, errors.New("device not found"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -215,7 +215,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.sourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(nil, errors.New("failed"))
+				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(nil, errors.New("failed to find source"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -257,7 +257,7 @@ func TestHub_listen(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "unauthorized to access source",
+			wantErrMsg:  "this device cannot access this source",
 		},
 
 		{
@@ -296,7 +296,7 @@ func TestHub_listen(t *testing.T) {
 
 				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", "source-id").
-					Times(1).Return(nil, errors.New("failed"))
+					Times(1).Return(nil, errors.New("failed to find subscription by id"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -389,7 +389,7 @@ func TestHub_listen(t *testing.T) {
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", "source-id").
 					Times(1).Return(nil, datastore.ErrSubscriptionNotFound)
 
-				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(errors.New("failed"))
+				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(errors.New("failed to create new subscription"))
 			},
 			want: &datastore.Device{
 				UID:            "device-id",
@@ -460,6 +460,8 @@ func TestHub_login(t *testing.T) {
 			},
 			dbFn: func(h *Hub) {
 				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+				d.EXPECT().FetchDeviceByHostName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
 				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			want: &datastore.Device{
@@ -482,7 +484,9 @@ func TestHub_login(t *testing.T) {
 			},
 			dbFn: func(h *Hub) {
 				d := h.deviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				d.EXPECT().FetchDeviceByHostName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed to create new device"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -534,7 +538,8 @@ func TestHub_login(t *testing.T) {
 			},
 			dbFn: func(h *Hub) {
 				d := h.deviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(nil, errors.New("failed"))
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).
+					Return(nil, errors.New("failed to find device by id"))
 			},
 			want: &datastore.Device{
 				GroupID:  "1234",
@@ -573,7 +578,7 @@ func TestHub_login(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "unauthorized to access device",
+			wantErrMsg:  "this device cannot access this project",
 		},
 		{
 			name: "should_error_for_wrong_device_app_id",
@@ -603,7 +608,7 @@ func TestHub_login(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "unauthorized to access device",
+			wantErrMsg:  "this device cannot access this application",
 		},
 		{
 			name: "should_login_with_existing_device_and_update_device_status_successfully",
@@ -680,7 +685,7 @@ func TestHub_login(t *testing.T) {
 					Status:         datastore.DeviceStatusOnline,
 					DocumentStatus: datastore.ActiveDocumentStatus,
 					LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-				}, "abc", "1234").Times(1).Return(errors.New("failed"))
+				}, "abc", "1234").Times(1).Return(errors.New("failed to update device to online"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
