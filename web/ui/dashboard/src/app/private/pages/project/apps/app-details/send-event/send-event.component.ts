@@ -1,6 +1,11 @@
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ButtonComponent } from 'src/app/components/button/button.component';
+import { InputComponent } from 'src/app/components/input/input.component';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { SelectComponent } from 'src/app/components/select/select.component';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -8,6 +13,8 @@ import { AppDetailsService } from '../app-details.service';
 
 @Component({
 	selector: 'app-send-event',
+	standalone: true,
+	imports: [CommonModule, ModalComponent, SelectComponent, InputComponent, ButtonComponent, ReactiveFormsModule],
 	templateUrl: './send-event.component.html',
 	styleUrls: ['./send-event.component.scss']
 })

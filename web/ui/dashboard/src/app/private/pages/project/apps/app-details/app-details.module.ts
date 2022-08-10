@@ -10,8 +10,8 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
-import { SendEventModule } from './send-event/send-event.module';
-import { CliModule } from './cli/cli.module';
+import { CliComponent } from './cli/cli.component';
+import { SendEventComponent } from './send-event/send-event.component';
 
 const routes: Routes = [
 	{
@@ -32,8 +32,8 @@ const routes: Routes = [
         EmptyStateComponent,
         SkeletonLoaderComponent,
 		CreateEndpointModule,
-        SendEventModule,
-        CliModule,
+        SendEventComponent,
+        CliComponent,
 		RouterModule.forChild(routes)
 	]
 })
