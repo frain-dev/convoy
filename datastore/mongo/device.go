@@ -46,6 +46,7 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 
 	update := bson.M{
 		"status":       device.Status,
+		"host_name":    device.HostName,
 		"updated_at":   device.UpdatedAt,
 		"last_seen_at": device.LastSeenAt,
 	}
@@ -104,6 +105,30 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 		}
 		return nil, err
 	}
+
+	return device, nil
+}
+
+func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, appID, groupID string) (*datastore.Device, error) {
+	filter := bson.M{
+		"group_id":        groupID,
+		"host_name":       hostName,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	if !util.IsStringEmpty(appID) {
+		filter["app_id"] = appID
+	}
+
+	device := &datastore.Device{}
+	err := d.store.FindOne(ctx, filter, nil, device)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, datastore.ErrDeviceNotFound
+		}
+		return nil, err
+	}
+
 	return device, nil
 }
 

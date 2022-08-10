@@ -113,7 +113,6 @@ func (c *Client) GoOffline() {
 	}
 
 	c.lock.Unlock()
-	log.Println("[GoOffline]: close")
 	c.Close()
 }
 

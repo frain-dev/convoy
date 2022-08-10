@@ -118,6 +118,7 @@ type DeviceRepository interface {
 	UpdateDeviceLastSeen(ctx context.Context, device *Device, appID, groupID string, status DeviceStatus) error
 	DeleteDevice(ctx context.Context, uid string, appID, groupID string) error
 	FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*Device, error)
+	FetchDeviceByHostName(ctx context.Context, hostName string, appID, groupID string) (*Device, error)
 	LoadDevicesPaged(ctx context.Context, groupID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
 }
 

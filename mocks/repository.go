@@ -1424,6 +1424,21 @@ func (mr *MockDeviceRepositoryMockRecorder) DeleteDevice(ctx, uid, appID, groupI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDevice", reflect.TypeOf((*MockDeviceRepository)(nil).DeleteDevice), ctx, uid, appID, groupID)
 }
 
+// FetchDeviceByHostName mocks base method.
+func (m *MockDeviceRepository) FetchDeviceByHostName(ctx context.Context, hostName, appID, groupID string) (*datastore.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchDeviceByHostName", ctx, hostName, appID, groupID)
+	ret0, _ := ret[0].(*datastore.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchDeviceByHostName indicates an expected call of FetchDeviceByHostName.
+func (mr *MockDeviceRepositoryMockRecorder) FetchDeviceByHostName(ctx, hostName, appID, groupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchDeviceByHostName", reflect.TypeOf((*MockDeviceRepository)(nil).FetchDeviceByHostName), ctx, hostName, appID, groupID)
+}
+
 // FetchDeviceByID mocks base method.
 func (m *MockDeviceRepository) FetchDeviceByID(ctx context.Context, uid, appID, groupID string) (*datastore.Device, error) {
 	m.ctrl.T.Helper()
