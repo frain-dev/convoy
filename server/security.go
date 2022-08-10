@@ -147,8 +147,8 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param appID path string true "application ID"
-// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [get]
 func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.Request) {
@@ -210,7 +210,7 @@ func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke [put]
+// @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke [put]
 func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
