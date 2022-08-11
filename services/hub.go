@@ -367,10 +367,6 @@ func (h *Hub) ListenHandler(w http.ResponseWriter, r *http.Request) {
 		EventTypes: listenRequest.EventTypes,
 	}
 
-	if len(client.EventTypes) == 0 {
-		client.EventTypes = []string{"*"}
-	}
-
 	client.hub.register <- client
 	go client.readPump()
 }
@@ -406,31 +402,40 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 		}
 	}
 
-	_, err = h.subscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID, listenRequest.SourceID)
-	switch err {
-	case nil:
-		break
-	case datastore.ErrSubscriptionNotFound:
-		s := &datastore.Subscription{
-			UID:            uuid.NewString(),
-			Name:           fmt.Sprintf("%v-subscription", device.HostName),
-			Type:           datastore.SubscriptionTypeCLI,
-			AppID:          appID,
-			GroupID:        group.UID,
-			SourceID:       listenRequest.SourceID,
-			DeviceID:       device.UID,
-			FilterConfig:   &datastore.FilterConfiguration{EventTypes: []string{"*"}},
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			Status:         datastore.ActiveSubscriptionStatus,
-			DocumentStatus: datastore.ActiveDocumentStatus,
+	sub, err := h.subscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
+			s := &datastore.Subscription{
+				UID:            uuid.NewString(),
+				Name:           fmt.Sprintf("%v-subscription", device.HostName),
+				Type:           datastore.SubscriptionTypeCLI,
+				AppID:          appID,
+				GroupID:        group.UID,
+				SourceID:       listenRequest.SourceID,
+				DeviceID:       device.UID,
+				FilterConfig:   &datastore.FilterConfiguration{EventTypes: []string{"*"}},
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				Status:         datastore.ActiveSubscriptionStatus,
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			}
+
+			err = h.subscriptionRepo.CreateSubscription(ctx, group.UID, s)
+			if err != nil {
+				return nil, util.NewServiceError(http.StatusBadRequest, err)
+			}
 		}
 
-		err := h.subscriptionRepo.CreateSubscription(ctx, group.UID, s)
-		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, err)
-		}
-	default:
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	sub.SourceID = listenRequest.SourceID
+	sub.FilterConfig.EventTypes = listenRequest.EventTypes
+	sub.AlertConfig = &datastore.DefaultAlertConfig
+	sub.RetryConfig = &datastore.DefaultRetryConfig
+	err = h.subscriptionRepo.UpdateSubscription(ctx, group.UID, sub)
+
+	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 

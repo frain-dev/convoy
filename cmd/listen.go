@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/services"
-	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -53,9 +53,6 @@ func addListenCommand(a *app) *cobra.Command {
 			}
 
 			eventTypes := strings.Split(events, ",")
-			if util.IsStringEmpty(events) {
-				eventTypes = []string{"*"}
-			}
 
 			listenRequest := services.ListenRequest{
 				HostName:   c.Host,
@@ -75,13 +72,18 @@ func addListenCommand(a *app) *cobra.Command {
 			}
 
 			url := url.URL{Scheme: "ws", Host: hostInfo.Host, Path: "/stream/listen"}
-			conn, _, err := websocket.DefaultDialer.Dial(url.String(), http.Header{
+			conn, response, err := websocket.DefaultDialer.Dial(url.String(), http.Header{
 				"Authorization": []string{"Bearer " + c.ActiveApiKey},
 				"Body":          []string{string(body)},
 			})
 
 			if err != nil {
-				log.Fatal("Error connecting to Websocket Server: ", err)
+				buf, e := io.ReadAll(response.Body)
+				if e != nil {
+					log.Fatal("Error parsing request body", e)
+				}
+
+				log.Fatal("Error connecting to Websocket Server\n", err, "\nhttp: ", string(buf))
 			}
 
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -135,7 +137,7 @@ func addListenCommand(a *app) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&source, "source", "", "Source ID")
-	cmd.Flags().StringVar(&events, "events", "", "Events types")
+	cmd.Flags().StringVar(&events, "events", "*", "Events types")
 	cmd.Flags().StringVar(&forwardTo, "forward-to", "", "Host to forward events to")
 
 	return cmd

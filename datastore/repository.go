@@ -99,7 +99,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
 	FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]Subscription, error)
-	FindSubscriptionByDeviceID(ctx context.Context, groupId string, deviceID, sourceID string) (*Subscription, error)
+	FindSubscriptionByDeviceID(ctx context.Context, groupId string, deviceID string) (*Subscription, error)
 	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
 }
 

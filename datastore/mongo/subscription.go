@@ -5,8 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/frain-dev/convoy/datastore"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
@@ -139,13 +137,10 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID, sourceID string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {
 	filter := bson.M{
 		"device_id": deviceID,
 		"group_id":  groupId,
-	}
-	if !util.IsStringEmpty(sourceID) {
-		filter["source_id"] = sourceID
 	}
 
 	subscription := &datastore.Subscription{}
