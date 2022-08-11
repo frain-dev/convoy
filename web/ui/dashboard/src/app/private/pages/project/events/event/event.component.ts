@@ -3,7 +3,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { APP } from 'src/app/models/app.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -11,6 +10,7 @@ import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { DateFilterComponent } from 'src/app/private/components/date-filter/date-filter.component';
 import { TimeFilterComponent } from 'src/app/private/components/time-filter/time-filter.component';
 import { GeneralService } from 'src/app/services/general/general.service';
+import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
 
 @Component({

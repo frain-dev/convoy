@@ -17,11 +17,11 @@ import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table
 import { TableComponent } from 'src/app/components/table/table.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
 
 const routes: Routes = [{ path: '', component: AppComponent }];
 

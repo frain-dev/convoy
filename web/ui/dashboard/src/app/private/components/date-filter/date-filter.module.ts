@@ -4,7 +4,7 @@ import { DateFilterComponent } from './date-filter.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
 
 @NgModule({
 	declarations: [DateFilterComponent],

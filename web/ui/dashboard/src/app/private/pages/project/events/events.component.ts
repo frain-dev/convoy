@@ -7,7 +7,7 @@ import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
 
 interface LABELS {
 	date: string;

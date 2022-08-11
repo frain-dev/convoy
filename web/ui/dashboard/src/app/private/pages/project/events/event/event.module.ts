@@ -10,7 +10,6 @@ import { EventComponent } from './event.component';
 import { RouterModule } from '@angular/router';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
@@ -21,6 +20,7 @@ import { TableRowComponent } from 'src/app/components/table-row/table-row.compon
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableComponent } from 'src/app/components/table/table.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
 
 @NgModule({
 	declarations: [EventComponent],

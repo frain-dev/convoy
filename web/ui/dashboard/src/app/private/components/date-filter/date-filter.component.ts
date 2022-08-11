@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
 
 interface CALENDAR_DAY {
 	date: number;
