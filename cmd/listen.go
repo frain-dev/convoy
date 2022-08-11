@@ -12,7 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	convoyNet "github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/services"
+	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -52,13 +55,15 @@ func addListenCommand(a *app) *cobra.Command {
 				log.Fatal("Error loading config file:", err)
 			}
 
-			eventTypes := strings.Split(events, ",")
+			if util.IsStringEmpty(forwardTo) {
+				log.Fatal("flag forward-to cannot be empty")
+			}
 
 			listenRequest := services.ListenRequest{
 				HostName:   c.Host,
 				DeviceID:   c.ActiveDeviceID,
 				SourceID:   source,
-				EventTypes: eventTypes,
+				EventTypes: strings.Split(events, ","),
 			}
 
 			body, _ := json.Marshal(listenRequest)
@@ -82,6 +87,7 @@ func addListenCommand(a *app) *cobra.Command {
 				if e != nil {
 					log.Fatal("Error parsing request body", e)
 				}
+				defer response.Body.Close()
 
 				log.Fatal("Error connecting to Websocket Server\n", err, "\nhttp: ", string(buf))
 			}
@@ -91,7 +97,7 @@ func addListenCommand(a *app) *cobra.Command {
 			}
 
 			defer conn.Close()
-			go receiveHandler(conn)
+			go receiveHandler(conn, forwardTo)
 
 			ticker := time.NewTicker(pingPeriod)
 			defer ticker.Stop()
@@ -143,7 +149,7 @@ func addListenCommand(a *app) *cobra.Command {
 	return cmd
 }
 
-func receiveHandler(connection *websocket.Conn) {
+func receiveHandler(connection *websocket.Conn, url string) {
 	defer close(done)
 	for {
 		_, msg, err := connection.ReadMessage()
@@ -179,6 +185,15 @@ func receiveHandler(connection *websocket.Conn) {
 			log.Println("Error in writing to websocket connection")
 		}
 
+		// send request to the recepient
+		d := convoyNet.NewDispatcher(time.Second * 10)
+		res, err := d.ForwardCliEvent(url, convoy.HttpPost, event.Data, event.Headers)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		log.Println(string(res.Body))
 	}
 }
 

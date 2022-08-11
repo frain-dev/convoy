@@ -128,9 +128,9 @@ func (h *Hub) StartEventWatcher() {
 }
 
 type CLIEvent struct {
-	UID              string                `json:"uid"`
-	ForwardedHeaders httpheader.HTTPHeader `json:"forwarded_headers" bson:"forwarded_headers"`
-	Data             json.RawMessage       `json:"data"`
+	UID     string                `json:"uid"`
+	Headers httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	Data    json.RawMessage       `json:"data"`
 
 	// for filtering this event delivery
 	EventType string `json:"-"`
@@ -157,13 +157,13 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 		}
 
 		h.events <- &CLIEvent{
-			UID:              ed.UID,
-			Data:             ed.Metadata.Data,
-			ForwardedHeaders: ed.Headers,
-			EventType:        ed.CLIMetadata.EventType,
-			AppID:            ed.AppID,
-			DeviceID:         ed.DeviceID,
-			GroupID:          ed.GroupID,
+			UID:       ed.UID,
+			Data:      ed.Metadata.Data,
+			Headers:   ed.Headers,
+			EventType: ed.CLIMetadata.EventType,
+			AppID:     ed.AppID,
+			DeviceID:  ed.DeviceID,
+			GroupID:   ed.GroupID,
 		}
 
 		return nil
@@ -436,7 +436,6 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 	sub.AlertConfig = &datastore.DefaultAlertConfig
 	sub.RetryConfig = &datastore.DefaultRetryConfig
 	err = h.subscriptionRepo.UpdateSubscription(ctx, group.UID, sub)
-	log.Println(err)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
