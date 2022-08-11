@@ -424,17 +424,19 @@ func (h *Hub) listen(ctx context.Context, group *datastore.Group, app *datastore
 			if err != nil {
 				return nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
+
+			return device, nil
 		}
 
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	sub.SourceID = listenRequest.SourceID
-	sub.FilterConfig.EventTypes = listenRequest.EventTypes
+	sub.FilterConfig = &datastore.FilterConfiguration{EventTypes: listenRequest.EventTypes}
 	sub.AlertConfig = &datastore.DefaultAlertConfig
 	sub.RetryConfig = &datastore.DefaultRetryConfig
 	err = h.subscriptionRepo.UpdateSubscription(ctx, group.UID, sub)
-
+	log.Println(err)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}

@@ -86,7 +86,9 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", "source-id").
+				sub.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(&datastore.Subscription{}, nil)
 
 			},
@@ -295,7 +297,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", "source-id").
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(nil, errors.New("failed to find subscription by id"))
 			},
 			wantErr:     true,
@@ -336,7 +338,8 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", "source-id").
+
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(nil, datastore.ErrSubscriptionNotFound)
 
 				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(nil)
@@ -386,7 +389,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", "source-id").
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(nil, datastore.ErrSubscriptionNotFound)
 
 				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(errors.New("failed to create new subscription"))
