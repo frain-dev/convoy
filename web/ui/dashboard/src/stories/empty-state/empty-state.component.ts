@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
+import { ButtonComponent } from '../../app/components/button/button.component';
 
 @Component({
 	selector: 'convoy-empty-state',
