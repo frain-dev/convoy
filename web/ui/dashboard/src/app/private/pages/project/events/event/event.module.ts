@@ -11,7 +11,7 @@ import { RouterModule } from '@angular/router';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
-import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
+import { EmptyStateComponent } from 'src/stories/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { CardComponent } from 'src/app/components/card/card.component';
