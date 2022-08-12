@@ -404,6 +404,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									keySubRouter.Use(a.M.RequireBaseUrl())
 									keySubRouter.Post("/", a.CreateAppAPIKey)
 									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
+									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 								})
 
 								appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {

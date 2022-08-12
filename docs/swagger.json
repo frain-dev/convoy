@@ -3957,7 +3957,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an api key that will be used by app portal",
+                "description": "This endpoint creates an api key that will be used by app portal or the cli",
                 "consumes": [
                     "application/json"
                 ],
@@ -3967,7 +3967,7 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Create an api key for app portal (API)",
+                "summary": "Create an api key for app portal or the cli (API)",
                 "parameters": [
                     {
                         "type": "string",
@@ -6092,6 +6092,130 @@
                 }
             }
         },
+        "/ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint revokes app's an api key",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "APIKey"
+                ],
+                "summary": "Revoke an App's API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group id",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "application id",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key id",
+                        "name": "keyID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/ui/organisations/{orgID}/invites": {
             "post": {
                 "security": [
@@ -6953,6 +7077,116 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/organisations/{orgID}/security/applications/{appID}/keys": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches multiple api keys belonging to an app",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "APIKey"
+                ],
+                "summary": "Fetch multiple api keys belonging to an app",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "application ID",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.PortalAPIKeyResponse"
                                         }
                                     }
                                 }
@@ -8506,11 +8740,11 @@
                 "event_type": {
                     "type": "string"
                 },
-                "forwarded_headers": {
-                    "$ref": "#/definitions/datastore.HttpHeader"
-                },
                 "group_id": {
                     "type": "string"
+                },
+                "headers": {
+                    "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "matched_endpoints": {
                     "description": "TODO(all) remove this field",
@@ -8567,11 +8801,11 @@
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
                 },
-                "forwarded_headers": {
-                    "$ref": "#/definitions/datastore.HttpHeader"
-                },
                 "group_id": {
                     "type": "string"
+                },
+                "headers": {
+                    "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
@@ -9112,6 +9346,15 @@
                 }
             }
         },
+        "httpheader.HTTPHeader": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
         "models.APIKey": {
             "type": "object",
             "properties": {
@@ -9400,12 +9643,6 @@
         "models.Source": {
             "type": "object",
             "properties": {
-                "forward_headers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
