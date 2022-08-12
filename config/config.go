@@ -154,8 +154,9 @@ type SearchConfiguration struct {
 }
 
 type TypesenseConfiguration struct {
-	Host   string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
-	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
+	Host       string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
+	ApiKey     string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
+	Collection string `json:"collection" envconfig:"CONVOY_TYPESENSE_COLLECTION"`
 }
 
 const (
