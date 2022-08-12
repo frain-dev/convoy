@@ -76,7 +76,6 @@ export class CreateProjectComponent implements OnInit {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
 
 		this.enableMoreConfig ? this.checkProjectConfig() : delete this.projectForm.value.config;
-		console.log(this.projectForm.value);
 
 		this.isCreatingProject = true;
 
