@@ -57,14 +57,14 @@
 							*ngFor="let hour of timeFilterHours"
 							class="py-10px px-14px text-14hover:bg-primary-500 hover:transition-all hover:duration-300 cursor-pointer"
 							(click)="filterEndHour = filterEndHour >= 12 ? hour + 12 : hour"
-							[ngClass]="{ active: (filterEndHour > 12 ? filterEndHour - 12 : filterEndHour) === hour }"
+							[ngClass]="{ 'bg-primary-500 transition-all duration-300': (filterEndHour > 12 ? filterEndHour - 12 : filterEndHour) === hour }"
 						>
 							{{ hour < 10 ? '0' + hour : hour }}
 						</li>
 					</ul>
 
 					<ul class="h-200px overflow-y-scroll">
-						<li class="py-10px px-14px text-14hover:bg-primary-500 hover:transition-all hover:duration-300 cursor-pointer" *ngFor="let minute of timeFilterMinutes; let i = index" (click)="filterEndMinute = minute" [ngClass]="{ active: filterEndMinute === minute }">
+						<li class="py-10px px-14px text-14hover:bg-primary-500 hover:transition-all hover:duration-300 cursor-pointer" *ngFor="let minute of timeFilterMinutes; let i = index" (click)="filterEndMinute = minute" [ngClass]="{ 'bg-primary-500 transition-all duration-300': filterEndMinute === minute }">
 							{{ minute < 10 ? '0' + minute : minute }}
 						</li>
 					</ul>
