@@ -8,7 +8,7 @@ import { InputComponent } from 'src/app/components/input/input.component';
 import { PageComponent } from 'src/app/components/page/page.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
-import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
+import { ToggleComponent } from 'src/stories/toggle/toggle.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DeleteModalModule } from '../../components/delete-modal/delete-modal.module';
 import { SettingsService } from './settings.service';
