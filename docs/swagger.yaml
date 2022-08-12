@@ -185,10 +185,10 @@ definitions:
         type: string
       event_type:
         type: string
-      forwarded_headers:
-        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
+      headers:
+        $ref: '#/definitions/httpheader.HTTPHeader'
       matched_endpoints:
         description: TODO(all) remove this field
         type: integer
@@ -230,10 +230,10 @@ definitions:
         type: string
       event_metadata:
         $ref: '#/definitions/datastore.Event'
-      forwarded_headers:
-        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
+      headers:
+        $ref: '#/definitions/httpheader.HTTPHeader'
       metadata:
         $ref: '#/definitions/datastore.Metadata'
       status:
@@ -590,6 +590,12 @@ definitions:
       type:
         type: string
     type: object
+  httpheader.HTTPHeader:
+    additionalProperties:
+      items:
+        type: string
+      type: array
+    type: object
   models.APIKey:
     properties:
       expires_at:
@@ -779,10 +785,6 @@ definitions:
     type: object
   models.Source:
     properties:
-      forward_headers:
-        items:
-          type: string
-        type: array
       is_disabled:
         type: boolean
       name:
@@ -3059,6 +3061,7 @@ paths:
       consumes:
       - application/json
       description: This endpoint creates an api key that will be used by app portal
+        or the cli
       parameters:
       - description: application ID
         in: path
@@ -3106,7 +3109,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create an api key for app portal (API)
+      summary: Create an api key for app portal or the cli (API)
       tags:
       - APIKey
   /sources:
@@ -4149,6 +4152,76 @@ paths:
       summary: Create a group
       tags:
       - Group
+  /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint revokes app's an api key
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      - description: Group id
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        type: string
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke an App's API Key
+      tags:
+      - APIKey
   /ui/organisations/{orgID}/invites:
     post:
       consumes:
@@ -4655,6 +4728,66 @@ paths:
       summary: Update an organisation's member
       tags:
       - Organisation
+  /ui/organisations/{orgID}/security/applications/{appID}/keys:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches multiple api keys belonging to an app
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple api keys belonging to an app
+      tags:
+      - APIKey
   /ui/organisations/{orgID}/security/keys:
     get:
       consumes:

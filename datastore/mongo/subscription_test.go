@@ -236,7 +236,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
 
 	// Fetch sub again
-	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "group-id-1", "device-id-1", "")
+	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "group-id-1", "device-id-1")
 	require.NoError(t, err)
 
 	require.NotEmpty(t, sub.UID)

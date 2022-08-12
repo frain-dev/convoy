@@ -432,6 +432,38 @@ func (s *SecurityIntegrationTestSuite) Test_GetAppAPIKeys() {
 	require.Equal(s.T(), 1, len(apiKeyResponse))
 }
 
+func (s *SecurityIntegrationTestSuite) Test_RevokeAppAPIKey() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "test-app", true)
+
+	role := auth.Role{
+		Type:  auth.RoleAdmin,
+		Group: s.DefaultGroup.UID,
+		App:   app.UID,
+	}
+
+	apiKey, _, _ := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", string(datastore.CLIKey))
+
+	url := fmt.Sprintf("/ui/organisations/%s/groups/%s/apps/%s/keys/%s/revoke", s.DefaultOrg.UID, s.DefaultGroup.UID, app.UID, apiKey.UID)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	_, err = s.DB.APIRepo().FindAPIKeyByID(context.Background(), apiKey.UID)
+	require.Error(s.T(), err)
+}
+
 func (s *SecurityIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
 	metrics.Reset()

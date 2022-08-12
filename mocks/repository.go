@@ -1144,18 +1144,18 @@ func (mr *MockSubscriptionRepositoryMockRecorder) DeleteSubscription(arg0, arg1,
 }
 
 // FindSubscriptionByDeviceID mocks base method.
-func (m *MockSubscriptionRepository) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID, sourceID string) (*datastore.Subscription, error) {
+func (m *MockSubscriptionRepository) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSubscriptionByDeviceID", ctx, groupId, deviceID, sourceID)
+	ret := m.ctrl.Call(m, "FindSubscriptionByDeviceID", ctx, groupId, deviceID)
 	ret0, _ := ret[0].(*datastore.Subscription)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindSubscriptionByDeviceID indicates an expected call of FindSubscriptionByDeviceID.
-func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByDeviceID(ctx, groupId, deviceID, sourceID interface{}) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByDeviceID(ctx, groupId, deviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByDeviceID", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByDeviceID), ctx, groupId, deviceID, sourceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByDeviceID", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByDeviceID), ctx, groupId, deviceID)
 }
 
 // FindSubscriptionByID mocks base method.
