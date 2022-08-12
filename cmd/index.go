@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -46,14 +47,14 @@ func addIndexCommand(a *app) *cobra.Command {
 					var document *convoy.GenericMap
 					err := cs.Decode(&document)
 					if err != nil {
-						return err
+						log.Println(err)
 					}
 
 					if (*document)["operationType"].(string) == "insert" {
 						doc := (*document)["fullDocument"].(convoy.GenericMap)
 						err := a.searcher.Index(cfg.Search.Typesense.Collection, doc)
 						if err != nil {
-							return err
+							log.Println(err)
 						}
 					}
 				}
