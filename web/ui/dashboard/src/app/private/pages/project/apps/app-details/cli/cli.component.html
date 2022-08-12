@@ -47,10 +47,12 @@
 			<div>
 				<div class="flex items-center">
 					<h3 class="font-semibold mr-14px">{{ key.name }}</h3>
+					<convoy-tag type="grey" className="mr-10px">{{ key.role.type }}</convoy-tag>
 					<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 				</div>
 				<p class="text-grey-40 text-10 mt-8px">Created: {{ key.created_at | date: 'medium' }}</p>
 			</div>
+            <convoy-button size="xs" type="outline" color="danger" (click)="selectedApiKey = key; showRevokeApiModal = true">Revoke</convoy-button>
 		</div>
 	</ng-container>
 
@@ -87,3 +89,6 @@
 		<convoy-button (click)="showApiKey = false; getApiKeys()" buttonType="button">Done</convoy-button>
 	</div>
 </convoy-modal>
+
+
+<app-delete-modal *ngIf="showRevokeApiModal" [isLoading]="isRevokingApiKey" [deleteText]="'revoke “' + selectedApiKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="showRevokeApiModal = false" (deleteData)="revokeApiKey()"></app-delete-modal>

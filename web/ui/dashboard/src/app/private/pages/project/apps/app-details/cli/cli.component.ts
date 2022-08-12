@@ -9,13 +9,14 @@ import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skel
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { API_KEY, DEVICE } from 'src/app/models/app.model';
 import { PipesModule } from 'src/app/pipes/pipes.module';
+import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';
 
 @Component({
 	selector: 'convoy-cli',
-    standalone: true,
-    imports: [CommonModule, CardComponent, ButtonComponent, EmptyStateComponent, TagComponent, SkeletonLoaderComponent, ModalComponent, PipesModule],
+	standalone: true,
+	imports: [CommonModule, CardComponent, ButtonComponent, EmptyStateComponent, TagComponent, SkeletonLoaderComponent, ModalComponent, PipesModule, DeleteModalModule],
 	templateUrl: './cli.component.html',
 	styleUrls: ['./cli.component.scss']
 })
@@ -26,9 +27,12 @@ export class CliComponent implements OnInit {
 	isFetchingDevices = false;
 	isFetchingApiKeys = false;
 	showApiKey = false;
+	showRevokeApiModal = false;
 	showSecretCopyText = false;
+	isRevokingApiKey = false;
 	apiKey!: string;
 	apiKeys!: API_KEY[];
+	selectedApiKey!: API_KEY;
 	devices!: DEVICE[];
 	loaderIndex: number[] = [0, 1, 2];
 	appId: string = this.route.snapshot.params.id;
@@ -80,6 +84,19 @@ export class CliComponent implements OnInit {
 		} catch {
 			this.isGeneratingNewKey = false;
 			return;
+		}
+	}
+
+	async revokeApiKey() {
+		this.isRevokingApiKey = true;
+		try {
+			const response = await this.appDetailsService.revokeApiKey({ appId: this.selectedApiKey?.role.app, keyId: this.selectedApiKey?.uid });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.isRevokingApiKey = false;
+            this.showRevokeApiModal = false;
+			this.getApiKeys();
+		} catch {
+			this.isRevokingApiKey = false;
 		}
 	}
 

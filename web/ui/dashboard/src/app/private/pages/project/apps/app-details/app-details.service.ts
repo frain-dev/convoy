@@ -137,6 +137,22 @@ export class AppDetailsService {
 		});
 	}
 
+	revokeApiKey(requestDetails: { appId: string; keyId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys/${requestDetails.keyId}/revoke`,
+					method: 'put',
+					body: null
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	getAppDevices(appId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
