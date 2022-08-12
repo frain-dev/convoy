@@ -66,7 +66,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						},
 						RateLimit: &datastore.RateLimitConfiguration{
 							Count:    1000,
-							Duration: "1m",
+							Duration: 60,
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
@@ -108,7 +108,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
-						Duration: "1m",
+						Duration: 60,
 					},
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
@@ -139,7 +139,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						},
 						RateLimit: &datastore.RateLimitConfiguration{
 							Count:    1000,
-							Duration: "1m",
+							Duration: 60,
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
@@ -181,7 +181,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
-						Duration: "1m",
+						Duration: 60,
 					},
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
