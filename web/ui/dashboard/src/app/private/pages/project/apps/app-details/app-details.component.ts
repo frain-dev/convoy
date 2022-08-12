@@ -33,14 +33,7 @@ export class AppDetailsComponent implements OnInit {
 	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint?: ENDPOINT;
 
-	constructor(
-		private appDetailsService: AppDetailsService,
-		private generalService: GeneralService,
-		private route: ActivatedRoute,
-		private location: Location,
-		private router: Router,
-		public privateService: PrivateService
-	) {}
+	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.isLoadingAppDetails = true;
@@ -88,11 +81,13 @@ export class AppDetailsComponent implements OnInit {
 
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		if (this.privateService.activeProjectDetails?.type === 'incoming') return;
-		
-		this.loadingAppPotalToken = true;
 
+		this.loadingAppPotalToken = true;
+		const payload = {
+			key_type: 'app_portal'
+		};
 		try {
-			const appTokenResponse = await this.appDetailsService.getAppPortalToken({ appId: this.appsDetailsItem.uid });
+			const appTokenResponse = await this.appDetailsService.generateKey({ appId: this.appsDetailsItem.uid, body: payload });
 			this.appPortalLink = appTokenResponse.data.url;
 			this.appPortalIframe = `<iframe style="width: 100%; height: 98%; border: none;" frameborder="0" src="${appTokenResponse.data.url}"></iframe>`;
 			if (requestDetail.redirect) window.open(`${appTokenResponse.data.url}`, '_blank');
@@ -129,6 +124,7 @@ export class AppDetailsComponent implements OnInit {
 		this.showAddEndpointModal = false;
 		this.selectedEndpoint = undefined;
 	}
+
 	focusInput() {
 		document.getElementById('tagInput')?.focus();
 	}
