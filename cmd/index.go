@@ -31,7 +31,7 @@ func addIndexCommand(a *app) *cobra.Command {
 			}
 
 			db := client.Client().(*mongo.Database)
-			coll := db.Collection("events")
+			coll := db.Collection(cfg.Search.Typesense.Collection)
 			ctx := context.Background()
 
 			cs, err := coll.Watch(ctx, mongo.Pipeline{})
@@ -51,7 +51,7 @@ func addIndexCommand(a *app) *cobra.Command {
 
 					if (*document)["operationType"].(string) == "insert" {
 						doc := (*document)["fullDocument"].(convoy.GenericMap)
-						err := a.searcher.Index("events", doc)
+						err := a.searcher.Index(cfg.Search.Typesense.Collection, doc)
 						if err != nil {
 							return err
 						}
