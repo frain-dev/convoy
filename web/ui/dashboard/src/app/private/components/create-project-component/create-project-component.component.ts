@@ -73,30 +73,31 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async createProject() {
-		// if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
+		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
 
 		this.enableMoreConfig ? this.checkProjectConfig() : delete this.projectForm.value.config;
-        console.log(this.projectForm.value)
+		console.log(this.projectForm.value);
 
-		// this.isCreatingProject = true;
+		this.isCreatingProject = true;
 
-		// try {
-		// 	const response = await this.createProjectService.createProject(this.projectForm.value);
-		// 	this.isCreatingProject = false;
-		// 	this.projectForm.reset();
-		// 	this.privateService.activeProjectDetails = response.data.group;
-		// 	this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
-		// 	this.apiKey = response.data.api_key.key;
-		// 	this.projectDetails = response.data.group;
-		// 	this.showApiKey = true;
-		// } catch (error) {
-		// 	this.isCreatingProject = false;
-		// }
+		try {
+			const response = await this.createProjectService.createProject(this.projectForm.value);
+			this.isCreatingProject = false;
+			this.projectForm.reset();
+			this.privateService.activeProjectDetails = response.data.group;
+			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
+			this.apiKey = response.data.api_key.key;
+			this.projectDetails = response.data.group;
+			this.showApiKey = true;
+		} catch (error) {
+			this.isCreatingProject = false;
+		}
 	}
 
 	async updateProject() {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-
+		this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
+		this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		this.isCreatingProject = true;
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
@@ -123,7 +124,7 @@ export class CreateProjectComponent implements OnInit {
 				this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
 			}
 
-            if (configKey === 'ratelimit' && configDetails?.ratelimit?.duration) {
+			if (configKey === 'ratelimit' && configDetails?.ratelimit?.duration) {
 				this.projectForm.value.config.ratelimit.duration = this.getTimeValue(configDetails.ratelimit.duration);
 			}
 
@@ -137,13 +138,14 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	getTimeString(timeValue: number) {
-		if (timeValue > 59) return `${(timeValue / 60).toFixed(2)}m`;
+		if (timeValue > 59) return `${Math.round(timeValue / 60)}m`;
 		return `${timeValue}s`;
 	}
 
 	getTimeValue(timeValue: any) {
 		const [digits, word] = timeValue.match(/\D+|\d+/g);
 		if (word === 's') return parseInt(digits);
-		return parseInt(digits) * 60;
+		else if (word === 'm') return parseInt(digits) * 60;
+		return parseInt(digits);
 	}
 }
