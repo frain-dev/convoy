@@ -64,6 +64,9 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
+			this.projectForm.get('config.ratelimit.duration')?.patchValue(this.getTimeString(response.data.config.ratelimit.duration));
+			this.projectForm.get('config.strategy.duration')?.patchValue(this.getTimeString(response.data.config.strategy.duration));
+			console.log(this.projectForm.value);
 		} catch (error) {
 			console.log(error);
 		}
@@ -92,7 +95,8 @@ export class CreateProjectComponent implements OnInit {
 
 	async updateProject() {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-
+		this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
+		this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		this.isCreatingProject = true;
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
@@ -103,7 +107,6 @@ export class CreateProjectComponent implements OnInit {
 			this.isCreatingProject = false;
 		}
 	}
-
 
 	checkProjectConfig() {
 		const configDetails = this.projectForm.value.config;
@@ -120,15 +123,28 @@ export class CreateProjectComponent implements OnInit {
 				this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
 			}
 
-			if (configKey === 'strategy' && configDetails?.strategy?.duration && this.action !== 'update') {
-				let duration = configDetails.strategy.duration;
-				const [digits, word] = duration.match(/\D+|\d+/g);
-				word === 's' ? (duration = parseInt(digits) * 1000) : (duration = parseInt(digits) * 1000000);
-				this.projectForm.value.config.strategy.duration = duration;
+			if (configKey === 'ratelimit' && configDetails?.ratelimit?.duration) {
+				this.projectForm.value.config.ratelimit.duration = this.getTimeValue(configDetails.ratelimit.duration);
+			}
+
+			if (configKey === 'strategy' && configDetails?.strategy?.duration) {
+				this.projectForm.value.config.strategy.duration = this.getTimeValue(configDetails.strategy.duration);
 			}
 		});
 
 		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;
 		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
+	}
+
+	getTimeString(timeValue: number) {
+		if (timeValue > 59) return `${Math.round(timeValue / 60)}m`;
+		return `${timeValue}s`;
+	}
+
+	getTimeValue(timeValue: any) {
+		const [digits, word] = timeValue.match(/\D+|\d+/g);
+		if (word === 's') return parseInt(digits);
+		else if (word === 'm') return parseInt(digits) * 60;
+		return parseInt(digits);
 	}
 }

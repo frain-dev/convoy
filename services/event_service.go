@@ -393,7 +393,7 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 		return errors.New("an error occurred while trying to resend event")
 	}
 
-	taskName := convoy.CreateEventProcessor
+	taskName := convoy.EventProcessor
 
 	job := &queue.Job{
 		ID:      eventDelivery.UID,
