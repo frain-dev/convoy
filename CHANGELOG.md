@@ -1,3 +1,10 @@
+## v0.6.4
+
+-   [Bugfix] Fixed a bug where event deliveries could not be force retried #938
+-   [Bugfix] Changed the group/project rate limit duration type from string to int #938
+-   [Bugfix] Fixed a bug where team invites could not be canceled on the UI #940
+-   [Enhancement] Add an environment variable for the typesense collection name #939
+
 ## v0.6.3
 
 -   [Enhancement] change app portal url from `/app-portal` to `/app` #924

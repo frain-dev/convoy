@@ -140,7 +140,7 @@ var (
 
 	DefaultRateLimitConfig = RateLimitConfiguration{
 		Count:    1000,
-		Duration: "1m",
+		Duration: 60,
 	}
 
 	DefaultRetryConfig = RetryConfiguration{
@@ -247,7 +247,7 @@ type GroupConfig struct {
 
 type RateLimitConfiguration struct {
 	Count    int    `json:"count" bson:"count"`
-	Duration string `json:"duration" bson:"duration"`
+	Duration uint64 `json:"duration" bson:"duration"`
 }
 
 type StrategyConfiguration struct {
