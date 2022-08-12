@@ -36,7 +36,7 @@
 				</h3>
 				<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
 					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism"></convoy-select>
-					<convoy-input [type]="action === 'update' ? 'number' : 'text'" label="Duration" name="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" errorMessage="Please enter your retry logic duration"></convoy-input>
+					<convoy-input label="Duration" name="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" errorMessage="Please enter your retry logic duration"></convoy-input>
 					<convoy-input type="number" label="Limit" name="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" errorMessage="Please enter a retry limit"></convoy-input>
 				</div>
 
