@@ -1818,7 +1818,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.EventQueue, gomock.Any()).
+				eq.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 		},
@@ -1850,7 +1850,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.EventQueue, gomock.Any()).
+				eq.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:    true,

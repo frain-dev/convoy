@@ -133,7 +133,7 @@ export class TeamsComponent implements OnInit {
 	async cancelInvite() {
 		this.cancelingInvite = true;
 		try {
-			const response = await this.teamService.cancelPendingInvite(this.currentId);
+			const response = await this.teamService.cancelPendingInvite(this.selectedMember.uid);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.fetchPendingTeamMembers();
 			this.currentId = '';
