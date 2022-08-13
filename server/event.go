@@ -297,10 +297,6 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	query := r.URL.Query().Get("query")
 	app := r.URL.Query().Get("appId")
 
-	// if pageable.Page == 0 {
-	// 	pageable.Page = 1
-	// }
-
 	f := &datastore.Filter{
 		Query:        query,
 		Group:        group,

@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/searcher"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -27,6 +28,7 @@ type args struct {
 	cache             cache.Cache
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
+	search            searcher.Searcher
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
@@ -226,7 +228,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreated(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo)
+			fn := ProcessEventCreated(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

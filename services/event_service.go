@@ -151,7 +151,7 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 
 func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	ids, paginationData, err := e.searcher.Search("events", filter)
+	ids, paginationData, err := e.searcher.Search(filter.Group.UID, filter)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events from search backend")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)

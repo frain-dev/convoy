@@ -10,13 +10,14 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/searcher"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 
 		var event datastore.Event
@@ -152,6 +153,11 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 					log.Errorf("Error occurred sending new event to the queue %s", err)
 				}
 			}
+		}
+
+		err = search.Index(event.GroupID, event)
+		if err != nil {
+			log.Errorf("Error indexing event to the queue: %s", err)
 		}
 
 		return nil

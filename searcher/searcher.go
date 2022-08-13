@@ -10,7 +10,7 @@ import (
 
 type Searcher interface {
 	Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error)
-	Index(collection string, document convoy.GenericMap) error
+	Index(collection string, document interface{}) error
 	Remove(collection string, filter *datastore.Filter) error
 }
 

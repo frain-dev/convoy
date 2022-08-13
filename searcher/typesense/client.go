@@ -14,7 +14,6 @@ import (
 	"github.com/jeremywohl/flatten"
 	"github.com/typesense/typesense-go/typesense"
 	"github.com/typesense/typesense-go/typesense/api"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Typesense struct {
@@ -102,19 +101,43 @@ func (t *Typesense) Search(collection string, f *datastore.Filter) ([]string, da
 	return events, data, nil
 }
 
-func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
-	// convert data field to map
-	strData := document["data"].(primitive.Binary).Data
-	var data *convoy.GenericMap
-	err := json.Unmarshal(strData, &data)
+func (t *Typesense) Index(collection string, rawDocument interface{}) error {
+	event := rawDocument.(datastore.Event)
+
+	// convert event data field to map
+	rawData := event.Data
+	var eventData *convoy.GenericMap
+	err := json.Unmarshal(rawData, &eventData)
 	if err != nil {
 		return err
 	}
 
-	document["data"] = data
-	document["id"] = document["_id"]
-	document["updated_at"] = document["updated_at"].(primitive.DateTime).Time().Unix() * 1000
-	document["created_at"] = document["created_at"].(primitive.DateTime).Time().Unix() * 1000
+	// convert event to map
+	eBytes, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	var document convoy.GenericMap
+	err = json.Unmarshal(eBytes, &document)
+	if err != nil {
+		return err
+	}
+
+	document["data"] = eventData
+	document["id"] = document["uid"]
+
+	createdAt, err := time.Parse("2006-01-02T15:04:05Z07:00", document["created_at"].(string))
+	if err != nil {
+		return err
+	}
+	document["created_at"] = createdAt.Unix()
+
+	updatedAt, err := time.Parse("2006-01-02T15:04:05Z07:00", document["updated_at"].(string))
+	if err != nil {
+		return err
+	}
+	document["updated_at"] = updatedAt.Unix()
 
 	jsonDoc, err := json.Marshal(document)
 	if err != nil {
@@ -126,8 +149,8 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 		return err
 	}
 
-	var doc *convoy.GenericMap
-	err = json.Unmarshal([]byte(flattened), &doc)
+	var indexedDoc *convoy.GenericMap
+	err = json.Unmarshal([]byte(flattened), &indexedDoc)
 	if err != nil {
 		return err
 	}
@@ -159,7 +182,7 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 	}
 
 	// import to typesense
-	_, err = t.client.Collection(collection).Documents().Upsert(doc)
+	_, err = t.client.Collection(collection).Documents().Upsert(indexedDoc)
 	if err != nil {
 		return err
 	}
