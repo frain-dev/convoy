@@ -4,8 +4,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
-	"github.com/frain-dev/convoy/searcher/typesense"
+	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
+	"github.com/frain-dev/convoy/internal/pkg/searcher/typesense"
 )
 
 type Searcher interface {

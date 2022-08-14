@@ -10,7 +10,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	objectstore "github.com/frain-dev/convoy/datastore/object-store"
-	"github.com/frain-dev/convoy/searcher"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/util"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
