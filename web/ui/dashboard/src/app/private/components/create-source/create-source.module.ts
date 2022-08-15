@@ -6,7 +6,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
-import { CardComponent } from 'src/stories/card/card.component';
+import { CardComponent } from 'src/app/components/card/card.component';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
