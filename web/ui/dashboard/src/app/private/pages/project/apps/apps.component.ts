@@ -6,7 +6,7 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 @Component({
 	selector: 'app-apps',

@@ -20,7 +20,7 @@ import { TableHeadComponent } from 'src/app/components/table-head/table-head.com
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { TableComponent } from 'src/app/components/table/table.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
-import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 @NgModule({
 	declarations: [EventDeliveriesComponent],

@@ -10,7 +10,7 @@ import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { DateFilterComponent } from 'src/app/private/components/date-filter/date-filter.component';
 import { TimeFilterComponent } from 'src/app/private/components/time-filter/time-filter.component';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
 
 @Component({

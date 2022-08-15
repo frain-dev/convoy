@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TimeFilterComponent } from './time-filter.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 @NgModule({
 	declarations: [TimeFilterComponent],

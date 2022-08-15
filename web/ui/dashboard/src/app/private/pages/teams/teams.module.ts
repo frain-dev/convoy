@@ -18,7 +18,7 @@ import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },

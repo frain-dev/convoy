@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'src/app/models/global.model';
 import { TEAMS } from 'src/app/models/teams.model';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { DropdownComponent } from 'src/stories/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { TeamsService } from './teams.service';
 
 @Component({
