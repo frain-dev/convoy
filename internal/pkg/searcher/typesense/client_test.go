@@ -5,6 +5,7 @@ package typesense
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 
@@ -39,13 +40,11 @@ func (p *Person) toGenericMap(document *convoy.GenericMap) error {
 }
 
 func getTypesenseHost() string {
-	return "http://localhost:8108"
-	// return os.Getenv("CONVOY_TYPESENSE_HOST")
+	return os.Getenv("CONVOY_TYPESENSE_HOST")
 }
 
 func getTypesenseAPIKey() string {
-	return "some-api-key"
-	// return os.Getenv("CONVOY_TYPESENSE_API_KEY")
+	return os.Getenv("CONVOY_TYPESENSE_API_KEY")
 }
 
 func deleteCollection(t *testing.T, ts *Typesense, collection string) {

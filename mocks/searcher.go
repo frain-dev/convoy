@@ -7,6 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	convoy "github.com/frain-dev/convoy"
 	datastore "github.com/frain-dev/convoy/datastore"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,7 +36,7 @@ func (m *MockSearcher) EXPECT() *MockSearcherMockRecorder {
 }
 
 // Index mocks base method.
-func (m *MockSearcher) Index(collection string, document interface{}) error {
+func (m *MockSearcher) Index(collection string, document convoy.GenericMap) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Index", collection, document)
 	ret0, _ := ret[0].(error)
@@ -49,7 +50,7 @@ func (mr *MockSearcherMockRecorder) Index(collection, document interface{}) *gom
 }
 
 // Remove mocks base method.
-func (m *MockSearcher) Remove(collection string, filter *datastore.Filter) error {
+func (m *MockSearcher) Remove(collection string, filter *datastore.SearchFilter) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Remove", collection, filter)
 	ret0, _ := ret[0].(error)
@@ -63,10 +64,10 @@ func (mr *MockSearcherMockRecorder) Remove(collection, filter interface{}) *gomo
 }
 
 // Search mocks base method.
-func (m *MockSearcher) Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error) {
+func (m *MockSearcher) Search(collection string, filter *datastore.SearchFilter) ([]convoy.GenericMap, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Search", collection, filter)
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]convoy.GenericMap)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
