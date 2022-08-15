@@ -1,14 +1,11 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
 import { componentWrapperDecorator } from '@storybook/angular';
-import { DropdownComponent } from './dropdown.component';
-import * as ButtonStories from '../button/Button.stories';
+import { DropdownComponent } from '../../app/components/dropdown/dropdown.component';
 
 export default {
 	title: 'Example/Dropdown',
 	component: DropdownComponent,
-    decorators:[
-        componentWrapperDecorator((story) => `<div style="margin: 3em">${story}</div>`),
-    ],
+	decorators: [componentWrapperDecorator(story => `<div class="p-5">${story}</div>`)],
 	argTypes: {
 		position: {
 			options: ['right', 'left'],
@@ -39,6 +36,12 @@ export default {
 			options: ['deep', 'light'],
 			control: { type: 'select' },
 			defaultValue: 'deep'
+		},
+		buttonText: {
+			control: { type: 'text' }
+		},
+        class: {
+			control: { type: 'text' }
 		}
 	},
 	parameters: {
@@ -49,15 +52,22 @@ export default {
 } as Meta;
 
 const Template: Story<DropdownComponent> = (args: DropdownComponent) => ({
-	props: args
+	props: args,
+	template: `<convoy-dropdown [buttonText]="buttonText" [position]="position" [size]="size" [buttonColor]="buttonColor" [buttonSize]="buttonSize" [buttonType]="buttonType" [buttonTexture]="buttonTexture">
+                {{ngContent}}
+               </convoy-dropdown>
+              `
 });
 
-export const Default = Template.bind({});
-Default.args = {
+export const Base = Template.bind({});
+Base.args = {
+	ngContent: 'Dropdown content',
 	position: 'right',
 	size: 'md',
-	buttonColor: ButtonStories.Base.args?.color,
-	buttonSize: ButtonStories.Base.args?.size,
-	buttonType: ButtonStories.Base.args?.type,
-	buttonTexture: ButtonStories.Base.args?.texture
+    class: 'p-3',
+	buttonText: 'Dropdown toggle',
+	buttonColor: 'primary',
+	buttonSize: 'md',
+	buttonType: 'default',
+	buttonTexture: 'deep'
 };
