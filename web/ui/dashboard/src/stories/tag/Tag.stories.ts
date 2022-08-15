@@ -1,5 +1,5 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { TagComponent } from './tag.component';
+import { TagComponent } from '../../app/components/tag/tag.component';
 
 export default {
 	title: 'Example/Tag',
