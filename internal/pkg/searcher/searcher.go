@@ -9,18 +9,20 @@ import (
 )
 
 type Searcher interface {
-	Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error)
-	Index(collection string, document interface{}) error
-	Remove(collection string, filter *datastore.Filter) error
+	// Search retrieves documents from the typesense collection based on the search filters
+	Search(collection string, filter *datastore.SearchFilter) ([]convoy.GenericMap, datastore.PaginationData, error)
+
+	// Index upserts the collection and indexes documents in the typesense collection,
+	// each document must have the id, created_at and updated_at fields
+	Index(collection string, document convoy.GenericMap) error
+
+	// Remove removes documents from the typesense collection based on the search filters
+	Remove(collection string, filter *datastore.SearchFilter) error
 }
 
 func NewSearchClient(c config.Configuration) (Searcher, error) {
 	if c.Search.Type == config.SearchProvider("typesense") {
-		if c.Database.Type != "mongodb" {
-			return nil, convoy.ErrUnsupportedDatebase
-		}
-
-		client, err := typesense.NewTypesenseClient(c)
+		client, err := typesense.NewTypesenseClient(c.Search.Typesense.Host, c.Search.Typesense.ApiKey)
 		return client, err
 	}
 

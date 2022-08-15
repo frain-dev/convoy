@@ -1,6 +1,7 @@
 package noopsearcher
 
 import (
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 )
 
@@ -11,14 +12,14 @@ func NewNoopSearcher() *NoopSearcher {
 	return &NoopSearcher{}
 }
 
-func (n *NoopSearcher) Search(collection string, filter *datastore.Filter) ([]string, datastore.PaginationData, error) {
-	return make([]string, 0), datastore.PaginationData{}, nil
+func (n *NoopSearcher) Search(collection string, filter *datastore.SearchFilter) ([]convoy.GenericMap, datastore.PaginationData, error) {
+	return make([]convoy.GenericMap, 0), datastore.PaginationData{}, nil
 }
 
-func (n *NoopSearcher) Index(collection string, document interface{}) error {
+func (n *NoopSearcher) Index(collection string, document convoy.GenericMap) error {
 	return nil
 }
 
-func (n *NoopSearcher) Remove(collection string, filter *datastore.Filter) error {
+func (n *NoopSearcher) Remove(collection string, filter *datastore.SearchFilter) error {
 	return nil
 }

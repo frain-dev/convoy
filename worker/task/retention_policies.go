@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -133,14 +134,20 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 		}
 
 		//delete documents
-		searchFilter := &datastore.Filter{
+		f := &datastore.Filter{
 			Group: group,
 			SearchParams: datastore.SearchParams{
 				CreatedAtStart: 0,
 				CreatedAtEnd:   expDate.Unix(),
 			},
 		}
-		err = searcher.Remove(collection, searchFilter)
+
+		filterByBuilder := new(strings.Builder)
+		filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", f.Group.UID))
+		filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd))
+		filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd))
+
+		err = searcher.Remove(collection, &datastore.SearchFilter{FilterBy: filterByBuilder.String()})
 		if err != nil {
 			return err
 		}

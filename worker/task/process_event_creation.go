@@ -155,7 +155,31 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 			}
 		}
 
-		err = search.Index(event.GroupID, event)
+		// convert event data field to map
+		rawData := event.Data
+		var eventData *convoy.GenericMap
+		err = json.Unmarshal(rawData, &eventData)
+		if err != nil {
+			return err
+		}
+
+		// convert event to bytes
+		eBytes, err := json.Marshal(event)
+		if err != nil {
+			return err
+		}
+
+		// convert event to map
+		var document convoy.GenericMap
+		err = json.Unmarshal(eBytes, &document)
+		if err != nil {
+			return err
+		}
+
+		document["data"] = eventData
+		document["id"] = document["uid"]
+
+		err = search.Index(event.GroupID, document)
 		if err != nil {
 			log.Errorf("Error indexing event to the queue: %s", err)
 		}

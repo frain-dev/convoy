@@ -14,3 +14,9 @@ type SourceFilter struct {
 	Type     string
 	Provider string
 }
+
+type SearchFilter struct {
+	Query    string
+	FilterBy   string
+	Pageable Pageable
+}

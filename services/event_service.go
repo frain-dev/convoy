@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -151,7 +152,36 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 
 func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	ids, paginationData, err := e.searcher.Search(filter.Group.UID, filter)
+	filterByBuilder := new(strings.Builder)
+
+	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", filter.Group.UID))
+
+	hasAppFilter := !util.IsStringEmpty(filter.AppID)
+	if hasAppFilter {
+		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", filter.Group.UID))
+	}
+
+	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd))
+
+	documents, paginationData, err := e.searcher.Search(filter.Group.UID, &datastore.SearchFilter{
+		Query:    filter.Query,
+		FilterBy: filterByBuilder.String(),
+		Pageable: filter.Pageable,
+	})
+
+	var ids []string
+	for _, d := range documents {
+		if tmp, found := d["uid"]; found {
+			if uid, ok := tmp.(string); ok {
+				ids = append(ids, uid)
+			} else {
+				log.Errorf("uid field is not a string with value %v", uid)
+			}
+		} else {
+			log.Errorf("uid field is not found the search document")
+		}
+	}
+
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events from search backend")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
