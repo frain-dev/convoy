@@ -1,5 +1,5 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { TooltipComponent } from './tooltip.component';
+import { TooltipComponent } from '../../app/components/tooltip/tooltip.component';
 
 export default {
 	title: 'Example/Tooltip',
@@ -14,16 +14,22 @@ export default {
 			options: ['sm', 'md'],
 			control: { type: 'select' },
 			defaultValue: 'md'
+		},
+		img: {
+			control: { type: 'string' }
 		}
 	}
 } as Meta;
 
 const Template: Story<TooltipComponent> = (args: TooltipComponent) => ({
-	props: args
+	props: args,
+	template: `<div class="flex items-center h-200px"><span class="mr-4">click here </span> <convoy-tooltip [size]="size" [position]="position" [img]="img">{{ngContent}}</convoy-tooltip></div>`
 });
 
 export const Base = Template.bind({});
 Base.args = {
+	ngContent: 'Convoy tooltip',
 	position: 'left',
-	size: 'sm'
+	size: 'sm',
+	img: '/assets/img/small-info-icon.svg'
 };
