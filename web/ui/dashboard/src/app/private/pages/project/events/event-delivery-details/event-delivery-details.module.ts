@@ -6,7 +6,7 @@ import { EventDeliveryDetailsComponent } from './event-delivery-details.componen
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { TagComponent } from 'src/stories/tag/tag.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 @NgModule({
