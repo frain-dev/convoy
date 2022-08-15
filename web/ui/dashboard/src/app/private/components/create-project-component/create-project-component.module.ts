@@ -9,7 +9,7 @@ import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { TooltipComponent } from 'src/stories/tooltip/tooltip.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],

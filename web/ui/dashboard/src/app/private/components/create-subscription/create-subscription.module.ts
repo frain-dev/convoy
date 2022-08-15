@@ -12,7 +12,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { TooltipComponent } from 'src/stories/tooltip/tooltip.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
