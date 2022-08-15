@@ -23,7 +23,7 @@ export default {
 
 const Template: Story<TooltipComponent> = (args: TooltipComponent) => ({
 	props: args,
-	template: `<div class="flex items-center h-200px"><span class="mr-4">click here </span> <convoy-tooltip [size]="size" [position]="position" [img]="img">{{ngContent}}</convoy-tooltip></div>`
+	template: `<div class="flex justify-center items-center h-200px"><span class="mr-2">click here </span> <convoy-tooltip [size]="size" [position]="position" [img]="img">{{ngContent}}</convoy-tooltip></div>`
 });
 
 export const Base = Template.bind({});
@@ -32,4 +32,4 @@ Base.args = {
 	position: 'left',
 	size: 'sm',
 	img: '/assets/img/small-info-icon.svg'
-};
+} as Partial<TooltipComponent>;
