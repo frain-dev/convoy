@@ -13,5 +13,11 @@ export default {
 		}
 	}
 } as Meta;
+const Template: Story<ToggleComponent> = (args: ToggleComponent) => ({
+	props: args
+});
 
-
+export const Base = Template.bind({});
+Base.args = {
+	isChecked: false
+};
