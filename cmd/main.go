@@ -290,7 +290,6 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addRetryCommand(app))
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addUpgradeCommand(app))
-	cmd.AddCommand(addIndexCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
 }
 
