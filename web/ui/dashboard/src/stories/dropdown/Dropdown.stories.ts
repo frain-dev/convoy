@@ -70,4 +70,4 @@ Base.args = {
 	buttonSize: 'md',
 	buttonType: 'default',
 	buttonTexture: 'deep'
-};
+} as Partial<DropdownComponent>;
