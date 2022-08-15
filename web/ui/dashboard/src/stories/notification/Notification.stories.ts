@@ -1,5 +1,5 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { NotificationComponent } from './notification.component';
+import { NotificationComponent } from '../../app/components/notification/notification.component';
 
 export default {
 	title: 'Example/Notification',
