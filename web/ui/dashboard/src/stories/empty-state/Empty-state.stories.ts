@@ -1,5 +1,5 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { EmptyStateComponent } from '../empty-state/empty-state.component';
+import { EmptyStateComponent } from '../../app/components/empty-state/empty-state.component';
 
 export default {
 	title: 'Example/EmptyState',

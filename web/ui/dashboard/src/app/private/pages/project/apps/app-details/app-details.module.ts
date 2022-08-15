@@ -8,7 +8,7 @@ import { CreateEndpointModule } from './create-endpoint/create-endpoint.module';
 import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { EmptyStateComponent } from 'src/stories/empty-state/empty-state.component';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
