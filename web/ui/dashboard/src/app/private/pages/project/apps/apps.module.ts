@@ -11,7 +11,7 @@ import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table
 import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { TableComponent } from 'src/app/components/table/table.component';
-import { TagComponent } from 'src/app/components/tag/tag.component';
+import { TagComponent } from 'src/stories/tag/tag.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
