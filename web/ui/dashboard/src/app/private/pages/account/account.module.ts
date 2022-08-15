@@ -6,7 +6,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { PageComponent } from 'src/app/components/page/page.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { CardComponent } from 'src/app/components/card/card.component';
+import { CardComponent } from 'src/stories/card/card.component';
 
 const routes: Routes = [{ path: '', component: AccountComponent }];
 

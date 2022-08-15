@@ -5,7 +5,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { LoaderModule } from '../loader/loader.module';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputComponent } from 'src/app/components/input/input.component';
-import { CardComponent } from 'src/app/components/card/card.component';
+import { CardComponent } from 'src/stories/card/card.component';
 
 @NgModule({
 	declarations: [CreateAppComponent],

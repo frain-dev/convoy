@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { CardComponent } from 'src/app/components/card/card.component';
+import { CardComponent } from 'src/stories/card/card.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { PageComponent } from 'src/app/components/page/page.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';

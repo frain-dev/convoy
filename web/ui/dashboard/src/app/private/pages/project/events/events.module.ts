@@ -10,7 +10,7 @@ import { EventDeliveriesModule } from './event-deliveries/event-deliveries.modul
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { CardComponent } from 'src/app/components/card/card.component';
+import { CardComponent } from 'src/stories/card/card.component';
 import { ChartComponent } from 'src/app/components/chart/chart.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 

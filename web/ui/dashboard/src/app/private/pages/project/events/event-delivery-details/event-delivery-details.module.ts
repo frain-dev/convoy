@@ -4,7 +4,7 @@ import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { RouterModule } from '@angular/router';
 import { EventDeliveryDetailsComponent } from './event-delivery-details.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
-import { CardComponent } from 'src/app/components/card/card.component';
+import { CardComponent } from 'src/stories/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';

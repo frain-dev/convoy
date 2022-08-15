@@ -12,7 +12,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { BadgeComponent } from 'src/app/components/badge/badge.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { InputComponent } from 'src/app/components/input/input.component';
-import { CardComponent } from 'src/app/components/card/card.component';
+import { CardComponent } from 'src/stories/card/card.component';
 import { TableComponent } from 'src/app/components/table/table.component';
 import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
 import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';

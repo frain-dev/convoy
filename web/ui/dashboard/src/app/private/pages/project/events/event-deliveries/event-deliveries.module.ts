@@ -8,7 +8,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { RouterModule } from '@angular/router';
 import { EventDeliveriesComponent } from './event-deliveries.component';
-import { CardComponent } from 'src/app/components/card/card.component';
+import { CardComponent } from 'src/stories/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
