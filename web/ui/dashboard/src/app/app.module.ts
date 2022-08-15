@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { NotificationComponent } from 'src/stories/notification/notification.component';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
