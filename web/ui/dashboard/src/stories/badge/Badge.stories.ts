@@ -1,5 +1,5 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { BadgeComponent } from './badge.component';
+import { BadgeComponent } from '../../app/components/badge/badge.component';
 
 export default {
 	title: 'Example/Badge',

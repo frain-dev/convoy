@@ -7,7 +7,7 @@ import { CreateOrganisationModule } from './components/create-organisation/creat
 import { AddAnalyticsModule } from './components/add-analytics/add-analytics.module';
 import { DropdownComponent } from '../components/dropdown/dropdown.component';
 import { ButtonComponent } from '../components/button/button.component';
-import { BadgeComponent } from '../../stories/badge/badge.component';
+import { BadgeComponent } from '../components/badge/badge.component';
 
 @NgModule({
 	declarations: [PrivateComponent],
