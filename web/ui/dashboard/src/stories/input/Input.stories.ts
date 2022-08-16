@@ -1,14 +1,18 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { InputComponent } from './input.component';
+import { moduleMetadata } from '@storybook/angular';
+import { InputComponent } from '../../app/components/input/input.component';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 export default {
 	title: 'Example/Input',
 	component: InputComponent,
+	decorators: [
+		moduleMetadata({
+			imports: [ReactiveFormsModule]
+		})
+	],
 	argTypes: {
 		label: {
-			control: { type: 'text' }
-		},
-		name: {
 			control: { type: 'text' }
 		},
 		type: {
@@ -17,9 +21,6 @@ export default {
 			defaultValue: 'text'
 		},
 		formControlName: {
-			control: { type: 'text' }
-		},
-		autocomplete: {
 			control: { type: 'text' }
 		},
 		errorMessage: {
@@ -42,15 +43,51 @@ export default {
 	}
 } as Meta;
 
-const Template: Story<InputComponent> = (args: InputComponent) => ({
-	props: args
-});
+const Template: Story<InputComponent> = (args: InputComponent) => {
+	const formGroup = new FormGroup({
+		name: new FormControl(undefined)
+	});
 
-export const Default = Template.bind({});
-Default.args = {
-	label: 'Input Label',
-	name: 'inputName',
-	type: 'text',
-	placeholder: 'input placeholder',
-	errorMessage: 'input error message'
+	return {
+		component: InputComponent,
+		template: `
+        <form [formGroup]="form" class="pt-100px">
+          <convoy-input
+            [label]="label"
+            [type]="type"
+            [placeholder]="placeholder"
+            [errorMessage]="errorMessage"
+            [required]="required"
+            formControlName="name"
+          >
+          </convoy-input>
+        </form>
+      `,
+		props: {
+			...args,
+			form: formGroup
+		}
+	};
 };
+
+export const Base = Template.bind({});
+Base.args = {
+	label: 'Convoy Input Label',
+	type: 'text',
+	placeholder: 'Convoy input placeholder',
+	required: true,
+	readonly: true,
+	errorMessage: 'Convoy input error message',
+    tooltipContent: 'Convoy input tooltip content'
+} as Partial<InputComponent>;
+
+
+export const Password = Template.bind({});
+Password.args = {
+	label: 'Convoy Input Label',
+	type: 'password',
+	placeholder: '********',
+	required: true,
+	readonly: false,
+	errorMessage: 'Convoy input error message'
+} as Partial<InputComponent>;
