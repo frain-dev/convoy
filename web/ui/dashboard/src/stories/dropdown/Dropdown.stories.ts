@@ -1,6 +1,7 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
 import { componentWrapperDecorator } from '@storybook/angular';
 import { DropdownComponent } from '../../app/components/dropdown/dropdown.component';
+import * as ButtonStories from '../button/Button.stories';
 
 export default {
 	title: 'Example/Dropdown',
@@ -40,7 +41,7 @@ export default {
 		buttonText: {
 			control: { type: 'text' }
 		},
-        class: {
+		class: {
 			control: { type: 'text' }
 		}
 	},
@@ -53,9 +54,11 @@ export default {
 
 const Template: Story<DropdownComponent> = (args: DropdownComponent) => ({
 	props: args,
-	template: `<convoy-dropdown [buttonText]="buttonText" [position]="position" [size]="size" [buttonColor]="buttonColor" [buttonSize]="buttonSize" [buttonType]="buttonType" [buttonTexture]="buttonTexture">
-                {{ngContent}}
-               </convoy-dropdown>
+	template: ` <div class="flex justify-center h-300px">
+                    <convoy-dropdown [buttonText]="buttonText" [position]="position" [size]="size" [buttonColor]="buttonColor" [buttonSize]="buttonSize" [buttonType]="buttonType" [buttonTexture]="buttonTexture">
+                        {{ngContent}}
+                    </convoy-dropdown>
+                </div>
               `
 });
 
@@ -64,10 +67,10 @@ Base.args = {
 	ngContent: 'Dropdown content',
 	position: 'right',
 	size: 'md',
-    class: 'p-3',
-	buttonText: 'Dropdown toggle',
-	buttonColor: 'primary',
-	buttonSize: 'md',
-	buttonType: 'default',
-	buttonTexture: 'deep'
+	class: 'p-3',
+	buttonText: ButtonStories.Base.args?.buttonText,
+	buttonColor: ButtonStories.Base.args?.color,
+	buttonSize: ButtonStories.Base.args?.size,
+	buttonType: ButtonStories.Base.args?.type,
+	buttonTexture: ButtonStories.Base.args?.texture
 } as Partial<DropdownComponent>;
