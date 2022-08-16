@@ -18,12 +18,6 @@ export default {
 		description: {
 			control: { type: 'text' }
 		},
-		_id: {
-			control: { type: 'text' }
-		},
-		formControlName: {
-			control: { type: 'text' }
-		},
 		checked: {
 			control: { type: 'boolean' }
 		}
@@ -43,7 +37,6 @@ const Template: Story<RadioComponent> = (args: RadioComponent) => {
             [label]="label"
             [description]="description"
             [checked]="checked"
-            [_id]="_id"
             formControlName="enableForm"
           >
           </convoy-radio>
@@ -60,6 +53,5 @@ export const Base = Template.bind({});
 Base.args = {
 	label: 'Convoy Radio Label',
 	description: 'Convoy Radio Description',
-    _id: 'Convoy radio id',
 	checked: false
 } as Partial<RadioComponent>;
