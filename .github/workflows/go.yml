@@ -29,7 +29,7 @@ jobs:
                   redis-port: 6379
 
             - name: Start Typesense
-              uses: jirevwe/typesense-github-action@v1.0.0
+              uses: jirevwe/typesense-github-action@v1.0.1
               with:
                   typesense-version: 0.23.1
                   typesense-api-key: some-api-key
