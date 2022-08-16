@@ -2,6 +2,7 @@ import { Story, Meta } from '@storybook/angular/types-6-0';
 import { moduleMetadata } from '@storybook/angular';
 import { InputComponent } from '../../app/components/input/input.component';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import * as TooltipStories from '../tooltip/Tooltip.stories';
 
 export default {
 	title: 'Example/Input',
@@ -48,7 +49,7 @@ export default {
 	},
 	parameters: {
 		actions: {
-			handles: ['focus']
+			handles: ['focus', 'hover']
 		}
 	}
 } as Meta;
@@ -72,6 +73,7 @@ const Template: Story<InputComponent> = (args: InputComponent) => {
             [tooltipPosition]="tooltipPosition"
             [tooltipSize]="tooltipSize"
             [tooltipContent]="tooltipContent"
+            [tooltipImg]="tooltipImg"
             formControlName="name"
           >
           </convoy-input>
@@ -92,7 +94,10 @@ Base.args = {
 	required: true,
 	readonly: false,
 	errorMessage: 'Convoy input error message',
-	tooltipContent: 'Convoy input tooltip content'
+	tooltipContent: TooltipStories.Base.args.ngContent,
+	tooltipImg: TooltipStories.Base.args.img,
+	tooltipSize: TooltipStories.Base.args.size,
+	tooltipPosition: TooltipStories.Base.args.position
 } as Partial<InputComponent>;
 
 export const Password = Template.bind({});

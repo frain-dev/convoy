@@ -31,6 +31,7 @@ export class InputComponent implements OnInit, ControlValueAccessor {
 	@Input('tooltipPosition') tooltipPosition: 'left' | 'right' = 'left';
 	@Input('tooltipSize') tooltipSize: 'sm' | 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
+	@Input('tooltipImg') tooltipImg!: string;
 	control!: any;
 	showLoginPassword = false;
 
