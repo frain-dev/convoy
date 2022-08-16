@@ -14,12 +14,6 @@ export default {
 	argTypes: {
 		isChecked: {
 			control: { type: 'boolean' }
-		},
-		label: {
-			control: { type: 'string' }
-		},
-		formControlName: {
-			control: { type: 'text' }
 		}
 	}
 } as Meta;
@@ -34,7 +28,6 @@ const Template: Story<ToggleComponent> = (args: ToggleComponent) => {
 		template: `
         <form [formGroup]="form">
           <convoy-toggle
-            [label]="label"
             [isChecked]="isChecked"
             formControlName="toggleForm"
           >
@@ -51,5 +44,4 @@ const Template: Story<ToggleComponent> = (args: ToggleComponent) => {
 export const Base = Template.bind({});
 Base.args = {
 	isChecked: false,
-    label: 'Convoy toggle'
 };
