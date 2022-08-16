@@ -1,5 +1,5 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { ButtonComponent } from './button.component';
+import { ButtonComponent } from '../../app/components/button/button.component';
 
 export default {
 	title: 'Example/Button',
