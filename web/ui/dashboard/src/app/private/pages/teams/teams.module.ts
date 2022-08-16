@@ -10,7 +10,6 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { BadgeComponent } from 'src/app/components/badge/badge.component';
-import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TableComponent } from 'src/app/components/table/table.component';
@@ -19,6 +18,7 @@ import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
