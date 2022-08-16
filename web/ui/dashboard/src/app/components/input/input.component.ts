@@ -19,7 +19,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 })
 export class InputComponent implements OnInit, ControlValueAccessor {
 	@Input('name') name!: string;
-	@Input('type') type = 'text';
+	@Input('type') type: 'text' | 'password' | 'number' | 'url' | 'email' = 'text';
 	@Input('autocomplete') autocomplete!: string;
 	@Input('errorMessage') errorMessage!: string;
 	@Input('label') label!: string;
@@ -28,8 +28,8 @@ export class InputComponent implements OnInit, ControlValueAccessor {
 	@Input('readonly') readonly = false;
 	@Input('placeholder') placeholder!: string;
 	@Input('className') class!: string;
-	@Input('tooltipPosition') tooltipPosition: 'left'| 'right' = 'left';
-	@Input('tooltipSize') tooltipSize: 'sm'| 'md' = 'md';
+	@Input('tooltipPosition') tooltipPosition: 'left' | 'right' = 'left';
+	@Input('tooltipSize') tooltipSize: 'sm' | 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
 	control!: any;
 	showLoginPassword = false;
