@@ -6,25 +6,22 @@ export default {
 	component: EmptyStateComponent,
 	argTypes: {
 		imgSrc: {
-			control: { type: 'string' }
+			control: { type: 'text' }
 		},
         heading: {
-			control: { type: 'string' }
+			control: { type: 'text' }
 		},
         description: {
-			control: { type: 'string' }
+			control: { type: 'text' }
 		},
         buttonText: {
-			control: { type: 'string' }
+			control: { type: 'text' }
 		},
 		type: {
 			options: ['normal', 'table'],
 			control: { type: 'select' },
 			defaultValue: 'normal'
-		},
-        class: {
-			control: { type: 'string' }
-		},
+		}
 	}
 } as Meta;
 
@@ -35,9 +32,17 @@ const Template: Story<EmptyStateComponent> = (args: EmptyStateComponent) => ({
 export const Base = Template.bind({});
 Base.args = {
 	imgSrc: '/assets/img/empty-state.svg',
-	heading: 'heading',
-	description: 'description',
+	heading: 'Convoy empty state heading',
+	description: 'Convoy empty state description',
 	buttonText: 'button text',
 	type: 'normal',
-    class: 'p-5'
+};
+
+export const Table = Template.bind({});
+Table.args = {
+	imgSrc: '/assets/img/empty-state.svg',
+	heading: 'Convoy empty state heading',
+	description: 'Convoy empty state description',
+	buttonText: 'button text',
+	type: 'table',
 };
