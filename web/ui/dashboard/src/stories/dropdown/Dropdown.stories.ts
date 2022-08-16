@@ -1,12 +1,10 @@
 import { Story, Meta } from '@storybook/angular/types-6-0';
-import { componentWrapperDecorator } from '@storybook/angular';
 import { DropdownComponent } from '../../app/components/dropdown/dropdown.component';
 import * as ButtonStories from '../button/Button.stories';
 
 export default {
 	title: 'Example/Dropdown',
 	component: DropdownComponent,
-	decorators: [componentWrapperDecorator(story => `<div class="p-5">${story}</div>`)],
 	argTypes: {
 		position: {
 			options: ['right', 'left'],
