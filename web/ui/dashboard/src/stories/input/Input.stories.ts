@@ -17,11 +17,8 @@ export default {
 		},
 		type: {
 			options: ['text', 'password', 'number', 'url', 'email'],
-			control: { type: 'text' },
+			control: { type: 'select' },
 			defaultValue: 'text'
-		},
-		formControlName: {
-			control: { type: 'text' }
 		},
 		errorMessage: {
 			control: { type: 'text' }
@@ -34,11 +31,24 @@ export default {
 		},
 		readonly: {
 			control: { type: 'boolean' }
+		},
+		tooltipPosition: {
+			options: ['left', 'right'],
+			control: { type: 'select' },
+			defaultValue: 'left'
+		},
+		tooltipSize: {
+			options: ['sm', 'md'],
+			control: { type: 'select' },
+			defaultValue: 'md'
+		},
+		tooltipContent: {
+			control: { type: 'text' }
 		}
 	},
 	parameters: {
 		actions: {
-			handles: ['click']
+			handles: ['focus']
 		}
 	}
 } as Meta;
@@ -58,6 +68,10 @@ const Template: Story<InputComponent> = (args: InputComponent) => {
             [placeholder]="placeholder"
             [errorMessage]="errorMessage"
             [required]="required"
+            [readonly]="readonly"
+            [tooltipPosition]="tooltipPosition"
+            [tooltipSize]="tooltipSize"
+            [tooltipContent]="tooltipContent"
             formControlName="name"
           >
           </convoy-input>
@@ -76,11 +90,10 @@ Base.args = {
 	type: 'text',
 	placeholder: 'Convoy input placeholder',
 	required: true,
-	readonly: true,
+	readonly: false,
 	errorMessage: 'Convoy input error message',
-    tooltipContent: 'Convoy input tooltip content'
+	tooltipContent: 'Convoy input tooltip content'
 } as Partial<InputComponent>;
-
 
 export const Password = Template.bind({});
 Password.args = {

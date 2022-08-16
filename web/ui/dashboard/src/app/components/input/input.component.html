@@ -12,7 +12,7 @@
 			[type]="showLoginPassword ? 'text' : 'password'"
 			[id]="name"
 			[name]="name"
-			autocomplete="current-password"
+			autocomplete="password"
 			[formControl]="control"
 			required
 			class="
@@ -54,6 +54,7 @@
 		[required]="required"
 		[readonly]="readonly"
 		[placeholder]="placeholder"
+        [ngClass]="{'pointer-events-none': readonly}"
 		class="
 			transition-all
 			duration-[.3s]
