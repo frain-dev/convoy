@@ -8,19 +8,22 @@ export default {
 		imgSrc: {
 			control: { type: 'text' }
 		},
-        heading: {
+		heading: {
 			control: { type: 'text' }
 		},
-        description: {
+		description: {
 			control: { type: 'text' }
 		},
-        buttonText: {
+		buttonText: {
 			control: { type: 'text' }
 		},
 		type: {
 			options: ['normal', 'table'],
 			control: { type: 'select' },
 			defaultValue: 'normal'
+		},
+		class: {
+			control: { type: 'text' }
 		}
 	}
 } as Meta;
@@ -36,6 +39,7 @@ Base.args = {
 	description: 'Convoy empty state description',
 	buttonText: 'button text',
 	type: 'normal',
+	class: 'p-5'
 };
 
 export const Table = Template.bind({});
@@ -45,4 +49,5 @@ Table.args = {
 	description: 'Convoy empty state description',
 	buttonText: 'button text',
 	type: 'table',
+	class: 'p-5'
 };
