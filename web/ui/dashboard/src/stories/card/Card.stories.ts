@@ -20,4 +20,4 @@ export const Base = Template.bind({});
 Base.args = {
 	ngContent: 'This is convoy card',
     class: 'p-5'
-};
+} as Partial<CardComponent>;
