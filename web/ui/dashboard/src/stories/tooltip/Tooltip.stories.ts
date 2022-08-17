@@ -16,7 +16,7 @@ export default {
 			defaultValue: 'md'
 		},
 		img: {
-			control: { type: 'string' }
+			control: { type: 'text' }
 		}
 	}
 } as Meta;

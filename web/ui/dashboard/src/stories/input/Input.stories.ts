@@ -45,6 +45,9 @@ export default {
 		},
 		tooltipContent: {
 			control: { type: 'text' }
+		},
+        tooltipImg: {
+			control: { type: 'text' }
 		}
 	},
 	parameters: {
@@ -94,10 +97,10 @@ Base.args = {
 	required: true,
 	readonly: false,
 	errorMessage: 'Convoy input error message',
-	tooltipContent: TooltipStories.Base.args.ngContent,
-	tooltipImg: TooltipStories.Base.args.img,
-	tooltipSize: TooltipStories.Base.args.size,
-	tooltipPosition: TooltipStories.Base.args.position
+	tooltipContent: 'Tooltip content',
+	tooltipImg: TooltipStories.Base.args?.img,
+	tooltipSize: TooltipStories.Base.args?.size,
+	tooltipPosition: TooltipStories.Base.args?.position
 } as Partial<InputComponent>;
 
 export const Password = Template.bind({});

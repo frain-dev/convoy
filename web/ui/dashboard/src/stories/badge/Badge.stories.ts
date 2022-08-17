@@ -6,7 +6,7 @@ export default {
 	component: BadgeComponent,
 	argTypes: {
 		text: {
-			control: { type: 'string' }
+			control: { type: 'text' }
 		},
 		texture: {
 			options: ['deep', 'light'],
