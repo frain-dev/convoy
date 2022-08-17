@@ -40,7 +40,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
 			consumer.RegisterHandlers(convoy.EventProcessor, handler)
 
-			eventCreatedhandler := task.ProcessEventCreated(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo, a.searcher)
+			eventCreatedhandler := task.ProcessEventCreation(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo, a.searcher)
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
 
 			notificationHandler := task.SendNotification(a.emailNotificationSender)

@@ -141,77 +141,80 @@ func TestProcessEventCreated(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name: "should_process_event_for_incoming_group",
-		// 	event: &datastore.Event{
-		// 		UID:        uuid.NewString(),
-		// 		EventType:  "*",
-		// 		ProviderID: uuid.NewString(),
-		// 		SourceID:   "source-id-1",
-		// 		GroupID:    "group-id-1",
-		// 		AppID:      "app-id-1",
-		// 		Data:       []byte(`{}`),
-		// 		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		// 		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		// 	},
-		// 	dbFn: func(args *args) {
-		// 		mockCache, _ := args.cache.(*mocks.MockCache)
-		// 		var gr *datastore.Group
-		// 		mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
+		{
+			name: "should_process_event_for_incoming_group",
+			event: &datastore.Event{
+				UID:        uuid.NewString(),
+				EventType:  "*",
+				ProviderID: uuid.NewString(),
+				SourceID:   "source-id-1",
+				GroupID:    "group-id-1",
+				AppID:      "app-id-1",
+				Data:       []byte(`{}`),
+				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+			},
+			dbFn: func(args *args) {
+				mockCache, _ := args.cache.(*mocks.MockCache)
+				var gr *datastore.Group
+				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
 
-		// 		group := &datastore.Group{
-		// 			UID:  "group-id-1",
-		// 			Type: datastore.IncomingGroup,
-		// 			Config: &datastore.GroupConfig{
-		// 				Strategy: &datastore.StrategyConfiguration{
-		// 					Type:       datastore.LinearStrategyProvider,
-		// 					Duration:   10,
-		// 					RetryCount: 3,
-		// 				},
-		// 			},
-		// 		}
+				group := &datastore.Group{
+					UID:  "group-id-1",
+					Type: datastore.IncomingGroup,
+					Config: &datastore.GroupConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       datastore.LinearStrategyProvider,
+							Duration:   10,
+							RetryCount: 3,
+						},
+					},
+				}
 
-		// 		g, _ := args.groupRepo.(*mocks.MockGroupRepository)
-		// 		g.EXPECT().FetchGroupByID(gomock.Any(), "group-id-1").Times(1).Return(
-		// 			group,
-		// 			nil,
-		// 		)
-		// 		mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
+				g, _ := args.groupRepo.(*mocks.MockGroupRepository)
+				g.EXPECT().FetchGroupByID(gomock.Any(), "group-id-1").Times(1).Return(
+					group,
+					nil,
+				)
+				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
 
-		// 		a, _ := args.appRepo.(*mocks.MockApplicationRepository)
-		// 		app := &datastore.Application{UID: "app-id-1"}
+				a, _ := args.appRepo.(*mocks.MockApplicationRepository)
+				app := &datastore.Application{UID: "app-id-1"}
 
-		// 		s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-		// 		subscriptions := []datastore.Subscription{
-		// 			{
-		// 				UID:        "456",
-		// 				AppID:      "app-id-1",
-		// 				EndpointID: "098",
-		// 				Status:     datastore.ActiveSubscriptionStatus,
-		// 				FilterConfig: &datastore.FilterConfiguration{
-		// 					EventTypes: []string{"*"},
-		// 				},
-		// 			},
-		// 		}
-		// 		s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "group-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				subscriptions := []datastore.Subscription{
+					{
+						UID:        "456",
+						AppID:      "app-id-1",
+						EndpointID: "098",
+						Status:     datastore.ActiveSubscriptionStatus,
+						FilterConfig: &datastore.FilterConfiguration{
+							EventTypes: []string{"*"},
+						},
+					},
+				}
+				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "group-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
 
-		// 		e, _ := args.eventRepo.(*mocks.MockEventRepository)
-		// 		e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-		// 		a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").Times(1).Return(app, nil)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").Times(1).Return(app, nil)
 
-		// 		endpoint := &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
-		// 		a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "app-id-1", "098").
-		// 			Times(1).Return(endpoint, nil)
+				endpoint := &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
+				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "app-id-1", "098").
+					Times(1).Return(endpoint, nil)
 
-		// 		ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-		// 		ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-		// 		q, _ := args.eventQueue.(*mocks.MockQueuer)
-		// 		q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-		// 	},
-		// 	wantErr: false,
-		// },
+				q, _ := args.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+
+				srh, _ := args.search.(*mocks.MockSearcher)
+				srh.EXPECT().Index(gomock.Any(), gomock.Any())
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -233,7 +236,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreated(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search)
+			fn := ProcessEventCreation(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)
