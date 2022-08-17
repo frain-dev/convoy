@@ -179,9 +179,19 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 		document["data"] = eventData
 		document["id"] = document["uid"]
 
-		err = search.Index(event.GroupID, document)
+		payload, err := json.Marshal(document)
 		if err != nil {
-			log.Errorf("Error indexing event to the queue: %s", err)
+			return err
+		}
+
+		job := &queue.Job{
+			ID:      event.UID,
+			Payload: payload,
+			Delay:   5 * time.Second,
+		}
+		err = eventQueue.Write(convoy.IndexDocument, convoy.PriorityQueue, job)
+		if err != nil {
+			log.Errorf("Error occurred sending new event to the queue %s", err)
 		}
 
 		return nil

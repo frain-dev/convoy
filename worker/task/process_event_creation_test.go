@@ -136,8 +136,7 @@ func TestProcessEventCreated(t *testing.T) {
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 
-				srh, _ := args.search.(*mocks.MockSearcher)
-				srh.EXPECT().Index(gomock.Any(), gomock.Any())
+				q.EXPECT().Write(convoy.IndexDocument, convoy.PriorityQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -210,8 +209,7 @@ func TestProcessEventCreated(t *testing.T) {
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 
-				srh, _ := args.search.(*mocks.MockSearcher)
-				srh.EXPECT().Index(gomock.Any(), gomock.Any())
+				q.EXPECT().Write(convoy.IndexDocument, convoy.PriorityQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},

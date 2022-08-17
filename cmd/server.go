@@ -193,6 +193,9 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		notificationHandler := task.SendNotification(a.emailNotificationSender)
 		consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
 
+		searchIndex := task.SearchIndex(a.searcher)
+		consumer.RegisterHandlers(convoy.IndexDocument, searchIndex)
+
 		dailyAnalytics := analytics.TrackDailyAnalytics(&analytics.Repo{
 			ConfigRepo: a.configRepo,
 			EventRepo:  a.eventRepo,
