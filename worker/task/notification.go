@@ -2,15 +2,19 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/notifications"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/notification/email"
-	"github.com/frain-dev/convoy/notification/slack"
 )
 
 func sendNotification(
@@ -32,55 +36,71 @@ func sendNotification(
 		return fmt.Errorf("failed to fetch application endpoint: %v", err)
 	}
 
-	n := &notification.Notification{
-		LogoURL:           g.LogoURL,
-		TargetURL:         endpoint.TargetURL,
-		Subject:           "Endpoint Status Update",
-		EndpointStatus:    string(status),
-		EmailTemplateName: email.TemplateEndpointUpdate.String(),
-	}
-
-	if failure {
-		n.Text = fmt.Sprintf("failed to send event delivery (%s) to endpoint url (%s) after retry limit was hit, endpoint status is now %s", eventDelivery.UID, endpoint.TargetURL, status)
-	} else {
-		n.Text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.TargetURL, status)
-	}
-
 	if !util.IsStringEmpty(app.SupportEmail) {
-		err = sendEmailNotification(ctx, n, smtpCfg)
-		if err != nil {
-			return fmt.Errorf("failed to send slack notification: %v", err)
+		n := &notification.Notification{
+			NotificationType: notifications.EmailNotificationType,
+			Payload: email.Message{
+				Email:        app.SupportEmail,
+				Subject:      "Endpoint Status Update",
+				TemplateName: email.TemplateEndpointUpdate,
+				Params: map[string]string{
+					"logo_url":        g.LogoURL,
+					"target_url":      endpoint.TargetURL,
+					"endpoint_status": string(status),
+				},
+			},
 		}
+
+		buf, err := json.Marshal(n)
+		if err != nil {
+			log.WithError(err).Error("Failed to marshal email notification payload")
+			return nil
+		}
+
+		job := &queue.Job{
+			Payload: json.RawMessage(buf),
+			Delay:   0,
+		}
+		err := q.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+		if err != nil {
+			log.WithError(err).Error("Failed to write new notification to the queue")
+		}
+
+		return nil
 	}
 
 	if !util.IsStringEmpty(app.SlackWebhookURL) {
-		err = sendSlackNotification(ctx, app.SlackWebhookURL, n)
+		n := &notification.Notification{
+			NotificationType: notifications.SlackNotificationType,
+			Payload: notifications.SlackNotification{
+				WebhookURL: app.SlackWebhookURL,
+			},
+		}
+
+		var text string
+		if failure {
+			text = fmt.Sprintf("failed to send event delivery (%s) to endpoint url (%s) after retry limit was hit, endpoint status is now %s", eventDelivery.UID, endpoint.TargetURL, status)
+		} else {
+			text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.TargetURL, status)
+		}
+		n.Payload.Text = text
+
+		buf, err := json.Marshal(n)
 		if err != nil {
-			return fmt.Errorf("failed to send slack notification: %v", err)
+			log.WithError(err).Error("Failed to marshal slack notification payload")
+			return nil
+		}
+
+		job := &queue.Job{
+			Payload: json.RawMessage(buf),
+			Delay:   0,
+		}
+
+		err = q.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+		if err != nil {
+			log.WithError(err).Error("Failed to write new notification to the queue")
 		}
 	}
 
-	return nil
-}
-
-func sendEmailNotification(ctx context.Context, n *notification.Notification, smtpCfg *config.SMTPConfiguration) error {
-	em, err := email.NewEmailNotificationSender(smtpCfg)
-	if err != nil {
-		return fmt.Errorf("failed to get new email notification sender: %v", err)
-	}
-
-	err = em.SendNotification(ctx, n)
-	if err != nil {
-		return fmt.Errorf("failed to send email notification: %v", err)
-	}
-
-	return nil
-}
-
-func sendSlackNotification(ctx context.Context, slackWebhookURL string, n *notification.Notification) error {
-	err := slack.NewSlackNotificationSender(slackWebhookURL).SendNotification(ctx, n)
-	if err != nil {
-		return fmt.Errorf("failed to send slack notification: %v", err)
-	}
 	return nil
 }

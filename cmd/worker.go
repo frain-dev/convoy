@@ -45,6 +45,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 
 			notificationHandler := task.SendNotification(a.emailNotificationSender)
 			consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
+
 			dailyAnalytics := analytics.TrackDailyAnalytics(&analytics.Repo{
 				ConfigRepo: a.configRepo,
 				EventRepo:  a.eventRepo,
