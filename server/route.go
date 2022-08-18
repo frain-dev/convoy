@@ -484,10 +484,14 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Use(a.M.RequireAuthUserMetadata())
+			configRouter.Use(a.M.RequirePermission(auth.RoleInstanceAdmin))
 
 			configRouter.Get("/", a.LoadConfiguration)
 			configRouter.Post("/", a.CreateConfiguration)
 			configRouter.Put("/", a.UpdateConfiguration)
+
+			configRouter.Route("/team", func(teamRouter chi.Router) {
+			})
 
 		})
 	})
