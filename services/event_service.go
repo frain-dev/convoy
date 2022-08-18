@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -152,20 +151,13 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 
 func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	filterByBuilder := new(strings.Builder)
-
-	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", filter.Group.UID))
-
-	hasAppFilter := !util.IsStringEmpty(filter.AppID)
-	if hasAppFilter {
-		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", filter.Group.UID))
-	}
-
-	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd))
-
 	ids, paginationData, err := e.searcher.Search(filter.Group.UID, &datastore.SearchFilter{
-		Query:    filter.Query,
-		FilterBy: filterByBuilder.String(),
+		Query: filter.Query,
+		FilterBy: datastore.FilterBy{
+			AppID:        filter.AppID,
+			GroupID:      filter.Group.UID,
+			SearchParams: filter.SearchParams,
+		},
 		Pageable: filter.Pageable,
 	})
 

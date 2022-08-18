@@ -68,7 +68,7 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 		Q:        f.Query,
 		QueryBy:  queryBy,
 		SortBy:   &sortBy,
-		FilterBy: &f.FilterBy,
+		FilterBy: f.FilterBy.String(),
 		Page:     &f.Pageable.Page,
 		PerPage:  &f.Pageable.PerPage,
 	}
@@ -194,7 +194,7 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 
 func (t *Typesense) Remove(collection string, f *datastore.SearchFilter) error {
 	batchsize := 100
-	filter := &api.DeleteDocumentsParams{FilterBy: &f.FilterBy, BatchSize: &batchsize}
+	filter := &api.DeleteDocumentsParams{FilterBy: f.FilterBy.String(), BatchSize: &batchsize}
 
 	c, err := t.client.Collection(collection).Documents().Delete(filter)
 	if err != nil {
