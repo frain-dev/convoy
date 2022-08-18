@@ -15,14 +15,14 @@ type Role struct {
 type RoleType string
 
 const (
-	RoleSuperUser = RoleType("super_user")
-	RoleAdmin     = RoleType("admin")
-	RoleAPI       = RoleType("api")
+	RoleSuperUser     = RoleType("super_user")
+	RoleAppPortal     = RoleType("app_portal")
+	RoleInstanceAdmin = RoleType("instance_admin")
 )
 
 func (r RoleType) IsValid() bool {
 	switch r {
-	case RoleSuperUser, RoleAdmin, RoleAPI:
+	case RoleSuperUser, RoleAppPortal, RoleInstanceAdmin:
 		return true
 	default:
 		return false

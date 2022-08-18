@@ -103,7 +103,7 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	}
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: group.UID,
 		App:   app.UID,
 	}

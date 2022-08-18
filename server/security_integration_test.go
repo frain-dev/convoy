@@ -71,7 +71,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}`
+	bodyStr := `{"name":"default_api_key","role":{"type":"super_user","group":"%s"},"key_type":"api_key","expires_at":"%s"}`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour).Format(time.RFC3339))
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys", s.DefaultOrg.UID)
@@ -112,7 +112,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 
@@ -159,7 +159,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelo
 	app, _ := testdb.SeedApplication(s.DB, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 
@@ -188,7 +188,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 	// Just Before.
@@ -217,7 +217,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeyByID() {
 	expectedStatusCode := http.StatusOK
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 	// Just Before.
@@ -265,13 +265,13 @@ func (s *SecurityIntegrationTestSuite) Test_UpdateAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 	// Just Before.
 	apiKey, _, _ := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "api")
 
-	bodyStr := `{"role":{"type":"api","group":"%s"}}`
+	bodyStr := `{"role":{"type":"super_user","group":"%s"}}`
 	body := serialize(bodyStr, s.DefaultGroup.UID)
 
 	url := fmt.Sprintf("/ui/organisations/%s/security/keys/%s", s.DefaultOrg.UID, apiKey.UID)
@@ -322,7 +322,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
 	expectedStatusCode := http.StatusOK
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 	// Just Before.

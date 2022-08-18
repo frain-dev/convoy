@@ -417,7 +417,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 
 			require.Equal(t, group.Name+"'s default key", apiKey.Name)
 			require.Equal(t, group.UID, apiKey.Role.Group)
-			require.Equal(t, auth.RoleAdmin, apiKey.Role.Type)
+			require.Equal(t, auth.RoleSuperUser, apiKey.Role.Type)
 			require.NotEmpty(t, apiKey.ExpiresAt)
 			require.NotEmpty(t, apiKey.UID)
 			require.NotEmpty(t, apiKey.Key)

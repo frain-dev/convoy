@@ -57,7 +57,7 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 					UID:       "123456",
 					FirstName: "test",
 					LastName:  "test",
-					Role:      auth.Role{Type: auth.RoleAdmin},
+					Role:      auth.Role{Type: auth.RoleSuperUser},
 				}, nil)
 			},
 			want: &auth.AuthenticatedUser{
@@ -70,9 +70,9 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 					UID:       "123456",
 					FirstName: "test",
 					LastName:  "test",
-					Role:      auth.Role{Type: auth.RoleAdmin},
+					Role:      auth.Role{Type: auth.RoleSuperUser},
 				},
-				Role: auth.Role{Type: auth.RoleAdmin},
+				Role: auth.Role{Type: auth.RoleSuperUser},
 			},
 		},
 

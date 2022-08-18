@@ -46,7 +46,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 

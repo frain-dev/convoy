@@ -50,7 +50,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "1234",
 					},
 					ExpiresAt: expires,
@@ -65,7 +65,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				Name: "test_api_key",
 				Type: "api",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 				},
 				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
@@ -88,7 +88,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "1234",
 						App:   "1234",
 					},
@@ -132,7 +132,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "1234",
 						App:   "1234",
 					},
@@ -161,7 +161,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "1234",
 						App:   "1234",
 					},
@@ -190,7 +190,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "1234",
 						App:   "1234",
 					},
@@ -199,7 +199,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "555",
-					Role:           auth.Role{Type: auth.RoleAdmin},
+					Role:           auth.Role{Type: auth.RoleAppPortal},
 				},
 			},
 			dbFn: func(ss *SecurityService) {
@@ -219,7 +219,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "1234",
 						App:   "1234",
 					},
@@ -309,7 +309,7 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 				Name: "test_app",
 				Type: "app_portal",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 					App:   "abc",
 				},
@@ -563,7 +563,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 				},
 			},
@@ -579,7 +579,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:  auth.RoleAPI,
+							Type:  auth.RoleSuperUser,
 							Group: "avs",
 							App:   "",
 						},
@@ -591,7 +591,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 			wantAPIKey: &datastore.APIKey{
 				UID: "ref",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 				},
 			},
@@ -602,7 +602,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 				},
 			},
@@ -629,7 +629,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 				},
 			},
@@ -648,7 +648,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 				},
 			},
@@ -672,7 +672,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "1234",
 				},
 			},
@@ -688,7 +688,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:  auth.RoleAPI,
+							Type:  auth.RoleSuperUser,
 							Group: "avs",
 							App:   "",
 						},
@@ -764,7 +764,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 						{
 							UID: "ref",
 							Role: auth.Role{
-								Type:  auth.RoleAPI,
+								Type:  auth.RoleSuperUser,
 								Group: "avs",
 								App:   "",
 							},
@@ -772,7 +772,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 						{
 							UID: "abc",
 							Role: auth.Role{
-								Type:  auth.RoleAPI,
+								Type:  auth.RoleSuperUser,
 								Group: "123",
 								App:   "",
 							},
@@ -791,7 +791,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				{
 					UID: "ref",
 					Role: auth.Role{
-						Type:  auth.RoleAPI,
+						Type:  auth.RoleSuperUser,
 						Group: "avs",
 						App:   "",
 					},
@@ -799,7 +799,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				{
 					UID: "abc",
 					Role: auth.Role{
-						Type:  auth.RoleAPI,
+						Type:  auth.RoleSuperUser,
 						Group: "123",
 						App:   "",
 					},

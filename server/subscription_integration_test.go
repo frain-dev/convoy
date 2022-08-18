@@ -47,7 +47,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: s.DefaultGroup.UID,
 	}
 
@@ -118,7 +118,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 
 	// Seed Auth
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: group.UID,
 	}
 
@@ -369,7 +369,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 
 	// Seed Auth
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
+		Type:  auth.RoleSuperUser,
 		Group: group.UID,
 	}
 

@@ -44,7 +44,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "123",
 					App:   "abc",
 				},
@@ -59,7 +59,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				OrganisationID: "1234",
 				UserID:         "1234",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "123",
 					App:   "abc",
 				},
@@ -73,13 +73,13 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type: auth.RoleAdmin,
+					Type: auth.RoleType("rubbish"),
 				},
 				user: &datastore.User{UID: "1234"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify group for organisation member",
+			wantErrMsg:  "invalid role type: rubbish",
 		},
 		{
 			name: "should_fail_to_create_organisation_member",
@@ -87,7 +87,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "123",
 					App:   "abc",
 				},
@@ -155,13 +155,13 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					OrganisationID: "abc",
 					UserID:         "def",
 					Role: auth.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "111",
 						App:   "",
 					},
 				},
 				role: &auth.Role{
-					Type:  auth.RoleAPI,
+					Type:  auth.RoleSuperUser,
 					Group: "333",
 					App:   "",
 				},
@@ -171,7 +171,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				OrganisationID: "abc",
 				UserID:         "def",
 				Role: auth.Role{
-					Type:  auth.RoleAPI,
+					Type:  auth.RoleSuperUser,
 					Group: "333",
 					App:   "",
 				},
@@ -189,14 +189,14 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				ctx:                ctx,
 				organisationMember: &datastore.OrganisationMember{},
 				role: &auth.Role{
-					Type:  auth.RoleAPI,
+					Type:  auth.RoleType("rubbish"),
 					Group: "",
 					App:   "",
 				},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify group for organisation member",
+			wantErrMsg:  "invalid role type: rubbish",
 		},
 		{
 			name: "should_update_organisation_member",
@@ -207,13 +207,13 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					OrganisationID: "abc",
 					UserID:         "def",
 					Role: auth.Role{
-						Type:  auth.RoleAdmin,
+						Type:  auth.RoleSuperUser,
 						Group: "111",
 						App:   "",
 					},
 				},
 				role: &auth.Role{
-					Type:  auth.RoleAPI,
+					Type:  auth.RoleSuperUser,
 					Group: "333",
 					App:   "",
 				},

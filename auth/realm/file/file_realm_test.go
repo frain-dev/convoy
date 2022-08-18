@@ -16,7 +16,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username1",
 			Password: "password1",
 			Role: auth.Role{
-				Type:  auth.RoleAdmin,
+				Type:  auth.RoleSuperUser,
 				Group: "sendcash-pay",
 			},
 		},
@@ -24,7 +24,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username2",
 			Password: "password2",
 			Role: auth.Role{
-				Type:  auth.RoleAdmin,
+				Type:  auth.RoleSuperUser,
 				Group: "buycoins",
 			},
 		},
@@ -40,7 +40,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username4",
 			Password: "password4",
 			Role: auth.Role{
-				Type:  auth.RoleAPI,
+				Type:  auth.RoleSuperUser,
 				Group: "termii",
 			},
 		},
@@ -49,7 +49,7 @@ var fileRealmOpt = &config.FileRealmOption{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{
-				Type:  auth.RoleAdmin,
+				Type:  auth.RoleSuperUser,
 				Group: "sendcash-pay",
 			},
 		},
@@ -91,7 +91,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 					Password: "password1",
 				},
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "sendcash-pay",
 				},
 			},
@@ -112,7 +112,7 @@ func TestFileRealm_Authenticate(t *testing.T) {
 					APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 				},
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
+					Type:  auth.RoleSuperUser,
 					Group: "sendcash-pay",
 				},
 			},
@@ -218,7 +218,7 @@ func TestNewFileRealm(t *testing.T) {
 						Username: "username1",
 						Password: "password1",
 						Role: auth.Role{
-							Type:  auth.RoleAdmin,
+							Type:  auth.RoleSuperUser,
 							Group: "sendcash-pay",
 						},
 					},
@@ -226,7 +226,7 @@ func TestNewFileRealm(t *testing.T) {
 						Username: "username2",
 						Password: "password2",
 						Role: auth.Role{
-							Type:  auth.RoleAdmin,
+							Type:  auth.RoleSuperUser,
 							Group: "buycoins",
 						},
 					},
@@ -242,7 +242,7 @@ func TestNewFileRealm(t *testing.T) {
 						Username: "username4",
 						Password: "password4",
 						Role: auth.Role{
-							Type:  auth.RoleAPI,
+							Type:  auth.RoleSuperUser,
 							Group: "termii",
 						},
 					},
@@ -251,7 +251,7 @@ func TestNewFileRealm(t *testing.T) {
 					{
 						APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 						Role: auth.Role{
-							Type:  auth.RoleAdmin,
+							Type:  auth.RoleSuperUser,
 							Group: "sendcash-pay",
 						},
 					},

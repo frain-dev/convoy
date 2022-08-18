@@ -200,7 +200,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	require.Equal(s.T(), "test-group", respGroup.Group.Name)
 	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
 
-	require.Equal(s.T(), auth.RoleAdmin, respGroup.APIKey.Role.Type)
+	require.Equal(s.T(), auth.RoleSuperUser, respGroup.APIKey.Role.Type)
 	require.Equal(s.T(), respGroup.Group.UID, respGroup.APIKey.Role.Group)
 	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
 	require.NotEmpty(s.T(), respGroup.APIKey.Key)
