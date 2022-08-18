@@ -150,48 +150,20 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				}
 				err = eventQueue.Write(taskName, convoy.EventQueue, job)
 				if err != nil {
-					log.Errorf("Error occurred sending new event to the queue %s", err)
+					log.Errorf("[asynq]: an error occurred sending event delivery to be dispatched %s", err)
 				}
 			}
 		}
 
-		// convert event data field to map
-		rawData := event.Data
-		var eventData *convoy.GenericMap
-		err = json.Unmarshal(rawData, &eventData)
-		if err != nil {
-			return err
-		}
-
-		// convert event to bytes
-		eBytes, err := json.Marshal(event)
-		if err != nil {
-			return err
-		}
-
-		// convert event to map
-		var document convoy.GenericMap
-		err = json.Unmarshal(eBytes, &document)
-		if err != nil {
-			return err
-		}
-
-		document["data"] = eventData
-		document["id"] = document["uid"]
-
-		payload, err := json.Marshal(document)
-		if err != nil {
-			return err
-		}
-
 		job := &queue.Job{
 			ID:      event.UID,
-			Payload: payload,
+			Payload: t.Payload(), // t.Payload() is the original event bytes
 			Delay:   5 * time.Second,
 		}
+
 		err = eventQueue.Write(convoy.IndexDocument, convoy.PriorityQueue, job)
 		if err != nil {
-			log.Errorf("Error occurred sending new event to the queue %s", err)
+			log.Errorf("[asynq]: an error occurred sending event to be indexed %s", err)
 		}
 
 		return nil

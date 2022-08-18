@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
@@ -23,12 +24,36 @@ func SearchIndex(search searcher.Searcher) func(ctx context.Context, t *asynq.Ta
 
 		buf := t.Payload()
 
-		var document convoy.GenericMap
-		err := json.Unmarshal(buf, &document)
+		var event datastore.Event
+		err := json.Unmarshal(buf, &event)
 		if err != nil {
-			log.WithError(err).Error("failed to unmarshal notification payload")
+			log.WithError(err).Error("[json]: failed to unmarshal event payload")
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
+
+		// convert event data field to map
+		rawData := event.Data
+		var eventData *convoy.GenericMap
+		err = json.Unmarshal(rawData, &eventData)
+		if err != nil {
+			return err
+		}
+
+		// convert event to bytes
+		eBytes, err := json.Marshal(event)
+		if err != nil {
+			return err
+		}
+
+		// convert event to map
+		var document convoy.GenericMap
+		err = json.Unmarshal(eBytes, &document)
+		if err != nil {
+			return err
+		}
+
+		document["data"] = eventData
+		document["id"] = document["uid"]
 
 		if g, found := document["group_id"]; found {
 			if group_id, ok := g.(string); ok {
