@@ -44,6 +44,13 @@ var DefaultConfiguration = Configuration{
 			Dsn: "redis://localhost:6378",
 		},
 	},
+	Search: SearchConfiguration{
+		Type: "typesense",
+		Typesense: TypesenseConfiguration{
+			Host:   "http://localhost:8108",
+			ApiKey: "some-api-key",
+		},
+	},
 }
 
 type DatabaseConfiguration struct {
@@ -154,9 +161,8 @@ type SearchConfiguration struct {
 }
 
 type TypesenseConfiguration struct {
-	Host       string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
-	ApiKey     string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
-	Collection string `json:"collection" envconfig:"CONVOY_TYPESENSE_COLLECTION"`
+	Host   string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
+	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
 }
 
 const (

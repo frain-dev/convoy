@@ -110,6 +110,7 @@ func TestLoadConfig(t *testing.T) {
 						Dsn: "redis://localhost:8379",
 					},
 				},
+				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
@@ -146,6 +147,7 @@ func TestLoadConfig(t *testing.T) {
 						WorkerPort: 5006,
 					},
 				},
+				Search:          DefaultConfiguration.Search,
 				MaxResponseSize: MaxResponseSize,
 				Environment:     DevelopmentEnvironment,
 				MultipleTenants: false,
@@ -170,6 +172,7 @@ func TestLoadConfig(t *testing.T) {
 						Dsn: "redis://localhost:8379",
 					},
 				},
+				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,

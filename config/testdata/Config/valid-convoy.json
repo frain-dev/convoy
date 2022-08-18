@@ -8,6 +8,13 @@
             "dsn": "redis://localhost:8379"
         }
     },
+    "search": {
+        "type": "typesense",
+        "typesense": {
+            "host": "http://localhost:8108",
+            "api_key": "some-api-key"
+        }
+    },
     "max_response_size": 40,
     "server": {
         "http": {

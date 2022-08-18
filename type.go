@@ -71,6 +71,7 @@ const (
 	DeadLetterProcessor   TaskName = "DeadLetterProcessor"
 	CreateEventProcessor  TaskName = "CreateEventProcessor"
 	NotificationProcessor TaskName = "NotificationProcessor"
+	IndexDocument         TaskName = "index document"
 	DailyAnalytics        TaskName = "daily analytics"
 	MonitorTwitterSources TaskName = "monitor twitter sources"
 	RetentionPolicies     TaskName = "retention_policies"
@@ -80,7 +81,7 @@ const (
 	SourceCacheKey        CacheKey = "sources"
 )
 
-//queues
+// queues
 const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
@@ -89,7 +90,7 @@ const (
 	DefaultQueue     QueueName = "DefaultQueue"
 )
 
-//Exports dir
+// Exports dir
 const (
 	DefaultOnPremDir = "/var/convoy/export/"
 	TmpExportDir     = "/tmp/convoy/export/"
