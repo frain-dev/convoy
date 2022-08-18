@@ -12,8 +12,8 @@ func NewNoopSearcher() *NoopSearcher {
 	return &NoopSearcher{}
 }
 
-func (n *NoopSearcher) Search(collection string, filter *datastore.SearchFilter) ([]convoy.GenericMap, datastore.PaginationData, error) {
-	return make([]convoy.GenericMap, 0), datastore.PaginationData{}, nil
+func (n *NoopSearcher) Search(collection string, filter *datastore.SearchFilter) ([]string, datastore.PaginationData, error) {
+	return make([]string, 0), datastore.PaginationData{}, nil
 }
 
 func (n *NoopSearcher) Index(collection string, document convoy.GenericMap) error {

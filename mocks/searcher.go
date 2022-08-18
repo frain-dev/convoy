@@ -64,10 +64,10 @@ func (mr *MockSearcherMockRecorder) Remove(collection, filter interface{}) *gomo
 }
 
 // Search mocks base method.
-func (m *MockSearcher) Search(collection string, filter *datastore.SearchFilter) ([]convoy.GenericMap, datastore.PaginationData, error) {
+func (m *MockSearcher) Search(collection string, filter *datastore.SearchFilter) ([]string, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Search", collection, filter)
-	ret0, _ := ret[0].([]convoy.GenericMap)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2

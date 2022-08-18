@@ -10,10 +10,10 @@ import (
 
 type Searcher interface {
 	// Search retrieves documents from the typesense collection based on the search filters
-	Search(collection string, filter *datastore.SearchFilter) ([]convoy.GenericMap, datastore.PaginationData, error)
+	Search(collection string, filter *datastore.SearchFilter) ([]string, datastore.PaginationData, error)
 
 	// Index upserts the collection and indexes documents in the typesense collection,
-	// each document must have the id, created_at and updated_at fields
+	// each document must have the id, uid, created_at and updated_at fields
 	Index(collection string, document convoy.GenericMap) error
 
 	// Remove removes documents from the typesense collection based on the search filters

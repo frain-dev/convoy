@@ -1167,7 +1167,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 				se, _ := es.searcher.(*mocks.MockSearcher)
 				se.EXPECT().Search(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return([]convoy.GenericMap{{"uid": "1234"}}, datastore.PaginationData{
+					Return([]string{"1234"}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,
 						PerPage:   2,

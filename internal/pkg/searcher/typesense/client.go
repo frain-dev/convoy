@@ -17,11 +17,15 @@ import (
 const DateFormat = "2006-01-02T15:04:05Z07:00"
 
 var ErrIDFieldIsRequired = errors.New("id field does not exist on the document")
-var ErrCreatedAtFieldIsRequired = errors.New("created_at field should be a string")
-var ErrCreatedAtFieldIsNotString = errors.New("created_at field does not exist on the document")
 
-var ErrUpdatedAtFieldIsRequired = errors.New("updated_at field should be a string")
-var ErrUpdatedAtFieldIsNotString = errors.New("updated_at field does not exist on the document")
+var ErrUidFieldIsNotString = errors.New("uid field should be a string")
+var ErrUidFieldIsRequired = errors.New("uid field does not exist on the document")
+
+var ErrCreatedAtFieldIsNotString = errors.New("created_at field should be a string")
+var ErrCreatedAtFieldIsRequired = errors.New("created_at field does not exist on the document")
+
+var ErrUpdatedAtFieldIsNotString = errors.New("updated_at field should be a string")
+var ErrUpdatedAtFieldIsRequired = errors.New("updated_at field does not exist on the document")
 
 type Typesense struct {
 	client *typesense.Client
@@ -38,8 +42,8 @@ func NewTypesenseClient(host, apiKey string) (*Typesense, error) {
 	return &Typesense{client: client}, err
 }
 
-func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]convoy.GenericMap, datastore.PaginationData, error) {
-	docs := make([]convoy.GenericMap, 0)
+func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]string, datastore.PaginationData, error) {
+	docs := make([]string, 0)
 	data := datastore.PaginationData{}
 	queryByBuilder := new(strings.Builder)
 
@@ -75,7 +79,9 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]conv
 	}
 
 	for _, hit := range *result.Hits {
-		docs = append(docs, *hit.Document)
+		if v, ok := (*hit.Document)["uid"]; ok {
+			docs = append(docs, v.(string))
+		}
 	}
 
 	data.Next = int64(f.Pageable.Page + 1)
@@ -97,6 +103,14 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 	// perform schema validation
 	if _, found := document["id"]; !found {
 		return ErrIDFieldIsRequired
+	}
+
+	if c, found := document["uid"]; found {
+		if _, ok := c.(string); !ok {
+			return ErrUidFieldIsNotString
+		}
+	} else {
+		return ErrUidFieldIsRequired
 	}
 
 	if c, found := document["created_at"]; found {

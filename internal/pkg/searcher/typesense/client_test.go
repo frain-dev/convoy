@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,6 +19,7 @@ const testCollection = "test"
 
 type Person struct {
 	ID        string `json:"id,omitempty"`
+	UID       string `json:"uid,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Age       int    `json:"age,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
@@ -40,10 +42,12 @@ func (p *Person) toGenericMap(document *convoy.GenericMap) error {
 }
 
 func getTypesenseHost() string {
+	// return "http://localhost:8108"
 	return os.Getenv("CONVOY_TYPESENSE_HOST")
 }
 
 func getTypesenseAPIKey() string {
+	// return "some-api-key"
 	return os.Getenv("CONVOY_TYPESENSE_API_KEY")
 }
 
@@ -68,7 +72,8 @@ func Test_IndexOne(t *testing.T) {
 	p := Person{
 		Age:       1,
 		Name:      "raymond",
-		ID:        "uid-1",
+		ID:        uuid.NewString(),
+		UID:       "uid-1",
 		CreatedAt: "2022-08-02T15:04:05+01:00",
 		UpdatedAt: "2022-09-02T15:04:05+01:00",
 	}
@@ -95,21 +100,24 @@ func Test_IndexMutiple(t *testing.T) {
 		{
 			Age:       1,
 			Name:      "subomi",
-			ID:        "uid-1",
+			UID:       "uid-1",
+			ID:        uuid.NewString(),
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
 			Age:       2,
 			Name:      "raymond",
-			ID:        "uid-2",
+			ID:        uuid.NewString(),
+			UID:       "uid-2",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
 			Age:       2,
+			ID:        uuid.NewString(),
 			Name:      "emmanuel",
-			ID:        "uid-3",
+			UID:       "uid-3",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
@@ -147,7 +155,8 @@ func Test_Index(t *testing.T) {
 		{
 			name: "Successfully index the document",
 			person: Person{
-				ID:        "uid-5",
+				ID:        uuid.NewString(),
+				UID:       "uid-5",
 				Age:       5,
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -175,8 +184,9 @@ func Test_Index(t *testing.T) {
 		{
 			name: "Should fail to index the document - missing created_at field",
 			person: Person{
+				ID:        uuid.NewString(),
 				Age:       5,
-				ID:        "uid-2",
+				UID:       "uid-2",
 				Name:      "emmanuella",
 				UpdatedAt: "2022-09-02T15:04:05+01:00",
 			},
@@ -190,7 +200,8 @@ func Test_Index(t *testing.T) {
 			name: "Should fail to index the document - missing updated_at field",
 			person: Person{
 				Age:       5,
-				ID:        "uid-2",
+				ID:        uuid.NewString(),
+				UID:       "uid-2",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
 			},
@@ -198,6 +209,20 @@ func Test_Index(t *testing.T) {
 				count:   1,
 				wantErr: true,
 				Err:     ErrUpdatedAtFieldIsRequired,
+			},
+		},
+		{
+			name: "Should fail to index the document - missing uid field",
+			person: Person{
+				Age:       5,
+				ID:        uuid.NewString(),
+				Name:      "emmanuella",
+				CreatedAt: "2022-09-02T15:04:05+01:00",
+			},
+			expected: Expected{
+				count:   1,
+				wantErr: true,
+				Err:     ErrUidFieldIsRequired,
 			},
 		},
 	}
@@ -231,35 +256,40 @@ func Test_Search(t *testing.T) {
 
 	people := []Person{
 		{
-			ID:        "uid-1",
+			UID:       "uid-1",
+			ID:        uuid.NewString(),
 			Age:       1,
 			Name:      "subomi",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        "uid-2",
+			ID:        uuid.NewString(),
+			UID:       "uid-2",
 			Age:       2,
 			Name:      "raymond",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        "uid-3",
+			ID:        uuid.NewString(),
+			UID:       "uid-3",
 			Age:       2,
 			Name:      "emmanuel",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        "uid-4",
+			ID:        uuid.NewString(),
+			UID:       "uid-4",
 			Age:       3,
 			Name:      "pelumi",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        "uid-5",
+			ID:        uuid.NewString(),
+			UID:       "uid-5",
 			Age:       5,
 			Name:      "emmanuella",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -321,7 +351,7 @@ func Test_Search(t *testing.T) {
 
 			require.Equal(t, tt.expected.count, len(pp))
 			for i, v := range pp {
-				require.Equal(t, tt.expected.ids[i], v["id"].(string))
+				require.Equal(t, tt.expected.ids[i], v)
 			}
 		})
 	}
