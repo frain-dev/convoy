@@ -6,7 +6,6 @@ package typesense
 import (
 	"encoding/json"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/frain-dev/convoy"
@@ -22,6 +21,7 @@ type Person struct {
 	UID       string `json:"uid,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Age       int    `json:"age,omitempty"`
+	GroupID   string `json:"group_id,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
 	UpdatedAt string `json:"updated_at,omitempty"`
 }
@@ -101,12 +101,14 @@ func Test_IndexMutiple(t *testing.T) {
 			Age:       1,
 			Name:      "subomi",
 			UID:       "uid-1",
+			GroupID:   "group-1",
 			ID:        uuid.NewString(),
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
 			Age:       2,
+			GroupID:   "group-1",
 			Name:      "raymond",
 			ID:        uuid.NewString(),
 			UID:       "uid-2",
@@ -117,6 +119,7 @@ func Test_IndexMutiple(t *testing.T) {
 			Age:       2,
 			ID:        uuid.NewString(),
 			Name:      "emmanuel",
+			GroupID:   "group-1",
 			UID:       "uid-3",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -158,6 +161,7 @@ func Test_Index(t *testing.T) {
 				ID:        uuid.NewString(),
 				UID:       "uid-5",
 				Age:       5,
+				GroupID:   "group-1",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
 				UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -171,6 +175,7 @@ func Test_Index(t *testing.T) {
 			name: "Should fail to index the document - missing id field",
 			person: Person{
 				Age:       5,
+				GroupID:   "group-1",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
 				UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -186,6 +191,7 @@ func Test_Index(t *testing.T) {
 			person: Person{
 				ID:        uuid.NewString(),
 				Age:       5,
+				GroupID:   "group-1",
 				UID:       "uid-2",
 				Name:      "emmanuella",
 				UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -201,6 +207,7 @@ func Test_Index(t *testing.T) {
 			person: Person{
 				Age:       5,
 				ID:        uuid.NewString(),
+				GroupID:   "group-1",
 				UID:       "uid-2",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -216,6 +223,7 @@ func Test_Index(t *testing.T) {
 			person: Person{
 				Age:       5,
 				ID:        uuid.NewString(),
+				GroupID:   "group-1",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
 			},
@@ -259,6 +267,7 @@ func Test_Search(t *testing.T) {
 			UID:       "uid-1",
 			ID:        uuid.NewString(),
 			Age:       1,
+			GroupID:   "group-1",
 			Name:      "subomi",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -267,6 +276,7 @@ func Test_Search(t *testing.T) {
 			ID:        uuid.NewString(),
 			UID:       "uid-2",
 			Age:       2,
+			GroupID:   "group-1",
 			Name:      "raymond",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -275,6 +285,7 @@ func Test_Search(t *testing.T) {
 			ID:        uuid.NewString(),
 			UID:       "uid-3",
 			Age:       2,
+			GroupID:   "group-1",
 			Name:      "emmanuel",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -282,6 +293,7 @@ func Test_Search(t *testing.T) {
 		{
 			ID:        uuid.NewString(),
 			UID:       "uid-4",
+			GroupID:   "group-1",
 			Age:       3,
 			Name:      "pelumi",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -290,6 +302,7 @@ func Test_Search(t *testing.T) {
 		{
 			ID:        uuid.NewString(),
 			UID:       "uid-5",
+			GroupID:   "group-1",
 			Age:       5,
 			Name:      "emmanuella",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -339,12 +352,15 @@ func Test_Search(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filterByBuilder := new(strings.Builder)
-			filterByBuilder.WriteString("created_at:=[0..10000000000]")
-
 			pp, _, err := ts.Search(testCollection, &datastore.SearchFilter{
-				Query:    tt.query,
-				FilterBy: filterByBuilder.String(),
+				Query: tt.query,
+				FilterBy: datastore.FilterBy{
+					GroupID: "group-1",
+					SearchParams: datastore.SearchParams{
+						CreatedAtStart: 0,
+						CreatedAtEnd:   10000000000,
+					},
+				},
 				Pageable: datastore.Pageable{Page: 1, PerPage: 10, Sort: 1},
 			})
 			require.NoError(t, err)
