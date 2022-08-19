@@ -170,10 +170,12 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 
 		apm.SetApplication(nRApp)
 
-		db, err = mongo.New(cfg)
+		database, err := mongo.New(cfg)
 		if err != nil {
 			return err
 		}
+
+		*db = *database
 
 		var tr tracer.Tracer
 		var ca cache.Cache
