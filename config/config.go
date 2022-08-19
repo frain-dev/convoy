@@ -44,13 +44,6 @@ var DefaultConfiguration = Configuration{
 			Dsn: "redis://localhost:6378",
 		},
 	},
-	Search: SearchConfiguration{
-		Type: "typesense",
-		Typesense: TypesenseConfiguration{
-			Host:   "http://localhost:8108",
-			ApiKey: "some-api-key",
-		},
-	},
 }
 
 type DatabaseConfiguration struct {
