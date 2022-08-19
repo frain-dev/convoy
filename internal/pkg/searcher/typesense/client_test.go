@@ -42,11 +42,11 @@ func (p *Person) toGenericMap(document *convoy.GenericMap) error {
 }
 
 func getTypesenseHost() string {
-	return os.Getenv("CONVOY_TYPESENSE_HOST")
+	return os.Getenv("TEST_CONVOY_TYPESENSE_HOST")
 }
 
 func getTypesenseAPIKey() string {
-	return os.Getenv("CONVOY_TYPESENSE_API_KEY")
+	return os.Getenv("TEST_CONVOY_TYPESENSE_API_KEY")
 }
 
 func deleteCollection(t *testing.T, ts *Typesense, collection string) {
