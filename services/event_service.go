@@ -11,8 +11,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -151,7 +151,16 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 
 func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	ids, paginationData, err := e.searcher.Search("events", filter)
+	ids, paginationData, err := e.searcher.Search(filter.Group.UID, &datastore.SearchFilter{
+		Query: filter.Query,
+		FilterBy: datastore.FilterBy{
+			AppID:        filter.AppID,
+			GroupID:      filter.Group.UID,
+			SearchParams: filter.SearchParams,
+		},
+		Pageable: filter.Pageable,
+	})
+
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events from search backend")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)

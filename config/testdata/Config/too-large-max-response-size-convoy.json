@@ -14,6 +14,13 @@
             "port": 80
         }
     },
+    "search": {
+        "type": "typesense",
+        "typesense": {
+            "host": "http://localhost:8108",
+            "api_key": "some-api-key"
+        }
+    },
     "group": {
         "strategy": {
             "type": "default",
