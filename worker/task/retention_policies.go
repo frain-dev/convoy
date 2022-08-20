@@ -10,7 +10,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	objectstore "github.com/frain-dev/convoy/datastore/object-store"
-	"github.com/frain-dev/convoy/searcher"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/util"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
@@ -133,14 +133,20 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 		}
 
 		//delete documents
-		searchFilter := &datastore.Filter{
+		f := &datastore.Filter{
 			Group: group,
 			SearchParams: datastore.SearchParams{
 				CreatedAtStart: 0,
 				CreatedAtEnd:   expDate.Unix(),
 			},
 		}
-		err = searcher.Remove(collection, searchFilter)
+
+		sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
+			GroupID:      f.Group.UID,
+			SearchParams: f.SearchParams,
+		}}
+
+		err = searcher.Remove(collection, sf)
 		if err != nil {
 			return err
 		}
