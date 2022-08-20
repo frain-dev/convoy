@@ -93,18 +93,18 @@
         <td align="center">
             <div class="card">
                 <div class="head">
-                    <img src={{ .LogoURL }} alt="Company Logo" width="140px"/>
+                    <img src={{ .logo_url }} alt="Company Logo" width="140px"/>
                     <!-- <p>For any enquiry or complaint, kindly send an email to info@frain.dev</p> -->
                 </div>
                 <h3>Hi there</h3>
                 <p>
-                    You have been invited to {{.InviterName}}'s team , you can accept it through the link below.
+                    You have been invited to {{ .inviter_name }}'s team , you can accept it through the link below.
                 </p>
 
-                <p><a href={{.InviteURL}}>InviteURL</a></p>
+                <p><a href={{ .invite_url }}>InviteURL</a></p>
 
                 <p>
-                    <strong>Important:</strong> This invite link will expire at {{.ExpiresAt}}.
+                    <strong>Important:</strong> This invite link will expire at {{ .expires_at }}.
                 </p>
 
                 <p class="issue-text">

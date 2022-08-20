@@ -13,8 +13,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -241,16 +240,18 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 }
 
 func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user *datastore.User) error {
-	n := &notification.Notification{
-		Email:             user.Email,
-		EmailTemplateName: email.TemplateResetPassword.String(),
-		Subject:           "Convoy Password Reset",
-		PasswordResetURL:  fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
-		RecipientName:     user.FirstName,
-		ExpiresAt:         user.ResetPasswordExpiresAt.Time().String(),
+	em := email.Message{
+		Email:        user.Email,
+		Subject:      "Convoy Password Reset",
+		TemplateName: email.TemplateResetPassword,
+		Params: map[string]string{
+			"password_reset_url": fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
+			"recipient_name":     user.FirstName,
+			"expires_at":         user.ResetPasswordExpiresAt.Time().String(),
+		},
 	}
 
-	buf, err := json.Marshal(n)
+	buf, err := json.Marshal(em)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
 		return err
@@ -261,7 +262,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 		Delay:   0,
 	}
 
-	err = u.queue.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+	err = u.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.WithError(err).Error("failed to write new notification to the queue")
 		return err

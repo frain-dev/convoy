@@ -31,7 +31,7 @@ func ProcessEmails(ctx context.Context, t *asynq.Task) error {
 
 	newEmail := email.NewEmail(sc)
 
-	if err := newEmail.Build(string(message.Glob), message.Params); err != nil {
+	if err := newEmail.Build(string(message.TemplateName), message.Params); err != nil {
 		log.WithError(err).Error("Failed to build email")
 		return err
 	}

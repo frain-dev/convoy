@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 )
 
@@ -22,10 +21,10 @@ const (
 
 type Notification struct {
 	// Defines the type of notification either slack or email.
-	NotificationType NotificationType
+	NotificationType NotificationType `json:"notification_type,omitempty"`
 
 	// Email or Slack notification
-	Payload interface{}
+	Payload interface{} `json:"payload,omitempty"`
 }
 
 type SlackNotification struct {
@@ -42,13 +41,7 @@ func ProcessNotification(ctx context.Context, sC smtp.Client, payload interface{
 
 // EMAIL NOTIFICATION
 func SendEmailNotification(ctx context.Context, n Notification) error {
-	newEmail := email.NewEmail(s)
-	err := newEmail.Build(n.EmailTemplateName, n)
-	if err != nil {
-		return err
-	}
-
-	return newEmail.Send(n.Email, n.Subject)
+	return errors.New("Function not implemented")
 }
 
 // SLACK NOTIFICATION

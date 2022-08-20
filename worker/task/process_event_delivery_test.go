@@ -9,13 +9,13 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/go-redis/redis_rate/v9"
 	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -717,6 +717,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			cache := mocks.NewMockCache(ctrl)
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
 			subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+			q := mocks.NewMockQueuer(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -742,7 +743,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter, subRepo)
 			}
 
-			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter, subRepo)
+			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter, subRepo, q)
 
 			payload := json.RawMessage(tc.msg.UID)
 

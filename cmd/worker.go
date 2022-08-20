@@ -37,34 +37,48 @@ func addWorkerCommand(a *app) *cobra.Command {
 				log.WithError(err).Error("failed to create worker")
 			}
 
-			handler := task.ProcessEventDelivery(a.applicationRepo, a.eventDeliveryRepo, a.groupRepo, a.limiter, a.subRepo)
-			consumer.RegisterHandlers(convoy.EventProcessor, handler)
+			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+				a.applicationRepo,
+				a.eventDeliveryRepo,
+				a.groupRepo,
+				a.limiter,
+				a.subRepo,
+				a.queue))
 
-			eventCreatedhandler := task.ProcessEventCreation(a.applicationRepo, a.eventRepo, a.groupRepo, a.eventDeliveryRepo, a.cache, a.queue, a.subRepo, a.searcher)
-			consumer.RegisterHandlers(convoy.CreateEventProcessor, eventCreatedhandler)
+			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
+				a.applicationRepo,
+				a.eventRepo,
+				a.groupRepo,
+				a.eventDeliveryRepo,
+				a.cache,
+				a.queue,
+				a.subRepo,
+				a.searcher))
 
-			notificationHandler := task.SendNotification(a.emailNotificationSender)
-			consumer.RegisterHandlers(convoy.NotificationProcessor, notificationHandler)
-
-			dailyAnalytics := analytics.TrackDailyAnalytics(&analytics.Repo{
-				ConfigRepo: a.configRepo,
-				EventRepo:  a.eventRepo,
-				GroupRepo:  a.groupRepo,
-				OrgRepo:    a.orgRepo,
-				UserRepo:   a.userRepo,
-			}, cfg)
-			monitorTwitterSources := task.MonitorTwitterSources(a.sourceRepo, a.subRepo, a.applicationRepo, a.queue)
-			retentionPolicies := task.RententionPolicies(
+			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
 				cfg,
 				a.configRepo,
 				a.groupRepo,
 				a.eventRepo,
 				a.eventDeliveryRepo,
-				a.searcher)
+				a.searcher))
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, dailyAnalytics)
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, monitorTwitterSources)
-			consumer.RegisterHandlers(convoy.RetentionPolicies, retentionPolicies)
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
+				a.sourceRepo,
+				a.subRepo,
+				a.applicationRepo,
+				a.queue))
+
+			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(&analytics.Repo{
+				ConfigRepo: a.configRepo,
+				EventRepo:  a.eventRepo,
+				GroupRepo:  a.groupRepo,
+				OrgRepo:    a.orgRepo,
+				UserRepo:   a.userRepo,
+			}, cfg))
+
+			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications)
+			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails)
 
 			//start worker
 			log.Infof("Starting Convoy workers...")
