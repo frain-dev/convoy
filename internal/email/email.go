@@ -34,6 +34,8 @@ func (t TemplateName) String() string {
 // Message represents a generic email message. It can be anything from
 // an organisation invite to a disabled endpoint email
 type Message struct {
+
+	// Email represents email recipient.
 	Email string `json:"email,omitempty"`
 
 	// Subject of the email

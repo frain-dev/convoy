@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
@@ -235,7 +236,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 
 			// send endpoint reactivation notification
-			err = sendNotification(context.Background(), appRepo, ed, g, &cfg.SMTP, subscriptionStatus, notificationQueue, false)
+			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -276,7 +277,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 
 			// send endpoint deactivation notification
-			err = sendNotification(context.Background(), appRepo, ed, g, &cfg.SMTP, subscriptionStatus, notificationQueue, true)
+			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}

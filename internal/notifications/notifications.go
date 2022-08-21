@@ -2,15 +2,16 @@ package notifications
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
+	"fmt"
 
-	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
+	log "github.com/sirupsen/logrus"
 )
-
-// Sender defines the method set any notifier should contain.
-type Sender interface {
-	SendNotification(context.Context, interface{}) error
-}
 
 type NotificationType string
 
@@ -33,18 +34,74 @@ type SlackNotification struct {
 	Text string `json:"text,omitempty"`
 }
 
-// ProcessNotification is the entrypoint to this package. It processes
-// each notifications with the correct handler.
-func ProcessNotification(ctx context.Context, sC smtp.Client, payload interface{}) error {
-	return errors.New("Function not implemented")
-}
+// NOTIFICATIONS
 
-// EMAIL NOTIFICATION
-func SendEmailNotification(ctx context.Context, n Notification) error {
-	return errors.New("Function not implemented")
-}
+func SendEndpointNotification(ctx context.Context,
+	app *datastore.Application,
+	endpoint *datastore.Endpoint,
+	group *datastore.Group,
+	status datastore.SubscriptionStatus,
+	q queue.Queuer,
+	failure bool,
+) error {
+	var ns []*Notification
 
-// SLACK NOTIFICATION
-func SendSlackNotification(ctx context.Context, notification SlackNotification) error {
-	return errors.New("Function not implemented")
+	if !util.IsStringEmpty(app.SupportEmail) {
+		_ = append(ns, &Notification{NotificationType: EmailNotificationType})
+	}
+
+	if !util.IsStringEmpty(app.SlackWebhookURL) {
+		_ = append(ns, &Notification{NotificationType: SlackNotificationType})
+	}
+
+	for _, v := range ns {
+		switch v.NotificationType {
+		case EmailNotificationType:
+			v.Payload = email.Message{
+				Email:        app.SupportEmail,
+				Subject:      "Endpoint Status Update",
+				TemplateName: email.TemplateEndpointUpdate,
+				Params: map[string]string{
+					"logo_url":        group.LogoURL,
+					"target_url":      endpoint.TargetURL,
+					"endpoint_status": string(status),
+				},
+			}
+		case SlackNotificationType:
+			payload := SlackNotification{
+				WebhookURL: app.SlackWebhookURL,
+			}
+
+			var text string
+			if failure {
+				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, endpoint status is now %s", endpoint.TargetURL, status)
+			} else {
+				text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.TargetURL, status)
+			}
+
+			payload.Text = text
+			v.Payload = payload
+		default:
+			log.Error("Invalid notification type")
+			continue
+		}
+
+		buf, err := json.Marshal(v)
+		if err != nil {
+			log.WithError(err).Errorf("Failed to marshal %v notification payload", v.NotificationType)
+			continue
+		}
+
+		job := &queue.Job{
+			Payload: json.RawMessage(buf),
+			Delay:   0,
+		}
+
+		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
+		if err != nil {
+			log.WithError(err).Error("Failed to write new notification to the queue")
+		}
+	}
+
+	return nil
 }

@@ -195,7 +195,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -216,8 +216,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -280,7 +278,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -301,8 +299,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -369,7 +365,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -390,8 +386,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -454,7 +448,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -475,8 +469,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -543,7 +535,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -576,8 +568,6 @@ func TestProcessEventDelivery(t *testing.T) {
 					Allowed:   10,
 					Remaining: 10,
 				}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).
@@ -628,11 +618,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
 						Status: datastore.ActiveSubscriptionStatus,

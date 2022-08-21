@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
@@ -29,6 +30,13 @@ func addWorkerCommand(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			sc, err := smtp.New(&cfg.SMTP)
+			if err != nil {
+				log.WithError(err).Error("Failed to create smtp client")
+				return err
+			}
+
 			ctx := context.Background()
 
 			// register worker.
@@ -77,8 +85,8 @@ func addWorkerCommand(a *app) *cobra.Command {
 				UserRepo:   a.userRepo,
 			}, cfg))
 
+			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications)
-			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails)
 
 			//start worker
 			log.Infof("Starting Convoy workers...")

@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/server"
+	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	route "github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -178,6 +179,12 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		})
 
 	if withWorkers {
+		sc, err := smtp.New(&cfg.SMTP)
+		if err != nil {
+			log.WithError(err).Error("Failed to create smtp client")
+			return err
+		}
+
 		// register worker.
 		consumer, err := worker.NewConsumer(a.queue)
 		if err != nil {
@@ -224,8 +231,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			UserRepo:   a.userRepo,
 		}, cfg))
 
+		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications)
-		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails)
 
 		//start worker
 		log.Infof("Starting Convoy workers...")
