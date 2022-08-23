@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/socket"
 	convoyNet "github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -59,7 +59,7 @@ func addListenCommand(a *app) *cobra.Command {
 				log.Fatal("flag forward-to cannot be empty")
 			}
 
-			listenRequest := services.ListenRequest{
+			listenRequest := socket.ListenRequest{
 				HostName:   c.Host,
 				DeviceID:   c.ActiveDeviceID,
 				SourceID:   source,
@@ -165,14 +165,14 @@ func receiveHandler(connection *websocket.Conn, url string) {
 			return
 		}
 
-		var event services.CLIEvent
+		var event socket.CLIEvent
 		err = json.Unmarshal(msg, &event)
 		if err != nil {
 			log.Println("Error in reading json:", err)
 			continue
 		}
 
-		ack := &services.AckEventDelivery{UID: event.UID}
+		ack := &socket.AckEventDelivery{UID: event.UID}
 		j, err := json.Marshal(ack)
 		if err != nil {
 			log.Println("Error in marshalling json:", err)

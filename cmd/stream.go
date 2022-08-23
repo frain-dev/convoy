@@ -9,11 +9,11 @@ import (
 	"time"
 
 	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/pkg/socket"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/services"
 	"github.com/go-chi/chi/v5"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,7 +33,15 @@ func addStreamCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
 
-			hub := services.NewHub(a.deviceRepo, a.subRepo, a.sourceRepo, a.applicationRepo, a.eventDeliveryRepo, watchCollection)
+			r := &socket.Repo{
+				AppRepo:           a.applicationRepo,
+				DeviceRepo:        a.deviceRepo,
+				SubscriptionRepo:  a.subRepo,
+				SourceRepo:        a.sourceRepo,
+				EventDeliveryRepo: a.eventDeliveryRepo,
+			}
+
+			hub := socket.NewHub(watchCollection)
 			go hub.StartRegister()
 			go hub.StartUnregister()
 			go hub.StartEventWatcher()
@@ -56,8 +64,8 @@ func addStreamCommand(a *app) *cobra.Command {
 					m.RequireAppPortalApplication(),
 				)
 
-				streamRouter.Get("/listen", hub.ListenHandler)
-				streamRouter.Post("/login", hub.LoginHandler)
+				streamRouter.Get("/listen", socket.ListenHandler(hub, r))
+				streamRouter.Post("/login", socket.LoginHandler(hub, r))
 			})
 
 			srv := &http.Server{
@@ -79,7 +87,7 @@ func addStreamCommand(a *app) *cobra.Command {
 	return cmd
 }
 
-func gracefulShutdown(srv *http.Server, hub *services.Hub) {
+func gracefulShutdown(srv *http.Server, hub *socket.Hub) {
 	// Wait for interrupt signal to gracepfully shutdown the server with a timeout of 10 seconds
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

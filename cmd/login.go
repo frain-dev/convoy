@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/socket"
 	convoyNet "github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -125,13 +125,13 @@ func addLoginCommand() *cobra.Command {
 				return err
 			}
 
-			loginRequest := &services.LoginRequest{HostName: hostName, DeviceID: deviceID}
+			loginRequest := &socket.LoginRequest{HostName: hostName, DeviceID: deviceID}
 			body, err := json.Marshal(loginRequest)
 			if err != nil {
 				return err
 			}
 
-			var response *services.LoginResponse
+			var response *socket.LoginResponse
 
 			dispatch := convoyNet.NewDispatcher(time.Second * 10)
 			url := fmt.Sprintf("%s/stream/login", c.Host)
@@ -167,7 +167,7 @@ func addLoginCommand() *cobra.Command {
 	return cmd
 }
 
-func WriteConfig(c *Config, response *services.LoginResponse) error {
+func WriteConfig(c *Config, response *socket.LoginResponse) error {
 	projectName := fmt.Sprintf("%s (%s)", response.Group.Name, response.App.Title)
 	c.ActiveProject = projectName
 	c.ActiveDeviceID = response.Device.UID

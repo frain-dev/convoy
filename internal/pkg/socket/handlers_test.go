@@ -1,4 +1,4 @@
-package services
+package socket
 
 import (
 	"context"
@@ -7,30 +7,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideHub(ctrl *gomock.Controller) *Hub {
+func provideRepo(ctrl *gomock.Controller) *Repo {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 
-	fn := func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
-		return nil
+	return &Repo{
+		AppRepo:           appRepo,
+		DeviceRepo:        deviceRepo,
+		SubscriptionRepo:  subRepo,
+		SourceRepo:        sourceRepo,
+		EventDeliveryRepo: eventDeliveryRepo,
 	}
-
-	return NewHub(deviceRepo, subRepo, sourceRepo, appRepo, eventDeliveryRepo, fn)
 }
 
 func TestHub_listen(t *testing.T) {
@@ -45,7 +44,7 @@ func TestHub_listen(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		dbFn        func(h *Hub)
+		dbFn        func(h *Repo)
 		want        *datastore.Device
 		wantErr     bool
 		wantErrCode int
@@ -64,8 +63,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -79,13 +78,13 @@ func TestHub_listen(t *testing.T) {
 					nil,
 				)
 
-				s, _ := h.sourceRepo.(*mocks.MockSourceRepository)
+				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
 					&datastore.Source{UID: "1234", GroupID: "1234"},
 					nil,
 				)
 
-				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
+				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
 				sub.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
@@ -116,8 +115,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -148,8 +147,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -180,8 +179,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(nil, errors.New("device not found"))
 			},
 			wantErr:     true,
@@ -201,8 +200,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -216,7 +215,7 @@ func TestHub_listen(t *testing.T) {
 					nil,
 				)
 
-				s, _ := h.sourceRepo.(*mocks.MockSourceRepository)
+				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(nil, errors.New("failed to find source"))
 			},
 			wantErr:     true,
@@ -236,8 +235,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -251,7 +250,7 @@ func TestHub_listen(t *testing.T) {
 					nil,
 				)
 
-				s, _ := h.sourceRepo.(*mocks.MockSourceRepository)
+				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
 					&datastore.Source{UID: "1234", GroupID: "ref"},
 					nil,
@@ -275,8 +274,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -290,13 +289,13 @@ func TestHub_listen(t *testing.T) {
 					nil,
 				)
 
-				s, _ := h.sourceRepo.(*mocks.MockSourceRepository)
+				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
 					&datastore.Source{UID: "1234", GroupID: "1234"},
 					nil,
 				)
 
-				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
+				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(nil, errors.New("failed to find subscription by id"))
 			},
@@ -317,8 +316,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -331,13 +330,13 @@ func TestHub_listen(t *testing.T) {
 					nil,
 				)
 
-				s, _ := h.sourceRepo.(*mocks.MockSourceRepository)
+				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
 					&datastore.Source{UID: "1234", GroupID: "1234"},
 					nil,
 				)
 
-				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
+				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
 
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(nil, datastore.ErrSubscriptionNotFound)
@@ -367,8 +366,8 @@ func TestHub_listen(t *testing.T) {
 					EventTypes: []string{"charge.success"},
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -382,13 +381,13 @@ func TestHub_listen(t *testing.T) {
 					nil,
 				)
 
-				s, _ := h.sourceRepo.(*mocks.MockSourceRepository)
+				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
 					&datastore.Source{UID: "1234", GroupID: "1234"},
 					nil,
 				)
 
-				sub, _ := h.subscriptionRepo.(*mocks.MockSubscriptionRepository)
+				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(nil, datastore.ErrSubscriptionNotFound)
 
@@ -411,13 +410,17 @@ func TestHub_listen(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			h := provideHub(ctrl)
+			r := provideRepo(ctrl)
 
 			if tt.dbFn != nil {
-				tt.dbFn(h)
+				tt.dbFn(r)
 			}
 
-			device, err := h.listen(tt.args.ctx, tt.args.group, tt.args.app, tt.args.listenRequest)
+			h := NewHub(func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
+				return nil
+			})
+
+			device, err := listen(tt.args.ctx, tt.args.group, tt.args.app, tt.args.listenRequest, h, r)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -443,7 +446,7 @@ func TestHub_login(t *testing.T) {
 	var tests = []struct {
 		name        string
 		args        args
-		dbFn        func(h *Hub)
+		dbFn        func(h *Repo)
 		want        *datastore.Device
 		checkData   bool
 		wantErr     bool
@@ -461,8 +464,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByHostName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -485,8 +488,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByHostName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed to create new device"))
@@ -506,8 +509,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "device-id",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -539,8 +542,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "device-id",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).
 					Return(nil, errors.New("failed to find device by id"))
 			},
@@ -564,8 +567,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "device-id",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -594,8 +597,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "device-id",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -624,8 +627,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "device-id",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -666,8 +669,8 @@ func TestHub_login(t *testing.T) {
 					DeviceID: "device-id",
 				},
 			},
-			dbFn: func(h *Hub) {
-				d := h.deviceRepo.(*mocks.MockDeviceRepository)
+			dbFn: func(h *Repo) {
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:            "device-id",
@@ -698,13 +701,17 @@ func TestHub_login(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			h := provideHub(ctrl)
+			r := provideRepo(ctrl)
 
 			if tt.dbFn != nil {
-				tt.dbFn(h)
+				tt.dbFn(r)
 			}
 
-			device, err := h.login(tt.args.ctx, tt.args.group, tt.args.app, tt.args.loginRequest)
+			h := NewHub(func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
+				return nil
+			})
+
+			device, err := login(tt.args.ctx, tt.args.group, tt.args.app, tt.args.loginRequest, h, r)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())

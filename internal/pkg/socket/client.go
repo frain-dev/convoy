@@ -1,4 +1,4 @@
-package services
+package socket
 
 import (
 	"context"
@@ -24,14 +24,31 @@ type Client struct {
 	hub *Hub
 
 	// device id of the cli client
-	deviceID   string
-	EventTypes []string
-	Device     *datastore.Device
+	deviceID          string
+	EventTypes        []string
+	Device            *datastore.Device
+	deviceRepo        datastore.DeviceRepository
+	eventDeliveryRepo datastore.EventDeliveryRepository
 
 	// The websocket connection.
 	conn *websocket.Conn
 
 	lock sync.RWMutex // protect Device from data race
+}
+
+func NewClient(hub *Hub, conn *websocket.Conn, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
+	client := &Client{
+		hub:               hub,
+		conn:              conn,
+		Device:            device,
+		EventTypes:        events,
+		deviceID:          device.UID,
+		deviceRepo:        deviceRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+	}
+
+	register <- client
+	go client.readPump()
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -47,7 +64,7 @@ func (c *Client) readPump() {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		err := c.hub.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID, datastore.DeviceStatusOnline)
+		err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID, datastore.DeviceStatusOnline)
 		if err != nil {
 			log.WithError(err).Error("failed to update device last seen")
 			return errors.New("failed to update device last seen")
@@ -81,7 +98,7 @@ func (c *Client) readPump() {
 					log.WithError(err).Error("failed to unmarshal text message")
 					continue
 				}
-				go c.hub.UpdateEventDeliveryStatus(ed.UID)
+				go c.UpdateEventDeliveryStatus(ed.UID)
 			}
 
 			if err != nil {
@@ -99,7 +116,7 @@ func (c *Client) Close() {
 	if err != nil {
 		log.WithError(err).Error("failed to close client conn")
 	}
-	c.hub.unregister <- c
+	unregister <- c
 }
 
 func (c *Client) GoOffline() {
@@ -107,7 +124,7 @@ func (c *Client) GoOffline() {
 
 	c.Device.Status = datastore.DeviceStatusOffline
 
-	err := c.hub.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID)
+	err := c.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID)
 	if err != nil {
 		log.WithError(err).Error("failed to update device status to offline")
 	}
@@ -132,4 +149,16 @@ func (c *Client) HasEventType(evType string) bool {
 		}
 	}
 	return false
+}
+
+func (c *Client) UpdateEventDeliveryStatus(id string) {
+	ed, err := c.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), id)
+	if err != nil {
+		log.WithError(err).WithField("event_delivery_id", id).Error("failed to find event delivery")
+	}
+
+	err = c.eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.SuccessEventStatus)
+	if err != nil {
+		log.WithError(err).WithField("event_delivery_id", id).Error("failed to update event delivery status")
+	}
 }
