@@ -160,6 +160,7 @@ type TypesenseConfiguration struct {
 
 const (
 	envPrefix              string = "convoy"
+	DevelopmentEnvironment string = "development"
 	OSSEnvironment         string = "oss"
 )
 
