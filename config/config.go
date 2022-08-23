@@ -25,7 +25,7 @@ var cfgSingleton atomic.Value
 
 var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
-	Environment:     DevelopmentEnvironment,
+	Environment:     OSSEnvironment,
 	MaxResponseSize: MaxResponseSize,
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
@@ -159,9 +159,9 @@ type TypesenseConfiguration struct {
 }
 
 const (
-	envPrefix string = "convoy"
-
+	envPrefix              string = "convoy"
 	DevelopmentEnvironment string = "development"
+	OSSEnvironment         string = "oss"
 )
 
 const (

@@ -111,7 +111,7 @@ func (a *Analytics) RegisterTrackers() {
 		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.Repo.GroupRepo, a.Repo.OrgRepo, a.client, a.instanceID),
 		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client, a.instanceID),
 		DailyGroupCount:        newGroupAnalytics(a.Repo.GroupRepo, a.client, a.instanceID),
-		DailyActiveGroupCount: newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.Repo.OrgRepo, a.client, a.instanceID),
+		DailyActiveGroupCount:  newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.Repo.OrgRepo, a.client, a.instanceID),
 		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client, a.instanceID),
 	}
 
@@ -124,7 +124,7 @@ type MixPanelClient struct {
 func NewMixPanelClient(cfg config.Configuration) (*MixPanelClient, error) {
 	token := MixPanelDevToken
 
-	if cfg.Environment == "prod" {
+	if cfg.Environment == "cloud" {
 		token = MixPanelProdToken
 	}
 
