@@ -32,12 +32,14 @@ type Organisation struct {
 
 type Configuration struct {
 	IsAnalyticsEnabled *bool                                 `json:"is_analytics_enabled"`
+	IsSignupEnabled    *bool                                 `json:"is_signup_enabled"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 }
 
 type ConfigurationResponse struct {
 	UID                string                                `json:"uid"`
 	IsAnalyticsEnabled bool                                  `json:"is_analytics_enabled"`
+	IsSignupEnabled    bool                                  `json:"is_signup_enabled"`
 	ApiVersion         string                                `json:"api_version"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 

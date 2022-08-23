@@ -640,6 +640,7 @@ type Configuration struct {
 	ID                 primitive.ObjectID          `json:"-" bson:"_id"`
 	UID                string                      `json:"uid" bson:"uid"`
 	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
+	IsSignupEnabled    bool                        `json:"is_signup_enabled" bson:"is_signup_enabled"`
 	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" bson:"storage_policy"`
 	DocumentStatus     DocumentStatus              `json:"-" bson:"document_status"`
 
