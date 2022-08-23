@@ -19,8 +19,8 @@ require (
 	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/gobeam/mongo-go-pagination v0.0.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/mock v1.6.0
-	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20211219150637-8dfabfccb3be
