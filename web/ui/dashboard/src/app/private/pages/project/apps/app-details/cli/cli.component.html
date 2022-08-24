@@ -50,7 +50,7 @@
 					<convoy-tag type="grey" className="mr-10px">{{ key.role.type }}</convoy-tag>
 					<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 				</div>
-				<p class="text-grey-40 text-10 mt-8px">Created: {{ key.created_at | date: 'medium' }}</p>
+				<p class="text-grey-40 text-10 mt-8px">Expires At: {{ key.expires_at | date: 'medium' }}</p>
 			</div>
             <convoy-button size="xs" type="outline" color="danger" (click)="selectedApiKey = key; showRevokeApiModal = true">Revoke</convoy-button>
 		</div>

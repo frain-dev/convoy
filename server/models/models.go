@@ -283,8 +283,10 @@ type ResetPassword struct {
 }
 
 type CreateAppApiKey struct {
-	Group   *datastore.Group
-	App     *datastore.Application
-	BaseUrl *string
-	KeyType datastore.KeyType `json:"key_type"`
+	Group      *datastore.Group
+	App        *datastore.Application
+	Name       string `json:"name"`
+	BaseUrl    string
+	KeyType    datastore.KeyType `json:"key_type"`
+	Expiration int               `json:"expiration"`
 }

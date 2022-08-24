@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +22,13 @@ func provideSecurityService(ctrl *gomock.Controller) *SecurityService {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	return NewSecurityService(groupRepo, apiKeyRepo)
+}
+
+func sameMinute(date1, date2 time.Time) bool {
+	s1 := date1.Format(time.Stamp)
+	s2 := date2.Format(time.Stamp)
+
+	return s1 == s2
 }
 
 func TestSecurityService_CreateAPIKey(t *testing.T) {
@@ -292,6 +298,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 		wantAPIKey    *datastore.APIKey
 		dbFn          func(ss *SecurityService)
 		verifyBaseUrl bool
+		wantBaseUrl   string
 		wantErr       bool
 		wantErrCode   int
 		wantErrMsg    string
@@ -304,17 +311,19 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 					Group:   &datastore.Group{UID: "1234"},
 					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
 					KeyType: datastore.AppPortalKey,
-					BaseUrl: stringPtr("https://getconvoy.io"),
+					BaseUrl: "https://getconvoy.io",
+					Name:    "api-key-1",
 				},
 			},
 			wantAPIKey: &datastore.APIKey{
-				Name: "test_app",
+				Name: "api-key-1",
 				Type: datastore.AppPortalKey,
 				Role: auth.Role{
 					Type:  auth.RoleAdmin,
 					Group: "1234",
 					App:   "abc",
 				},
+				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(ss *SecurityService) {
@@ -323,6 +332,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 					Times(1).Return(nil)
 			},
 			verifyBaseUrl: true,
+			wantBaseUrl:   "?groupID=1234&appId=abc",
 		},
 
 		{
@@ -330,20 +340,23 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.CreateAppApiKey{
-					Group:   &datastore.Group{UID: "1234"},
-					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-					KeyType: datastore.CLIKey,
-					BaseUrl: stringPtr("https://getconvoy.io"),
+					Group:      &datastore.Group{UID: "1234"},
+					App:        &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					KeyType:    datastore.CLIKey,
+					BaseUrl:    "https://getconvoy.io",
+					Name:       "api-key-1",
+					Expiration: 7,
 				},
 			},
 			wantAPIKey: &datastore.APIKey{
-				Name: "test_app",
+				Name: "api-key-1",
 				Type: datastore.CLIKey,
 				Role: auth.Role{
 					Type:  auth.RoleAdmin,
 					Group: "1234",
 					App:   "abc",
 				},
+				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 7)),
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(ss *SecurityService) {
@@ -373,7 +386,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 				newApiKey: &models.CreateAppApiKey{
 					Group:   &datastore.Group{UID: "1234"},
 					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-					BaseUrl: stringPtr("https://getconvoy.io"),
+					BaseUrl: "https://getconvoy.io",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
@@ -416,11 +429,15 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 			require.Empty(t, apiKey.DeletedAt)
 
 			if tc.verifyBaseUrl {
-				require.True(t, strings.HasSuffix(*tc.args.newApiKey.BaseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.newApiKey.Group.UID, tc.args.newApiKey.App.UID)))
+				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.newApiKey.Group.UID, tc.args.newApiKey.App.UID))
 			}
 
+			require.True(t, sameMinute(apiKey.ExpiresAt.Time(), tc.wantAPIKey.ExpiresAt.Time()))
+
 			stripVariableFields(t, "apiKey", apiKey)
+			stripVariableFields(t, "apiKey", tc.wantAPIKey)
 			apiKey.ExpiresAt = 0
+			tc.wantAPIKey.ExpiresAt = 0
 			require.Equal(t, tc.wantAPIKey, apiKey)
 		})
 	}
@@ -784,7 +801,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 		{
 			name: "should_fetch_api_keys",
 			args: args{
-				ctx: ctx,
+				ctx:    ctx,
 				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
 					Page:    1,
@@ -857,7 +874,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 		{
 			name: "should_fail_fetch_api_keys",
 			args: args{
-				ctx: ctx,
+				ctx:    ctx,
 				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
 					Page:    1,

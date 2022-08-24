@@ -140,7 +140,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	var apiKeyResponse models.PortalAPIKeyResponse
 	parseResponse(s.T(), w.Result(), &apiKeyResponse)
 	require.NotEmpty(s.T(), apiKeyResponse.Key)
-	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/app-portal/%s?groupID=%s&appId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, app.UID))
+	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/app/%s?groupID=%s&appId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, app.UID))
 	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.AppPortalKey))
 	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
 	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)

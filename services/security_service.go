@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -119,30 +118,31 @@ func (ss *SecurityService) CreateAppAPIKey(ctx context.Context, d *models.Create
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
-	expiresAt := time.Now().Add(30 * time.Minute)
+	var expiresAt time.Time
+	if d.KeyType == datastore.CLIKey {
+		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(d.Expiration))
+	} else if d.KeyType == datastore.AppPortalKey {
+		expiresAt = time.Now().Add(30 * time.Minute)
+	}
 
 	apiKey := &datastore.APIKey{
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
-		Name:           d.App.Title,
+		Name:           d.Name,
 		Type:           d.KeyType,
 		Role:           role,
 		Hash:           encodedKey,
 		Salt:           salt,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
 		log.WithError(err).Error("failed to create api key")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
-	}
-
-	if !util.IsStringEmpty(*d.BaseUrl) && d.KeyType == datastore.AppPortalKey {
-		*d.BaseUrl = fmt.Sprintf("%s/app-portal/%s?groupID=%s&appId=%s", *d.BaseUrl, key, d.Group.UID, d.App.UID)
 	}
 
 	return apiKey, key, nil

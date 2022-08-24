@@ -3,8 +3,10 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/cip8/autoname"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
@@ -115,15 +117,27 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
+	if newApiKey.Expiration == 0 {
+		newApiKey.Expiration = 7
+	}
+
+	if util.IsStringEmpty(newApiKey.Name) {
+		newApiKey.Name = autoname.Generate(" ")
+	}
+
 	newApiKey.Group = group
 	newApiKey.App = app
-	newApiKey.BaseUrl = &baseUrl
+	newApiKey.BaseUrl = baseUrl
 	newApiKey.KeyType = keyType
 
 	apiKey, key, err := a.S.SecurityService.CreateAppAPIKey(r.Context(), &newApiKey)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	if !util.IsStringEmpty(baseUrl) && newApiKey.KeyType == datastore.AppPortalKey {
+		baseUrl = fmt.Sprintf("%s/app/%s?groupID=%s&appId=%s", baseUrl, key, newApiKey.Group.UID, newApiKey.App.UID)
 	}
 
 	resp := models.PortalAPIKeyResponse{

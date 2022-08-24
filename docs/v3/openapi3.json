@@ -279,11 +279,11 @@
 					"event_type": {
 						"type": "string"
 					},
-					"forwarded_headers": {
-						"$ref": "#/components/schemas/datastore.HttpHeader"
-					},
 					"group_id": {
 						"type": "string"
+					},
+					"headers": {
+						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
 					"matched_endpoints": {
 						"description": "TODO(all) remove this field",
@@ -340,11 +340,11 @@
 					"event_metadata": {
 						"$ref": "#/components/schemas/datastore.Event"
 					},
-					"forwarded_headers": {
-						"$ref": "#/components/schemas/datastore.HttpHeader"
-					},
 					"group_id": {
 						"type": "string"
+					},
+					"headers": {
+						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
@@ -885,6 +885,15 @@
 				},
 				"type": "object"
 			},
+			"httpheader.HTTPHeader": {
+				"additionalProperties": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"type": "object"
+			},
 			"models.APIKey": {
 				"properties": {
 					"expires_at": {
@@ -1172,12 +1181,6 @@
 			},
 			"models.Source": {
 				"properties": {
-					"forward_headers": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -5822,7 +5825,7 @@
 		},
 		"/security/applications/{appID}/keys": {
 			"post": {
-				"description": "This endpoint creates an api key that will be used by app portal",
+				"description": "This endpoint creates an api key that will be used by app portal or the cli",
 				"parameters": [
 					{
 						"description": "application ID",
@@ -5929,7 +5932,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create an api key for app portal (API)",
+				"summary": "Create an api key for app portal or the cli (API)",
 				"tags": [
 					"APIKey"
 				]
@@ -8235,6 +8238,148 @@
 				]
 			}
 		},
+		"/ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke": {
+			"put": {
+				"description": "This endpoint revokes app's an api key",
+				"parameters": [
+					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "API Key id",
+						"in": "path",
+						"name": "keyID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Revoke an App's API Key",
+				"tags": [
+					"APIKey"
+				]
+			}
+		},
 		"/ui/organisations/{orgID}/invites": {
 			"post": {
 				"description": "This endpoint invites a user to join an organisation",
@@ -9280,6 +9425,130 @@
 				"summary": "Update an organisation's member",
 				"tags": [
 					"Organisation"
+				]
+			}
+		},
+		"/ui/organisations/{orgID}/security/applications/{appID}/keys": {
+			"get": {
+				"description": "This endpoint fetches multiple api keys belonging to an app",
+				"parameters": [
+					{
+						"description": "Organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "application ID",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"201": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.PortalAPIKeyResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Created"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Fetch multiple api keys belonging to an app",
+				"tags": [
+					"APIKey"
 				]
 			}
 		},
