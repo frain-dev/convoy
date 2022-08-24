@@ -18,6 +18,36 @@ const (
 	fileSuffix   = ".html"
 )
 
+type TemplateName string
+
+const (
+	TemplateEndpointUpdate     TemplateName = "endpoint.update"
+	TemplateOrganisationInvite TemplateName = "organisation.invite"
+	TemplateResetPassword      TemplateName = "reset.password"
+	TemplateTwitterSource      TemplateName = "twitter.source"
+)
+
+func (t TemplateName) String() string {
+	return string(t)
+}
+
+// Message represents a generic email message. It can be anything from
+// an organisation invite to a disabled endpoint email
+type Message struct {
+
+	// Email represents email recipient.
+	Email string `json:"email,omitempty"`
+
+	// Subject of the email
+	Subject string `json:"subject,omitempty"`
+
+	// Params to replace the template variables.
+	Params interface{} `json:"params,omitempty"`
+
+	// Glob represents which template to use in building the email
+	TemplateName TemplateName `json:"template_name,omitempty"`
+}
+
 type Email struct {
 	client smtp.SmtpClient
 	templ  *template.Template
