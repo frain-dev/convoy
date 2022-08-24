@@ -19,8 +19,11 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v2
 
+            - name: Get commit SHA
+              run: echo $GITHUB_SHA > $GITHUB_WORKSPACE/_meta
+
             - name: Build image
-              run: docker build -t $REPO/convoy:edge .
+              run: docker build -f . -t $REPO/convoy:$(echo $GITHUB_SHA | head -c7) .
 
             - name: Install doctl
               uses: digitalocean/action-doctl@v2
@@ -28,7 +31,7 @@ jobs:
                   token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
             - name: Log in to DigitalOcean Container Registry with short-lived credentials
-              run: doctl registry login --expiry-seconds 60
+              run: doctl registry login --expiry-seconds 600
 
             - name: Push image to DigitalOcean Container Registry
-              run: docker push $REPO/convoy:edge
+              run: docker push $REPO/convoy:$(echo $GITHUB_SHA | head -c7)
