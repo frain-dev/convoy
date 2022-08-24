@@ -188,4 +188,12 @@ export class EventsComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 		return this.dateRange(startDate, endDate);
 	}
+
+	openSource(sourceId: string) {
+		this.router.navigate([`/projects/${this.privateService.activeProjectDetails.uid}/sources`], { queryParams: { id: sourceId } });
+	}
+
+	openApp(appId: string) {
+		this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails.uid}/apps/${appId}`);
+	}
 }

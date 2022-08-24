@@ -103,7 +103,7 @@
 </convoy-card>
 
 <div [hidden]="activeTab !== 'events'">
-	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>
+	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)" (openApp)="openApp($event)" (openSource)="openSource($event)"></app-event>
 </div>
 <div [hidden]="activeTab !== 'event deliveries'">
 	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
