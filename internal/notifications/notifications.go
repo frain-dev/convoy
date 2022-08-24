@@ -47,11 +47,11 @@ func SendEndpointNotification(ctx context.Context,
 	var ns []*Notification
 
 	if !util.IsStringEmpty(app.SupportEmail) {
-		_ = append(ns, &Notification{NotificationType: EmailNotificationType})
+		ns = append(ns, &Notification{NotificationType: EmailNotificationType})
 	}
 
 	if !util.IsStringEmpty(app.SlackWebhookURL) {
-		_ = append(ns, &Notification{NotificationType: SlackNotificationType})
+		ns = append(ns, &Notification{NotificationType: SlackNotificationType})
 	}
 
 	for _, v := range ns {
