@@ -97,10 +97,10 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 	os := services.NewOrganisationService(r.OrgRepo, r.OrgMemberRepo)
 	rs := services.NewSubscriptionService(r.SubRepo, r.AppRepo, r.SourceRepo)
 	sos := services.NewSourceService(r.SourceRepo, s.Cache)
-	us := services.NewUserService(r.UserRepo, s.Cache, s.Queue)
 	ois := services.NewOrganisationInviteService(r.OrgRepo, r.UserRepo, r.OrgMemberRepo, r.OrgInviteRepo, s.Queue)
 	om := services.NewOrganisationMemberService(r.OrgMemberRepo)
 	cs := services.NewConfigService(r.ConfigRepo)
+	us := services.NewUserService(r.UserRepo, s.Cache, s.Queue, cs, os)
 
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		EventRepo:         r.EventRepo,
@@ -315,6 +315,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", a.LoginUser)
+			authRouter.Post("/register", a.RegisterUser)
 			authRouter.Post("/token/refresh", a.RefreshToken)
 			authRouter.Post("/logout", a.LogoutUser)
 		})

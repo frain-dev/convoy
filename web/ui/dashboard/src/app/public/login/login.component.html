@@ -4,7 +4,7 @@
 		<form [formGroup]="loginForm" (ngSubmit)="login()">
 			<convoy-input type="text" autocomplete="username" name="username" formControlName="username" errorMessage="Please enter your username" label="Username" placeholder="super@default.com"></convoy-input>
 
-			<convoy-input type="password" formControlName="password" name="password" errorMessage="Password is required" label="Password"></convoy-input>
+			<convoy-input type="password" formControlName="password" name="password" errorMessage="Please enter your password" label="Password"></convoy-input>
 
 			<div class="flex items-center text-12 mb-20px -mt-18px">
 				Forgot password?
@@ -16,5 +16,7 @@
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</convoy-button>
 		</form>
+
+		<convoy-button type="link" className="mt-12px w-full" routerLink="/signup" size="sm">Signup</convoy-button>
 	</section>
 </div>

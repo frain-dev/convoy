@@ -61,6 +61,7 @@ export class SettingsComponent implements OnInit {
 	});
 	configForm: FormGroup = this.formBuilder.group({
 		is_analytics_enabled: [null, Validators.required],
+		is_signup_enabled: [null, Validators.required],
 		storage_policy: this.formBuilder.group({
 			type: [null, Validators.required],
 			on_prem: this.formBuilder.group({
