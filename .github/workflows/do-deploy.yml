@@ -23,7 +23,7 @@ jobs:
               run: echo $GITHUB_SHA > $GITHUB_WORKSPACE/_meta
 
             - name: Build image
-              run: docker build -f . -t $REPO/convoy:$(echo $GITHUB_SHA | head -c7) .
+              run: docker build -t $REPO/convoy:$(echo $GITHUB_SHA | head -c7) .
 
             - name: Install doctl
               uses: digitalocean/action-doctl@v2
