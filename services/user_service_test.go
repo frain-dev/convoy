@@ -241,7 +241,7 @@ func TestService_RegisterUser(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusForbidden,
-			wantErrMsg: "registration is not allowed",
+			wantErrMsg:  "user registration is disabled",
 		},
 	}
 

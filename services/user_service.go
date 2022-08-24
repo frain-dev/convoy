@@ -92,7 +92,7 @@ func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUse
 
 	// registration is not allowed
 	if !canRegister {
-		return nil, nil, util.NewServiceError(http.StatusForbidden, errors.New("registration is not allowed"))
+		return nil, nil, util.NewServiceError(http.StatusForbidden, errors.New("user registration is disabled"))
 	}
 
 	p := datastore.Password{Plaintext: data.Password}
