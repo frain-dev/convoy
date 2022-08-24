@@ -231,6 +231,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			UserRepo:   a.userRepo,
 		}, cfg))
 
+		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
