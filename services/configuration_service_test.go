@@ -39,14 +39,14 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 			name: "should_create_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &datastore.OnPremStorage{
 						Path: "/tmp/",
 					},
 				}},
 			},
-			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true},
+			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, IsSignupEnabled: true},
 			dbFn: func(c *ConfigService) {
 				co, _ := c.configRepo.(*mocks.MockConfigurationRepository)
 				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -88,6 +88,7 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 			}
 			require.Nil(t, err)
 			require.Equal(t, config.IsAnalyticsEnabled, tc.wantConfig.IsAnalyticsEnabled)
+			require.Equal(t, config.IsSignupEnabled, tc.wantConfig.IsSignupEnabled)
 		})
 	}
 }

@@ -23,14 +23,16 @@ import (
 )
 
 type UserService struct {
-	userRepo datastore.UserRepository
-	cache    cache.Cache
-	queue    queue.Queuer
-	jwt      *jwt.Jwt
+	userRepo      datastore.UserRepository
+	cache         cache.Cache
+	queue         queue.Queuer
+	jwt           *jwt.Jwt
+	configService *ConfigService
+	orgService    *OrganisationService
 }
 
-func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer) *UserService {
-	return &UserService{userRepo: userRepo, cache: cache, queue: queue}
+func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer, configService *ConfigService, orgService *OrganisationService) *UserService {
+	return &UserService{userRepo: userRepo, cache: cache, queue: queue, configService: configService, orgService: orgService}
 }
 
 func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error) {
@@ -69,6 +71,73 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 
 	return user, &token, nil
 
+}
+
+func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUser) (*datastore.User, *jwt.Token, error) {
+	var canRegister bool
+
+	if err := util.Validate(data); err != nil {
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	config, err := u.configService.LoadConfiguration(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if config != nil {
+		canRegister = config.IsSignupEnabled
+	}
+
+	// registration is not allowed
+	if !canRegister {
+		return nil, nil, util.NewServiceError(http.StatusForbidden, errors.New("user registration is disabled"))
+	}
+
+	p := datastore.Password{Plaintext: data.Password}
+	err = p.GenerateHash()
+
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	user := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      data.FirstName,
+		LastName:       data.LastName,
+		Email:          data.Email,
+		Password:       string(p.Hash),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err = u.userRepo.CreateUser(ctx, user)
+	if err != nil {
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, datastore.ErrDuplicateEmail) {
+			statusCode = http.StatusBadRequest
+		}
+
+		return nil, nil, util.NewServiceError(statusCode, err)
+	}
+
+	_, err = u.orgService.CreateOrganisation(ctx, &models.Organisation{Name: data.OrganisationName}, user)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	jwt, err := u.token()
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	token, err := jwt.GenerateToken(user)
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return user, &token, nil
 }
 
 func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jwt.Token, error) {
@@ -170,7 +239,11 @@ func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, u
 
 	err := u.userRepo.UpdateUser(ctx, user)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, datastore.ErrDuplicateEmail) {
+			statusCode = http.StatusBadRequest
+		}
+		return nil, util.NewServiceError(statusCode, err)
 	}
 
 	return user, nil
