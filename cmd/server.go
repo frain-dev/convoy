@@ -179,7 +179,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		})
 
 	if withWorkers {
-		sc, err := smtp.New(&cfg.SMTP)
+		sc, err := smtp.NewClient(&cfg.SMTP)
 		if err != nil {
 			log.WithError(err).Error("Failed to create smtp client")
 			return err
