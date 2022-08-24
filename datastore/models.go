@@ -332,6 +332,7 @@ var (
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
+	ErrDuplicateEmail                = errors.New("a user with this email already exists")
 )
 
 type AppMetadata struct {

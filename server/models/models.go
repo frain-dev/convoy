@@ -123,12 +123,19 @@ type LoginUser struct {
 	Password string `json:"password" valid:"required~please provide your password"`
 }
 
+type RegisterUser struct {
+	FirstName        string `json:"first_name" valid:"required~please provide a first name"`
+	LastName         string `json:"last_name" valid:"required~please provide a last name"`
+	Email            string `json:"email" valid:"required~please provide an email,email"`
+	Password         string `json:"password" valid:"required~please provide a password"`
+	OrganisationName string `json:"org_name" valid:"required~please provide an organisation name"`
+}
+
 type LoginUserResponse struct {
 	UID       string    `json:"uid"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
 	Email     string    `json:"email"`
-	Role      auth.Role `json:"role"`
 	Token     Token     `json:"token"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
