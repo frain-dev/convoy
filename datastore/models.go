@@ -364,6 +364,7 @@ type Event struct {
 	AppID      string                `json:"app_id,omitempty" bson:"app_id"`
 	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
 	App        *Application          `json:"app_metadata,omitempty" bson:"-"`
+	Source     *Source               `json:"source_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -468,7 +469,7 @@ type DeliveryAttempt struct {
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
-//Event defines a payload to be sent to an application
+// Event defines a payload to be sent to an application
 type EventDelivery struct {
 	ID             primitive.ObjectID    `json:"-" bson:"_id"`
 	UID            string                `json:"uid" bson:"uid"`
