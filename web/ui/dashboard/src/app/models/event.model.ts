@@ -1,4 +1,5 @@
 import { APP, ENDPOINT } from './app.model';
+import { SOURCE } from './group.model';
 
 export interface EVENT {
 	created_at: Date;
@@ -18,6 +19,7 @@ export interface EVENT {
 		strategy: string;
 	};
 	app_metadata: APP;
+	source_metadata: SOURCE;
 }
 
 export interface EVENT_DELIVERY {
