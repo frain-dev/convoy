@@ -1,10 +1,11 @@
 <div class="bg-[url('/assets/img/background-pattern.svg')] bg-center min-h-screen flex flex-col items-center justify-center bg-cover">
 	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
 	<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
-		<div class="bg-primary-500 mb-20px border border-primary-100 border-dashed rounded-8px py-10px px-16px flex">
+		<!-- We don't have this component or need it yet. Temporary hold; it might be used here. -->
+		<!-- <div class="bg-primary-500 mb-20px border border-primary-100 border-dashed rounded-8px py-10px px-16px flex">
 			<img src="/assets/img/ideas.svg" alt="idea" class="mr-8px" />
 			<div class="text-12">Please note that our cloud platform is in private beta.</div>
-		</div>
+		</div> -->
 
 		<form [formGroup]="signupForm" (ngSubmit)="signup()" class="flex flex-wrap justify-between">
 			<convoy-input class="w-full" type="text" name="org_name" formControlName="org_name" errorMessage="Please enter your business name" label="Business Name" placeholder="Convoy"></convoy-input>
