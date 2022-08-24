@@ -16,7 +16,7 @@ type SmtpClient interface {
 }
 
 func NewClient(cfg *config.SMTPConfiguration) (SmtpClient, error) {
-	if cfg == nil {
+	if *cfg == (config.SMTPConfiguration{}) {
 		return NewNoopClient()
 	}
 
