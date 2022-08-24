@@ -24,6 +24,7 @@ var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be fo
 
 type EventService struct {
 	appRepo           datastore.ApplicationRepository
+	sourceRepo        datastore.SourceRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	queue             queue.Queuer
@@ -33,8 +34,8 @@ type EventService struct {
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo}
+	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -255,6 +256,8 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 	}
 
 	appMap := datastore.AppMap{}
+	sourceMap := datastore.SourceMap{}
+
 	for i, event := range events {
 		if _, ok := appMap[event.AppID]; !ok {
 			a, _ := e.appRepo.FindApplicationByID(ctx, event.AppID)
@@ -267,7 +270,19 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 			appMap[event.AppID] = aa
 		}
 
+		if _, ok := sourceMap[event.SourceID]; !ok && !util.IsStringEmpty(event.SourceID) {
+			ev, err := e.sourceRepo.FindSourceByID(ctx, event.GroupID, event.SourceID)
+			if err == nil {
+				source := &datastore.Source{
+					UID:  ev.UID,
+					Name: ev.Name,
+				}
+				sourceMap[event.SourceID] = source
+			}
+		}
+
 		events[i].App = appMap[event.AppID]
+		events[i].Source = sourceMap[event.SourceID]
 	}
 
 	return events, paginationData, nil
