@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
 
 	"github.com/dchest/uniuri"
@@ -89,17 +88,19 @@ func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.C
 }
 
 func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) error {
-	n := &notification.Notification{
-		Email:             iv.InviteeEmail,
-		EmailTemplateName: email.TemplateOrganisationInvite.String(),
-		Subject:           "Convoy Organization Invite",
-		InviteURL:         fmt.Sprintf("%s/accept-invite?token=%s", baseURL, iv.Token),
-		OrganisationName:  org.Name,
-		InviterName:       fmt.Sprintf("%s %s", user.FirstName, user.LastName),
-		ExpiresAt:         iv.ExpiresAt.Time().String(),
+	em := email.Message{
+		Email:        iv.InviteeEmail,
+		Subject:      "Convoy Organization Invite",
+		TemplateName: email.TemplateOrganisationInvite,
+		Params: map[string]string{
+			"invite_url":        fmt.Sprintf("%s/accept-invite?token=%s", baseURL, iv.Token),
+			"organisation_name": org.Name,
+			"inviter_name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+			"expires_at":        iv.ExpiresAt.Time().String(),
+		},
 	}
 
-	buf, err := json.Marshal(n)
+	buf, err := json.Marshal(em)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
 		return nil
@@ -110,7 +111,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 		Delay:   0,
 	}
 
-	err = ois.queue.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+	err = ois.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.WithError(err).Error("failed to write new notification to the queue")
 	}
