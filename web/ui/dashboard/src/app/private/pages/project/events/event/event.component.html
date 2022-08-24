@@ -135,7 +135,6 @@
 		type="outline"
 		size="sm"
 		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		(clickItem)="getEvents({ page: events.pagination.prev })"
 		routerLink="./"
 		[queryParams]="{ page: events?.pagination?.next }"
 		(click)="getEvents({ page: events?.pagination?.next })"
