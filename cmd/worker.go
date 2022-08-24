@@ -86,7 +86,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			}, cfg))
 
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
-			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications)
+			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 			//start worker
 			log.Infof("Starting Convoy workers...")

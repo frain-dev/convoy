@@ -45,7 +45,7 @@ type Message struct {
 	Params interface{} `json:"params,omitempty"`
 
 	// Glob represents which template to use in building the email
-	TemplateName TemplateName `json:"template,omitempty"`
+	TemplateName TemplateName `json:"template_name,omitempty"`
 }
 
 type Email struct {

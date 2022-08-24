@@ -232,7 +232,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}, cfg))
 
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
-		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications)
+		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 		//start worker
 		log.Infof("Starting Convoy workers...")
