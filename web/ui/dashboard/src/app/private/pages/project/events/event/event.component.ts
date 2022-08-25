@@ -22,6 +22,8 @@ export class EventComponent implements OnInit {
 	@Input() activeTab!: string;
 	@Output() getEventDeliveries = new EventEmitter<string>();
 	@Output() pushEvents = new EventEmitter<any>();
+	@Output() openSource = new EventEmitter<string>();
+	@Output() openApp = new EventEmitter<string>();
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	eventsTableHead: string[] = ['Event Type', 'App Name', 'Time Created', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
@@ -214,6 +216,10 @@ export class EventComponent implements OnInit {
 			});
 			this.events = eventsResponse.data;
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
+
+			// to show app name or source name on events table header
+			if (this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventsTableHead[1] = 'Source Name';
+
 			this.eventsDetailsItem = this.events?.content[0];
 			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 

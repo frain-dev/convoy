@@ -90,30 +90,30 @@
                     <td align="center">
                         <div class="card">
                             <div class="head">
-                                <img src={{ .LogoURL }} alt="Company Logo" width="140px" />
+                                <img src={{ .logo_url }} alt="Company Logo" width="140px" />
                                 <!-- <p>For any enquiry or complaint, kindly send an email to info@frain.dev</p> -->
                             </div>
                             <h3>Hi there,</h3>
-                            {{if eq .EndpointStatus "active"}}
+                            {{if eq .endpoint_status "active"}}
                                 <p>
                                     Please note your endpoint has been enabled. See details:
                                 </p>
                                 <ul>
-                                    <li><strong>URL:</strong> {{.TargetURL}}</li>
+                                    <li><strong>URL:</strong> {{.target_url}}</li>
                                 </ul>
                                 <p>
-                                    <strong>Important:</strong> Congrats! Your endpoint as been restored successfully. Please head over to your dashboard to retry 
-                                    all failed and discarded events. 
+                                    <strong>Important:</strong> Congrats! Your endpoint as been restored successfully. Please head over to your dashboard to retry
+                                    all failed and discarded events.
                                 </p>
                             {{else}}
                                 <p>
                                     Please note your endpoint has been disabled. See details:
                                 </p>
                                 <ul>
-                                    <li><strong>URL:</strong> {{.TargetURL}}</li>
+                                    <li><strong>URL:</strong> {{.target_url}}</li>
                                 </ul>
                                 <p>
-                                    <strong>Important:</strong> You're receiving this email because your endpoint has consecutively failed to receive events, and 
+                                    <strong>Important:</strong> You're receiving this email because your endpoint has consecutively failed to receive events, and
                                     needs to be checked. To re-activate your endpoint please head over to your dashboard and retry any failed event.
                                 </p>
                             {{end}}

@@ -567,6 +567,7 @@ func SeedConfiguration(db convoyMongo.Client) (*datastore.Configuration, error) 
 	config := &datastore.Configuration{
 		UID:                uuid.NewString(),
 		IsAnalyticsEnabled: true,
+		IsSignupEnabled:    true,
 		StoragePolicy:      &datastore.DefaultStoragePolicy,
 		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}

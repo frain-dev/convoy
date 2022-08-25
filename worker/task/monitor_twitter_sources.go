@@ -10,8 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
@@ -64,15 +63,17 @@ func MonitorTwitterSources(sourceRepo datastore.SourceRepository, subRepo datast
 }
 
 func sendNotificationEmail(source datastore.Source, app *datastore.Application, q queue.Queuer) error {
-	n := &notification.Notification{
-		Email:             app.SupportEmail,
-		EmailTemplateName: email.TemplateTwitterSource.String(),
-		SourceName:        source.Name,
-		CrcVerifiedAt:     source.ProviderConfig.Twitter.CrcVerifiedAt.Time().String(),
-		Subject:           "Twitter Custom Source",
+	em := email.Message{
+		Email:        app.SupportEmail,
+		Subject:      "Twitter Custom Source",
+		TemplateName: email.TemplateTwitterSource,
+		Params: map[string]string{
+			"crc_verified_at": source.ProviderConfig.Twitter.CrcVerifiedAt.Time().String(),
+			"source_name":     source.Name,
+		},
 	}
 
-	buf, err := json.Marshal(n)
+	buf, err := json.Marshal(em)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
 		return err
@@ -83,7 +84,7 @@ func sendNotificationEmail(source datastore.Source, app *datastore.Application, 
 		Delay:   0,
 	}
 
-	err = q.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+	err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.WithError(err).Error("failed to write new notification to the queue")
 		return err

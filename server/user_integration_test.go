@@ -131,6 +131,144 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
+func (u *UserIntegrationTestSuite) Test_RegisterUser() {
+	_, err := testdb.SeedConfiguration(u.DB)
+	require.NoError(u.T(), err)
+
+	r := &models.RegisterUser{
+		FirstName:        "test",
+		LastName:         "test",
+		Email:            "test@test.com",
+		Password:         "123456",
+		OrganisationName: "test",
+	}
+	// Arrange Request
+	bodyStr := fmt.Sprintf(`{
+		"first_name": "%s",
+		"last_name": "%s",
+		"email": "%s",
+		"password": "%s",
+		"org_name": "%s"
+	}`, r.FirstName, r.LastName, r.Email, r.Password, r.OrganisationName)
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	w := httptest.NewRecorder()
+
+	//Act
+	u.Router.ServeHTTP(w, req)
+
+	//Assert
+	require.Equal(u.T(), http.StatusCreated, w.Code)
+
+	var response models.LoginUserResponse
+	parseResponse(u.T(), w.Result(), &response)
+
+	require.NotEmpty(u.T(), response.UID)
+	require.NotEmpty(u.T(), response.Token.AccessToken)
+	require.NotEmpty(u.T(), response.Token.RefreshToken)
+
+	require.Equal(u.T(), r.FirstName, response.FirstName)
+	require.Equal(u.T(), r.LastName, response.LastName)
+	require.Equal(u.T(), r.Email, response.Email)
+}
+
+func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
+	config, err := testdb.SeedConfiguration(u.DB)
+	require.NoError(u.T(), err)
+
+	// disable registration
+	config.IsSignupEnabled = false
+	require.NoError(u.T(), u.DB.ConfigurationRepo().UpdateConfiguration(context.Background(), config))
+
+	r := &models.RegisterUser{
+		FirstName:        "test",
+		LastName:         "test",
+		Email:            "test@test.com",
+		Password:         "123456",
+		OrganisationName: "test",
+	}
+	// Arrange Request
+	bodyStr := fmt.Sprintf(`{
+		"first_name": "%s",
+		"last_name": "%s",
+		"email": "%s",
+		"password": "%s",
+		"org_name": "%s"
+	}`, r.FirstName, r.LastName, r.Email, r.Password, r.OrganisationName)
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	w := httptest.NewRecorder()
+
+	//Act
+	u.Router.ServeHTTP(w, req)
+
+	//Assert
+	require.Equal(u.T(), http.StatusForbidden, w.Code)
+
+}
+
+func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
+	_, err := testdb.SeedConfiguration(u.DB)
+	require.NoError(u.T(), err)
+
+	r := &models.RegisterUser{
+		FirstName:        "test",
+		LastName:         "test",
+		Email:            "test@test.com",
+		Password:         "123456",
+		OrganisationName: "test",
+	}
+	// Arrange Request
+	bodyStr := fmt.Sprintf(`{
+		"last_name": "%s",
+		"email": "%s",
+		"password": "%s",
+		"org_name": "%s"
+	}`, r.LastName, r.Email, r.Password, r.OrganisationName)
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	w := httptest.NewRecorder()
+
+	//Act
+	u.Router.ServeHTTP(w, req)
+
+	//Assert
+	require.Equal(u.T(), http.StatusBadRequest, w.Code)
+}
+
+func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
+	_, err := testdb.SeedConfiguration(u.DB)
+	require.NoError(u.T(), err)
+
+	r := &models.RegisterUser{
+		FirstName:        "test",
+		LastName:         "test",
+		Email:            "test@test.com",
+		Password:         "123456",
+		OrganisationName: "test",
+	}
+	// Arrange Request
+	bodyStr := fmt.Sprintf(`{
+		"first_name": "%s",
+		"last_name": "%s",
+		"password": "%s",
+		"org_name": "%s"
+	}`, r.FirstName, r.LastName, r.Password, r.OrganisationName)
+
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	w := httptest.NewRecorder()
+
+	//Act
+	u.Router.ServeHTTP(w, req)
+
+	//Assert
+	require.Equal(u.T(), http.StatusBadRequest, w.Code)
+}
+
 func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.DB, "", password)

@@ -32,6 +32,9 @@ module.exports = {
 			},
 			fontFamily: {
 				sans: ['Quicksand', ...defaultTheme.fontFamily.sans]
+			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(400% 400% at 50% 50%, var(--tw-gradient-stops))'
 			}
 		},
 		screens: {

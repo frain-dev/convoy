@@ -12,10 +12,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/go-chi/chi/v5"
@@ -91,16 +91,16 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 
 func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 	as := services.NewAppService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Cache)
-	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo)
+	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo, r.SourceRepo)
 	gs := services.NewGroupService(r.ApiKeyRepo, r.AppRepo, r.GroupRepo, r.EventRepo, r.EventDeliveryRepo, s.Limiter, s.Cache)
 	ss := services.NewSecurityService(r.GroupRepo, r.ApiKeyRepo)
 	os := services.NewOrganisationService(r.OrgRepo, r.OrgMemberRepo)
 	rs := services.NewSubscriptionService(r.SubRepo, r.AppRepo, r.SourceRepo)
 	sos := services.NewSourceService(r.SourceRepo, s.Cache)
-	us := services.NewUserService(r.UserRepo, s.Cache, s.Queue)
 	ois := services.NewOrganisationInviteService(r.OrgRepo, r.UserRepo, r.OrgMemberRepo, r.OrgInviteRepo, s.Queue)
 	om := services.NewOrganisationMemberService(r.OrgMemberRepo)
 	cs := services.NewConfigService(r.ConfigRepo)
+	us := services.NewUserService(r.UserRepo, s.Cache, s.Queue, cs, os)
 
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		EventRepo:         r.EventRepo,
@@ -315,6 +315,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", a.LoginUser)
+			authRouter.Post("/register", a.RegisterUser)
 			authRouter.Post("/token/refresh", a.RefreshToken)
 			authRouter.Post("/logout", a.LogoutUser)
 		})

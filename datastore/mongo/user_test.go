@@ -19,16 +19,77 @@ func Test_CreateUser(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db, UserCollection)
-	userRepo := NewUserRepo(db, store)
-	user := generateUser(t)
 
-	require.NoError(t, userRepo.CreateUser(context.Background(), user))
-	newUser, err := userRepo.FindUserByID(context.Background(), user.UID)
-	require.NoError(t, err)
+	tt := []struct {
+		name             string
+		users            []datastore.User
+		isDuplicateEmail bool
+	}{
+		{
+			name: "create user",
+			users: []datastore.User{
+				{
+					UID:            uuid.NewString(),
+					FirstName:      "test",
+					LastName:       "test",
+					Email:          fmt.Sprintf("%s@test.com", uuid.NewString()),
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+		},
+		{
+			name: "cannot create user with existing email",
+			users: []datastore.User{
+				{
+					UID:            uuid.NewString(),
+					FirstName:      "test",
+					LastName:       "test",
+					Email:          "test@test.com",
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
 
-	require.Equal(t, user.UID, newUser.UID)
-	require.Equal(t, user.FirstName, newUser.FirstName)
-	require.Equal(t, user.LastName, newUser.LastName)
+				{
+					UID:            uuid.NewString(),
+					FirstName:      "test",
+					LastName:       "test",
+					Email:          "test@test.com",
+					DocumentStatus: datastore.ActiveDocumentStatus,
+				},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			userRepo := NewUserRepo(db, store)
+
+			for i, user := range tc.users {
+				user := &datastore.User{
+					UID:            user.UID,
+					FirstName:      user.FirstName,
+					LastName:       user.LastName,
+					Email:          user.Email,
+					DocumentStatus: user.DocumentStatus,
+				}
+
+				if i == 0 {
+					require.NoError(t, userRepo.CreateUser(context.Background(), user))
+					newUser, err := userRepo.FindUserByID(context.Background(), user.UID)
+					require.NoError(t, err)
+
+					require.Equal(t, user.UID, newUser.UID)
+					require.Equal(t, user.FirstName, newUser.FirstName)
+					require.Equal(t, user.LastName, newUser.LastName)
+				}
+
+				if i > 0 && tc.isDuplicateEmail {
+					err := userRepo.CreateUser(context.Background(), user)
+					require.Error(t, err)
+					require.ErrorIs(t, err, datastore.ErrDuplicateEmail)
+				}
+			}
+		})
+	}
 }
 
 func Test_FindUserByEmail(t *testing.T) {

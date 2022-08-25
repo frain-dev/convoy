@@ -1,3 +1,11 @@
+## 0.6.5
+
+-   [Feature] Add support for user registration. #959
+-   [Bugfix] Updated event dashboard with application and source metadata. #960
+-   [Bugfix] Allow re-invitation of a previously cancelled invitation. #967
+-   [Enhancement] Projects scoped indexing and search. #945
+-   [Enhancement] Improved notification system. #954
+
 ## v0.6.4
 
 -   [Bugfix] Fixed a bug where event deliveries could not be force retried #938

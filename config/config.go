@@ -25,7 +25,7 @@ var cfgSingleton atomic.Value
 
 var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
-	Environment:     DevelopmentEnvironment,
+	Environment:     OSSEnvironment,
 	MaxResponseSize: MaxResponseSize,
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
@@ -154,15 +154,14 @@ type SearchConfiguration struct {
 }
 
 type TypesenseConfiguration struct {
-	Host       string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
-	ApiKey     string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
-	Collection string `json:"collection" envconfig:"CONVOY_TYPESENSE_COLLECTION"`
+	Host   string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
+	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
 }
 
 const (
-	envPrefix string = "convoy"
-
+	envPrefix              string = "convoy"
 	DevelopmentEnvironment string = "development"
+	OSSEnvironment         string = "oss"
 )
 
 const (
