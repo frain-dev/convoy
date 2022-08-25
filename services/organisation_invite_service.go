@@ -265,7 +265,12 @@ func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
 	}
 
+	if iv.Status == datastore.InviteStatusCancelled {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("organisation member invite is already cancelled"))
+	}
+
 	iv.Status = datastore.InviteStatusCancelled
+	iv.DocumentStatus = datastore.DeletedDocumentStatus
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
