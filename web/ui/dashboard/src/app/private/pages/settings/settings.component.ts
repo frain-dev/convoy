@@ -22,7 +22,7 @@ import { SettingsService } from './settings.service';
 })
 export class SettingsComponent implements OnInit {
 	activePage: 'organisation settings' | 'configuration settings' = 'configuration settings';
-	settingsMenu: ['configuration settings', 'organisation settings'] = ['configuration settings', 'organisation settings'];
+	settingsMenu: ['organisation settings'] = ['organisation settings'];
 	regions = [
 		'us-east-2',
 		'us-east-1',
