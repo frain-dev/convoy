@@ -87,15 +87,22 @@
 
 			<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
 				<span *ngIf="events" [hidden]="activeTab !== 'events'">
-					{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }}
+					{{ events && events.pagination.total > 0 ? (events.pagination.prev ? events.pagination.perPage * events.pagination.prev : 1) : 0 }} -
+					{{ events && events.pagination.total < 20 ? events.pagination.total : events.pagination.prev ? events.pagination.perPage * events.pagination.prev + events.content.length : events.pagination.perPage }}
 					<strong>of</strong>
-					{{ events?.pagination?.total || 0 }}
+					{{ events.pagination.total || 0 }}
 				</span>
 				<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
-					{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
-					{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }}
+					{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? (eventDeliveries.pagination.prev ? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev : 1) : 0 }} -
+					{{
+						eventDeliveries && eventDeliveries.pagination.total < 20
+							? eventDeliveries.pagination.total
+							: eventDeliveries.pagination.prev
+							? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev + eventDeliveries.content.length
+							: eventDeliveries.pagination.perPage
+					}}
 					<strong>of</strong>
-					{{ eventDeliveries?.pagination?.total || 0 }}
+					{{ eventDeliveries.pagination.total || 0 }}
 				</span>
 			</div>
 		</ul>
@@ -103,7 +110,7 @@
 </convoy-card>
 
 <div [hidden]="activeTab !== 'events'">
-	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>
+	<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)" (openApp)="openApp($event)" (openSource)="openSource($event)"></app-event>
 </div>
 <div [hidden]="activeTab !== 'event deliveries'">
 	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>

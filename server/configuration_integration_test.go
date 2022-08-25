@@ -100,7 +100,8 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 	// Arrange Request
 	bodyStr := `{
-		"is_analytics_enabled": true
+		"is_analytics_enabled": true,
+		"is_signup_enabled": true
 	}`
 
 	body := serialize(bodyStr)
@@ -120,6 +121,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 
 	require.NotEmpty(c.T(), config.UID)
 	require.True(c.T(), config.IsAnalyticsEnabled)
+	require.True(c.T(), config.IsSignupEnabled)
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
@@ -129,6 +131,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
 	// Arrange Request
 	bodyStr := `{
 		"is_analytics_enabled": false,
+		"is_signup_enabled": false,
 		"storage_policy": {
 			"type": "on_prem",
 			"on_prem":{
@@ -155,6 +158,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
 	require.NotEmpty(c.T(), config.UID)
 	require.Equal(c.T(), "/tmp", config.StoragePolicy.OnPrem.Path)
 	require.False(c.T(), config.IsAnalyticsEnabled)
+	require.False(c.T(), config.IsSignupEnabled)
 
 }
 

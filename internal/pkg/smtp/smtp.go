@@ -15,12 +15,20 @@ type SmtpClient interface {
 	SendEmail(emailAddr, subject string, body bytes.Buffer) error
 }
 
-type Client struct {
+func NewClient(cfg *config.SMTPConfiguration) (SmtpClient, error) {
+	if *cfg == (config.SMTPConfiguration{}) {
+		return NewNoopClient()
+	}
+
+	return NewSMTP(cfg)
+}
+
+type SMTPClient struct {
 	url, username, password, from, replyTo string
 	port                                   uint32
 }
 
-func New(cfg *config.SMTPConfiguration) (SmtpClient, error) {
+func NewSMTP(cfg *config.SMTPConfiguration) (SmtpClient, error) {
 	var err error
 
 	errMsg := "Missing SMTP Config - %s"
@@ -49,7 +57,7 @@ func New(cfg *config.SMTPConfiguration) (SmtpClient, error) {
 		log.WithError(err).Error()
 	}
 
-	return &Client{
+	return &SMTPClient{
 		url:      cfg.URL,
 		port:     cfg.Port,
 		username: cfg.Username,
@@ -59,7 +67,7 @@ func New(cfg *config.SMTPConfiguration) (SmtpClient, error) {
 	}, err
 }
 
-func (s *Client) SendEmail(emailAddr, subject string, body bytes.Buffer) error {
+func (s *SMTPClient) SendEmail(emailAddr, subject string, body bytes.Buffer) error {
 	// Compose Message
 	m := s.setHeaders(emailAddr, subject)
 
@@ -74,7 +82,7 @@ func (s *Client) SendEmail(emailAddr, subject string, body bytes.Buffer) error {
 	return nil
 }
 
-func (s *Client) setHeaders(email, subject string) *gomail.Message {
+func (s *SMTPClient) setHeaders(email, subject string) *gomail.Message {
 	m := gomail.NewMessage()
 
 	m.SetHeader("From", s.from)
@@ -87,4 +95,14 @@ func (s *Client) setHeaders(email, subject string) *gomail.Message {
 	m.SetHeader("Subject", subject)
 
 	return m
+}
+
+type NoopClient struct{}
+
+func NewNoopClient() (*NoopClient, error) {
+	return &NoopClient{}, nil
+}
+
+func (n *NoopClient) SendEmail(em, sub string, b bytes.Buffer) error {
+	return nil
 }

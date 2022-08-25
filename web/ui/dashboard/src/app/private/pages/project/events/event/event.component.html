@@ -79,8 +79,11 @@
 								<convoy-table-cell class="contents" className="pl-16px">
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
-								<convoy-table-cell class="contents" className="w-150px overflow-ellipsis">
+								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openApp.emit(event.app_metadata?.uid)">
 									<span class="underline text-primary-100">{{ event.app_metadata?.name }}</span>
+								</convoy-table-cell>
+								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openSource.emit(event.source_metadata?.uid)">
+									<span class="underline text-primary-100">{{ event.source_metadata?.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 								<convoy-table-cell class="contents">
@@ -135,7 +138,6 @@
 		type="outline"
 		size="sm"
 		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		(clickItem)="getEvents({ page: events.pagination.prev })"
 		routerLink="./"
 		[queryParams]="{ page: events?.pagination?.next }"
 		(click)="getEvents({ page: events?.pagination?.next })"

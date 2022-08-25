@@ -15,8 +15,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 
-	"github.com/frain-dev/convoy/searcher"
-	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/server/testdb"

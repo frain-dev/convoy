@@ -32,6 +32,11 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 	user.ResetPasswordToken = uuid.NewString()
 
 	err := u.store.Save(ctx, user, nil)
+
+	if mongo.IsDuplicateKeyError(err) {
+		return datastore.ErrDuplicateEmail
+	}
+
 	return err
 }
 
@@ -90,6 +95,11 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 	}
 
 	err := u.store.UpdateByID(ctx, user.UID, update)
+
+	if mongo.IsDuplicateKeyError(err) {
+		return datastore.ErrDuplicateEmail
+	}
+	
 	return err
 }
 

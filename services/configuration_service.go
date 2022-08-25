@@ -56,6 +56,10 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 		config.IsAnalyticsEnabled = *newConfig.IsAnalyticsEnabled
 	}
 
+	if newConfig.IsSignupEnabled != nil {
+		config.IsSignupEnabled = *newConfig.IsSignupEnabled
+	}
+
 	err := c.configRepo.CreateConfiguration(ctx, config)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -77,6 +81,10 @@ func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.
 
 	if config.IsAnalyticsEnabled != nil {
 		cfg.IsAnalyticsEnabled = *config.IsAnalyticsEnabled
+	}
+
+	if config.IsSignupEnabled != nil {
+		cfg.IsSignupEnabled = *config.IsSignupEnabled
 	}
 
 	if config.StoragePolicy != nil {

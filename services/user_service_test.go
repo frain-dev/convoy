@@ -20,11 +20,17 @@ func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
 	userRepo := mocks.NewMockUserRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
+	configRepo := mocks.NewMockConfigurationRepository(ctrl)
+	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	orgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.Nil(t, err)
 
-	userService := NewUserService(userRepo, cache, queue)
+	configService := NewConfigService(configRepo)
+	orgService := NewOrganisationService(orgRepo, orgMemberRepo)
+
+	userService := NewUserService(userRepo, cache, queue, configService, orgService)
 	return userService
 }
 
@@ -158,6 +164,124 @@ func TestUserService_LoginUser(t *testing.T) {
 			require.Equal(t, user.Email, tc.wantUser.Email)
 		})
 	}
+}
+
+func TestService_RegisterUser(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx  context.Context
+		user *models.RegisterUser
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		wantUser    *datastore.User
+		dbFn        func(u *UserService)
+		wantConfig  bool
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_register_user",
+			args: args{
+				ctx: ctx,
+				user: &models.RegisterUser{
+					FirstName:        "test",
+					LastName:         "test",
+					Email:            "test@test.com",
+					Password:         "123456",
+					OrganisationName: "test",
+				},
+			},
+			wantUser: &datastore.User{
+				UID:       "12345",
+				FirstName: "test",
+				LastName:  "test",
+				Email:     "test@test.com",
+			},
+			dbFn: func(u *UserService) {
+				us, _ := u.userRepo.(*mocks.MockUserRepository)
+				configRepo, _ := u.configService.configRepo.(*mocks.MockConfigurationRepository)
+				orgRepo, _ := u.orgService.orgRepo.(*mocks.MockOrganisationRepository)
+				orgMemberRepo, _ := u.orgService.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{
+					UID:             "12345",
+					IsSignupEnabled: true,
+				}, nil)
+
+				us.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
+
+		{
+			name: "should_not_register_user_when_registration_is_not_allowed",
+			args: args{
+				ctx: ctx,
+				user: &models.RegisterUser{
+					FirstName:        "test",
+					LastName:         "test",
+					Email:            "test@test.com",
+					Password:         "123456",
+					OrganisationName: "test",
+				},
+			},
+			dbFn: func(u *UserService) {
+				configRepo, _ := u.configService.configRepo.(*mocks.MockConfigurationRepository)
+				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{
+					UID:             "12345",
+					IsSignupEnabled: false,
+				}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusForbidden,
+			wantErrMsg:  "user registration is disabled",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			u := provideUserService(ctrl, t)
+
+			if tc.dbFn != nil {
+				tc.dbFn(u)
+			}
+
+			if tc.wantConfig {
+				err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+				require.Nil(t, err)
+			}
+
+			user, token, err := u.RegisterUser(tc.args.ctx, tc.args.user)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.NotEmpty(t, user.UID)
+			require.NotEmpty(t, user.FirstName)
+
+			require.NotEmpty(t, token.AccessToken)
+			require.NotEmpty(t, token.RefreshToken)
+
+			require.Equal(t, user.FirstName, tc.wantUser.FirstName)
+			require.Equal(t, user.LastName, tc.wantUser.LastName)
+			require.Equal(t, user.Email, tc.wantUser.Email)
+		})
+	}
+
 }
 
 func TestUserService_RefreshToken(t *testing.T) {

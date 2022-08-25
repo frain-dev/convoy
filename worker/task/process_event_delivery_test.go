@@ -9,13 +9,13 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/go-redis/redis_rate/v9"
 	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -195,7 +195,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -216,8 +216,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -280,7 +278,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -301,8 +299,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -369,7 +365,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -390,8 +386,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -454,7 +448,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -475,8 +469,6 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.ScheduledEventStatus,
 					}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -543,7 +535,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
@@ -576,8 +568,6 @@ func TestProcessEventDelivery(t *testing.T) {
 					Allowed:   10,
 					Remaining: 10,
 				}, nil).Times(1)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{}, nil)
 
 				o.EXPECT().
 					FetchGroupByID(gomock.Any(), gomock.Any()).
@@ -628,11 +618,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
 						GroupID: "123",
-					}, nil).Times(2)
+					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
 						Status: datastore.ActiveSubscriptionStatus,
@@ -717,6 +707,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			cache := mocks.NewMockCache(ctrl)
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
 			subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+			q := mocks.NewMockQueuer(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -742,7 +733,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(appRepo, groupRepo, msgRepo, rateLimiter, subRepo)
 			}
 
-			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter, subRepo)
+			processFn := ProcessEventDelivery(appRepo, msgRepo, groupRepo, rateLimiter, subRepo, q)
 
 			payload := json.RawMessage(tc.msg.UID)
 
