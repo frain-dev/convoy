@@ -11,7 +11,7 @@ Convoy
 
 ![convoy image](./convoy-logo.svg)
 
-Convoy is a fast & secure webhooks service. It receives event data from an HTTP API and sends these event data to the configured endpoints. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
+Convoy is a fast & secure webhooks proxy. It enables you to receive webhook events from providers and publish them to users.. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
 
 Convoy includes the following features:
 
@@ -23,30 +23,30 @@ Convoy includes the following features:
 
 - **Management UI**: Visibility and easy debugging are one of highly coveted features of a webhook delivery system. Convoy provides a UI to view your delivery attempt logs, filter by application, event status, date & time and perform flexible batch retries during downtimes.
 
-- **Other features(Coming soon)**: Application Portal; enable you embed Convoy dashboard directly into your dashboard, Rate Limiting, Replay Attacks prevention, Multiple Ingest sources.
+- **Application Portal**: Application Portal allows API providers embed Convoy dashboard directly into their API dashboard. With the API, users can build their own webhooks portal if you care so much about whitelisting. :)
 
 ## Installation, Getting Started
-Follow the instructions on our [overview guide](https://getconvoy.io/docs/overview#how-to-navigate-these-docs) to start publishing events with Convoy.
+There are several ways to get started using Convoy.
 
-There are several ways of installing Convoy.
-
-### Binaries
+### Option 1: Download our Binaries or Docker Image
 Convoy binaries can be downloaded with your package manager of choice. You can head over to [Downloads Page](https://getconvoy.io/download) to proceed.
-
-### Docker images
-Docker images are available on [GitHub Container Registry](https://github.com/frain-dev/convoy/pkgs/container/convoy).
-
-You can launch a Convoy Container with the following
 
 ```bash
 $ docker run \
 	-p 5005:5005 \
 	--name convoy-server \
 	-v `pwd`/convoy.json:/convoy.json \
-	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.6.0-rc.1
+	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.6.5
 ```
 
-You can view a sample configuration here - [convoy.json](https://github.com/frain-dev/convoy/blob/main/convoy.json.example).
+### Option 2: Spin up an instance with third-party dependencies on a Linux VM
+```bash
+ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/frain-dev/convoy/main/deploy/vm-deploy)"
+```
+
+### Option 3: If you don't wish to self-host
+Sign up for a free [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
+
 
 ### Building from source
 To build Convoy from source code, you need:
@@ -56,7 +56,7 @@ To build Convoy from source code, you need:
 
 ```bash
 git clone https://github.com/frain-dev/convoy.git && cd convoy
-go build -o convoy ./cmd
+make build
 ```
 
 ## Contributing
