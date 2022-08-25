@@ -14,5 +14,8 @@ ui_install:
 	npm ci && \
  	 npm run build
 
+build:
+	scripts/build.sh
+
 integration_tests:
 	go test -tags integration -p 1 ./...
