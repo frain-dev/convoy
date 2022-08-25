@@ -48,15 +48,15 @@ $ docker run \
 Sign up for a free [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
 
 
-### Building from source
+### Option 4: Building from source
 To build Convoy from source code, you need:
 * Go [version 1.16 or greater](https://golang.org/doc/install).
 * NodeJS [version 14.17 or greater](https://nodejs.org).
 * Npm [version 6 or greater](https://npmjs.com).
 
 ```bash
-git clone https://github.com/frain-dev/convoy.git && cd convoy
-make build
+$ git clone https://github.com/frain-dev/convoy.git && cd convoy
+$ make build
 ```
 
 ## Contributing
