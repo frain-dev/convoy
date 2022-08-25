@@ -11,7 +11,7 @@ Convoy
 
 ![convoy image](./convoy-logo.svg)
 
-Convoy is a fast & secure webhooks proxy. It enables you publish and receive webhook events to users and from providers respectively. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
+Convoy is a fast & secure webhooks proxy. It enables you to receive webhook events from providers and publish them to users.. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
 
 Convoy includes the following features:
 
