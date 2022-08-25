@@ -1147,6 +1147,7 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 					Group: "ref",
 					App:   "",
 				},
+				DocumentStatus: datastore.DeletedDocumentStatus,
 			},
 			wantErr: false,
 		},
