@@ -39,7 +39,7 @@ $ docker run \
 	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.6.5
 ```
 
-### Option 2: Spin up a instance on a Linux VM
+### Option 2: Spin up an instance with third-party dependencies on a Linux VM
 ```bash
  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/frain-dev/convoy/main/deploy/vm-deploy)"
 ```
