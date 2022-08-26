@@ -136,7 +136,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "as", Value: "group_events"},
 		}},
 	}
-	
+
 	projectStage := bson.D{
 		{
 			Key: "$project",
