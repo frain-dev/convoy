@@ -126,10 +126,17 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "from", Value: EventCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
+			{Key: "pipeline", Value: mongo.Pipeline{
+				bson.D{{
+					Key: "$project", Value: bson.D{
+						{Key: "_id", Value: "$uid"},
+					}},
+				},
+			}},
 			{Key: "as", Value: "group_events"},
 		}},
 	}
-
+	
 	projectStage := bson.D{
 		{
 			Key: "$project",
