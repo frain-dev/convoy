@@ -22,7 +22,7 @@ export interface GROUP {
 		DisableEndpoint: boolean;
 		replay_attacks: boolean;
 	};
-	statistics: {
+	statistics?: {
 		messages_sent: number;
 		total_apps: number;
 	};
