@@ -1,3 +1,7 @@
+## 0.6.6
+
+-   [Bugfix] Fix project statistics lookup query #978 #979
+
 ## 0.6.5
 
 -   [Feature] Add support for user registration. #959
