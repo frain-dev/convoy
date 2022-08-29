@@ -13,7 +13,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func provideRepo(ctrl *gomock.Controller) *Repo {
@@ -416,9 +415,7 @@ func TestHub_listen(t *testing.T) {
 				tt.dbFn(r)
 			}
 
-			h := NewHub(func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
-				return nil
-			})
+			h := NewHub()
 
 			device, err := listen(tt.args.ctx, tt.args.group, tt.args.app, tt.args.listenRequest, h, r)
 			if tt.wantErr {
@@ -707,9 +704,7 @@ func TestHub_login(t *testing.T) {
 				tt.dbFn(r)
 			}
 
-			h := NewHub(func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
-				return nil
-			})
+			h := NewHub()
 
 			device, err := login(tt.args.ctx, tt.args.group, tt.args.app, tt.args.loginRequest, h, r)
 			if tt.wantErr {

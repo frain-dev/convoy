@@ -194,8 +194,8 @@ func (h *Hub) StartClientStatusWatcher() {
 	for {
 		select {
 		case <-h.ticker.C:
+			// TODO(raymond): it might be better to read directly from the devicr collection then disable them
 			for k, v := range h.deviceClients {
-				log.Println("tick: ", v.Device.LastSeenAt.Time().String())
 				h.lock.Lock()
 				if !h.deviceClients[k].IsOnline() {
 					h.deviceClients[k].GoOffline()

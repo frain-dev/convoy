@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -78,43 +77,40 @@ func (c *Client) readPump() {
 	})
 
 	for {
-		select {
-		default:
-			messageType, message, err := c.conn.ReadMessage()
-			fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
+		messageType, message, err := c.conn.ReadMessage()
+		// fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
 
-			// messageType -1 means an error occured
-			// set the device of this client to offline
-			if messageType == -1 {
+		// messageType -1 means an error occured
+		// set the device of this client to offline
+		if messageType == -1 {
+			c.GoOffline()
+		}
+
+		if messageType == websocket.CloseMessage {
+			c.Close()
+		}
+
+		if messageType == websocket.TextMessage {
+			// this is triggered when a SIGINT signal (Ctrl + C) is sent by the client
+			if string(message) == "disconnect" {
 				c.GoOffline()
+				continue
 			}
 
-			if messageType == websocket.CloseMessage {
-				c.Close()
-			}
-
-			if messageType == websocket.TextMessage {
-				// this is triggered when a SIGINT signal (Ctrl + C) is sent by the client
-				if string(message) == "disconnect" {
-					c.GoOffline()
-					continue
-				}
-
-				var ed AckEventDelivery
-				err := json.Unmarshal(message, &ed)
-				if err != nil {
-					log.WithError(err).Error("failed to unmarshal text message")
-					continue
-				}
-				go c.UpdateEventDeliveryStatus(ed.UID)
-			}
-
+			var ed AckEventDelivery
+			err := json.Unmarshal(message, &ed)
 			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.WithError(err).WithField("device_id", c.deviceID).Error("unexpected close error")
-				}
-				return
+				log.WithError(err).Error("failed to unmarshal text message")
+				continue
 			}
+			go c.UpdateEventDeliveryStatus(ed.UID)
+		}
+
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.WithError(err).WithField("device_id", c.deviceID).Error("unexpected close error")
+			}
+			return
 		}
 	}
 }
