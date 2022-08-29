@@ -165,6 +165,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 
 	groupStore := getStore(db, GroupCollection)
 	eventStore := getStore(db, EventCollection)
+	statsStore := getStore(db, ProjectStatsCollection)
 
 	groupRepo := NewGroupRepo(db, groupStore)
 
@@ -213,6 +214,9 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	groups := []*datastore.Group{group1, group2}
 	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
 	require.NoError(t, err)
+
+	stats := NewProjectStatsRepo(db, statsStore)
+	stats.FetchGroupsStatistics(context.Background(), groups)
 
 	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{
 		GroupID:      group1.UID,

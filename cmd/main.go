@@ -39,7 +39,7 @@ func main() {
 
 	log.SetFormatter(&prefixed.TextFormatter{
 		DisableColors:   false,
-		TimestampFormat: "2006-01-02 15:04:05",
+		TimestampFormat: time.RFC3339,
 		FullTimestamp:   true,
 		ForceFormatting: true,
 	})
@@ -111,6 +111,7 @@ type app struct {
 	orgMemberRepo     datastore.OrganisationMemberRepository
 	orgInviteRepo     datastore.OrganisationInviteRepository
 	sourceRepo        datastore.SourceRepository
+	projectStatsRepo  datastore.ProjectStatsRepository
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
 	queue             queue.Queuer
@@ -239,6 +240,7 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 		app.orgRepo = db.OrganisationRepo()
 		app.orgMemberRepo = db.OrganisationMemberRepo()
 		app.orgInviteRepo = db.OrganisationInviteRepo()
+		app.projectStatsRepo = db.ProjectStatsRepo()
 
 		app.queue = q
 		app.logger = lo

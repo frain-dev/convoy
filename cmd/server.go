@@ -160,6 +160,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			EventRepo:         a.eventRepo,
 			EventDeliveryRepo: a.eventDeliveryRepo,
 			AppRepo:           a.applicationRepo,
+			ProjectStatsRepo:  a.projectStatsRepo,
 			GroupRepo:         a.groupRepo,
 			ApiKeyRepo:        a.apiKeyRepo,
 			SubRepo:           a.subRepo,
@@ -216,6 +217,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.eventRepo,
 			a.eventDeliveryRepo,
 			a.searcher))
+
+		consumer.RegisterHandlers(convoy.ProjectStatistics, task.AggregateProjectStats(a.groupRepo))
 
 		consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
 			a.sourceRepo,

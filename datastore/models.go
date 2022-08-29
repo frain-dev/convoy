@@ -750,3 +750,9 @@ type EventMap map[string]*Event
 type SourceMap map[string]*Source
 type AppMap map[string]*Application
 type EndpointMap map[string]*Endpoint
+
+type ProjectStatistics struct {
+	ID           string `json:"uid" bson:"_id"`
+	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
+	TotalApps    int64  `json:"total_apps" bson:"total_apps"`
+}

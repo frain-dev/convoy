@@ -118,6 +118,7 @@ func buildServer() *ApplicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 	subRepo := db.SubRepo()
+	projectStatsRepo := db.ProjectStatsRepo()
 
 	return NewApplicationHandler(
 		Repos{
@@ -133,6 +134,7 @@ func buildServer() *ApplicationHandler {
 			OrgInviteRepo:     orgInviteRepo,
 			UserRepo:          userRepo,
 			ConfigRepo:        configRepo,
+			ProjectStatsRepo:  projectStatsRepo,
 		}, Services{
 			Queue:    queue,
 			Logger:   logger,

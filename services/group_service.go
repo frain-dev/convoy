@@ -24,19 +24,21 @@ type GroupService struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	appRepo           datastore.ApplicationRepository
 	groupRepo         datastore.GroupRepository
+	projectStatsRepo  datastore.ProjectStatsRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	limiter           limiter.RateLimiter
 	cache             cache.Cache
 }
 
-func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
+func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache, projectStatsRepo datastore.ProjectStatsRepository) *GroupService {
 	return &GroupService{
 		apiKeyRepo:        apiKeyRepo,
 		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		projectStatsRepo:  projectStatsRepo,
 		limiter:           limiter,
 		cache:             cache,
 	}
@@ -183,7 +185,7 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 }
 
 func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
-	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
+	err := gs.projectStatsRepo.FetchGroupsStatistics(ctx, groups)
 	if err != nil {
 		log.WithError(err).Error("failed to count group applications")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))

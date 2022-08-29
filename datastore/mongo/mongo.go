@@ -19,6 +19,7 @@ import (
 const (
 	ConfigCollection              = "configurations"
 	GroupCollection               = "groups"
+	ProjectStatsCollection        = "project_statistics"
 	OrganisationCollection        = "organisations"
 	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
@@ -43,6 +44,7 @@ type Client struct {
 	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
+	projectStatsRepo  datastore.ProjectStatsRepository
 }
 
 func New(cfg config.Configuration) (*Client, error) {
@@ -83,6 +85,7 @@ func New(cfg config.Configuration) (*Client, error) {
 	users := datastore.New(conn, UserCollection)
 	config := datastore.New(conn, ConfigCollection)
 	event_delivery := datastore.New(conn, EventDeliveryCollection)
+	projectStats := datastore.New(conn, ProjectStatsCollection)
 
 	c := &Client{
 		db:                conn,
@@ -98,6 +101,7 @@ func New(cfg config.Configuration) (*Client, error) {
 		orgInviteRepo:     NewOrgInviteRepo(conn, org_invite),
 		userRepo:          NewUserRepo(conn, users),
 		configRepo:        NewConfigRepo(conn, config),
+		projectStatsRepo:  NewProjectStatsRepo(conn, projectStats),
 	}
 
 	c.ensureMongoIndices()
@@ -163,6 +167,10 @@ func (c *Client) UserRepo() datastore.UserRepository {
 
 func (c *Client) ConfigurationRepo() datastore.ConfigurationRepository {
 	return c.configRepo
+}
+
+func (c *Client) ProjectStatsRepo() datastore.ProjectStatsRepository {
+	return c.projectStatsRepo
 }
 
 func (c *Client) ensureMongoIndices() {

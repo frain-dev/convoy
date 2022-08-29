@@ -125,3 +125,7 @@ type ConfigurationRepository interface {
 	LoadConfiguration(context.Context) (*Configuration, error)
 	UpdateConfiguration(context.Context, *Configuration) error
 }
+
+type ProjectStatsRepository interface {
+	FetchGroupsStatistics(ctx context.Context, groups []*Group) error
+}

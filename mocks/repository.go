@@ -1535,3 +1535,40 @@ func (mr *MockConfigurationRepositoryMockRecorder) UpdateConfiguration(arg0, arg
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).UpdateConfiguration), arg0, arg1)
 }
+
+// MockProjectStatsRepository is a mock of ProjectStatsRepository interface.
+type MockProjectStatsRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockProjectStatsRepositoryMockRecorder
+}
+
+// MockProjectStatsRepositoryMockRecorder is the mock recorder for MockProjectStatsRepository.
+type MockProjectStatsRepositoryMockRecorder struct {
+	mock *MockProjectStatsRepository
+}
+
+// NewMockProjectStatsRepository creates a new mock instance.
+func NewMockProjectStatsRepository(ctrl *gomock.Controller) *MockProjectStatsRepository {
+	mock := &MockProjectStatsRepository{ctrl: ctrl}
+	mock.recorder = &MockProjectStatsRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockProjectStatsRepository) EXPECT() *MockProjectStatsRepositoryMockRecorder {
+	return m.recorder
+}
+
+// FetchGroupsStatistics mocks base method.
+func (m *MockProjectStatsRepository) FetchGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchGroupsStatistics", ctx, groups)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FetchGroupsStatistics indicates an expected call of FetchGroupsStatistics.
+func (mr *MockProjectStatsRepositoryMockRecorder) FetchGroupsStatistics(ctx, groups interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchGroupsStatistics", reflect.TypeOf((*MockProjectStatsRepository)(nil).FetchGroupsStatistics), ctx, groups)
+}

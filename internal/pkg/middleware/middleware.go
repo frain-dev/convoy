@@ -87,6 +87,7 @@ type CreateMiddleware struct {
 	SubRepo           datastore.SubscriptionRepository
 	SourceRepo        datastore.SourceRepository
 	OrgRepo           datastore.OrganisationRepository
+	ProjectStatsRepo  datastore.ProjectStatsRepository
 	OrgMemberRepo     datastore.OrganisationMemberRepository
 	OrgInviteRepo     datastore.OrganisationInviteRepository
 	UserRepo          datastore.UserRepository

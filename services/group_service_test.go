@@ -24,7 +24,8 @@ func provideGroupService(ctrl *gomock.Controller) *GroupService {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
+	projectStats := mocks.NewMockProjectStatsRepository(ctrl)
+	return NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache, projectStats)
 }
 
 func TestGroupService_CreateGroup(t *testing.T) {
@@ -638,7 +639,8 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+				st := gs.projectStatsRepo.(*mocks.MockProjectStatsRepository)
+				st.EXPECT().FetchGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
 					groups[0].Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
@@ -683,7 +685,8 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+				st := gs.projectStatsRepo.(*mocks.MockProjectStatsRepository)
+				st.EXPECT().FetchGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
 					groups[0].Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
@@ -728,7 +731,8 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+				st := gs.projectStatsRepo.(*mocks.MockProjectStatsRepository)
+				st.EXPECT().FetchGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
 					groups[0].Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
@@ -824,8 +828,8 @@ func TestGroupService_FillGroupsStatistics(t *testing.T) {
 				g:   &datastore.Group{UID: "1234"},
 			},
 			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
+				st := gs.projectStatsRepo.(*mocks.MockProjectStatsRepository)
+				st.EXPECT().FetchGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
 					groups[0].Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
@@ -849,8 +853,8 @@ func TestGroupService_FillGroupsStatistics(t *testing.T) {
 				g:   &datastore.Group{UID: "1234"},
 			},
 			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				st := gs.projectStatsRepo.(*mocks.MockProjectStatsRepository)
+				st.EXPECT().FetchGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
