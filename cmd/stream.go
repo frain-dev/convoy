@@ -41,11 +41,12 @@ func addStreamCommand(a *app) *cobra.Command {
 				EventDeliveryRepo: a.eventDeliveryRepo,
 			}
 
-			hub := socket.NewHub(watchCollection)
+			hub := socket.NewHub()
 			go hub.StartRegister()
 			go hub.StartUnregister()
 			go hub.StartEventWatcher()
 			go hub.StartEventSender()
+			go hub.StartClientStatusWatcher()
 
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
 				AppRepo:   a.applicationRepo,

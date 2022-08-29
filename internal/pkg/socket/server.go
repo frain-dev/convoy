@@ -1,14 +1,19 @@
 package socket
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
+	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,8 +34,13 @@ type Hub struct {
 
 	watchCollectionFn WatchCollectionFn
 
-	close  chan struct{}
+	close chan struct{}
+
+	// events from the change stream are written to thi channel and are sent to the respective devices
 	events chan *CLIEvent
+
+	// this ticker is used to periodically set inactive (or incorrectly disconnected) devices to offline
+	ticker *time.Ticker
 }
 
 type AckEventDelivery struct {
@@ -51,12 +61,12 @@ type CLIEvent struct {
 
 type WatchCollectionFn func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error
 
-func NewHub(watchCollectionFn WatchCollectionFn) *Hub {
+func NewHub() *Hub {
 	register = make(chan *Client, 1)
 	unregister = make(chan *Client, 1)
 
 	return &Hub{
-		watchCollectionFn: watchCollectionFn,
+		watchCollectionFn: watchCollection,
 		deviceClients:     map[string]*Client{},
 		events:            make(chan *CLIEvent, 10),
 		close:             make(chan struct{}),
@@ -78,6 +88,7 @@ func (h *Hub) StartEventSender() {
 
 			if !client.IsOnline() {
 				client.GoOffline()
+				client.Close()
 				continue
 			}
 
@@ -176,6 +187,82 @@ func (h *Hub) StartUnregister() {
 	}
 }
 
+func (h *Hub) StartClientStatusWatcher() {
+	h.ticker = time.NewTicker(time.Second * 5)
+	defer h.ticker.Stop()
+
+	for {
+		select {
+		case <-h.ticker.C:
+			for k, v := range h.deviceClients {
+				log.Println("tick: ", v.Device.LastSeenAt.Time().String())
+				h.lock.Lock()
+				if !h.deviceClients[k].IsOnline() {
+					h.deviceClients[k].GoOffline()
+					h.deviceClients[k].Close()
+					log.Printf("Device %s has be set to offline after inactivity for 2 munites", v.Device.HostName)
+				}
+				h.lock.Unlock()
+			}
+		case <-h.close:
+			return
+		}
+	}
+}
+
 func (h *Hub) Stop() {
 	close(h.close)
+}
+
+type WatcherFn func(map[string]interface{}) error
+
+func watchCollection(fn func(map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
+	cfg, err := config.Get()
+	if err != nil {
+		return err
+	}
+
+	if cfg.Database.Type != "mongodb" {
+		return convoy.ErrUnsupportedDatebase
+	}
+
+	client, err := m.New(cfg)
+	if err != nil {
+		return err
+	}
+
+	db := client.Client().(*mongo.Database)
+	coll := db.Collection(collection)
+	ctx := context.Background()
+
+	cs, err := coll.Watch(ctx, pipeline)
+	if err != nil {
+		return err
+	}
+	defer cs.Close(ctx)
+
+	for {
+		select {
+		case <-stop:
+			logrus.Println("Exiting Database watcher")
+			return nil
+		default:
+			ok := cs.Next(ctx)
+			if ok {
+				var document *convoy.GenericMap
+				err := cs.Decode(&document)
+				if err != nil {
+					return err
+				}
+
+				if (*document)["operationType"].(string) == "insert" {
+					doc := (*document)["fullDocument"].(convoy.GenericMap)
+					err := fn(doc)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 }

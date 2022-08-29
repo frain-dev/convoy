@@ -61,7 +61,8 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.cache,
 				a.queue,
 				a.subRepo,
-				a.searcher))
+				a.searcher,
+				a.deviceRepo))
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
 				cfg,

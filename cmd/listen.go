@@ -123,8 +123,15 @@ func addListenCommand(a *app) *cobra.Command {
 					// stop the health checks
 					ticker.Stop()
 
+					// Send a message to set the device to offline
+					err := conn.WriteMessage(websocket.TextMessage, []byte("disconnect"))
+					if err != nil {
+						log.Println("Error during closing websocket:", err)
+						return
+					}
+
 					// Close our websocket connection
-					err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+					err = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 					if err != nil {
 						log.Println("Error during closing websocket:", err)
 						return

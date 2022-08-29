@@ -208,7 +208,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.cache,
 			a.queue,
 			a.subRepo,
-			a.searcher))
+			a.searcher,
+			a.deviceRepo))
 
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
 			cfg,

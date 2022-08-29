@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -16,13 +17,11 @@ const (
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
 
-	maxDeviceLastSeenDuration = 2 * time.Minute
+	maxDeviceLastSeenDuration = 10 * time.Second
 )
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	hub *Hub
-
 	// device id of the cli client
 	deviceID          string
 	EventTypes        []string
@@ -38,7 +37,6 @@ type Client struct {
 
 func NewClient(hub *Hub, conn *websocket.Conn, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
 	client := &Client{
-		hub:               hub,
 		conn:              conn,
 		Device:            device,
 		EventTypes:        events,
@@ -81,17 +79,27 @@ func (c *Client) readPump() {
 
 	for {
 		select {
-		case <-c.hub.close:
-			return
 		default:
 			messageType, message, err := c.conn.ReadMessage()
-			// fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
+			fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
+
+			// messageType -1 means an error occured
+			// set the device of this client to offline
+			if messageType == -1 {
+				c.GoOffline()
+			}
 
 			if messageType == websocket.CloseMessage {
 				c.Close()
 			}
 
 			if messageType == websocket.TextMessage {
+				// this is triggered when a SIGINT signal (Ctrl + C) is sent by the client
+				if string(message) == "disconnect" {
+					c.GoOffline()
+					continue
+				}
+
 				var ed AckEventDelivery
 				err := json.Unmarshal(message, &ed)
 				if err != nil {
@@ -130,7 +138,6 @@ func (c *Client) GoOffline() {
 	}
 
 	c.lock.Unlock()
-	c.Close()
 }
 
 func (c *Client) IsOnline() bool {

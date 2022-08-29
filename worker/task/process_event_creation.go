@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -12,13 +11,14 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 
 		var event datastore.Event
@@ -130,7 +130,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				DeviceID:       s.DeviceID,
 				Headers:        event.Headers,
 
-				Status:           getEventDeliveryStatus(&s, app),
+				Status:           getEventDeliveryStatus(ctx, &s, app, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
@@ -146,8 +146,6 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				log.WithError(err).Error("error occurred creating event delivery")
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
-
-			fmt.Printf("\n[Event Delivery]%+v\n\n", eventDelivery)
 
 			taskName := convoy.EventProcessor
 
@@ -198,9 +196,25 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 	return matched
 }
 
-func getEventDeliveryStatus(subscription *datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
-	if app.IsDisabled || subscription.Status != datastore.ActiveSubscriptionStatus {
+func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, app *datastore.Application, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
+	if app.IsDisabled {
 		return datastore.DiscardedEventStatus
+	}
+
+	if subscription.Status != datastore.ActiveSubscriptionStatus {
+		return datastore.DiscardedEventStatus
+	} else {
+		if !util.IsStringEmpty(subscription.DeviceID) {
+			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, app.UID, app.GroupID)
+			if err != nil {
+				log.WithError(err).Error("an error occurred fetching the subcriptions's device")
+				return datastore.DiscardedEventStatus
+			}
+
+			if device.Status != datastore.DeviceStatusOnline {
+				return datastore.DiscardedEventStatus
+			}
+		}
 	}
 
 	return datastore.ScheduledEventStatus
