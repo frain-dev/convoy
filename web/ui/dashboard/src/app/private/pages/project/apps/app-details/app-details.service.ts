@@ -26,7 +26,7 @@ export class AppDetailsService {
 		});
 	}
 
-	generateKey(requestDetails: { appId: string; body: { key_type: string } }): Promise<HTTP_RESPONSE> {
+	generateKey(requestDetails: { appId: string; body: { key_type: string; name?: string; expiration?: string } }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
