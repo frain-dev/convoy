@@ -11,8 +11,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/searcher"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -24,6 +24,7 @@ var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be fo
 
 type EventService struct {
 	appRepo           datastore.ApplicationRepository
+	sourceRepo        datastore.SourceRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	queue             queue.Queuer
@@ -33,8 +34,8 @@ type EventService struct {
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo}
+	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -151,7 +152,16 @@ func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.E
 
 func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	ids, paginationData, err := e.searcher.Search("events", filter)
+	ids, paginationData, err := e.searcher.Search(filter.Group.UID, &datastore.SearchFilter{
+		Query: filter.Query,
+		FilterBy: datastore.FilterBy{
+			AppID:        filter.AppID,
+			GroupID:      filter.Group.UID,
+			SearchParams: filter.SearchParams,
+		},
+		Pageable: filter.Pageable,
+	})
+
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events from search backend")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
@@ -240,6 +250,8 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 	}
 
 	appMap := datastore.AppMap{}
+	sourceMap := datastore.SourceMap{}
+
 	for i, event := range events {
 		if _, ok := appMap[event.AppID]; !ok {
 			a, _ := e.appRepo.FindApplicationByID(ctx, event.AppID)
@@ -252,7 +264,19 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 			appMap[event.AppID] = aa
 		}
 
+		if _, ok := sourceMap[event.SourceID]; !ok && !util.IsStringEmpty(event.SourceID) {
+			ev, err := e.sourceRepo.FindSourceByID(ctx, event.GroupID, event.SourceID)
+			if err == nil {
+				source := &datastore.Source{
+					UID:  ev.UID,
+					Name: ev.Name,
+				}
+				sourceMap[event.SourceID] = source
+			}
+		}
+
 		events[i].App = appMap[event.AppID]
+		events[i].Source = sourceMap[event.SourceID]
 	}
 
 	return events, paginationData, nil
@@ -387,7 +411,7 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 		return errors.New("an error occurred while trying to resend event")
 	}
 
-	taskName := convoy.CreateEventProcessor
+	taskName := convoy.EventProcessor
 
 	job := &queue.Job{
 		ID:      eventDelivery.UID,

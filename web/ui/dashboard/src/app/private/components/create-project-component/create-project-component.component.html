@@ -36,7 +36,7 @@
 				</h3>
 				<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
 					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism"></convoy-select>
-					<convoy-input [type]="action === 'update' ? 'number' : 'text'" label="Duration" name="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" errorMessage="Please enter your retry logic duration"></convoy-input>
+					<convoy-input label="Duration" name="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" errorMessage="Please enter your retry logic duration"></convoy-input>
 					<convoy-input type="number" label="Limit" name="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" errorMessage="Please enter a retry limit"></convoy-input>
 				</div>
 
@@ -98,10 +98,7 @@
 		<p class="text-14 text-danger-100 mb-40px text-center">For security reasons, we cannot show it to you again</p>
 		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px mb-32px">
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ apiKey }}</span>
-			<convoy-button type="text" size="sm" (click)="copyKey(apiKey)">
-				<img src="/assets/img/copy.svg" alt="copy" />
-				<small *ngIf="showSecretCopyText">Copied!</small>
-			</convoy-button>
+			<convoy-copy-button [text]="apiKey"></convoy-copy-button>
 		</div>
 		<convoy-button (click)="onAction.emit({ action: 'createProject', data: projectDetails })" buttonType="button">Done</convoy-button>
 	</div>

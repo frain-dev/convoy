@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
@@ -27,6 +28,7 @@ type args struct {
 	cache             cache.Cache
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
+	search            searcher.Searcher
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
@@ -37,6 +39,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	queue := mocks.NewMockQueuer(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	search := mocks.NewMockSearcher(ctrl)
 
 	return &args{
 		appRepo:           appRepo,
@@ -46,6 +49,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 		cache:             cache,
 		eventQueue:        queue,
 		subRepo:           subRepo,
+		search:            search,
 	}
 }
 
@@ -132,6 +136,8 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+
+				q.EXPECT().Write(convoy.IndexDocument, convoy.PriorityQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -204,6 +210,8 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+
+				q.EXPECT().Write(convoy.IndexDocument, convoy.PriorityQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -228,7 +236,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreated(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo)
+			fn := ProcessEventCreation(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

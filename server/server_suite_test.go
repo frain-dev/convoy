@@ -27,11 +27,11 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	noopsearcher "github.com/frain-dev/convoy/searcher/noop"
 	"github.com/frain-dev/convoy/tracer"
 )
 

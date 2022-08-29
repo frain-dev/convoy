@@ -1,3 +1,56 @@
+## v0.6.5
+
+-   [Feature] Add support for user registration. #959
+-   [Bugfix] Updated event dashboard with application and source metadata. #960
+-   [Bugfix] Allow re-invitation of a previously cancelled invitation. #967
+-   [Enhancement] Projects scoped indexing and search. #945
+-   [Enhancement] Improved notification system. #954
+
+## v0.6.4
+
+-   [Bugfix] Fixed a bug where event deliveries could not be force retried #938
+-   [Bugfix] Changed the group/project rate limit duration type from string to int #938
+-   [Bugfix] Fixed a bug where team invites could not be canceled on the UI #940
+-   [Enhancement] Add an environment variable for the typesense collection name #939
+
+## v0.6.3
+
+-   [Enhancement] change app portal url from `/app-portal` to `/app` #924
+-   [Enhancement] App portal improvements #918
+
+## v0.6.2
+
+-   [Feature] Added Proxy Events without Verification #906
+-   [Enhancement] Reliably forward Incoming events request headers #895
+-   [Bugfix] Fixed force retry bug #891 #890
+
+## v0.6.1
+
+-   [Bugfix] Fixed API response for force retry endpoint #892, #897
+-   [Bugfix] Changed create configuration to use a post request #896
+
+## v0.6.0
+
+-   [Feature] Add Support for Custom Sources (Twitter, Shopify) #869, #833, #826
+-   [Feature] Add Support for Retention Policies #839, #879
+-   [Enhancement] Updated UI Architecture to use Tailwind CSS #816
+-   [Enhancement] Optimised UI to reduce initial bundle size #879
+-   [Enhancement] Allow all workers to run in a single cluster #876
+-   [Enhancement] Add cancelled status on org invite #812
+-   [Bugfix] Fixed wrong FindMany query in subscriptions.go #858
+-   [Bugfix] Enabled JWT configuration with env variables #813
+
+## v0.6.0-rc.4
+
+-   [Bugfix] Fixed bug in correctly using datastore FindMany method #856
+
+## v0.6.0-rc.3
+
+-   [Change] Changed host to instance id in the analytics #821
+-   [Enhancement] Add support for JWT environment variables #813
+-   [Bugfix] Fix analytics query #825
+-   [Bugfix] UI bug fixes #814
+
 ## v0.6.0-rc.2
 
 -   [Bugfix] Dereference slice when finding source subscriptions #808

@@ -32,6 +32,7 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 		c := &models.ConfigurationResponse{
 			UID:                config.UID,
 			IsAnalyticsEnabled: config.IsAnalyticsEnabled,
+			IsSignupEnabled:    config.IsSignupEnabled,
 			StoragePolicy:      config.StoragePolicy,
 			ApiVersion:         convoy.GetVersion(),
 			CreatedAt:          config.CreatedAt,
@@ -72,6 +73,7 @@ func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 	c := &models.ConfigurationResponse{
 		UID:                config.UID,
 		IsAnalyticsEnabled: config.IsAnalyticsEnabled,
+		IsSignupEnabled:    config.IsSignupEnabled,
 		StoragePolicy:      config.StoragePolicy,
 		ApiVersion:         convoy.GetVersion(),
 		CreatedAt:          config.CreatedAt,
@@ -110,6 +112,7 @@ func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.
 	c := &models.ConfigurationResponse{
 		UID:                config.UID,
 		IsAnalyticsEnabled: config.IsAnalyticsEnabled,
+		IsSignupEnabled:    config.IsSignupEnabled,
 		StoragePolicy:      config.StoragePolicy,
 		ApiVersion:         convoy.GetVersion(),
 		CreatedAt:          config.CreatedAt,

@@ -15,12 +15,12 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { PipesModule } from 'src/app/pipes/pipes.module';
 import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
 import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
 import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableComponent } from 'src/app/components/table/table.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 
 @NgModule({
 	declarations: [EventComponent],
@@ -41,7 +41,7 @@ import { TableComponent } from 'src/app/components/table/table.component';
 		TagComponent,
 		ListItemComponent,
 		CardComponent,
-		PipesModule,
+		StatusColorModule,
 		TableHeadComponent,
 		TableHeadCellComponent,
 		TableRowComponent,

@@ -81,10 +81,7 @@
 				<div class="w-full">
 					<div class="text-12 flex items-center whitespace-nowrap">
 						Endpoint Secret
-						<convoy-button type="text" className="px-0 py-0 ml-2" (click)="copyText(subscription.endpoint_metadata.secret)">
-							<img src="/assets/img/copy-icon.svg" width="16px" alt="copy icon" />
-							<small *ngIf="textCopied">Copied!</small>
-						</convoy-button>
+						<convoy-copy-button [text]="subscription.endpoint_metadata.secret" size="md" (copyText)="copyText()"></convoy-copy-button>
 					</div>
 				</div>
 				<div class="flex items-center justify-end w-[50%]">

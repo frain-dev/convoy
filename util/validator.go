@@ -54,6 +54,7 @@ func init() {
 
 	govalidator.TagMap["supported_verifier"] = govalidator.Validator(func(verifier string) bool {
 		verifiers := map[string]bool{
+			string(datastore.NoopVerifier):      true,
 			string(datastore.HMacVerifier):      true,
 			string(datastore.BasicAuthVerifier): true,
 			string(datastore.APIKeyVerifier):    true,

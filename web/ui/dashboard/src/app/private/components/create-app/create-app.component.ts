@@ -46,6 +46,7 @@ export class CreateAppComponent implements OnInit {
 		return this.formBuilder.group({
 			url: ['', Validators.required],
 			description: ['', Validators.required],
+			secret: [null],
 			http_timeout: [null]
 		});
 	}

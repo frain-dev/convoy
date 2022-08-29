@@ -110,6 +110,7 @@ func TestLoadConfig(t *testing.T) {
 						Dsn: "redis://localhost:8379",
 					},
 				},
+				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
@@ -117,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxResponseSize: 40 * 1024,
-				Environment:     DevelopmentEnvironment,
+				Environment:     OSSEnvironment,
 				MultipleTenants: false,
 			},
 			wantErr:    false,
@@ -146,8 +147,9 @@ func TestLoadConfig(t *testing.T) {
 						WorkerPort: 5006,
 					},
 				},
+				Search:          DefaultConfiguration.Search,
 				MaxResponseSize: MaxResponseSize,
-				Environment:     DevelopmentEnvironment,
+				Environment:     OSSEnvironment,
 				MultipleTenants: false,
 			},
 			wantErr:    false,
@@ -170,6 +172,7 @@ func TestLoadConfig(t *testing.T) {
 						Dsn: "redis://localhost:8379",
 					},
 				},
+				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
@@ -177,7 +180,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxResponseSize: MaxResponseSize,
-				Environment:     DevelopmentEnvironment,
+				Environment:     OSSEnvironment,
 				MultipleTenants: false,
 			},
 			wantErr:    false,

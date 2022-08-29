@@ -26,7 +26,7 @@
 
 		<div [ngClass]="{ 'opacity-50 pointer-events-none': subscriptionForm.get('app_id')?.invalid }">
 			<convoy-select className="mb-0 mt-24px" [options]="endPoints" name="endpoint" formControlName="endpoint_id" errorMessage="Select or create an endpoint" label="Endpoint" placeholder="Select an endpoint" [required]="true"></convoy-select>
-			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true">
+			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true" *ngIf="!token">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
@@ -34,7 +34,7 @@
 			</convoy-button>
 		</div>
 
-		<div class="mt-24px" *ngIf="projectType === 'outgoing'">
+		<div class="mt-24px" *ngIf="projectType === 'outgoing' || token">
 			<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
 			<div (click)="focusInput()" class="w-full font-medium text-14 text-grey-100 border border-primary-500 outline-none rounded-4px bg-[#F7F9FC] pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
 				<div *ngFor="let tag of eventTags" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
@@ -46,6 +46,10 @@
 			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
 		</div>
 
+		<div class="flex justify-end mt-20px">
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
+		</div>
+
 		<div [hidden]="!enableMoreConfig">
 			<h2 class="font-semibold flex items-center mb-20px mt-30px">
 				Retry Logic
@@ -55,7 +59,7 @@
 				</convoy-tooltip>
 			</h2>
 
-			<div class="grid grid-cols-2 gap-6" formGroupName="retry_config">
+			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
 				<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism"></convoy-select>
 
 				<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3s"></convoy-input>
@@ -71,15 +75,11 @@
 				<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
 			</div>
 		</div>
-
-		<div class="flex justify-end mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
-		</div>
 	</convoy-card>
 
 	<div class="flex justify-end mt-32px">
-		<convoy-button className="mr-16px" type="outline" buttonType="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</convoy-button>
-		<convoy-button>
+		<convoy-button className="mr-16px text-14" type="outline" buttonType="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</convoy-button>
+		<convoy-button className="text-14">
 			{{ action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
@@ -87,6 +87,11 @@
 		</convoy-button>
 	</div>
 </form>
+
+<div class="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] text-white-100 flex-col" *ngIf="showError">
+	<p>An error occured while fetching app details</p>
+	<convoy-button size="sm" className="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</convoy-button>
+</div>
 
 <convoy-modal
 	size="lg"
@@ -96,7 +101,7 @@
 >
 	<div modalBody>
 		<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
-		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action == 'close' ? false : onCreateSource($event); showCreateSourceModal = false"></app-create-source>
-		<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action == 'cancel' ? false : getApps(); showCreateEndpointModal = false"></app-create-endpoint>
+		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action === 'close' ? (showCreateSourceModal = false) : onCreateSource($event.data); showCreateSourceModal = false"></app-create-source>
+		<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false"></app-create-endpoint>
 	</div>
 </convoy-modal>

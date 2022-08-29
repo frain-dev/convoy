@@ -11,6 +11,10 @@ const routes: Routes = [
 		loadChildren: () => import('./public/login/login.module').then(m => m.LoginModule)
 	},
 	{
+		path: 'signup',
+		loadChildren: () => import('./public/signup/signup.module').then(m => m.SignupModule)
+	},
+	{
 		path: 'app/:token',
 		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
 	},
@@ -25,8 +29,8 @@ const routes: Routes = [
 	{
 		path: 'app/:token/subscriptions/:id',
 		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
-  },
-  {
+	},
+	{
 		path: 'forgot-password',
 		loadChildren: () => import('./public/forgot-password/forgot-password.module').then(m => m.ForgotPasswordModule)
 	},

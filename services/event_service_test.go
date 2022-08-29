@@ -24,7 +24,8 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	cache := mocks.NewMockCache(ctrl)
 	searcher := mocks.NewMockSearcher(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo)
+	sourceRepo := mocks.NewMockSourceRepository(ctrl)
+	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo)
 }
 
 func TestEventService_CreateAppEvent(t *testing.T) {
@@ -1818,7 +1819,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.EventQueue, gomock.Any()).
+				eq.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 		},
@@ -1850,7 +1851,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.EventQueue, gomock.Any()).
+				eq.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:    true,

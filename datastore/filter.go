@@ -1,5 +1,10 @@
 package datastore
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Filter struct {
 	Query        string
 	Group        *Group
@@ -15,8 +20,31 @@ type SourceFilter struct {
 	Provider string
 }
 
-type ApiKeyFilter struct {
-	GroupID string
-	AppID   string
-	KeyType KeyType
+type FilterBy struct {
+	AppID        string
+	GroupID      string
+	SearchParams SearchParams
+}
+
+func (f *FilterBy) String() *string {
+	var s string
+	filterByBuilder := new(strings.Builder)
+	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", f.GroupID))
+	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd))
+
+	if len(f.AppID) > 0 {
+		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", f.AppID))
+	}
+
+	s = filterByBuilder.String()
+
+	// we only return a pointer address here
+	// because the typesense lib needs a string pointer
+	return &s
+}
+
+type SearchFilter struct {
+	Query    string
+	FilterBy FilterBy
+	Pageable Pageable
 }

@@ -39,7 +39,6 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-		Role:      user.Role,
 		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
@@ -47,6 +46,43 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
+}
+
+// RegisterUser
+// @Summary Registers a user
+// @Description This endpoint registers a new user
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param user body models.RegisterUser true "User Details"
+// @Success 201 {object} serverResponse{data=models.LoginUserResponse}
+// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Router /auth/register [post]
+func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+	var newUser models.RegisterUser
+	if err := util.ReadJSON(r, &newUser); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	user, token, err := a.S.UserService.RegisterUser(r.Context(), &newUser)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	u := &models.LoginUserResponse{
+		UID:       user.UID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		DeletedAt: user.DeletedAt,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Registration successful", u, http.StatusCreated))
 }
 
 // RefreshToken

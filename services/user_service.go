@@ -13,8 +13,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/notification"
-	"github.com/frain-dev/convoy/notification/email"
+	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -24,14 +23,16 @@ import (
 )
 
 type UserService struct {
-	userRepo datastore.UserRepository
-	cache    cache.Cache
-	queue    queue.Queuer
-	jwt      *jwt.Jwt
+	userRepo      datastore.UserRepository
+	cache         cache.Cache
+	queue         queue.Queuer
+	jwt           *jwt.Jwt
+	configService *ConfigService
+	orgService    *OrganisationService
 }
 
-func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer) *UserService {
-	return &UserService{userRepo: userRepo, cache: cache, queue: queue}
+func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer, configService *ConfigService, orgService *OrganisationService) *UserService {
+	return &UserService{userRepo: userRepo, cache: cache, queue: queue, configService: configService, orgService: orgService}
 }
 
 func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error) {
@@ -70,6 +71,73 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 
 	return user, &token, nil
 
+}
+
+func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUser) (*datastore.User, *jwt.Token, error) {
+	var canRegister bool
+
+	if err := util.Validate(data); err != nil {
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	config, err := u.configService.LoadConfiguration(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if config != nil {
+		canRegister = config.IsSignupEnabled
+	}
+
+	// registration is not allowed
+	if !canRegister {
+		return nil, nil, util.NewServiceError(http.StatusForbidden, errors.New("user registration is disabled"))
+	}
+
+	p := datastore.Password{Plaintext: data.Password}
+	err = p.GenerateHash()
+
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	user := &datastore.User{
+		UID:            uuid.NewString(),
+		FirstName:      data.FirstName,
+		LastName:       data.LastName,
+		Email:          data.Email,
+		Password:       string(p.Hash),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err = u.userRepo.CreateUser(ctx, user)
+	if err != nil {
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, datastore.ErrDuplicateEmail) {
+			statusCode = http.StatusBadRequest
+		}
+
+		return nil, nil, util.NewServiceError(statusCode, err)
+	}
+
+	_, err = u.orgService.CreateOrganisation(ctx, &models.Organisation{Name: data.OrganisationName}, user)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	jwt, err := u.token()
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	token, err := jwt.GenerateToken(user)
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return user, &token, nil
 }
 
 func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jwt.Token, error) {
@@ -171,7 +239,11 @@ func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, u
 
 	err := u.userRepo.UpdateUser(ctx, user)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, datastore.ErrDuplicateEmail) {
+			statusCode = http.StatusBadRequest
+		}
+		return nil, util.NewServiceError(statusCode, err)
 	}
 
 	return user, nil
@@ -241,16 +313,18 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 }
 
 func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user *datastore.User) error {
-	n := &notification.Notification{
-		Email:             user.Email,
-		EmailTemplateName: email.TemplateResetPassword.String(),
-		Subject:           "Convoy Password Reset",
-		PasswordResetURL:  fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
-		RecipientName:     user.FirstName,
-		ExpiresAt:         user.ResetPasswordExpiresAt.Time().String(),
+	em := email.Message{
+		Email:        user.Email,
+		Subject:      "Convoy Password Reset",
+		TemplateName: email.TemplateResetPassword,
+		Params: map[string]string{
+			"password_reset_url": fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
+			"recipient_name":     user.FirstName,
+			"expires_at":         user.ResetPasswordExpiresAt.Time().String(),
+		},
 	}
 
-	buf, err := json.Marshal(n)
+	buf, err := json.Marshal(em)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
 		return err
@@ -261,7 +335,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 		Delay:   0,
 	}
 
-	err = u.queue.Write(convoy.NotificationProcessor, convoy.ScheduleQueue, job)
+	err = u.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.WithError(err).Error("failed to write new notification to the queue")
 		return err

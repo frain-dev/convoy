@@ -26,7 +26,7 @@
 				</ng-container>
 			</convoy-dropdown>
 
-			<convoy-dropdown size="lg" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #appsFilterDropdown [active]="!!eventDeliveriesApp">
+			<convoy-dropdown size="lg" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #appsFilterDropdown [active]="!!eventDeliveriesApp" [hidden]="appPortalToken">
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Apps</span>
@@ -98,7 +98,7 @@
 
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
-	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="displayedEventDeliveries && displayedEventDeliveries.length > 0">
+	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0">
 		<convoy-table>
 			<convoy-table-head class="contents">
 				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventDelTableHead; let i = index">{{ head }}</convoy-table-head-cell>
@@ -125,13 +125,18 @@
 						<convoy-table-cell class="contents">{{ event.metadata?.retry_limit }}</convoy-table-cell>
 						<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-button size="xs" texture="light" [disable]="event.status !== 'Success' && event.status !== 'Failure'" (clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })">
+							<convoy-button
+								size="xs"
+								texture="light"
+								[disable]="event.status !== 'Success' && event.status !== 'Failure'"
+								(clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
+							>
 								<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 								{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
 							</convoy-button>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-button size="xs" type="icon" [routerLink]="'./delivery/' + event.uid">
+							<convoy-button size="xs" type="icon" [routerLink]="'./event-deliveries/' + event.uid">
 								<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
 							</convoy-button>
 						</convoy-table-cell>
@@ -141,7 +146,7 @@
 		</convoy-table>
 	</div>
 
-	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="displayedEventDeliveries?.length === 0"></convoy-empty-state>
+	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)"></convoy-empty-state>
 </convoy-card>
 
 <div class="flex items-center mt-16px mb-24px">
@@ -151,7 +156,7 @@
 		className="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
-		[disable]="eventDeliveries?.pagination?.prev === 0"
+		[disable]="!eventDeliveries || eventDeliveries?.pagination?.prev === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
@@ -166,7 +171,7 @@
 		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
-		[disable]="eventDeliveries?.pagination?.next === 0"
+		[disable]="!eventDeliveries || eventDeliveries?.pagination?.next === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
 	>
 		Next

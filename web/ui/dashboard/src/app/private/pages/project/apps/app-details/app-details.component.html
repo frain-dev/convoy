@@ -99,8 +99,8 @@
 				<h3 class="font-medium">App Event Endpoints</h3>
 				<div class="flex items-center">
 					<convoy-button size="sm" type="text" (clickItem)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</convoy-button>
-					<div class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
-					<convoy-button size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
+					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
+					<convoy-button *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
 				</div>
 			</div>
 
@@ -171,27 +171,22 @@
 
 		<!-- app portal  -->
 		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
-			<div *ngIf="loadingAppPotalToken">
-				<h3 class="font-medium">App Portal</h3>
+            <h3 class="font-medium">App Portal</h3>
+			<div *ngIf="loadingAppPotalToken" >
 				<ul class="mt-10px">
-					<convoy-list-item>
+					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
 						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
 					</convoy-list-item>
-					<convoy-list-item>
+					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
 						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
 					</convoy-list-item>
-					<convoy-list-item>
-						<div class="text-14 text-grey-40 font-light">Embed Iframe portal</div>
-						<div></div>
-					</convoy-list-item>
-					<div class="skeleton-loader code mt-16px"></div>
+					<div class="bg-grey-10 animate-pulse rounded-8px w-full h-100px mt-16px"></div>
 				</ul>
 			</div>
 
 			<div *ngIf="!loadingAppPotalToken">
-				<h3 class="font-medium">App Portal</h3>
 				<ul class="mt-10px">
 					<convoy-list-item className="border-none !py-8px">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
@@ -211,10 +206,7 @@
 					<div class="bg-white-100 border-2 border-primary-500 rounded-[10px] p-16px mt-16px">
 						<div class="text-14 text-grey-40 overflow-x-scroll">{{ appPortalIframe }}</div>
 						<div class="flex justify-end">
-							<convoy-button type="text" size="sm" (clickItem)="copyText(appPortalLink)">
-								<img src="/assets/img/copy.svg" class="w-14px" alt="copy" />
-								<small *ngIf="textCopied">Copied!</small>
-							</convoy-button>
+                            <convoy-copy-button [text]="appPortalLink"></convoy-copy-button>
 						</div>
 					</div>
 				</ul>
@@ -241,10 +233,7 @@
 	<ng-container modalBody>
 		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px">
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecretKey }}</span>
-			<convoy-button type="text" size="sm" (clickItem)="copyText(endpointSecretKey)">
-				<img src="/assets/img/copy.svg" class="h-20px w-20px" alt="copy" />
-				<small *ngIf="textCopied">Copied!</small>
-			</convoy-button>
+			<convoy-copy-button [text]="endpointSecretKey"></convoy-copy-button>
 		</div>
 	</ng-container>
 </convoy-modal>

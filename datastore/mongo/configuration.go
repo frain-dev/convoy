@@ -51,6 +51,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, config *datastore.
 
 	update := bson.D{
 		primitive.E{Key: "is_analytics_enabled", Value: config.IsAnalyticsEnabled},
+		primitive.E{Key: "is_signup_enabled", Value: config.IsSignupEnabled},
 		primitive.E{Key: "storage_policy", Value: config.StoragePolicy},
 		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
 	}

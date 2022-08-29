@@ -12,6 +12,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { CliComponent } from './cli/cli.component';
 import { SendEventComponent } from './send-event/send-event.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 const routes: Routes = [
 	{
@@ -33,6 +34,7 @@ const routes: Routes = [
         SkeletonLoaderComponent,
 		CreateEndpointModule,
         SendEventComponent,
+		CopyButtonComponent,
         CliComponent,
 		RouterModule.forChild(routes)
 	]

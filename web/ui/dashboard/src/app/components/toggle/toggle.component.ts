@@ -19,6 +19,7 @@ import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveForm
 export class ToggleComponent implements OnInit, ControlValueAccessor {
 	@Input('isChecked') isChecked = false;
 	@Input('label') label!: string;
+	@Input('name') id!: string;
 	@Input('class') class!: string;
 	@Input('formControlName') formControlName?: string;
 	@Output('onChange') onChange = new EventEmitter<any>();
@@ -27,7 +28,7 @@ export class ToggleComponent implements OnInit, ControlValueAccessor {
 	constructor(private controlContainer: ControlContainer) {}
 
 	ngOnInit(): void {
-		if(this.formControlName){
+		if (this.formControlName) {
 			if (this.controlContainer.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
 		}
 	}

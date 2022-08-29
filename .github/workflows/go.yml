@@ -12,7 +12,7 @@ jobs:
             matrix:
                 go-version: [1.16.x, 1.17.x]
                 os: [ubuntu-latest, macos-latest]
-                mongodb-version: ["4.0", "4.2", "4.4"]
+                mongodb-version: ["5.0"]
                 redis-version: ["6.2.6"]
 
         runs-on: ubuntu-latest
@@ -27,6 +27,12 @@ jobs:
               with:
                   redis-version: ${{ matrix.redis-version }}
                   redis-port: 6379
+
+            - name: Start Typesense
+              uses: jirevwe/typesense-github-action@v1.0.1
+              with:
+                  typesense-version: 0.23.1
+                  typesense-api-key: some-api-key
 
             - name: Get the version
               id: get_version
@@ -59,6 +65,8 @@ jobs:
             - name: Run integration tests
               run: make integration_tests
               env:
-                  TEST_BADGER_DSN: "../../test.db"
                   TEST_MONGO_DSN: "mongodb://localhost:27017/testdb"
                   TEST_REDIS_DSN: "redis://localhost:6379"
+                  TEST_CONVOY_TYPESENSE_HOST: "http://localhost:8108"
+                  TEST_CONVOY_TYPESENSE_API_KEY: "some-api-key"
+                  TEST_CONVOY_SEARCH_TYPE: "typesense"

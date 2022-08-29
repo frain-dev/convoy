@@ -1,7 +1,7 @@
 <convoy-page>
 	<div class="flex items-center justify-between mb-20px">
-		<h3 class="mb-10px">Subscriptions</h3>
-		<convoy-button size="sm" (click)="showCreateSubscriptionModal = true">Create Subscription</convoy-button>
+		<h3 class="mb-10px font-medium">Subscriptions</h3>
+		<convoy-button *ngIf="showCreateSubscription" size="sm" (click)="showCreateSubscriptionModal = true" [disable]="showSubscriptionError">Create Subscription</convoy-button>
 	</div>
 
 	<convoy-card className="w-full">
@@ -63,7 +63,7 @@
 			</tbody>
 		</convoy-table>
 
-		<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No endpoints to show here" *ngIf="!isloadingSubscriptions && subscriptions.content.length === 0"></convoy-empty-state>
+		<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No subscriptionto show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
 	</convoy-card>
 
 	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">

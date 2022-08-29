@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -17,7 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 
 		var event datastore.Event
@@ -164,9 +165,20 @@ func ProcessEventCreated(appRepo datastore.ApplicationRepository, eventRepo data
 				}
 				err = eventQueue.Write(taskName, convoy.EventQueue, job)
 				if err != nil {
-					log.Errorf("Error occurred sending new event to the queue %s", err)
+					log.Errorf("[asynq]: an error occurred sending event delivery to be dispatched %s", err)
 				}
 			}
+		}
+
+		job := &queue.Job{
+			ID:      event.UID,
+			Payload: t.Payload(), // t.Payload() is the original event bytes
+			Delay:   5 * time.Second,
+		}
+
+		err = eventQueue.Write(convoy.IndexDocument, convoy.PriorityQueue, job)
+		if err != nil {
+			log.Errorf("[asynq]: an error occurred sending event to be indexed %s", err)
 		}
 
 		return nil

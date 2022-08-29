@@ -9,8 +9,10 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -28,7 +30,7 @@ type SignatureValues struct {
 	Timestamp string
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		Id := string(t.Payload())
 
@@ -212,7 +214,8 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			err = sendNotification(context.Background(), appRepo, ed, g, &cfg.SMTP, subscriptionStatus, false)
+			// send endpoint reactivation notification
+			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -252,7 +255,8 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				}
 			}
 
-			err = sendNotification(context.Background(), appRepo, ed, g, &cfg.SMTP, subscriptionStatus, true)
+			// send endpoint deactivation notification
+			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
