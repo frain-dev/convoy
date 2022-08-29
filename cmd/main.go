@@ -51,7 +51,7 @@ func main() {
 	}
 
 	app := &app{}
-	var db *mongo.Client
+	db := &mongo.Client{}
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
@@ -104,7 +104,7 @@ type app struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	applicationRepo   datastore.ApplicationRepository
-	deviceRepo              datastore.DeviceRepository
+	deviceRepo        datastore.DeviceRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	subRepo           datastore.SubscriptionRepository
@@ -287,11 +287,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addRetryCommand(app))
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addUpgradeCommand(app))
-	cmd.AddCommand(addStreamCommand(app))
-	cmd.AddCommand(addLoginCommand())
-	cmd.AddCommand(addSwitchCommand())
-	cmd.AddCommand(addProjectCommand())
-	cmd.AddCommand(addListenCommand(app))
+	cmd.AddCommand(addIndexCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
 }
 

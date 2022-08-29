@@ -5,11 +5,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy/searcher"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	m "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 )

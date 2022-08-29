@@ -8,7 +8,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { API_KEY, DEVICE } from 'src/app/models/app.model';
-import { PipesModule } from 'src/app/pipes/pipes.module';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';
@@ -16,7 +16,7 @@ import { AppDetailsService } from '../app-details.service';
 @Component({
 	selector: 'convoy-cli',
 	standalone: true,
-	imports: [CommonModule, CardComponent, ButtonComponent, EmptyStateComponent, TagComponent, SkeletonLoaderComponent, ModalComponent, PipesModule, DeleteModalModule],
+	imports: [CommonModule, CardComponent, ButtonComponent, EmptyStateComponent, TagComponent, SkeletonLoaderComponent, ModalComponent, StatusColorModule, DeleteModalModule],
 	templateUrl: './cli.component.html',
 	styleUrls: ['./cli.component.scss']
 })
@@ -93,7 +93,7 @@ export class CliComponent implements OnInit {
 			const response = await this.appDetailsService.revokeApiKey({ appId: this.selectedApiKey?.role.app, keyId: this.selectedApiKey?.uid });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingApiKey = false;
-            this.showRevokeApiModal = false;
+			this.showRevokeApiModal = false;
 			this.getApiKeys();
 		} catch {
 			this.isRevokingApiKey = false;
