@@ -94,7 +94,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 
 func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 	as := services.NewAppService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Cache)
-	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo, r.SourceRepo)
+	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo, r.SourceRepo, r.DeviceRepo)
 	gs := services.NewGroupService(r.ApiKeyRepo, r.AppRepo, r.GroupRepo, r.EventRepo, r.EventDeliveryRepo, s.Limiter, s.Cache)
 	ss := services.NewSecurityService(r.GroupRepo, r.ApiKeyRepo)
 	os := services.NewOrganisationService(r.OrgRepo, r.OrgMemberRepo)

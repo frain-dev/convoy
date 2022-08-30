@@ -188,19 +188,18 @@ func (h *Hub) StartUnregister() {
 }
 
 func (h *Hub) StartClientStatusWatcher() {
-	h.ticker = time.NewTicker(time.Second * 5)
+	h.ticker = time.NewTicker(time.Second * 30)
 	defer h.ticker.Stop()
 
 	for {
 		select {
 		case <-h.ticker.C:
-			// TODO(raymond): it might be better to read directly from the devicr collection then disable them
 			for k, v := range h.deviceClients {
 				h.lock.Lock()
 				if !h.deviceClients[k].IsOnline() {
 					h.deviceClients[k].GoOffline()
 					h.deviceClients[k].Close()
-					log.Printf("Device %s has be set to offline after inactivity for 2 munites", v.Device.HostName)
+					log.Printf("%s has be set to offline after inactivity for 30 seconds", v.Device.HostName)
 				}
 				h.lock.Unlock()
 			}

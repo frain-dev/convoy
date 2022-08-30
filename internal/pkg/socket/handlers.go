@@ -162,7 +162,7 @@ func login(ctx context.Context, group *datastore.Group, app *datastore.Applicati
 				GroupID:        group.UID,
 				UID:            uuid.NewString(),
 				HostName:       loginRequest.HostName,
-				Status:         datastore.DeviceStatusOnline,
+				Status:         datastore.DeviceStatusOffline,
 				DocumentStatus: datastore.ActiveDocumentStatus,
 				LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
 				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),

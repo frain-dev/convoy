@@ -181,7 +181,7 @@ type Application struct {
 	UID             string             `json:"uid" bson:"uid"`
 	GroupID         string             `json:"group_id" bson:"group_id"`
 	Title           string             `json:"name" bson:"title"`
-	SupportEmail    string             `json:"support_email" bson:"support_email"`
+	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
 	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
 	IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
 
@@ -498,8 +498,9 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
-	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
+	Device   *Device      `json:"device_metadata,omitempty" bson:"-"`
+	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
 	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
@@ -707,10 +708,10 @@ type OrganisationMember struct {
 type Device struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
-	GroupID        string             `json:"group_id" bson:"group_id"`
-	AppID          string             `json:"app_id" bson:"app_id"`
-	HostName       string             `json:"host_name" bson:"host_name"`
-	Status         DeviceStatus       `json:"status" bson:"status"`
+	GroupID        string             `json:"group_id,omitempty" bson:"group_id"`
+	AppID          string             `json:"app_id,omitempty" bson:"app_id"`
+	HostName       string             `json:"host_name,omitempty" bson:"host_name"`
+	Status         DeviceStatus       `json:"status,omitempty" bson:"status"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	LastSeenAt     primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
@@ -792,5 +793,6 @@ func (p *Password) Matches() (bool, error) {
 
 type EventMap map[string]*Event
 type SourceMap map[string]*Source
+type DeviceMap map[string]*Device
 type AppMap map[string]*Application
 type EndpointMap map[string]*Endpoint
