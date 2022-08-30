@@ -471,6 +471,7 @@ func TestHub_login(t *testing.T) {
 				GroupID:  "1234",
 				AppID:    "abc",
 				HostName: "hostname_1",
+				Status:   datastore.DeviceStatusOffline,
 			},
 			wantErr: false,
 		},
@@ -514,7 +515,7 @@ func TestHub_login(t *testing.T) {
 						GroupID:        "1234",
 						AppID:          "abc",
 						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOnline,
+						Status:         datastore.DeviceStatusOffline,
 						DocumentStatus: datastore.ActiveDocumentStatus,
 						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
 					},
@@ -525,6 +526,7 @@ func TestHub_login(t *testing.T) {
 				GroupID:  "1234",
 				AppID:    "abc",
 				HostName: "hostname_1",
+				Status:   datastore.DeviceStatusOffline,
 			},
 			wantErr: false,
 		},
@@ -632,7 +634,7 @@ func TestHub_login(t *testing.T) {
 						GroupID:        "1234",
 						AppID:          "abc",
 						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOffline,
+						Status:         datastore.DeviceStatusOnline,
 						DocumentStatus: datastore.ActiveDocumentStatus,
 						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
 					},
@@ -643,7 +645,7 @@ func TestHub_login(t *testing.T) {
 					GroupID:        "1234",
 					AppID:          "abc",
 					HostName:       "hostname_1",
-					Status:         datastore.DeviceStatusOnline,
+					Status:         datastore.DeviceStatusOffline,
 					DocumentStatus: datastore.ActiveDocumentStatus,
 					LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
 				}, "abc", "1234").Times(1).Return(nil)
@@ -674,7 +676,7 @@ func TestHub_login(t *testing.T) {
 						GroupID:        "1234",
 						AppID:          "abc",
 						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOffline,
+						Status:         datastore.DeviceStatusOnline,
 						DocumentStatus: datastore.ActiveDocumentStatus,
 						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
 					},
@@ -685,7 +687,7 @@ func TestHub_login(t *testing.T) {
 					GroupID:        "1234",
 					AppID:          "abc",
 					HostName:       "hostname_1",
-					Status:         datastore.DeviceStatusOnline,
+					Status:         datastore.DeviceStatusOffline,
 					DocumentStatus: datastore.ActiveDocumentStatus,
 					LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
 				}, "abc", "1234").Times(1).Return(errors.New("failed to update device to online"))
@@ -718,7 +720,7 @@ func TestHub_login(t *testing.T) {
 			require.NotEmpty(t, device.UID)
 			require.Equal(t, tt.want.AppID, device.AppID)
 			require.Equal(t, tt.want.GroupID, device.GroupID)
-			require.Equal(t, datastore.DeviceStatusOnline, device.Status)
+			require.Equal(t, datastore.DeviceStatusOffline, device.Status)
 			require.Equal(t, tt.want.HostName, device.HostName)
 
 		})

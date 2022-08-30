@@ -126,8 +126,10 @@ func login(ctx context.Context, group *datastore.Group, app *datastore.Applicati
 			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
 		}
 
-		if device.Status != datastore.DeviceStatusOnline {
-			device.Status = datastore.DeviceStatusOnline
+		// we set the device to offline because it was in an inconsistent state on the server.
+		// the device should only be set to online when we start listening for events
+		if device.Status == datastore.DeviceStatusOnline {
+			device.Status = datastore.DeviceStatusOffline
 			err = repo.DeviceRepo.UpdateDevice(ctx, device, device.AppID, device.GroupID)
 			if err != nil {
 				return nil, util.NewServiceError(http.StatusBadRequest, err)

@@ -320,14 +320,16 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 			}
 		}
 
-		if _, ok := deviceMap[ed.DeviceID]; !ok {
-			dev, err := e.deviceRepo.FetchDeviceByID(ctx, ed.DeviceID, ed.AppID, ed.GroupID)
-			if err == nil {
-				device := &datastore.Device{
-					UID:      dev.UID,
-					HostName: dev.HostName,
+		if !util.IsStringEmpty(ed.DeviceID) {
+			if _, ok := deviceMap[ed.DeviceID]; !ok {
+				dev, err := e.deviceRepo.FetchDeviceByID(ctx, ed.DeviceID, ed.AppID, ed.GroupID)
+				if err == nil {
+					device := &datastore.Device{
+						UID:      dev.UID,
+						HostName: dev.HostName,
+					}
+					deviceMap[ed.DeviceID] = device
 				}
-				deviceMap[ed.DeviceID] = device
 			}
 		}
 
