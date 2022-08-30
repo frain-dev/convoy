@@ -78,7 +78,7 @@
 						{{ subscription?.endpoint_metadata?.target_url }}
 					</div>
 				</div>
-				<div class="w-full">
+				<div class="w-full" *ngIf="subscription?.endpoint_metadata">
 					<div class="text-12 flex items-center whitespace-nowrap">
 						Endpoint Secret
 						<convoy-copy-button [text]="subscription.endpoint_metadata.secret" size="md" (copyText)="copyText()"></convoy-copy-button>
