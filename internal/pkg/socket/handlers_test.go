@@ -53,7 +53,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_listen_successfully",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
+				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
 				app:   &datastore.Application{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -187,10 +187,10 @@ func TestHub_listen(t *testing.T) {
 			wantErrMsg:  "device not found",
 		},
 		{
-			name: "should_listen_successfully",
+			name: "should_fail_to_find_source",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
+				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
 				app:   &datastore.Application{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -225,7 +225,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_error_for_wrong_source_group_id",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
+				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
 				app:   &datastore.Application{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -264,7 +264,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_fail_to_find_subscription",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
+				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
 				app:   &datastore.Application{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -306,7 +306,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_create_new_subscription_and_listen_successfully",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
+				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
 				app:   &datastore.Application{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -356,7 +356,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_fail_to_create_new_subscription",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
+				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
 				app:   &datastore.Application{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
