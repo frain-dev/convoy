@@ -70,39 +70,9 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	r.URL = req.URL
 	r.Method = req.Method
 
-	trace := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			r.IP = connInfo.Conn.RemoteAddr().String()
-			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
-		},
-	}
+	err = d.Do(req, r, maxResponseSize)
 
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-
-	response, err := d.client.Do(req)
-	if err != nil {
-		log.WithError(err).Error("error sending request to API endpoint")
-		r.Error = err.Error()
-		return r, err
-	}
-	updateDispatchHeaders(r, response)
-
-	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
-	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
-	// if it is greater than maxResponseSize. body.Read will return io.EOF,
-	// if it is equal to maxResponseSize. body.Read will return io.EOF,
-	// in all cases, io.ReadAll ignores io.EOF.
-	body := io.LimitReader(response.Body, maxResponseSize)
-	buf, err := io.ReadAll(body)
-	r.Body = buf
-
-	if err != nil {
-		log.WithError(err).Error("couldn't parse response body")
-		return r, err
-	}
-	defer response.Body.Close()
-
-	return r, nil
+	return r, err
 }
 
 func (d *Dispatcher) SendCliRequest(url string, method convoy.HttpMethod, apiKey string, jsonData json.RawMessage) (*Response, error) {
@@ -122,39 +92,9 @@ func (d *Dispatcher) SendCliRequest(url string, method convoy.HttpMethod, apiKey
 	r.URL = req.URL
 	r.Method = req.Method
 
-	trace := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			r.IP = connInfo.Conn.RemoteAddr().String()
-			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
-		},
-	}
+	err = d.Do(req, r, config.MaxRequestSize)
 
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-
-	response, err := d.client.Do(req)
-	if err != nil {
-		log.WithError(err).Error("error sending request to API endpoint")
-		r.Error = err.Error()
-		return r, err
-	}
-	updateDispatchHeaders(r, response)
-
-	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
-	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
-	// if it is greater than maxResponseSize. body.Read will return io.EOF,
-	// if it is equal to maxResponseSize. body.Read will return io.EOF,
-	// in all cases, io.ReadAll ignores io.EOF.
-	body := io.LimitReader(response.Body, config.MaxRequestSize)
-	buf, err := io.ReadAll(body)
-	r.Body = buf
-
-	if err != nil {
-		log.WithError(err).Error("couldn't parse response body")
-		return r, err
-	}
-	defer response.Body.Close()
-
-	return r, nil
+	return r, err
 }
 
 func (d *Dispatcher) ForwardCliEvent(url string, method convoy.HttpMethod, jsonData json.RawMessage, headers httpheader.HTTPHeader) (*Response, error) {
@@ -195,48 +135,18 @@ func (d *Dispatcher) ForwardCliEvent(url string, method convoy.HttpMethod, jsonD
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())
 
-	r.RequestHeader = req.Header
-	r.URL = req.URL
-	r.Method = req.Method
-
-	trace := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			r.IP = connInfo.Conn.RemoteAddr().String()
-			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
-		},
-	}
-
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)
 
 	req.Header = http.Header(header)
 
-	response, err := d.client.Do(req)
-	if err != nil {
-		log.WithError(err).Error("error sending request to API endpoint")
-		r.Error = err.Error()
-		return r, err
-	}
-	updateDispatchHeaders(r, response)
+	r.RequestHeader = req.Header
+	r.URL = req.URL
+	r.Method = req.Method
 
-	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
-	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
-	// if it is greater than maxResponseSize. body.Read will return io.EOF,
-	// if it is equal to maxResponseSize. body.Read will return io.EOF,
-	// in all cases, io.ReadAll ignores io.EOF.
-	body := io.LimitReader(response.Body, config.MaxRequestSize)
-	buf, err := io.ReadAll(body)
-	r.Body = buf
+	err = d.Do(req, r, config.MaxRequestSize)
 
-	if err != nil {
-		log.WithError(err).Error("couldn't parse response body")
-		return r, err
-	}
-	defer response.Body.Close()
-
-	return r, nil
+	return r, err
 }
 
 type Response struct {
@@ -263,4 +173,40 @@ func defaultUserAgent() string {
 		return "Convoy/v0.1.0"
 	}
 	return "Convoy/" + strings.TrimSuffix(string(f), "\n")
+}
+
+func (d *Dispatcher) Do(req *http.Request, res *Response, maxResponseSize int64) error {
+	trace := &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			res.IP = connInfo.Conn.RemoteAddr().String()
+			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
+		},
+	}
+
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+
+	response, err := d.client.Do(req)
+	if err != nil {
+		log.WithError(err).Error("error sending request to API endpoint")
+		res.Error = err.Error()
+		return err
+	}
+	updateDispatchHeaders(res, response)
+
+	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
+	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
+	// if it is greater than maxResponseSize. body.Read will return io.EOF,
+	// if it is equal to maxResponseSize. body.Read will return io.EOF,
+	// in all cases, io.ReadAll ignores io.EOF.
+	body := io.LimitReader(response.Body, maxResponseSize)
+	buf, err := io.ReadAll(body)
+	res.Body = buf
+
+	if err != nil {
+		log.WithError(err).Error("couldn't parse response body")
+		return err
+	}
+	defer response.Body.Close()
+
+	return nil
 }
