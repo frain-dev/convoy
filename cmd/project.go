@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addProjectCommand() *cobra.Command {
+func addListAppsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "projects",
-		Short:             "List all your convoy projects",
+		Use:               "apps",
+		Short:             "List all your convoy cli apps",
 		PersistentPreRun:  func(cmd *cobra.Command, args []string) {},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -22,12 +22,12 @@ func addProjectCommand() *cobra.Command {
 
 			t := table.NewWriter()
 			t.SetOutputMirror(os.Stdout)
-			t.AppendHeader(table.Row{"Current Project", "ID", "Name"})
+			t.AppendHeader(table.Row{"Current App", "ID", "Name"})
 
-			for _, project := range c.Projects {
+			for _, project := range c.Applications {
 				var current string
 
-				if project.Name == c.ActiveProject {
+				if project.Name == c.ActiveApplication {
 					current = "*"
 				}
 

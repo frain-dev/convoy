@@ -25,11 +25,11 @@ const (
 )
 
 type Config struct {
-	Host                 string    `yaml:"host"`
-	ActiveDeviceID       string    `yaml:"active_device_id"`
-	ActiveApiKey         string    `yaml:"active_api_key"`
-	ActiveProject        string    `yaml:"active_project"`
-	Projects             []Project `yaml:"projects"`
+	Host                 string        `yaml:"host"`
+	ActiveDeviceID       string        `yaml:"active_device_id"`
+	ActiveApiKey         string        `yaml:"active_api_key"`
+	ActiveApplication    string        `yaml:"active_application"`
+	Applications         []Application `yaml:"applications"`
 	path                 string
 	hasDefaultConfigFile bool
 	isNewApiKey          bool
@@ -89,7 +89,7 @@ func (c *Config) WriteConfig() error {
 	return nil
 }
 
-type Project struct {
+type Application struct {
 	UID      string `yaml:"uid"`
 	Name     string `yaml:"name"`
 	ApiKey   string `yaml:"api_key"`
@@ -168,41 +168,48 @@ func addLoginCommand() *cobra.Command {
 }
 
 func WriteConfig(c *Config, response *socket.LoginResponse) error {
-	projectName := fmt.Sprintf("%s (%s)", response.Group.Name, response.App.Title)
-	c.ActiveProject = projectName
+	name := fmt.Sprintf("%s (%s)", response.App.Title, response.Group.Name)
+	c.ActiveApplication = name
 	c.ActiveDeviceID = response.Device.UID
 
 	if c.hasDefaultConfigFile {
-		if c.isNewApiKey {
-			// If the api key provided is different from the active api key,
-			// we append the project returned to the list of projects within the config
-			c.Projects = append(c.Projects, Project{
-				UID:      response.Group.UID,
-				Name:     projectName,
-				ApiKey:   c.ActiveApiKey,
-				DeviceID: response.Device.UID,
-			})
-		} else if c.isNewHost {
+		if c.isNewHost {
 			// if the host is different from the current host in the config file,
 			// the data in the config file is overwritten
-			c.Projects = []Project{
+			c.Applications = []Application{
 				{
-					UID:      response.Group.UID,
-					Name:     projectName,
+					UID:      response.App.UID,
+					Name:     name,
 					ApiKey:   c.ActiveApiKey,
 					DeviceID: response.Device.UID,
 				},
 			}
 		}
+
+		if c.isNewApiKey {
+			if doesAppExist(c, response.App.UID) {
+				return fmt.Errorf("app with ID (%s) has been added already", response.App.UID)
+			}
+
+			// If the api key provided is different from the active api key,
+			// we append the project returned to the list of projects within the config
+			c.Applications = append(c.Applications, Application{
+				UID:      response.App.UID,
+				Name:     name,
+				ApiKey:   c.ActiveApiKey,
+				DeviceID: response.Device.UID,
+			})
+		}
+
 	} else {
 		// Make sure the directory holding our config exists
 		if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
 			return err
 		}
-		c.Projects = []Project{
+		c.Applications = []Application{
 			{
-				UID:      response.Group.UID,
-				Name:     projectName,
+				UID:      response.App.UID,
+				Name:     name,
 				ApiKey:   c.ActiveApiKey,
 				DeviceID: response.Device.UID,
 			},
@@ -231,7 +238,7 @@ func IsNewHost(currentHost, newHost string) bool {
 // The api key is considered new if it doesn't already
 // exist within the config file
 func IsNewApiKey(c *Config, apiKey string) bool {
-	for _, project := range c.Projects {
+	for _, project := range c.Applications {
 		if project.ApiKey == apiKey {
 			return false
 		}
@@ -243,13 +250,24 @@ func IsNewApiKey(c *Config, apiKey string) bool {
 func findDeviceID(c *Config) string {
 	var deviceID string
 
-	for _, project := range c.Projects {
-		if project.ApiKey == c.ActiveApiKey {
-			return project.DeviceID
+	for _, app := range c.Applications {
+		if app.ApiKey == c.ActiveApiKey {
+			return app.DeviceID
 		}
 	}
 
 	return deviceID
+}
+
+func doesAppExist(c *Config, appId string) bool {
+	for _, app := range c.Applications {
+		fmt.Printf("\n%v %v\n\n", app.UID, appId)
+		if app.UID == appId {
+			return true
+		}
+	}
+
+	return false
 }
 
 // generateDeviceHostName uses the machine's host name and the mac address to generate a predictable unique id per device

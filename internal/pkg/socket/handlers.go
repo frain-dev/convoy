@@ -201,7 +201,15 @@ func listen(ctx context.Context, group *datastore.Group, app *datastore.Applicat
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
 	}
 
-	if !util.IsStringEmpty(listenRequest.SourceID) {
+	if group.Type == datastore.IncomingGroup && util.IsStringEmpty(listenRequest.SourceID) {
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source is required for incoming projects"))
+	}
+
+	if group.Type == datastore.OutgoingGroup && !util.IsStringEmpty(listenRequest.SourceID) {
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source should not be passed for outgoing projects"))
+	}
+
+	if group.Type == datastore.IncomingGroup && !util.IsStringEmpty(listenRequest.SourceID) {
 		source, err := r.SourceRepo.FindSourceByID(ctx, device.GroupID, listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
