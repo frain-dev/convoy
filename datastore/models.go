@@ -499,7 +499,6 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
-	Device   *Device      `json:"device_metadata,omitempty" bson:"-"`
 	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
 	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
@@ -517,6 +516,7 @@ type EventDelivery struct {
 
 type CLIMetadata struct {
 	EventType string `json:"event_type" bson:"event_type"`
+	HostName  string `json:"host_name,omitempty" bson:"-"`
 }
 
 type KeyType string

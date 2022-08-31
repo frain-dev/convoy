@@ -331,6 +331,7 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 					deviceMap[ed.DeviceID] = device
 				}
 			}
+			deliveries[i].CLIMetadata.HostName = deviceMap[ed.DeviceID].HostName
 		}
 
 		if _, ok := endpointMap[ed.EndpointID]; !ok {
@@ -351,7 +352,6 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 
 		deliveries[i].App = appMap[ed.AppID]
 		deliveries[i].Event = eventMap[ed.EventID]
-		deliveries[i].Device = deviceMap[ed.DeviceID]
 		deliveries[i].Endpoint = endpointMap[ed.EndpointID]
 	}
 
