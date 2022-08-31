@@ -49,9 +49,13 @@
 			<p class="text-grey-40 text-12 font-light">STATUS</p>
 			<convoy-tag [type]="eventDelsDetails?.status || '' | statuscolor">{{ eventDelsDetails?.status }}</convoy-tag>
 		</div>
-		<div>
+		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">IP ADDRESS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
+		</div>
+        <div *ngIf="eventDelsDetails?.device_id">
+			<p class="text-grey-40 text-12 font-light">DEVICE</p>
+			<p class="text-14 font-medium">{{ eventDelsDetails?.cli_metadata?.host_name || '-' }}</p>
 		</div>
 		<div *ngIf="eventDelsDetails?.status == 'Success'">
 			<p class="text-grey-40 text-12 font-light">TIME</p>
