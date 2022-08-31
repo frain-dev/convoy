@@ -22,6 +22,7 @@ type EventDeliveryRepository interface {
 	CountDeliveriesByStatus(context.Context, EventDeliveryStatus, SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(context.Context, []string, EventDeliveryStatus) error
+	FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 	CountEventDeliveries(context.Context, string, string, string, []EventDeliveryStatus, SearchParams) (int64, error)

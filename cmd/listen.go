@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -37,6 +38,7 @@ const (
 )
 
 func addListenCommand(a *app) *cobra.Command {
+	var since string
 	var source string
 	var events string
 	var forwardTo string
@@ -76,6 +78,26 @@ func addListenCommand(a *app) *cobra.Command {
 				log.Fatal("Error parsing host URL: ", err)
 			}
 
+			if !util.IsStringEmpty(since) {
+				var sinceTime time.Time
+				sinceTime, err = time.Parse(time.RFC3339, since)
+				if err != nil {
+					log.WithError(err).Error("since is not a valid timestamp, will try time duration")
+
+					dur, err := time.ParseDuration(since)
+					if err != nil {
+						log.WithError(err).Fatal("since is neither a valid time duration or timestamp, see the listen command help menu for a valid since value")
+					} else {
+						since = fmt.Sprintf("since:duration:%v", since)
+						sinceTime = time.Now().Add(-dur)
+					}
+				} else {
+					since = fmt.Sprintf("since:timestamp:%v", since)
+				}
+
+				log.Printf("will resend all discarded events after: %v", sinceTime)
+			}
+
 			url := url.URL{Scheme: "ws", Host: hostInfo.Host, Path: "/stream/listen"}
 			conn, response, err := websocket.DefaultDialer.Dial(url.String(), http.Header{
 				"Authorization": []string{"Bearer " + c.ActiveApiKey},
@@ -83,13 +105,16 @@ func addListenCommand(a *app) *cobra.Command {
 			})
 
 			if err != nil {
-				buf, e := io.ReadAll(response.Body)
-				if e != nil {
-					log.Fatal("Error parsing request body", e)
+				if response != nil {
+					buf, e := io.ReadAll(response.Body)
+					if e != nil {
+						log.Fatal("Error parsing request body", e)
+					}
+					defer response.Body.Close()
+					log.Fatal("\nhttp: ", string(buf))
 				}
-				defer response.Body.Close()
 
-				log.Fatal("Error connecting to Websocket Server\n", err, "\nhttp: ", string(buf))
+				log.Fatal(err)
 			}
 
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -101,6 +126,14 @@ func addListenCommand(a *app) *cobra.Command {
 
 			ticker := time.NewTicker(pingPeriod)
 			defer ticker.Stop()
+
+			if !util.IsStringEmpty(since) {
+				// Send a message to the server to resend unsuccessful events to the device
+				err := conn.WriteMessage(websocket.TextMessage, []byte(since))
+				if err != nil {
+					log.Println("an error occured sending 'since' message", err)
+				}
+			}
 
 			// Our main loop for the client
 			// We send our relevant packets here
@@ -149,9 +182,10 @@ func addListenCommand(a *app) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&source, "source", "", "Source ID")
+	cmd.Flags().StringVar(&source, "source", "", "The source id of the source you want to receive events from (only applies to incoming projects)")
+	cmd.Flags().StringVar(&since, "since", "", "Send discarded events since a timestamp (e.g. 2013-01-02T13:23:37Z) or relative time (e.g. 42m for 42 minutes)")
 	cmd.Flags().StringVar(&events, "events", "*", "Events types")
-	cmd.Flags().StringVar(&forwardTo, "forward-to", "", "Host to forward events to")
+	cmd.Flags().StringVar(&forwardTo, "forward-to", "", "The host/web server you want to forward events to")
 
 	return cmd
 }
@@ -168,36 +202,37 @@ func receiveHandler(connection *websocket.Conn, url string) {
 				return
 			}
 
-			log.Println("Error in receive:", err)
+			log.Error("an error occured in the receive handler:", err)
 			return
 		}
 
 		var event socket.CLIEvent
 		err = json.Unmarshal(msg, &event)
 		if err != nil {
-			log.Println("Error in reading json:", err)
+			log.Error("an error occured in unmarshaling json:", err)
 			continue
-		}
-
-		ack := &socket.AckEventDelivery{UID: event.UID}
-		j, err := json.Marshal(ack)
-		if err != nil {
-			log.Println("Error in marshalling json:", err)
-			continue
-		}
-
-		// write an ack message back to the connection here
-		err = connection.WriteMessage(websocket.TextMessage, j)
-		if err != nil {
-			log.Println("Error in writing to websocket connection")
 		}
 
 		// send request to the recepient
 		d := convoyNet.NewDispatcher(time.Second * 10)
 		res, err := d.ForwardCliEvent(url, convoy.HttpPost, event.Data, event.Headers)
 		if err != nil {
-			log.Println(err)
+			log.Error("an error occured while forwading the event", err)
 			continue
+		}
+
+		// set the event delivery status to Success when we sucessfully forward the event
+		ack := &socket.AckEventDelivery{UID: event.UID}
+		mb, err := json.Marshal(ack)
+		if err != nil {
+			log.Error("an error occured in marshalling json:", err)
+			continue
+		}
+
+		// write an ack message back to the connection here
+		err = connection.WriteMessage(websocket.TextMessage, mb)
+		if err != nil {
+			log.Error("an error occured while acknowledging the event", err)
 		}
 
 		log.Println(string(res.Body))

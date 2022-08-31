@@ -219,6 +219,21 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) DeleteGroupEventDeliveries(ct
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).DeleteGroupEventDeliveries), ctx, filter, hardDelete)
 }
 
+// FindDiscardedEventDeliveries mocks base method.
+func (m *MockEventDeliveryRepository) FindDiscardedEventDeliveries(ctx context.Context, appId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindDiscardedEventDeliveries", ctx, appId, searchParams)
+	ret0, _ := ret[0].([]datastore.EventDelivery)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindDiscardedEventDeliveries indicates an expected call of FindDiscardedEventDeliveries.
+func (mr *MockEventDeliveryRepositoryMockRecorder) FindDiscardedEventDeliveries(ctx, appId, searchParams interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDiscardedEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindDiscardedEventDeliveries), ctx, appId, searchParams)
+}
+
 // FindEventDeliveriesByEventID mocks base method.
 func (m *MockEventDeliveryRepository) FindEventDeliveriesByEventID(arg0 context.Context, arg1 string) ([]datastore.EventDelivery, error) {
 	m.ctrl.T.Helper()

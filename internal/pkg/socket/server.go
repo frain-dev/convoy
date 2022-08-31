@@ -2,7 +2,10 @@ package socket
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"strconv"
 	"sync"
 	"time"
 
@@ -13,17 +16,19 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// Register new clients.
+// Register new clients
 var register chan *Client
 
-// Unregister clients.
+// Unregister clients
 var unregister chan *Client
+
+// events from the change stream are written to this channel and are sent to the respective devices
+var events chan *CLIEvent
 
 // Hub maintains the set of active clients and broadcasts messages to the clients.
 type Hub struct {
@@ -35,9 +40,6 @@ type Hub struct {
 	watchCollectionFn WatchCollectionFn
 
 	close chan struct{}
-
-	// events from the change stream are written to thi channel and are sent to the respective devices
-	events chan *CLIEvent
 
 	// this ticker is used to periodically set inactive (or incorrectly disconnected) devices to offline
 	ticker *time.Ticker
@@ -59,16 +61,14 @@ type CLIEvent struct {
 	GroupID   string `json:"-"`
 }
 
-type WatchCollectionFn func(fn func(doc map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error
-
 func NewHub() *Hub {
 	register = make(chan *Client, 1)
 	unregister = make(chan *Client, 1)
+	events = make(chan *CLIEvent, 10)
 
 	return &Hub{
 		watchCollectionFn: watchCollection,
 		deviceClients:     map[string]*Client{},
-		events:            make(chan *CLIEvent, 10),
 		close:             make(chan struct{}),
 	}
 }
@@ -76,7 +76,7 @@ func NewHub() *Hub {
 func (h *Hub) StartEventSender() {
 	for {
 		select {
-		case ev := <-h.events:
+		case ev := <-events:
 			h.lock.RLock()
 			client := h.deviceClients[ev.DeviceID]
 			h.lock.RUnlock()
@@ -124,7 +124,7 @@ func (h *Hub) StartEventSender() {
 
 func (h *Hub) StartEventWatcher() {
 	fn := h.watchEventDeliveriesCollection()
-	err := h.watchCollectionFn(fn, mongo.Pipeline{}, m.EventDeliveryCollection, h.close)
+	err := h.watchCollectionFn(fn, m.EventDeliveryCollection, h.close)
 	if err != nil {
 		log.WithError(err).Error("database collection watcher exited unexpectedly")
 	}
@@ -147,9 +147,36 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 			return nil
 		}
 
-		h.events <- &CLIEvent{
+		// map[Data:base64Str Subtype:int]
+		var dataMap convoy.GenericMap
+		err = json.Unmarshal(ed.Metadata.Data, &dataMap)
+		if err != nil {
+			return err
+		}
+
+		value, exists := dataMap["Data"]
+		if !exists {
+			return errors.New("'Data' field doesn't exist in map")
+		}
+
+		vBytes, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+
+		vStr, err := strconv.Unquote(string(vBytes))
+		if err != nil {
+			return err
+		}
+
+		dataBytes, err := base64.StdEncoding.DecodeString(vStr)
+		if err != nil {
+			return err
+		}
+
+		events <- &CLIEvent{
 			UID:       ed.UID,
-			Data:      ed.Metadata.Data,
+			Data:      dataBytes,
 			Headers:   ed.Headers,
 			EventType: ed.CLIMetadata.EventType,
 			AppID:     ed.AppID,
@@ -213,9 +240,9 @@ func (h *Hub) Stop() {
 	close(h.close)
 }
 
-type WatcherFn func(map[string]interface{}) error
+type WatchCollectionFn func(fn func(doc map[string]interface{}) error, collection string, stop chan struct{}) error
 
-func watchCollection(fn func(map[string]interface{}) error, pipeline mongo.Pipeline, collection string, stop chan struct{}) error {
+func watchCollection(fn func(map[string]interface{}) error, collection string, stop chan struct{}) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -234,7 +261,7 @@ func watchCollection(fn func(map[string]interface{}) error, pipeline mongo.Pipel
 	coll := db.Collection(collection)
 	ctx := context.Background()
 
-	cs, err := coll.Watch(ctx, pipeline)
+	cs, err := coll.Watch(ctx, mongo.Pipeline{})
 	if err != nil {
 		return err
 	}
@@ -243,7 +270,7 @@ func watchCollection(fn func(map[string]interface{}) error, pipeline mongo.Pipel
 	for {
 		select {
 		case <-stop:
-			logrus.Println("Exiting Database watcher")
+			log.Println("Exiting Database watcher")
 			return nil
 		default:
 			ok := cs.Next(ctx)

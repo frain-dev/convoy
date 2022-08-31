@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,7 +35,7 @@ type Client struct {
 	lock sync.RWMutex // protect Device from data race
 }
 
-func NewClient(hub *Hub, conn *websocket.Conn, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
+func NewClient(conn *websocket.Conn, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
 	client := &Client{
 		conn:              conn,
 		Device:            device,
@@ -94,6 +95,36 @@ func (c *Client) readPump() {
 			// this is triggered when a SIGINT signal (Ctrl + C) is sent by the client
 			if string(message) == "disconnect" {
 				c.GoOffline()
+				continue
+			}
+
+			// the "since" message is formatted thus:
+			// "since:duration:2m"
+			// "since:timestamp:2022-08-31T00:00:00Z"
+			if strings.HasPrefix(string(message), "since") {
+				var since time.Time
+
+				timeType := strings.Split(string(message), ":")[1]
+				timeStr := strings.Split(string(message), ":")[2]
+
+				switch timeType {
+				case "timestamp":
+					since, err = time.Parse(time.RFC3339, timeStr)
+					if err != nil {
+						log.WithError(err).Error("'since' is not a valid timestamp, will ignore it")
+					}
+				case "duration":
+					dur, err := time.ParseDuration(timeStr)
+					if err != nil {
+						log.WithError(err).Error("'since' is not a valid time duration, will ignore it")
+					} else {
+						since = time.Now().Add(-dur)
+					}
+				default:
+					log.WithError(err).Error("will ignore 'since' value")
+				}
+
+				go c.ResendEventDeliveries(since)
 				continue
 			}
 
@@ -163,5 +194,29 @@ func (c *Client) UpdateEventDeliveryStatus(id string) {
 	err = c.eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.SuccessEventStatus)
 	if err != nil {
 		log.WithError(err).WithField("event_delivery_id", id).Error("failed to update event delivery status")
+	}
+}
+
+func (c *Client) ResendEventDeliveries(since time.Time) {
+	eds, err := c.eventDeliveryRepo.FindDiscardedEventDeliveries(context.Background(), c.Device.AppID, c.deviceID,
+		datastore.SearchParams{CreatedAtStart: since.Unix(), CreatedAtEnd: time.Now().Unix()})
+	if err != nil {
+		log.WithError(err).Error("failed to find discarded event deliveries")
+	}
+
+	if eds == nil {
+		return
+	}
+
+	for _, ed := range eds {
+		events <- &CLIEvent{
+			UID:       ed.UID,
+			Data:      ed.Metadata.Data,
+			Headers:   ed.Headers,
+			EventType: ed.CLIMetadata.EventType,
+			AppID:     ed.AppID,
+			DeviceID:  ed.DeviceID,
+			GroupID:   ed.GroupID,
+		}
 	}
 }

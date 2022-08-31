@@ -75,7 +75,7 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		NewClient(hub, conn, device, listenRequest.EventTypes, repo.DeviceRepo, repo.EventDeliveryRepo)
+		NewClient(conn, device, listenRequest.EventTypes, repo.DeviceRepo, repo.EventDeliveryRepo)
 	})
 }
 

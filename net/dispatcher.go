@@ -2,7 +2,6 @@ package net
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -100,33 +98,7 @@ func (d *Dispatcher) SendCliRequest(url string, method convoy.HttpMethod, apiKey
 func (d *Dispatcher) ForwardCliEvent(url string, method convoy.HttpMethod, jsonData json.RawMessage, headers httpheader.HTTPHeader) (*Response, error) {
 	r := &Response{}
 
-	var b map[string]interface{}
-	err := json.Unmarshal(jsonData, &b)
-	if err != nil {
-		return nil, err
-	}
-
-	value, exists := b["Data"]
-	if !exists {
-		return nil, errors.New("Data field doesn't exist in map")
-	}
-
-	vBytes, err := json.Marshal(value)
-	if err != nil {
-		return nil, err
-	}
-
-	vStr, err := strconv.Unquote(string(vBytes))
-	if err != nil {
-		return nil, err
-	}
-
-	bb, err := base64.StdEncoding.DecodeString(vStr)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(string(method), url, bytes.NewBuffer(bb))
+	req, err := http.NewRequest(string(method), url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err
