@@ -156,6 +156,7 @@ func (c *Client) Close() {
 
 func (c *Client) GoOffline() {
 	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	c.Device.Status = datastore.DeviceStatusOffline
 
@@ -163,8 +164,6 @@ func (c *Client) GoOffline() {
 	if err != nil {
 		log.WithError(err).Error("failed to update device status to offline")
 	}
-
-	c.lock.Unlock()
 }
 
 func (c *Client) IsOnline() bool {

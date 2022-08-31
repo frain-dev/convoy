@@ -27,13 +27,13 @@ var done chan interface{}
 var interrupt chan os.Signal
 
 const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
+	// Time allowed to write a message to the server.
+	writeWait = time.Second
 
-	// Time allowed to read the next pong message from the peer.
+	// Time allowed to read the next pong message from the server.
 	pongWait = 10 * time.Second
 
-	// Send pings to peer with this period. Must be less than pongWait.
+	// Send pings to server with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
 )
 
@@ -68,7 +68,7 @@ func addListenCommand(a *app) *cobra.Command {
 				EventTypes: strings.Split(events, ","),
 			}
 
-			body, _ := json.Marshal(listenRequest)
+			body, err := json.Marshal(listenRequest)
 			if err != nil {
 				log.Fatal("Error marshalling json:", err)
 			}
