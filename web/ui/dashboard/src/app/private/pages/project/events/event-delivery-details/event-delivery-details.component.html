@@ -80,7 +80,7 @@
 		<div></div>
 	</div>
 
-	<div class="grid grid-cols-5 mb-32px" *ngIf="!isLoadingDeliveryDetails">
+	<div class="grid grid-cols-5 mb-32px" *ngIf="!isLoadingDeliveryDetails && !eventDelsDetails?.device_id">
 		<div>
 			<p class="text-grey-40 text-12 font-light">HTTP STATUS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
