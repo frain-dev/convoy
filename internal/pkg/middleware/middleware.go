@@ -71,6 +71,7 @@ type Middleware struct {
 	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
+	deviceRepo        datastore.DeviceRepository
 	cache             cache.Cache
 	logger            logger.Logger
 	limiter           limiter.RateLimiter
@@ -90,6 +91,7 @@ type CreateMiddleware struct {
 	OrgInviteRepo     datastore.OrganisationInviteRepository
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
+	DeviceRepo        datastore.DeviceRepository
 	Cache             cache.Cache
 	Logger            logger.Logger
 	Limiter           limiter.RateLimiter
@@ -110,6 +112,7 @@ func NewMiddleware(cs *CreateMiddleware) *Middleware {
 		orgInviteRepo:     cs.OrgInviteRepo,
 		userRepo:          cs.UserRepo,
 		configRepo:        cs.ConfigRepo,
+		deviceRepo:        cs.DeviceRepo,
 		cache:             cs.Cache,
 		logger:            cs.Logger,
 		limiter:           cs.Limiter,
@@ -543,6 +546,11 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 					RateLimitDuration: en.RateLimitDuration,
 				}
 				eventDelivery.Endpoint = endpoint
+			}
+
+			device, err := m.deviceRepo.FetchDeviceByID(r.Context(), eventDelivery.DeviceID, a.UID, a.GroupID)
+			if err == nil {
+				eventDelivery.CLIMetadata.HostName = device.HostName
 			}
 
 			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))

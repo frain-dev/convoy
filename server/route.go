@@ -118,6 +118,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 		OrgMemberRepo:     r.OrgMemberRepo,
 		OrgInviteRepo:     r.OrgInviteRepo,
 		UserRepo:          r.UserRepo,
+		DeviceRepo:        r.DeviceRepo,
 		ConfigRepo:        r.ConfigRepo,
 		Cache:             s.Cache,
 		Logger:            s.Logger,
