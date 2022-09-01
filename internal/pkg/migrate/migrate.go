@@ -120,7 +120,10 @@ func NewMigrator(c *mongo.Client, opts *Options, migrations []*Migration) *Migra
 		}
 
 		if count == 0 {
-			m.insertMigration(m.migrations[len(m.migrations)-1].ID)
+			err := m.insertMigration(m.migrations[len(m.migrations)-1].ID)
+			if err != nil {
+				return false, err
+			}
 			return true, nil
 		}
 
