@@ -53,7 +53,7 @@ func addUpCommand() *cobra.Command {
 				DatabaseName: dbName,
 			}
 
-			m := migrate.NewMigrator(c, opts, migrations)
+			m := migrate.NewMigrator(c, opts, migrations, nil)
 
 			err = m.Migrate(context.Background())
 			if err != nil {
@@ -94,7 +94,7 @@ func addDownCommand() *cobra.Command {
 				DatabaseName: dbName,
 			}
 
-			m := migrate.NewMigrator(c, opts, migrations)
+			m := migrate.NewMigrator(c, opts, migrations, nil)
 
 			err = m.RollbackTo(context.Background(), migrationID)
 			if err != nil {
