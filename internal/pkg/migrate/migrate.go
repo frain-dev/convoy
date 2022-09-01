@@ -69,6 +69,8 @@ type MigrationDoc struct {
 	DocumentStatus datastore.DocumentStatus `json:"document_status" bson:"document_status"`
 }
 
+type InitSchemaFunc func(*mongo.Database) (bool, error)
+
 type MigrateFunc func(*mongo.Database) error
 
 type RollbackFunc func(*mongo.Database) error
@@ -88,6 +90,7 @@ type Migrator struct {
 	db         *mongo.Database
 	opts       *Options
 	migrations []*Migration
+	initSchema InitSchemaFunc
 }
 
 func NewMigrator(c *mongo.Client, opts *Options, migrations []*Migration) *Migrator {
@@ -99,12 +102,32 @@ func NewMigrator(c *mongo.Client, opts *Options, migrations []*Migration) *Migra
 		opts.CollectionName = DefaultOptions.CollectionName
 	}
 
-	return &Migrator{
+	m := &Migrator{
 		client:     c,
 		db:         c.Database(opts.DatabaseName, nil),
 		opts:       opts,
 		migrations: migrations,
 	}
+
+	m.initSchema = func(db *mongo.Database) (bool, error) {
+		// save the last schema if nothing dey.
+		filter := map[string]interface{}{}
+
+		store := datastore.New(m.db, m.opts.CollectionName)
+		count, err := store.Count(context.Background(), filter)
+		if err != nil {
+			return false, err
+		}
+
+		if count == 0 {
+			m.insertMigration(m.migrations[len(m.migrations)-1].ID)
+			return true, nil
+		}
+
+		return false, nil
+	}
+
+	return m
 }
 
 // Migrate executes all migrations that did not run yet.
@@ -198,10 +221,6 @@ func (m *Migrator) migrate(ctx context.Context, migrationID string) error {
 	m.begin()
 	defer m.rollback(ctx)
 
-	if err := m.createMigrationCollectionIfNotExists(); err != nil {
-		return err
-	}
-
 	if m.opts.ValidateUnknownMigrations {
 		unknownMigrations, err := m.unknownMigrationsHaveHappened()
 		if err != nil {
@@ -211,6 +230,15 @@ func (m *Migrator) migrate(ctx context.Context, migrationID string) error {
 		if unknownMigrations {
 			return ErrUnknownPastMigration
 		}
+	}
+
+	initializedSchema, err := m.initSchema(m.db)
+	if err != nil {
+		return err
+	}
+
+	if initializedSchema {
+		return m.commit()
 	}
 
 	for _, migration := range m.migrations {
@@ -247,10 +275,6 @@ func (m *Migrator) unknownMigrationsHaveHappened() (bool, error) {
 	}
 
 	return false, nil
-}
-
-func (m *Migrator) createMigrationCollectionIfNotExists() error {
-	return nil
 }
 
 func (m *Migrator) begin() {

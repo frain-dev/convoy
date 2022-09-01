@@ -55,7 +55,10 @@ func addUpCommand() *cobra.Command {
 
 			m := migrate.NewMigrator(c, opts, migrations)
 
-			m.Migrate(context.Background())
+			err = m.Migrate(context.Background())
+			if err != nil {
+				log.WithError(err).Fatalf("Error running migrations")
+			}
 		},
 	}
 
@@ -63,6 +66,8 @@ func addUpCommand() *cobra.Command {
 }
 
 func addDownCommand() *cobra.Command {
+	var migrationID string
+
 	cmd := &cobra.Command{
 		Use:   "down",
 		Short: "Rollback migrations",
@@ -91,9 +96,14 @@ func addDownCommand() *cobra.Command {
 
 			m := migrate.NewMigrator(c, opts, migrations)
 
-			m.RollbackLast(context.Background())
+			err = m.RollbackTo(context.Background(), migrationID)
+			if err != nil {
+				log.WithError(err).Fatalf("Error rolling back migrations")
+			}
 		},
 	}
+
+	cmd.Flags().StringVar(&migrationID, "id", "", "Migration ID")
 
 	return cmd
 }
