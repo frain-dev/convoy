@@ -93,7 +93,7 @@ type Migrator struct {
 	initSchema InitSchemaFunc
 }
 
-func NewMigrator(c *mongo.Client, opts *Options, migrations []*Migration) *Migrator {
+func NewMigrator(c *mongo.Client, opts *Options, migrations []*Migration, i InitSchemaFunc) *Migrator {
 	if opts.DatabaseName == "" {
 		opts.DatabaseName = DefaultOptions.DatabaseName
 	}
@@ -109,26 +109,11 @@ func NewMigrator(c *mongo.Client, opts *Options, migrations []*Migration) *Migra
 		migrations: migrations,
 	}
 
-	m.initSchema = func(db *mongo.Database) (bool, error) {
-		// save the last schema if nothing dey.
-		filter := map[string]interface{}{}
-
-		store := datastore.New(m.db, m.opts.CollectionName)
-		count, err := store.Count(context.Background(), filter)
-		if err != nil {
-			return false, err
-		}
-
-		if count == 0 {
-			err := m.insertMigration(m.migrations[len(m.migrations)-1].ID)
-			if err != nil {
-				return false, err
-			}
-			return true, nil
-		}
-
-		return false, nil
+	if i == nil {
+		i = m.defaultinitSchema
 	}
+
+	m.initSchema = i
 
 	return m
 }
@@ -414,4 +399,25 @@ func (m *Migrator) getLastRunMigration() (*Migration, error) {
 	}
 
 	return nil, ErrNoRunMigration
+}
+
+func (m *Migrator) defaultinitSchema(db *mongo.Database) (bool, error) {
+	// save the last schema if nothing dey.
+	filter := map[string]interface{}{}
+
+	store := datastore.New(m.db, m.opts.CollectionName)
+	count, err := store.Count(context.Background(), filter)
+	if err != nil {
+		return false, err
+	}
+
+	if count == 0 {
+		err := m.insertMigration(m.migrations[len(m.migrations)-1].ID)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	return false, nil
 }

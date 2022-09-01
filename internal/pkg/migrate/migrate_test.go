@@ -18,48 +18,54 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var migrations = []*Migration{
-	{
-		ID: "201608301400",
-		Migrate: func(db *mongo.Database) error {
-			return nil
+var (
+	migrations = []*Migration{
+		{
+			ID: "201608301400",
+			Migrate: func(db *mongo.Database) error {
+				return nil
+			},
+			Rollback: func(db *mongo.Database) error {
+				return nil
+			},
 		},
-		Rollback: func(db *mongo.Database) error {
-			return nil
+		{
+			ID: "201608301430",
+			Migrate: func(db *mongo.Database) error {
+				return nil
+			},
+			Rollback: func(db *mongo.Database) error {
+				return nil
+			},
 		},
-	},
-	{
-		ID: "201608301430",
-		Migrate: func(db *mongo.Database) error {
-			return nil
-		},
-		Rollback: func(db *mongo.Database) error {
-			return nil
-		},
-	},
-}
+	}
 
-var extendedMigrations = append(migrations, &Migration{
-	ID: "201807221927",
-	Migrate: func(db *mongo.Database) error {
-		return nil
-	},
-	Rollback: func(db *mongo.Database) error {
-		return nil
-	},
-})
-
-var failingMigration = []*Migration{
-	{
-		ID: "201904231300",
+	extendedMigrations = append(migrations, &Migration{
+		ID: "201807221927",
 		Migrate: func(db *mongo.Database) error {
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
 			return nil
 		},
-	},
-}
+	})
+
+	failingMigration = []*Migration{
+		{
+			ID: "201904231300",
+			Migrate: func(db *mongo.Database) error {
+				return nil
+			},
+			Rollback: func(db *mongo.Database) error {
+				return nil
+			},
+		},
+	}
+
+	fakeInitSchema = func(db *mongo.Database) (bool, error) {
+		return false, nil
+	}
+)
 
 type Person struct {
 	Name string
@@ -80,7 +86,7 @@ func TestMigration(t *testing.T) {
 	defer closeFn()
 
 	opts := &Options{DatabaseName: getDBName(t)}
-	m := NewMigrator(db.Client(), opts, migrations)
+	m := NewMigrator(db.Client(), opts, migrations, fakeInitSchema)
 
 	err := m.Migrate(context.Background())
 	assert.NoError(t, err)
@@ -100,7 +106,7 @@ func TestMigrateTo(t *testing.T) {
 	defer closeFn()
 
 	opts := &Options{DatabaseName: getDBName(t)}
-	m := NewMigrator(db.Client(), opts, extendedMigrations)
+	m := NewMigrator(db.Client(), opts, extendedMigrations, fakeInitSchema)
 
 	err := m.MigrateTo(context.Background(), "201608301430")
 	assert.NoError(t, err)
@@ -113,7 +119,7 @@ func TestRollbackTo(t *testing.T) {
 	defer closeFn()
 
 	opts := &Options{DatabaseName: getDBName(t)}
-	m := NewMigrator(db.Client(), opts, extendedMigrations)
+	m := NewMigrator(db.Client(), opts, extendedMigrations, fakeInitSchema)
 
 	// First, apply all migrations.
 	err := m.Migrate(context.Background())
@@ -131,7 +137,7 @@ func TestMigrationIDDoesNotExist(t *testing.T) {
 	defer closeFn()
 
 	opts := &Options{DatabaseName: getDBName(t)}
-	m := NewMigrator(db.Client(), opts, extendedMigrations)
+	m := NewMigrator(db.Client(), opts, extendedMigrations, fakeInitSchema)
 	ctx := context.Background()
 
 	assert.Equal(t, ErrMigrationIDDoesNotExist, m.MigrateTo(ctx, "1234"))
@@ -153,7 +159,7 @@ func TestMissingID(t *testing.T) {
 	defer closeFn()
 
 	opts := &Options{DatabaseName: getDBName(t)}
-	m := NewMigrator(db.Client(), opts, migrationsMissingID)
+	m := NewMigrator(db.Client(), opts, migrationsMissingID, fakeInitSchema)
 	assert.Equal(t, ErrMissingID, m.Migrate(context.Background()))
 }
 
@@ -177,7 +183,7 @@ func TestDuplicatedID(t *testing.T) {
 	defer closeFn()
 
 	opts := &Options{DatabaseName: getDBName(t)}
-	m := NewMigrator(db.Client(), opts, migrationsDuplicatedID)
+	m := NewMigrator(db.Client(), opts, migrationsDuplicatedID, fakeInitSchema)
 	_, isDuplicatedIDError := m.Migrate(context.Background()).(*DuplicatedIDError)
 	assert.True(t, isDuplicatedIDError)
 }
