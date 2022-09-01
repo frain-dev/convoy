@@ -356,6 +356,10 @@ func (m *Migrator) hasMigrations() bool {
 }
 
 func (m *Migrator) checkIDExist(migrationID string) error {
+	if migrationID == "schema_init" {
+		return nil
+	}
+
 	for _, migration := range m.migrations {
 		if migration.ID == migrationID {
 			return nil
@@ -416,6 +420,9 @@ func (m *Migrator) defaultinitSchema(db *mongo.Database) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+
+		m.migrations = append([]*Migration{{ID: "schema_init"}}, m.migrations...)
+
 		return true, nil
 	}
 
