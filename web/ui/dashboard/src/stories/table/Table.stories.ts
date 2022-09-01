@@ -16,9 +16,6 @@ export default {
 		})
 	],
 	argTypes: {
-		class: {
-			control: { type: 'text' }
-		},
 		forDate: {
 			control: { type: 'boolean' }
 		},
@@ -32,29 +29,29 @@ const Template: Story<TableComponent> = (args: TableComponent) => ({
 	props: args,
 	template: `<convoy-table>
                 <convoy-table-head class="contents">
-                    <convoy-table-head-cell class="contents">head</convoy-table-head-cell>
-                    <convoy-table-head-cell class="contents">head</convoy-table-head-cell>
-                    <convoy-table-head-cell class="contents">head</convoy-table-head-cell>
-                    <convoy-table-head-cell class="contents">head</convoy-table-head-cell>
+                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
+                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
+                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
+                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
                 </convoy-table-head>
                 <tbody>
-                    <convoy-table-row [forDate]="forDate" class="contents">
+                    <convoy-table-row [forDate]="forDate" class="contents" *ngIf="forDate">
                         <convoy-table-cell class="contents" [forDate]="true">22nd Jan</convoy-table-cell>
                         <convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
                         <convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
                         <convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
                     </convoy-table-row>
                     <convoy-table-row class="contents" [active]="active">
-						<convoy-table-cell class="contents">data</convoy-table-cell>
-						<convoy-table-cell class="contents">data</convoy-table-cell>
-						<convoy-table-cell class="contents">data</convoy-table-cell>
-						<convoy-table-cell class="contents">data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
 					</convoy-table-row>
                     <convoy-table-row class="contents">
-						<convoy-table-cell class="contents">data</convoy-table-cell>
-						<convoy-table-cell class="contents">data</convoy-table-cell>
-						<convoy-table-cell class="contents">data</convoy-table-cell>
-						<convoy-table-cell class="contents">data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
+						<convoy-table-cell class="contents">Table data</convoy-table-cell>
 					</convoy-table-row>
                 </tbody>
             </convoy-table>`
@@ -62,7 +59,12 @@ const Template: Story<TableComponent> = (args: TableComponent) => ({
 
 export const Base = Template.bind({});
 Base.args = {
-	class: 'm-auto',
+	forDate: false,
+	active: false
+} as Partial<TableComponent>;
+
+export const WithDate = Template.bind({});
+WithDate.args = {
 	forDate: true,
 	active: true
 } as Partial<TableComponent>;

@@ -5,9 +5,6 @@ export default {
 	title: 'Example/TableCell',
 	component: TableCellComponent,
 	argTypes: {
-		class: {
-			control: { type: 'text' }
-		},
         forDate: {
 			control: { type: 'boolean' }
 		}

@@ -5,11 +5,8 @@ import { TableCellComponent } from '../../app/components/table-cell/table-cell.c
 export default {
 	title: 'Example/TableRow',
 	component: TableRowComponent,
-    subcomponents: {TableCellComponent},
+	subcomponents: { TableCellComponent },
 	argTypes: {
-		class: {
-			control: { type: 'text' }
-		},
 		forDate: {
 			control: { type: 'boolean' }
 		},
@@ -22,13 +19,13 @@ export default {
 const Template: Story<TableRowComponent> = (args: TableRowComponent) => ({
 	props: args,
 	template: `<convoy-table-row class="contents" [forDate]="forDate" [active]="active">
-                <convoy-table-cell class="contents" [forDate]="forDate">{{ngContent}}</convoy-table-cell>
+                {{ngContent}}
                </convoy-table-row>`
 });
 
 export const Base = Template.bind({});
 Base.args = {
-	ngContent: 'convoy table row',
+	ngContent: 'convoy table row content',
 	forDate: true,
 	active: false
 } as Partial<TableRowComponent>;
