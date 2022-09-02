@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -38,6 +39,10 @@ var (
 	// ErrMigrationIDDoesNotExist is returned when migrating or rolling back to a migration ID that
 	// does not exist in the list of migrations
 	ErrMigrationIDDoesNotExist = errors.New("migrate: Tried to migrate to an ID that doesn't exist")
+
+	// ErrPendingMigrationsFound is used to indicate there exist pending migrations yet to be run
+	// if the user proceeds without running migrations it can lead to data integrity issues.
+	ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first!")
 )
 
 // DuplicatedIDError is returned when more than one migration have the same ID
@@ -195,6 +200,27 @@ func (m *Migrator) RollbackTo(ctx context.Context, migrationID string) error {
 	}
 
 	return m.commit()
+}
+
+func (m *Migrator) CheckPendingMigrations(ctx context.Context) (bool, error) {
+	store := datastore.New(m.db, m.opts.CollectionName)
+
+	filter := bson.M{
+		"id": bson.M{
+			"$ne": "schema_init",
+		},
+	}
+
+	dbMigrations, err := store.Count(ctx, filter)
+	if err != nil {
+		return false, err
+	}
+
+	if len(m.migrations) > int(dbMigrations) {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (m *Migrator) migrate(ctx context.Context, migrationID string) error {
@@ -420,8 +446,6 @@ func (m *Migrator) defaultinitSchema(db *mongo.Database) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-
-		m.migrations = append([]*Migration{{ID: "schema_init"}}, m.migrations...)
 
 		return true, nil
 	}

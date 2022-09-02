@@ -188,6 +188,36 @@ func TestDuplicatedID(t *testing.T) {
 	assert.True(t, isDuplicatedIDError)
 }
 
+func TestCheckPendingMigrations(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	opts := &Options{DatabaseName: getDBName(t)}
+	m := NewMigrator(db.Client(), opts, migrations, fakeInitSchema)
+
+	// First apply migrations
+	err := m.Migrate(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), tableCount(t, db, opts.CollectionName))
+
+	// Check against pending migrations
+	pm := NewMigrator(db.Client(), opts, extendedMigrations, fakeInitSchema)
+	pendingMigrations, err := pm.CheckPendingMigrations(context.Background())
+	assert.NoError(t, err)
+	assert.True(t, pendingMigrations)
+
+	// Apply pending migrations
+	err = pm.Migrate(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), tableCount(t, db, opts.CollectionName))
+
+	// Check pending status again
+	pendingMigrations, err = pm.CheckPendingMigrations(context.Background())
+	assert.NoError(t, err)
+	assert.False(t, pendingMigrations)
+
+}
+
 func tableCount(t *testing.T, db *mongo.Database, collectionName string) int64 {
 	store := datastore.New(db, collectionName)
 	filter := map[string]interface{}{}

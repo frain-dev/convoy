@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 	_ "time/tzdata"
 
@@ -11,11 +13,13 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/internal/pkg/migrate"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy/logger"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -31,7 +35,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 )
 
 func main() {
@@ -51,7 +55,7 @@ func main() {
 	}
 
 	app := &app{}
-	db := &mongo.Client{}
+	db := &cm.Client{}
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
@@ -125,7 +129,7 @@ func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
 }
 
-func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
+func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -166,12 +170,35 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 
 		apm.SetApplication(nRApp)
 
-		database, err := mongo.New(cfg)
+		database, err := cm.New(cfg)
 		if err != nil {
 			return err
 		}
 
 		*db = *database
+
+		// Check Pending Migrations
+		c := db.Client().(*mongo.Database).Client()
+		u, err := url.Parse(cfg.Database.Dsn)
+		if err != nil {
+			return err
+		}
+
+		dbName := strings.TrimPrefix(u.Path, "/")
+		opts := &migrate.Options{
+			DatabaseName: dbName,
+		}
+
+		m := migrate.NewMigrator(c, opts, migrations, nil)
+
+		pm, err := m.CheckPendingMigrations(context.Background())
+		if err != nil {
+			return err
+		}
+
+		if pm {
+			return migrate.ErrPendingMigrationsFound
+		}
 
 		var tr tracer.Tracer
 		var ca cache.Cache
@@ -251,7 +278,7 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 	}
 }
 
-func postRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
+func postRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := db.Disconnect(context.Background())
 		if err == nil {
@@ -287,7 +314,7 @@ type ConvoyCli struct {
 	cmd *cobra.Command
 }
 
-func NewCli(app *app, db *mongo.Client) ConvoyCli {
+func NewCli(app *app, db *cm.Client) ConvoyCli {
 	cmd := &cobra.Command{
 		Use:     "Convoy",
 		Version: convoy.GetVersion(),
