@@ -189,7 +189,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			DatabaseName: dbName,
 		}
 
-		m := migrate.NewMigrator(c, opts, migrations, nil)
+		m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
 
 		pm, err := m.CheckPendingMigrations(context.Background())
 		if err != nil {
