@@ -88,11 +88,11 @@ func addListenCommand(a *app) *cobra.Command {
 					if err != nil {
 						log.WithError(err).Fatal("since is neither a valid time duration or timestamp, see the listen command help menu for a valid since value")
 					} else {
-						since = fmt.Sprintf("since:duration:%v", since)
+						since = fmt.Sprintf("since|duration|%v", since)
 						sinceTime = time.Now().Add(-dur)
 					}
 				} else {
-					since = fmt.Sprintf("since:timestamp:%v", since)
+					since = fmt.Sprintf("since|timestamp|%v", since)
 				}
 
 				log.Printf("will resend all discarded events after: %v", sinceTime)

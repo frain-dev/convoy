@@ -99,29 +99,12 @@ func (c *Client) processMessage(messageType int, message []byte, err error, unre
 		}
 
 		// the "since" message is formatted thus:
-		// "since:duration:2m"
-		// "since:timestamp:2022-08-31T00:00:00Z"
+		// "since|duration|2m"
+		// "since|timestamp|2022-08-31T00:00:00Z"
 		if strings.HasPrefix(string(message), "since") {
-			var since time.Time
-
-			timeType := strings.Split(string(message), ":")[1]
-			timeStr := strings.Split(string(message), ":")[2]
-
-			switch timeType {
-			case "timestamp":
-				since, err = time.Parse(time.RFC3339, timeStr)
-				if err != nil {
-					log.WithError(err).Error("'since' is not a valid timestamp, will ignore it")
-				}
-			case "duration":
-				dur, err := time.ParseDuration(timeStr)
-				if err != nil {
-					log.WithError(err).Error("'since' is not a valid time duration, will ignore it")
-				} else {
-					since = time.Now().Add(-dur)
-				}
-			default:
-				log.WithError(err).Error("will ignore 'since' value")
+			since, err := c.parseTime(string(message))
+			if err != nil {
+				log.Error(err)
 			}
 
 			go c.ResendEventDeliveries(since, events)
@@ -193,6 +176,36 @@ func (c *Client) HasEventType(evType string) bool {
 		}
 	}
 	return false
+}
+
+func (c *Client) parseTime(message string) (time.Time, error) {
+	var since time.Time = time.Now()
+	var err error
+
+	timeType := strings.Split(message, "|")[1]
+	timeStr := strings.Split(message, "|")[2]
+
+	switch timeType {
+	case "timestamp":
+		since, err = time.Parse(time.RFC3339, timeStr)
+		if err != nil {
+			log.WithError(err).Error("'since' is not a valid timestamp, will ignore it")
+			return since, err
+		}
+	case "duration":
+		dur, err := time.ParseDuration(timeStr)
+		if err != nil {
+			log.WithError(err).Error("'since' is not a valid time duration, will ignore it")
+			return since, err
+		} else {
+			since = time.Now().Add(-dur)
+		}
+	default:
+		log.Error("will ignore 'since' value")
+		return since, errors.New("will ignore 'since' value")
+	}
+
+	return since, nil
 }
 
 func (c *Client) UpdateEventDeliveryStatus(id string) {
