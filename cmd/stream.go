@@ -28,6 +28,7 @@ func addStreamCommand(a *app) *cobra.Command {
 			authCfg := &config.AuthConfiguration{
 				Native: config.NativeRealmOptions{Enabled: true},
 			}
+
 			err := realm_chain.Init(authCfg, a.apiKeyRepo, nil, nil)
 			if err != nil {
 				log.WithError(err).Fatal("failed to initialize realm chain")
@@ -41,12 +42,12 @@ func addStreamCommand(a *app) *cobra.Command {
 				EventDeliveryRepo: a.eventDeliveryRepo,
 			}
 
-			hub := socket.NewHub()
-			go hub.StartRegister()
-			go hub.StartUnregister()
-			go hub.StartEventWatcher()
-			go hub.StartEventSender()
-			go hub.StartClientStatusWatcher()
+			h := socket.NewHub()
+			go h.StartRegister()
+			go h.StartUnregister()
+			go h.StartEventWatcher()
+			go h.StartEventSender()
+			go h.StartClientStatusWatcher()
 
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
 				AppRepo:   a.applicationRepo,
@@ -65,8 +66,8 @@ func addStreamCommand(a *app) *cobra.Command {
 					m.RequireAppPortalApplication(),
 				)
 
-				streamRouter.Get("/listen", socket.ListenHandler(hub, r))
-				streamRouter.Post("/login", socket.LoginHandler(hub, r))
+				streamRouter.Get("/listen", socket.ListenHandler(h, r))
+				streamRouter.Post("/login", socket.LoginHandler(h, r))
 			})
 
 			srv := &http.Server{
@@ -81,7 +82,7 @@ func addStreamCommand(a *app) *cobra.Command {
 				}
 			}()
 
-			gracefulShutdown(srv, hub)
+			gracefulShutdown(srv, h)
 		},
 	}
 

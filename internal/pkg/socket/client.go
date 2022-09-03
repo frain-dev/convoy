@@ -20,6 +20,11 @@ const (
 	maxDeviceLastSeenDuration = 10 * time.Second
 )
 
+var (
+	ErrFailedToUpdateDevice    = errors.New("failed to update device last seen")
+	ErrFailedToSendPongMessage = errors.New("failed to write pong message")
+)
+
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	// device id of the cli client
@@ -30,12 +35,12 @@ type Client struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 
 	// The websocket connection.
-	conn *websocket.Conn
+	conn WebSocketConnection
 
 	lock sync.RWMutex // protect Device from data race
 }
 
-func NewClient(conn *websocket.Conn, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
+func NewClient(conn WebSocketConnection, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
 	client := &Client{
 		conn:              conn,
 		Device:            device,
@@ -46,7 +51,7 @@ func NewClient(conn *websocket.Conn, device *datastore.Device, events []string, 
 	}
 
 	register <- client
-	go client.readPump()
+	go client.readPump(unregister)
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -54,88 +59,15 @@ func NewClient(conn *websocket.Conn, device *datastore.Device, events []string, 
 // The application runs readPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *Client) readPump() {
-	defer c.Close()
+func (c *Client) readPump(unregister chan *Client) {
+	defer c.Close(unregister)
 
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetPingHandler(func(string) error {
-		c.lock.Lock()
-		defer c.lock.Unlock()
-
-		err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID, datastore.DeviceStatusOnline)
-		if err != nil {
-			log.WithError(err).Error("failed to update device last seen")
-			return errors.New("failed to update device last seen")
-		}
-
-		err = c.conn.WriteMessage(websocket.PongMessage, []byte("ok"))
-		if err != nil {
-			log.WithError(err).Error("failed to write pong message")
-			return errors.New("failed to write pong message")
-		}
-
-		return nil
-	})
+	c.conn.SetPingHandler(c.pingHandler)
 
 	for {
 		messageType, message, err := c.conn.ReadMessage()
-		// fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
-
-		// messageType -1 means an error occured
-		// set the device of this client to offline
-		if messageType == -1 {
-			c.GoOffline()
-		}
-
-		if messageType == websocket.CloseMessage {
-			c.Close()
-		}
-
-		if messageType == websocket.TextMessage {
-			// this is triggered when a SIGINT signal (Ctrl + C) is sent by the client
-			if string(message) == "disconnect" {
-				c.GoOffline()
-				continue
-			}
-
-			// the "since" message is formatted thus:
-			// "since:duration:2m"
-			// "since:timestamp:2022-08-31T00:00:00Z"
-			if strings.HasPrefix(string(message), "since") {
-				var since time.Time
-
-				timeType := strings.Split(string(message), ":")[1]
-				timeStr := strings.Split(string(message), ":")[2]
-
-				switch timeType {
-				case "timestamp":
-					since, err = time.Parse(time.RFC3339, timeStr)
-					if err != nil {
-						log.WithError(err).Error("'since' is not a valid timestamp, will ignore it")
-					}
-				case "duration":
-					dur, err := time.ParseDuration(timeStr)
-					if err != nil {
-						log.WithError(err).Error("'since' is not a valid time duration, will ignore it")
-					} else {
-						since = time.Now().Add(-dur)
-					}
-				default:
-					log.WithError(err).Error("will ignore 'since' value")
-				}
-
-				go c.ResendEventDeliveries(since)
-				continue
-			}
-
-			var ed AckEventDelivery
-			err := json.Unmarshal(message, &ed)
-			if err != nil {
-				log.WithError(err).Error("failed to unmarshal text message")
-				continue
-			}
-			go c.UpdateEventDeliveryStatus(ed.UID)
-		}
+		c.processMessage(messageType, message, err, unregister)
 
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -146,7 +78,86 @@ func (c *Client) readPump() {
 	}
 }
 
-func (c *Client) Close() {
+func (c *Client) processMessage(messageType int, message []byte, err error, unregister chan *Client) {
+	// fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
+
+	// messageType -1 means an error occured
+	// set the device of this client to offline
+	if messageType == -1 {
+		c.GoOffline()
+	}
+
+	if messageType == websocket.CloseMessage {
+		c.Close(unregister)
+	}
+
+	if messageType == websocket.TextMessage {
+		// this is triggered when a SIGINT signal (Ctrl + C) is sent by the client
+		if string(message) == "disconnect" {
+			c.GoOffline()
+			return
+		}
+
+		// the "since" message is formatted thus:
+		// "since:duration:2m"
+		// "since:timestamp:2022-08-31T00:00:00Z"
+		if strings.HasPrefix(string(message), "since") {
+			var since time.Time
+
+			timeType := strings.Split(string(message), ":")[1]
+			timeStr := strings.Split(string(message), ":")[2]
+
+			switch timeType {
+			case "timestamp":
+				since, err = time.Parse(time.RFC3339, timeStr)
+				if err != nil {
+					log.WithError(err).Error("'since' is not a valid timestamp, will ignore it")
+				}
+			case "duration":
+				dur, err := time.ParseDuration(timeStr)
+				if err != nil {
+					log.WithError(err).Error("'since' is not a valid time duration, will ignore it")
+				} else {
+					since = time.Now().Add(-dur)
+				}
+			default:
+				log.WithError(err).Error("will ignore 'since' value")
+			}
+
+			go c.ResendEventDeliveries(since, events)
+			return
+		}
+
+		var ed AckEventDelivery
+		err := json.Unmarshal(message, &ed)
+		if err != nil {
+			log.WithError(err).Error("failed to unmarshal text message")
+			return
+		}
+		go c.UpdateEventDeliveryStatus(ed.UID)
+	}
+}
+
+func (c *Client) pingHandler(appData string) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID, datastore.DeviceStatusOnline)
+	if err != nil {
+		log.WithError(err).Error(ErrFailedToUpdateDevice.Error())
+		return ErrFailedToUpdateDevice
+	}
+
+	err = c.conn.WriteMessage(websocket.PongMessage, []byte("ok"))
+	if err != nil {
+		log.WithError(err).Error(ErrFailedToSendPongMessage.Error())
+		return ErrFailedToSendPongMessage
+	}
+
+	return nil
+}
+
+func (c *Client) Close(unregister chan *Client) {
 	err := c.conn.Close()
 	if err != nil {
 		log.WithError(err).Error("failed to close client conn")
@@ -196,7 +207,7 @@ func (c *Client) UpdateEventDeliveryStatus(id string) {
 	}
 }
 
-func (c *Client) ResendEventDeliveries(since time.Time) {
+func (c *Client) ResendEventDeliveries(since time.Time, events chan *CLIEvent) {
 	eds, err := c.eventDeliveryRepo.FindDiscardedEventDeliveries(context.Background(), c.Device.AppID, c.deviceID,
 		datastore.SearchParams{CreatedAtStart: since.Unix(), CreatedAtEnd: time.Now().Unix()})
 	if err != nil {

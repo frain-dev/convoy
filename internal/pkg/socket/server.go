@@ -88,7 +88,7 @@ func (h *Hub) StartEventSender() {
 
 			if !client.IsOnline() {
 				client.GoOffline()
-				client.Close()
+				client.Close(unregister)
 				continue
 			}
 
@@ -225,7 +225,7 @@ func (h *Hub) StartClientStatusWatcher() {
 				h.lock.Lock()
 				if !h.deviceClients[k].IsOnline() {
 					h.deviceClients[k].GoOffline()
-					h.deviceClients[k].Close()
+					h.deviceClients[k].Close(unregister)
 					log.Printf("%s has be set to offline after inactivity for 30 seconds", v.Device.HostName)
 				}
 				h.lock.Unlock()

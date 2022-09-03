@@ -28,7 +28,7 @@ var interrupt chan os.Signal
 
 const (
 	// Time allowed to write a message to the server.
-	writeWait = time.Second
+	writeWait = 10 * time.Second
 
 	// Time allowed to read the next pong message from the server.
 	pongWait = 10 * time.Second
