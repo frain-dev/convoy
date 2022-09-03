@@ -24,7 +24,7 @@ func provideClient(r *Repo, c WebSocketConnection) *Client {
 		Device: &datastore.Device{
 			UID:        "1234",
 			Status:     datastore.DeviceStatusOnline,
-			LastSeenAt: primitive.DateTime(time.Now().UnixMilli()),
+			LastSeenAt: primitive.DateTime(time.Now().Unix() * 1000),
 		},
 	}
 }
@@ -59,7 +59,7 @@ func TestIsOnline(t *testing.T) {
 
 	require.Equal(t, true, c.IsOnline())
 
-	c.Device.LastSeenAt = primitive.DateTime(time.Now().Add(-time.Minute).UnixMilli())
+	c.Device.LastSeenAt = primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000)
 
 	require.Equal(t, false, c.IsOnline())
 }
@@ -147,7 +147,7 @@ func TestPingHandler_Success(t *testing.T) {
 	r := provideRepo(ctrl)
 
 	c := provideClient(r, conn)
-	c.Device.LastSeenAt = primitive.DateTime(time.Now().Add(-time.Minute).UnixMilli())
+	c.Device.LastSeenAt = primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000)
 
 	conn.EXPECT().WriteMessage(gomock.Any(), gomock.Any()).Return(nil)
 
@@ -173,7 +173,7 @@ func TestPingHandler_FailedToUpdateDevice(t *testing.T) {
 		Device: &datastore.Device{
 			UID:        "1234",
 			Status:     datastore.DeviceStatusOnline,
-			LastSeenAt: primitive.DateTime(time.Now().Add(-time.Minute).UnixMilli()),
+			LastSeenAt: primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000),
 		},
 	}
 
@@ -199,7 +199,7 @@ func TestPingHandler_FailedToSendPongMessage(t *testing.T) {
 		Device: &datastore.Device{
 			UID:        "1234",
 			Status:     datastore.DeviceStatusOnline,
-			LastSeenAt: primitive.DateTime(time.Now().Add(-time.Minute).UnixMilli()),
+			LastSeenAt: primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000),
 		},
 	}
 
