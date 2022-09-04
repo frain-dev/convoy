@@ -15,6 +15,7 @@ export class DropdownComponent implements OnInit {
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' = 'md';
 	@Input('active') active: boolean = false;
 	@Input('className') class!: string;
+	@Input('buttonText') buttonText!: string;
 	@Input('buttonClass') buttonClass = '';
 	@Input('buttonColor') buttonColor!: 'primary' | 'success' | 'warning' | 'danger' | 'grey';
 	@Input('buttonSize') buttonSize: 'sm' | 'md' | 'lg' = 'md';
