@@ -1,4 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { RouterTestingModule } from '@angular/router/testing';
+import { InputComponent } from 'src/app/components/input/input.component';
+import { RadioComponent } from 'src/app/components/radio/radio.component';
 
 import { CreateSourceComponent } from './create-source.component';
 
@@ -8,7 +12,8 @@ describe('CreateSourceComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CreateSourceComponent ]
+      declarations: [ CreateSourceComponent ],
+      imports:[ReactiveFormsModule, RouterTestingModule, InputComponent, RadioComponent]
     })
     .compileComponents();
   });

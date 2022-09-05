@@ -101,9 +101,9 @@ export class SettingsComponent implements OnInit {
 		if (org) {
 			const organisationDetails = JSON.parse(org);
 			this.organisationId = organisationDetails.uid;
-			this.organisationName = organisationDetails.name;
+			this.organisationName = organisationDetails?.name;
 			this.editOrganisationForm.patchValue({
-				name: organisationDetails.name
+				name: organisationDetails?.name
 			});
 		}
 	}

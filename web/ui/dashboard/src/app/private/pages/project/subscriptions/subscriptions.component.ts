@@ -23,7 +23,7 @@ export class SubscriptionsComponent implements OnInit {
 	showDeleteSubscriptionModal = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
-		this.projectId = this.privateService.activeProjectDetails.uid;
+		this.projectId = this.privateService?.activeProjectDetails?.uid;
 
 		const urlParam = route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSubscriptionModal = true;

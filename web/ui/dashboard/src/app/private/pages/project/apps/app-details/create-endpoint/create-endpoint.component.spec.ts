@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { RouterTestingModule } from '@angular/router/testing';
+import { InputComponent } from 'src/app/components/input/input.component';
 
 import { CreateEndpointComponent } from './create-endpoint.component';
 
@@ -8,7 +11,8 @@ describe('CreateEndpointComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CreateEndpointComponent ]
+      declarations: [ CreateEndpointComponent ],
+      imports: [ReactiveFormsModule, RouterTestingModule, InputComponent]
     })
     .compileComponents();
   });

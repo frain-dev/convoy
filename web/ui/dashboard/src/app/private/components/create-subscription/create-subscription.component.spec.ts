@@ -1,4 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { RouterTestingModule } from '@angular/router/testing';
+import { InputComponent } from 'src/app/components/input/input.component';
+import { SelectComponent } from 'src/app/components/select/select.component';
 
 import { CreateSubscriptionComponent } from './create-subscription.component';
 
@@ -8,7 +12,8 @@ describe('CreateSubscriptionComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CreateSubscriptionComponent ]
+      declarations: [ CreateSubscriptionComponent ],
+      imports: [ReactiveFormsModule, RouterTestingModule, SelectComponent, InputComponent]
     })
     .compileComponents();
   });

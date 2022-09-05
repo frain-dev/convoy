@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 
 import { PrivateComponent } from './private.component';
 
@@ -8,7 +9,8 @@ describe('PrivateComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PrivateComponent ]
+      declarations: [ PrivateComponent ],
+      imports: [RouterTestingModule]
     })
     .compileComponents();
   });

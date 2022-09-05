@@ -8,7 +8,7 @@ describe('EmptyStateComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ EmptyStateComponent ]
+      imports: [ EmptyStateComponent ]
     })
     .compileComponents();
 

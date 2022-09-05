@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { RouterTestingModule } from '@angular/router/testing';
+import { RadioComponent } from 'src/app/components/radio/radio.component';
 
 import { AddAnalyticsComponent } from './add-analytics.component';
 
@@ -8,7 +11,8 @@ describe('AddAnalyticsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ AddAnalyticsComponent ]
+      declarations: [ AddAnalyticsComponent ],
+      imports: [ReactiveFormsModule, RouterTestingModule, RadioComponent]
     })
     .compileComponents();
   });

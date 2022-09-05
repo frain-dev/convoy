@@ -2,7 +2,6 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { PrivateService } from '../../private.service';
-import { ProjectService } from './project.service';
 
 @Component({
 	selector: 'app-project',

@@ -39,6 +39,11 @@ module.exports = function (config) {
     autoWatch: true,
     browsers: ['Chrome'],
     singleRun: false,
-    restartOnFileChange: true
+    restartOnFileChange: true,
+    files: [
+        { pattern: './src/lib/assets/**/*.png', watched: false, served: true, included: true },
+        { pattern: './src/lib/assets/**/*.svg', watched: false, served: true, included: true },
+        { pattern: './src/lib/assets/**/*.gif', watched: false, served: true, included: true }
+    ]
   });
 };

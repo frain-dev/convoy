@@ -20,7 +20,7 @@ export class SourcesComponent implements OnInit {
 	isLoadingSources = false;
 	isDeletingSource = false;
 	showDeleteSourceModal = false;
-	projectId = this.privateService.activeProjectDetails.uid;
+	projectId = this.privateService?.activeProjectDetails?.uid;
 
 	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
 		this.route.queryParams.subscribe(params => (this.activeSource = this.sources?.content.find(source => source.uid === params?.id)));

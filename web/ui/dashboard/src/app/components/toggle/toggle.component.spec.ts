@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ReactiveFormsModule } from '@angular/forms';
 
 import { ToggleComponent } from './toggle.component';
 
@@ -8,7 +9,7 @@ describe('ToggleComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ ToggleComponent ]
+      imports: [ ToggleComponent, ReactiveFormsModule ]
     })
     .compileComponents();
 

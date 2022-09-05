@@ -19,7 +19,7 @@ export class BadgeComponent implements OnInit {
 
 	get firstletters(): string {
 		const firstLetters = this.text
-			.split(' ')
+			?.split(' ')
 			.map(word => word[0])
 			.join('');
 		return firstLetters;

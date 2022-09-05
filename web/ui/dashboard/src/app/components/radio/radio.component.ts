@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, forwardRef, Input, OnInit } from '@angular/core';
+import { Component, forwardRef, Input, OnInit, Optional } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { TooltipComponent } from '../tooltip/tooltip.component';
 
@@ -30,10 +30,10 @@ export class RadioComponent implements OnInit, ControlValueAccessor {
 	@Input('formControlName') formControlName!: string;
 	control!: any;
 
-	constructor(private controlContainer: ControlContainer) {}
+	constructor(@Optional() private controlContainer: ControlContainer) {}
 
 	ngOnInit(): void {
-		if (this.controlContainer.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
+		if (this.controlContainer?.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
 	}
 
 	registerOnChange() {}

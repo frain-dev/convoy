@@ -8,7 +8,7 @@ describe('BadgeComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ BadgeComponent ]
+      imports: [ BadgeComponent ]
     })
     .compileComponents();
 

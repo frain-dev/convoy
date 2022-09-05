@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 
 import { EventsService } from './events.service';
 
@@ -6,7 +7,9 @@ describe('EventsService', () => {
   let service: EventsService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+        imports: [RouterTestingModule]
+    });
     service = TestBed.inject(EventsService);
   });
 
