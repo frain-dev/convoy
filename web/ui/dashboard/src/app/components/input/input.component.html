@@ -2,7 +2,7 @@
 	<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
 		<div class="flex items-center">
 			{{ label }}
-			<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{ tooltipContent }}</convoy-tooltip>
+			<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" [img]="tooltipImg ? tooltipImg : ''" class="ml-4px">{{ tooltipContent }}</convoy-tooltip>
 		</div>
 		<span *ngIf="required" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
 	</label>
@@ -12,7 +12,7 @@
 			[type]="showLoginPassword ? 'text' : 'password'"
 			[id]="name"
 			[name]="name"
-			autocomplete="current-password"
+			autocomplete="password"
 			[formControl]="control"
 			required
 			class="
@@ -54,6 +54,7 @@
 		[required]="required"
 		[readonly]="readonly"
 		[placeholder]="placeholder"
+		[ngClass]="{ 'pointer-events-none': readonly }"
 		class="
 			transition-all
 			duration-[.3s]
