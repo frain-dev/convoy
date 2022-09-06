@@ -94,7 +94,7 @@ type ApplicationRepository interface {
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
 	UpdateSubscription(context.Context, string, *Subscription) error
-	LoadSubscriptionsPaged(context.Context, string, Pageable) ([]Subscription, PaginationData, error)
+	LoadSubscriptionsPaged(context.Context, string, *FilterBy, Pageable) ([]Subscription, PaginationData, error)
 	DeleteSubscription(context.Context, string, *Subscription) error
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)

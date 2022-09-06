@@ -510,8 +510,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
 		portalRouter.Use(a.M.RequireAuth())
-		portalRouter.Use(a.M.RequireGroup())
-		portalRouter.Use(a.M.RequireAppID())
 		portalRouter.Use(a.M.RequireAppPortalApplication())
 		portalRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
