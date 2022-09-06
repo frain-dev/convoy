@@ -132,11 +132,11 @@ type RegisterUser struct {
 }
 
 type LoginUserResponse struct {
-	UID       string    `json:"uid"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Token     Token     `json:"token"`
+	UID       string `json:"uid"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Token     Token  `json:"token"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
@@ -250,9 +250,10 @@ type Subscription struct {
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
-	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig     *datastore.StrategyConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
 }
 
 type UpdateSubscription struct {
@@ -261,9 +262,10 @@ type UpdateSubscription struct {
 	SourceID   string `json:"source_id,omitempty"`
 	EndpointID string `json:"endpoint_id,omitempty"`
 
-	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty"`
-	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty"`
-	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty"`
+	RetryConfig     *datastore.StrategyConfiguration  `json:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty"`
 }
 
 type UpdateUser struct {

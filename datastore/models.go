@@ -128,7 +128,7 @@ const (
 
 var (
 	DefaultStrategyConfig = StrategyConfiguration{
-		Type:       "linear",
+		Type:       DefaultStrategyProvider,
 		Duration:   100,
 		RetryCount: 10,
 	}
@@ -239,6 +239,7 @@ type GroupConfig struct {
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
+	AlertConfig              *AlertConfiguration           `json:"alert_config" bson:"alert_config"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
 	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
@@ -251,9 +252,9 @@ type RateLimitConfiguration struct {
 }
 
 type StrategyConfiguration struct {
-	Type       StrategyProvider `json:"type" valid:"required~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
-	Duration   uint64           `json:"duration" valid:"required~please provide a valid duration in seconds,int"`
-	RetryCount uint64           `json:"retry_count" valid:"required~please provide a valid retry count,int"`
+	Type       StrategyProvider `json:"type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
+	Duration   uint64           `json:"duration" valid:"optional~please provide a valid duration in seconds,int"`
+	RetryCount uint64           `json:"retry_count" valid:"optional~please provide a valid retry count,int"`
 }
 
 type SignatureConfiguration struct {
@@ -532,9 +533,10 @@ type Subscription struct {
 	App      *Application `json:"app_metadata,omitempty" bson:"-"`
 
 	// subscription config
-	AlertConfig  *AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig  *RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig *FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig     *StrategyConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`

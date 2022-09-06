@@ -20,7 +20,7 @@ var (
 	ErrUpateSubscriptionError       = errors.New("failed to update subscription")
 	ErrCreateSubscriptionError      = errors.New("failed to create subscription")
 	ErrDeletedSubscriptionError     = errors.New("failed to delete subscription")
-	ErrValidateSubscriptionError    = errors.New("failed to validate group update")
+	ErrValidateSubscriptionError    = errors.New("failed to validate subscription")
 	ErrCannotFetchSubcriptionsError = errors.New("an error occurred while fetching subscriptions")
 )
 
@@ -73,9 +73,10 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		SourceID:   newSubscription.SourceID,
 		EndpointID: newSubscription.EndpointID,
 
-		RetryConfig:  newSubscription.RetryConfig,
-		AlertConfig:  newSubscription.AlertConfig,
-		FilterConfig: newSubscription.FilterConfig,
+		RetryConfig:     newSubscription.RetryConfig,
+		AlertConfig:     newSubscription.AlertConfig,
+		FilterConfig:    newSubscription.FilterConfig,
+		RateLimitConfig: newSubscription.RateLimitConfig,
 
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -95,7 +96,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 	}
 
 	if subscription.RetryConfig == nil {
-		subscription.RetryConfig = &datastore.DefaultRetryConfig
+		subscription.RetryConfig = &datastore.DefaultStrategyConfig
 	}
 
 	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
@@ -152,7 +153,7 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		subscription.RetryConfig.Type = update.RetryConfig.Type
 	}
 
-	if update.RetryConfig != nil && !util.IsStringEmpty(update.RetryConfig.Duration) {
+	if update.RetryConfig != nil && update.RetryConfig.Duration > 0 {
 		subscription.RetryConfig.Duration = update.RetryConfig.Duration
 	}
 
@@ -162,6 +163,14 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 
 	if update.FilterConfig != nil && len(update.FilterConfig.EventTypes) > 0 {
 		subscription.FilterConfig.EventTypes = update.FilterConfig.EventTypes
+	}
+
+	if update.RateLimitConfig != nil && update.RateLimitConfig.Count > 0 {
+		subscription.RateLimitConfig.Count = update.RateLimitConfig.Count
+	}
+
+	if update.RateLimitConfig != nil && update.RateLimitConfig.Duration > 0 {
+		subscription.RateLimitConfig.Duration = update.RateLimitConfig.Duration
 	}
 
 	err = s.subRepo.UpdateSubscription(ctx, groupId, subscription)

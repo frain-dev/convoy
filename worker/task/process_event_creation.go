@@ -90,10 +90,10 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		intervalSeconds := group.Config.Strategy.Duration
-		retryLimit := group.Config.Strategy.RetryCount
+		ec := &EventDeliveryConfig{group: group}
 
 		for _, s := range subscriptions {
+			ec.subscription = &s
 			app, err := appRepo.FindApplicationByID(ctx, s.AppID)
 			if err != nil {
 				log.Errorf("Error fetching applcation %s", err)
@@ -107,13 +107,14 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 			}
 
 			s.Endpoint = endpoint
+			strategyType, intervalSeconds, retryLimit := ec.retryConfig()
 
 			metadata := &datastore.Metadata{
 				NumTrials:       0,
 				RetryLimit:      retryLimit,
 				Data:            event.Data,
 				IntervalSeconds: intervalSeconds,
-				Strategy:        group.Config.Strategy.Type,
+				Strategy:        strategyType,
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			}
 

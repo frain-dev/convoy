@@ -61,33 +61,20 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
+		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
+		if err != nil {
+			log.WithError(err).Error("could not find group")
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
+
 		switch ed.Status {
 		case datastore.ProcessingEventStatus,
 			datastore.SuccessEventStatus:
 			return nil
 		}
 
-		var rateLimitDuration time.Duration
-		if util.IsStringEmpty(endpoint.RateLimitDuration) {
-			rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
-			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint rate limit")
-				return nil
-			}
-		} else {
-			rateLimitDuration, err = time.ParseDuration(endpoint.RateLimitDuration)
-			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint rate limit")
-				return nil
-			}
-		}
-
-		var rateLimit int
-		if endpoint.RateLimit == 0 {
-			rateLimit = convoy.RATE_LIMIT
-		} else {
-			rateLimit = endpoint.RateLimit
-		}
+		ec := &EventDeliveryConfig{subscription: subscription, group: g}
+		rateLimit, rateLimitDuration := ec.rateLimitConfig()
 
 		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rateLimit, int(rateLimitDuration))
 		if err != nil {
@@ -161,11 +148,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		bStr := strings.TrimSuffix(buff.String(), "\n")
 
-		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
-		if err != nil {
-			log.WithError(err).Error("could not find error")
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
 		var signedPayload strings.Builder
 		var timestamp string
 		if g.Config.ReplayAttacks {
@@ -320,4 +302,48 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
+}
+
+type EventDeliveryConfig struct {
+	group        *datastore.Group
+	subscription *datastore.Subscription
+}
+
+func (ec *EventDeliveryConfig) retryConfig() (datastore.StrategyProvider, uint64, uint64) {
+	var intervalSeconds, retryLimit uint64
+	var strategyType datastore.StrategyProvider
+
+	if ec.subscription.RetryConfig != nil {
+		intervalSeconds = ec.subscription.RetryConfig.Duration
+		retryLimit = ec.subscription.RetryConfig.RetryCount
+		strategyType = ec.subscription.RetryConfig.Type
+	} else if ec.group.Config != nil {
+		intervalSeconds = ec.group.Config.Strategy.Duration
+		retryLimit = ec.group.Config.Strategy.RetryCount
+		strategyType = ec.group.Config.Strategy.Type
+	} else {
+		intervalSeconds = datastore.DefaultStrategyConfig.Duration
+		retryLimit = datastore.DefaultStrategyConfig.RetryCount
+		strategyType = datastore.DefaultStrategyConfig.Type
+	}
+
+	return strategyType, intervalSeconds, retryLimit
+}
+
+func (ec *EventDeliveryConfig) rateLimitConfig() (int, uint64) {
+	var count int
+	var rateLimitDuration uint64
+
+	if ec.subscription.RateLimitConfig != nil {
+		count = ec.subscription.RateLimitConfig.Count
+		rateLimitDuration = ec.subscription.RateLimitConfig.Duration
+	} else if ec.group.Config != nil {
+		count = ec.group.Config.RateLimit.Count
+		rateLimitDuration = ec.group.Config.RateLimit.Duration
+	} else {
+		count = datastore.DefaultRateLimitConfig.Count
+		rateLimitDuration = datastore.DefaultRateLimitConfig.Duration
+	}
+
+	return count, rateLimitDuration
 }

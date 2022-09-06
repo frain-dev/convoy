@@ -68,6 +68,10 @@ func TestGroupService_CreateGroup(t *testing.T) {
 							Count:    1000,
 							Duration: 60,
 						},
+						AlertConfig: &datastore.AlertConfiguration{
+							Count:     10,
+							Threshold: "1h",
+						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
@@ -110,6 +114,10 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						Count:    1000,
 						Duration: 60,
 					},
+					AlertConfig: &datastore.AlertConfiguration{
+						Count:     10,
+						Threshold: "1h",
+					},
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
@@ -140,6 +148,10 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						RateLimit: &datastore.RateLimitConfiguration{
 							Count:    1000,
 							Duration: 60,
+						},
+						AlertConfig: &datastore.AlertConfiguration{
+							Count:     10,
+							Threshold: "1h",
 						},
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
@@ -182,6 +194,10 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
 						Duration: 60,
+					},
+					AlertConfig: &datastore.AlertConfiguration{
+						Count:     10,
+						Threshold: "1h",
 					},
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
@@ -228,6 +244,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Signature:       &datastore.DefaultSignatureConfig,
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
+					AlertConfig:     &datastore.DefaultAlertConfig,
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
@@ -281,6 +298,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
+					AlertConfig:     &datastore.DefaultAlertConfig,
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
