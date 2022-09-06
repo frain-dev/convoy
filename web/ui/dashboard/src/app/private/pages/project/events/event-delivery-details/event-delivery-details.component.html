@@ -1,6 +1,7 @@
 <convoy-card className="py-26px px-32px mb-20px mt-16px">
 	<div class="flex justify-between items-center pb-18px border-b border-grey-10">
-		<h3 class="font-medium">{{ eventDelsDetails?.app_metadata?.name }}</h3>
+        <h3 class="font-medium">{{ eventDelsDetails?.app_metadata?.name }}</h3>
+
 
 		<convoy-button
 			[disable]="eventDelsDetails?.status !== 'Failure' && eventDelsDetails?.status !== 'Success'"
@@ -55,7 +56,13 @@
 		</div>
         <div *ngIf="eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">DEVICE</p>
-			<p class="text-14 font-medium">{{ eventDelsDetails?.cli_metadata?.host_name || '-' }}</p>
+
+			<p class="flex items-center text-14 font-medium">
+                <svg width="24" height="20" class="mr-8px" *ngIf="!eventDelsDetails.device_id">
+                    <use xlink:href="#cli-icon"></use>
+                </svg>
+                {{ eventDelsDetails?.cli_metadata?.host_name || '-' }}
+            </p>
 		</div>
 		<div *ngIf="eventDelsDetails?.status == 'Success'">
 			<p class="text-grey-40 text-12 font-light">TIME</p>
