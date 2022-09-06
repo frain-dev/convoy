@@ -178,26 +178,13 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		*db = *database
 
 		// Check Pending Migrations
-		c := db.Client().(*mongo.Database).Client()
-		u, err := url.Parse(cfg.Database.Dsn)
-		if err != nil {
-			return err
-		}
-
-		dbName := strings.TrimPrefix(u.Path, "/")
-		opts := &migrate.Options{
-			DatabaseName: dbName,
-		}
-
-		m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-
-		pm, err := m.CheckPendingMigrations(context.Background())
-		if err != nil {
-			return err
-		}
-
-		if pm {
-			return migrate.ErrPendingMigrationsFound
+		alias := cmd.Aliases[0]
+		shouldSkip := strings.HasPrefix(alias, "migrate")
+		if !shouldSkip {
+			err := checkPendingMigrations(cfg.Database.Dsn, db)
+			if err != nil {
+				return err
+			}
 		}
 
 		var tr tracer.Tracer
@@ -372,4 +359,30 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	return c, nil
+}
+
+func checkPendingMigrations(dbDsn string, db *cm.Client) error {
+	c := db.Client().(*mongo.Database).Client()
+	u, err := url.Parse(dbDsn)
+	if err != nil {
+		return err
+	}
+
+	dbName := strings.TrimPrefix(u.Path, "/")
+	opts := &migrate.Options{
+		DatabaseName: dbName,
+	}
+
+	m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
+
+	pm, err := m.CheckPendingMigrations(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if pm {
+		return migrate.ErrPendingMigrationsFound
+	}
+
+	return nil
 }
