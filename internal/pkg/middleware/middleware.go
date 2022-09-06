@@ -243,17 +243,31 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 
 func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var group *datastore.Group
+			authUser := GetAuthUserFromContext(r.Context())
+			groupID := authUser.Role.Group
+			appID := authUser.Role.App
 
-			appID := chi.URLParam(r, "appID")
-
-			if util.IsStringEmpty(appID) {
-				appID = r.URL.Query().Get("appId")
+			groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
+			err := m.cache.Get(r.Context(), groupCacheKey, &group)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+				return
 			}
 
-			if util.IsStringEmpty(appID) {
-				appID = getAppIDFromContext(r.Context())
+			if group == nil {
+				group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+					return
+				}
+
+				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
 			}
 
 			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
@@ -271,7 +285,9 @@ func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.
 				return
 			}
 
+			r = r.WithContext(setGroupInContext(r.Context(), group))
 			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			r = r.WithContext(setAppIDInContext(r.Context(), app.UID))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -1210,13 +1226,12 @@ func setAppIDInContext(ctx context.Context, appId string) context.Context {
 	return context.WithValue(ctx, appIdCtx, appId)
 }
 
-func getAppIDFromContext(ctx context.Context) string {
-	var appID string
-
-	if appID, ok := ctx.Value(appIdCtx).(string); ok {
+func GetAppIDFromContext(r *http.Request) string {
+	if appID, ok := r.Context().Value(appIdCtx).(string); ok {
 		return appID
 	}
 
+	appID := r.URL.Query().Get("appId")
 	return appID
 }
 

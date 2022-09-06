@@ -488,7 +488,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 
 	type args struct {
 		ctx      context.Context
-		group    *datastore.Group
+		filter   *datastore.FilterBy
 		pageable datastore.Pageable
 	}
 
@@ -505,8 +505,8 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 		{
 			name: "should_load_subscriptions",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				ctx:    ctx,
+				filter: &datastore.FilterBy{GroupID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -592,7 +592,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			dbFn: func(ss *SubcriptionService) {
 				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().
-					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any()).
+					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]datastore.Subscription{
 						{UID: "123"},
 						{UID: "123456"},
@@ -645,8 +645,8 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 		{
 			name: "should_fail_load_sources",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "123"},
+				ctx:    ctx,
+				filter: &datastore.FilterBy{GroupID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -656,7 +656,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			dbFn: func(so *SubcriptionService) {
 				s, _ := so.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().
-					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
 
 			},
@@ -667,8 +667,8 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 		{
 			name: "should_load_sources_empty_list",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "123"},
+				ctx:    ctx,
+				filter: &datastore.FilterBy{GroupID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -687,7 +687,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			dbFn: func(so *SubcriptionService) {
 				s, _ := so.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().
-					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Subscription{},
 						datastore.PaginationData{
 							Total:     0,
@@ -713,7 +713,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			subscriptions, paginationData, err := ss.LoadSubscriptionsPaged(tc.args.ctx, tc.args.group.UID, tc.args.pageable)
+			subscriptions, paginationData, err := ss.LoadSubscriptionsPaged(tc.args.ctx, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
