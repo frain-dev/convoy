@@ -248,20 +248,20 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				ed.Status = datastore.FailureEventStatus
 			}
 
-			subscriptionStatus := subscription.Status
+			
 			if g.Config.DisableEndpoint && subscription.Status != datastore.PendingSubscriptionStatus {
-				subscriptionStatus = datastore.InactiveSubscriptionStatus
+				subscriptionStatus := datastore.InactiveSubscriptionStatus
 
 				err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 				if err != nil {
 					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 				}
-			}
 
-			// send endpoint deactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true)
-			if err != nil {
-				log.WithError(err).Error("failed to send notification")
+				// send endpoint deactivation notification
+				err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true)
+				if err != nil {
+					log.WithError(err).Error("failed to send notification")
+				}
 			}
 		}
 

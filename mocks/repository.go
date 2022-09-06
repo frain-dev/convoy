@@ -1204,9 +1204,9 @@ func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionsBySourceIDs(a
 }
 
 // LoadSubscriptionsPaged mocks base method.
-func (m *MockSubscriptionRepository) LoadSubscriptionsPaged(arg0 context.Context, arg1 string, arg2 datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
+func (m *MockSubscriptionRepository) LoadSubscriptionsPaged(arg0 context.Context, arg1 string, arg2 *datastore.FilterBy, arg3 datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadSubscriptionsPaged", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "LoadSubscriptionsPaged", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]datastore.Subscription)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -1214,9 +1214,9 @@ func (m *MockSubscriptionRepository) LoadSubscriptionsPaged(arg0 context.Context
 }
 
 // LoadSubscriptionsPaged indicates an expected call of LoadSubscriptionsPaged.
-func (mr *MockSubscriptionRepositoryMockRecorder) LoadSubscriptionsPaged(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) LoadSubscriptionsPaged(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSubscriptionsPaged", reflect.TypeOf((*MockSubscriptionRepository)(nil).LoadSubscriptionsPaged), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSubscriptionsPaged", reflect.TypeOf((*MockSubscriptionRepository)(nil).LoadSubscriptionsPaged), arg0, arg1, arg2, arg3)
 }
 
 // UpdateSubscription mocks base method.

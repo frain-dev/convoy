@@ -263,10 +263,10 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *da
 	return sub, nil
 }
 
-func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, groupId string, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
+func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	var subscriptions []datastore.Subscription
 	var paginatedData datastore.PaginationData
-	subscriptions, paginatedData, err := s.subRepo.LoadSubscriptionsPaged(ctx, groupId, pageable)
+	subscriptions, paginatedData, err := s.subRepo.LoadSubscriptionsPaged(ctx, filter.GroupID, filter, pageable)
 	if err != nil {
 		log.WithError(err).Error(ErrCannotFetchSubcriptionsError.Error())
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, ErrCannotFetchSubcriptionsError)
