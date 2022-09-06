@@ -10,11 +10,9 @@ import (
 
 	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
-	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/go-chi/chi/v5"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -55,20 +53,7 @@ func addStreamCommand(a *app) *cobra.Command {
 				Cache:     a.cache,
 			})
 
-			router := chi.NewRouter()
-			router.Use(middleware.Recoverer)
-
-			router.Route("/stream", func(streamRouter chi.Router) {
-				streamRouter.Use(
-					m.RequireAuth(),
-					m.RequireGroup(),
-					m.RequireAppID(),
-					m.RequireAppPortalApplication(),
-				)
-
-				streamRouter.Get("/listen", socket.ListenHandler(h, r))
-				streamRouter.Post("/login", socket.LoginHandler(h, r))
-			})
+			router := socket.BuildRoutes(h, r, m)
 
 			srv := &http.Server{
 				Handler: router,

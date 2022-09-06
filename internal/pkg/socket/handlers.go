@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/websocket"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -49,6 +51,25 @@ var ug = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
+	router := chi.NewRouter()
+	router.Use(middleware.Recoverer)
+
+	router.Route("/stream", func(streamRouter chi.Router) {
+		streamRouter.Use(
+			m.RequireAuth(),
+			m.RequireGroup(),
+			m.RequireAppID(),
+			m.RequireAppPortalApplication(),
+		)
+
+		streamRouter.Get("/listen", ListenHandler(h, r))
+		streamRouter.Post("/login", LoginHandler(h, r))
+	})
+
+	return router
+}
+
 func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		listenRequest := &ListenRequest{}
@@ -59,8 +80,8 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		group := middleware.GetGroupFromContext(r.Context())
-		app := middleware.GetApplicationFromContext(r.Context())
+		group := m.GetGroupFromContext(r.Context())
+		app := m.GetApplicationFromContext(r.Context())
 
 		device, err := listen(r.Context(), group, app, listenRequest, hub, repo)
 		if err != nil {
@@ -88,8 +109,8 @@ func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		group := middleware.GetGroupFromContext(r.Context())
-		app := middleware.GetApplicationFromContext(r.Context())
+		group := m.GetGroupFromContext(r.Context())
+		app := m.GetApplicationFromContext(r.Context())
 
 		device, err := login(r.Context(), group, app, loginRequest, hub, repo)
 		if err != nil {
