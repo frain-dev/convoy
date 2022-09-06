@@ -64,19 +64,30 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 	queryBy := queryByBuilder.String()
 	sortBy := "created_at:desc"
 
-	params := &api.SearchCollectionParams{
-		Q:        f.Query,
-		QueryBy:  queryBy,
-		SortBy:   &sortBy,
-		FilterBy: f.FilterBy.String(),
-		Page:     &f.Pageable.Page,
-		PerPage:  &f.Pageable.PerPage,
+	sp := &api.MultiSearchParams{}
+
+	msp := api.MultiSearchSearchesParameter{
+		Searches: []api.MultiSearchCollectionParameters{
+			{
+				Collection: collection,
+				MultiSearchParameters: api.MultiSearchParameters{
+					Q:        &f.Query,
+					QueryBy:  &queryBy,
+					SortBy:   &sortBy,
+					FilterBy: f.FilterBy.String(),
+					Page:     &f.Pageable.Page,
+					PerPage:  &f.Pageable.PerPage,
+				},
+			},
+		},
 	}
 
-	result, err := t.client.Collection(collection).Documents().Search(params)
+	results, err := t.client.MultiSearch.Perform(sp, msp)
 	if err != nil {
 		return docs, data, err
 	}
+
+	result := results.Results[0]
 
 	for _, hit := range *result.Hits {
 		if v, ok := (*hit.Document)["uid"]; ok {
