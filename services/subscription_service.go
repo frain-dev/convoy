@@ -100,7 +100,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 	}
 
 	if subscription.RetryConfig == nil {
-		subscription.RetryConfig = &datastore.DefaultStrategyConfig
+		subscription.RetryConfig = &datastore.DefaultRetryConfig
 	}
 
 	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
@@ -157,8 +157,12 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		subscription.RetryConfig.Type = update.RetryConfig.Type
 	}
 
-	if update.RetryConfig != nil && update.RetryConfig.Duration > 0 {
+	if update.RetryConfig != nil && !util.IsStringEmpty(update.RetryConfig.Duration) {
 		subscription.RetryConfig.Duration = update.RetryConfig.Duration
+	}
+
+	if update.RetryConfig != nil && update.RetryConfig.IntervalSeconds > 0 {
+		subscription.RetryConfig.IntervalSeconds = update.RetryConfig.IntervalSeconds
 	}
 
 	if update.RetryConfig != nil && update.RetryConfig.RetryCount > 0 {

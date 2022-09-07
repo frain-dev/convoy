@@ -234,7 +234,7 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
-	subscription, _ := testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	subscription, _ := testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	eventDelivery, _ := testdb.SeedEventDelivery(s.DB, app, &datastore.Event{}, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s/resend", eventDeliveryID)
@@ -285,7 +285,7 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	event, _ := testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
-	subscription, _ := testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	subscription, _ := testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	_, _ = testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
@@ -316,7 +316,7 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	event, _ := testdb.SeedEvent(s.DB, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
-	subscription, _ := testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	subscription, _ := testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	e1, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
 	e2, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
 	e3, _ := testdb.SeedEventDelivery(s.DB, app, event, &app.Endpoints[0], s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)

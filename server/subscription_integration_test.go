@@ -81,7 +81,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 		"retry_config": {
 			"type": "linear",
 			"retry_count": 2,
-			"duration": 10
+			"duration": "10s",
+			"interval_seconds": 10
 		},
 		"filter_config": {
 			"event_types": [
@@ -148,7 +149,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		"retry_config": {
 			"type": "linear",
 			"retry_count": 2,
-			"duration": 10
+			"duration": "10s"
 		},
 		"filter_config": {
 			"event_types": [
@@ -237,7 +238,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppDoesNotBel
 		"retry_config": {
 			"type": "linear",
 			"retry_count": 2,
-			"duration": 10
+			"duration": "10s"
 		},
 		"filter_config": {
 			"event_types": [
@@ -350,7 +351,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, group.UID)
 	source, _ := testdb.SeedSource(s.DB, group, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
@@ -391,7 +392,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, group.UID)
 	source, _ := testdb.SeedSource(s.DB, group, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, "incoming", source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
@@ -424,7 +425,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 		app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 		endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 		source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString(), "", "", nil)
-		_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+		_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	}
 	// Arrange Request
 	url := "/api/v1/subscriptions"
@@ -450,7 +451,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
@@ -475,7 +476,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
@@ -487,7 +488,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 		"retry_config": {
 			"type": "linear",
 			"retry_count": 3,
-			"duration": 2
+			"duration": "2s"
 		},
 		"filter_config": {
 			"event_types": [
@@ -528,7 +529,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveS
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.ActiveSubscriptionStatus)
+	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.ActiveSubscriptionStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)
@@ -558,7 +559,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Inactiv
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.InactiveSubscriptionStatus)
+	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.InactiveSubscriptionStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)
@@ -588,7 +589,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Pending
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.PendingSubscriptionStatus)
+	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.PendingSubscriptionStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)
@@ -609,7 +610,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Unknown
 	app, _ := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.DB, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.DB, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "random")
+	_, _ = testdb.SeedSubscription(s.DB, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "random")
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)

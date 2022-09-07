@@ -74,9 +74,9 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		}
 
 		ec := &EventDeliveryConfig{subscription: subscription, group: g}
-		rateLimit, rateLimitDuration := ec.rateLimitConfig()
+		rlc := ec.rateLimitConfig()
 
-		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rateLimit, int(rateLimitDuration))
+		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
 			return nil
 		}
@@ -89,7 +89,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
 		}
 
-		_, err = rateLimiter.Allow(context.Background(), endpoint.TargetURL, rateLimit, int(rateLimitDuration))
+		_, err = rateLimiter.Allow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
 			return nil
 		}
@@ -308,6 +308,17 @@ type EventDeliveryConfig struct {
 	subscription *datastore.Subscription
 }
 
+type RetryConfig struct {
+	Type       datastore.StrategyProvider
+	Duration   uint64
+	RetryCount uint64
+}
+
+type RateLimitConfig struct {
+	Count    int
+	Duration uint64
+}
+
 func (ec *EventDeliveryConfig) disableEndpoint() bool {
 	if ec.subscription.DisableEndpoint != nil {
 		return *ec.subscription.DisableEndpoint
@@ -316,41 +327,50 @@ func (ec *EventDeliveryConfig) disableEndpoint() bool {
 	return ec.group.Config.DisableEndpoint
 }
 
-func (ec *EventDeliveryConfig) retryConfig() (datastore.StrategyProvider, uint64, uint64) {
-	var intervalSeconds, retryLimit uint64
-	var strategyType datastore.StrategyProvider
+func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
+	rc := &RetryConfig{}
 
 	if ec.subscription.RetryConfig != nil {
-		intervalSeconds = ec.subscription.RetryConfig.Duration
-		retryLimit = ec.subscription.RetryConfig.RetryCount
-		strategyType = ec.subscription.RetryConfig.Type
+		duration := ec.subscription.RetryConfig.Duration
+		if !util.IsStringEmpty(duration) {
+			interval, err := time.ParseDuration(duration)
+			if err != nil {
+				return rc, err
+			}
+
+			rc.Duration = uint64(interval.Seconds())
+		} else {
+			rc.Duration = ec.subscription.RetryConfig.IntervalSeconds
+		}
+		rc.RetryCount = ec.subscription.RetryConfig.RetryCount
+		rc.Type = ec.subscription.RetryConfig.Type
+
 	} else if ec.group.Config != nil {
-		intervalSeconds = ec.group.Config.Strategy.Duration
-		retryLimit = ec.group.Config.Strategy.RetryCount
-		strategyType = ec.group.Config.Strategy.Type
+		rc.Duration = ec.group.Config.Strategy.Duration
+		rc.RetryCount = ec.group.Config.Strategy.RetryCount
+		rc.Type = ec.group.Config.Strategy.Type
 	} else {
-		intervalSeconds = datastore.DefaultStrategyConfig.Duration
-		retryLimit = datastore.DefaultStrategyConfig.RetryCount
-		strategyType = datastore.DefaultStrategyConfig.Type
+		rc.Duration = datastore.DefaultStrategyConfig.Duration
+		rc.RetryCount = datastore.DefaultStrategyConfig.RetryCount
+		rc.Type = datastore.DefaultStrategyConfig.Type
 	}
 
-	return strategyType, intervalSeconds, retryLimit
+	return rc, nil
 }
 
-func (ec *EventDeliveryConfig) rateLimitConfig() (int, uint64) {
-	var count int
-	var rateLimitDuration uint64
+func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
+	rlc := &RateLimitConfig{}
 
 	if ec.subscription.RateLimitConfig != nil {
-		count = ec.subscription.RateLimitConfig.Count
-		rateLimitDuration = ec.subscription.RateLimitConfig.Duration
+		rlc.Count = ec.subscription.RateLimitConfig.Count
+		rlc.Duration = ec.subscription.RateLimitConfig.Duration
 	} else if ec.group.Config != nil {
-		count = ec.group.Config.RateLimit.Count
-		rateLimitDuration = ec.group.Config.RateLimit.Duration
+		rlc.Count = ec.group.Config.RateLimit.Count
+		rlc.Duration = ec.group.Config.RateLimit.Duration
 	} else {
-		count = datastore.DefaultRateLimitConfig.Count
-		rateLimitDuration = datastore.DefaultRateLimitConfig.Duration
+		rlc.Count = datastore.DefaultRateLimitConfig.Count
+		rlc.Duration = datastore.DefaultRateLimitConfig.Duration
 	}
 
-	return count, rateLimitDuration
+	return rlc
 }

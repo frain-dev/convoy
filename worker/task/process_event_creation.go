@@ -107,14 +107,18 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 			}
 
 			s.Endpoint = endpoint
-			strategyType, intervalSeconds, retryLimit := ec.retryConfig()
+			rc, err := ec.retryConfig()
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+
+			}
 
 			metadata := &datastore.Metadata{
 				NumTrials:       0,
-				RetryLimit:      retryLimit,
+				RetryLimit:      rc.RetryCount,
 				Data:            event.Data,
-				IntervalSeconds: intervalSeconds,
-				Strategy:        strategyType,
+				IntervalSeconds: rc.Duration,
+				Strategy:        rc.Type,
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			}
 

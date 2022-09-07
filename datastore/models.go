@@ -144,9 +144,9 @@ var (
 	}
 
 	DefaultRetryConfig = RetryConfiguration{
-		Type:       LinearStrategyProvider,
-		Duration:   "10s",
-		RetryCount: 3,
+		Type:            LinearStrategyProvider,
+		IntervalSeconds: 10,
+		RetryCount:      3,
 	}
 
 	DefaultAlertConfig = AlertConfiguration{
@@ -534,7 +534,7 @@ type Subscription struct {
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig     *StrategyConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
 	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
 	DisableEndpoint *bool                   `json:"disable_endpoint,omitempty" bson:"disable_endpoint"`
@@ -584,9 +584,10 @@ type User struct {
 }
 
 type RetryConfiguration struct {
-	Type       config.StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
-	Duration   string                  `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
-	RetryCount int                     `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
+	Type            StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration        string           `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
+	IntervalSeconds uint64           `json:"interval_seconds" bson:"interval_seconds" valid:"int~please provide a valid interval seconds"`
+	RetryCount      uint64           `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 type AlertConfiguration struct {

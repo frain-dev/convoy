@@ -41,7 +41,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&datastore.Subscription{RetryConfig: &datastore.DefaultStrategyConfig}, nil)
+					Return(&datastore.Subscription{RetryConfig: &datastore.DefaultRetryConfig}, nil)
 
 				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{}, nil)
 
@@ -964,10 +964,10 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 		{
 			name: "Subscription Config is primary config",
 			subscription: &datastore.Subscription{
-				RetryConfig: &datastore.StrategyConfiguration{
-					Type:       datastore.LinearStrategyProvider,
-					Duration:   2,
-					RetryCount: 3,
+				RetryConfig: &datastore.RetryConfiguration{
+					Type:            datastore.LinearStrategyProvider,
+					IntervalSeconds: 2,
+					RetryCount:      3,
 				},
 				RateLimitConfig: &datastore.RateLimitConfiguration{
 					Count:    100,
@@ -1031,18 +1031,20 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 			evConfig := &EventDeliveryConfig{subscription: tc.subscription, group: tc.group}
 
 			if tc.wantRetryConfig != nil {
-				strategyType, intervalSeconds, retryLimit := evConfig.retryConfig()
+				rc, err := evConfig.retryConfig()
 
-				assert.Equal(t, tc.wantRetryConfig.Type, strategyType)
-				assert.Equal(t, tc.wantRetryConfig.Duration, intervalSeconds)
-				assert.Equal(t, tc.wantRetryConfig.RetryCount, retryLimit)
+				assert.Nil(t, err)
+
+				assert.Equal(t, tc.wantRetryConfig.Type, rc.Type)
+				assert.Equal(t, tc.wantRetryConfig.Duration, rc.Duration)
+				assert.Equal(t, tc.wantRetryConfig.RetryCount, rc.RetryCount)
 			}
 
 			if tc.wantRateLimitConfig != nil {
-				count, rateLimitDuration := evConfig.rateLimitConfig()
+				rlc := evConfig.rateLimitConfig()
 
-				assert.Equal(t, tc.wantRateLimitConfig.Count, count)
-				assert.Equal(t, tc.wantRateLimitConfig.Duration, rateLimitDuration)
+				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Count)
+				assert.Equal(t, tc.wantRateLimitConfig.Duration, rlc.Duration)
 			}
 
 			disableEndpoint := evConfig.disableEndpoint()

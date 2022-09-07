@@ -251,7 +251,7 @@ type Subscription struct {
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
 	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig     *datastore.StrategyConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	RetryConfig     *datastore.RetryConfiguration     `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
 	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
 	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
@@ -264,7 +264,7 @@ type UpdateSubscription struct {
 	EndpointID string `json:"endpoint_id,omitempty"`
 
 	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty"`
-	RetryConfig     *datastore.StrategyConfiguration  `json:"retry_config,omitempty"`
+	RetryConfig     *datastore.RetryConfiguration     `json:"retry_config,omitempty"`
 	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty"`
 	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty"`
 	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
