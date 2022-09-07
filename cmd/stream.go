@@ -18,16 +18,23 @@ import (
 )
 
 func addStreamCommand(a *app) *cobra.Command {
+	var socketPort uint32
+
 	cmd := &cobra.Command{
 		Use:   "stream",
 		Short: "Start a websocket server to pipe events to another convoy instance",
 		Run: func(cmd *cobra.Command, args []string) {
+			c, err := config.Get()
+			if err != nil {
+				log.WithError(err).Fatal("failed to initialize realm chain")
+			}
+
 			// enable only the native auth realm
 			authCfg := &config.AuthConfiguration{
 				Native: config.NativeRealmOptions{Enabled: true},
 			}
 
-			err := realm_chain.Init(authCfg, a.apiKeyRepo, nil, nil)
+			err = realm_chain.Init(authCfg, a.apiKeyRepo, nil, nil)
 			if err != nil {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
@@ -55,9 +62,13 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			router := socket.BuildRoutes(h, r, m)
 
+			if c.Server.HTTP.SocketPort != 0 {
+				socketPort = c.Server.HTTP.SocketPort
+			}
+
 			srv := &http.Server{
 				Handler: router,
-				Addr:    fmt.Sprintf(":%d", 5008),
+				Addr:    fmt.Sprintf(":%d", socketPort),
 			}
 
 			go func() {
@@ -67,10 +78,12 @@ func addStreamCommand(a *app) *cobra.Command {
 				}
 			}()
 
+			log.Infof("Worker running on port %v", socketPort)
 			gracefulShutdown(srv, h)
 		},
 	}
 
+	cmd.Flags().Uint32Var(&socketPort, "socket-port", 5008, "Socket port")
 	return cmd
 }
 

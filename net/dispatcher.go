@@ -68,7 +68,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.Do(req, r, maxResponseSize)
+	err = d.do(req, r, maxResponseSize)
 
 	return r, err
 }
@@ -90,7 +90,7 @@ func (d *Dispatcher) SendCliRequest(url string, method convoy.HttpMethod, apiKey
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.Do(req, r, config.MaxRequestSize)
+	err = d.do(req, r, config.MaxRequestSize)
 
 	return r, err
 }
@@ -116,7 +116,7 @@ func (d *Dispatcher) ForwardCliEvent(url string, method convoy.HttpMethod, jsonD
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.Do(req, r, config.MaxRequestSize)
+	err = d.do(req, r, config.MaxRequestSize)
 
 	return r, err
 }
@@ -147,7 +147,7 @@ func defaultUserAgent() string {
 	return "Convoy/" + strings.TrimSuffix(string(f), "\n")
 }
 
-func (d *Dispatcher) Do(req *http.Request, res *Response, maxResponseSize int64) error {
+func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64) error {
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			res.IP = connInfo.Conn.RemoteAddr().String()
