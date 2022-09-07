@@ -99,13 +99,15 @@ func GetArgsByCollection(collection string, uri string, exportDir string, expDat
 	switch collection {
 	case "events":
 		query := fmt.Sprintf(`{ "group_id": "%s", "document_status": "Active", "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
-		out := fmt.Sprint(exportDir, group.OrganisationID, "/", group.UID, "/", "events/", time.Now().UTC().Format(time.RFC3339), "/", "events.json") //<org-id>/<project-id>/events/<today-as-ISODateTime>
+		//orgs/<org-id>/projects/<project-id>/events/<today-as-ISODateTime>
+		out := fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s/events.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 
 	case "eventdeliveries":
 		query := fmt.Sprintf(`{ "group_id": "%s", "document_status": "Active", "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
-		out := fmt.Sprint(exportDir, group.OrganisationID, "/", group.UID, "/", "eventdeliveries/", time.Now().UTC().Format(time.RFC3339), "/", "event_deliveries.json") //<org-id>/<project-id>/events/<today-as-ISODateTime>
+		//orgs/<org-id>/projects/<project-id>/eventdeliveries/<today-as-ISODateTime>
+		out := fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s/events.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 	default:
@@ -118,35 +120,16 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 	if err != nil {
 		return err
 	}
-	mongoExporter := &util.MongoExporter{
-		Args: args,
-	}
+
+	mongoExporter := &util.MongoExporter{Args: args}
 	numDocs, err := mongoExporter.Export()
 	if err != nil {
 		return err
 	}
+
 	if numDocs > 0 {
 		//upload to object store
 		err = objectStoreClient.Save(out)
-		if err != nil {
-			return err
-		}
-
-		//delete documents
-		f := &datastore.Filter{
-			Group: group,
-			SearchParams: datastore.SearchParams{
-				CreatedAtStart: 0,
-				CreatedAtEnd:   expDate.Unix(),
-			},
-		}
-
-		sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
-			GroupID:      f.Group.UID,
-			SearchParams: f.SearchParams,
-		}}
-
-		err = searcher.Remove(collection, sf)
 		if err != nil {
 			return err
 		}
@@ -187,6 +170,20 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 			if err != nil {
 				return err
 			}
+		}
+
+		//delete documents
+		sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
+			GroupID: group.UID,
+			SearchParams: datastore.SearchParams{
+				CreatedAtStart: 0,
+				CreatedAtEnd:   expDate.Unix(),
+			},
+		}}
+
+		err = searcher.Remove(collection, sf)
+		if err != nil {
+			log.WithError(err).Error("typesense: an error occured deleting typesense record")
 		}
 	}
 	return nil
