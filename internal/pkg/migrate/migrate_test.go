@@ -62,7 +62,7 @@ var (
 		},
 	}
 
-	fakeInitSchema = func(db *mongo.Database) (bool, error) {
+	fakeInitSchema = func(ctx context.Context, db *mongo.Database) (bool, error) {
 		return false, nil
 	}
 )

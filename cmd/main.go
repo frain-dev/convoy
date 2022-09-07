@@ -178,12 +178,14 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		*db = *database
 
 		// Check Pending Migrations
-		alias := cmd.Aliases[0]
-		shouldSkip := strings.HasPrefix(alias, "migrate")
-		if !shouldSkip {
-			err := checkPendingMigrations(cfg.Database.Dsn, db)
-			if err != nil {
-				return err
+		if len(cmd.Aliases) > 0 {
+			alias := cmd.Aliases[0]
+			shouldSkip := strings.HasPrefix(alias, "migrate")
+			if !shouldSkip {
+				err := checkPendingMigrations(cfg.Database.Dsn, db)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
