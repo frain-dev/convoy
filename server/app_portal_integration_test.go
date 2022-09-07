@@ -120,12 +120,12 @@ func (s *EventIntegrationTestSuite) Test_GetAppSubscriptions() {
 
 	// seed subscriptions
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedSubscription(s.DB, app1, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+		_, err = testdb.SeedSubscription(s.DB, app1, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 		require.NoError(s.T(), err)
 
 	}
 
-	sub, err := testdb.SeedSubscription(s.DB, app2, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	sub, err := testdb.SeedSubscription(s.DB, app2, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.StrategyConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	require.NoError(s.T(), err)
 
 	role := auth.Role{

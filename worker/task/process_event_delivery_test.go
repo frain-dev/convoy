@@ -772,6 +772,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
@@ -810,7 +811,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
-						TargetURL: "https://google.com",
+						TargetURL:         "https://google.com",
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
@@ -865,6 +866,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
