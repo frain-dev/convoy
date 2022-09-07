@@ -120,7 +120,7 @@
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">
 							<div class="flex items-center">
-                                <svg width="16" height="14" class="mr-10px" *ngIf="!event.device_id">
+                                <svg width="16" height="14" class="mr-10px" *ngIf="event.device_id">
                                     <use xlink:href="#cli-icon"></use>
                                 </svg>
                                 <convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
