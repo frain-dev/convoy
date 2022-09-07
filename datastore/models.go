@@ -239,7 +239,6 @@ type GroupConfig struct {
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
-	AlertConfig              *AlertConfiguration           `json:"alert_config" bson:"alert_config"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
 	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
