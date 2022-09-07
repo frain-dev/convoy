@@ -74,7 +74,7 @@ type MigrationDoc struct {
 	DocumentStatus datastore.DocumentStatus `json:"document_status" bson:"document_status"`
 }
 
-type InitSchemaFunc func(*mongo.Database) (bool, error)
+type InitSchemaFunc func(context.Context, *mongo.Database) (bool, error)
 
 type MigrateFunc func(*mongo.Database) error
 
@@ -246,7 +246,7 @@ func (m *Migrator) migrate(ctx context.Context, migrationID string) error {
 		}
 	}
 
-	initializedSchema, err := m.initSchema(m.db)
+	initializedSchema, err := m.initSchema(ctx, m.db)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (m *Migrator) migrate(ctx context.Context, migrationID string) error {
 	}
 
 	for _, migration := range m.migrations {
-		if err := m.runMigration(migration); err != nil {
+		if err := m.runMigration(ctx, migration); err != nil {
 			return err
 		}
 		if migrationID != "" && migration.ID == migrationID {
@@ -328,13 +328,17 @@ func (m *Migrator) migrationRan(migration *Migration) (bool, error) {
 	return count > 0, err
 }
 
-func (m *Migrator) insertMigration(id string) error {
+func (m *Migrator) insertMigration(ctx context.Context, id string) error {
 	store := datastore.New(m.db, m.opts.CollectionName)
 
 	var result MigrationDoc
 	payload := &MigrationDoc{ID: id, DocumentStatus: datastore.ActiveDocumentStatus}
 
-	err := store.Save(context.Background(), payload, &result)
+	if m.session != nil {
+		ctx = mongo.NewSessionContext(ctx, m.session)
+	}
+
+	err := store.Save(ctx, payload, &result)
 	if err != nil {
 		return err
 	}
@@ -342,7 +346,7 @@ func (m *Migrator) insertMigration(id string) error {
 	return nil
 }
 
-func (m *Migrator) runMigration(migration *Migration) error {
+func (m *Migrator) runMigration(ctx context.Context, migration *Migration) error {
 	if len(migration.ID) == 0 {
 		return ErrMissingID
 	}
@@ -357,7 +361,7 @@ func (m *Migrator) runMigration(migration *Migration) error {
 			return err
 		}
 
-		if err := m.insertMigration(migration.ID); err != nil {
+		if err := m.insertMigration(ctx, migration.ID); err != nil {
 			return err
 		}
 	}
@@ -410,6 +414,10 @@ func (m *Migrator) rollbackMigration(ctx context.Context, migration *Migration) 
 		"id": migration.ID,
 	}
 
+	if m.session != nil {
+		ctx = mongo.NewSessionContext(ctx, m.session)
+	}
+
 	return store.DeleteOne(ctx, filter, true)
 }
 
@@ -431,7 +439,7 @@ func (m *Migrator) getLastRunMigration() (*Migration, error) {
 	return nil, ErrNoRunMigration
 }
 
-func (m *Migrator) defaultinitSchema(db *mongo.Database) (bool, error) {
+func (m *Migrator) defaultinitSchema(ctx context.Context, db *mongo.Database) (bool, error) {
 	// save the last schema if nothing dey.
 	filter := map[string]interface{}{}
 
@@ -442,7 +450,7 @@ func (m *Migrator) defaultinitSchema(db *mongo.Database) (bool, error) {
 	}
 
 	if count == 0 {
-		err := m.insertMigration(m.migrations[len(m.migrations)-1].ID)
+		err := m.insertMigration(ctx, m.migrations[len(m.migrations)-1].ID)
 		if err != nil {
 			return false, err
 		}
