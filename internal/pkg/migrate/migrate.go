@@ -42,7 +42,7 @@ var (
 
 	// ErrPendingMigrationsFound is used to indicate there exist pending migrations yet to be run
 	// if the user proceeds without running migrations it can lead to data integrity issues.
-	ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first!")
+	ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first")
 )
 
 // DuplicatedIDError is returned when more than one migration have the same ID
