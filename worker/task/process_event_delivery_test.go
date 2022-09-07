@@ -959,6 +959,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 		group               *datastore.Group
 		wantRetryConfig     *datastore.StrategyConfiguration
 		wantRateLimitConfig *datastore.RateLimitConfiguration
+		wantDisableEndpoint bool
 	}{
 		{
 			name: "Subscription Config is primary config",
@@ -972,11 +973,15 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 					Count:    100,
 					Duration: 1,
 				},
+				DisableEndpoint: func(b bool) *bool {
+					return &b
+				}(true),
 			},
 			group: &datastore.Group{
 				Config: &datastore.GroupConfig{
-					Strategy:  &datastore.DefaultStrategyConfig,
-					RateLimit: &datastore.DefaultRateLimitConfig,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
+					DisableEndpoint: false,
 				},
 			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
@@ -988,6 +993,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				Count:    100,
 				Duration: 1,
 			},
+			wantDisableEndpoint: true,
 		},
 
 		{
@@ -1004,6 +1010,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 						Count:    100,
 						Duration: 10,
 					},
+					DisableEndpoint: false,
 				},
 			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
@@ -1015,6 +1022,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				Count:    100,
 				Duration: 10,
 			},
+			wantDisableEndpoint: false,
 		},
 	}
 
@@ -1036,6 +1044,9 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				assert.Equal(t, tc.wantRateLimitConfig.Count, count)
 				assert.Equal(t, tc.wantRateLimitConfig.Duration, rateLimitDuration)
 			}
+
+			disableEndpoint := evConfig.disableEndpoint()
+			assert.Equal(t, tc.wantDisableEndpoint, disableEndpoint)
 		})
 	}
 }

@@ -537,6 +537,7 @@ type Subscription struct {
 	RetryConfig     *StrategyConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
 	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
+	DisableEndpoint *bool                   `json:"disable_endpoint,omitempty" bson:"disable_endpoint"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`

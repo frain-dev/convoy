@@ -210,7 +210,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			log.Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
-		if done && subscription.Status == datastore.PendingSubscriptionStatus && g.Config.DisableEndpoint {
+		if done && subscription.Status == datastore.PendingSubscriptionStatus && ec.disableEndpoint() {
 			subscriptionStatus := datastore.ActiveSubscriptionStatus
 			err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 			if err != nil {
@@ -248,8 +248,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				ed.Status = datastore.FailureEventStatus
 			}
 
-			
-			if g.Config.DisableEndpoint && subscription.Status != datastore.PendingSubscriptionStatus {
+			if ec.disableEndpoint() && subscription.Status != datastore.PendingSubscriptionStatus {
 				subscriptionStatus := datastore.InactiveSubscriptionStatus
 
 				err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
@@ -307,6 +306,14 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 type EventDeliveryConfig struct {
 	group        *datastore.Group
 	subscription *datastore.Subscription
+}
+
+func (ec *EventDeliveryConfig) disableEndpoint() bool {
+	if ec.subscription.DisableEndpoint != nil {
+		return *ec.subscription.DisableEndpoint
+	}
+
+	return ec.group.Config.DisableEndpoint
 }
 
 func (ec *EventDeliveryConfig) retryConfig() (datastore.StrategyProvider, uint64, uint64) {

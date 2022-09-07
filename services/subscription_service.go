@@ -85,6 +85,10 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
+	if newSubscription.DisableEndpoint != nil {
+		subscription.DisableEndpoint = newSubscription.DisableEndpoint
+	}
+
 	if subscription.FilterConfig == nil ||
 		subscription.FilterConfig.EventTypes == nil ||
 		len(subscription.FilterConfig.EventTypes) == 0 {
@@ -171,6 +175,10 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 
 	if update.RateLimitConfig != nil && update.RateLimitConfig.Duration > 0 {
 		subscription.RateLimitConfig.Duration = update.RateLimitConfig.Duration
+	}
+
+	if update.DisableEndpoint != nil {
+		subscription.DisableEndpoint = update.DisableEndpoint
 	}
 
 	err = s.subRepo.UpdateSubscription(ctx, groupId, subscription)

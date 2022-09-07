@@ -59,6 +59,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 		"retry_config.type":        string(subscription.RetryConfig.Type),
 		"retry_config.duration":    subscription.RetryConfig.Duration,
 		"retry_config.retry_count": subscription.RetryConfig.RetryCount,
+		"disable_endpoint":         subscription.DisableEndpoint,
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)

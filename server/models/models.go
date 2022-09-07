@@ -254,6 +254,7 @@ type Subscription struct {
 	RetryConfig     *datastore.StrategyConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
 	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
+	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
 }
 
 type UpdateSubscription struct {
@@ -266,6 +267,7 @@ type UpdateSubscription struct {
 	RetryConfig     *datastore.StrategyConfiguration  `json:"retry_config,omitempty"`
 	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty"`
 	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty"`
+	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
 }
 
 type UpdateUser struct {
