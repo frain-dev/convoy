@@ -108,6 +108,7 @@ type app struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	applicationRepo   datastore.ApplicationRepository
+	deviceRepo        datastore.DeviceRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	subRepo           datastore.SubscriptionRepository
@@ -250,11 +251,13 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		app.applicationRepo = db.AppRepo()
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
+		app.deviceRepo = db.DeviceRepo()
 		app.userRepo = db.UserRepo()
 		app.configRepo = db.ConfigurationRepo()
 		app.orgRepo = db.OrganisationRepo()
 		app.orgMemberRepo = db.OrganisationMemberRepo()
 		app.orgInviteRepo = db.OrganisationInviteRepo()
+		app.deviceRepo = db.DeviceRepo()
 
 		app.queue = q
 		app.logger = lo
@@ -297,6 +300,12 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addMigrateCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
+	cmd.AddCommand(addListenCommand(app))
+	cmd.AddCommand(addLoginCommand())
+	cmd.AddCommand(addListAppsCommand())
+	cmd.AddCommand(addStreamCommand(app))
+	cmd.AddCommand(addSwitchCommand())
+
 }
 
 type ConvoyCli struct {

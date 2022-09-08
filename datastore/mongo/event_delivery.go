@@ -284,3 +284,39 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 	}
 	return nil
 }
+
+func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
+	filter := bson.M{
+		"app_id":          appId,
+		"device_id":       deviceId,
+		"status":          datastore.DiscardedEventStatus,
+		"created_at":      getCreatedDateFilter(searchParams),
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	deliveries := make([]datastore.EventDelivery, 0)
+
+	cur, err := db.inner.Find(ctx, filter, nil)
+	if err != nil {
+		return deliveries, err
+	}
+
+	for cur.Next(ctx) {
+		var delivery datastore.EventDelivery
+		if err := cur.Decode(&delivery); err != nil {
+			return deliveries, err
+		}
+
+		deliveries = append(deliveries, delivery)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := cur.Close(ctx); err != nil {
+		return deliveries, err
+	}
+
+	return deliveries, nil
+}

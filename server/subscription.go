@@ -25,8 +25,8 @@ import (
 // @Param sort query string false "sort order"
 // @Param q query string false "subscription title"
 // @Param groupId query string true "group id"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Subscription}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions [get]
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +54,8 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param subscriptionID path string true "application id"
-// @Success 200 {object} serverResponse{data=datastore.Subscription}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [get]
 func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +78,8 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Accept json
 // @Produce json
 // @Param groupId query string true "group id"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Subscription}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions [post]
 func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
@@ -91,8 +91,6 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
-
-	sub.Type = string(group.Type)
 
 	subscription, err := a.S.SubService.CreateSubscription(r.Context(), group, &sub)
 	if err != nil {
@@ -112,8 +110,8 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Produce json
 // @Param groupId query string true "group id"
 // @Param subscriptionID path string true "subscription id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [delete]
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
@@ -143,8 +141,8 @@ func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 // @Produce json
 // @Param subscriptionID path string true "subscription id"
 // @Param subscription body models.Subscription true "Subscription Details"
-// @Success 200 {object} serverResponse{data=datastore.Subscription}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID} [put]
 func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
@@ -175,8 +173,8 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Accept json
 // @Produce json
 // @Param subscriptionID path string true "subscription id"
-// @Success 200 {object} serverResponse{data=datastore.Subscription}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {

@@ -22,8 +22,8 @@ import (
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.OrganisationMember}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.OrganisationMember}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members [get]
 func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
@@ -49,8 +49,8 @@ func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param memberID path string true "organisation member id"
-// @Success 200 {object} serverResponse{data=datastore.OrganisationMember}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.OrganisationMember}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members/{memberID} [get]
 func (a *ApplicationHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
@@ -75,8 +75,8 @@ func (a *ApplicationHandler) GetOrganisationMember(w http.ResponseWriter, r *htt
 // @Param orgID path string true "organisation id"
 // @Param memberID path string true "organisation member id"
 // @Param organisation_member body models.UpdateOrganisationMember true "Organisation member Details"
-// @Success 200 {object} serverResponse{data=datastore.Organisation}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Organisation}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members/{memberID} [put]
 func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Request) {
@@ -113,8 +113,8 @@ func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param memberID path string true "organisation member id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members/{memberID} [delete]
 func (a *ApplicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {

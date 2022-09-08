@@ -119,7 +119,12 @@
 							<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
+							<div class="flex items-center">
+                                <svg width="16" height="14" class="mr-10px" *ngIf="event.device_id">
+                                    <use xlink:href="#cli-icon"></use>
+                                </svg>
+                                <convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
+                            </div>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">{{ event.metadata?.num_trials }}</convoy-table-cell>
 						<convoy-table-cell class="contents">{{ event.metadata?.retry_limit }}</convoy-table-cell>

@@ -78,7 +78,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -111,7 +111,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -129,7 +129,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -147,7 +147,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -203,7 +203,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -221,7 +221,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -239,7 +239,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -257,7 +257,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -313,7 +313,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -331,7 +331,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -349,7 +349,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -367,7 +367,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -430,7 +430,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -448,7 +448,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -466,7 +466,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -484,7 +484,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -538,7 +538,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -556,7 +556,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -574,7 +574,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -592,7 +592,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -648,7 +648,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -669,7 +669,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -687,7 +687,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -705,7 +705,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -768,7 +768,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -786,7 +786,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -804,7 +804,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -822,7 +822,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -885,7 +885,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -903,7 +903,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -921,7 +921,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -939,7 +939,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1009,7 +1009,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1027,7 +1027,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1045,7 +1045,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1063,7 +1063,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1124,7 +1124,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1142,7 +1142,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1160,7 +1160,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1178,7 +1178,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1224,7 +1224,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1242,7 +1242,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1260,7 +1260,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1278,7 +1278,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1318,7 +1318,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1336,7 +1336,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1354,7 +1354,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1372,7 +1372,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1418,7 +1418,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1436,7 +1436,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1454,7 +1454,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1472,7 +1472,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1512,7 +1512,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1545,7 +1545,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1563,7 +1563,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1581,7 +1581,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1630,7 +1630,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1648,7 +1648,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1666,7 +1666,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1684,7 +1684,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1733,7 +1733,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1751,7 +1751,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1769,7 +1769,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1787,7 +1787,143 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{appID}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches devices for an app",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Source"
+                ],
+                "summary": "Fetch devices for an app",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "results per page",
+                        "name": "perPage",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "app id",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "content": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/datastore.Device"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1887,7 +2023,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1932,7 +2068,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1950,7 +2086,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1968,7 +2104,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2041,7 +2177,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2059,7 +2195,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2077,7 +2213,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2095,7 +2231,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2180,7 +2316,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2210,7 +2346,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2228,7 +2364,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2246,7 +2382,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2319,7 +2455,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2337,7 +2473,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2355,7 +2491,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2373,7 +2509,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2429,7 +2565,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2459,7 +2595,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2477,7 +2613,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2495,7 +2631,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2551,7 +2687,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2581,7 +2717,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2599,7 +2735,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2617,7 +2753,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2702,7 +2838,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2747,7 +2883,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2765,7 +2901,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2783,7 +2919,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2839,7 +2975,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2869,7 +3005,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2887,7 +3023,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2905,7 +3041,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2961,7 +3097,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2991,7 +3127,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3009,7 +3145,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3027,7 +3163,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3083,7 +3219,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3104,7 +3240,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3122,7 +3258,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3140,7 +3276,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3203,7 +3339,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3221,7 +3357,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3239,7 +3375,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3257,7 +3393,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3313,7 +3449,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3343,7 +3479,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3361,7 +3497,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3379,7 +3515,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3427,7 +3563,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3448,7 +3584,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3466,7 +3602,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3484,7 +3620,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3533,7 +3669,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3551,7 +3687,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3569,7 +3705,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3587,7 +3723,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3643,7 +3779,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3661,7 +3797,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3679,7 +3815,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3697,7 +3833,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3744,7 +3880,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3762,7 +3898,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3780,7 +3916,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3798,7 +3934,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3821,7 +3957,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an api key that will be used by app portal",
+                "description": "This endpoint creates an api key that will be used by app portal or the cli",
                 "consumes": [
                     "application/json"
                 ],
@@ -3831,7 +3967,7 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Create an api key for app portal (API)",
+                "summary": "Create an api key for app portal or the cli (API)",
                 "parameters": [
                     {
                         "type": "string",
@@ -3847,7 +3983,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3865,7 +4001,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3883,7 +4019,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3901,7 +4037,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3961,7 +4097,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3994,7 +4130,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4012,7 +4148,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4030,7 +4166,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4086,7 +4222,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4104,7 +4240,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4122,7 +4258,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4140,7 +4276,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4196,7 +4332,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4214,7 +4350,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4232,7 +4368,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4250,7 +4386,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4313,7 +4449,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4331,7 +4467,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4349,7 +4485,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4367,7 +4503,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4421,7 +4557,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4439,7 +4575,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4457,7 +4593,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4475,7 +4611,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4548,7 +4684,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4581,7 +4717,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4599,7 +4735,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4617,7 +4753,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4664,7 +4800,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4697,7 +4833,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4715,7 +4851,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4733,7 +4869,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4789,7 +4925,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4807,7 +4943,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4825,7 +4961,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4843,7 +4979,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4899,7 +5035,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4917,7 +5053,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4935,7 +5071,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4953,7 +5089,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5007,7 +5143,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5025,7 +5161,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5043,7 +5179,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5061,7 +5197,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5110,7 +5246,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5128,7 +5264,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5146,7 +5282,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5164,7 +5300,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5224,7 +5360,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5257,7 +5393,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5275,7 +5411,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5293,7 +5429,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5342,7 +5478,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5360,7 +5496,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5378,7 +5514,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5396,7 +5532,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5460,7 +5596,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5478,7 +5614,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5496,7 +5632,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5514,7 +5650,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5563,7 +5699,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5581,7 +5717,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5599,7 +5735,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5617,7 +5753,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5673,7 +5809,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5691,7 +5827,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5709,7 +5845,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5727,7 +5863,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5774,7 +5910,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5792,7 +5928,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5810,7 +5946,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5828,7 +5964,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5886,7 +6022,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5904,7 +6040,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5922,7 +6058,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5940,7 +6076,131 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint revokes app's an api key",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "APIKey"
+                ],
+                "summary": "Revoke an App's API Key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group id",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "application id",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key id",
+                        "name": "keyID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5998,7 +6258,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6016,7 +6276,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6034,7 +6294,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6052,7 +6312,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6119,7 +6379,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6137,7 +6397,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6155,7 +6415,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6173,7 +6433,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6229,7 +6489,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6247,7 +6507,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6265,7 +6525,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6283,7 +6543,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6339,7 +6599,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6357,7 +6617,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6375,7 +6635,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6393,7 +6653,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6460,7 +6720,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6493,7 +6753,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6511,7 +6771,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6529,7 +6789,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6585,7 +6845,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6603,7 +6863,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6621,7 +6881,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6639,7 +6899,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6702,7 +6962,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6720,7 +6980,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6738,7 +6998,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6756,7 +7016,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6810,7 +7070,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6828,7 +7088,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6846,7 +7106,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6864,7 +7124,117 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/organisations/{orgID}/security/applications/{appID}/keys": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches multiple api keys belonging to an app",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "APIKey"
+                ],
+                "summary": "Fetch multiple api keys belonging to an app",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "application ID",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.PortalAPIKeyResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6931,7 +7301,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6964,7 +7334,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6982,7 +7352,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7000,7 +7370,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7056,7 +7426,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7074,7 +7444,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7092,7 +7462,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7110,7 +7480,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7166,7 +7536,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7184,7 +7554,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7202,7 +7572,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7220,7 +7590,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7274,7 +7644,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7292,7 +7662,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7310,7 +7680,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7328,7 +7698,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7384,7 +7754,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7402,7 +7772,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7420,7 +7790,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7438,7 +7808,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7484,7 +7854,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7502,7 +7872,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7520,7 +7890,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7538,7 +7908,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7591,7 +7961,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7609,7 +7979,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7627,7 +7997,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7645,7 +8015,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7694,7 +8064,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7712,7 +8082,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7730,7 +8100,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7748,7 +8118,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7806,7 +8176,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7824,7 +8194,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7842,7 +8212,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7860,7 +8230,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7909,7 +8279,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7927,7 +8297,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7945,7 +8315,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7963,7 +8333,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8019,7 +8389,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8037,7 +8407,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8055,7 +8425,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8073,7 +8443,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8217,6 +8587,14 @@
                 }
             }
         },
+        "datastore.CLIMetadata": {
+            "type": "object",
+            "properties": {
+                "event_type": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.DeliveryAttempt": {
             "type": "object",
             "properties": {
@@ -8266,6 +8644,38 @@
                     "type": "string"
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.Device": {
+            "type": "object",
+            "properties": {
+                "app_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "last_seen_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -8330,11 +8740,11 @@
                 "event_type": {
                     "type": "string"
                 },
-                "forwarded_headers": {
-                    "$ref": "#/definitions/datastore.HttpHeader"
-                },
                 "group_id": {
                     "type": "string"
+                },
+                "headers": {
+                    "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "matched_endpoints": {
                     "description": "TODO(all) remove this field",
@@ -8364,6 +8774,9 @@
                 "app_metadata": {
                     "$ref": "#/definitions/datastore.Application"
                 },
+                "cli_metadata": {
+                    "$ref": "#/definitions/datastore.CLIMetadata"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -8371,6 +8784,9 @@
                     "type": "string"
                 },
                 "description": {
+                    "type": "string"
+                },
+                "device_id": {
                     "type": "string"
                 },
                 "endpoint_id": {
@@ -8385,11 +8801,11 @@
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
                 },
-                "forwarded_headers": {
-                    "$ref": "#/definitions/datastore.HttpHeader"
-                },
                 "group_id": {
                     "type": "string"
+                },
+                "headers": {
+                    "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
@@ -8827,6 +9243,9 @@
                 "deleted_at": {
                     "type": "string"
                 },
+                "device_id": {
+                    "type": "string"
+                },
                 "endpoint_metadata": {
                     "$ref": "#/definitions/datastore.Endpoint"
                 },
@@ -8923,6 +9342,15 @@
                     "$ref": "#/definitions/datastore.HMac"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpheader.HTTPHeader": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "array",
+                "items": {
                     "type": "string"
                 }
             }
@@ -9215,12 +9643,6 @@
         "models.Source": {
             "type": "object",
             "properties": {
-                "forward_headers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -9289,6 +9711,7 @@
                     "$ref": "#/definitions/datastore.AlertConfiguration"
                 },
                 "app_id": {
+                    "description": "Type       string `json:\"type\" bson:\"type\" valid:\"required~please provide a valid subscription type\"`",
                     "type": "string"
                 },
                 "endpoint_id": {
@@ -9304,9 +9727,6 @@
                     "$ref": "#/definitions/datastore.RetryConfiguration"
                 },
                 "source_id": {
-                    "type": "string"
-                },
-                "type": {
                     "type": "string"
                 }
             }
@@ -9390,7 +9810,7 @@
                 }
             }
         },
-        "server.serverResponse": {
+        "util.ServerResponse": {
             "type": "object",
             "properties": {
                 "data": {
