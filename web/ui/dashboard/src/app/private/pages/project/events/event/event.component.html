@@ -114,7 +114,7 @@
 						<ul>
 							<convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['./event-deliveries/' + delivery.uid]" className="cursor-pointer !justify-start">
                                 <div class="flex items-center">
-                                    <svg width="16" height="14" class="mr-6px" *ngIf="!delivery.device_id">
+                                    <svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
                                         <use xlink:href="#cli-icon"></use>
                                     </svg>
                                     <convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
