@@ -25,7 +25,8 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	searcher := mocks.NewMockSearcher(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo)
+	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
+	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo, deviceRepo)
 }
 
 func TestEventService_CreateAppEvent(t *testing.T) {

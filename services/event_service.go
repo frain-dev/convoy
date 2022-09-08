@@ -31,11 +31,12 @@ type EventService struct {
 	subRepo           datastore.SubscriptionRepository
 	cache             cache.Cache
 	searcher          searcher.Searcher
+	deviceRepo        datastore.DeviceRepository
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo}
+	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, deviceRepo datastore.DeviceRepository) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -291,6 +292,7 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 
 	appMap := datastore.AppMap{}
 	eventMap := datastore.EventMap{}
+	deviceMap := datastore.DeviceMap{}
 	endpointMap := datastore.EndpointMap{}
 
 	for i, ed := range deliveries {
@@ -316,6 +318,20 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 				}
 				eventMap[ed.EventID] = event
 			}
+		}
+
+		if !util.IsStringEmpty(ed.DeviceID) {
+			if _, ok := deviceMap[ed.DeviceID]; !ok {
+				dev, err := e.deviceRepo.FetchDeviceByID(ctx, ed.DeviceID, ed.AppID, ed.GroupID)
+				if err == nil {
+					device := &datastore.Device{
+						UID:      dev.UID,
+						HostName: dev.HostName,
+					}
+					deviceMap[ed.DeviceID] = device
+				}
+			}
+			deliveries[i].CLIMetadata.HostName = deviceMap[ed.DeviceID].HostName
 		}
 
 		if _, ok := endpointMap[ed.EndpointID]; !ok {

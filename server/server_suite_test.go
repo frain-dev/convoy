@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -118,6 +117,7 @@ func buildServer() *ApplicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 	subRepo := db.SubRepo()
+	deviceRepo := db.DeviceRepo()
 
 	return NewApplicationHandler(
 		Repos{
@@ -133,6 +133,7 @@ func buildServer() *ApplicationHandler {
 			OrgInviteRepo:     orgInviteRepo,
 			UserRepo:          userRepo,
 			ConfigRepo:        configRepo,
+			DeviceRepo:        deviceRepo,
 		}, Services{
 			Queue:    queue,
 			Logger:   logger,
@@ -156,7 +157,7 @@ func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRep
 }
 
 func parseResponse(t *testing.T, w *http.Response, object interface{}) {
-	body, err := ioutil.ReadAll(w.Body)
+	body, err := io.ReadAll(w.Body)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

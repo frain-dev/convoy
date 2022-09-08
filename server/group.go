@@ -18,8 +18,8 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param groupID path string true "group id"
-// @Success 200 {object} serverResponse{data=datastore.Group}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [get]
 func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +42,8 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param groupID path string true "group id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [delete]
 func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
@@ -67,8 +67,8 @@ func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param group body models.Group true "Group Details"
-// @Success 200 {object} serverResponse{data=datastore.Group}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups [post]
 func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +103,8 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Produce  json
 // @Param groupID path string true "group id"
 // @Param group body models.Group true "Group Details"
-// @Success 200 {object} serverResponse{data=datastore.Group}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups/{groupID} [put]
 func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
@@ -132,8 +132,8 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Accept  json
 // @Produce  json
 // @Param name query string false "group name"
-// @Success 200 {object} serverResponse{data=[]datastore.Group}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=[]datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /groups [get]
 func (a *ApplicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {

@@ -73,7 +73,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		GroupID:    group.UID,
 		UID:        uuid.New().String(),
 		Name:       newSubscription.Name,
-		Type:       newSubscription.Type,
+		Type:       datastore.SubscriptionTypeAPI,
 		AppID:      newSubscription.AppID,
 		SourceID:   newSubscription.SourceID,
 		EndpointID: newSubscription.EndpointID,
