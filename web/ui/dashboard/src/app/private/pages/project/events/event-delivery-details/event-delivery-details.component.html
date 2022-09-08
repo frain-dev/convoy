@@ -54,20 +54,13 @@
 			<p class="text-grey-40 text-12 font-light">IP ADDRESS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
 		</div>
-        <div *ngIf="eventDelsDetails?.device_id">
-			<p class="text-grey-40 text-12 font-light">DEVICE</p>
 
-			<div class="flex items-center text-14 font-medium">
-                <svg width="16" height="14" class="mr-8px">
-                    <use xlink:href="#cli-icon"></use>
-                </svg>
-                {{ eventDelsDetails?.cli_metadata?.host_name || '-' }}
-            </div>
-		</div>
 		<div *ngIf="eventDelsDetails?.status == 'Success'">
 			<p class="text-grey-40 text-12 font-light">TIME</p>
 			<p class="text-14 font-medium">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
 		</div>
+
+
 	</div>
 
 	<div class="grid grid-cols-5 mb-32px" *ngIf="isLoadingDeliveryDetails">
@@ -87,20 +80,32 @@
 		<div></div>
 	</div>
 
-	<div class="grid grid-cols-5 mb-32px" *ngIf="!isLoadingDeliveryDetails && !eventDelsDetails?.device_id">
-		<div>
+	<div class="grid grid-cols-5 mb-32px" *ngIf="!isLoadingDeliveryDetails">
+		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">HTTP STATUS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
 		</div>
-		<div>
+		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">API VERSION</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
 		</div>
-		<div>
+		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">ENDPOINT</p>
 			<p class="text-primary-100 text-14 font-medium overflow-ellipsis whitespace-nowrap w-200px overflow-hidden" [title]="eventDelsDetails?.endpoint_metadata?.target_url">
 				{{ eventDelsDetails?.endpoint_metadata?.target_url }}
 			</p>
+		</div>
+        <div *ngIf="eventDelsDetails?.device_id">
+			<p class="text-grey-40 text-12 font-light">DEVICE</p>
+
+			<div class="flex items-center text-14 font-medium">
+                <div>
+                    <svg width="16" height="14" class="mr-8px">
+                        <use xlink:href="#cli-icon"></use>
+                    </svg>
+                </div>
+                <span class="whitespace-nowrap">{{ eventDelsDetails?.cli_metadata?.host_name || '-' }}</span>
+            </div>
 		</div>
 		<div></div>
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
