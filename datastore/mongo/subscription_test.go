@@ -28,7 +28,7 @@ func createSubscription() *datastore.Subscription {
 		},
 		RetryConfig: &datastore.RetryConfiguration{
 			Type:       "linear",
-			IntervalSeconds:   3,
+			Duration:   3,
 			RetryCount: 10,
 		},
 		FilterConfig: &datastore.FilterConfiguration{
@@ -68,7 +68,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		appId string
+		appId    string
 		pageData datastore.Pageable
 		expected Expected
 	}{
@@ -118,8 +118,8 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		},
 
 		{
-			name: "Load Subscriptions Paged with App ID - 1 record",
-			appId: "app-id-1",
+			name:     "Load Subscriptions Paged with App ID - 1 record",
+			appId:    "app-id-1",
 			pageData: datastore.Pageable{Page: 1, PerPage: 3},
 			expected: Expected{
 				paginationData: datastore.PaginationData{

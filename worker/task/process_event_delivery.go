@@ -331,17 +331,7 @@ func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 	rc := &RetryConfig{}
 
 	if ec.subscription.RetryConfig != nil {
-		duration := ec.subscription.RetryConfig.Duration
-		if !util.IsStringEmpty(duration) {
-			interval, err := time.ParseDuration(duration)
-			if err != nil {
-				return rc, err
-			}
-
-			rc.Duration = uint64(interval.Seconds())
-		} else {
-			rc.Duration = ec.subscription.RetryConfig.IntervalSeconds
-		}
+		rc.Duration = ec.subscription.RetryConfig.Duration
 		rc.RetryCount = ec.subscription.RetryConfig.RetryCount
 		rc.Type = ec.subscription.RetryConfig.Type
 

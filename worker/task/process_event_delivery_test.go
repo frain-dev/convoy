@@ -965,9 +965,9 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 			name: "Subscription Config is primary config",
 			subscription: &datastore.Subscription{
 				RetryConfig: &datastore.RetryConfiguration{
-					Type:            datastore.LinearStrategyProvider,
-					IntervalSeconds: 2,
-					RetryCount:      3,
+					Type:       datastore.LinearStrategyProvider,
+					Duration:   2,
+					RetryCount: 3,
 				},
 				RateLimitConfig: &datastore.RateLimitConfiguration{
 					Count:    100,

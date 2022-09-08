@@ -64,6 +64,11 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		}
 	}
 
+	retryConfig, err := getRetryConfig(newSubscription.RetryConfig)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	subscription := &datastore.Subscription{
 		GroupID:    group.UID,
 		UID:        uuid.New().String(),
@@ -73,7 +78,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		SourceID:   newSubscription.SourceID,
 		EndpointID: newSubscription.EndpointID,
 
-		RetryConfig:     newSubscription.RetryConfig,
+		RetryConfig:     retryConfig,
 		AlertConfig:     newSubscription.AlertConfig,
 		FilterConfig:    newSubscription.FilterConfig,
 		RateLimitConfig: newSubscription.RateLimitConfig,
@@ -133,6 +138,11 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
 	}
 
+	retryConfig, err := getRetryConfig(update.RetryConfig)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	if !util.IsStringEmpty(update.Name) {
 		subscription.Name = update.Name
 	}
@@ -158,11 +168,11 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 	}
 
 	if update.RetryConfig != nil && !util.IsStringEmpty(update.RetryConfig.Duration) {
-		subscription.RetryConfig.Duration = update.RetryConfig.Duration
+		subscription.RetryConfig.Duration = retryConfig.Duration
 	}
 
 	if update.RetryConfig != nil && update.RetryConfig.IntervalSeconds > 0 {
-		subscription.RetryConfig.IntervalSeconds = update.RetryConfig.IntervalSeconds
+		subscription.RetryConfig.RetryCount = retryConfig.RetryCount
 	}
 
 	if update.RetryConfig != nil && update.RetryConfig.RetryCount > 0 {
@@ -344,4 +354,25 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 	}
 
 	return subscriptions, paginatedData, nil
+}
+
+func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfiguration, error) {
+	if cfg == nil {
+		return nil, nil
+	}
+
+	strategyConfig := &datastore.RetryConfiguration{Type: cfg.Type, RetryCount: cfg.RetryCount}
+	if !util.IsStringEmpty(cfg.Duration) {
+		interval, err := time.ParseDuration(cfg.Duration)
+		if err != nil {
+			return nil, err
+		}
+
+		strategyConfig.Duration = uint64(interval.Seconds())
+		return strategyConfig, nil
+	}
+
+	strategyConfig.Duration = cfg.IntervalSeconds
+	return strategyConfig, nil
+
 }

@@ -144,9 +144,9 @@ var (
 	}
 
 	DefaultRetryConfig = RetryConfiguration{
-		Type:            LinearStrategyProvider,
-		IntervalSeconds: 10,
-		RetryCount:      3,
+		Type:       LinearStrategyProvider,
+		Duration:   10,
+		RetryCount: 3,
 	}
 
 	DefaultAlertConfig = AlertConfiguration{
@@ -583,10 +583,9 @@ type User struct {
 }
 
 type RetryConfiguration struct {
-	Type            StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
-	Duration        string           `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
-	IntervalSeconds uint64           `json:"interval_seconds" bson:"interval_seconds" valid:"int~please provide a valid interval seconds"`
-	RetryCount      uint64           `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
+	Type       StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration   uint64           `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
+	RetryCount uint64           `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 type AlertConfiguration struct {
