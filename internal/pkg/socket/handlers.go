@@ -247,7 +247,7 @@ func listen(ctx context.Context, group *datastore.Group, app *datastore.Applicat
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			s := &datastore.Subscription{
 				UID:            uuid.NewString(),
-				Name:           fmt.Sprintf("%v-subscription", device.HostName),
+				Name:           fmt.Sprintf("%s-subscription", device.HostName),
 				Type:           datastore.SubscriptionTypeCLI,
 				AppID:          appID,
 				GroupID:        group.UID,

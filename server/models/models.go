@@ -132,11 +132,11 @@ type RegisterUser struct {
 }
 
 type LoginUserResponse struct {
-	UID       string    `json:"uid"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Token     Token     `json:"token"`
+	UID       string `json:"uid"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Token     Token  `json:"token"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
@@ -244,8 +244,7 @@ type WebhookRequest struct {
 }
 
 type Subscription struct {
-	Name string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
-	//Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
+	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
 	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
