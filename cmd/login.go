@@ -261,7 +261,6 @@ func findDeviceID(c *Config) string {
 
 func doesAppExist(c *Config, appId string) bool {
 	for _, app := range c.Applications {
-		fmt.Printf("\n%v %v\n\n", app.UID, appId)
 		if app.UID == appId {
 			return true
 		}
