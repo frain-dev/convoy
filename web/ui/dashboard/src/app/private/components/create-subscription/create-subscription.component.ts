@@ -19,6 +19,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		source_id: [null, Validators.required],
 		endpoint_id: [null, Validators.required],
 		group_id: [null, Validators.required],
+		disable_endpoint: [null, Validators.required],
 		alert_config: this.formBuilder.group({
 			threshold: [null],
 			count: [null]
@@ -181,7 +182,9 @@ export class CreateSubscriptionComponent implements OnInit {
 		} else {
 			this.subscriptionForm.get('alert_config.count')?.patchValue(parseInt(this.subscriptionForm.get('alert_config.count')?.value));
 			this.subscriptionForm.get('retry_config.retry_count')?.patchValue(parseInt(this.subscriptionForm.get('retry_config.retry_count')?.value));
+			this.subscriptionForm.get('retry_config.duration')?.patchValue(parseInt(this.subscriptionForm.get('retry_config.duration')?.value));
 		}
+
 
 		this.isCreatingSubscription = true;
 		try {

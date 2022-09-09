@@ -46,6 +46,12 @@
 			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
 		</div>
 
+		<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
+		<div class="grid grid-cols-2 gap-24px">
+			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
+			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
+		</div>
+
 		<div class="flex justify-end mt-20px">
 			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
 		</div>
@@ -62,7 +68,7 @@
 			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
 				<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism"></convoy-select>
 
-				<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3s"></convoy-input>
+				<convoy-input type="number" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3"></convoy-input>
 				<convoy-input type="text" name="retry-logic-count" formControlName="retry_count" label="Limit" placeholder="e.g 5"></convoy-input>
 			</div>
 
