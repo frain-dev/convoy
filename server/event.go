@@ -164,7 +164,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 
 	f := &datastore.Filter{
 		Group:   m.GetGroupFromContext(r.Context()),
-		AppID:   r.URL.Query().Get("appId"),
+		AppID:   m.GetAppIDFromContext(r),
 		EventID: r.URL.Query().Get("eventId"),
 		Status:  status,
 		Pageable: datastore.Pageable{
@@ -217,7 +217,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 
 	f := &datastore.Filter{
 		Group:        m.GetGroupFromContext(r.Context()),
-		AppID:        r.URL.Query().Get("appId"),
+		AppID:        m.GetAppIDFromContext(r),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
 		SearchParams: searchParams,
@@ -295,12 +295,11 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 	query := r.URL.Query().Get("query")
-	app := r.URL.Query().Get("appId")
 
 	f := &datastore.Filter{
 		Query:        query,
 		Group:        group,
-		AppID:        app,
+		AppID:        m.GetAppIDFromContext(r),
 		Pageable:     pageable,
 		SearchParams: searchParams,
 	}
@@ -362,7 +361,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 
 	f := &datastore.Filter{
 		Group:        m.GetGroupFromContext(r.Context()),
-		AppID:        r.URL.Query().Get("appId"),
+		AppID:        m.GetAppIDFromContext(r),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
 		Pageable:     m.GetPageableFromContext(r.Context()),
