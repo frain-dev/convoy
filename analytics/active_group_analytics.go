@@ -69,7 +69,6 @@ func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
 		}
 	}
 
-	perPage += 20
 	page += 1
 
 	return a.track(perPage, page, count)
