@@ -1,3 +1,10 @@
+## 0.6.7
+
+-   [Bugfix] Fix analytics query #1001
+-   [Bugfix] Fix middleware layer for app portal #988
+-   [Bugfix] Fix endpoint notification email bug #981
+
+
 ## 0.6.6
 
 -   [Bugfix] Fix project statistics lookup query #978 #979
