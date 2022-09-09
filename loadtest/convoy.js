@@ -2,6 +2,18 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { randomItem } from "https://jslib.k6.io/k6-utils/1.2.0/index.js";
 
+const baseUrl = `${__ENV.BASE_URL}/api/v1`
+const apiKey = __ENV.API_KEY
+const appId = __ENV.APP_ID;
+const params = {
+    headers : {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+    }
+}
+
+const eventFailRate = new Rate('failed events')
+
 const names = ["John", "Jane", "Bert", "Ed"];
 const emails = [
   "John@gmail.com",
@@ -9,6 +21,7 @@ const emails = [
   "Bert@yahoo.com",
   "Ed@hotmail.com",
 ];
+
 export const generateEventPayload = (appId) => ({
   app_id: appId,
   data: {
@@ -21,32 +34,23 @@ export const generateEventPayload = (appId) => ({
 export let options = {
   noConnectionReuse: true,
   stages: [
-    { duration: "20s", target: 1 }, // simulate ramp-up of traffic from 1 to 1000 users over 1 minute.
-    { duration: "20s", target: 10 }, // stay at 1000 users for 1 minute
-    { duration: "20s", target: 0 }, // ramp-down to 0 users in 1 minute
+    { duration: '60s', target: 100 }, // simulate ramp-up of traffic from 1 to 100 users over 60s
+    { duration: '60s', target: 100 }, // stay at 100 users for 60s
   ],
   thresholds: {
-    http_req_duration: ["p(99)<6000"], // 99% of requests must complete below 6.0s
-    "successfully sent event": ["p(99)<6000"], // 99% of requests must complete below 6.0s
+    'failed events': ['rate<0.1'],
+    'http_req_duration': ['p(99)<6000'], // 99% of requests must complete below 2s
   },
 };
 
 export default function () {
-  const headers = { "content-type": "application/json" };
-  const baseUrl = "http://localhost:5005";
-  const groupId = "12097532-bd40-4cd9-bdfe-0a2dfb08d86e";
-  const appId = "d64eac7b-7d3f-464b-84d0-f3938d36b3af";
+  let eventBody = JSON.stringify(generateEventPayload(appId))
+    const eventResponse = http.post(`${baseUrl}/events`, eventBody, params)
 
-  // create endpoint
-  const response = http.post(
-    `${baseUrl}/api/v1/events?groupId=${groupId}`,
-    JSON.stringify(generateEventPayload(appId)),
-    { headers }
-  );
+    check(eventResponse, {
+        "create event status is 201": (r) => r.status === 201,
+    })
 
-  check(response, {
-    "create endpoint status is 201": (r) => r.status === 201,
-  });
-
-  sleep(1);
+    eventFailRate.add(eventResponse.status !== 201);
+    sleep(1);
 }
