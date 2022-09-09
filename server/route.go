@@ -496,13 +496,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
 		portalRouter.Use(a.M.RequireAuth())
-		portalRouter.Use(a.M.RequireGroup())
-		portalRouter.Use(a.M.RequireAppID())
+		portalRouter.Use(a.M.RequireAppPortalApplication())
+		portalRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Use(a.M.RequireAppPortalApplication())
-			appRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
-
 			appRouter.Get("/", a.GetApp)
 
 			appRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
@@ -519,8 +516,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Use(a.M.RequireAppPortalApplication())
-			eventRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
 			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
@@ -532,9 +527,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		})
 
 		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-			subsriptionRouter.Use(a.M.RequireAppPortalApplication())
-			subsriptionRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
-
 			subsriptionRouter.Post("/", a.CreateSubscription)
 			subsriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 			subsriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
@@ -543,9 +535,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		})
 
 		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.Use(a.M.RequireAppPortalApplication())
-			eventDeliveryRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
-
 			eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
 			eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
 			eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
