@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -64,8 +65,12 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 	return err
 }
 
-func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId string, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
+func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	filter := bson.M{"group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
+
+	if !util.IsStringEmpty(f.AppID) {
+		filter["app_id"] = f.AppID
+	}
 
 	var subscriptions []datastore.Subscription
 	paginatedData, err := pager.
