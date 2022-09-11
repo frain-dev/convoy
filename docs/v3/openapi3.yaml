@@ -940,7 +940,7 @@ info:
   version: 0.1.12
 openapi: 3.0.3
 paths:
-  /applications:
+  /api/v1/applications:
     get:
       description: This fetches all applications
       parameters:
@@ -1094,7 +1094,7 @@ paths:
       summary: Create an application
       tags:
       - Application
-  /applications/{appID}:
+  /api/v1/applications/{appID}:
     delete:
       description: This endpoint deletes an app
       parameters:
@@ -1298,7 +1298,7 @@ paths:
       summary: Update an application
       tags:
       - Application
-  /applications/{appID}/endpoints:
+  /api/v1/applications/{appID}/endpoints:
     get:
       description: This endpoint fetches an application's endpoints
       parameters:
@@ -1439,7 +1439,7 @@ paths:
       summary: Create an application endpoint
       tags:
       - Application Endpoints
-  /applications/{appID}/endpoints/{endpointID}:
+  /api/v1/applications/{appID}/endpoints/{endpointID}:
     delete:
       description: This endpoint deletes an application endpoint
       parameters:
@@ -1661,187 +1661,7 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
-  /configuration:
-    get:
-      description: This endpoint fetches configuration
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
-                      - properties:
-                          content:
-                            items:
-                              $ref: '#/components/schemas/models.ConfigurationResponse'
-                            type: array
-                        type: object
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch configuration
-      tags:
-      - Source
-    post:
-      description: This endpoint creates a configuration
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Configuration'
-        description: Configuration Details
-        required: true
-        x-originalParamName: application
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.ConfigurationResponse'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Create a configuration
-      tags:
-      - Application
-    put:
-      description: This endpoint updates configuration
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Configuration'
-        description: Configuration Details
-        required: true
-        x-originalParamName: application
-      responses:
-        "202":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.ConfigurationResponse'
-                  type: object
-          description: Accepted
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Update configuration
-      tags:
-      - Application
-  /eventdeliveries:
+  /api/v1/eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
       parameters:
@@ -1955,7 +1775,7 @@ paths:
       summary: Get event deliveries
       tags:
       - EventDelivery
-  /eventdeliveries/{eventDeliveryID}:
+  /api/v1/eventdeliveries/{eventDeliveryID}:
     get:
       description: This endpoint fetches an event delivery.
       parameters:
@@ -2026,7 +1846,7 @@ paths:
       summary: Get event delivery
       tags:
       - EventDelivery
-  /eventdeliveries/{eventDeliveryID}/resend:
+  /api/v1/eventdeliveries/{eventDeliveryID}/resend:
     put:
       description: This endpoint resends an app event
       parameters:
@@ -2097,7 +1917,7 @@ paths:
       summary: Resend an app event
       tags:
       - EventDelivery
-  /eventdeliveries/batchretry:
+  /api/v1/eventdeliveries/batchretry:
     post:
       description: This endpoint resends multiple app events
       parameters:
@@ -2172,7 +1992,7 @@ paths:
       summary: Batch Resend app events
       tags:
       - EventDelivery
-  /eventdeliveries/countbatchretryevents:
+  /api/v1/eventdeliveries/countbatchretryevents:
     get:
       description: This endpoint counts app events that will be affected by a batch
         retry operation
@@ -2268,7 +2088,7 @@ paths:
       summary: Count affected eventDeliveries
       tags:
       - EventDelivery
-  /eventdeliveries/forceresend:
+  /api/v1/eventdeliveries/forceresend:
     post:
       description: This endpoint force resends multiple app events
       parameters:
@@ -2343,7 +2163,7 @@ paths:
       summary: Force Resend app events
       tags:
       - EventDelivery
-  /events:
+  /api/v1/events:
     get:
       description: This endpoint fetches app events with pagination
       parameters:
@@ -2517,7 +2337,7 @@ paths:
       summary: Create app event
       tags:
       - Events
-  /events/{eventID}:
+  /api/v1/events/{eventID}:
     get:
       description: This endpoint fetches an app event
       parameters:
@@ -2588,147 +2408,7 @@ paths:
       summary: Get app event
       tags:
       - Events
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
-    get:
-      description: This endpoint fetches an app message's delivery attempts
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      items:
-                        $ref: '#/components/schemas/datastore.DeliveryAttempt'
-                      type: array
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempts
-      tags:
-      - DeliveryAttempts
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
-    get:
-      description: This endpoint fetches an app event delivery attempt
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        schema:
-          type: string
-      - description: delivery attempt id
-        in: path
-        name: deliveryAttemptID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.DeliveryAttempt'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempt
-      tags:
-      - DeliveryAttempts
-  /events/{eventID}/replay:
+  /api/v1/events/{eventID}/replay:
     put:
       description: This endpoint replays an app event
       parameters:
@@ -2799,67 +2479,7 @@ paths:
       summary: Replay app event
       tags:
       - Events
-  /security/applications/{appID}/keys:
-    post:
-      description: This endpoint creates an api key that will be used by app portal
-      parameters:
-      - description: application ID
-        in: path
-        name: appID
-        required: true
-        schema:
-          type: string
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.PortalAPIKeyResponse'
-                  type: object
-          description: Created
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for app portal (API)
-      tags:
-      - APIKey
-  /sources:
+  /api/v1/sources:
     get:
       description: This endpoint fetches multiple sources
       parameters:
@@ -3002,7 +2622,7 @@ paths:
       summary: Create a source
       tags:
       - Source
-  /sources/{sourceID}:
+  /api/v1/sources/{sourceID}:
     delete:
       description: This endpoint deletes a source
       parameters:
@@ -3206,7 +2826,7 @@ paths:
       summary: Update a source
       tags:
       - Source
-  /subscriptions:
+  /api/v1/subscriptions:
     get:
       description: This endpoint fetches all the subscriptions
       parameters:
@@ -3359,7 +2979,7 @@ paths:
       summary: Creates a subscription
       tags:
       - Subscriptions
-  /subscriptions/{subscriptionID}:
+  /api/v1/subscriptions/{subscriptionID}:
     delete:
       description: This endpoint deletes a subscription
       parameters:
@@ -3557,7 +3177,7 @@ paths:
       summary: Update a subscription
       tags:
       - Subscriptions
-  /subscriptions/{subscriptionID}/toggle_status:
+  /api/v1/subscriptions/{subscriptionID}/toggle_status:
     put:
       description: This endpoint updates a subscription
       parameters:
@@ -3617,6 +3237,206 @@ paths:
       summary: Toggles a subscription's status from active <-> inactive
       tags:
       - Subscriptions
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
+    get:
+      description: This endpoint fetches an app message's delivery attempts
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        schema:
+          type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      items:
+                        $ref: '#/components/schemas/datastore.DeliveryAttempt'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempts
+      tags:
+      - DeliveryAttempts
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+    get:
+      description: This endpoint fetches an app event delivery attempt
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        schema:
+          type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        schema:
+          type: string
+      - description: delivery attempt id
+        in: path
+        name: deliveryAttemptID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.DeliveryAttempt'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempt
+      tags:
+      - DeliveryAttempts
+  /security/applications/{appID}/keys:
+    post:
+      description: This endpoint creates an api key that will be used by app portal
+      parameters:
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.PortalAPIKeyResponse'
+                  type: object
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal (API)
+      tags:
+      - APIKey
   /ui/auth/login:
     post:
       description: This endpoint logs in a user
@@ -3847,6 +3667,186 @@ paths:
       summary: Refresh an access token
       tags:
       - User
+  /ui/configuration:
+    get:
+      description: This endpoint fetches configuration
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/models.ConfigurationResponse'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch configuration
+      tags:
+      - Configuration
+    post:
+      description: This endpoint creates a configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Configuration'
+        description: Configuration Details
+        required: true
+        x-originalParamName: application
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.ConfigurationResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create a configuration
+      tags:
+      - Configuration
+    put:
+      description: This endpoint updates configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Configuration'
+        description: Configuration Details
+        required: true
+        x-originalParamName: application
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.ConfigurationResponse'
+                  type: object
+          description: Accepted
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Update configuration
+      tags:
+      - Configuration
   /ui/organiastions/{orgID}/groups/{groupID}:
     delete:
       description: This endpoint deletes a group using its id
@@ -5876,6 +5876,8 @@ tags:
   name: User
 - description: Application related APIs
   name: Application
+- description: Configuration related APIs
+  name: Configuration
 - description: Source related APIs
   name: Source
 - description: Subscription related APIs

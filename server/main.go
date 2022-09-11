@@ -28,6 +28,9 @@ package server
 // @tag.name Application
 // @tag.description Application related APIs
 
+// @tag.name Configuration
+// @tag.description Configuration related APIs
+
 // @tag.name Source
 // @tag.description Source related APIs
 

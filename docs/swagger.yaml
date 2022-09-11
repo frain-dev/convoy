@@ -936,7 +936,7 @@ info:
   title: Convoy API Specification
   version: 0.1.12
 paths:
-  /applications:
+  /api/v1/applications:
     get:
       consumes:
       - application/json
@@ -1074,7 +1074,7 @@ paths:
       summary: Create an application
       tags:
       - Application
-  /applications/{appID}:
+  /api/v1/applications/{appID}:
     delete:
       consumes:
       - application/json
@@ -1258,7 +1258,7 @@ paths:
       summary: Update an application
       tags:
       - Application
-  /applications/{appID}/endpoints:
+  /api/v1/applications/{appID}/endpoints:
     get:
       consumes:
       - application/json
@@ -1385,7 +1385,7 @@ paths:
       summary: Create an application endpoint
       tags:
       - Application Endpoints
-  /applications/{appID}/endpoints/{endpointID}:
+  /api/v1/applications/{appID}/endpoints/{endpointID}:
     delete:
       consumes:
       - application/json
@@ -1584,173 +1584,7 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
-  /configuration:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches configuration
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/models.ConfigurationResponse'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch configuration
-      tags:
-      - Source
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates a configuration
-      parameters:
-      - description: Configuration Details
-        in: body
-        name: application
-        required: true
-        schema:
-          $ref: '#/definitions/models.Configuration'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ConfigurationResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create a configuration
-      tags:
-      - Application
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates configuration
-      parameters:
-      - description: Configuration Details
-        in: body
-        name: application
-        required: true
-        schema:
-          $ref: '#/definitions/models.Configuration'
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: Accepted
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ConfigurationResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update configuration
-      tags:
-      - Application
-  /eventdeliveries:
+  /api/v1/eventdeliveries:
     get:
       consumes:
       - application/json
@@ -1851,7 +1685,7 @@ paths:
       summary: Get event deliveries
       tags:
       - EventDelivery
-  /eventdeliveries/{eventDeliveryID}:
+  /api/v1/eventdeliveries/{eventDeliveryID}:
     get:
       consumes:
       - application/json
@@ -1916,7 +1750,7 @@ paths:
       summary: Get event delivery
       tags:
       - EventDelivery
-  /eventdeliveries/{eventDeliveryID}/resend:
+  /api/v1/eventdeliveries/{eventDeliveryID}/resend:
     put:
       consumes:
       - application/json
@@ -1981,7 +1815,7 @@ paths:
       summary: Resend an app event
       tags:
       - EventDelivery
-  /eventdeliveries/batchretry:
+  /api/v1/eventdeliveries/batchretry:
     post:
       consumes:
       - application/json
@@ -2049,7 +1883,7 @@ paths:
       summary: Batch Resend app events
       tags:
       - EventDelivery
-  /eventdeliveries/countbatchretryevents:
+  /api/v1/eventdeliveries/countbatchretryevents:
     get:
       consumes:
       - application/json
@@ -2134,7 +1968,7 @@ paths:
       summary: Count affected eventDeliveries
       tags:
       - EventDelivery
-  /eventdeliveries/forceresend:
+  /api/v1/eventdeliveries/forceresend:
     post:
       consumes:
       - application/json
@@ -2202,7 +2036,7 @@ paths:
       summary: Force Resend app events
       tags:
       - EventDelivery
-  /events:
+  /api/v1/events:
     get:
       consumes:
       - application/json
@@ -2358,7 +2192,7 @@ paths:
       summary: Create app event
       tags:
       - Events
-  /events/{eventID}:
+  /api/v1/events/{eventID}:
     get:
       consumes:
       - application/json
@@ -2423,134 +2257,7 @@ paths:
       summary: Get app event
       tags:
       - Events
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an app message's delivery attempts
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/datastore.DeliveryAttempt'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempts
-      tags:
-      - DeliveryAttempts
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an app event delivery attempt
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        type: string
-      - description: delivery attempt id
-        in: path
-        name: deliveryAttemptID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.DeliveryAttempt'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempt
-      tags:
-      - DeliveryAttempts
-  /events/{eventID}/replay:
+  /api/v1/events/{eventID}/replay:
     put:
       consumes:
       - application/json
@@ -2615,62 +2322,7 @@ paths:
       summary: Replay app event
       tags:
       - Events
-  /security/applications/{appID}/keys:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an api key that will be used by app portal
-      parameters:
-      - description: application ID
-        in: path
-        name: appID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for app portal (API)
-      tags:
-      - APIKey
-  /sources:
+  /api/v1/sources:
     get:
       consumes:
       - application/json
@@ -2799,7 +2451,7 @@ paths:
       summary: Create a source
       tags:
       - Source
-  /sources/{sourceID}:
+  /api/v1/sources/{sourceID}:
     delete:
       consumes:
       - application/json
@@ -2983,7 +2635,7 @@ paths:
       summary: Update a source
       tags:
       - Source
-  /subscriptions:
+  /api/v1/subscriptions:
     get:
       consumes:
       - application/json
@@ -3122,7 +2774,7 @@ paths:
       summary: Creates a subscription
       tags:
       - Subscriptions
-  /subscriptions/{subscriptionID}:
+  /api/v1/subscriptions/{subscriptionID}:
     delete:
       consumes:
       - application/json
@@ -3301,7 +2953,7 @@ paths:
       summary: Update a subscription
       tags:
       - Subscriptions
-  /subscriptions/{subscriptionID}/toggle_status:
+  /api/v1/subscriptions/{subscriptionID}/toggle_status:
     put:
       consumes:
       - application/json
@@ -3356,6 +3008,188 @@ paths:
       summary: Toggles a subscription's status from active <-> inactive
       tags:
       - Subscriptions
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an app message's delivery attempts
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/datastore.DeliveryAttempt'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempts
+      tags:
+      - DeliveryAttempts
+  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an app event delivery attempt
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        type: string
+      - description: delivery attempt id
+        in: path
+        name: deliveryAttemptID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.DeliveryAttempt'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempt
+      tags:
+      - DeliveryAttempts
+  /security/applications/{appID}/keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by app portal
+      parameters:
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal (API)
+      tags:
+      - APIKey
   /ui/auth/login:
     post:
       consumes:
@@ -3567,6 +3401,172 @@ paths:
       summary: Refresh an access token
       tags:
       - User
+  /ui/configuration:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/models.ConfigurationResponse'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch configuration
+      tags:
+      - Configuration
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a configuration
+      parameters:
+      - description: Configuration Details
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Configuration'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ConfigurationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a configuration
+      tags:
+      - Configuration
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates configuration
+      parameters:
+      - description: Configuration Details
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/models.Configuration'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ConfigurationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update configuration
+      tags:
+      - Configuration
   /ui/organiastions/{orgID}/groups/{groupID}:
     delete:
       consumes:
@@ -5408,6 +5408,8 @@ tags:
   name: User
 - description: Application related APIs
   name: Application
+- description: Configuration related APIs
+  name: Configuration
 - description: Source related APIs
   name: Source
 - description: Subscription related APIs
