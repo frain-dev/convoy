@@ -18,12 +18,15 @@
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"expires_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"hash": {
@@ -48,6 +51,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -239,11 +243,11 @@
 					"event_type": {
 						"type": "string"
 					},
-					"forwarded_headers": {
-						"$ref": "#/components/schemas/datastore.HttpHeader"
-					},
 					"group_id": {
 						"type": "string"
+					},
+					"headers": {
+						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
 					"matched_endpoints": {
 						"description": "TODO(all) remove this field",
@@ -255,6 +259,9 @@
 					},
 					"source_id": {
 						"type": "string"
+					},
+					"source_metadata": {
+						"$ref": "#/components/schemas/datastore.Source"
 					},
 					"uid": {
 						"type": "string"
@@ -294,11 +301,11 @@
 					"event_metadata": {
 						"$ref": "#/components/schemas/datastore.Event"
 					},
-					"forwarded_headers": {
-						"$ref": "#/components/schemas/datastore.HttpHeader"
-					},
 					"group_id": {
 						"type": "string"
+					},
+					"headers": {
+						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
@@ -597,7 +604,7 @@
 						"type": "integer"
 					},
 					"duration": {
-						"type": "string"
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -836,6 +843,15 @@
 				},
 				"type": "object"
 			},
+			"httpheader.HTTPHeader": {
+				"additionalProperties": {
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"type": "object"
+			},
 			"models.APIKey": {
 				"properties": {
 					"expires_at": {
@@ -901,6 +917,9 @@
 					"is_analytics_enabled": {
 						"type": "boolean"
 					},
+					"is_signup_enabled": {
+						"type": "boolean"
+					},
 					"storage_policy": {
 						"$ref": "#/components/schemas/datastore.StoragePolicyConfiguration"
 					}
@@ -919,6 +938,9 @@
 						"type": "integer"
 					},
 					"is_analytics_enabled": {
+						"type": "boolean"
+					},
+					"is_signup_enabled": {
 						"type": "boolean"
 					},
 					"storage_policy": {
@@ -1025,9 +1047,11 @@
 			"models.LoginUserResponse": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"email": {
@@ -1039,9 +1063,6 @@
 					"last_name": {
 						"type": "string"
 					},
-					"role": {
-						"$ref": "#/components/schemas/auth.Role"
-					},
 					"token": {
 						"$ref": "#/components/schemas/models.Token"
 					},
@@ -1049,6 +1070,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -1096,6 +1118,26 @@
 				},
 				"type": "object"
 			},
+			"models.RegisterUser": {
+				"properties": {
+					"email": {
+						"type": "string"
+					},
+					"first_name": {
+						"type": "string"
+					},
+					"last_name": {
+						"type": "string"
+					},
+					"org_name": {
+						"type": "string"
+					},
+					"password": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.ResetPassword": {
 				"properties": {
 					"password": {
@@ -1123,12 +1165,6 @@
 			},
 			"models.Source": {
 				"properties": {
-					"forward_headers": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -1150,9 +1186,11 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"group_id": {
@@ -1180,6 +1218,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"url": {
@@ -1299,7 +1338,7 @@
 				},
 				"type": "object"
 			},
-			"server.serverResponse": {
+			"util.ServerResponse": {
 				"properties": {
 					"data": {
 						"items": {
@@ -1395,7 +1434,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1432,7 +1471,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1454,7 +1493,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1476,7 +1515,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1535,7 +1574,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1557,7 +1596,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1579,7 +1618,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1601,7 +1640,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1659,7 +1698,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1681,7 +1720,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1703,7 +1742,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1725,7 +1764,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1781,7 +1820,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1803,7 +1842,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1825,7 +1864,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1847,7 +1886,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1915,7 +1954,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1937,7 +1976,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1959,7 +1998,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -1981,7 +2020,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2039,7 +2078,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2064,7 +2103,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2086,7 +2125,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2108,7 +2147,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2176,7 +2215,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2198,7 +2237,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2220,7 +2259,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2242,7 +2281,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2309,7 +2348,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2331,7 +2370,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2353,7 +2392,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2375,7 +2414,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2440,7 +2479,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2462,7 +2501,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2484,7 +2523,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2506,7 +2545,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2583,7 +2622,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2605,7 +2644,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2627,7 +2666,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2649,7 +2688,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -2677,332 +2716,6 @@
 				]
 			}
 		},
-		"/auth/login": {
-			"post": {
-				"description": "This endpoint logs in a user",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.LoginUser"
-							}
-						}
-					},
-					"description": "User Details",
-					"required": true,
-					"x-originalParamName": "user"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.LoginUserResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Login a user",
-				"tags": [
-					"User"
-				]
-			}
-		},
-		"/auth/logout": {
-			"post": {
-				"description": "This endpoint logs out a user",
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Logs out a user",
-				"tags": [
-					"User"
-				]
-			}
-		},
-		"/auth/token/refresh": {
-			"post": {
-				"description": "This endpoint refreshes an access token",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Token"
-							}
-						}
-					},
-					"description": "Token Details",
-					"required": true,
-					"x-originalParamName": "token"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.Token"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Refresh an access token",
-				"tags": [
-					"User"
-				]
-			}
-		},
 		"/configuration": {
 			"get": {
 				"description": "This endpoint fetches configuration",
@@ -3013,7 +2726,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3050,7 +2763,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3072,7 +2785,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3094,7 +2807,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3142,7 +2855,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3164,7 +2877,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3186,7 +2899,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3208,7 +2921,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3256,7 +2969,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3278,7 +2991,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3300,7 +3013,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3322,7 +3035,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3438,7 +3151,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3487,7 +3200,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3509,7 +3222,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3531,7 +3244,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3607,7 +3320,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3629,7 +3342,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3651,7 +3364,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3673,7 +3386,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3770,7 +3483,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3804,7 +3517,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3826,7 +3539,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3848,7 +3561,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3924,7 +3637,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3946,7 +3659,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3968,7 +3681,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -3990,7 +3703,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4048,7 +3761,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4082,7 +3795,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4104,7 +3817,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4126,7 +3839,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4184,7 +3897,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4218,7 +3931,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4240,7 +3953,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4262,7 +3975,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4359,7 +4072,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4408,7 +4121,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4430,7 +4143,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4452,7 +4165,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4511,7 +4224,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4545,7 +4258,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4567,7 +4280,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4589,7 +4302,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4647,7 +4360,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4681,7 +4394,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4703,7 +4416,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4725,7 +4438,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4783,7 +4496,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4808,7 +4521,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4830,7 +4543,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4852,7 +4565,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4919,7 +4632,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4941,7 +4654,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4963,7 +4676,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -4985,7 +4698,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5043,7 +4756,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5077,7 +4790,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5099,7 +4812,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5121,7 +4834,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5149,476 +4862,6 @@
 				]
 			}
 		},
-		"/groups": {
-			"get": {
-				"description": "This endpoint fetches groups",
-				"parameters": [
-					{
-						"description": "group name",
-						"in": "query",
-						"name": "name",
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"items": {
-														"$ref": "#/components/schemas/datastore.Group"
-													},
-													"type": "array"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get groups",
-				"tags": [
-					"Group"
-				]
-			}
-		},
-		"/groups/{groupID}": {
-			"delete": {
-				"description": "This endpoint deletes a group using its id",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "path",
-						"name": "groupID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Delete a group",
-				"tags": [
-					"Group"
-				]
-			},
-			"get": {
-				"description": "This endpoint fetches a group by its id",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "path",
-						"name": "groupID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get a group",
-				"tags": [
-					"Group"
-				]
-			},
-			"put": {
-				"description": "This endpoint updates a group",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "path",
-						"name": "groupID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Group"
-							}
-						}
-					},
-					"description": "Group Details",
-					"required": true,
-					"x-originalParamName": "group"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Update a group",
-				"tags": [
-					"Group"
-				]
-			}
-		},
 		"/security/applications/{appID}/keys": {
 			"post": {
 				"description": "This endpoint creates an api key that will be used by app portal",
@@ -5640,7 +4883,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5662,7 +4905,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5684,7 +4927,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5706,7 +4949,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5770,7 +5013,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5807,7 +5050,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5829,7 +5072,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5851,7 +5094,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5910,7 +5153,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5932,7 +5175,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5954,7 +5197,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -5976,7 +5219,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6034,7 +5277,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6056,7 +5299,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6078,7 +5321,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6100,7 +5343,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6156,7 +5399,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6178,7 +5421,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6200,7 +5443,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6222,7 +5465,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6290,7 +5533,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6312,7 +5555,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6334,7 +5577,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6356,7 +5599,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6437,7 +5680,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6474,7 +5717,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6496,7 +5739,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6518,7 +5761,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6565,7 +5808,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6602,7 +5845,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6624,7 +5867,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6646,7 +5889,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6704,7 +5947,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6726,7 +5969,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6748,7 +5991,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6770,7 +6013,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6794,7 +6037,7 @@
 				],
 				"summary": "Delete subscription",
 				"tags": [
-					"Application"
+					"Subscriptions"
 				]
 			},
 			"get": {
@@ -6826,7 +6069,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6848,7 +6091,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6870,7 +6113,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6892,7 +6135,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6916,7 +6159,7 @@
 				],
 				"summary": "Gets a subscription",
 				"tags": [
-					"Subscription"
+					"Subscriptions"
 				]
 			},
 			"put": {
@@ -6951,7 +6194,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6973,7 +6216,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -6995,7 +6238,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7017,7 +6260,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7041,7 +6284,7 @@
 				],
 				"summary": "Update a subscription",
 				"tags": [
-					"Subscription"
+					"Subscriptions"
 				]
 			}
 		},
@@ -7066,7 +6309,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7088,7 +6331,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7110,7 +6353,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7132,7 +6375,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7156,7 +6399,568 @@
 				],
 				"summary": "Toggles a subscription's status from active \u003c-\u003e inactive",
 				"tags": [
-					"Subscription"
+					"Subscriptions"
+				]
+			}
+		},
+		"/ui/auth/login": {
+			"post": {
+				"description": "This endpoint logs in a user",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.LoginUser"
+							}
+						}
+					},
+					"description": "User Details",
+					"required": true,
+					"x-originalParamName": "user"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.LoginUserResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"summary": "Login a user",
+				"tags": [
+					"User"
+				]
+			}
+		},
+		"/ui/auth/logout": {
+			"post": {
+				"description": "This endpoint logs out a user",
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Logs out a user",
+				"tags": [
+					"User"
+				]
+			}
+		},
+		"/ui/auth/register": {
+			"post": {
+				"description": "This endpoint registers a new user",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.RegisterUser"
+							}
+						}
+					},
+					"description": "User Details",
+					"required": true,
+					"x-originalParamName": "user"
+				},
+				"responses": {
+					"201": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.LoginUserResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Created"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"summary": "Registers a user",
+				"tags": [
+					"User"
+				]
+			}
+		},
+		"/ui/auth/token/refresh": {
+			"post": {
+				"description": "This endpoint refreshes an access token",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Token"
+							}
+						}
+					},
+					"description": "Token Details",
+					"required": true,
+					"x-originalParamName": "token"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.Token"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"summary": "Refresh an access token",
+				"tags": [
+					"User"
+				]
+			}
+		},
+		"/ui/organiastions/{orgID}/groups/{groupID}": {
+			"delete": {
+				"description": "This endpoint deletes a group using its id",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Delete a group",
+				"tags": [
+					"Group"
 				]
 			}
 		},
@@ -7196,7 +7000,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7233,7 +7037,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7255,7 +7059,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7277,7 +7081,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7325,7 +7129,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7347,7 +7151,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7369,7 +7173,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7391,7 +7195,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7460,7 +7264,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7482,7 +7286,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7504,7 +7308,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7526,7 +7330,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7575,7 +7379,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7597,7 +7401,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7619,7 +7423,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7641,7 +7445,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7688,7 +7492,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7710,7 +7514,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7732,7 +7536,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7754,7 +7558,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7813,7 +7617,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7835,7 +7639,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7857,7 +7661,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7879,7 +7683,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7908,6 +7712,130 @@
 			}
 		},
 		"/ui/organisations/{orgID}/groups": {
+			"get": {
+				"description": "This endpoint fetches groups",
+				"parameters": [
+					{
+						"description": "group name",
+						"in": "query",
+						"name": "name",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"items": {
+														"$ref": "#/components/schemas/datastore.Group"
+													},
+													"type": "array"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get groups",
+				"tags": [
+					"Group"
+				]
+			},
 			"post": {
 				"description": "This endpoint creates a group",
 				"parameters": [
@@ -7940,7 +7868,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7962,7 +7890,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -7984,7 +7912,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8006,7 +7934,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8029,6 +7957,264 @@
 					}
 				],
 				"summary": "Create a group",
+				"tags": [
+					"Group"
+				]
+			}
+		},
+		"/ui/organisations/{orgID}/groups/{groupID}": {
+			"get": {
+				"description": "This endpoint fetches a group by its id",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Group"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get a group",
+				"tags": [
+					"Group"
+				]
+			},
+			"put": {
+				"description": "This endpoint updates a group",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "path",
+						"name": "groupID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "organisation id",
+						"in": "path",
+						"name": "orgID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.Group"
+							}
+						}
+					},
+					"description": "Group Details",
+					"required": true,
+					"x-originalParamName": "group"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Group"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Update a group",
 				"tags": [
 					"Group"
 				]
@@ -8067,7 +8253,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8089,7 +8275,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8111,7 +8297,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8133,7 +8319,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8206,7 +8392,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8228,7 +8414,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8250,7 +8436,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8272,7 +8458,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8330,7 +8516,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8352,7 +8538,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8374,7 +8560,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8396,7 +8582,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8454,7 +8640,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8476,7 +8662,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8498,7 +8684,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8520,7 +8706,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8593,7 +8779,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8630,7 +8816,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8652,7 +8838,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8674,7 +8860,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8732,7 +8918,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8754,7 +8940,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8776,7 +8962,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8798,7 +8984,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8854,7 +9040,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8876,7 +9062,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8898,7 +9084,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8920,7 +9106,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -8988,7 +9174,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9010,7 +9196,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9032,7 +9218,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9054,7 +9240,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9127,7 +9313,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9164,7 +9350,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9186,7 +9372,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9208,7 +9394,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9267,7 +9453,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9289,7 +9475,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9311,7 +9497,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9333,7 +9519,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9391,7 +9577,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9413,7 +9599,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9435,7 +9621,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9457,7 +9643,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9513,7 +9699,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9535,7 +9721,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9557,7 +9743,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9579,7 +9765,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9637,7 +9823,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9659,7 +9845,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9681,7 +9867,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9703,7 +9889,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9731,7 +9917,7 @@
 				]
 			}
 		},
-		"/users/forgot-password": {
+		"/ui/users/forgot-password": {
 			"post": {
 				"description": "This endpoint generates a password reset token",
 				"requestBody": {
@@ -9753,7 +9939,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9775,7 +9961,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9797,7 +9983,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9819,7 +10005,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9842,7 +10028,7 @@
 				]
 			}
 		},
-		"/users/reset-password": {
+		"/ui/users/reset-password": {
 			"post": {
 				"description": "This endpoint resets a users password",
 				"parameters": [
@@ -9875,7 +10061,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9897,7 +10083,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9919,7 +10105,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9941,7 +10127,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -9964,122 +10150,7 @@
 				]
 			}
 		},
-		"/users/token": {
-			"get": {
-				"description": "This endpoint finds a user by an invite token",
-				"parameters": [
-					{
-						"description": "invite token",
-						"in": "query",
-						"name": "token",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.User"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/server.serverResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Find user by invite token",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
-		"/users/{userID}/password": {
+		"/ui/users/{userID}/password": {
 			"put": {
 				"description": "This endpoint updates a user's password",
 				"parameters": [
@@ -10112,7 +10183,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10134,7 +10205,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10156,7 +10227,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10178,7 +10249,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10206,7 +10277,7 @@
 				]
 			}
 		},
-		"/users/{userID}/profile": {
+		"/ui/users/{userID}/profile": {
 			"get": {
 				"description": "This endpoint fetches a user",
 				"parameters": [
@@ -10227,7 +10298,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10249,7 +10320,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10271,7 +10342,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10293,7 +10364,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10352,7 +10423,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10374,7 +10445,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10396,7 +10467,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10418,7 +10489,7 @@
 								"schema": {
 									"allOf": [
 										{
-											"$ref": "#/components/schemas/server.serverResponse"
+											"$ref": "#/components/schemas/util.ServerResponse"
 										},
 										{
 											"properties": {
@@ -10445,17 +10516,144 @@
 					"User"
 				]
 			}
+		},
+		"/users/token": {
+			"get": {
+				"description": "This endpoint finds a user by an invite token",
+				"parameters": [
+					{
+						"description": "invite token",
+						"in": "query",
+						"name": "token",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.User"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Find user by invite token",
+				"tags": [
+					"Organisation"
+				]
+			}
 		}
 	},
 	"servers": [
 		{
-			"url": "https://cloud.staging.getconvoy.io/api/v1"
+			"url": "https://dashboard.getconvoy.io/"
 		}
 	],
 	"tags": [
 		{
+			"description": "User related APIs",
+			"name": "User"
+		},
+		{
 			"description": "Application related APIs",
 			"name": "Application"
+		},
+		{
+			"description": "Source related APIs",
+			"name": "Source"
+		},
+		{
+			"description": "Subscription related APIs",
+			"name": "Subscriptions"
 		},
 		{
 			"description": "Endpoint related APIs",

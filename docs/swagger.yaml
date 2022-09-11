@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /
 definitions:
   auth.Role:
     properties:
@@ -12,10 +12,19 @@ definitions:
   datastore.APIKey:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       expires_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       hash:
         type: string
@@ -32,6 +41,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
     type: object
   datastore.AlertConfiguration:
@@ -159,10 +171,10 @@ definitions:
         type: string
       event_type:
         type: string
-      forwarded_headers:
-        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
+      headers:
+        $ref: '#/definitions/httpheader.HTTPHeader'
       matched_endpoints:
         description: TODO(all) remove this field
         type: integer
@@ -175,6 +187,8 @@ definitions:
         type: string
       source_id:
         type: string
+      source_metadata:
+        $ref: '#/definitions/datastore.Source'
       uid:
         type: string
       updated_at:
@@ -200,10 +214,10 @@ definitions:
         type: string
       event_metadata:
         $ref: '#/definitions/datastore.Event'
-      forwarded_headers:
-        $ref: '#/definitions/datastore.HttpHeader'
       group_id:
         type: string
+      headers:
+        $ref: '#/definitions/httpheader.HTTPHeader'
       metadata:
         $ref: '#/definitions/datastore.Metadata'
       status:
@@ -403,7 +417,7 @@ definitions:
       count:
         type: integer
       duration:
-        type: string
+        type: integer
     type: object
   datastore.RetentionPolicyConfiguration:
     properties:
@@ -558,6 +572,12 @@ definitions:
       type:
         type: string
     type: object
+  httpheader.HTTPHeader:
+    additionalProperties:
+      items:
+        type: string
+      type: array
+    type: object
   models.APIKey:
     properties:
       expires_at:
@@ -601,6 +621,8 @@ definitions:
     properties:
       is_analytics_enabled:
         type: boolean
+      is_signup_enabled:
+        type: boolean
       storage_policy:
         $ref: '#/definitions/datastore.StoragePolicyConfiguration'
     type: object
@@ -613,6 +635,8 @@ definitions:
       deleted_at:
         type: integer
       is_analytics_enabled:
+        type: boolean
+      is_signup_enabled:
         type: boolean
       storage_policy:
         $ref: '#/definitions/datastore.StoragePolicyConfiguration'
@@ -684,8 +708,14 @@ definitions:
   models.LoginUserResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       email:
         type: string
@@ -693,13 +723,14 @@ definitions:
         type: string
       last_name:
         type: string
-      role:
-        $ref: '#/definitions/auth.Role'
       token:
         $ref: '#/definitions/models.Token'
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
     type: object
   models.Organisation:
@@ -729,6 +760,19 @@ definitions:
       url:
         type: string
     type: object
+  models.RegisterUser:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      org_name:
+        type: string
+      password:
+        type: string
+    type: object
   models.ResetPassword:
     properties:
       password:
@@ -747,10 +791,6 @@ definitions:
     type: object
   models.Source:
     properties:
-      forward_headers:
-        items:
-          type: string
-        type: array
       is_disabled:
         type: boolean
       name:
@@ -765,8 +805,14 @@ definitions:
   models.SourceResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       group_id:
         type: string
@@ -785,6 +831,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       url:
         type: string
@@ -861,7 +910,7 @@ definitions:
       pagination:
         $ref: '#/definitions/datastore.PaginationData'
     type: object
-  server.serverResponse:
+  util.ServerResponse:
     properties:
       data:
         items:
@@ -872,7 +921,7 @@ definitions:
       status:
         type: boolean
     type: object
-host: cloud.staging.getconvoy.io
+host: dashboard.getconvoy.io
 info:
   contact:
     email: Info@frain.dev
@@ -921,7 +970,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -937,7 +986,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -946,7 +995,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -955,7 +1004,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -988,7 +1037,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Application'
@@ -997,7 +1046,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1006,7 +1055,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1015,7 +1064,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1048,7 +1097,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1057,7 +1106,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1066,7 +1115,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1075,7 +1124,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1107,7 +1156,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Application'
@@ -1116,7 +1165,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1125,7 +1174,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1134,7 +1183,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1172,7 +1221,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Application'
@@ -1181,7 +1230,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1190,7 +1239,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1199,7 +1248,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1232,7 +1281,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   items:
@@ -1243,7 +1292,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1252,7 +1301,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1261,7 +1310,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1299,7 +1348,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Endpoint'
@@ -1308,7 +1357,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1317,7 +1366,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1326,7 +1375,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1364,7 +1413,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1373,7 +1422,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1382,7 +1431,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1391,7 +1440,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1428,7 +1477,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Endpoint'
@@ -1437,7 +1486,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1446,7 +1495,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1455,7 +1504,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1498,7 +1547,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Endpoint'
@@ -1507,7 +1556,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1516,7 +1565,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1525,7 +1574,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1535,163 +1584,6 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
-  /auth/login:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint logs in a user
-      parameters:
-      - description: User Details
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.LoginUser'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.LoginUserResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Login a user
-      tags:
-      - User
-  /auth/logout:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint logs out a user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Logs out a user
-      tags:
-      - User
-  /auth/token/refresh:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint refreshes an access token
-      parameters:
-      - description: Token Details
-        in: body
-        name: token
-        required: true
-        schema:
-          $ref: '#/definitions/models.Token'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.Token'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Refresh an access token
-      tags:
-      - User
   /configuration:
     get:
       consumes:
@@ -1704,7 +1596,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -1720,7 +1612,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1729,7 +1621,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1738,7 +1630,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1766,7 +1658,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/models.ConfigurationResponse'
@@ -1775,7 +1667,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1784,7 +1676,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1793,7 +1685,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1821,7 +1713,7 @@ paths:
           description: Accepted
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/models.ConfigurationResponse'
@@ -1830,7 +1722,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1839,7 +1731,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1848,7 +1740,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1910,7 +1802,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -1931,7 +1823,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1940,7 +1832,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1949,7 +1841,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -1982,7 +1874,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -1996,7 +1888,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2005,7 +1897,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2014,7 +1906,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2047,7 +1939,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -2061,7 +1953,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2070,7 +1962,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2079,7 +1971,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2120,7 +2012,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2129,7 +2021,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2138,7 +2030,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2147,7 +2039,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2200,7 +2092,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -2214,7 +2106,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2223,7 +2115,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2232,7 +2124,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2273,7 +2165,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2282,7 +2174,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2291,7 +2183,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2300,7 +2192,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2352,7 +2244,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -2373,7 +2265,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2382,7 +2274,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2391,7 +2283,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2424,7 +2316,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -2438,7 +2330,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2447,7 +2339,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2456,7 +2348,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2489,7 +2381,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -2503,7 +2395,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2512,7 +2404,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2521,7 +2413,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2554,7 +2446,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   items:
@@ -2565,7 +2457,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2574,7 +2466,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2583,7 +2475,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2621,7 +2513,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.DeliveryAttempt'
@@ -2630,7 +2522,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2639,7 +2531,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2648,7 +2540,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2681,7 +2573,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -2695,7 +2587,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2704,7 +2596,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2713,7 +2605,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2723,231 +2615,6 @@ paths:
       summary: Replay app event
       tags:
       - Events
-  /groups:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches groups
-      parameters:
-      - description: group name
-        in: query
-        name: name
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/datastore.Group'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get groups
-      tags:
-      - Group
-  /groups/{groupID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes a group using its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a group
-      tags:
-      - Group
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches a group by its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Group'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get a group
-      tags:
-      - Group
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates a group
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      - description: Group Details
-        in: body
-        name: group
-        required: true
-        schema:
-          $ref: '#/definitions/models.Group'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Group'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/server.serverResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update a group
-      tags:
-      - Group
   /security/applications/{appID}/keys:
     post:
       consumes:
@@ -2966,7 +2633,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/models.PortalAPIKeyResponse'
@@ -2975,7 +2642,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2984,7 +2651,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -2993,7 +2660,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3028,7 +2695,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -3044,7 +2711,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3053,7 +2720,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3062,7 +2729,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3095,7 +2762,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/models.SourceResponse'
@@ -3104,7 +2771,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3113,7 +2780,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3122,7 +2789,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3155,7 +2822,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3164,7 +2831,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3173,7 +2840,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3182,7 +2849,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3214,7 +2881,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/models.SourceResponse'
@@ -3223,7 +2890,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3232,7 +2899,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3241,7 +2908,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3279,7 +2946,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/models.SourceResponse'
@@ -3288,7 +2955,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3297,7 +2964,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3306,7 +2973,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3350,7 +3017,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -3366,7 +3033,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3375,7 +3042,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3384,7 +3051,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3411,7 +3078,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -3427,7 +3094,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3436,7 +3103,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3445,7 +3112,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3478,7 +3145,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3487,7 +3154,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3496,7 +3163,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3505,7 +3172,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3514,7 +3181,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete subscription
       tags:
-      - Application
+      - Subscriptions
     get:
       consumes:
       - application/json
@@ -3537,7 +3204,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Subscription'
@@ -3546,7 +3213,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3555,7 +3222,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3564,7 +3231,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3573,7 +3240,7 @@ paths:
       - ApiKeyAuth: []
       summary: Gets a subscription
       tags:
-      - Subscription
+      - Subscriptions
     put:
       consumes:
       - application/json
@@ -3597,7 +3264,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Subscription'
@@ -3606,7 +3273,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3615,7 +3282,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3624,7 +3291,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3633,7 +3300,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update a subscription
       tags:
-      - Subscription
+      - Subscriptions
   /subscriptions/{subscriptionID}/toggle_status:
     put:
       consumes:
@@ -3652,7 +3319,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Subscription'
@@ -3661,7 +3328,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3670,7 +3337,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3679,7 +3346,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3688,7 +3355,278 @@ paths:
       - ApiKeyAuth: []
       summary: Toggles a subscription's status from active <-> inactive
       tags:
-      - Subscription
+      - Subscriptions
+  /ui/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint logs in a user
+      parameters:
+      - description: User Details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LoginUserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Login a user
+      tags:
+      - User
+  /ui/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint logs out a user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Logs out a user
+      tags:
+      - User
+  /ui/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint registers a new user
+      parameters:
+      - description: User Details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LoginUserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Registers a user
+      tags:
+      - User
+  /ui/auth/token/refresh:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint refreshes an access token
+      parameters:
+      - description: Token Details
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/models.Token'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Token'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Refresh an access token
+      tags:
+      - User
+  /ui/organiastions/{orgID}/groups/{groupID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group
+      tags:
+      - Group
   /ui/organisations:
     get:
       consumes:
@@ -3714,7 +3652,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -3730,7 +3668,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3739,7 +3677,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3748,7 +3686,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3776,7 +3714,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Organisation'
@@ -3785,7 +3723,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3794,7 +3732,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3803,7 +3741,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3831,7 +3769,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3840,7 +3778,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3849,7 +3787,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3858,7 +3796,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3885,7 +3823,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Organisation'
@@ -3894,7 +3832,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3903,7 +3841,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3912,7 +3850,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3945,7 +3883,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Organisation'
@@ -3954,7 +3892,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3963,7 +3901,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3972,7 +3910,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -3983,6 +3921,66 @@ paths:
       tags:
       - Organisation
   /ui/organisations/{orgID}/groups:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/datastore.Group'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get groups
+      tags:
+      - Group
     post:
       consumes:
       - application/json
@@ -4006,7 +4004,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Group'
@@ -4015,7 +4013,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4024,7 +4022,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4033,7 +4031,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4041,6 +4039,131 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create a group
+      tags:
+      - Group
+  /ui/organisations/{orgID}/groups/{groupID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches a group by its id
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a group
+      tags:
+      - Group
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates a group
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      - description: Group Details
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/models.Group'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a group
       tags:
       - Group
   /ui/organisations/{orgID}/invites:
@@ -4067,7 +4190,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4076,7 +4199,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4085,7 +4208,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4094,7 +4217,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4127,7 +4250,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.OrganisationInvite'
@@ -4136,7 +4259,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4145,7 +4268,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4154,7 +4277,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4187,7 +4310,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4196,7 +4319,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4205,7 +4328,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4214,7 +4337,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4254,7 +4377,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4263,7 +4386,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4272,7 +4395,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4281,7 +4404,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4321,7 +4444,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -4337,7 +4460,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4346,7 +4469,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4355,7 +4478,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4388,7 +4511,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4397,7 +4520,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4406,7 +4529,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4415,7 +4538,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4447,7 +4570,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.OrganisationMember'
@@ -4456,7 +4579,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4465,7 +4588,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4474,7 +4597,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4512,7 +4635,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.Organisation'
@@ -4521,7 +4644,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4530,7 +4653,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4539,7 +4662,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4579,7 +4702,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   allOf:
@@ -4595,7 +4718,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4604,7 +4727,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4613,7 +4736,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4647,7 +4770,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/models.APIKeyResponse'
@@ -4656,7 +4779,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4665,7 +4788,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4674,7 +4797,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4707,7 +4830,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.APIKey'
@@ -4716,7 +4839,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4725,7 +4848,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4734,7 +4857,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4766,7 +4889,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.APIKey'
@@ -4775,7 +4898,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4784,7 +4907,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4793,7 +4916,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4826,7 +4949,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4835,7 +4958,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4844,7 +4967,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4853,7 +4976,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4891,7 +5014,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4900,7 +5023,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4909,7 +5032,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4918,7 +5041,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4928,7 +5051,7 @@ paths:
       summary: Accept or decline an organisation invite
       tags:
       - Organisation
-  /users/{userID}/password:
+  /ui/users/{userID}/password:
     put:
       consumes:
       - application/json
@@ -4952,7 +5075,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.User'
@@ -4961,7 +5084,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4970,7 +5093,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4979,7 +5102,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -4989,7 +5112,7 @@ paths:
       summary: Updates a user's password
       tags:
       - User
-  /users/{userID}/profile:
+  /ui/users/{userID}/profile:
     get:
       consumes:
       - application/json
@@ -5007,7 +5130,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.User'
@@ -5016,7 +5139,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5025,7 +5148,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5034,7 +5157,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5067,7 +5190,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.User'
@@ -5076,7 +5199,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5085,7 +5208,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5094,7 +5217,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5104,7 +5227,7 @@ paths:
       summary: Updates a user
       tags:
       - User
-  /users/forgot-password:
+  /ui/users/forgot-password:
     post:
       consumes:
       - application/json
@@ -5123,7 +5246,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.User'
@@ -5132,7 +5255,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5141,7 +5264,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5150,7 +5273,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5158,7 +5281,7 @@ paths:
       summary: Send password reset token
       tags:
       - User
-  /users/reset-password:
+  /ui/users/reset-password:
     post:
       consumes:
       - application/json
@@ -5182,7 +5305,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.User'
@@ -5191,7 +5314,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5200,7 +5323,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5209,7 +5332,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5235,7 +5358,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/datastore.User'
@@ -5244,7 +5367,7 @@ paths:
           description: Bad Request
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5253,7 +5376,7 @@ paths:
           description: Unauthorized
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5262,7 +5385,7 @@ paths:
           description: Internal Server Error
           schema:
             allOf:
-            - $ref: '#/definitions/server.serverResponse'
+            - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
                   $ref: '#/definitions/server.Stub'
@@ -5281,8 +5404,14 @@ securityDefinitions:
     type: apiKey
 swagger: "2.0"
 tags:
+- description: User related APIs
+  name: User
 - description: Application related APIs
   name: Application
+- description: Source related APIs
+  name: Source
+- description: Subscription related APIs
+  name: Subscriptions
 - description: Endpoint related APIs
   name: Application Endpoints
 - description: Event related APIs

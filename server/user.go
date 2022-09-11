@@ -18,8 +18,8 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param user body models.LoginUser true "User Details"
-// @Success 200 {object} serverResponse{data=models.LoginUserResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=models.LoginUserResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Router /ui/auth/login [post]
 func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
@@ -55,8 +55,8 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param user body models.RegisterUser true "User Details"
-// @Success 201 {object} serverResponse{data=models.LoginUserResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 201 {object} util.ServerResponse{data=models.LoginUserResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Router /ui/auth/register [post]
 func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.RegisterUser
@@ -92,8 +92,8 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param token body models.Token true "Token Details"
-// @Success 200 {object} serverResponse{data=models.Token}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=models.Token}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Router /ui/auth/token/refresh [post]
 func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
@@ -117,8 +117,8 @@ func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/auth/logout [post]
 func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
@@ -144,8 +144,8 @@ func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 // @Accept  json
 // @Produce  json
 // @Param userID path string true "user id"
-// @Success 200 {object} serverResponse{data=datastore.User}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/users/{userID}/profile [get]
 func (a *ApplicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -166,8 +166,8 @@ func (a *ApplicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param userID path string true "user id"
 // @Param group body models.UpdateUser true "User Details"
-// @Success 200 {object} serverResponse{data=datastore.User}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/users/{userID}/profile [put]
 func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -201,8 +201,8 @@ func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 // @Produce  json
 // @Param userID path string true "user id"
 // @Param group body models.UpdatePassword true "Password Details"
-// @Success 200 {object} serverResponse{data=datastore.User}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/users/{userID}/password [put]
 func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
@@ -236,8 +236,8 @@ func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param email body models.ForgotPassword true "Forgot Password Details"
-// @Success 200 {object} serverResponse{data=datastore.User}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Router /ui/users/forgot-password [post]
 func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPassword models.ForgotPassword
@@ -265,8 +265,8 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 // @Produce  json
 // @Param token query string true "reset token"
 // @Param password body models.ResetPassword true "Reset Password Details"
-// @Success 200 {object} serverResponse{data=datastore.User}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Router /ui/users/reset-password [post]
 func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")

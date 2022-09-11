@@ -18,8 +18,8 @@
         },
         "version": "0.1.12"
     },
-    "host": "cloud.staging.getconvoy.io",
-    "basePath": "/api/v1",
+    "host": "dashboard.getconvoy.io",
+    "basePath": "/",
     "paths": {
         "/applications": {
             "get": {
@@ -78,7 +78,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -111,7 +111,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -129,7 +129,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -147,7 +147,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -203,7 +203,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -221,7 +221,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -239,7 +239,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -257,7 +257,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -313,7 +313,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -331,7 +331,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -349,7 +349,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -367,7 +367,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -430,7 +430,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -448,7 +448,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -466,7 +466,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -484,7 +484,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -538,7 +538,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -556,7 +556,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -574,7 +574,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -592,7 +592,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -648,7 +648,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -669,7 +669,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -687,7 +687,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -705,7 +705,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -768,7 +768,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -786,7 +786,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -804,7 +804,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -822,7 +822,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -885,7 +885,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -903,7 +903,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -921,7 +921,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -939,7 +939,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1009,7 +1009,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1027,7 +1027,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1045,7 +1045,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1063,7 +1063,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1124,7 +1124,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1142,7 +1142,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1160,7 +1160,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1178,301 +1178,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/login": {
-            "post": {
-                "description": "This endpoint logs in a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Login a user",
-                "parameters": [
-                    {
-                        "description": "User Details",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.LoginUser"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.LoginUserResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/logout": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint logs out a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Logs out a user",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/token/refresh": {
-            "post": {
-                "description": "This endpoint refreshes an access token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Refresh an access token",
-                "parameters": [
-                    {
-                        "description": "Token Details",
-                        "name": "token",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Token"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.Token"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1512,7 +1218,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1545,7 +1251,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1563,7 +1269,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1581,7 +1287,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1630,7 +1336,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1648,7 +1354,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1666,7 +1372,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1684,7 +1390,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1733,7 +1439,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1751,7 +1457,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1769,7 +1475,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1787,7 +1493,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1887,7 +1593,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1932,7 +1638,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1950,7 +1656,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1968,7 +1674,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2041,7 +1747,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2059,7 +1765,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2077,7 +1783,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2095,7 +1801,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2180,7 +1886,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2210,7 +1916,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2228,7 +1934,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2246,7 +1952,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2319,7 +2025,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2337,7 +2043,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2355,7 +2061,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2373,7 +2079,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2429,7 +2135,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2459,7 +2165,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2477,7 +2183,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2495,7 +2201,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2551,7 +2257,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2581,7 +2287,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2599,7 +2305,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2617,7 +2323,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2702,7 +2408,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2747,7 +2453,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2765,7 +2471,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2783,7 +2489,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2839,7 +2545,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2869,7 +2575,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2887,7 +2593,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2905,7 +2611,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2961,7 +2667,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2991,7 +2697,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3009,7 +2715,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3027,7 +2733,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3083,7 +2789,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3104,7 +2810,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3122,7 +2828,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3140,7 +2846,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3203,7 +2909,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3221,7 +2927,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3239,7 +2945,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3257,7 +2963,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3313,7 +3019,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3343,7 +3049,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3361,7 +3067,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3379,426 +3085,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/groups": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches groups",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Get groups",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group name",
-                        "name": "name",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/datastore.Group"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/groups/{groupID}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches a group by its id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Get a group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Group"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates a group",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Update a group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Group Details",
-                        "name": "group",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Group"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Group"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint deletes a group using its id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Delete a group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3847,7 +3134,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3865,7 +3152,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3883,7 +3170,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3901,7 +3188,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3961,7 +3248,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3994,7 +3281,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4012,7 +3299,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4030,7 +3317,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4086,7 +3373,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4104,7 +3391,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4122,7 +3409,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4140,7 +3427,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4196,7 +3483,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4214,7 +3501,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4232,7 +3519,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4250,7 +3537,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4313,7 +3600,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4331,7 +3618,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4349,7 +3636,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4367,7 +3654,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4421,7 +3708,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4439,7 +3726,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4457,7 +3744,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4475,7 +3762,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4548,7 +3835,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4581,7 +3868,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4599,7 +3886,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4617,7 +3904,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4664,7 +3951,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4697,7 +3984,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4715,7 +4002,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4733,7 +4020,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4764,7 +4051,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Subscription"
+                    "Subscriptions"
                 ],
                 "summary": "Gets a subscription",
                 "parameters": [
@@ -4789,7 +4076,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4807,7 +4094,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4825,7 +4112,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4843,7 +4130,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4872,7 +4159,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Subscription"
+                    "Subscriptions"
                 ],
                 "summary": "Update a subscription",
                 "parameters": [
@@ -4899,7 +4186,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4917,7 +4204,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4935,7 +4222,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4953,7 +4240,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4982,7 +4269,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Subscriptions"
                 ],
                 "summary": "Delete subscription",
                 "parameters": [
@@ -5007,7 +4294,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5025,7 +4312,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5043,7 +4330,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5061,7 +4348,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5092,7 +4379,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Subscription"
+                    "Subscriptions"
                 ],
                 "summary": "Toggles a subscription's status from active \u003c-\u003e inactive",
                 "parameters": [
@@ -5110,7 +4397,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5128,7 +4415,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5146,7 +4433,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5164,7 +4451,511 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/auth/login": {
+            "post": {
+                "description": "This endpoint logs in a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Login a user",
+                "parameters": [
+                    {
+                        "description": "User Details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.LoginUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.LoginUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint logs out a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Logs out a user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/auth/register": {
+            "post": {
+                "description": "This endpoint registers a new user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Registers a user",
+                "parameters": [
+                    {
+                        "description": "User Details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RegisterUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.LoginUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/auth/token/refresh": {
+            "post": {
+                "description": "This endpoint refreshes an access token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Refresh an access token",
+                "parameters": [
+                    {
+                        "description": "Token Details",
+                        "name": "token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Token"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Token"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/organiastions/{orgID}/groups/{groupID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a group using its id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Group"
+                ],
+                "summary": "Delete a group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5224,7 +5015,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5257,7 +5048,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5275,7 +5066,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5293,7 +5084,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5342,7 +5133,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5360,7 +5151,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5378,7 +5169,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5396,7 +5187,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5460,7 +5251,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5478,7 +5269,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5496,7 +5287,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5514,7 +5305,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5563,7 +5354,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5581,7 +5372,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5599,7 +5390,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5617,7 +5408,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5673,7 +5464,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5691,7 +5482,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5709,7 +5500,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5727,7 +5518,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5774,7 +5565,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5792,7 +5583,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5810,7 +5601,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5828,7 +5619,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5845,6 +5636,116 @@
             }
         },
         "/ui/organisations/{orgID}/groups": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches groups",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Group"
+                ],
+                "summary": "Get groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/datastore.Group"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -5886,7 +5787,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5904,7 +5805,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5922,7 +5823,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5940,7 +5841,234 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/organisations/{orgID}/groups/{groupID}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint fetches a group by its id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Group"
+                ],
+                "summary": "Get a group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.Group"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Group"
+                ],
+                "summary": "Update a group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organisation id",
+                        "name": "orgID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Group Details",
+                        "name": "group",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Group"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.Group"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5998,7 +6126,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6016,7 +6144,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6034,7 +6162,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6052,7 +6180,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6119,7 +6247,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6137,7 +6265,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6155,7 +6283,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6173,7 +6301,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6229,7 +6357,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6247,7 +6375,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6265,7 +6393,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6283,7 +6411,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6339,7 +6467,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6357,7 +6485,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6375,7 +6503,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6393,7 +6521,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6460,7 +6588,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6493,7 +6621,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6511,7 +6639,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6529,7 +6657,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6585,7 +6713,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6603,7 +6731,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6621,7 +6749,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6639,7 +6767,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6702,7 +6830,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6720,7 +6848,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6738,7 +6866,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6756,7 +6884,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6810,7 +6938,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6828,7 +6956,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6846,7 +6974,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6864,7 +6992,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6931,7 +7059,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6964,7 +7092,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6982,7 +7110,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7000,7 +7128,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7056,7 +7184,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7074,7 +7202,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7092,7 +7220,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7110,7 +7238,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7166,7 +7294,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7184,7 +7312,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7202,7 +7330,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7220,7 +7348,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7274,7 +7402,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7292,7 +7420,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7310,7 +7438,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7328,7 +7456,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7384,7 +7512,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7402,7 +7530,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7420,7 +7548,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7438,7 +7566,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7454,7 +7582,7 @@
                 }
             }
         },
-        "/users/forgot-password": {
+        "/ui/users/forgot-password": {
             "post": {
                 "description": "This endpoint generates a password reset token",
                 "consumes": [
@@ -7484,7 +7612,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7502,7 +7630,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7520,7 +7648,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7538,7 +7666,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7554,7 +7682,7 @@
                 }
             }
         },
-        "/users/reset-password": {
+        "/ui/users/reset-password": {
             "post": {
                 "description": "This endpoint resets a users password",
                 "consumes": [
@@ -7591,7 +7719,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7609,7 +7737,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7627,7 +7755,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7645,7 +7773,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7661,110 +7789,7 @@
                 }
             }
         },
-        "/users/token": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint finds a user by an invite token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Organisation"
-                ],
-                "summary": "Find user by invite token",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "invite token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.User"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/server.serverResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/users/{userID}/password": {
+        "/ui/users/{userID}/password": {
             "put": {
                 "security": [
                     {
@@ -7806,7 +7831,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7824,7 +7849,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7842,7 +7867,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7860,7 +7885,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7876,7 +7901,7 @@
                 }
             }
         },
-        "/users/{userID}/profile": {
+        "/ui/users/{userID}/profile": {
             "get": {
                 "security": [
                     {
@@ -7909,7 +7934,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7927,7 +7952,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7945,7 +7970,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7963,7 +7988,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8019,7 +8044,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8037,7 +8062,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8055,7 +8080,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8073,7 +8098,110 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.serverResponse"
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/users/token": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint finds a user by an invite token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organisation"
+                ],
+                "summary": "Find user by invite token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "invite token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.User"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
                                 },
                                 {
                                     "type": "object",
@@ -8109,12 +8237,15 @@
             "type": "object",
             "properties": {
                 "created_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "expires_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "hash": {
@@ -8139,6 +8270,7 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -8330,11 +8462,11 @@
                 "event_type": {
                     "type": "string"
                 },
-                "forwarded_headers": {
-                    "$ref": "#/definitions/datastore.HttpHeader"
-                },
                 "group_id": {
                     "type": "string"
+                },
+                "headers": {
+                    "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "matched_endpoints": {
                     "description": "TODO(all) remove this field",
@@ -8346,6 +8478,9 @@
                 },
                 "source_id": {
                     "type": "string"
+                },
+                "source_metadata": {
+                    "$ref": "#/definitions/datastore.Source"
                 },
                 "uid": {
                     "type": "string"
@@ -8385,11 +8520,11 @@
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
                 },
-                "forwarded_headers": {
-                    "$ref": "#/definitions/datastore.HttpHeader"
-                },
                 "group_id": {
                     "type": "string"
+                },
+                "headers": {
+                    "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
@@ -8688,7 +8823,7 @@
                     "type": "integer"
                 },
                 "duration": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -8927,6 +9062,15 @@
                 }
             }
         },
+        "httpheader.HTTPHeader": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
         "models.APIKey": {
             "type": "object",
             "properties": {
@@ -8993,6 +9137,9 @@
                 "is_analytics_enabled": {
                     "type": "boolean"
                 },
+                "is_signup_enabled": {
+                    "type": "boolean"
+                },
                 "storage_policy": {
                     "$ref": "#/definitions/datastore.StoragePolicyConfiguration"
                 }
@@ -9011,6 +9158,9 @@
                     "type": "integer"
                 },
                 "is_analytics_enabled": {
+                    "type": "boolean"
+                },
+                "is_signup_enabled": {
                     "type": "boolean"
                 },
                 "storage_policy": {
@@ -9117,9 +9267,11 @@
             "type": "object",
             "properties": {
                 "created_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "email": {
@@ -9131,9 +9283,6 @@
                 "last_name": {
                     "type": "string"
                 },
-                "role": {
-                    "$ref": "#/definitions/auth.Role"
-                },
                 "token": {
                     "$ref": "#/definitions/models.Token"
                 },
@@ -9141,6 +9290,7 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -9187,6 +9337,26 @@
                 }
             }
         },
+        "models.RegisterUser": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "org_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "models.ResetPassword": {
             "type": "object",
             "properties": {
@@ -9215,12 +9385,6 @@
         "models.Source": {
             "type": "object",
             "properties": {
-                "forward_headers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -9242,9 +9406,11 @@
             "type": "object",
             "properties": {
                 "created_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "group_id": {
@@ -9272,6 +9438,7 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "url": {
@@ -9390,7 +9557,7 @@
                 }
             }
         },
-        "server.serverResponse": {
+        "util.ServerResponse": {
             "type": "object",
             "properties": {
                 "data": {
@@ -9417,8 +9584,20 @@
     },
     "tags": [
         {
+            "description": "User related APIs",
+            "name": "User"
+        },
+        {
             "description": "Application related APIs",
             "name": "Application"
+        },
+        {
+            "description": "Source related APIs",
+            "name": "Source"
+        },
+        {
+            "description": "Subscription related APIs",
+            "name": "Subscriptions"
         },
         {
             "description": "Endpoint related APIs",
