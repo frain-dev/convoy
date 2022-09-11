@@ -2257,6 +2257,133 @@ paths:
       summary: Get app event
       tags:
       - Events
+  /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an app message's delivery attempts
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/datastore.DeliveryAttempt'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempts
+      tags:
+      - DeliveryAttempts
+  /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an app event delivery attempt
+      parameters:
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        type: string
+      - description: delivery attempt id
+        in: path
+        name: deliveryAttemptID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.DeliveryAttempt'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempt
+      tags:
+      - DeliveryAttempts
   /api/v1/events/{eventID}/replay:
     put:
       consumes:
@@ -2322,6 +2449,61 @@ paths:
       summary: Replay app event
       tags:
       - Events
+  /api/v1/security/applications/{appID}/keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by app portal
+      parameters:
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal (API)
+      tags:
+      - APIKey
   /api/v1/sources:
     get:
       consumes:
@@ -3008,188 +3190,6 @@ paths:
       summary: Toggles a subscription's status from active <-> inactive
       tags:
       - Subscriptions
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an app message's delivery attempts
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/datastore.DeliveryAttempt'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempts
-      tags:
-      - DeliveryAttempts
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an app event delivery attempt
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        type: string
-      - description: delivery attempt id
-        in: path
-        name: deliveryAttemptID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.DeliveryAttempt'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempt
-      tags:
-      - DeliveryAttempts
-  /security/applications/{appID}/keys:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an api key that will be used by app portal
-      parameters:
-      - description: application ID
-        in: path
-        name: appID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for app portal (API)
-      tags:
-      - APIKey
   /ui/auth/login:
     post:
       consumes:
@@ -5340,7 +5340,7 @@ paths:
       summary: Reset user password
       tags:
       - User
-  /users/token:
+  /ui/users/token:
     get:
       consumes:
       - application/json
