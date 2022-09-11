@@ -18,10 +18,11 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param groupID path string true "group id"
+// @Param orgID path string true "organisation id"
 // @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /groups/{groupID} [get]
+// @Router /ui/organisations/{orgID}/groups/{groupID} [get]
 func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	group := m.GetGroupFromContext(r.Context())
@@ -42,10 +43,11 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param groupID path string true "group id"
+// @Param orgID path string true "organisation id"
 // @Success 200 {object} serverResponse{data=Stub}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /groups/{groupID} [delete]
+// @Router /ui/organiastions/{orgID}/groups/{groupID} [delete]
 func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
@@ -102,11 +104,12 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 // @Accept  json
 // @Produce  json
 // @Param groupID path string true "group id"
+// @Param orgID path string true "organisation id"
 // @Param group body models.Group true "Group Details"
 // @Success 200 {object} serverResponse{data=datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /groups/{groupID} [put]
+// @Router /ui/organisations/{orgID}/groups/{groupID} [put]
 func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateGroup
 	err := util.ReadJSON(r, &update)
@@ -132,10 +135,11 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Accept  json
 // @Produce  json
 // @Param name query string false "group name"
+// @Param orgID path string true "organisation id"
 // @Success 200 {object} serverResponse{data=[]datastore.Group}
 // @Failure 400,401,500 {object} serverResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /groups [get]
+// @Router /ui/organisations/{orgID}/groups [get]
 func (a *ApplicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
 	name := r.URL.Query().Get("name")

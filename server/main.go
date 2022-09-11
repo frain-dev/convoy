@@ -15,15 +15,24 @@ package server
 // @license.url https://www.mozilla.org/en-US/MPL/2.0/
 
 // @schemes https
-// @host cloud.staging.getconvoy.io
-// @BasePath /api/v1
+// @host dashboard.getconvoy.io
+// @BasePath /
 
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
 
+// @tag.name User
+// @tag.description User related APIs
+
 // @tag.name Application
 // @tag.description Application related APIs
+
+// @tag.name Source
+// @tag.description Source related APIs
+
+// @tag.name Subscriptions
+// @tag.description Subscription related APIs
 
 // @tag.name Application Endpoints
 // @tag.description Endpoint related APIs

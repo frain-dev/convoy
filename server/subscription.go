@@ -46,7 +46,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // GetSubscription
 // @Summary Gets a subscription
 // @Description This endpoint fetches an Subscription by it's id
-// @Tags Subscription
+// @Tags Subscriptions
 // @Accept json
 // @Produce  json
 // @Param groupId query string true "group id"
@@ -104,7 +104,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // DeleteSubscription
 // @Summary Delete subscription
 // @Description This endpoint deletes a subscription
-// @Tags Application
+// @Tags Subscriptions
 // @Accept json
 // @Produce json
 // @Param groupId query string true "group id"
@@ -135,7 +135,7 @@ func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 // UpdateSubscription
 // @Summary Update a subscription
 // @Description This endpoint updates a subscription
-// @Tags Subscription
+// @Tags Subscriptions
 // @Accept json
 // @Produce json
 // @Param subscriptionID path string true "subscription id"
@@ -168,7 +168,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // ToggleSubscriptionStatus
 // @Summary Toggles a subscription's status from active <-> inactive
 // @Description This endpoint updates a subscription
-// @Tags Subscription
+// @Tags Subscriptions
 // @Accept json
 // @Produce json
 // @Param subscriptionID path string true "subscription id"
