@@ -20,7 +20,7 @@ import (
 // @Param user body models.LoginUser true "User Details"
 // @Success 200 {object} util.ServerResponse{data=models.LoginUserResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Router /auth/login [post]
+// @Router /ui/auth/login [post]
 func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
@@ -55,9 +55,9 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param user body models.RegisterUser true "User Details"
-// @Success 201 {object} serverResponse{data=models.LoginUserResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
-// @Router /auth/register [post]
+// @Success 201 {object} util.ServerResponse{data=models.LoginUserResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Router /ui/auth/register [post]
 func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.RegisterUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
@@ -94,7 +94,7 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 // @Param token body models.Token true "Token Details"
 // @Success 200 {object} util.ServerResponse{data=models.Token}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Router /auth/token/refresh [post]
+// @Router /ui/auth/token/refresh [post]
 func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
 	if err := util.ReadJSON(r, &refreshToken); err != nil {
@@ -120,7 +120,7 @@ func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /auth/logout [post]
+// @Router /ui/auth/logout [post]
 func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	auth, err := m.GetAuthFromRequest(r)
 	if err != nil {
@@ -147,7 +147,7 @@ func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {object} util.ServerResponse{data=datastore.User}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /users/{userID}/profile [get]
+// @Router /ui/users/{userID}/profile [get]
 func (a *ApplicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
@@ -169,7 +169,7 @@ func (a *ApplicationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=datastore.User}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /users/{userID}/profile [put]
+// @Router /ui/users/{userID}/profile [put]
 func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var userUpdate models.UpdateUser
 	err := util.ReadJSON(r, &userUpdate)
@@ -204,7 +204,7 @@ func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {object} util.ServerResponse{data=datastore.User}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /users/{userID}/password [put]
+// @Router /ui/users/{userID}/password [put]
 func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var updatePassword models.UpdatePassword
 	err := util.ReadJSON(r, &updatePassword)
@@ -238,7 +238,7 @@ func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 // @Param email body models.ForgotPassword true "Forgot Password Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.User}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Router /users/forgot-password [post]
+// @Router /ui/users/forgot-password [post]
 func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPassword models.ForgotPassword
 	baseUrl := m.GetHostFromContext(r.Context())
@@ -267,7 +267,7 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 // @Param password body models.ResetPassword true "Reset Password Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.User}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Router /users/reset-password [post]
+// @Router /ui/users/reset-password [post]
 func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	var resetPassword models.ResetPassword
