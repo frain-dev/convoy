@@ -31,6 +31,7 @@ const (
 	SubscriptionCollection        = "subscriptions"
 	EventDeliveryCollection       = "eventdeliveries"
 	APIKeyCollection              = "apiKeys"
+	DeviceCollection              = "devices"
 )
 
 const CollectionCtx CollectionKey = "collection"

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -15,18 +14,18 @@ import (
 )
 
 type deviceRepo struct {
-	inner *mongo.Collection
 	store datastore.Store
 }
 
-func NewDeviceRepository(db *mongo.Database, store datastore.Store) datastore.DeviceRepository {
+func NewDeviceRepository(store datastore.Store) datastore.DeviceRepository {
 	return &deviceRepo{
-		inner: db.Collection(DeviceCollection),
 		store: store,
 	}
 }
 
 func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device) error {
+	ctx = d.setCollectionInContext(ctx)
+
 	device.ID = primitive.NewObjectID()
 	return d.store.Save(ctx, device, nil)
 }
@@ -141,7 +140,9 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *da
 		filter["app_id"] = f.AppID
 	}
 
-	paginatedData, err := pager.New(d.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&devices).Find()
+	pagination, err := d.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &devices)
+
 	if err != nil {
 		return devices, datastore.PaginationData{}, err
 	}
@@ -150,5 +151,9 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *da
 		devices = make([]datastore.Device, 0)
 	}
 
-	return devices, datastore.PaginationData(paginatedData.Pagination), nil
+	return devices, pagination, nil
+}
+
+func (d *deviceRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.DeviceCollection)
 }

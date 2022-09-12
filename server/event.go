@@ -25,10 +25,11 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
 
 	return services.NewEventService(
 		appRepo, eventRepo, eventDeliveryRepo,
-		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo,
+		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
 	)
 }
 
