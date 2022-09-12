@@ -13,8 +13,7 @@ import (
 )
 
 type userRepo struct {
-	collection *mongo.Collection
-	store      datastore.Store
+	store datastore.Store
 }
 
 func NewUserRepo(store datastore.Store) datastore.UserRepository {
