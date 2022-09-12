@@ -137,7 +137,7 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 		},
 	}
 
-	return db.store.UpdateMany(ctx, filter, update)
+	return db.store.UpdateMany(ctx, filter, update, false)
 }
 
 func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
@@ -217,7 +217,7 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 }
 
 func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, EventDeliveryCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EventDeliveryCollection)
 }
 
 func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {

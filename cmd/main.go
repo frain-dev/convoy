@@ -233,7 +233,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			return err
 		}
 
-		s := datastore.New(db.Database(), "")
+		s := datastore.New(db.Database())
 
 		app.store = s
 		app.queue = q

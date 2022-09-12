@@ -61,5 +61,5 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, config *datastore.
 }
 
 func (db *configRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, ConfigCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.ConfigCollection)
 }

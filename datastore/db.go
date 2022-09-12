@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	pager "github.com/gobeam/mongo-go-pagination"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,6 +17,21 @@ import (
 var ErrInvalidCollection = errors.New("Invalid collection type")
 
 type CollectionKey string
+
+const (
+	ConfigCollection              = "configurations"
+	GroupCollection               = "groups"
+	OrganisationCollection        = "organisations"
+	OrganisationInvitesCollection = "organisation_invites"
+	OrganisationMembersCollection = "organisation_members"
+	AppCollection                 = "applications"
+	EventCollection               = "events"
+	SourceCollection              = "sources"
+	UserCollection                = "users"
+	SubscriptionCollection        = "subscriptions"
+	EventDeliveryCollection       = "eventdeliveries"
+	APIKeyCollection              = "apiKeys"
+)
 
 const CollectionCtx CollectionKey = "collection"
 
@@ -38,7 +52,7 @@ type Store interface {
 
 	UpdateByID(ctx context.Context, id string, payload interface{}) error
 	UpdateOne(ctx context.Context, filter bson.M, payload interface{}) error
-	UpdateMany(ctx context.Context, filter, payload bson.M) error
+	UpdateMany(ctx context.Context, filter, payload bson.M, bulk bool) error
 
 	Inc(ctx context.Context, filter bson.M, payload interface{}) error
 
@@ -171,7 +185,7 @@ func (d *MongoStore) FindOne(ctx context.Context, filter, projection bson.M, res
 	return collection.FindOne(ctx, filter, ops).Decode(result)
 }
 
-func (d *MongoStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, page, limit, skip int64, results interface{}) (PaginationData, error) {
+func (d *MongoStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, page, limit int64, results interface{}) (PaginationData, error) {
 	if !IsValidPointer(results) {
 		log.Errorf("Invalid Pointer Type")
 		return PaginationData{}, ErrInvalidPtr
@@ -321,15 +335,33 @@ func (d *MongoStore) Inc(ctx context.Context, filter bson.M, payload interface{}
  * param: interface{}            payload
  * return: error
  */
-func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M) error {
+func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M, bulk bool) error {
 	col, err := d.retrieveCollection(ctx)
 	if err != nil {
 		return err
 	}
 	collection := d.Database.Collection(col)
+	payload = bson.M{
+		"$set": payload,
+	}
 
-	_, err = collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
-	return err
+	if !bulk {
+		_, err = collection.UpdateMany(ctx, filter, payload)
+		return err
+	}
+
+	var msgOperations []mongo.WriteModel
+	updateMessagesOperation := mongo.NewUpdateManyModel()
+	updateMessagesOperation.SetFilter(filter)
+	updateMessagesOperation.SetUpdate(payload)
+
+	msgOperations = append(msgOperations, updateMessagesOperation)
+	_, err = collection.BulkWrite(ctx, msgOperations)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /**
@@ -459,27 +491,27 @@ func (d *MongoStore) Aggregate(ctx context.Context, pipeline mongo.Pipeline, out
 func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 	switch ctx.Value(CollectionCtx) {
 	case "configurations":
-		return cm.ConfigCollection, nil
+		return ConfigCollection, nil
 	case "groups":
-		return cm.GroupCollection, nil
+		return GroupCollection, nil
 	case "organisations":
-		return cm.OrganisationCollection, nil
+		return OrganisationCollection, nil
 	case "organisation_invites":
-		return cm.OrganisationInvitesCollection, nil
+		return OrganisationInvitesCollection, nil
 	case "organisation_members":
-		return cm.OrganisationMembersCollection, nil
+		return OrganisationMembersCollection, nil
 	case "applications":
-		return cm.AppCollection, nil
+		return AppCollection, nil
 	case "events":
-		return cm.EventCollection, nil
+		return EventCollection, nil
 	case "sources":
-		return cm.SourceCollection, nil
+		return SourceCollection, nil
 	case "subscriptions":
-		return cm.SubscriptionCollection, nil
+		return SubscriptionCollection, nil
 	case "eventdeliveries":
-		return cm.EventDeliveryCollection, nil
+		return EventDeliveryCollection, nil
 	case "apiKeys":
-		return cm.APIKeyCollection, nil
+		return APIKeyCollection, nil
 	default:
 		return "", ErrInvalidCollection
 	}

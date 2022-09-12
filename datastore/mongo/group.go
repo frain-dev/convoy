@@ -119,7 +119,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 
 	lookupStage1 := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: AppCollection},
+			{Key: "from", Value: datastore.AppCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "as", Value: "group_apps"},
@@ -128,7 +128,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 
 	lookupStage2 := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: EventCollection},
+			{Key: "from", Value: datastore.EventCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
@@ -203,5 +203,5 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 }
 
 func (db *groupRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, GroupCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.GroupCollection)
 }

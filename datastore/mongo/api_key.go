@@ -88,12 +88,12 @@ func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 		},
 	}
 
-	updateAsDeleted := bson.D{
-		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
+	updateAsDeleted := bson.M{
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.DeletedDocumentStatus,
 	}
 
-	return db.store.UpdateMany(ctx, filter, updateAsDeleted)
+	return db.store.UpdateMany(ctx, filter, updateAsDeleted, false)
 }
 
 func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
@@ -131,5 +131,5 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.
 }
 
 func (db *apiKeyRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, APIKeyCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.APIKeyCollection)
 }

@@ -89,7 +89,7 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 
 	lookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: OrganisationCollection},
+			{Key: "from", Value: datastore.OrganisationCollection},
 			{Key: "localField", Value: "organisation_id"},
 			{Key: "foreignField", Value: "uid"},
 			{Key: "as", Value: "organisations"},
@@ -219,7 +219,7 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 
 	lookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: UserCollection},
+			{Key: "from", Value: datastore.UserCollection},
 			{Key: "localField", Value: "user_id"},
 			{Key: "foreignField", Value: "uid"},
 			{Key: "as", Value: "user"},
@@ -274,5 +274,5 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 }
 
 func (o *orgMemberRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, OrganisationMembersCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.OrganisationMembersCollection)
 }

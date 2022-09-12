@@ -10,24 +10,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/newrelic/go-agent/v3/integrations/nrmongo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-)
-
-const (
-	ConfigCollection              = "configurations"
-	GroupCollection               = "groups"
-	OrganisationCollection        = "organisations"
-	OrganisationInvitesCollection = "organisation_invites"
-	OrganisationMembersCollection = "organisation_members"
-	AppCollection                 = "applications"
-	EventCollection               = "events"
-	SourceCollection              = "sources"
-	UserCollection                = "users"
-	SubscriptionCollection        = "subscriptions"
-	EventDeliveryCollection       = "eventdeliveries"
-	APIKeyCollection              = "apiKeys"
 )
 
 type Client struct {
@@ -89,37 +75,37 @@ func (c *Client) Database() *mongo.Database {
 }
 
 func (c *Client) ensureMongoIndices() {
-	c.ensureIndex(GroupCollection, "uid", true, nil)
+	c.ensureIndex(datastore.GroupCollection, "uid", true, nil)
 
-	c.ensureIndex(OrganisationCollection, "uid", true, nil)
+	c.ensureIndex(datastore.OrganisationCollection, "uid", true, nil)
 
-	c.ensureIndex(OrganisationMembersCollection, "organisation_id", false, nil)
-	c.ensureIndex(OrganisationMembersCollection, "user_id", false, nil)
-	c.ensureIndex(OrganisationMembersCollection, "uid", true, nil)
+	c.ensureIndex(datastore.OrganisationMembersCollection, "organisation_id", false, nil)
+	c.ensureIndex(datastore.OrganisationMembersCollection, "user_id", false, nil)
+	c.ensureIndex(datastore.OrganisationMembersCollection, "uid", true, nil)
 
-	c.ensureIndex(OrganisationInvitesCollection, "uid", true, nil)
-	c.ensureIndex(OrganisationInvitesCollection, "token", true, nil)
+	c.ensureIndex(datastore.OrganisationInvitesCollection, "uid", true, nil)
+	c.ensureIndex(datastore.OrganisationInvitesCollection, "token", true, nil)
 
-	c.ensureIndex(AppCollection, "group_id", false, nil)
-	c.ensureIndex(UserCollection, "uid", true, nil)
-	c.ensureIndex(AppCollection, "uid", true, nil)
+	c.ensureIndex(datastore.AppCollection, "group_id", false, nil)
+	c.ensureIndex(datastore.UserCollection, "uid", true, nil)
+	c.ensureIndex(datastore.AppCollection, "uid", true, nil)
 
-	c.ensureIndex(EventCollection, "uid", true, nil)
-	c.ensureIndex(EventCollection, "app_id", false, nil)
-	c.ensureIndex(EventCollection, "group_id", false, nil)
-	c.ensureIndex(AppCollection, "group_id", false, nil)
-	c.ensureIndex(EventDeliveryCollection, "status", false, nil)
-	c.ensureIndex(SourceCollection, "uid", true, nil)
-	c.ensureIndex(SourceCollection, "mask_id", true, nil)
-	c.ensureIndex(SubscriptionCollection, "uid", true, nil)
-	c.ensureIndex(SubscriptionCollection, "filter_config.event_type", false, nil)
-	c.ensureCompoundIndex(AppCollection)
-	c.ensureCompoundIndex(EventCollection)
-	c.ensureCompoundIndex(UserCollection)
-	c.ensureCompoundIndex(GroupCollection)
-	c.ensureCompoundIndex(EventDeliveryCollection)
-	c.ensureCompoundIndex(OrganisationInvitesCollection)
-	c.ensureCompoundIndex(OrganisationMembersCollection)
+	c.ensureIndex(datastore.EventCollection, "uid", true, nil)
+	c.ensureIndex(datastore.EventCollection, "app_id", false, nil)
+	c.ensureIndex(datastore.EventCollection, "group_id", false, nil)
+	c.ensureIndex(datastore.AppCollection, "group_id", false, nil)
+	c.ensureIndex(datastore.EventDeliveryCollection, "status", false, nil)
+	c.ensureIndex(datastore.SourceCollection, "uid", true, nil)
+	c.ensureIndex(datastore.SourceCollection, "mask_id", true, nil)
+	c.ensureIndex(datastore.SubscriptionCollection, "uid", true, nil)
+	c.ensureIndex(datastore.SubscriptionCollection, "filter_config.event_type", false, nil)
+	c.ensureCompoundIndex(datastore.AppCollection)
+	c.ensureCompoundIndex(datastore.EventCollection)
+	c.ensureCompoundIndex(datastore.UserCollection)
+	c.ensureCompoundIndex(datastore.GroupCollection)
+	c.ensureCompoundIndex(datastore.EventDeliveryCollection)
+	c.ensureCompoundIndex(datastore.OrganisationInvitesCollection)
+	c.ensureCompoundIndex(datastore.OrganisationMembersCollection)
 }
 
 // ensureIndex - ensures an index is created for a specific field in a collection
@@ -175,7 +161,7 @@ func (c *Client) ensureCompoundIndex(collectionName string) bool {
 
 func compoundIndices() map[string][]mongo.IndexModel {
 	compoundIndices := map[string][]mongo.IndexModel{
-		GroupCollection: {
+		datastore.GroupCollection: {
 			{
 				Keys: bson.D{
 					{Key: "organisation_id", Value: 1},
@@ -185,7 +171,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Options: options.Index().SetUnique(true),
 			},
 		},
-		EventCollection: {
+		datastore.EventCollection: {
 			{
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
@@ -251,7 +237,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		EventDeliveryCollection: {
+		datastore.EventDeliveryCollection: {
 			{
 				Keys: bson.D{
 					{Key: "event_id", Value: 1},
@@ -317,7 +303,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		AppCollection: {
+		datastore.AppCollection: {
 			{
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
@@ -335,7 +321,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		OrganisationInvitesCollection: {
+		datastore.OrganisationInvitesCollection: {
 			{
 				Keys: bson.D{
 					{Key: "organisation_id", Value: 1},
@@ -353,7 +339,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		OrganisationMembersCollection: {
+		datastore.OrganisationMembersCollection: {
 			{
 				Keys: bson.D{
 					{Key: "organisation_id", Value: 1},
@@ -364,7 +350,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		UserCollection: {
+		datastore.UserCollection: {
 			{
 				Keys: bson.D{
 					{Key: "email", Value: 1},
@@ -374,7 +360,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		SubscriptionCollection: {
+		datastore.SubscriptionCollection: {
 			{
 				Keys: bson.D{
 					{Key: "app_id", Value: 1},

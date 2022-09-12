@@ -112,5 +112,5 @@ func (db *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, tok
 }
 
 func (db *orgInviteRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, OrganisationInvitesCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
 }

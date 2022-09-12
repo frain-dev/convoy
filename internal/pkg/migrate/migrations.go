@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,7 +30,7 @@ var Migrations = []*Migration{
 				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
 			}
 
-			store := datastore.New(db, cm.GroupCollection)
+			store := datastore.New(db)
 
 			var groups []*Group
 			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
@@ -61,7 +60,7 @@ var Migrations = []*Migration{
 		},
 		Rollback: func(db *mongo.Database) error {
 
-			store := datastore.New(db, cm.GroupCollection)
+			store := datastore.New(db)
 
 			var groups []*datastore.Group
 			err := store.FindAll(context.Background(), nil, nil, nil, &groups)

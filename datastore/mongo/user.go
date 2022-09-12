@@ -120,5 +120,5 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 }
 
 func (db *userRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, UserCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.UserCollection)
 }

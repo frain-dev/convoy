@@ -83,5 +83,5 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datas
 }
 
 func (db *orgRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, OrganisationCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.OrganisationCollection)
 }

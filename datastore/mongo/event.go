@@ -216,5 +216,5 @@ func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {
 }
 
 func (db *eventRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, EventCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 }

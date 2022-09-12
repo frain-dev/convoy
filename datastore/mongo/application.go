@@ -70,7 +70,7 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 		apps = make([]datastore.Application, 0)
 	}
 
-	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, EventCollection)
+	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 	for i, app := range apps {
 		filter = bson.M{"app_id": app.UID}
 		count, err := db.store.Count(eventsCtx, filter)
@@ -101,7 +101,7 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 		apps = make([]datastore.Application, 0)
 	}
 
-	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, EventCollection)
+	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 	for i, app := range apps {
 		filter = bson.M{"app_id": app.UID}
 		count, err := db.store.Count(eventsCtx, filter)
@@ -152,7 +152,7 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 		return apps, err
 	}
 
-	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, EventCollection)
+	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 	for i, app := range apps {
 		filter = bson.M{"app_id": app.UID}
 		count, err := db.store.Count(eventsCtx, filter)
@@ -178,7 +178,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 		return app, err
 	}
 
-	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, EventCollection)
+	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 	filter := bson.M{"app_id": app.UID}
 	count, err := db.store.Count(eventsCtx, filter)
 	if err != nil {
@@ -250,16 +250,18 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 		"document_status": datastore.DeletedDocumentStatus,
 	}
 
-	return db.store.UpdateMany(ctx, bson.M{"group_id": groupID}, update)
+	return db.store.UpdateMany(ctx, bson.M{"group_id": groupID}, update, false)
 }
 
 func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
-	}}}
+	updateAsDeleted := bson.M{
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
+	}
 
 	err := db.updateMessagesInApp(ctx, app, updateAsDeleted)
 	if err != nil {
@@ -270,10 +272,12 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 	if err != nil {
 		log.Errorf("%s an error has occurred while deleting app - %s", app.UID, err)
 
-		rollback := bson.D{primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "deleted_at", Value: nil},
-			primitive.E{Key: "document_status", Value: datastore.ActiveDocumentStatus},
-		}}}
+		rollback := bson.M{
+			"$set": bson.M{
+				"deleted_at":      nil,
+				"document_status": datastore.ActiveDocumentStatus,
+			},
+		}
 		err2 := db.updateMessagesInApp(ctx, app, rollback)
 		if err2 != nil {
 			log.Errorf("%s failed to rollback deleted app messages - %s", app.UID, err2)
@@ -304,48 +308,30 @@ func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Appl
 	return nil
 }
 
-func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Application, update bson.D) error {
+func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Application, update bson.M) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	var msgOperations []mongo.WriteModel
-
-	updateMessagesOperation := mongo.NewUpdateManyModel()
-	msgFilter := bson.M{"app_id": app.UID}
-	updateMessagesOperation.SetFilter(msgFilter)
-	updateMessagesOperation.SetUpdate(update)
-	msgOperations = append(msgOperations, updateMessagesOperation)
-
-	eventCollection := db.collection.Database().Collection(EventCollection)
-	res, err := eventCollection.BulkWrite(ctx, msgOperations)
+	filter := bson.M{"app_id": app.UID}
+	err := db.store.UpdateMany(ctx, filter, update, true)
 	if err != nil {
-		log.Errorf("failed to delete messages in %s. Reason: %s", app.UID, err)
 		return err
 	}
-	log.Infof("results of app messages op: %+v", res)
 	return nil
 }
 
-func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, update bson.D) error {
+func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, update bson.M) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	var appOperations []mongo.WriteModel
-	updateAppOperation := mongo.NewUpdateOneModel()
-	filter := bson.D{primitive.E{Key: "uid", Value: app.UID}}
-	updateAppOperation.SetFilter(filter)
-	updateAppOperation.SetUpdate(update)
-	appOperations = append(appOperations, updateAppOperation)
-
-	res, err := db.collection.BulkWrite(ctx, appOperations)
+	filter := bson.M{"app_id": app.UID}
+	err := db.store.UpdateMany(ctx, filter, update, true)
 	if err != nil {
-		log.Errorf("failed to delete app %s. Reason: %s", app.UID, err)
 		return err
 	}
-	log.Infof("results of app op: %+v", res)
 	return nil
 }
 
 func (db *appRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, AppCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.AppCollection)
 }
 
 func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
