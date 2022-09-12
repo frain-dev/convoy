@@ -80,7 +80,7 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 
 	var data *models.DashboardSummary
 
-	err = a.S.Cache.Get(r.Context(), qs, &data)
+	err = a.A.Cache.Get(r.Context(), qs, &data)
 
 	if err != nil {
 		log.Error(err)
@@ -92,7 +92,8 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		return
 	}
 
-	apps, err := a.S.AppService.CountGroupApplications(r.Context(), group.UID)
+	appService := createApplicationService(a)
+	apps, err := appService.CountGroupApplications(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
@@ -111,7 +112,7 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		PeriodData:   &messages,
 	}
 
-	err = a.S.Cache.Set(r.Context(), qs, dashboard, time.Minute)
+	err = a.A.Cache.Set(r.Context(), qs, dashboard, time.Minute)
 
 	if err != nil {
 		log.Error(err)

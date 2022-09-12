@@ -14,20 +14,18 @@ import (
 )
 
 type userRepo struct {
-	innerDB *mongo.Database
-	client  *mongo.Collection
-	store   datastore.Store
+	collection *mongo.Collection
+	store      datastore.Store
 }
 
-func NewUserRepo(db *mongo.Database, store datastore.Store) datastore.UserRepository {
+func NewUserRepo(store datastore.Store) datastore.UserRepository {
 	return &userRepo{
-		innerDB: db,
-		client:  db.Collection(UserCollection),
-		store:   store,
+		store: store,
 	}
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
+	ctx = u.setCollectionInContext(ctx)
 	user.ID = primitive.NewObjectID()
 	user.ResetPasswordToken = uuid.NewString()
 
@@ -41,6 +39,7 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 }
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
+	ctx = u.setCollectionInContext(ctx)
 	user := &datastore.User{}
 
 	filter := bson.M{"email": email}
@@ -55,6 +54,7 @@ func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastor
 }
 
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
+	ctx = u.setCollectionInContext(ctx)
 	user := &datastore.User{}
 
 	err := u.store.FindByID(ctx, id, nil, user)
@@ -67,11 +67,12 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 }
 
 func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
+	ctx = u.setCollectionInContext(ctx)
 	var users []datastore.User
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
-	paginatedData, err := pager.New(u.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&users).Find()
+	paginatedData, err := pager.New(u.collection).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&users).Find()
 	if err != nil {
 		return users, datastore.PaginationData{}, err
 	}
@@ -84,6 +85,7 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 }
 
 func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
+	ctx = u.setCollectionInContext(ctx)
 	update := bson.D{
 		primitive.E{Key: "first_name", Value: user.FirstName},
 		primitive.E{Key: "last_name", Value: user.LastName},
@@ -99,11 +101,12 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 	if mongo.IsDuplicateKeyError(err) {
 		return datastore.ErrDuplicateEmail
 	}
-	
+
 	return err
 }
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
+	ctx = u.setCollectionInContext(ctx)
 	user := &datastore.User{}
 
 	filter := bson.M{"reset_password_token": token}
@@ -114,4 +117,8 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 	}
 
 	return user, nil
+}
+
+func (db *userRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, UserCollection)
 }

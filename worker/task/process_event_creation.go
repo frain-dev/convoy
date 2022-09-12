@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/google/uuid"
@@ -17,7 +18,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(store datastore.Store, cache cache.Cache, eventQueue queue.Queuer, sc searcher.Searcher) func(context.Context, *asynq.Task) error {
+	subRepo := mongo.NewSubscriptionRepo(store)
+	appRepo := mongo.NewApplicationRepo(store)
+	groupRepo := mongo.NewGroupRepo(store)
+	eventRepo := mongo.NewEventRepository(store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(store)
+
 	return func(ctx context.Context, t *asynq.Task) error {
 
 		var event datastore.Event

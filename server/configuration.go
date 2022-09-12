@@ -5,10 +5,20 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 )
+
+func createConfigService(a *ApplicationHandler) *services.ConfigService {
+	configRepo := mongo.NewConfigRepo(a.A.Store)
+
+	return services.NewConfigService(
+		configRepo,
+	)
+}
 
 // LoadConfiguration
 // @Summary Fetch configuration
@@ -21,7 +31,8 @@ import (
 // @Security ApiKeyAuth
 // @Router /configuration [get]
 func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
-	config, err := a.S.ConfigService.LoadConfiguration(r.Context())
+	configService := createConfigService(a)
+	config, err := configService.LoadConfiguration(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -64,7 +75,8 @@ func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 		return
 	}
 
-	config, err := a.S.ConfigService.CreateConfiguration(r.Context(), &newConfig)
+	configService := createConfigService(a)
+	config, err := configService.CreateConfiguration(r.Context(), &newConfig)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -102,7 +114,8 @@ func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.
 		return
 	}
 
-	config, err := a.S.ConfigService.UpdateConfiguration(r.Context(), &newConfig)
+	configService := createConfigService(a)
+	config, err := configService.UpdateConfiguration(r.Context(), &newConfig)
 	if err != nil {
 		log.Println(err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

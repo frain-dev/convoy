@@ -29,27 +29,20 @@ type args struct {
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
 	search            searcher.Searcher
+	store             datastore.Store
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
-	eventRepo := mocks.NewMockEventRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
-	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
-	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	search := mocks.NewMockSearcher(ctrl)
+	store := mocks.NewMockStore(ctrl)
 
 	return &args{
-		appRepo:           appRepo,
-		eventRepo:         eventRepo,
-		groupRepo:         groupRepo,
-		eventDeliveryRepo: eventDeliveryRepo,
-		cache:             cache,
-		eventQueue:        queue,
-		subRepo:           subRepo,
-		search:            search,
+		cache:      cache,
+		eventQueue: queue,
+		search:     search,
+		store:      store,
 	}
 }
 
@@ -234,7 +227,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search)
+			fn := ProcessEventCreation(args.store, args.cache, args.eventQueue, args.search)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

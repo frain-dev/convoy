@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,13 +15,11 @@ import (
 )
 
 type eventRepo struct {
-	inner *mongo.Collection
 	store datastore.Store
 }
 
-func NewEventRepository(db *mongo.Database, store datastore.Store) datastore.EventRepository {
+func NewEventRepository(store datastore.Store) datastore.EventRepository {
 	return &eventRepo{
-		inner: db.Collection(EventCollection),
 		store: store,
 	}
 }
@@ -33,6 +30,7 @@ var monthlyIntervalFormat = "%Y-%m"  // 1 month
 var yearlyIntervalFormat = "%Y"      // 1 month
 
 func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) error {
+	ctx = db.setCollectionInContext(ctx)
 
 	message.ID = primitive.NewObjectID()
 
@@ -43,25 +41,23 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 		message.UID = uuid.New().String()
 	}
 
-	err := db.store.Save(ctx, message, nil)
-	return err
+	return db.store.Save(ctx, message, nil)
 }
 
 func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (int64, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"group_id":        groupID,
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	count, err := db.store.Count(ctx, filter)
-	if err != nil {
-		log.WithError(err).Errorf("failed to count events in group %s", groupID)
-		return 0, err
-	}
-	return count, nil
+	return db.store.Count(ctx, filter)
 }
 
 func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
+	ctx = db.setCollectionInContext(ctx)
+
 	update := bson.M{
 		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
 		"document_status": datastore.DeletedDocumentStatus,
@@ -84,6 +80,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.Ev
 }
 
 func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
+	ctx = db.setCollectionInContext(ctx)
 
 	start := searchParams.CreatedAtStart
 	end := searchParams.CreatedAtEnd
@@ -152,6 +149,8 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 }
 
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	m := new(datastore.Event)
 
 	err := db.store.FindByID(ctx, id, nil, m)
@@ -164,18 +163,23 @@ func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.E
 }
 
 func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datastore.Event, error) {
-	m := make([]datastore.Event, 0)
+	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"uid": bson.M{"$in": ids}, "document_status": datastore.ActiveDocumentStatus}
+	var event []datastore.Event
 
-	err := db.store.FindMany(ctx, filter, nil, nil, 0, 0, &m)
+	filter := bson.M{"uid": bson.M{"$in": ids}}
+
+	_, err := db.store.FindMany(ctx, filter, nil, nil, 0, 0, &event)
 	if err != nil {
 		return nil, err
 	}
-	return m, err
+
+	return event, err
 }
 
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(searchParams)}
 
 	hasAppFilter := !util.IsStringEmpty(appId)
@@ -192,19 +196,25 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId 
 			"created_at": getCreatedDateFilter(searchParams)}
 	}
 
-	var messages []datastore.Event
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&messages).Find()
+	var events []datastore.Event
+	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &events)
+
 	if err != nil {
-		return messages, datastore.PaginationData{}, err
+		return events, datastore.PaginationData{}, err
 	}
 
-	if messages == nil {
-		messages = make([]datastore.Event, 0)
+	if events == nil {
+		events = make([]datastore.Event, 0)
 	}
 
-	return messages, datastore.PaginationData(paginatedData.Pagination), nil
+	return events, pagination, nil
 }
 
 func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {
 	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
+}
+
+func (db *eventRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, EventCollection)
 }

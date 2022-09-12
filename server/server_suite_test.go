@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -71,6 +72,11 @@ func getDB() convoyMongo.Client {
 	return *db
 }
 
+func getStore(db *mongo.Database, collection string) datastore.Store {
+	store := datastore.New(db, collection)
+	return store
+}
+
 func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
@@ -100,40 +106,17 @@ func buildServer() *ApplicationHandler {
 	db := getDB()
 	qOpts, _ = getQueueOptions("EventQueue")
 
-	groupRepo := db.GroupRepo()
-	appRepo := db.AppRepo()
-	eventRepo := db.EventRepo()
-	eventDeliveryRepo := db.EventDeliveryRepo()
-	apiKeyRepo := db.APIRepo()
-	sourceRepo := db.SourceRepo()
-	orgRepo := db.OrganisationRepo()
-	orgMemberRepo := db.OrganisationMemberRepo()
-	orgInviteRepo := db.OrganisationInviteRepo()
-	userRepo := db.UserRepo()
-	configRepo := db.ConfigurationRepo()
+	store := datastore.New(db.Database(), "")
 	queue := redisqueue.NewQueue(qOpts)
 	logger := logger.NewNoopLogger()
 	cache := ncache.NewNoopCache()
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
-	subRepo := db.SubRepo()
 
 	return NewApplicationHandler(
-		Repos{
-			EventRepo:         eventRepo,
-			EventDeliveryRepo: eventDeliveryRepo,
-			AppRepo:           appRepo,
-			GroupRepo:         groupRepo,
-			ApiKeyRepo:        apiKeyRepo,
-			SubRepo:           subRepo,
-			SourceRepo:        sourceRepo,
-			OrgRepo:           orgRepo,
-			OrgMemberRepo:     orgMemberRepo,
-			OrgInviteRepo:     orgInviteRepo,
-			UserRepo:          userRepo,
-			ConfigRepo:        configRepo,
-		}, Services{
+		App{
+			Store:    store,
 			Queue:    queue,
 			Logger:   logger,
 			Tracer:   tracer,

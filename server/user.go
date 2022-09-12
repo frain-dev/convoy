@@ -4,12 +4,25 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
+
+func createUserService(a *ApplicationHandler) *services.UserService {
+	userRepo := mongo.NewUserRepo(a.A.Store)
+	configService := createConfigService(a)
+	orgService := createOrganisationService(a)
+
+	return services.NewUserService(
+		userRepo, a.A.Cache, a.A.Queue,
+		configService, orgService,
+	)
+}
 
 // LoginUser
 // @Summary Login a user
@@ -28,7 +41,8 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, token, err := a.S.UserService.LoginUser(r.Context(), &newUser)
+	userService := createUserService(a)
+	user, token, err := userService.LoginUser(r.Context(), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -65,7 +79,8 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	user, token, err := a.S.UserService.RegisterUser(r.Context(), &newUser)
+	userService := createUserService(a)
+	user, token, err := userService.RegisterUser(r.Context(), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -102,7 +117,8 @@ func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	token, err := a.S.UserService.RefreshToken(r.Context(), &refreshToken)
+	userService := createUserService(a)
+	token, err := userService.RefreshToken(r.Context(), &refreshToken)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -128,7 +144,8 @@ func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = a.S.UserService.LogoutUser(auth.Token)
+	userService := createUserService(a)
+	err = userService.LogoutUser(auth.Token)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -184,7 +201,8 @@ func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err = a.S.UserService.UpdateUser(r.Context(), &userUpdate, user)
+	userService := createUserService(a)
+	user, err = userService.UpdateUser(r.Context(), &userUpdate, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -219,7 +237,8 @@ func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	user, err = a.S.UserService.UpdatePassword(r.Context(), &updatePassword, user)
+	userService := createUserService(a)
+	user, err = userService.UpdatePassword(r.Context(), &updatePassword, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -249,7 +268,8 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = a.S.UserService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
+	userService := createUserService(a)
+	err = userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -277,7 +297,8 @@ func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := a.S.UserService.ResetPassword(r.Context(), token, &resetPassword)
+	userService := createUserService(a)
+	user, err := userService.ResetPassword(r.Context(), token, &resetPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

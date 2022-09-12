@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -13,6 +15,14 @@ import (
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
+
+func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionService {
+	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
+	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+
+	return services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
+}
 
 // GetSubscriptions
 // @Summary Get all subscriptions
@@ -35,7 +45,9 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	appID := m.GetAppIDFromContext(r)
 
 	filter := &datastore.FilterBy{GroupID: group.UID, AppID: appID}
-	subscriptions, paginationData, err := a.S.SubService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
+
+	subService := createSubscriptionService(a)
+	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load subscriptions")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -62,7 +74,8 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 	subId := chi.URLParam(r, "subscriptionID")
 	group := m.GetGroupFromContext(r.Context())
 
-	subscription, err := a.S.SubService.FindSubscriptionByID(r.Context(), group, subId, false)
+	subService := createSubscriptionService(a)
+	subscription, err := subService.FindSubscriptionByID(r.Context(), group, subId, false)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -94,7 +107,8 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 
 	sub.Type = string(group.Type)
 
-	subscription, err := a.S.SubService.CreateSubscription(r.Context(), group, &sub)
+	subService := createSubscriptionService(a)
+	subscription, err := subService.CreateSubscription(r.Context(), group, &sub)
 	if err != nil {
 		log.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -118,14 +132,15 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Router /subscriptions/{subscriptionID} [delete]
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
+	subService := createSubscriptionService(a)
 
-	sub, err := a.S.SubService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
+	sub, err := subService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = a.S.SubService.DeleteSubscription(r.Context(), group.UID, sub)
+	err = subService.DeleteSubscription(r.Context(), group.UID, sub)
 	if err != nil {
 		log.Errorln("failed to delete subscription - ", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -159,7 +174,8 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	g := m.GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
-	sub, err := a.S.SubService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
+	subService := createSubscriptionService(a)
+	sub, err := subService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -183,7 +199,8 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 	g := m.GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
-	sub, err := a.S.SubService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
+	subService := createSubscriptionService(a)
+	sub, err := subService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

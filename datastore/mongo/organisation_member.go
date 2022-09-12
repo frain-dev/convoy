@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,35 +14,34 @@ import (
 )
 
 type orgMemberRepo struct {
-	innerDB *mongo.Database
-	inner   *mongo.Collection
-	store   datastore.Store
+	store datastore.Store
 }
 
-func NewOrgMemberRepo(db *mongo.Database, store datastore.Store) datastore.OrganisationMemberRepository {
+func NewOrgMemberRepo(store datastore.Store) datastore.OrganisationMemberRepository {
 	return &orgMemberRepo{
-		innerDB: db,
-		inner:   db.Collection(OrganisationMembersCollection),
-		store:   store,
+		store: store,
 	}
 }
 
+func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	ctx = o.setCollectionInContext(ctx)
+	member.ID = primitive.NewObjectID()
+	return o.store.Save(ctx, member, nil)
+}
+
 func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
+	ctx = o.setCollectionInContext(ctx)
+
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
 	if !util.IsStringEmpty(organisationID) {
 		filter["organisation_id"] = organisationID
 	}
 
-	members := make([]*datastore.OrganisationMember, 0)
-	paginatedData, err := pager.New(o.inner).
-		Context(ctx).
-		Limit(int64(pageable.PerPage)).
-		Page(int64(pageable.Page)).
-		Sort("created_at", pageable.Sort).
-		Filter(filter).
-		Decode(&members).
-		Find()
+	var members []*datastore.OrganisationMember
+
+	pagination, err := o.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &members)
 
 	if err != nil {
 		return members, datastore.PaginationData{}, err
@@ -54,10 +52,12 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 		return members, datastore.PaginationData{}, err
 	}
 
-	return members, datastore.PaginationData(paginatedData.Pagination), nil
+	return members, pagination, nil
 }
 
 func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	ctx = o.setCollectionInContext(ctx)
+
 	matchStage1 := bson.D{
 		{Key: "$match",
 			Value: bson.D{
@@ -126,13 +126,8 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	return organisations, datastore.PaginationData{}, nil
 }
 
-func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
-	member.ID = primitive.NewObjectID()
-	err := o.store.Save(ctx, member, nil)
-	return err
-}
-
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	ctx = o.setCollectionInContext(ctx)
 	member.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	update := bson.D{
@@ -140,11 +135,11 @@ func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *da
 		primitive.E{Key: "updated_at", Value: member.UpdatedAt},
 	}
 
-	err := o.store.UpdateOne(ctx, bson.M{"uid": member.UID}, update)
-	return err
+	return o.store.UpdateOne(ctx, bson.M{"uid": member.UID}, update)
 }
 
 func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID string) error {
+	ctx = o.setCollectionInContext(ctx)
 	update := bson.M{
 		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
 		"document_status": datastore.DeletedDocumentStatus,
@@ -164,6 +159,7 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 }
 
 func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, orgID string) (*datastore.OrganisationMember, error) {
+	ctx = o.setCollectionInContext(ctx)
 	member := new(datastore.OrganisationMember)
 
 	filter := bson.M{
@@ -182,6 +178,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, or
 }
 
 func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID, orgID string) (*datastore.OrganisationMember, error) {
+	ctx = o.setCollectionInContext(ctx)
 	filter := bson.M{
 		"user_id":         userID,
 		"organisation_id": orgID,
@@ -199,6 +196,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 }
 
 func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members []*datastore.OrganisationMember) error {
+	ctx = o.setCollectionInContext(ctx)
 	userIDs := make([]string, 0, len(members))
 	orgIDs := make([]string, 0, len(members))
 	for i := range members {
@@ -244,6 +242,7 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 			},
 		},
 	}
+
 	projectStage2 := bson.D{
 		{
 			Key: "$project",
@@ -272,4 +271,8 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 	}
 
 	return nil
+}
+
+func (o *orgMemberRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, OrganisationMembersCollection)
 }

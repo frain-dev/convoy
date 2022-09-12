@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"time"
 
+	cm "github.com/frain-dev/convoy/datastore/mongo"
+	pager "github.com/gobeam/mongo-go-pagination"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,11 +15,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type mongoStore struct {
-	IsConnected    bool
-	CollectionName string
-	Collection     *mongo.Collection
-	Database       *mongo.Database
+var ErrInvalidCollection = errors.New("Invalid collection type")
+
+type CollectionKey string
+
+const CollectionCtx CollectionKey = "collection"
+
+type MongoStore struct {
+	IsConnected bool
+	Database    *mongo.Database
 }
 
 type Store interface {
@@ -26,7 +32,7 @@ type Store interface {
 
 	FindByID(ctx context.Context, id string, projection bson.M, result interface{}) error
 	FindOne(ctx context.Context, filter, projection bson.M, result interface{}) error
-	FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error
+	FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, page, limit int64, results interface{}) (PaginationData, error)
 	FindManyWithDeletedAt(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error
 	FindAll(ctx context.Context, filter bson.M, sort interface{}, projection, results interface{}) error
 
@@ -47,21 +53,19 @@ type Store interface {
 
 // mongodb driver -> store (database) -> repo -> service -> handler
 
-var _ Store = &mongoStore{}
+var _ Store = &MongoStore{}
 
 /*
  * New
  * This initialises a new MongoDB repo for the collection
  */
-func New(database *mongo.Database, collection string) Store {
-	mongoStore := &mongoStore{
-		IsConnected:    true,
-		CollectionName: collection,
-		Collection:     database.Collection(collection),
-		Database:       database,
+func New(database *mongo.Database) Store {
+	MongoStore := &MongoStore{
+		IsConnected: true,
+		Database:    database,
 	}
 
-	return mongoStore
+	return MongoStore
 }
 
 var (
@@ -75,10 +79,15 @@ func IsValidPointer(i interface{}) bool {
 
 /**
  * Save
- * Save is used to save a record in the mongoStore
+ * Save is used to save a record in the MongoStore
  */
-func (d *mongoStore) Save(ctx context.Context, payload interface{}, out interface{}) error {
-	result, err := d.Collection.InsertOne(ctx, payload)
+func (d *MongoStore) Save(ctx context.Context, payload interface{}, out interface{}) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+	result, err := collection.InsertOne(ctx, payload)
 
 	if err != nil {
 		return err
@@ -92,94 +101,117 @@ func (d *mongoStore) Save(ctx context.Context, payload interface{}, out interfac
 		return ErrInvalidPtr
 	}
 
-	return d.Collection.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(out)
+	return collection.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(out)
 }
 
 /**
  * SaveMany
- * SaveMany is used to bulk insert into the mongoStore
+ * SaveMany is used to bulk insert into the MongoStore
  *
  * param: []interface{} payload
  * return: error
  */
-func (d *mongoStore) SaveMany(ctx context.Context, payload []interface{}) error {
-	_, err := d.Collection.InsertMany(ctx, payload)
+func (d *MongoStore) SaveMany(ctx context.Context, payload []interface{}) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
+	_, err = collection.InsertMany(ctx, payload)
 	return err
 }
 
 /**
  * FindByID
- * FindByID finds a single record by id in the mongoStore
+ * FindByID finds a single record by id in the MongoStore
  * returns nil if record is not found.
  *
  * param: interface{}            id
  * param: bson.M projection
  * return: bson.M
  */
-func (d *mongoStore) FindByID(ctx context.Context, id string, projection bson.M, result interface{}) error {
+func (d *MongoStore) FindByID(ctx context.Context, id string, projection bson.M, result interface{}) error {
 	if !IsValidPointer(result) {
 		return ErrInvalidPtr
 	}
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
 
 	ops := options.FindOne()
 	if projection != nil {
 		ops.Projection = projection
 	}
 
-	return d.Collection.FindOne(ctx, bson.M{"uid": id, "document_status": ActiveDocumentStatus}, ops).Decode(result)
+	return collection.FindOne(ctx, bson.M{"uid": id, "document_status": ActiveDocumentStatus}, ops).Decode(result)
 }
 
 /**
  * Find One by
  */
-func (d *mongoStore) FindOne(ctx context.Context, filter, projection bson.M, result interface{}) error {
+func (d *MongoStore) FindOne(ctx context.Context, filter, projection bson.M, result interface{}) error {
 	if !IsValidPointer(result) {
 		return ErrInvalidPtr
 	}
+
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
 
 	ops := options.FindOne()
 	ops.Projection = projection
 
 	filter["document_status"] = ActiveDocumentStatus
 
-	return d.Collection.FindOne(ctx, filter, ops).Decode(result)
+	return collection.FindOne(ctx, filter, ops).Decode(result)
 }
 
-func (d *mongoStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error {
+func (d *MongoStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, page, limit, skip int64, results interface{}) (PaginationData, error) {
 	if !IsValidPointer(results) {
 		log.Errorf("Invalid Pointer Type")
-		return ErrInvalidPtr
+		return PaginationData{}, ErrInvalidPtr
 	}
 
-	ops := options.Find()
-	if limit > 0 {
-		ops.Limit = &limit
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return PaginationData{}, err
 	}
-	if skip > 0 {
-		ops.Skip = &skip
-	}
-	if projection != nil {
-		ops.Projection = projection
-	}
-	if sort != nil {
-		ops.Sort = sort
-	}
+	collection := d.Database.Collection(col)
 
 	filter["document_status"] = ActiveDocumentStatus
 
-	cursor, err := d.Collection.Find(ctx, filter, ops)
+	paginatedData, err := pager.
+		New(collection).
+		Context(ctx).
+		Limit(limit).
+		Page(page).
+		Filter(filter).
+		Sort("created_at", sort).
+		Decode(&results).
+		Find()
+
 	if err != nil {
-		log.WithError(err).Error("Cannot find many")
-		return err
+		return PaginationData{}, err
 	}
 
-	return cursor.All(ctx, results)
+	return PaginationData(paginatedData.Pagination), nil
 }
 
-func (d *mongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error {
+func (d *MongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error {
 	if !IsValidPointer(results) {
 		return ErrInvalidPtr
 	}
+
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
 
 	ops := options.Find()
 	if limit > 0 {
@@ -195,7 +227,7 @@ func (d *mongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projecti
 		ops.Sort = sort
 	}
 
-	cursor, err := d.Collection.Find(ctx, filter, ops)
+	cursor, err := collection.Find(ctx, filter, ops)
 	if err != nil {
 		return err
 	}
@@ -203,10 +235,16 @@ func (d *mongoStore) FindManyWithDeletedAt(ctx context.Context, filter, projecti
 	return cursor.All(ctx, results)
 }
 
-func (d *mongoStore) FindAll(ctx context.Context, filter bson.M, sort interface{}, projection, results interface{}) error {
+func (d *MongoStore) FindAll(ctx context.Context, filter bson.M, sort interface{}, projection, results interface{}) error {
 	if !IsValidPointer(results) {
 		return ErrInvalidPtr
 	}
+
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
 
 	ops := options.Find()
 
@@ -224,7 +262,7 @@ func (d *mongoStore) FindAll(ctx context.Context, filter bson.M, sort interface{
 
 	filter["document_status"] = ActiveDocumentStatus
 
-	cursor, err := d.Collection.Find(ctx, filter, ops)
+	cursor, err := collection.Find(ctx, filter, ops)
 	if err != nil {
 		return err
 	}
@@ -234,24 +272,42 @@ func (d *mongoStore) FindAll(ctx context.Context, filter bson.M, sort interface{
 
 /**
  * UpdateByID
- * Updates a single record by id in the mongoStore
+ * Updates a single record by id in the MongoStore
  *
  * param: interface{} id
  * param: interface{} payload
  * return: error
  */
-func (d *mongoStore) UpdateByID(ctx context.Context, id string, payload interface{}) error {
-	_, err := d.Collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
+func (d *MongoStore) UpdateByID(ctx context.Context, id string, payload interface{}) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
+	_, err = collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
 	return err
 }
 
-func (d *mongoStore) UpdateOne(ctx context.Context, filter bson.M, payload interface{}) error {
-	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+func (d *MongoStore) UpdateOne(ctx context.Context, filter bson.M, payload interface{}) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
+	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
 	return err
 }
 
-func (d *mongoStore) Inc(ctx context.Context, filter bson.M, payload interface{}) error {
-	_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$inc": payload})
+func (d *MongoStore) Inc(ctx context.Context, filter bson.M, payload interface{}) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
+	_, err = collection.UpdateOne(ctx, filter, bson.M{"$inc": payload})
 	return err
 }
 
@@ -265,8 +321,14 @@ func (d *mongoStore) Inc(ctx context.Context, filter bson.M, payload interface{}
  * param: interface{}            payload
  * return: error
  */
-func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload bson.M) error {
-	_, err := d.Collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
+func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
+	_, err = collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
 	return err
 }
 
@@ -281,9 +343,15 @@ func (d *mongoStore) UpdateMany(ctx context.Context, filter, payload bson.M) err
  * If hard delete is false, a soft delete is executed where the document status is changed.
  * If hardDelete is true, the document is completely deleted.
  */
-func (d *mongoStore) DeleteByID(ctx context.Context, id string, hardDelete bool) error {
+func (d *MongoStore) DeleteByID(ctx context.Context, id string, hardDelete bool) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
 	if hardDelete {
-		_, err := d.Collection.DeleteOne(ctx, bson.M{"uid": id}, nil)
+		_, err := collection.DeleteOne(ctx, bson.M{"uid": id}, nil)
 		return err
 
 	} else {
@@ -291,14 +359,14 @@ func (d *mongoStore) DeleteByID(ctx context.Context, id string, hardDelete bool)
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
 			"document_status": DeletedDocumentStatus,
 		}
-		_, err := d.Collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
+		_, err := collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
 		return err
 	}
 }
 
 /**
  * DeleteOne
- * Deletes one item from the mongoStore using filter a hash map to properly filter what is to be deleted.
+ * Deletes one item from the MongoStore using filter a hash map to properly filter what is to be deleted.
  *
  * param: bson.M filter
  * param: bool hardDelete
@@ -306,9 +374,15 @@ func (d *mongoStore) DeleteByID(ctx context.Context, id string, hardDelete bool)
  * If hard delete is false, a soft delete is executed where the document status is changed.
  * If hardDelete is true, the document is completely deleted.
  */
-func (d *mongoStore) DeleteOne(ctx context.Context, filter bson.M, hardDelete bool) error {
+func (d *MongoStore) DeleteOne(ctx context.Context, filter bson.M, hardDelete bool) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
 	if hardDelete {
-		_, err := d.Collection.DeleteOne(ctx, filter, nil)
+		_, err := collection.DeleteOne(ctx, filter, nil)
 		return err
 
 	} else {
@@ -316,7 +390,7 @@ func (d *mongoStore) DeleteOne(ctx context.Context, filter bson.M, hardDelete bo
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
 			"document_status": DeletedDocumentStatus,
 		}
-		_, err := d.Collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+		_, err := collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
 		return err
 	}
 }
@@ -332,35 +406,81 @@ func (d *mongoStore) DeleteOne(ctx context.Context, filter bson.M, hardDelete bo
  * If hardDelete is true, the document is completely deleted.
  * return: error
  */
-func (d *mongoStore) DeleteMany(ctx context.Context, filter, payload bson.M, hardDelete bool) error {
+func (d *MongoStore) DeleteMany(ctx context.Context, filter, payload bson.M, hardDelete bool) error {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
+
 	if hardDelete {
-		_, err := d.Collection.DeleteMany(ctx, filter)
+		_, err := collection.DeleteMany(ctx, filter)
 		return err
 	} else {
-		_, err := d.Collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
+		_, err := collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
 		return err
 	}
 }
 
-func (d *mongoStore) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {
+func (d *MongoStore) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return 0, err
+	}
+	collection := d.Database.Collection(col)
+
 	filter["document_status"] = ActiveDocumentStatus
-	return d.Collection.CountDocuments(ctx, filter)
+	return collection.CountDocuments(ctx, filter)
 }
 
-func (d *mongoStore) Aggregate(ctx context.Context, pipeline mongo.Pipeline, output interface{}, allowDiskUse bool) error {
+func (d *MongoStore) Aggregate(ctx context.Context, pipeline mongo.Pipeline, output interface{}, allowDiskUse bool) error {
 	if !IsValidPointer(output) {
 		return ErrInvalidPtr
 	}
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return err
+	}
+	collection := d.Database.Collection(col)
 
 	opts := options.Aggregate()
 	if allowDiskUse {
 		opts.SetAllowDiskUse(true)
 	}
 
-	cur, err := d.Collection.Aggregate(ctx, pipeline, opts)
+	cur, err := collection.Aggregate(ctx, pipeline, opts)
 	if err != nil {
 		return err
 	}
 
 	return cur.All(ctx, output)
+}
+
+func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
+	switch ctx.Value(CollectionCtx) {
+	case "configurations":
+		return cm.ConfigCollection, nil
+	case "groups":
+		return cm.GroupCollection, nil
+	case "organisations":
+		return cm.OrganisationCollection, nil
+	case "organisation_invites":
+		return cm.OrganisationInvitesCollection, nil
+	case "organisation_members":
+		return cm.OrganisationMembersCollection, nil
+	case "applications":
+		return cm.AppCollection, nil
+	case "events":
+		return cm.EventCollection, nil
+	case "sources":
+		return cm.SourceCollection, nil
+	case "subscriptions":
+		return cm.SubscriptionCollection, nil
+	case "eventdeliveries":
+		return cm.EventDeliveryCollection, nil
+	case "apiKeys":
+		return cm.APIKeyCollection, nil
+	default:
+		return "", ErrInvalidCollection
+	}
 }

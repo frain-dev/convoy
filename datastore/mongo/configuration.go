@@ -12,27 +12,25 @@ import (
 )
 
 type configRepo struct {
-	innerDB *mongo.Database
-	client  *mongo.Collection
-	store   datastore.Store
+	store datastore.Store
 }
 
-func NewConfigRepo(db *mongo.Database, store datastore.Store) datastore.ConfigurationRepository {
+func NewConfigRepo(store datastore.Store) datastore.ConfigurationRepository {
 	return &configRepo{
-		innerDB: db,
-		client:  db.Collection(ConfigCollection),
-		store:   store,
+		store: store,
 	}
 }
 
 func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.Configuration) error {
+	ctx = c.setCollectionInContext(ctx)
 	config.ID = primitive.NewObjectID()
 
-	err := c.store.Save(ctx, config, nil)
-	return err
+	return c.store.Save(ctx, config, nil)
 }
 
 func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configuration, error) {
+	ctx = c.setCollectionInContext(ctx)
+
 	config := &datastore.Configuration{}
 
 	filter := bson.M{}
@@ -47,6 +45,8 @@ func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configur
 }
 
 func (c *configRepo) UpdateConfiguration(ctx context.Context, config *datastore.Configuration) error {
+	ctx = c.setCollectionInContext(ctx)
+
 	filter := bson.M{"uid": config.UID}
 
 	update := bson.D{
@@ -58,4 +58,8 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, config *datastore.
 
 	err := c.store.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (db *configRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, ConfigCollection)
 }

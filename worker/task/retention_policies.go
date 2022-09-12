@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	objectstore "github.com/frain-dev/convoy/datastore/object-store"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/util"
@@ -16,7 +17,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
+func RententionPolicies(store datastore.Store, instanceConfig config.Configuration, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
+	configRepo := mongo.NewConfigRepo(store)
+	eventRepo := mongo.NewEventRepository(store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(store)
+
 	return func(ctx context.Context, t *asynq.Task) error {
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
@@ -34,6 +39,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 		}
 		filter := &datastore.GroupFilter{}
 
+		groupRepo := mongo.NewGroupRepo(store)
 		groups, err := groupRepo.LoadGroups(context.Background(), filter)
 		if err != nil {
 			log.WithError(err).Error("failed to load groups.")
@@ -51,7 +57,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 				expDate := time.Now().UTC().Add(-policy)
 				uri := instanceConfig.Database.Dsn
 				for _, collection := range collections {
-					err = ExportCollection(ctx, collection, uri, exportDir, expDate, objectStoreClient, g, eventRepo, eventDeliveriesRepo, groupRepo, searcher)
+					err = ExportCollection(ctx, collection, uri, exportDir, expDate, objectStoreClient, g, eventRepo, eventDeliveryRepo, groupRepo, searcher)
 					if err != nil {
 						log.WithError(err).Errorf("Error exporting collection %v", collection)
 						return err

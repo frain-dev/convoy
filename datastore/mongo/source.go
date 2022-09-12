@@ -14,20 +14,17 @@ import (
 )
 
 type sourceRepo struct {
-	innerDB *mongo.Database
-	client  *mongo.Collection
-	store   datastore.Store
+	store datastore.Store
 }
 
-func NewSourceRepo(db *mongo.Database, store datastore.Store) datastore.SourceRepository {
+func NewSourceRepo(store datastore.Store) datastore.SourceRepository {
 	return &sourceRepo{
-		innerDB: db,
-		client:  db.Collection(SourceCollection),
-		store:   store,
+		store: store,
 	}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
+	ctx = db.setCollectionInContext(ctx)
 	source.ID = primitive.NewObjectID()
 
 	err := s.store.Save(ctx, source, nil)
@@ -35,6 +32,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 }
 
 func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *datastore.Source) error {
+	ctx = db.setCollectionInContext(ctx)
 	filter := bson.M{"uid": source.UID, "group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
 
 	update := bson.D{
@@ -51,6 +49,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *d
 }
 
 func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id string) (*datastore.Source, error) {
+	ctx = db.setCollectionInContext(ctx)
 	source := &datastore.Source{}
 
 	filter := bson.M{"uid": id, "group_id": groupId}
@@ -64,6 +63,7 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id stri
 }
 
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*datastore.Source, error) {
+	ctx = db.setCollectionInContext(ctx)
 	source := &datastore.Source{}
 
 	filter := bson.M{"mask_id": maskId}
@@ -77,6 +77,7 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*da
 }
 
 func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id string) error {
+	ctx = db.setCollectionInContext(ctx)
 	filter := bson.M{"uid": id, "group_id": groupId}
 
 	update := bson.M{
@@ -89,13 +90,14 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+	ctx = db.setCollectionInContext(ctx)
 	var sources []datastore.Source
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID, "type": f.Type, "provider": f.Provider}
 
 	removeUnusedFields(filter)
 
-	paginatedData, err := pager.New(s.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&sources).Find()
+	paginatedData, err := pager.New(s.collection).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&sources).Find()
 	if err != nil {
 		return sources, datastore.PaginationData{}, err
 	}
@@ -105,6 +107,10 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	}
 
 	return sources, datastore.PaginationData(paginatedData.Pagination), nil
+}
+
+func (db *sourceRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, SourceCollection)
 }
 
 func removeUnusedFields(filter map[string]interface{}) {

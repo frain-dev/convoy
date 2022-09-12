@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/newrelic/go-agent/v3/integrations/nrmongo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -27,27 +26,18 @@ const (
 	SourceCollection              = "sources"
 	UserCollection                = "users"
 	SubscriptionCollection        = "subscriptions"
+	EventDeliveryCollection       = "eventdeliveries"
+	APIKeyCollection              = "apiKeys"
 )
 
 type Client struct {
-	db                *mongo.Database
-	apiKeyRepo        datastore.APIKeyRepository
-	groupRepo         datastore.GroupRepository
-	eventRepo         datastore.EventRepository
-	applicationRepo   datastore.ApplicationRepository
-	subscriptionRepo  datastore.SubscriptionRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	sourceRepo        datastore.SourceRepository
-	orgRepo           datastore.OrganisationRepository
-	orgMemberRepo     datastore.OrganisationMemberRepository
-	orgInviteRepo     datastore.OrganisationInviteRepository
-	userRepo          datastore.UserRepository
-	configRepo        datastore.ConfigurationRepository
+	db *mongo.Database
 }
 
 func New(cfg config.Configuration) (*Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	opts := options.Client()
 	newRelicMonitor := nrmongo.NewCommandMonitor(nil)
 	opts.SetMonitor(newRelicMonitor)
@@ -72,32 +62,9 @@ func New(cfg config.Configuration) (*Client, error) {
 
 	dbName := strings.TrimPrefix(u.Path, "/")
 	conn := client.Database(dbName, nil)
-	groups := datastore.New(conn, GroupCollection)
-	events := datastore.New(conn, EventCollection)
-	sources := datastore.New(conn, SourceCollection)
-	apps := datastore.New(conn, AppCollection)
-	subscriptions := datastore.New(conn, SubscriptionCollection)
-	orgs := datastore.New(conn, OrganisationCollection)
-	org_member := datastore.New(conn, OrganisationMembersCollection)
-	org_invite := datastore.New(conn, OrganisationInvitesCollection)
-	users := datastore.New(conn, UserCollection)
-	config := datastore.New(conn, ConfigCollection)
-	event_delivery := datastore.New(conn, EventDeliveryCollection)
 
 	c := &Client{
-		db:                conn,
-		apiKeyRepo:        NewApiKeyRepo(conn),
-		groupRepo:         NewGroupRepo(conn, groups),
-		applicationRepo:   NewApplicationRepo(conn, apps),
-		subscriptionRepo:  NewSubscriptionRepo(conn, subscriptions),
-		eventRepo:         NewEventRepository(conn, events),
-		eventDeliveryRepo: NewEventDeliveryRepository(conn, event_delivery),
-		sourceRepo:        NewSourceRepo(conn, sources),
-		orgRepo:           NewOrgRepo(conn, orgs),
-		orgMemberRepo:     NewOrgMemberRepo(conn, org_member),
-		orgInviteRepo:     NewOrgInviteRepo(conn, org_invite),
-		userRepo:          NewUserRepo(conn, users),
-		configRepo:        NewConfigRepo(conn, config),
+		db: conn,
 	}
 
 	c.ensureMongoIndices()
@@ -117,52 +84,8 @@ func (c *Client) Client() interface{} {
 	return c.db
 }
 
-func (c *Client) APIRepo() datastore.APIKeyRepository {
-	return c.apiKeyRepo
-}
-
-func (c *Client) GroupRepo() datastore.GroupRepository {
-	return c.groupRepo
-}
-
-func (c *Client) AppRepo() datastore.ApplicationRepository {
-	return c.applicationRepo
-}
-
-func (c *Client) EventRepo() datastore.EventRepository {
-	return c.eventRepo
-}
-
-func (c *Client) EventDeliveryRepo() datastore.EventDeliveryRepository {
-	return c.eventDeliveryRepo
-}
-
-func (c *Client) SubRepo() datastore.SubscriptionRepository {
-	return c.subscriptionRepo
-}
-
-func (c *Client) SourceRepo() datastore.SourceRepository {
-	return c.sourceRepo
-}
-
-func (c *Client) OrganisationRepo() datastore.OrganisationRepository {
-	return c.orgRepo
-}
-
-func (c *Client) OrganisationMemberRepo() datastore.OrganisationMemberRepository {
-	return c.orgMemberRepo
-}
-
-func (c *Client) OrganisationInviteRepo() datastore.OrganisationInviteRepository {
-	return c.orgInviteRepo
-}
-
-func (c *Client) UserRepo() datastore.UserRepository {
-	return c.userRepo
-}
-
-func (c *Client) ConfigurationRepo() datastore.ConfigurationRepository {
-	return c.configRepo
+func (c *Client) Database() *mongo.Database {
+	return c.db
 }
 
 func (c *Client) ensureMongoIndices() {

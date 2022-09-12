@@ -42,7 +42,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{
@@ -68,7 +68,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		appId string
+		appId    string
 		pageData datastore.Pageable
 		expected Expected
 	}{
@@ -118,8 +118,8 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		},
 
 		{
-			name: "Load Subscriptions Paged with App ID - 1 record",
-			appId: "app-id-1",
+			name:     "Load Subscriptions Paged with App ID - 1 record",
+			appId:    "app-id-1",
 			pageData: datastore.Pageable{Page: 1, PerPage: 3},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
@@ -154,7 +154,7 @@ func Test_DeleteSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
 	newSub := createSubscription()
 
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
@@ -173,7 +173,7 @@ func Test_CreateSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
 	newSub := createSubscription()
 
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
@@ -190,7 +190,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
 	newSub := createSubscription()
 
 	// Fetch sub again
@@ -213,7 +213,7 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{

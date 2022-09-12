@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -15,6 +17,18 @@ import (
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
+
+func CreateOrganisationInviteService(a *ApplicationHandler) *services.OrganisationInviteService {
+	userRepo := mongo.NewUserRepo(a.A.Store)
+	orgRepo := mongo.NewOrgRepo(a.A.Store)
+	orgMemberRepo := mongo.NewOrgMemberRepo(a.A.Store)
+	orgInviteRepo := mongo.NewOrgInviteRepo(a.A.Store)
+
+	return services.NewOrganisationInviteService(
+		orgRepo, userRepo, orgMemberRepo,
+		orgInviteRepo, a.A.Queue,
+	)
+}
 
 // InviteUserToOrganisation
 // @Summary Invite a user to join an organisation
@@ -40,7 +54,8 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 	user := m.GetUserFromContext(r.Context())
 	org := m.GetOrganisationFromContext(r.Context())
 
-	_, err = a.S.OrganisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
+	organisationInviteService := CreateOrganisationInviteService(a)
+	_, err = organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -67,8 +82,9 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
 	pageable := m.GetPageableFromContext(r.Context())
+	organisationInviteService := CreateOrganisationInviteService(a)
 
-	invites, paginationData, err := a.S.OrganisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
+	invites, paginationData, err := organisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -107,8 +123,9 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	organisationInviteService := CreateOrganisationInviteService(a)
 
-	err = a.S.OrganisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
+	err = organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
 	if err != nil {
 		log.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("")))
@@ -131,7 +148,9 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 // @Router /users/token [get]
 func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	user, iv, err := a.S.OrganisationInviteService.FindUserByInviteToken(r.Context(), token)
+	organisationInviteService := CreateOrganisationInviteService(a)
+
+	user, iv, err := organisationInviteService.FindUserByInviteToken(r.Context(), token)
 	if err != nil {
 		log.WithError(err).Error("failed to find user by invite token")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -159,8 +178,9 @@ func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 	baseUrl := m.GetHostFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
 	org := m.GetOrganisationFromContext(r.Context())
+	organisationInviteService := CreateOrganisationInviteService(a)
 
-	_, err := a.S.OrganisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
+	_, err := organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -183,7 +203,9 @@ func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/{inviteID}/cancel [post]
 func (a *ApplicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	iv, err := a.S.OrganisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
+	organisationInviteService := CreateOrganisationInviteService(a)
+
+	iv, err := organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {
 		log.WithError(err).Error("failed to cancel organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
