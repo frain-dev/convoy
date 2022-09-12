@@ -34,13 +34,15 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *d
 	ctx = s.setCollectionInContext(ctx)
 	filter := bson.M{"uid": source.UID, "group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
 
-	update := bson.D{
-		primitive.E{Key: "name", Value: source.Name},
-		primitive.E{Key: "type", Value: source.Type},
-		primitive.E{Key: "is_disabled", Value: source.IsDisabled},
-		primitive.E{Key: "verifier", Value: source.Verifier},
-		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "provider_config", Value: source.ProviderConfig},
+	update := bson.M{
+		"$set": bson.M{
+			"name":            source.Name,
+			"type":            source.Type,
+			"is_disabled":     source.IsDisabled,
+			"verifier":        source.Verifier,
+			"updated_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"provider_config": source.ProviderConfig,
+		},
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)
@@ -80,8 +82,10 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 	filter := bson.M{"uid": id, "group_id": groupId}
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)

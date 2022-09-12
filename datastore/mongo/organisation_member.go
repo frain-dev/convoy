@@ -130,9 +130,11 @@ func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *da
 	ctx = o.setCollectionInContext(ctx)
 	member.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	update := bson.D{
-		primitive.E{Key: "role", Value: member.Role},
-		primitive.E{Key: "updated_at", Value: member.UpdatedAt},
+	update := bson.M{
+		"$set": bson.M{
+			"role":       member.Role,
+			"updated_at": member.UpdatedAt,
+		},
 	}
 
 	return o.store.UpdateOne(ctx, bson.M{"uid": member.UID}, update)
@@ -141,8 +143,10 @@ func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *da
 func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID string) error {
 	ctx = o.setCollectionInContext(ctx)
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
 	filter := bson.M{

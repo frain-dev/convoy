@@ -44,10 +44,12 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	update := bson.M{
-		"status":       device.Status,
-		"host_name":    device.HostName,
-		"updated_at":   device.UpdatedAt,
-		"last_seen_at": device.LastSeenAt,
+		"$set": bson.M{
+			"status":       device.Status,
+			"host_name":    device.HostName,
+			"updated_at":   device.UpdatedAt,
+			"last_seen_at": device.LastSeenAt,
+		},
 	}
 
 	return d.store.UpdateOne(ctx, filter, update)
@@ -68,7 +70,11 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	device.LastSeenAt = primitive.NewDateTimeFromTime(time.Now())
 	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
-	return d.store.UpdateOne(ctx, filter, device)
+	update := bson.M{
+		"$set": device,
+	}
+
+	return d.store.UpdateOne(ctx, filter, update)
 }
 
 func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, appID, groupID string) error {

@@ -46,9 +46,11 @@ func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastor
 func (db *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
 	ctx = db.setCollectionInContext(ctx)
 	org.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{
-		primitive.E{Key: "name", Value: org.Name},
-		primitive.E{Key: "updated_at", Value: org.UpdatedAt},
+	update := bson.M{
+		"$set": bson.M{
+			"name":       org.Name,
+			"updated_at": org.UpdatedAt,
+		},
 	}
 
 	err := db.store.UpdateOne(ctx, bson.M{"uid": org.UID}, update)
@@ -58,8 +60,10 @@ func (db *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organi
 func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 	ctx = db.setCollectionInContext(ctx)
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
 	err := db.store.UpdateOne(ctx, bson.M{"uid": uid}, update)

@@ -46,7 +46,7 @@ func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Applica
 
 func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
-	var filter bson.M
+	filter := make(bson.M)
 
 	if !util.IsStringEmpty(groupID) {
 		filter["group_id"] = groupID
@@ -170,7 +170,7 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	id string) (*datastore.Application, error) {
 
 	ctx = db.setCollectionInContext(ctx)
-	var app *datastore.Application
+	app := &datastore.Application{}
 
 	err := db.store.FindByID(ctx, id, nil, app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -178,7 +178,12 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 		return app, err
 	}
 
+	if err != nil {
+		return app, err
+	}
+
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
+
 	filter := bson.M{"app_id": app.UID}
 	count, err := db.store.Count(eventsCtx, filter)
 	if err != nil {
@@ -285,6 +290,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 
 		return err
 	}
+
 	return nil
 }
 
@@ -322,7 +328,7 @@ func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Appli
 func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, update bson.M) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"app_id": app.UID}
+	filter := bson.M{"uid": app.UID}
 	err := db.store.UpdateMany(ctx, filter, update, true)
 	if err != nil {
 		return err

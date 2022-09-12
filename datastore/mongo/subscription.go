@@ -47,17 +47,19 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 	}
 
 	update := bson.M{
-		"name":        subscription.Name,
-		"source_id":   subscription.SourceID,
-		"endpoint_id": subscription.EndpointID,
+		"$set": bson.M{
+			"name":        subscription.Name,
+			"source_id":   subscription.SourceID,
+			"endpoint_id": subscription.EndpointID,
 
-		"filter_config.event_types": subscription.FilterConfig.EventTypes,
-		"alert_config.count":        subscription.AlertConfig.Count,
-		"alert_config.threshold":    subscription.AlertConfig.Threshold,
+			"filter_config.event_types": subscription.FilterConfig.EventTypes,
+			"alert_config.count":        subscription.AlertConfig.Count,
+			"alert_config.threshold":    subscription.AlertConfig.Threshold,
 
-		"retry_config.type":        string(subscription.RetryConfig.Type),
-		"retry_config.duration":    subscription.RetryConfig.Duration,
-		"retry_config.retry_count": subscription.RetryConfig.RetryCount,
+			"retry_config.type":        string(subscription.RetryConfig.Type),
+			"retry_config.duration":    subscription.RetryConfig.Duration,
+			"retry_config.retry_count": subscription.RetryConfig.RetryCount,
+		},
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)
@@ -176,8 +178,10 @@ func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId
 	}
 
 	update := bson.M{
-		"status":     status,
-		"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		"$set": bson.M{
+			"status":     status,
+			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		},
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)

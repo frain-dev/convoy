@@ -58,12 +58,14 @@ func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datas
 	ctx = db.setCollectionInContext(ctx)
 
 	iv.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{
-		primitive.E{Key: "role", Value: iv.Role},
-		primitive.E{Key: "status", Value: iv.Status},
-		primitive.E{Key: "updated_at", Value: iv.UpdatedAt},
-		primitive.E{Key: "expires_at", Value: iv.ExpiresAt},
-		primitive.E{Key: "document_status", Value: iv.DocumentStatus},
+	update := bson.M{
+		"$set": bson.M{
+			"role":            iv.Role,
+			"status":          iv.Status,
+			"updated_at":      iv.UpdatedAt,
+			"expires_at":      iv.ExpiresAt,
+			"document_status": iv.DocumentStatus,
+		},
 	}
 
 	return db.store.UpdateOne(ctx, bson.M{"uid": iv.UID}, update)
@@ -73,8 +75,10 @@ func (db *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, uid strin
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
 	return db.store.UpdateOne(ctx, bson.M{"uid": uid}, update)

@@ -49,11 +49,13 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, config *datastore.
 
 	filter := bson.M{"uid": config.UID}
 
-	update := bson.D{
-		primitive.E{Key: "is_analytics_enabled", Value: config.IsAnalyticsEnabled},
-		primitive.E{Key: "is_signup_enabled", Value: config.IsSignupEnabled},
-		primitive.E{Key: "storage_policy", Value: config.StoragePolicy},
-		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
+	update := bson.M{
+		"$set": bson.M{
+			"is_analytics_enabled": config.IsAnalyticsEnabled,
+			"is_signup_enabled":    config.IsSignupEnabled,
+			"storage_policy":       config.StoragePolicy,
+			"updated_at":           primitive.NewDateTimeFromTime(time.Now()),
+		},
 	}
 
 	err := c.store.UpdateOne(ctx, filter, update)

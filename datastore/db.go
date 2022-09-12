@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -206,8 +207,8 @@ func (d *MongoStore) FindMany(ctx context.Context, filter, projection bson.M, so
 		Limit(limit).
 		Page(page).
 		Filter(filter).
-		Sort("created_at", sort).
-		Decode(&results).
+		Sort("created_at", -1).
+		Decode(results).
 		Find()
 
 	if err != nil {
@@ -311,7 +312,7 @@ func (d *MongoStore) UpdateOne(ctx context.Context, filter bson.M, payload inter
 	}
 	collection := d.Database.Collection(col)
 
-	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+	_, err = collection.UpdateOne(ctx, filter, payload)
 	return err
 }
 
@@ -341,15 +342,16 @@ func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M, bul
 	if err != nil {
 		return err
 	}
+
 	collection := d.Database.Collection(col)
-	payload = bson.M{
-		"$set": payload,
-	}
 
 	if !bulk {
 		_, err = collection.UpdateMany(ctx, filter, payload)
 		return err
 	}
+
+	fmt.Println(filter)
+	fmt.Println(payload)
 
 	var msgOperations []mongo.WriteModel
 	updateMessagesOperation := mongo.NewUpdateManyModel()
@@ -357,10 +359,11 @@ func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M, bul
 	updateMessagesOperation.SetUpdate(payload)
 
 	msgOperations = append(msgOperations, updateMessagesOperation)
-	_, err = collection.BulkWrite(ctx, msgOperations)
+	res, err := collection.BulkWrite(ctx, msgOperations)
 	if err != nil {
 		return err
 	}
+	log.Infof("results of app op: %+v", res)
 
 	return nil
 }
@@ -513,6 +516,10 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return EventDeliveryCollection, nil
 	case "apiKeys":
 		return APIKeyCollection, nil
+	case "users":
+		return UserCollection, nil
+	case "data_migrations", nil:
+		return "data_migrations", nil
 	default:
 		return "", ErrInvalidCollection
 	}

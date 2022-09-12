@@ -31,9 +31,10 @@ var Migrations = []*Migration{
 			}
 
 			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			var groups []*Group
-			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
 			if err != nil {
 				return err
 			}
@@ -49,7 +50,7 @@ var Migrations = []*Migration{
 				}
 
 				update := bson.M{"config.ratelimit.duration": newDuration}
-				err = store.UpdateByID(context.Background(), group.UID, update)
+				err = store.UpdateByID(ctx, group.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err
@@ -61,9 +62,10 @@ var Migrations = []*Migration{
 		Rollback: func(db *mongo.Database) error {
 
 			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			var groups []*datastore.Group
-			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
 			if err != nil {
 				return err
 			}
@@ -77,7 +79,7 @@ var Migrations = []*Migration{
 				}
 
 				update := bson.M{"config.ratelimit.duration": newDuration.String()}
-				err = store.UpdateByID(context.Background(), group.UID, update)
+				err = store.UpdateByID(ctx, group.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err

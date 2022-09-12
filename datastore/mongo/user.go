@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -72,7 +71,8 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
-	paginatedData, err := pager.New(u.collection).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&users).Find()
+	pagination, err := u.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &users)
 	if err != nil {
 		return users, datastore.PaginationData{}, err
 	}
@@ -81,7 +81,7 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 		users = make([]datastore.User, 0)
 	}
 
-	return users, datastore.PaginationData(paginatedData.Pagination), nil
+	return users, pagination, nil
 }
 
 func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
