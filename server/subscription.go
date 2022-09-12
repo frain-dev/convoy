@@ -78,6 +78,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Accept json
 // @Produce json
 // @Param groupId query string true "group id"
+// @Param subscription body models.Subscription true "Subscription details"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
