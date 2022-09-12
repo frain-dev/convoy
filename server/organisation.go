@@ -27,8 +27,8 @@ func createOrganisationService(a *ApplicationHandler) *services.OrganisationServ
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
-// @Success 200 {object} serverResponse{data=datastore.Organisation}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Organisation}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [get]
 func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -46,8 +46,8 @@ func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Organisation}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Organisation}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations [get]
 func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { //TODO: change to GetUserOrganisationsPaged
@@ -73,8 +73,8 @@ func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 // @Accept  json
 // @Produce  json
 // @Param organisation body models.Organisation true "Organisation Details"
-// @Success 200 {object} serverResponse{data=datastore.Organisation}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Organisation}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations [post]
 func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -105,8 +105,8 @@ func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 // @Produce  json
 // @Param orgID path string true "organisation id"
 // @Param organisation body models.Organisation true "Organisation Details"
-// @Success 200 {object} serverResponse{data=datastore.Organisation}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Organisation}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [put]
 func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -134,8 +134,8 @@ func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "organisation id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [delete]
 func (a *ApplicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {

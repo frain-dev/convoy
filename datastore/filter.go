@@ -20,6 +20,12 @@ type SourceFilter struct {
 	Provider string
 }
 
+type ApiKeyFilter struct {
+	GroupID string
+	AppID   string
+	KeyType KeyType
+}
+
 type FilterBy struct {
 	AppID        string
 	GroupID      string

@@ -360,12 +360,25 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
+		datastore.DeviceCollection: {
+			{
+				Keys: bson.D{
+					{Key: "app_id", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "host_name", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
 		datastore.SubscriptionCollection: {
 			{
 				Keys: bson.D{
 					{Key: "app_id", Value: 1},
 					{Key: "group_id", Value: 1},
 					{Key: "source_id", Value: 1},
+					{Key: "device_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
 					{Key: "document_status", Value: 1},
 				},

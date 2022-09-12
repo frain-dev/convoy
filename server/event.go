@@ -40,8 +40,8 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param event body models.Event true "Event Details"
-// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [post]
 func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
@@ -72,8 +72,8 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID}/replay [put]
 func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
@@ -98,8 +98,8 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param eventID path string true "event id"
-// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events/{eventID} [get]
 func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
@@ -116,8 +116,8 @@ func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Produce json
 // @Param groupId query string true "group id"
 // @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/{eventDeliveryID} [get]
 func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
@@ -134,8 +134,8 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Produce  json
 // @Param groupId query string true "group id"
 // @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} serverResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
@@ -161,8 +161,8 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Produce json
 // @Param groupId query string true "group id"
 // @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/batchretry [post]
 func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
@@ -216,8 +216,8 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=Stub{num=integer}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub{num=integer}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/countbatchretryevents [get]
 func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
@@ -260,8 +260,8 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Produce json
 // @Param groupId query string true "group Id"
 // @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries/forceresend [post]
 func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
@@ -296,8 +296,8 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /events [get]
 func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
@@ -364,8 +364,8 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param status query []string false "status"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /eventdeliveries [get]
 func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
@@ -456,7 +456,7 @@ func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 	}
 }
 
-func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
+func FindMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
 	for _, a := range *attempts {
 		if a.UID == id {
 			return &a, nil

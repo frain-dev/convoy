@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +22,13 @@ func provideSecurityService(ctrl *gomock.Controller) *SecurityService {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	return NewSecurityService(groupRepo, apiKeyRepo)
+}
+
+func sameMinute(date1, date2 time.Time) bool {
+	s1 := date1.Format(time.Stamp)
+	s2 := date2.Format(time.Stamp)
+
+	return s1 == s2
 }
 
 func TestSecurityService_CreateAPIKey(t *testing.T) {
@@ -280,39 +286,77 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 	}
 }
 
-func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
+func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx     context.Context
-		group   *datastore.Group
-		app     *datastore.Application
-		baseUrl *string
+		ctx       context.Context
+		newApiKey *models.CreateAppApiKey
 	}
 	tests := []struct {
-		name        string
-		args        args
-		wantAPIKey  *datastore.APIKey
-		dbFn        func(ss *SecurityService)
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
+		name          string
+		args          args
+		wantAPIKey    *datastore.APIKey
+		dbFn          func(ss *SecurityService)
+		verifyBaseUrl bool
+		wantBaseUrl   string
+		wantErr       bool
+		wantErrCode   int
+		wantErrMsg    string
 	}{
 		{
 			name: "should_create_app_portal_api_key",
 			args: args{
-				ctx:     ctx,
-				group:   &datastore.Group{UID: "1234"},
-				app:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-				baseUrl: stringPtr("https://getconvoy.io"),
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group:   &datastore.Group{UID: "1234"},
+					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					KeyType: datastore.AppPortalKey,
+					BaseUrl: "https://getconvoy.io",
+					Name:    "api-key-1",
+				},
 			},
 			wantAPIKey: &datastore.APIKey{
-				Name: "test_app",
-				Type: "app_portal",
+				Name: "api-key-1",
+				Type: datastore.AppPortalKey,
 				Role: auth.Role{
 					Type:  auth.RoleAdmin,
 					Group: "1234",
 					App:   "abc",
 				},
+				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+			},
+			verifyBaseUrl: true,
+			wantBaseUrl:   "?groupID=1234&appId=abc",
+		},
+
+		{
+			name: "should_create_cli_api_key",
+			args: args{
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group:      &datastore.Group{UID: "1234"},
+					App:        &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					KeyType:    datastore.CLIKey,
+					BaseUrl:    "https://getconvoy.io",
+					Name:       "api-key-1",
+					Expiration: 7,
+				},
+			},
+			wantAPIKey: &datastore.APIKey{
+				Name: "api-key-1",
+				Type: datastore.CLIKey,
+				Role: auth.Role{
+					Type:  auth.RoleAdmin,
+					Group: "1234",
+					App:   "abc",
+				},
+				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 7)),
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(ss *SecurityService) {
@@ -321,12 +365,15 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 					Times(1).Return(nil)
 			},
 		},
+
 		{
 			name: "should_error_for_app_not_belong_to_group_api_key",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{GroupID: "12345"},
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group: &datastore.Group{UID: "1234"},
+					App:   &datastore.Application{GroupID: "12345"},
+				},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -335,10 +382,12 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 		{
 			name: "should_fail_to_create_app_portal_api_key",
 			args: args{
-				ctx:     ctx,
-				group:   &datastore.Group{UID: "1234"},
-				app:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-				baseUrl: stringPtr("https://getconvoy.io"),
+				ctx: ctx,
+				newApiKey: &models.CreateAppApiKey{
+					Group:   &datastore.Group{UID: "1234"},
+					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					BaseUrl: "https://getconvoy.io",
+				},
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -360,7 +409,7 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			apiKey, keyString, err := ss.CreateAppPortalAPIKey(tc.args.ctx, tc.args.group, tc.args.app, tc.args.baseUrl)
+			apiKey, keyString, err := ss.CreateAppAPIKey(tc.args.ctx, tc.args.newApiKey)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -379,10 +428,16 @@ func TestSecurityService_CreateAppPortalAPIKey(t *testing.T) {
 			require.NotEmpty(t, keyString)
 			require.Empty(t, apiKey.DeletedAt)
 
-			require.True(t, strings.HasSuffix(*tc.args.baseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.group.UID, tc.args.app.UID)))
+			if tc.verifyBaseUrl {
+				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.newApiKey.Group.UID, tc.args.newApiKey.App.UID))
+			}
+
+			require.True(t, sameMinute(apiKey.ExpiresAt.Time(), tc.wantAPIKey.ExpiresAt.Time()))
 
 			stripVariableFields(t, "apiKey", apiKey)
+			stripVariableFields(t, "apiKey", tc.wantAPIKey)
 			apiKey.ExpiresAt = 0
+			tc.wantAPIKey.ExpiresAt = 0
 			require.Equal(t, tc.wantAPIKey, apiKey)
 		})
 	}
@@ -730,6 +785,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx      context.Context
+		filter   *datastore.ApiKeyFilter
 		pageable *datastore.Pageable
 	}
 	tests := []struct {
@@ -745,7 +801,8 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 		{
 			name: "should_fetch_api_keys",
 			args: args{
-				ctx: ctx,
+				ctx:    ctx,
+				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
@@ -754,7 +811,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), &datastore.Pageable{
+				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any(), &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
 					Sort:    1,
@@ -815,9 +872,10 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			},
 		},
 		{
-			name: "should_fetch_api_keys",
+			name: "should_fail_fetch_api_keys",
 			args: args{
-				ctx: ctx,
+				ctx:    ctx,
+				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
@@ -826,7 +884,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), &datastore.Pageable{
+				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any(), &datastore.Pageable{
 					Page:    1,
 					PerPage: 1,
 					Sort:    1,
@@ -853,7 +911,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			apiKeys, paginationData, err := ss.GetAPIKeys(tc.args.ctx, tc.args.pageable)
+			apiKeys, paginationData, err := ss.GetAPIKeys(tc.args.ctx, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

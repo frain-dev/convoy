@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.34.28
+	github.com/cip8/autoname v1.0.1
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dukex/mixpanel v0.0.0-20220410140740-e82251311162
 	github.com/felixge/httpsnoop v1.0.2
@@ -22,11 +23,13 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20211219150637-8dfabfccb3be
 	github.com/hibiken/asynqmon v0.7.1
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jaswdr/faker v1.10.2
+	github.com/jedib0t/go-pretty/v6 v6.3.2
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
@@ -59,4 +62,5 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
+	gopkg.in/yaml.v3 v3.0.1
 )

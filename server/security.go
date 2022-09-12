@@ -2,8 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/cip8/autoname"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
@@ -32,8 +35,8 @@ func createSecurityService(a *ApplicationHandler) *services.SecurityService {
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param apiKey body models.APIKey true "API Key"
-// @Success 200 {object} serverResponse{data=models.APIKeyResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=models.APIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys [post]
 func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -72,40 +75,82 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
-// CreateAppPortalAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
-// @Summary Create an api key for app portal (UI)
-// @Description This endpoint creates an api key that will be used by app portal
+// CreateAppAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
+// @Summary Create an api key for app portal or the cli (UI)
+// @Description This endpoint creates an api key that will be used by app portal or the cli
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param appID path string true "application ID"
-// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [post]
+// @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys [post]
 
-// CreateAppPortalAPIKey
-// @Summary Create an api key for app portal (API)
-// @Description This endpoint creates an api key that will be used by app portal
+// CreateAppAPIKey
+// @Summary Create an api key for app portal or the cli (API)
+// @Description This endpoint creates an api key that will be used by app portal or the cli
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application ID"
-// @Success 201 {object} serverResponse{data=models.PortalAPIKeyResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /security/applications/{appID}/keys [post]
-func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Request) {
+	var keyType datastore.KeyType
+	var newApiKey models.CreateAppApiKey
+
+	if err := util.ReadJSON(r, &newApiKey); err != nil {
+		// Disregard the ErrEmptyBody err to ensure backward compatibility
+		if !errors.Is(err, util.ErrEmptyBody) {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
 	group := m.GetGroupFromContext(r.Context())
 	app := m.GetApplicationFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
-	securityService := createSecurityService(a)
 
-	apiKey, key, err := securityService.CreateAppPortalAPIKey(r.Context(), group, app, &baseUrl)
+	k := string(newApiKey.KeyType)
+
+	if util.IsStringEmpty(k) {
+		keyType = datastore.AppPortalKey
+	}
+
+	if !util.IsStringEmpty(k) {
+		keyType = datastore.KeyType(k)
+		if !keyType.IsValidAppKey() {
+			_ = render.Render(w, r, util.NewErrorResponse(errors.New("type is not supported").Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
+	if newApiKey.Expiration == 0 {
+		newApiKey.Expiration = 7
+	}
+
+	if util.IsStringEmpty(newApiKey.Name) {
+		newApiKey.Name = autoname.Generate(" ")
+	}
+
+	newApiKey.Group = group
+	newApiKey.App = app
+	newApiKey.BaseUrl = baseUrl
+	newApiKey.KeyType = keyType
+
+	securityService := createSecurityService(a)
+	apiKey, key, err := securityService.CreateAppAPIKey(r.Context(), &newApiKey)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	if !util.IsStringEmpty(baseUrl) && newApiKey.KeyType == datastore.AppPortalKey {
+		baseUrl = fmt.Sprintf("%s/app/%s?groupID=%s&appId=%s", baseUrl, key, newApiKey.Group.UID, newApiKey.App.UID)
 	}
 
 	resp := models.PortalAPIKeyResponse{
@@ -121,6 +166,43 @@ func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 
 }
 
+// LoadAppAPIKeysPaged
+// @Summary Fetch multiple api keys belonging to an app
+// @Description This endpoint fetches multiple api keys belonging to an app
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "Organisation id"
+// @Param appID path string true "application ID"
+// @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/organisations/{orgID}/security/applications/{appID}/keys [get]
+func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.Request) {
+	group := m.GetGroupFromContext(r.Context())
+	app := m.GetApplicationFromContext(r.Context())
+	pageable := m.GetPageableFromContext(r.Context())
+
+	f := &datastore.ApiKeyFilter{
+		GroupID: group.UID,
+		AppID:   app.UID,
+		KeyType: datastore.CLIKey,
+	}
+
+	securityService := createSecurityService(a)
+	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
+	if err != nil {
+		log.WithError(err).Error("failed to load api keys")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
+	_ = render.Render(w, r, util.NewServerResponse("api keys fetched successfully",
+		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
+
+}
+
 // RevokeAPIKey
 // @Summary Revoke API Key
 // @Description This endpoint revokes an api key
@@ -129,8 +211,8 @@ func (a *ApplicationHandler) CreateAppPortalAPIKey(w http.ResponseWriter, r *htt
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
-// @Success 200 {object} serverResponse{data=Stub}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID}/revoke [put]
 func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -145,6 +227,46 @@ func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
 }
 
+// RevokeAppAPIKey
+// @Summary Revoke an App's API Key
+// @Description This endpoint revokes app's an api key
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param orgID path string true "Organisation id"
+// @Param groupID path string true "Group id"
+// @Param appID path string true "application id"
+// @Param keyID path string true "API Key id"
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke [put]
+func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Request) {
+	app := m.GetApplicationFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
+
+	securityService := createSecurityService(a)
+	key, err := securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if key.Role.Group != group.UID || key.Role.App != app.UID {
+		_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
+		return
+	}
+
+	err = securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
+
+}
+
 // GetAPIKeyByID
 // @Summary Get api key by id
 // @Description This endpoint fetches an api key by its id
@@ -153,8 +275,8 @@ func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
-// @Success 200 {object} serverResponse{data=datastore.APIKey}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.APIKey}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [get]
 func (a *ApplicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
@@ -186,8 +308,8 @@ func (a *ApplicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 // @Produce  json
 // @Param orgID path string true "Organisation id"
 // @Param keyID path string true "API Key id"
-// @Success 200 {object} serverResponse{data=datastore.APIKey}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=datastore.APIKey}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [put]
 func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -231,15 +353,16 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]datastore.APIKey}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.APIKey}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys [get]
 func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	securityService := createSecurityService(a)
+	f := &datastore.ApiKeyFilter{}
 
-	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), &pageable)
+	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

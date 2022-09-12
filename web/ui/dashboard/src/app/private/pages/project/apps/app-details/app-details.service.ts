@@ -26,13 +26,13 @@ export class AppDetailsService {
 		});
 	}
 
-	getAppPortalToken(requestDetails: { appId: string }): Promise<HTTP_RESPONSE> {
+	generateKey(requestDetails: { appId: string; body: { key_type: string; name?: string; expiration?: string } }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
 					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys`,
 					method: 'post',
-					body: {}
+					body: requestDetails.body
 				});
 
 				return resolve(response);
@@ -113,6 +113,52 @@ export class AppDetailsService {
 					url: `${this.privateService.urlFactory('org_project')}/events`,
 					body: requestDetails.body,
 					method: 'post'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getApiKeys(appId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${appId}/keys`,
+					method: 'get'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	revokeApiKey(requestDetails: { appId: string; keyId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys/${requestDetails.keyId}/revoke`,
+					method: 'put',
+					body: null
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getAppDevices(appId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${appId}/devices`,
+					method: 'get'
 				});
 
 				return resolve(response);

@@ -29,20 +29,23 @@ type args struct {
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
 	search            searcher.Searcher
-	store             datastore.Store
+	deviceRepo        datastore.DeviceRepository
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
 	cache := mocks.NewMockCache(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
 	search := mocks.NewMockSearcher(ctrl)
-	store := mocks.NewMockStore(ctrl)
 
 	return &args{
-		cache:      cache,
-		eventQueue: queue,
-		search:     search,
-		store:      store,
+		appRepo:           appRepo,
+		eventRepo:         eventRepo,
+		groupRepo:         groupRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		cache:             cache,
+		eventQueue:        queue,
+		subRepo:           subRepo,
+		search:            search,
 	}
 }
 
@@ -106,6 +109,7 @@ func TestProcessEventCreated(t *testing.T) {
 						UID:        "456",
 						AppID:      "app-id-1",
 						EndpointID: "098",
+						Type:       datastore.SubscriptionTypeAPI,
 						Status:     datastore.ActiveSubscriptionStatus,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
@@ -179,6 +183,7 @@ func TestProcessEventCreated(t *testing.T) {
 						UID:        "456",
 						AppID:      "app-id-1",
 						EndpointID: "098",
+						Type:       datastore.SubscriptionTypeAPI,
 						Status:     datastore.ActiveSubscriptionStatus,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
@@ -227,7 +232,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.store, args.cache, args.eventQueue, args.search)
+			fn := ProcessEventCreation(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

@@ -26,8 +26,8 @@ func createConfigService(a *ApplicationHandler) *services.ConfigService {
 // @Tags Source
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} serverResponse{data=pagedResponse{content=[]models.ConfigurationResponse}}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.ConfigurationResponse}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [get]
 func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -64,8 +64,8 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 // @Accept  json
 // @Produce  json
 // @Param application body models.Configuration true "Configuration Details"
-// @Success 200 {object} serverResponse{data=models.ConfigurationResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=models.ConfigurationResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [post]
 func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +103,8 @@ func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 // @Accept  json
 // @Produce  json
 // @Param application body models.Configuration true "Configuration Details"
-// @Success 202 {object} serverResponse{data=models.ConfigurationResponse}
-// @Failure 400,401,500 {object} serverResponse{data=Stub}
+// @Success 202 {object} util.ServerResponse{data=models.ConfigurationResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /configuration [put]
 func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {

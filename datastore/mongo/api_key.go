@@ -116,11 +116,26 @@ func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datas
 	return apiKey, err
 }
 
-func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
+
 	var apiKeys []datastore.APIKey
 
-	pagination, err := db.store.FindMany(ctx, nil, nil, nil,
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+
+	if !util.IsStringEmpty(f.GroupID) {
+		filter["role.group"] = f.GroupID
+	}
+
+	if !util.IsStringEmpty(f.AppID) {
+		filter["role.app"] = f.AppID
+	}
+
+	if !util.IsStringEmpty(string(f.KeyType)) {
+		filter["key_type"] = f.KeyType
+	}
+
+	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &apiKeys)
 
 	if err != nil {

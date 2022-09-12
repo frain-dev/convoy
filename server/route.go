@@ -198,7 +198,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(a.M.RequireApp())
 					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.Post("/", a.CreateAppPortalAPIKey)
+					securitySubRouter.Post("/", a.CreateAppAPIKey)
 				})
 			})
 
@@ -336,7 +336,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.Post("/", a.CreateAppPortalAPIKey)
+									keySubRouter.Post("/", a.CreateAppAPIKey)
+									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
+									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 								})
 
 								appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
@@ -350,6 +352,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
 									})
+								})
+
+								appSubRouter.Route("/devices", func(deviceRouter chi.Router) {
+									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
 								})
 							})
 						})
@@ -453,10 +459,20 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					e.Put("/", a.UpdateAppEndpoint)
 				})
 			})
+
+			appRouter.Route("/keys", func(keySubRouter chi.Router) {
+				keySubRouter.Use(a.M.RequireBaseUrl())
+				keySubRouter.Post("/", a.CreateAppAPIKey)
+				keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
+				keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
+			})
+
+			appRouter.Route("/devices", func(deviceRouter chi.Router) {
+				deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+			})
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
-
 			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {

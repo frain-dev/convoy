@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -139,7 +138,7 @@ func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRep
 }
 
 func parseResponse(t *testing.T, w *http.Response, object interface{}) {
-	body, err := ioutil.ReadAll(w.Body)
+	body, err := io.ReadAll(w.Body)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

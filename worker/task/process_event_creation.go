@@ -9,22 +9,16 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreation(store datastore.Store, cache cache.Cache, eventQueue queue.Queuer, sc searcher.Searcher) func(context.Context, *asynq.Task) error {
-	subRepo := mongo.NewSubscriptionRepo(store)
-	appRepo := mongo.NewApplicationRepo(store)
-	groupRepo := mongo.NewGroupRepo(store)
-	eventRepo := mongo.NewEventRepository(store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(store)
-
+func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 
 		var event datastore.Event
@@ -107,13 +101,15 @@ func ProcessEventCreation(store datastore.Store, cache cache.Cache, eventQueue q
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
-			if err != nil {
-				log.Errorf("Error fetching endpoint %s", err)
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
+			if s.Type == datastore.SubscriptionTypeAPI {
+				endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
+				if err != nil {
+					log.Errorf("Error fetching endpoint %s", err)
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
 
-			s.Endpoint = endpoint
+				s.Endpoint = endpoint
+			}
 
 			metadata := &datastore.Metadata{
 				NumTrials:       0,
@@ -131,13 +127,18 @@ func ProcessEventCreation(store datastore.Store, cache cache.Cache, eventQueue q
 				GroupID:        group.UID,
 				EventID:        event.UID,
 				EndpointID:     s.EndpointID,
+				DeviceID:       s.DeviceID,
 				Headers:        event.Headers,
 
-				Status:           getEventDeliveryStatus(s, app),
+				Status:           getEventDeliveryStatus(ctx, &s, app, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
+			}
+
+			if s.Type == datastore.SubscriptionTypeCLI {
+				eventDelivery.CLIMetadata = &datastore.CLIMetadata{EventType: string(event.EventType)}
 			}
 
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
@@ -147,7 +148,12 @@ func ProcessEventCreation(store datastore.Store, cache cache.Cache, eventQueue q
 			}
 
 			taskName := convoy.EventProcessor
-			if eventDelivery.Status != datastore.DiscardedEventStatus {
+
+			// This event delivery will be picked up by the convoy stream command(if it is currently running).
+			// Otherwise, it will be lost to the wind? workaround for this is to disable the subscriptions created
+			// while the command was running, however in that scenario the event deliveries will still be created,
+			// but will be in the datastore.DiscardedEventStatus status, we can also delete the subscription, that is a firmer solution
+			if eventDelivery.Status != datastore.DiscardedEventStatus && s.Type != datastore.SubscriptionTypeCLI {
 				payload := json.RawMessage(eventDelivery.UID)
 
 				job := &queue.Job{
@@ -190,9 +196,25 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 	return matched
 }
 
-func getEventDeliveryStatus(subscription datastore.Subscription, app *datastore.Application) datastore.EventDeliveryStatus {
-	if app.IsDisabled || subscription.Status != datastore.ActiveSubscriptionStatus {
+func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, app *datastore.Application, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
+	if app.IsDisabled {
 		return datastore.DiscardedEventStatus
+	}
+
+	if subscription.Status != datastore.ActiveSubscriptionStatus {
+		return datastore.DiscardedEventStatus
+	} else {
+		if !util.IsStringEmpty(subscription.DeviceID) {
+			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, app.UID, app.GroupID)
+			if err != nil {
+				log.WithError(err).Error("an error occurred fetching the subcriptions's device")
+				return datastore.DiscardedEventStatus
+			}
+
+			if device.Status != datastore.DeviceStatusOnline {
+				return datastore.DiscardedEventStatus
+			}
+		}
 	}
 
 	return datastore.ScheduledEventStatus

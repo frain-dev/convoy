@@ -139,6 +139,21 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 	return subscriptions, nil
 }
 
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {
+	filter := bson.M{
+		"device_id": deviceID,
+		"group_id":  groupId,
+	}
+
+	subscription := &datastore.Subscription{}
+	err := s.store.FindOne(ctx, filter, nil, &subscription)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, datastore.ErrSubscriptionNotFound
+	}
+
+	return subscription, nil
+}
+
 func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 	filter := bson.M{"group_id": groupId, "source_id": sourceId, "document_status": datastore.ActiveDocumentStatus}

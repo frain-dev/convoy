@@ -183,9 +183,11 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		}
 
 		appRepo := cm.NewApplicationRepo(a.store)
+		eventRepo := cm.NewEventRepository(a.store)
 		eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
 		groupRepo := cm.NewGroupRepo(a.store)
 		subRepo := cm.NewSubscriptionRepo(a.store)
+		deviceRepo := cm.NewDeviceRepository(a.store)
 
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 			appRepo,
@@ -196,10 +198,15 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-			a.store,
+			appRepo,
+			eventRepo,
+			groupRepo,
+			eventDeliveryRepo,
 			a.cache,
 			a.queue,
-			a.searcher))
+			subRepo,
+			a.searcher,
+			deviceRepo))
 
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
 			a.store,

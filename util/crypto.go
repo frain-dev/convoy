@@ -1,15 +1,19 @@
 package util
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"hash"
 	"strings"
+	"time"
 
 	"github.com/dchest/uniuri"
 
@@ -42,6 +46,45 @@ func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
 	e := hex.EncodeToString(h.Sum(nil))
 
 	return e, nil
+}
+
+type Signature struct {
+	Timestamp   string
+	Hmac        string
+	EncodedData []byte
+}
+
+func GenerateSignatureHeader(replayAttacks bool, hash string, secret string, data json.RawMessage) (*Signature, error) {
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.SetEscapeHTML(false)
+
+	err := encoder.Encode(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode data: %v", err)
+	}
+
+	trimmedBuff := bytes.TrimSuffix(buf.Bytes(), []byte("\n"))
+
+	var signedPayload strings.Builder
+	var timestamp string
+	if replayAttacks {
+		timestamp = fmt.Sprint(time.Now().Unix())
+		signedPayload.WriteString(timestamp)
+		signedPayload.WriteString(",")
+	}
+	signedPayload.WriteString(string(trimmedBuff))
+
+	hmacStr, err := ComputeJSONHmac(hash, signedPayload.String(), secret, false)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while generating hmac: %v", err)
+	}
+
+	return &Signature{
+		Timestamp:   timestamp,
+		Hmac:        hmacStr,
+		EncodedData: trimmedBuff,
+	}, nil
 }
 
 func getHashFunction(algorithm string) (func() hash.Hash, error) {

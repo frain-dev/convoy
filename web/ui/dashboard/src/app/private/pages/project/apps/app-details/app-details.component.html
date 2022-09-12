@@ -1,4 +1,4 @@
-<h1 class="text-12 font-medium flex items-center mb-24px uppercase">
+<div class="text-12 font-medium flex items-center mb-24px uppercase">
 	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
@@ -12,33 +12,35 @@
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	<span class="font-medium text-primary-100">{{ appsDetailsItem?.name || 'App' }}</span>
-</h1>
+</div>
 
 <convoy-card className="p-32px mb-20px">
 	<div class="flex justify-between items-center mb-24px">
 		<h3 class="font-medium">Overview</h3>
 		<convoy-button size="sm" type="outline" [disable]="appsDetailsItem?.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</convoy-button>
 	</div>
+
+	<!-- app details overview  -->
 	<div class="flex items-center flex-wrap justify-between mb-32px" *ngIf="isLoadingAppDetails">
 		<div>
 			<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">UPDATED</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">EVENTS</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">ENDPOINTS</p>
-			<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-120px h-20px"></div>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
 	</div>
 	<div class="flex items-center justify-between flex-wrap mb-32px" *ngIf="!isLoadingAppDetails">
@@ -77,6 +79,7 @@
     </div> -->
 
 	<div class="flex flex-wrap justify-between border-t border-t-grey-10 mt-22px">
+		<!-- app endpoints  -->
 		<div
 			class="pt-32px"
 			[ngClass]="{
@@ -87,9 +90,9 @@
 			<div class="flex items-center justify-between" *ngIf="isLoadingAppDetails">
 				<h3 class="font-medium">App Event Endpoints</h3>
 				<div class="flex items-center">
-					<div class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
-					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
-					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="bg-grey-10 animate-pulse rounded-[20px] mt-10px w-100px h-20px"></div>
+					<convoy-skeleton-loader className="mt-10px w-100px h-20px"></convoy-skeleton-loader>
+					<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
+					<convoy-skeleton-loader className="mt-10px w-100px h-20px"></convoy-skeleton-loader>
 				</div>
 			</div>
 			<div class="flex items-center justify-between" *ngIf="!isLoadingAppDetails">
@@ -102,41 +105,22 @@
 			</div>
 
 			<ul class="mt-20px" *ngIf="isLoadingAppDetails">
-				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px">
+				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px" *ngFor="let index of [0, 1, 2]">
 					<div>
 						<div class="flex items-center mb-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-80px h-20px ml-14px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-100px h-20px"></convoy-skeleton-loader>
+							<convoy-skeleton-loader className="bg-grey-20 w-80px h-20px ml-14px"></convoy-skeleton-loader>
 						</div>
 
 						<div class="flex items-center">
 							<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-300px h-20px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-300px h-20px"></convoy-skeleton-loader>
 						</div>
 
 						<div class="flex items-center mt-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-100px h-20px"></convoy-skeleton-loader>
 							<div class="w-[1px] h-22px mr-16px border-l border-l-grey-10"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-						</div>
-					</div>
-				</li>
-				<li class="bg-[#f9f9fb] p-16px rounded-8px mb-24px">
-					<div>
-						<div class="flex items-center mb-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-80px h-20px ml-14px"></div>
-						</div>
-
-						<div class="flex items-center">
-							<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-300px h-20px"></div>
-						</div>
-
-						<div class="flex items-center mt-16px">
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
-							<div class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
-							<div class="bg-grey-20 animate-pulse rounded-[20px] w-100px h-20px"></div>
+							<convoy-skeleton-loader className="bg-grey-20 w-100px h-20px"></convoy-skeleton-loader>
 						</div>
 					</div>
 				</li>
@@ -176,24 +160,32 @@
 					</li>
 				</ng-container>
 			</ul>
-			<convoy-empty-state imgSrc="/assets/img/empty-state-img.svg" description="No endpoint has been added for selected app yet" className="h-[20vh]" *ngIf="!isLoadingAppDetails && appsDetailsItem?.endpoints?.length === 0"></convoy-empty-state>
+
+			<convoy-empty-state
+				imgSrc="/assets/img/empty-state-img.svg"
+				description="No endpoint has been added for selected app yet"
+				className="h-[20vh]"
+				*ngIf="!isLoadingAppDetails && (!appsDetailsItem?.endpoints || appsDetailsItem?.endpoints?.length === 0)"
+			></convoy-empty-state>
 		</div>
 
+		<!-- app portal  -->
 		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
             <h3 class="font-medium">App Portal</h3>
 			<div *ngIf="loadingAppPotalToken" >
 				<ul class="mt-10px">
 					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
-						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
+						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
 					</convoy-list-item>
 					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
-						<div class="bg-grey-10 animate-pulse rounded-8px w-80px h-20px"></div>
+						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
 					</convoy-list-item>
 					<div class="bg-grey-10 animate-pulse rounded-8px w-full h-100px mt-16px"></div>
 				</ul>
 			</div>
+
 			<div *ngIf="!loadingAppPotalToken">
 				<ul class="mt-10px">
 					<convoy-list-item className="border-none !py-8px">
@@ -223,14 +215,20 @@
 	</div>
 </convoy-card>
 
+<!-- app api keys and devices list  -->
+<convoy-cli></convoy-cli>
+
+<!-- send event form  -->
 <app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
 
+<!-- create endpoint form  -->
 <convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false">
 	<ng-container modalBody>
 		<app-create-endpoint [selectedEndpoint]="selectedEndpoint" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? closeEditEndpointModal() : getAppDetails(appsDetailsItem.uid); closeEditEndpointModal()"></app-create-endpoint>
 	</ng-container>
 </convoy-modal>
 
+<!-- endpoint secret  -->
 <convoy-modal *ngIf="showEndpointSecret" title="Endpoint Secret" (closeModal)="showEndpointSecret = false">
 	<ng-container modalBody>
 		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px">
@@ -240,4 +238,5 @@
 	</ng-container>
 </convoy-modal>
 
+<!-- delete modal  -->
 <app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>

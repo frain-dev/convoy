@@ -11,7 +11,7 @@ type APIKeyRepository interface {
 	FindAPIKeyByMaskID(context.Context, string) (*APIKey, error)
 	FindAPIKeyByHash(context.Context, string) (*APIKey, error)
 	RevokeAPIKeys(context.Context, []string) error
-	LoadAPIKeysPaged(context.Context, *Pageable) ([]APIKey, PaginationData, error)
+	LoadAPIKeysPaged(context.Context, *ApiKeyFilter, *Pageable) ([]APIKey, PaginationData, error)
 }
 
 type EventDeliveryRepository interface {
@@ -22,6 +22,7 @@ type EventDeliveryRepository interface {
 	CountDeliveriesByStatus(context.Context, EventDeliveryStatus, SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(context.Context, []string, EventDeliveryStatus) error
+	FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 	CountEventDeliveries(context.Context, string, string, string, []EventDeliveryStatus, SearchParams) (int64, error)
@@ -99,6 +100,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
 	FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]Subscription, error)
+	FindSubscriptionByDeviceID(ctx context.Context, groupId string, deviceID string) (*Subscription, error)
 	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
 }
 
@@ -109,6 +111,16 @@ type SourceRepository interface {
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
 	DeleteSourceByID(ctx context.Context, groupID string, id string) error
 	LoadSourcesPaged(ctx context.Context, groupID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+}
+
+type DeviceRepository interface {
+	CreateDevice(ctx context.Context, device *Device) error
+	UpdateDevice(ctx context.Context, device *Device, appID, groupID string) error
+	UpdateDeviceLastSeen(ctx context.Context, device *Device, appID, groupID string, status DeviceStatus) error
+	DeleteDevice(ctx context.Context, uid string, appID, groupID string) error
+	FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*Device, error)
+	FetchDeviceByHostName(ctx context.Context, hostName string, appID, groupID string) (*Device, error)
+	LoadDevicesPaged(ctx context.Context, groupID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
 }
 
 type UserRepository interface {
