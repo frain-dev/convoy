@@ -518,6 +518,8 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return APIKeyCollection, nil
 	case "users":
 		return UserCollection, nil
+	case "devices":
+		return DeviceCollection, nil
 	case "data_migrations", nil:
 		return "data_migrations", nil
 	default:

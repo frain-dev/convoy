@@ -41,7 +41,7 @@ func getDB(t *testing.T) (*mongo.Database, func()) {
 	}
 }
 
-func getStore(db *mongo.Database, collection string) datastore.Store {
-	store := datastore.New(db, collection)
+func getStore(db *mongo.Database) datastore.Store {
+	store := datastore.New(db)
 	return store
 }

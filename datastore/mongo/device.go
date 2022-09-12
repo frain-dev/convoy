@@ -31,6 +31,8 @@ func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device)
 }
 
 func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device, appID, groupID string) error {
+	ctx = d.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid":             device.UID,
 		"group_id":        groupID,
@@ -56,6 +58,8 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 }
 
 func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, appID, groupID string, status datastore.DeviceStatus) error {
+	ctx = d.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid":             device.UID,
 		"group_id":        groupID,
@@ -78,6 +82,8 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 }
 
 func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, appID, groupID string) error {
+	ctx = d.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid":             uid,
 		"group_id":        groupID,
@@ -115,6 +121,8 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 }
 
 func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, appID, groupID string) (*datastore.Device, error) {
+	ctx = d.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"group_id":        groupID,
 		"host_name":       hostName,
@@ -138,6 +146,8 @@ func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string,
 }
 
 func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
+	ctx = d.setCollectionInContext(ctx)
+
 	var devices []datastore.Device
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID}

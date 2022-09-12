@@ -71,8 +71,8 @@ func getDB() convoyMongo.Client {
 	return *db
 }
 
-func getStore(db *mongo.Database, collection string) datastore.Store {
-	store := datastore.New(db, collection)
+func getStore(db *mongo.Database) datastore.Store {
+	store := datastore.New(db)
 	return store
 }
 
@@ -105,7 +105,7 @@ func buildServer() *ApplicationHandler {
 	db := getDB()
 	qOpts, _ = getQueueOptions("EventQueue")
 
-	store := datastore.New(db.Database(), "")
+	store := datastore.New(db.Database())
 	queue := redisqueue.NewQueue(qOpts)
 	logger := logger.NewNoopLogger()
 	cache := ncache.NewNoopCache()

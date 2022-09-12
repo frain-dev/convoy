@@ -39,7 +39,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 	uid string) (*datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	var eventDelivery *datastore.EventDelivery
+	eventDelivery := &datastore.EventDelivery{}
 
 	err := db.store.FindByID(ctx, uid, nil, eventDelivery)
 

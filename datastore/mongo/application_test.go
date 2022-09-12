@@ -17,15 +17,16 @@ func Test_UpdateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(getStore(db, GroupCollection))
-	appRepo := NewApplicationRepo(getStore(db, AppCollection))
+	groupRepo := NewGroupRepo(getStore(db))
+	appRepo := NewApplicationRepo(getStore(db))
 
 	newGroup := &datastore.Group{
 		Name: "Random new group",
 		UID:  uuid.NewString(),
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+	require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
 
 	app := &datastore.Application{
 		Title:          "Next application name",
@@ -33,15 +34,16 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
+	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
+	require.NoError(t, appRepo.CreateApplication(appCtx, app, app.GroupID))
 
 	newTitle := "Newer name"
 
 	app.Title = newTitle
 
-	require.NoError(t, appRepo.UpdateApplication(context.Background(), app, app.GroupID))
+	require.NoError(t, appRepo.UpdateApplication(appCtx, app, app.GroupID))
 
-	newApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
+	newApp, err := appRepo.FindApplicationByID(appCtx, app.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, newTitle, newApp.Title)
@@ -53,7 +55,7 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
+	err = appRepo.CreateApplication(appCtx, app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -61,15 +63,16 @@ func Test_CreateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(getStore(db, GroupCollection))
-	appRepo := NewApplicationRepo(getStore(db, AppCollection))
+	groupRepo := NewGroupRepo(getStore(db))
+	appRepo := NewApplicationRepo(getStore(db))
 
 	newOrg := &datastore.Group{
 		Name: "Random new group 2",
 		UID:  uuid.NewString(),
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+	require.NoError(t, groupRepo.CreateGroup(groupCtx, newOrg))
 
 	app := &datastore.Application{
 		Title:          "Next application name",
@@ -78,7 +81,8 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
+	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
+	require.NoError(t, appRepo.CreateApplication(appCtx, app, app.GroupID))
 
 	app2 := &datastore.Application{
 		Title:          "Next application name",
@@ -87,7 +91,7 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
+	err := appRepo.CreateApplication(appCtx, app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -95,9 +99,10 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(getStore(db, AppCollection))
+	appRepo := NewApplicationRepo(getStore(db))
 
-	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", "", datastore.Pageable{
+	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
+	apps, _, err := appRepo.LoadApplicationsPaged(appCtx, "", "", datastore.Pageable{
 		Page:    1,
 		PerPage: 10,
 	})
@@ -110,20 +115,22 @@ func Test_FindApplicationByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(getStore(db, AppCollection))
+	appRepo := NewApplicationRepo(getStore(db))
 
-	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
+	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
+	_, err := appRepo.FindApplicationByID(appCtx, uuid.New().String())
 	require.Error(t, err)
 
 	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
 
-	groupRepo := NewGroupRepo(getStore(db, GroupCollection))
+	groupRepo := NewGroupRepo(getStore(db))
 
 	newGroup := &datastore.Group{
 		Name: "Yet another Random new group",
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+	require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
 
 	app := &datastore.Application{
 		Title:   "Next application name again",
@@ -131,5 +138,5 @@ func Test_FindApplicationByID(t *testing.T) {
 		UID:     uuid.NewString(),
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
+	require.NoError(t, appRepo.CreateApplication(appCtx, app, app.GroupID))
 }

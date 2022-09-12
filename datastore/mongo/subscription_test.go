@@ -42,7 +42,11 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
+	store := getStore(db)
+
+	subRepo := NewSubscriptionRepo(store)
+
+	subscriptionCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{
@@ -59,7 +63,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 			subscription.AppID = "app-id-1"
 		}
 
-		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
+		require.NoError(t, subRepo.CreateSubscription(subscriptionCtx, subscription.GroupID, subscription))
 	}
 
 	type Expected struct {
@@ -136,7 +140,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", &datastore.FilterBy{AppID: tc.appId}, tc.pageData)
+			_, pageable, err := subRepo.LoadSubscriptionsPaged(subscriptionCtx, "group-id-1", &datastore.FilterBy{AppID: tc.appId}, tc.pageData)
 
 			require.NoError(t, err)
 
@@ -154,17 +158,21 @@ func Test_DeleteSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
+	store := getStore(db)
+
+	subRepo := NewSubscriptionRepo(store)
 	newSub := createSubscription()
 
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+	subscriptionCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+	require.NoError(t, subRepo.CreateSubscription(subscriptionCtx, newSub.GroupID, newSub))
 
 	// delete the sub
-	err := subRepo.DeleteSubscription(context.Background(), newSub.GroupID, newSub)
+	err := subRepo.DeleteSubscription(subscriptionCtx, newSub.GroupID, newSub)
 	require.NoError(t, err)
 
 	// Fetch sub again
-	_, err = subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	_, err = subRepo.FindSubscriptionByID(subscriptionCtx, newSub.GroupID, newSub.UID)
 	require.Error(t, err)
 	require.EqualError(t, err, datastore.ErrSubscriptionNotFound.Error())
 }
@@ -173,12 +181,16 @@ func Test_CreateSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
+	store := getStore(db)
+
+	subRepo := NewSubscriptionRepo(store)
 	newSub := createSubscription()
 
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+	subscriptionCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
 
-	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	require.NoError(t, subRepo.CreateSubscription(subscriptionCtx, newSub.GroupID, newSub))
+
+	sub, err := subRepo.FindSubscriptionByID(subscriptionCtx, newSub.GroupID, newSub.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, sub.UID, newSub.UID)
@@ -190,18 +202,22 @@ func Test_FindSubscriptionByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
+	store := getStore(db)
+
+	subRepo := NewSubscriptionRepo(store)
 	newSub := createSubscription()
 
+	subscriptionCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
+
 	// Fetch sub again
-	_, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	_, err := subRepo.FindSubscriptionByID(subscriptionCtx, newSub.GroupID, newSub.UID)
 	require.Error(t, err)
 	require.EqualError(t, err, datastore.ErrSubscriptionNotFound.Error())
 
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+	require.NoError(t, subRepo.CreateSubscription(subscriptionCtx, newSub.GroupID, newSub))
 
 	// Fetch sub again
-	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	sub, err := subRepo.FindSubscriptionByID(subscriptionCtx, newSub.GroupID, newSub.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, sub.UID, newSub.UID)
@@ -213,7 +229,10 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(datastore.New(db, SubscriptionCollection))
+	store := getStore(db)
+
+	subRepo := NewSubscriptionRepo(store)
+	subscriptionCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{
@@ -226,11 +245,11 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 			EndpointID:     uuid.NewString(),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
-		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
+		require.NoError(t, subRepo.CreateSubscription(subscriptionCtx, subscription.GroupID, subscription))
 	}
 
 	// Fetch sub again
-	subs, err := subRepo.FindSubscriptionsByAppID(context.Background(), "group-id-1", "app-id-1")
+	subs, err := subRepo.FindSubscriptionsByAppID(subscriptionCtx, "group-id-1", "app-id-1")
 	require.NoError(t, err)
 
 	for _, sub := range subs {
@@ -244,7 +263,8 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+	store := getStore(db)
+	subRepo := NewSubscriptionRepo(store)
 
 	subscription := &datastore.Subscription{
 		UID:            uuid.NewString(),

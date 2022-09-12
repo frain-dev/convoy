@@ -595,7 +595,7 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 	return config, nil
 }
 
-func SeedDevice(db convoyMongo.Client, g *datastore.Group, appID string) error {
+func SeedDevice(store datastore.Store, g *datastore.Group, appID string) error {
 	device := &datastore.Device{
 		UID:            uuid.NewString(),
 		GroupID:        g.UID,
@@ -605,7 +605,8 @@ func SeedDevice(db convoyMongo.Client, g *datastore.Group, appID string) error {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := db.DeviceRepo().CreateDevice(context.TODO(), device)
+	deviceRepo := cm.NewDeviceRepository(store)
+	err := deviceRepo.CreateDevice(context.TODO(), device)
 	if err != nil {
 		return err
 	}

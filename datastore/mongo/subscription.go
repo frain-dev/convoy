@@ -113,6 +113,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 
 func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
+
 	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType), "document_status": datastore.ActiveDocumentStatus}
 
 	subscriptions := make([]datastore.Subscription, 0)
@@ -126,6 +127,7 @@ func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, gro
 
 func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"app_id":          appID,
 		"group_id":        groupId,
@@ -142,6 +144,8 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 }
 
 func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {
+	ctx = s.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"device_id": deviceID,
 		"group_id":  groupId,
@@ -171,6 +175,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, gro
 
 func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.SubscriptionStatus) error {
 	ctx = s.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid":             subscriptionId,
 		"group_id":        groupId,

@@ -52,6 +52,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			groupRepo := cm.NewGroupRepo(a.store)
 			subRepo := cm.NewSubscriptionRepo(a.store)
 			deviceRepo := cm.NewDeviceRepository(a.store)
+			configRepo := cm.NewConfigRepo(a.store)
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				appRepo,
@@ -73,8 +74,11 @@ func addWorkerCommand(a *app) *cobra.Command {
 				deviceRepo))
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
-				a.store,
 				cfg,
+				configRepo,
+				groupRepo,
+				eventRepo,
+				eventDeliveryRepo,
 				a.searcher))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(

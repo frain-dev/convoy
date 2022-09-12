@@ -16,7 +16,7 @@ func Test_FetchGroupByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, GroupCollection)
+	store := getStore(db)
 
 	groupRepo := NewGroupRepo(store)
 
@@ -26,10 +26,11 @@ func Test_FetchGroupByID(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+	require.NoError(t, groupRepo.CreateGroup(groupCtx, newOrg))
 
 	// Fetch org again
-	org, err := groupRepo.FetchGroupByID(context.Background(), newOrg.UID)
+	org, err := groupRepo.FetchGroupByID(groupCtx, newOrg.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, org.UID, newOrg.UID)
@@ -39,7 +40,7 @@ func Test_CreateGroup(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, GroupCollection)
+	store := getStore(db)
 
 	tt := []struct {
 		name        string
@@ -120,6 +121,8 @@ func Test_CreateGroup(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			groupRepo := NewGroupRepo(store)
 
+			groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+
 			for i, group := range tc.groups {
 				newGroup := &datastore.Group{
 					Name:           group.Name,
@@ -128,17 +131,17 @@ func Test_CreateGroup(t *testing.T) {
 				}
 
 				if i == 0 {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+					require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
 				}
 
 				if i > 0 && tc.isDuplicate {
-					err := groupRepo.CreateGroup(context.Background(), newGroup)
+					err := groupRepo.CreateGroup(groupCtx, newGroup)
 					require.Error(t, err)
 					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
 				}
 
 				if i > 0 && !tc.isDuplicate {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+					require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
 				}
 			}
 
@@ -149,11 +152,12 @@ func Test_CreateGroup(t *testing.T) {
 func Test_LoadGroups(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
-	store := getStore(db, GroupCollection)
+	store := getStore(db)
 
 	orgRepo := NewGroupRepo(store)
 
-	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
+	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+	orgs, err := orgRepo.LoadGroups(groupCtx, &datastore.GroupFilter{})
 	require.NoError(t, err)
 
 	require.True(t, len(orgs) == 0)
@@ -163,10 +167,9 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupStore := getStore(db, GroupCollection)
-	eventStore := getStore(db, EventCollection)
+	store := getStore(db)
 
-	groupRepo := NewGroupRepo(groupStore)
+	groupRepo := NewGroupRepo(store)
 
 	group1 := &datastore.Group{
 		Name: "group1",
@@ -178,10 +181,11 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		UID:  uuid.NewString(),
 	}
 
-	err := groupRepo.CreateGroup(context.Background(), group1)
+	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+	err := groupRepo.CreateGroup(groupCtx, group1)
 	require.NoError(t, err)
 
-	err = groupRepo.CreateGroup(context.Background(), group2)
+	err = groupRepo.CreateGroup(groupCtx, group2)
 	require.NoError(t, err)
 
 	app1 := &datastore.Application{
@@ -194,11 +198,12 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		GroupID: group2.UID,
 	}
 
-	appRepo := NewApplicationRepo(getStore(db, AppCollection))
-	err = appRepo.CreateApplication(context.Background(), app1, group1.UID)
+	appRepo := NewApplicationRepo(getStore(db))
+	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
+	err = appRepo.CreateApplication(appCtx, app1, group1.UID)
 	require.NoError(t, err)
 
-	err = appRepo.CreateApplication(context.Background(), app2, group2.UID)
+	err = appRepo.CreateApplication(appCtx, app2, group2.UID)
 	require.NoError(t, err)
 
 	event := &datastore.Event{
@@ -207,11 +212,12 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		AppID:   app1.UID,
 	}
 
-	err = NewEventRepository(eventStore).CreateEvent(context.Background(), event)
+	eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
+	err = NewEventRepository(store).CreateEvent(eventCtx, event)
 	require.NoError(t, err)
 
 	groups := []*datastore.Group{group1, group2}
-	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
+	err = groupRepo.FillGroupsStatistics(groupCtx, groups)
 	require.NoError(t, err)
 
 	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{
