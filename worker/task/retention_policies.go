@@ -32,8 +32,8 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 			log.WithError(err)
 			return err
 		}
-		filter := &datastore.GroupFilter{}
 
+		filter := &datastore.GroupFilter{}
 		groups, err := groupRepo.LoadGroups(context.Background(), filter)
 		if err != nil {
 			log.WithError(err).Error("failed to load groups.")
@@ -69,6 +69,7 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 		exportDir := convoy.TmpExportDir
 		objectStoreOpts := objectstore.ObjectStoreOptions{
 			Bucket:       config.StoragePolicy.S3.Bucket,
+			Endpoint:     config.StoragePolicy.S3.Endpoint,
 			AccessKey:    config.StoragePolicy.S3.AccessKey,
 			SecretKey:    config.StoragePolicy.S3.SecretKey,
 			SessionToken: config.StoragePolicy.S3.SessionToken,

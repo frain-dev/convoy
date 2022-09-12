@@ -661,8 +661,9 @@ type S3Storage struct {
 	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
 	AccessKey    string `json:"-" bson:"access_key" valid:"required~please provide an access key"`
 	SecretKey    string `json:"-" bson:"secret_key" valid:"required~please provide a secret key"`
-	SessionToken string `json:"-" bson:"session_token"`
 	Region       string `json:"region" bson:"region" valid:"required~please provide AWS bucket region"`
+	SessionToken string `json:"-" bson:"session_token"`
+	Endpoint     string `json:"endpoint" bson:"endpoint"`
 }
 
 type OnPremStorage struct {
