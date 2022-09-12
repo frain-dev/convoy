@@ -10,11 +10,13 @@ export class StatusColorPipe implements PipeTransform {
 
 		switch (value) {
 			case 'default':
+			case 'offline':
 				type = 'grey';
 				break;
 			case 'active':
 			case 'Success':
 			case 'success':
+			case 'online':
 				type = 'success';
 				break;
 			case 'Pending':
@@ -22,6 +24,7 @@ export class StatusColorPipe implements PipeTransform {
 				break;
 			case 'Failed':
 			case 'Failure':
+			case 'disabled':
 				type = 'danger';
 				break;
 

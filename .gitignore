@@ -24,6 +24,7 @@
 # ui depencencies
 **/node_modules
 **/.angular/cache
+**/storybook-static
 
 # Convoy specific
 convoy

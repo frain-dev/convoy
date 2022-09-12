@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -64,8 +65,12 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 	return err
 }
 
-func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId string, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
+func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	filter := bson.M{"group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
+
+	if !util.IsStringEmpty(f.AppID) {
+		filter["app_id"] = f.AppID
+	}
 
 	var subscriptions []datastore.Subscription
 	paginatedData, err := pager.
@@ -135,6 +140,21 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 	}
 
 	return subscriptions, nil
+}
+
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {
+	filter := bson.M{
+		"device_id": deviceID,
+		"group_id":  groupId,
+	}
+
+	subscription := &datastore.Subscription{}
+	err := s.store.FindOne(ctx, filter, nil, &subscription)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, datastore.ErrSubscriptionNotFound
+	}
+
+	return subscription, nil
 }
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {

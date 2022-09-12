@@ -27,8 +27,9 @@ func addMigrateCommand(a *app) *cobra.Command {
 
 func addUpCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "up",
-		Short: "Run all pending migrations",
+		Use:     "up",
+		Aliases: []string{"migrate-up"},
+		Short:   "Run all pending migrations",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
@@ -68,8 +69,9 @@ func addDownCommand() *cobra.Command {
 	var migrationID string
 
 	cmd := &cobra.Command{
-		Use:   "down",
-		Short: "Rollback migrations",
+		Use:     "down",
+		Aliases: []string{"migrate-down"},
+		Short:   "Rollback migrations",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {

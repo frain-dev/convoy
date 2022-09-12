@@ -108,6 +108,7 @@ type app struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	groupRepo         datastore.GroupRepository
 	applicationRepo   datastore.ApplicationRepository
+	deviceRepo        datastore.DeviceRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	subRepo           datastore.SubscriptionRepository
@@ -178,26 +179,15 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		*db = *database
 
 		// Check Pending Migrations
-		c := db.Client().(*mongo.Database).Client()
-		u, err := url.Parse(cfg.Database.Dsn)
-		if err != nil {
-			return err
-		}
-
-		dbName := strings.TrimPrefix(u.Path, "/")
-		opts := &migrate.Options{
-			DatabaseName: dbName,
-		}
-
-		m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-
-		pm, err := m.CheckPendingMigrations(context.Background())
-		if err != nil {
-			return err
-		}
-
-		if pm {
-			return migrate.ErrPendingMigrationsFound
+		if len(cmd.Aliases) > 0 {
+			alias := cmd.Aliases[0]
+			shouldSkip := strings.HasPrefix(alias, "migrate")
+			if !shouldSkip {
+				err := checkPendingMigrations(cfg.Database.Dsn, db)
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 		var tr tracer.Tracer
@@ -261,11 +251,13 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		app.applicationRepo = db.AppRepo()
 		app.eventDeliveryRepo = db.EventDeliveryRepo()
 		app.sourceRepo = db.SourceRepo()
+		app.deviceRepo = db.DeviceRepo()
 		app.userRepo = db.UserRepo()
 		app.configRepo = db.ConfigurationRepo()
 		app.orgRepo = db.OrganisationRepo()
 		app.orgMemberRepo = db.OrganisationMemberRepo()
 		app.orgInviteRepo = db.OrganisationInviteRepo()
+		app.deviceRepo = db.DeviceRepo()
 
 		app.queue = q
 		app.logger = lo
@@ -308,6 +300,12 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addMigrateCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
+	cmd.AddCommand(addListenCommand(app))
+	cmd.AddCommand(addLoginCommand())
+	cmd.AddCommand(addListAppsCommand())
+	cmd.AddCommand(addStreamCommand(app))
+	cmd.AddCommand(addSwitchCommand())
+
 }
 
 type ConvoyCli struct {
@@ -372,4 +370,30 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	return c, nil
+}
+
+func checkPendingMigrations(dbDsn string, db *cm.Client) error {
+	c := db.Client().(*mongo.Database).Client()
+	u, err := url.Parse(dbDsn)
+	if err != nil {
+		return err
+	}
+
+	dbName := strings.TrimPrefix(u.Path, "/")
+	opts := &migrate.Options{
+		DatabaseName: dbName,
+	}
+
+	m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
+
+	pm, err := m.CheckPendingMigrations(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if pm {
+		return migrate.ErrPendingMigrationsFound
+	}
+
+	return nil
 }

@@ -45,6 +45,7 @@ type Repos struct {
 	OrgInviteRepo     datastore.OrganisationInviteRepository
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
+	DeviceRepo        datastore.DeviceRepository
 }
 
 type Services struct {
@@ -66,6 +67,7 @@ type Services struct {
 	OrganisationService       *services.OrganisationService
 	OrganisationMemberService *services.OrganisationMemberService
 	OrganisationInviteService *services.OrganisationInviteService
+	DeviceService             *services.DeviceService
 }
 
 //go:embed ui/build
@@ -92,7 +94,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 
 func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 	as := services.NewAppService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Cache)
-	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo, r.SourceRepo)
+	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo, r.SourceRepo, r.DeviceRepo)
 	gs := services.NewGroupService(r.ApiKeyRepo, r.AppRepo, r.GroupRepo, r.EventRepo, r.EventDeliveryRepo, s.Limiter, s.Cache)
 	ss := services.NewSecurityService(r.GroupRepo, r.ApiKeyRepo)
 	os := services.NewOrganisationService(r.OrgRepo, r.OrgMemberRepo)
@@ -101,6 +103,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 	ois := services.NewOrganisationInviteService(r.OrgRepo, r.UserRepo, r.OrgMemberRepo, r.OrgInviteRepo, s.Queue)
 	om := services.NewOrganisationMemberService(r.OrgMemberRepo)
 	cs := services.NewConfigService(r.ConfigRepo)
+	ds := services.NewDeviceService(r.DeviceRepo)
 	us := services.NewUserService(r.UserRepo, s.Cache, s.Queue, cs, os)
 
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
@@ -115,6 +118,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 		OrgMemberRepo:     r.OrgMemberRepo,
 		OrgInviteRepo:     r.OrgInviteRepo,
 		UserRepo:          r.UserRepo,
+		DeviceRepo:        r.DeviceRepo,
 		ConfigRepo:        r.ConfigRepo,
 		Cache:             s.Cache,
 		Logger:            s.Logger,
@@ -137,6 +141,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 			OrgInviteRepo:     r.OrgInviteRepo,
 			UserRepo:          r.UserRepo,
 			ConfigRepo:        r.ConfigRepo,
+			DeviceRepo:        r.DeviceRepo,
 		},
 		S: Services{
 			Queue:                     s.Queue,
@@ -156,6 +161,7 @@ func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
 			OrganisationService:       os,
 			OrganisationMemberService: om,
 			OrganisationInviteService: ois,
+			DeviceService:             ds,
 		},
 	}
 }
@@ -260,7 +266,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(a.M.RequireApp())
 					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.Post("/", a.CreateAppPortalAPIKey)
+					securitySubRouter.Post("/", a.CreateAppAPIKey)
 				})
 			})
 
@@ -398,7 +404,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.Post("/", a.CreateAppPortalAPIKey)
+									keySubRouter.Post("/", a.CreateAppAPIKey)
+									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
+									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 								})
 
 								appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
@@ -412,6 +420,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
 									})
+								})
+
+								appSubRouter.Route("/devices", func(deviceRouter chi.Router) {
+									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
 								})
 							})
 						})
@@ -498,13 +510,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
 		portalRouter.Use(a.M.RequireAuth())
-		portalRouter.Use(a.M.RequireGroup())
-		portalRouter.Use(a.M.RequireAppID())
+		portalRouter.Use(a.M.RequireAppPortalApplication())
+		portalRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
 
 		portalRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Use(a.M.RequireAppPortalApplication())
-			appRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
-
 			appRouter.Get("/", a.GetApp)
 
 			appRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
@@ -518,12 +527,20 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					e.Put("/", a.UpdateAppEndpoint)
 				})
 			})
+
+			appRouter.Route("/keys", func(keySubRouter chi.Router) {
+				keySubRouter.Use(a.M.RequireBaseUrl())
+				keySubRouter.Post("/", a.CreateAppAPIKey)
+				keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
+				keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
+			})
+
+			appRouter.Route("/devices", func(deviceRouter chi.Router) {
+				deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+			})
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Use(a.M.RequireAppPortalApplication())
-			eventRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
-
 			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -534,9 +551,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		})
 
 		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-			subsriptionRouter.Use(a.M.RequireAppPortalApplication())
-			subsriptionRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
-
 			subsriptionRouter.Post("/", a.CreateSubscription)
 			subsriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 			subsriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
@@ -545,9 +559,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		})
 
 		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.Use(a.M.RequireAppPortalApplication())
-			eventDeliveryRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
-
 			eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
 			eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
 			eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)

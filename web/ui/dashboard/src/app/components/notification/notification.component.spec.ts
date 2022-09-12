@@ -11,9 +11,7 @@ describe('NotificationComponent', () => {
       declarations: [ NotificationComponent ]
     })
     .compileComponents();
-  });
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(NotificationComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

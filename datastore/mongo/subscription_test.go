@@ -17,7 +17,7 @@ func createSubscription() *datastore.Subscription {
 	return &datastore.Subscription{
 		UID:        uuid.NewString(),
 		Name:       "Subscription",
-		Type:       "incoming",
+		Type:       datastore.SubscriptionTypeAPI,
 		AppID:      "app-id-1",
 		GroupID:    "group-id-1",
 		SourceID:   "source-id-1",
@@ -48,12 +48,17 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		subscription := &datastore.Subscription{
 			UID:            uuid.NewString(),
 			Name:           fmt.Sprintf("Subscription %d", i),
-			Type:           "incoming",
+			Type:           datastore.SubscriptionTypeAPI,
 			GroupID:        "group-id-1",
-			SourceID:       "source-id-1",
-			EndpointID:     "endpoint-id-1",
+			SourceID:       uuid.NewString(),
+			EndpointID:     uuid.NewString(),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
+
+		if i == 0 {
+			subscription.AppID = "app-id-1"
+		}
+
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
 	}
 
@@ -63,6 +68,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	tests := []struct {
 		name     string
+		appId string
 		pageData datastore.Pageable
 		expected Expected
 	}{
@@ -110,11 +116,27 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "Load Subscriptions Paged with App ID - 1 record",
+			appId: "app-id-1",
+			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					Total:     1,
+					TotalPage: 1,
+					Page:      1,
+					PerPage:   3,
+					Prev:      0,
+					Next:      0,
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", tc.pageData)
+			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", &datastore.FilterBy{AppID: tc.appId}, tc.pageData)
 
 			require.NoError(t, err)
 
@@ -197,11 +219,11 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 		subscription := &datastore.Subscription{
 			UID:            uuid.NewString(),
 			Name:           fmt.Sprintf("Subscription %d", i),
-			Type:           "incoming",
+			Type:           datastore.SubscriptionTypeAPI,
 			AppID:          "app-id-1",
 			GroupID:        "group-id-1",
-			SourceID:       "source-id-1",
-			EndpointID:     "endpoint-id-1",
+			SourceID:       uuid.NewString(),
+			EndpointID:     uuid.NewString(),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
@@ -216,4 +238,31 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 		require.Equal(t, sub.AppID, "app-id-1")
 		require.Equal(t, sub.GroupID, "group-id-1")
 	}
+}
+
+func Test_FindSubscriptionByDeviceID(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db, datastore.New(db, SubscriptionCollection))
+
+	subscription := &datastore.Subscription{
+		UID:            uuid.NewString(),
+		Name:           "test_subscription",
+		Type:           datastore.SubscriptionTypeAPI,
+		SourceID:       "source-id-1",
+		DeviceID:       "device-id-1",
+		GroupID:        "group-id-1",
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
+
+	// Fetch sub again
+	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "group-id-1", "device-id-1")
+	require.NoError(t, err)
+
+	require.NotEmpty(t, sub.UID)
+	require.Equal(t, sub.DeviceID, "device-id-1")
+	require.Equal(t, sub.GroupID, "group-id-1")
+	require.Equal(t, sub.SourceID, "source-id-1")
 }

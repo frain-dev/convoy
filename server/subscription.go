@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 
 	"github.com/frain-dev/convoy/util"
@@ -31,8 +32,10 @@ import (
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
+	appID := m.GetAppIDFromContext(r)
 
-	apps, paginationData, err := a.S.SubService.LoadSubscriptionsPaged(r.Context(), group.UID, pageable)
+	filter := &datastore.FilterBy{GroupID: group.UID, AppID: appID}
+	subscriptions, paginationData, err := a.S.SubService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load subscriptions")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -40,7 +43,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
-		pagedResponse{Content: &apps, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: &subscriptions, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetSubscription
@@ -88,8 +91,6 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
-
-	sub.Type = string(group.Type)
 
 	subscription, err := a.S.SubService.CreateSubscription(r.Context(), group, &sub)
 	if err != nil {
