@@ -111,7 +111,7 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	err = a.S.OrganisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
 	if err != nil {
 		log.WithError(err).Error("failed to process organisation member invite")
-		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("")))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
