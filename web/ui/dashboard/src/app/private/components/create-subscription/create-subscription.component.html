@@ -52,10 +52,6 @@
 			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
 		</div>
 
-		<div class="flex justify-end mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
-		</div>
-
 		<div [hidden]="!enableMoreConfig">
 			<h2 class="font-semibold flex items-center mb-20px mt-30px">
 				Retry Logic
@@ -68,7 +64,7 @@
 			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
 				<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism"></convoy-select>
 
-				<convoy-input type="number" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3"></convoy-input>
+				<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3"></convoy-input>
 				<convoy-input type="text" name="retry-logic-count" formControlName="retry_count" label="Limit" placeholder="e.g 5"></convoy-input>
 			</div>
 
@@ -80,6 +76,9 @@
 				<convoy-input type="number" name="alert-config-count" formControlName="count" label="Count" placeholder="e.g 10"></convoy-input>
 				<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
 			</div>
+		</div>
+		<div class="flex justify-end mt-20px">
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
 		</div>
 	</convoy-card>
 
