@@ -31,7 +31,7 @@
 
 <convoy-card className="relative">
 	<ul class="flex flex-wrap items-center min-h-[76px] metrics">
-		<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:160px] [background-position-y:35px] min-w-[220px]">
+		<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
 			<img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
 			<div *ngIf="isloadingDashboardData">
 				<convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
@@ -47,7 +47,7 @@
 			</div>
 		</li>
 
-		<li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:160px] [background-position-y:35px] min-w-[220px]">
+		<li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
 			<img src="/assets/img/apps-icon.svg" class="mr-30px" alt="apps icon" />
 			<div *ngIf="isloadingDashboardData">
 				<convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
@@ -70,18 +70,18 @@
 
 <convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
 	<div class="flex items-center justify-center">
-		<ul class="w-full flex items-center">
-			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+		<ul class="w-full flex items-center pl-18px">
+			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)" class="first-of-type:mr-18px">
 				<convoy-button
-					type="clear"
+					type="text"
 					color="grey"
 					[className]="
 						activeTab === tab
-							? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
-							: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
+							? 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] border-primary-100 transition-all ease-in-out'
+							: 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
 					"
 				>
-					<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+					<span class="text-14 font-semibold capitalize transition-all duration-300" [class]="activeTab === tab ? 'text-primary-100' : 'text-grey-40'">{{ tab }}</span>
 				</convoy-button>
 			</li>
 
