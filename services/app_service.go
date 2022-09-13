@@ -164,6 +164,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		RateLimit:         e.RateLimit,
 		HttpTimeout:       e.HttpTimeout,
 		RateLimitDuration: duration.String(),
+		CustomHeaders:     e.CustomHeaders,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus:    datastore.ActiveDocumentStatus,
@@ -278,6 +279,10 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 
 			if !util.IsStringEmpty(e.Secret) {
 				endpoint.Secret = e.Secret
+			}
+
+			if e.CustomHeaders != nil {
+				endpoint.CustomHeaders = e.CustomHeaders
 			}
 
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
