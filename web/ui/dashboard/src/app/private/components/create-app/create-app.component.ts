@@ -18,6 +18,7 @@ export class CreateAppComponent implements OnInit {
 	appUid = this.route.snapshot.params.id;
 	isSavingApp = false;
 	isLoadingAppDetails = false;
+    confirmModal = false;
 	appsDetailsItem!: APP;
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -119,9 +120,5 @@ export class CreateAppComponent implements OnInit {
 		} catch {
 			this.isLoadingAppDetails = false;
 		}
-	}
-
-	closeAppInstance() {
-		this.discardApp.emit();
 	}
 }
