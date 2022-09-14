@@ -644,54 +644,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "should_create_app_endpoint_with_custom_headers",
-			args: args{
-				ctx: ctx,
-				e: models.Endpoint{
-					Secret:        "1234",
-					URL:           "https://google.com",
-					Description:   "test_endpoint",
-					CustomHeaders: []datastore.CustomHeaders{{HeaderName: "test", HeaderValue: "test"}},
-					Events:        []string{"payment.created"},
-				},
-				app: &datastore.Application{UID: "abc"},
-			},
-			dbFn: func(app *AppService) {
-				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Application{UID: "abc"}, nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-			},
-			wantApp: &datastore.Application{
-				UID: "abc",
-				Endpoints: []datastore.Endpoint{
-					{
-						Secret:            "1234",
-						TargetURL:         "https://google.com",
-						Description:       "test_endpoint",
-						RateLimit:         5000,
-						RateLimitDuration: "1m0s",
-						DocumentStatus:    datastore.ActiveDocumentStatus,
-						CustomHeaders:     []datastore.CustomHeaders{{HeaderName: "test", HeaderValue: "test"}},
-					},
-				},
-			},
-			wantEndpoint: &datastore.Endpoint{
-				Secret:            "1234",
-				TargetURL:         "https://google.com",
-				Description:       "test_endpoint",
-				RateLimit:         5000,
-				RateLimitDuration: "1m0s",
-				CustomHeaders:     []datastore.CustomHeaders{{HeaderName: "test", HeaderValue: "test"}},
-				DocumentStatus:    datastore.ActiveDocumentStatus,
-			},
-			wantErr: false,
-		},
+		
 		{
 			name: "should_create_app_endpoint_with_no_events",
 			args: args{

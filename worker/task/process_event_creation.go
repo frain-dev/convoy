@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -102,21 +101,14 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			var endpoint *datastore.Endpoint
 			if s.Type == datastore.SubscriptionTypeAPI {
-				endpoint, err = appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
+				endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
 				if err != nil {
 					log.Errorf("Error fetching endpoint %s", err)
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
 				s.Endpoint = endpoint
-			}
-
-			headers := httpheader.HTTPHeader(make(map[string][]string))
-			headers.MergeHeaders(event.Headers)
-			if endpoint != nil {
-				headers.MergeHeaders(endpoint.Headers())
 			}
 
 			metadata := &datastore.Metadata{
@@ -136,7 +128,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				EventID:        event.UID,
 				EndpointID:     s.EndpointID,
 				DeviceID:       s.DeviceID,
-				Headers:        headers,
+				Headers:        event.Headers,
 
 				Status:           getEventDeliveryStatus(ctx, &s, app, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
