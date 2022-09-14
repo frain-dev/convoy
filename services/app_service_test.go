@@ -644,7 +644,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		
+
 		{
 			name: "should_create_app_endpoint_with_no_events",
 			args: args{
