@@ -133,7 +133,7 @@
 							<convoy-button
 								size="xs"
 								texture="light"
-								[disable]="event.status !== 'Success' && event.status !== 'Failure'"
+								[disable]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
 								(clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 							>
 								<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
