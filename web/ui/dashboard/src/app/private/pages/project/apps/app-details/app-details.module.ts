@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { AppDetailsComponent } from './app-details.component';
 import { RouterModule, Routes } from '@angular/router';
 import { CreateEndpointModule } from './create-endpoint/create-endpoint.module';
-import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
@@ -13,6 +12,7 @@ import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skel
 import { CliComponent } from './cli/cli.component';
 import { SendEventComponent } from './send-event/send-event.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 
 const routes: Routes = [
 	{
@@ -24,7 +24,7 @@ const routes: Routes = [
 	declarations: [AppDetailsComponent],
 	imports: [
 		CommonModule,
-		DeleteModalModule,
+		DeleteModalComponent,
 		CardComponent,
 		ButtonComponent,
 		EmptyStateComponent,

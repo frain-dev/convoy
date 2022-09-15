@@ -5,7 +5,6 @@ import { RouterModule, Routes } from '@angular/router';
 import { CreateAppModule } from 'src/app/private/components/create-app/create-app.module';
 import { FormsModule } from '@angular/forms';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
-import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
 import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
@@ -18,6 +17,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 
 const routes: Routes = [
 	{
@@ -45,7 +45,7 @@ const routes: Routes = [
 		CreateAppModule,
 		FormsModule,
 		TableLoaderModule,
-		DeleteModalModule,
+		DeleteModalComponent,
 		RouterModule.forChild(routes),
 		TableHeadComponent,
 		TableHeadCellComponent,

@@ -13,14 +13,14 @@ import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skel
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { API_KEY, DEVICE } from 'src/app/models/app.model';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
-import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
+import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';
 
 @Component({
 	selector: 'convoy-cli',
 	standalone: true,
-	imports: [CommonModule, CardComponent, ButtonComponent, EmptyStateComponent, TagComponent, SkeletonLoaderComponent, ModalComponent, StatusColorModule, DeleteModalModule, ReactiveFormsModule, InputComponent, SelectComponent, CopyButtonComponent],
+	imports: [CommonModule, CardComponent, ButtonComponent, EmptyStateComponent, TagComponent, SkeletonLoaderComponent, ModalComponent, StatusColorModule, DeleteModalComponent, ReactiveFormsModule, InputComponent, SelectComponent, CopyButtonComponent],
 	templateUrl: './cli.component.html',
 	styleUrls: ['./cli.component.scss']
 })
