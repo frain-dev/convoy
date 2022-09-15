@@ -1,10 +1,32 @@
 <convoy-page>
-	<div class="flex items-center justify-between mb-20px">
-		<h3 class="mb-10px font-medium">Subscriptions</h3>
-		<convoy-button *ngIf="showCreateSubscription" size="sm" (click)="showCreateSubscriptionModal = true" [disable]="showSubscriptionError">Create Subscription</convoy-button>
-	</div>
+    <h3 class="font-medium mb-20px">App Portal</h3>
 
-	<convoy-card className="w-full">
+    <convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
+		<div class="flex items-center justify-center">
+			<ul class="w-full flex items-center">
+				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+					<convoy-button
+						type="clear"
+						color="grey"
+						[className]="
+							activeTab === tab
+								? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
+								: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
+						"
+					>
+						<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+					</convoy-button>
+				</li>
+
+				<div class="ml-auto pr-14px">
+					<convoy-button size="sm" type="outline" (click)="showCreateSubscriptionModal = true" [disable]="showSubscriptionError" *ngIf="activeTab === 'subscriptions'">Create Subscription</convoy-button>
+					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true" *ngIf="activeTab === 'cli keys'">Generate Key</convoy-button>
+				</div>
+			</ul>
+		</div>
+	</convoy-card>
+
+	<convoy-card className="min-h-[30vh] rounded-tl-[0] rounded-tr-[0] w-full" *ngIf="activeTab === 'subscriptions'">
 		<convoy-table-loader id="endpoints_loader" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
 
 		<convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
@@ -66,30 +88,34 @@
 		<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No subscriptionto show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
 	</convoy-card>
 
+	<ng-container *ngIf="activeTab === 'cli keys'">
+		<convoy-cli-keys></convoy-cli-keys>
+	</ng-container>
+
 	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
 		<div class="flex items-center justify-center">
 			<ul class="w-full flex items-center">
-				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+				<li *ngFor="let tab of eventTabs" (click)="toggleEventsTab(tab)">
 					<convoy-button
 						type="clear"
 						color="grey"
 						[className]="
-							activeTab === tab
+							activeEventsTab === tab
 								? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
 								: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
 						"
 					>
-						<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+						<span [class]="activeEventsTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
 					</convoy-button>
 				</li>
 
 				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
-					<span *ngIf="events" [hidden]="activeTab !== 'events'">
+					<span *ngIf="events" [hidden]="activeEventsTab !== 'events'">
 						{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }}
 						<strong>of</strong>
 						{{ events?.pagination?.total || 0 }}
 					</span>
-					<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
+					<span *ngIf="eventDeliveries" [hidden]="activeEventsTab !== 'event deliveries'">
 						{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
 						{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }}
 						<strong>of</strong>
@@ -100,11 +126,11 @@
 		</div>
 	</convoy-card>
 
-	<div [hidden]="activeTab !== 'events'">
+	<div [hidden]="activeEventsTab !== 'events'">
 		<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>
 	</div>
 
-	<div [hidden]="activeTab !== 'event deliveries'">
+	<div [hidden]="activeEventsTab !== 'event deliveries'">
 		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 	</div>
 </convoy-page>
