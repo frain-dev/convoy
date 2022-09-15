@@ -8,7 +8,7 @@ import { AppService } from './app.service';
 import { CliKeysComponent } from 'src/app/private/pages/project/apps/app-details/cli-keys/cli-keys.component';
 
 type EVENT_PAGE_TABS = 'events' | 'event deliveries';
-type PAGE_TABS = 'subscriptions' | 'cli keys';
+type PAGE_TABS = 'subscriptions' | 'cli keys' | 'devices';
 
 @Component({
 	selector: 'app-app',
@@ -22,7 +22,7 @@ export class AppComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
-	tabs: ['subscriptions', 'cli keys'] = ['subscriptions', 'cli keys'];
+	tabs: ['subscriptions', 'cli keys', 'devices'] = ['subscriptions', 'cli keys', 'devices'];
 	activeEventsTab: EVENT_PAGE_TABS = 'events';
 	activeTab: PAGE_TABS = 'subscriptions';
 	events!: { content: EVENT[]; pagination: PAGINATION };

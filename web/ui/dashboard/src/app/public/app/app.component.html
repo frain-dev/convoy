@@ -1,7 +1,7 @@
 <convoy-page>
-    <h3 class="font-medium mb-20px">App Portal</h3>
+	<h3 class="font-medium mb-20px">App Portal</h3>
 
-    <convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
+	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
 		<div class="flex items-center justify-center">
 			<ul class="w-full flex items-center">
 				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
@@ -20,7 +20,7 @@
 
 				<div class="ml-auto pr-14px">
 					<convoy-button size="sm" type="outline" (click)="showCreateSubscriptionModal = true" [disable]="showSubscriptionError" *ngIf="activeTab === 'subscriptions'">Create Subscription</convoy-button>
-					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true" *ngIf="activeTab === 'cli keys'">Generate Key</convoy-button>
+					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true" [disable]="showSubscriptionError" *ngIf="activeTab === 'cli keys'">Generate Key</convoy-button>
 				</div>
 			</ul>
 		</div>
@@ -90,6 +90,10 @@
 
 	<ng-container *ngIf="activeTab === 'cli keys'">
 		<convoy-cli-keys></convoy-cli-keys>
+	</ng-container>
+
+	<ng-container *ngIf="activeTab === 'devices'">
+		<convoy-devices></convoy-devices>
 	</ng-container>
 
 	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">

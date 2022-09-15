@@ -8,7 +8,6 @@ import { ActivatedRoute } from '@angular/router';
 import { API_KEY } from 'src/app/models/app.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { AppDetailsService } from '../app-details.service';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
@@ -59,6 +58,7 @@ export class CliKeysComponent implements OnInit {
 	}
 
 	async getAppPortalApp() {
+		this.showError = false;
 		this.isloadingAppPortalAppDetails = true;
 
 		try {
@@ -67,6 +67,7 @@ export class CliKeysComponent implements OnInit {
 			this.getApiKeys();
 			return;
 		} catch (error) {
+			this.showError = true;
 			this.isloadingAppPortalAppDetails = false;
 			return error;
 		}

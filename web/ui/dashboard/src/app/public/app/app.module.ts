@@ -23,6 +23,7 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CliKeysComponent } from 'src/app/private/pages/project/apps/app-details/cli-keys/cli-keys.component';
+import { DevicesComponent } from 'src/app/private/pages/project/apps/app-details/devices/devices.component';
 
 const routes: Routes = [{ path: '', component: AppComponent }];
 
@@ -51,7 +52,8 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		TableCellComponent,
 		TableHeadCellComponent,
 		TableComponent,
-        CliKeysComponent
+        CliKeysComponent,
+        DevicesComponent
 	]
 })
 export class AppModule {}

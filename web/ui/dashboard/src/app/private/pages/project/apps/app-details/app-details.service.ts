@@ -121,19 +121,4 @@ export class AppDetailsService {
 			}
 		});
 	}
-
-	getAppDevices(appId: string): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/apps/${appId}/devices`,
-					method: 'get'
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
 }
