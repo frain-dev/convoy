@@ -1,5 +1,5 @@
 <convoy-page>
-	<h3 class="font-medium mb-20px">App Portal</h3>
+	<h2 class="font-semibold mb-20px">App Portal</h2>
 
 	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
 		<div class="flex items-center justify-center">
@@ -26,7 +26,7 @@
 		</div>
 	</convoy-card>
 
-	<convoy-card className="min-h-[30vh] rounded-tl-[0] rounded-tr-[0] w-full" *ngIf="activeTab === 'subscriptions'">
+	<convoy-card className="min-h-[30vh] rounded-tl-[0] rounded-tr-[0] w-full pt-30px" *ngIf="activeTab === 'subscriptions'">
 		<convoy-table-loader id="endpoints_loader" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
 
 		<convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
