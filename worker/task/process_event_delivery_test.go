@@ -78,7 +78,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.InactiveSubscriptionStatus,
 					}, nil)
 
-				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{}, nil)
+				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{Config: &datastore.GroupConfig{
+					RateLimit: &datastore.DefaultRateLimitConfig,
+					Strategy:  &datastore.DefaultStrategyConfig,
+				}}, nil)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{

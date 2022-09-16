@@ -312,15 +312,10 @@ func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 		rc.Duration = ec.subscription.RetryConfig.Duration
 		rc.RetryCount = ec.subscription.RetryConfig.RetryCount
 		rc.Type = ec.subscription.RetryConfig.Type
-
-	} else if ec.group.Config != nil {
+	} else {
 		rc.Duration = ec.group.Config.Strategy.Duration
 		rc.RetryCount = ec.group.Config.Strategy.RetryCount
 		rc.Type = ec.group.Config.Strategy.Type
-	} else {
-		rc.Duration = datastore.DefaultStrategyConfig.Duration
-		rc.RetryCount = datastore.DefaultStrategyConfig.RetryCount
-		rc.Type = datastore.DefaultStrategyConfig.Type
 	}
 
 	return rc, nil
@@ -332,12 +327,9 @@ func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 	if ec.subscription.RateLimitConfig != nil {
 		rlc.Count = ec.subscription.RateLimitConfig.Count
 		rlc.Duration = ec.subscription.RateLimitConfig.Duration
-	} else if ec.group.Config != nil {
+	} else {
 		rlc.Count = ec.group.Config.RateLimit.Count
 		rlc.Duration = ec.group.Config.RateLimit.Duration
-	} else {
-		rlc.Count = datastore.DefaultRateLimitConfig.Count
-		rlc.Duration = datastore.DefaultRateLimitConfig.Duration
 	}
 
 	return rlc
