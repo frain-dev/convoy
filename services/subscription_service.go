@@ -100,14 +100,6 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		subscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
 	}
 
-	if subscription.AlertConfig == nil {
-		subscription.AlertConfig = &datastore.DefaultAlertConfig
-	}
-
-	if subscription.RetryConfig == nil {
-		subscription.RetryConfig = &datastore.DefaultRetryConfig
-	}
-
 	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
 	if err != nil {
 		log.WithError(err).Error(ErrCreateSubscriptionError.Error())
