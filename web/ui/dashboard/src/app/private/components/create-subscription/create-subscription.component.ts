@@ -87,6 +87,12 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
+			const duration = this.convertTime(response.data.retry_config.duration);
+			this.subscriptionForm.patchValue({
+				retry_config: {
+					duration: duration
+				}
+			});
 			if (!this.token) this.onUpdateAppSelection();
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
@@ -155,7 +161,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
 	}
 
-    async onCreateEndpoint(newEndpoint: ENDPOINT) {
+	async onCreateEndpoint(newEndpoint: ENDPOINT) {
 		await this.getApps();
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 	}
@@ -184,13 +190,12 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.get('retry_config.retry_count')?.patchValue(parseInt(this.subscriptionForm.get('retry_config.retry_count')?.value));
 		}
 
-
 		this.isCreatingSubscription = true;
 		try {
 			const response =
 				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
 			this.isCreatingSubscription = false;
-			this.onAction.emit(response.data);
+			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 		} catch (error) {
 			this.isCreatingSubscription = false;
 		}
@@ -245,5 +250,15 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	goToSubsriptionsPage() {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+	}
+
+	convertTime(timeValue: number): string {
+		if (timeValue >= 60) {
+			const timeInMinutes = Math.floor(timeValue / 60);
+			const remainderSeconds = timeValue % 60;
+			return `${timeInMinutes}m${remainderSeconds ? `${remainderSeconds}s` : ''}`;
+		}
+
+		return `${timeValue}s`;
 	}
 }
