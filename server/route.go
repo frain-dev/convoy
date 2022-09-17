@@ -183,7 +183,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
-
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(chiMiddleware.AllowContentType("application/json"))
 			r.Use(a.M.JsonResponse)
@@ -314,6 +313,11 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				userSubRouter.Get("/profile", a.GetUser)
 				userSubRouter.Put("/profile", a.UpdateUser)
 				userSubRouter.Put("/password", a.UpdatePassword)
+
+				userSubRouter.Route("/security", func(securityRouter chi.Router) {
+					securityRouter.Post("/personal_api_keys", a.CreatePersonalAPIKey)
+					securityRouter.Put("/personal_api_keys/{keyID}", a.RevokePersonalAPIKey)
+				})
 			})
 		})
 
@@ -355,11 +359,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					orgMemberRouter.With(a.M.Pagination).Get("/", a.GetOrganisationMembers)
 
 					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
-
 						orgMemberSubRouter.Get("/", a.GetOrganisationMember)
 						orgMemberSubRouter.Put("/", a.UpdateOrganisationMember)
 						orgMemberSubRouter.Delete("/", a.DeleteOrganisationMember)
-
 					})
 				})
 
@@ -490,7 +492,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							dashboardRouter.Get("/config", a.GetAllConfigDetails)
 						})
 					})
-
 				})
 			})
 		})
@@ -501,11 +502,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			configRouter.Get("/", a.LoadConfiguration)
 			configRouter.Post("/", a.CreateConfiguration)
 			configRouter.Put("/", a.UpdateConfiguration)
-
 		})
 	})
 
-	//App Portal API.
+	// App Portal API.
 	router.Route("/portal", func(portalRouter chi.Router) {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
