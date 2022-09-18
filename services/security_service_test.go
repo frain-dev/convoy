@@ -949,7 +949,7 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			args: args{
 				ctx:       ctx,
 				user:      &datastore.User{UID: "1234"},
-				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key"},
+				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", ExpiresAt: expires},
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -959,6 +959,7 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			wantAPIKey: &datastore.APIKey{
 				UserID:         "1234",
 				Name:           "test_personal_key",
+				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
 				Type:           datastore.PersonalKey,
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
@@ -973,6 +974,22 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "expiry date is invalid",
+		},
+		{
+			name: "should_fail_to_create_personal_apiKey",
+			args: args{
+				ctx:       ctx,
+				user:      &datastore.User{UID: "1234"},
+				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", ExpiresAt: expires},
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
+					Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create api key",
 		},
 	}
 	for _, tt := range tests {
