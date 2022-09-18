@@ -316,7 +316,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 				userSubRouter.Route("/security", func(securityRouter chi.Router) {
 					securityRouter.Post("/personal_api_keys", a.CreatePersonalAPIKey)
-					securityRouter.Put("/personal_api_keys/{keyID}", a.RevokePersonalAPIKey)
+					securityRouter.Put("/personal_api_keys/{keyID}/revoke", a.RevokePersonalAPIKey)
 				})
 			})
 		})

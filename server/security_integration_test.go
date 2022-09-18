@@ -104,7 +104,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreatePersonalAPIKey() {
 
 	// Arrange Request.
 	bodyStr := `{"name":"default_api_key","expires_at":"%s"}`
-	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour).Format(time.RFC3339))
+	body := serialize(bodyStr, time.Now().Add(time.Hour).Format(time.RFC3339))
 
 	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys", s.DefaultUser.UID)
 
@@ -296,14 +296,10 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeAPIKey() {
 func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
-	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
-	}
 	// Just Before.
-	apiKey, _, _ := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	apiKey, _, _ := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 
-	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys/%s/revoke", s.DefaultOrg.UID, apiKey.UID)
+	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys/%s/revoke", s.DefaultUser.UID, apiKey.UID)
 
 	req := createRequest(http.MethodPut, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
@@ -325,14 +321,10 @@ func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey() {
 func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey_UnauthorizedUser() {
 	expectedStatusCode := http.StatusUnauthorized
 
-	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
-	}
 	// Just Before.
-	apiKey, _, _ := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", string(datastore.PersonalKey), uuid.NewString())
+	apiKey, _, _ := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), uuid.NewString())
 
-	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys/%s/revoke", s.DefaultOrg.UID, apiKey.UID)
+	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys/%s/revoke", s.DefaultUser.UID, apiKey.UID)
 
 	req := createRequest(http.MethodPut, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
