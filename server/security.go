@@ -113,7 +113,7 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 		Key:       keyString,
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Personal API Key created successfully", resp, http.StatusCreated))
 }
 
 // CreateAppAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
@@ -287,7 +287,7 @@ func (a *ApplicationHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("personal api key revoked successfully", nil, http.StatusOK))
 }
 
 // RevokeAppAPIKey

@@ -51,7 +51,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -122,7 +122,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		Group: group.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")
+	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "", "")
 
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)
 	source, _ := testdb.SeedSource(s.DB, group, uuid.NewString(), "", "", nil)
@@ -373,7 +373,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 		Group: group.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "")
+	_, apiKey, _ := testdb.SeedAPIKey(s.DB, role, "", "test", "", "")
 
 	// Just Before
 	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "", false)

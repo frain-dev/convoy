@@ -270,7 +270,7 @@ func SeedOrganisationInvite(db convoyMongo.Client, org *datastore.Organisation, 
 }
 
 // SeedAPIKey creates random api key for integration tests.
-func SeedAPIKey(db convoyMongo.Client, role auth.Role, uid, name, keyType string) (*datastore.APIKey, string, error) {
+func SeedAPIKey(db convoyMongo.Client, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -288,6 +288,7 @@ func SeedAPIKey(db convoyMongo.Client, role auth.Role, uid, name, keyType string
 		UID:            uid,
 		MaskID:         maskID,
 		Name:           name,
+		UserID:         userID,
 		Type:           datastore.KeyType(keyType),
 		Role:           role,
 		Hash:           encodedKey,
@@ -443,7 +444,6 @@ func SeedMultipleOrganisations(db convoyMongo.Client, ownerID string, num int) (
 }
 
 func SeedSource(db convoyMongo.Client, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
-
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -477,7 +477,7 @@ func SeedSource(db convoyMongo.Client, g *datastore.Group, uid, maskID, ds strin
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	err := db.SourceRepo().CreateSource(context.TODO(), source)
 	if err != nil {
 		return nil, err
@@ -554,7 +554,7 @@ func SeedUser(db convoyMongo.Client, email, password string) (*datastore.User, e
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	err = db.UserRepo().CreateUser(context.TODO(), user)
 	if err != nil {
 		return nil, err
@@ -572,7 +572,7 @@ func SeedConfiguration(db convoyMongo.Client) (*datastore.Configuration, error) 
 		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	err := db.ConfigurationRepo().CreateConfiguration(context.TODO(), config)
 	if err != nil {
 		return nil, err

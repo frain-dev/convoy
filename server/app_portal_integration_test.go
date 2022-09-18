@@ -84,16 +84,16 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvents() {
 	}
 
 	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "app_portal")
+	_, key, err := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/events", key, nil)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	s.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	var respEvents []datastore.Event
@@ -135,16 +135,16 @@ func (s *EventIntegrationTestSuite) Test_GetAppSubscriptions() {
 	}
 
 	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "app_portal")
+	_, key, err := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/subscriptions", key, nil)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	s.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	var respSubs []datastore.Subscription
