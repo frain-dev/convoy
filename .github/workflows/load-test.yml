@@ -1,6 +1,11 @@
 name: Run Load Test
 
 on:
+  schedule:
+    - cron: '30 14 * * *'
+    - cron: '30 18 * * *'
+    - cron: '30 21 * * *'
+
   workflow_dispatch:
     inputs:
       name:
@@ -21,6 +26,7 @@ jobs:
         uses: grafana/k6-action@v0.2.0
         with:
          file_name: ../../loadtest/convoy.js 
+         flags: --out influxdb=${{ secrets.INFLUXDB_BASE_URL }}
         env: 
            BASE_URL: ${{ secrets.BASE_URL }}
            API_KEY: ${{ secrets.API_KEY }}

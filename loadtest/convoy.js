@@ -38,8 +38,8 @@ export const generateEventPayload = (appId) => ({
 export let options = {
     noConnectionReuse: true,
     stages: [
-        { duration: "60s", target: 70 }, // simulate ramp-up of traffic from 1 to 100 users over 60s
-        { duration: "60s", target: 70 }, // stay at 100 users for 60s
+        { duration: "60s", target: 20 }, // simulate ramp-up of traffic from 1 to 20 users over 60s
+        { duration: "60s", target: 20 }, // stay at 20 users for 60s
     ],
     thresholds: {
         "List_Events": ["p(95) < 3000"], //95% of requests must complete below 3s
