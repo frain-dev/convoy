@@ -27,7 +27,7 @@ jobs:
       - name: Run Local K6 Test
         uses: grafana/k6-action@v0.2.0
         with:
-         filename: ../../loadtest/convoy.js 
+         filename: loadtest/convoy.js 
          flags: --out influxdb=${{ secrets.INFLUXDB_BASE_URL }}
         env: 
            BASE_URL: ${{ secrets.CONVOY_BASE_URL }}
