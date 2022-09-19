@@ -1,0 +1,27 @@
+name: Run Load Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Manual workflow name"
+        required: true
+
+
+jobs:
+   load_test: 
+     name: K6 Load Test
+     runs-on: ubuntu-latest
+
+     steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Run Local K6 Test
+        uses: grafana/k6-action@v0.2.0
+        with:
+         file_name: ../../loadtest/convoy.js 
+        env: 
+           BASE_URL: ${{ secrets.BASE_URL }}
+           API_KEY: ${{ secrets.API_KEY }}
+           APP_ID: ${{ secrets.APP_ID }}
