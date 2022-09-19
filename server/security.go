@@ -225,7 +225,7 @@ func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.
 	f := &datastore.ApiKeyFilter{
 		GroupID: group.UID,
 		AppID:   app.UID,
-		KeyType: datastore.CLIKey, // TODO: why is this here?
+		KeyType: datastore.CLIKey,
 	}
 
 	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), f, &pageable)
