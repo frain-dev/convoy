@@ -127,6 +127,14 @@ func (k KeyType) IsValidAppKey() bool {
 	}
 }
 
+func (k KeyType) IsValid() bool {
+	switch k {
+	case AppPortalKey, CLIKey, ProjectKey, PersonalKey:
+		return true
+	}
+	return false
+}
+
 const (
 	DefaultStrategyProvider     = LinearStrategyProvider
 	LinearStrategyProvider      = "linear"

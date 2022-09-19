@@ -482,6 +482,33 @@ func (s *SecurityIntegrationTestSuite) Test_GetAPIKeys() {
 	require.Equal(s.T(), 3, len(apiKeyResponse))
 }
 
+func (s *SecurityIntegrationTestSuite) Test_GetPersonalAPIKeys() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-1", "api", s.DefaultUser.UID)
+	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-2", "api", s.DefaultUser.UID)
+	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-3", "api", uuid.NewString())
+
+	url := fmt.Sprintf(" /ui/users/%s/security/personal_api_keys", s.DefaultUser.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var apiKeyResponse []models.APIKeyByIDResponse
+	pagedResp := &pagedResponse{Content: &apiKeyResponse}
+	parseResponse(s.T(), w.Result(), pagedResp)
+	require.Equal(s.T(), 2, len(apiKeyResponse))
+}
+
 func (s *SecurityIntegrationTestSuite) Test_GetAppAPIKeys() {
 	expectedStatusCode := http.StatusOK
 

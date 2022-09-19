@@ -132,6 +132,10 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 		filter["key_type"] = f.KeyType
 	}
 
+	if !util.IsStringEmpty(f.UserID) {
+		filter["user_id"] = f.UserID
+	}
+
 	paginatedData, err := pager.
 		New(db.client).
 		Context(ctx).
@@ -141,7 +145,6 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 		Sort("created_at", pageable.Sort).
 		Decode(&apiKeys).
 		Find()
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

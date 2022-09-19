@@ -9801,6 +9801,14 @@
 						}
 					},
 					{
+						"description": "api key type",
+						"in": "query",
+						"name": "keyType",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "results per page",
 						"in": "query",
 						"name": "perPage",

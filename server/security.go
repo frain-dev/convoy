@@ -401,6 +401,22 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("api key updated successfully", resp, http.StatusOK))
 }
 
+// GetAPIKeys - this is a duplicate annotation for the User security route for this handler
+// @Summary Fetch multiple api keys
+// @Description This endpoint fetches multiple api keys
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param userID path string true "User id"
+// @Param keyType query string false "api key type"
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.APIKey}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/users/{userID}/security/personal_api_keys [get]
+
 // GetAPIKeys
 // @Summary Fetch multiple api keys
 // @Description This endpoint fetches multiple api keys
@@ -408,6 +424,7 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "Organisation id"
+// @Param keyType query string false "api key type"
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
@@ -419,6 +436,19 @@ func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) 
 	pageable := m.GetPageableFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{}
+	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
+	if keyType.IsValid() {
+		f.KeyType = keyType
+
+		if keyType == datastore.PersonalKey {
+			user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
+			if !ok {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+			f.UserID = user.UID
+		}
+	}
 
 	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {

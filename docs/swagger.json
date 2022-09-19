@@ -7424,6 +7424,12 @@
                     },
                     {
                         "type": "string",
+                        "description": "api key type",
+                        "name": "keyType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "results per page",
                         "name": "perPage",
                         "in": "query"

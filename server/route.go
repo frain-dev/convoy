@@ -314,9 +314,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				userSubRouter.Put("/profile", a.UpdateUser)
 				userSubRouter.Put("/password", a.UpdatePassword)
 
-				userSubRouter.Route("/security", func(securityRouter chi.Router) {
-					securityRouter.Post("/personal_api_keys", a.CreatePersonalAPIKey)
-					securityRouter.Put("/personal_api_keys/{keyID}/revoke", a.RevokePersonalAPIKey)
+				userSubRouter.Route("/security/personal_api_keys", func(securityRouter chi.Router) {
+					securityRouter.Post("/", a.CreatePersonalAPIKey)
+					securityRouter.Put("/{keyID}/revoke", a.RevokePersonalAPIKey)
+					securityRouter.With(a.M.Pagination).Get("/", a.GetAPIKeys)
 				})
 			})
 		})
