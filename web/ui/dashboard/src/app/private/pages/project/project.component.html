@@ -1,4 +1,4 @@
-<div class="flex pt-0 pb-0 w-full m-0">
+<div class="flex pt-0 pb-0 w-full max-w-[1440px] m-auto">
 	<aside class="w-fit pt-10 border-r border-r-grey-10 relative ml-56px">
 		<convoy-button type="icon" buttonType="button" className="px-0 py-0 border border-grey-10 bg-white-100 rounded-100px w-32px h-32px absolute top-8px -right-16px" [disable]="screenWidth < 1150" (clickItem)="shouldShowFullSideBar = !shouldShowFullSideBar">
 			<svg width="12" height="12" class="fill-primary-100 transition-all duration-200" [class]="shouldShowFullSideBar ? 'hidden' : 'block'">
@@ -42,7 +42,7 @@
 		</div>
 	</aside>
 	<div class="w-full">
-		<convoy-github-star></convoy-github-star>
+		<convoy-github-star class="w-full"></convoy-github-star>
 		<main class="w-full pl-24px pr-64px mt-24px relative transition-all duration-200">
 			<router-outlet></router-outlet>
 		</main>

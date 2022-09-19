@@ -245,4 +245,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	goToSubsriptionsPage() {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
 	}
+
+	isNewProjectRoute(): boolean {
+		if (this.router.url == '/projects/new') return true;
+		return false;
+	}
 }
