@@ -486,11 +486,11 @@ func (s *SecurityIntegrationTestSuite) Test_GetPersonalAPIKeys() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-1", "api", s.DefaultUser.UID)
-	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-2", "api", s.DefaultUser.UID)
-	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-3", "api", uuid.NewString())
+	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-1", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-2", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, _, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-3", string(datastore.PersonalKey), uuid.NewString())
 
-	url := fmt.Sprintf(" /ui/users/%s/security/personal_api_keys", s.DefaultUser.UID)
+	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys?keyType=personal_key", s.DefaultUser.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
