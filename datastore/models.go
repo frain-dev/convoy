@@ -168,6 +168,10 @@ var (
 			Path: convoy.DefaultOnPremDir,
 		},
 	}
+
+	DefaultRetentionPolicy = RetentionPolicyConfiguration{
+		Policy: "60d",
+	}
 )
 
 const (
