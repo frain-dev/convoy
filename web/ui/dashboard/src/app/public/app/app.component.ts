@@ -36,6 +36,7 @@ export class AppComponent implements OnInit {
 	subscriptionId = this.route.snapshot.params.id;
 	showCreateSubscription = false;
 	showSubscriptionError = false;
+    showCliError = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 

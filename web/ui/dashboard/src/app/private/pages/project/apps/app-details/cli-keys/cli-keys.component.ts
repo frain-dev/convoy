@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
@@ -25,6 +25,7 @@ import { CliKeysService } from './cli-keys.service';
 	styleUrls: ['./cli-keys.component.scss']
 })
 export class CliKeysComponent implements OnInit {
+	@Output() cliError = new EventEmitter<any>();
 	isFetchingApiKeys = false;
 	showApiKey = false;
 	showRevokeApiModal = false;
@@ -58,6 +59,7 @@ export class CliKeysComponent implements OnInit {
 	}
 
 	async getAppPortalApp() {
+		this.cliError.emit(false);
 		this.showError = false;
 		this.isloadingAppPortalAppDetails = true;
 
@@ -67,6 +69,7 @@ export class CliKeysComponent implements OnInit {
 			this.getApiKeys();
 			return;
 		} catch (error) {
+			this.cliError.emit(true);
 			this.showError = true;
 			this.isloadingAppPortalAppDetails = false;
 			return error;
@@ -74,6 +77,7 @@ export class CliKeysComponent implements OnInit {
 	}
 
 	async getApiKeys() {
+		this.cliError.emit(false);
 		this.showError = false;
 		this.isFetchingApiKeys = true;
 		try {
@@ -81,6 +85,7 @@ export class CliKeysComponent implements OnInit {
 			this.apiKeys = response.data.content;
 			this.isFetchingApiKeys = false;
 		} catch {
+			this.cliError.emit(true);
 			this.showError = true;
 			this.isFetchingApiKeys = false;
 			return;

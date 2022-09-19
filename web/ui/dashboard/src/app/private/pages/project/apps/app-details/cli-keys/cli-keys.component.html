@@ -1,4 +1,4 @@
-<convoy-card className="mb-20px min-h-[30vh] pt-30px rounded-tl-[0] rounded-tr-[0]">
+<convoy-card className="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
 	<!-- empty state for api keys  -->
 	<ng-container *ngIf="showError || (!isFetchingApiKeys && apiKeys?.length === 0)">
 		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No CLI keys yet" type="table" className="h-[30vh]" id="empty-state"></convoy-empty-state>
@@ -37,8 +37,8 @@
 <convoy-modal *ngIf="showApiKey">
 	<div class="flex flex-col items-center justify-center min-h-[80vh] px-30px" modalBody>
 		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
-		<h2 class="font-semibold mt-16px">Api Key Generated Successfully</h2>
-		<p class="text-14 text-grey-60 font-normal text-center mb-16px mt-8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
+		<h2 class="font-semibold mt-16px">Cli Key Generated Successfully</h2>
+		<p class="text-14 text-grey-60 font-normal text-center mb-16px mt-8px">Your Cli Key has been created. Please copy this key and save it somewhere safe.</p>
 		<p class="text-14 text-danger-100 mb-40px text-center">For security reasons, we cannot show it to you again</p>
 		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px mb-32px">
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ apiKey }}</span>

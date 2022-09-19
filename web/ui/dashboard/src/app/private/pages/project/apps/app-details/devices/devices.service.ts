@@ -13,7 +13,7 @@ export class DevicesService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${token ? '' : this.privateService.urlFactory('org_project')}/apps/${appId}/devices`,
+					url: token ? '/apps/devices' : `${this.privateService.urlFactory('org_project')}/apps/${appId}/devices`,
 					method: 'get',
 					token
 				});
@@ -25,7 +25,7 @@ export class DevicesService {
 		});
 	}
 
-    async getAppPortalApp(token: string): Promise<HTTP_RESPONSE> {
+	async getAppPortalApp(token: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({

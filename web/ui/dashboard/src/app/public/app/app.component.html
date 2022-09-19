@@ -20,7 +20,7 @@
 
 				<div class="ml-auto pr-14px">
 					<convoy-button size="sm" type="outline" (click)="showCreateSubscriptionModal = true" [disable]="showSubscriptionError" *ngIf="activeTab === 'subscriptions'">Create Subscription</convoy-button>
-					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true" [disable]="showSubscriptionError" *ngIf="activeTab === 'cli keys'">Generate Key</convoy-button>
+					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true" [disable]="showCliError" *ngIf="activeTab === 'cli keys'">Generate Key</convoy-button>
 				</div>
 			</ul>
 		</div>
@@ -85,11 +85,11 @@
 			</tbody>
 		</convoy-table>
 
-		<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No subscriptionto show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
+		<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
 	</convoy-card>
 
 	<ng-container *ngIf="activeTab === 'cli keys'">
-		<convoy-cli-keys></convoy-cli-keys>
+		<convoy-cli-keys (cliError)="showCliError = $event"></convoy-cli-keys>
 	</ng-container>
 
 	<ng-container *ngIf="activeTab === 'devices'">
