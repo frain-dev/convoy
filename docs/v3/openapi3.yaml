@@ -469,6 +469,8 @@ components:
       properties:
         bucket:
           type: string
+        endpoint:
+          type: string
         region:
           type: string
       type: object
@@ -701,6 +703,10 @@ components:
       properties:
         app_id:
           type: string
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
         data:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
