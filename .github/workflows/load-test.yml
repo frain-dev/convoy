@@ -11,6 +11,8 @@ on:
       name:
         description: "Manual workflow name"
         required: true
+  
+  pull_request:
 
 
 jobs:
