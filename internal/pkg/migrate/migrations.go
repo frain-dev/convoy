@@ -155,4 +155,67 @@ var Migrations = []*Migration{
 			return nil
 		},
 	},
+
+	{
+		ID: "20220919100029_add_default_group_configuration",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db, cm.GroupCollection)
+
+			var groups []*datastore.Group
+			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			if err != nil {
+				return err
+			}
+
+			for _, group := range groups {
+				config := group.Config
+
+				if config != nil {
+					continue
+				}
+
+				config = &datastore.GroupConfig{
+					Signature:       &datastore.DefaultSignatureConfig,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
+					RetentionPolicy: &datastore.DefaultRetentionPolicy,
+				}
+
+				update := bson.M{"config": config}
+				err = store.UpdateByID(context.Background(), group.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db, cm.GroupCollection)
+
+			var groups []*datastore.Group
+			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			if err != nil {
+				return err
+			}
+
+			for _, group := range groups {
+				config := group.Config
+
+				if config == nil {
+					continue
+				}
+
+				update := bson.M{"config": nil}
+				err = store.UpdateByID(context.Background(), group.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration")
+					return err
+				}
+			}
+
+			return nil
+		},
+	},
 }
