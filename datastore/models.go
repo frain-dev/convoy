@@ -92,6 +92,22 @@ const (
 	ShopifySourceProvider SourceProvider = "shopify"
 )
 
+func (s SourceProvider) IsValid() bool {
+	switch s {
+	case GithubSourceProvider, TwitterSourceProvider, ShopifySourceProvider:
+		return true
+	}
+	return false
+}
+
+func (s SourceType) IsValid() bool {
+	switch s {
+	case HTTPSource, RestApiSource, PubSubSource, DBChangeStream:
+		return true
+	}
+	return false
+}
+
 const (
 	NoopVerifier      VerifierType = "noop"
 	HMacVerifier      VerifierType = "hmac"
@@ -214,10 +230,12 @@ type Endpoint struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-var ErrOrgNotFound = errors.New("organisation not found")
-var ErrDeviceNotFound = errors.New("device not found")
-var ErrOrgInviteNotFound = errors.New("organisation invite not found")
-var ErrOrgMemberNotFound = errors.New("organisation member not found")
+var (
+	ErrOrgNotFound       = errors.New("organisation not found")
+	ErrDeviceNotFound    = errors.New("device not found")
+	ErrOrgInviteNotFound = errors.New("organisation invite not found")
+	ErrOrgMemberNotFound = errors.New("organisation member not found")
+)
 
 type Group struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
@@ -388,9 +406,11 @@ type Event struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-type SubscriptionType string
-type EventDeliveryStatus string
-type HttpHeader map[string]string
+type (
+	SubscriptionType    string
+	EventDeliveryStatus string
+	HttpHeader          map[string]string
+)
 
 func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 	for k, v := range h {
@@ -792,8 +812,10 @@ func (p *Password) Matches() (bool, error) {
 	return true, err
 }
 
-type EventMap map[string]*Event
-type SourceMap map[string]*Source
-type DeviceMap map[string]*Device
-type AppMap map[string]*Application
-type EndpointMap map[string]*Endpoint
+type (
+	EventMap    map[string]*Event
+	SourceMap   map[string]*Source
+	DeviceMap   map[string]*Device
+	AppMap      map[string]*Application
+	EndpointMap map[string]*Endpoint
+)
