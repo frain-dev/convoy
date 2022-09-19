@@ -28,6 +28,6 @@ jobs:
          file_name: ../../loadtest/convoy.js 
          flags: --out influxdb=${{ secrets.INFLUXDB_BASE_URL }}
         env: 
-           BASE_URL: ${{ secrets.BASE_URL }}
-           API_KEY: ${{ secrets.API_KEY }}
-           APP_ID: ${{ secrets.APP_ID }}
+           BASE_URL: ${{ secrets.CONVOY_BASE_URL }}
+           API_KEY: ${{ secrets.CONVOY_API_KEY }}
+           APP_ID: ${{ secrets.CONVOY_APP_ID }}
