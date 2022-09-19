@@ -65,19 +65,16 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
-type StrategyProvider string
-
-type GroupType string
-
-type SourceType string
-
-type SourceProvider string
-
-type VerifierType string
-
-type EncodingType string
-
-type StorageType string
+type (
+	StrategyProvider string
+	GroupType        string
+	SourceType       string
+	SourceProvider   string
+	VerifierType     string
+	EncodingType     string
+	StorageType      string
+	KeyType          string
+)
 
 const (
 	HTTPSource     SourceType = "http"
@@ -118,6 +115,7 @@ const (
 	ProjectKey   KeyType = "project"
 	AppPortalKey KeyType = "app_portal"
 	CLIKey       KeyType = "cli"
+	PersonalKey  KeyType = "personal_key"
 )
 
 func (k KeyType) IsValidAppKey() bool {
@@ -127,6 +125,14 @@ func (k KeyType) IsValidAppKey() bool {
 	default:
 		return false
 	}
+}
+
+func (k KeyType) IsValid() bool {
+	switch k {
+	case AppPortalKey, CLIKey, ProjectKey, PersonalKey:
+		return true
+	}
+	return false
 }
 
 const (
@@ -214,10 +220,12 @@ type Endpoint struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-var ErrOrgNotFound = errors.New("organisation not found")
-var ErrDeviceNotFound = errors.New("device not found")
-var ErrOrgInviteNotFound = errors.New("organisation invite not found")
-var ErrOrgMemberNotFound = errors.New("organisation member not found")
+var (
+	ErrOrgNotFound       = errors.New("organisation not found")
+	ErrDeviceNotFound    = errors.New("device not found")
+	ErrOrgInviteNotFound = errors.New("organisation invite not found")
+	ErrOrgMemberNotFound = errors.New("organisation member not found")
+)
 
 type Group struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
@@ -388,9 +396,11 @@ type Event struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-type SubscriptionType string
-type EventDeliveryStatus string
-type HttpHeader map[string]string
+type (
+	SubscriptionType    string
+	EventDeliveryStatus string
+	HttpHeader          map[string]string
+)
 
 func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 	for k, v := range h {
@@ -519,8 +529,6 @@ type CLIMetadata struct {
 	HostName  string `json:"host_name,omitempty" bson:"-"`
 }
 
-type KeyType string
-
 type APIKey struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
@@ -530,6 +538,7 @@ type APIKey struct {
 	Hash      string             `json:"hash,omitempty" bson:"hash"`
 	Salt      string             `json:"salt,omitempty" bson:"salt"`
 	Type      KeyType            `json:"key_type" bson:"key_type"`
+	UserID    string             `json:"user_id" bson:"user_id"`
 	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
@@ -792,8 +801,10 @@ func (p *Password) Matches() (bool, error) {
 	return true, err
 }
 
-type EventMap map[string]*Event
-type SourceMap map[string]*Source
-type DeviceMap map[string]*Device
-type AppMap map[string]*Application
-type EndpointMap map[string]*Endpoint
+type (
+	EventMap    map[string]*Event
+	SourceMap   map[string]*Source
+	DeviceMap   map[string]*Device
+	AppMap      map[string]*Application
+	EndpointMap map[string]*Endpoint
+)

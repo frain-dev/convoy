@@ -17,10 +17,11 @@ import (
 
 type NativeRealm struct {
 	apiKeyRepo datastore.APIKeyRepository
+	userRepo   datastore.UserRepository
 }
 
-func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository) *NativeRealm {
-	return &NativeRealm{apiKeyRepo: apiKeyRepo}
+func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository) *NativeRealm {
+	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo}
 }
 
 func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
@@ -67,6 +68,15 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		AuthenticatedByRealm: n.GetName(),
 		Credential:           *cred,
 		Role:                 apiKey.Role,
+	}
+
+	if apiKey.Type == datastore.PersonalKey {
+		user, err := n.userRepo.FindUserByID(ctx, apiKey.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch user: %v", err)
+		}
+
+		authUser.Metadata = user
 	}
 
 	return authUser, nil

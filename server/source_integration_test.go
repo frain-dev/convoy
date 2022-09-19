@@ -50,7 +50,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")

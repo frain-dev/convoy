@@ -45,6 +45,8 @@ components:
             NextSendTime denotes the next time a Event will be published in
             case it failed the first time
           type: integer
+        user_id:
+          type: string
       type: object
     datastore.AlertConfiguration:
       properties:
@@ -469,6 +471,8 @@ components:
       properties:
         bucket:
           type: string
+        endpoint:
+          type: string
         region:
           type: string
       type: object
@@ -638,6 +642,8 @@ components:
           $ref: '#/components/schemas/models.Role'
         uid:
           type: string
+        user_id:
+          type: string
       type: object
     models.Application:
       properties:
@@ -701,6 +707,10 @@ components:
       properties:
         app_id:
           type: string
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
         data:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
@@ -777,6 +787,13 @@ components:
           type: string
         role:
           $ref: '#/components/schemas/auth.Role'
+      type: object
+    models.PersonalAPIKey:
+      properties:
+        expires_at:
+          type: string
+        name:
+          type: string
       type: object
     models.PortalAPIKeyResponse:
       properties:
@@ -5354,6 +5371,11 @@ paths:
         required: true
         schema:
           type: string
+      - description: api key type
+        in: query
+        name: keyType
+        schema:
+          type: string
       - description: results per page
         in: query
         name: perPage
@@ -5959,6 +5981,141 @@ paths:
       summary: Updates a user
       tags:
       - User
+  /ui/users/{userID}/security/personal_api_keys:
+    post:
+      description: This endpoint creates an api key that will be used by the native
+        auth realm
+      parameters:
+      - description: User id
+        in: path
+        name: userID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.PersonalAPIKey'
+        description: API Key
+        required: true
+        x-originalParamName: apiKey
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.APIKeyResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key
+      tags:
+      - APIKey
+  /ui/users/{userID}/security/personal_api_keys/{keyID}/revoke:
+    put:
+      description: This endpoint revokes a personal api key
+      parameters:
+      - description: User id
+        in: path
+        name: userID
+        required: true
+        schema:
+          type: string
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke a Personal API Key
+      tags:
+      - APIKey
   /ui/users/forgot-password:
     post:
       description: This endpoint generates a password reset token

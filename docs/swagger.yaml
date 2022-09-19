@@ -45,6 +45,8 @@ definitions:
           NextSendTime denotes the next time a Event will be published in
           case it failed the first time
         type: integer
+      user_id:
+        type: string
     type: object
   datastore.AlertConfiguration:
     properties:
@@ -469,6 +471,8 @@ definitions:
     properties:
       bucket:
         type: string
+      endpoint:
+        type: string
       region:
         type: string
     type: object
@@ -639,6 +643,8 @@ definitions:
         $ref: '#/definitions/models.Role'
       uid:
         type: string
+      user_id:
+        type: string
     type: object
   models.Application:
     properties:
@@ -702,6 +708,10 @@ definitions:
     properties:
       app_id:
         type: string
+      custom_headers:
+        additionalProperties:
+          type: string
+        type: object
       data:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
@@ -778,6 +788,13 @@ definitions:
         type: string
       role:
         $ref: '#/definitions/auth.Role'
+    type: object
+  models.PersonalAPIKey:
+    properties:
+      expires_at:
+        type: string
+      name:
+        type: string
     type: object
   models.PortalAPIKeyResponse:
     properties:
@@ -4932,6 +4949,10 @@ paths:
         name: orgID
         required: true
         type: string
+      - description: api key type
+        in: query
+        name: keyType
+        type: string
       - description: results per page
         in: query
         name: perPage
@@ -5476,6 +5497,128 @@ paths:
       summary: Updates a user
       tags:
       - User
+  /ui/users/{userID}/security/personal_api_keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by the native
+        auth realm
+      parameters:
+      - description: User id
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: API Key
+        in: body
+        name: apiKey
+        required: true
+        schema:
+          $ref: '#/definitions/models.PersonalAPIKey'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.APIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key
+      tags:
+      - APIKey
+  /ui/users/{userID}/security/personal_api_keys/{keyID}/revoke:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint revokes a personal api key
+      parameters:
+      - description: User id
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke a Personal API Key
+      tags:
+      - APIKey
   /ui/users/forgot-password:
     post:
       consumes:
