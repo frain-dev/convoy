@@ -2498,6 +2498,296 @@ paths:
       summary: Replay app event
       tags:
       - Events
+  /api/v1/projects:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        type: string
+      - description: organisation id
+        in: query
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/datastore.Group'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get groups
+      tags:
+      - Group
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a group
+      parameters:
+      - description: Organisation id
+        in: query
+        name: orgID
+        required: true
+        type: string
+      - description: Group Details
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/models.Group'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a group
+      tags:
+      - Group
+  /api/v1/projects/{projectID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group
+      tags:
+      - Group
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches a group by its id
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a group
+      tags:
+      - Group
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates a group
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Group Details
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/models.Group'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a group
+      tags:
+      - Group
   /api/v1/security/applications/{appID}/keys:
     post:
       consumes:
@@ -3703,66 +3993,6 @@ paths:
       summary: Update configuration
       tags:
       - Configuration
-  /ui/organiastions/{orgID}/groups/{groupID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes a group using its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a group
-      tags:
-      - Group
   /ui/organisations:
     get:
       consumes:
@@ -4114,7 +4344,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get groups
+      summary: Get groups - UI
       tags:
       - Group
     post:
@@ -4174,10 +4404,69 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create a group
+      summary: Create a group - UI
       tags:
       - Group
   /ui/organisations/{orgID}/groups/{groupID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group - UI
+      tags:
+      - Group
     get:
       consumes:
       - application/json
@@ -4234,7 +4523,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get a group
+      summary: Get a group - UI
       tags:
       - Group
     put:
@@ -4299,9 +4588,70 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Update a group
+      summary: Update a group - UI
       tags:
       - Group
+  /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by app portal
+        or the cli
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        type: string
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal or the cli (UI)
+      tags:
+      - APIKey
   /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke:
     put:
       consumes:
@@ -5498,6 +5848,83 @@ paths:
       tags:
       - User
   /ui/users/{userID}/security/personal_api_keys:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches multiple api keys
+      parameters:
+      - description: User id
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: api key type
+        in: query
+        name: keyType
+        type: string
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/datastore.APIKey'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple api keys
+      tags:
+      - APIKey
     post:
       consumes:
       - application/json

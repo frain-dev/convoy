@@ -188,6 +188,30 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			r.Use(a.M.JsonResponse)
 			r.Use(a.M.RequireAuth())
 
+			r.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Use(a.M.RequireAuthUserMetadata())
+
+				projectRouter.With(
+					a.M.RequireOrganisation(),
+					a.M.RequireOrganisationMembership(),
+					a.M.RequireOrganisationMemberRole(auth.RoleSuperUser),
+				).Post("/", a.CreateGroup)
+
+				projectRouter.With(
+					a.M.RequireOrganisation(),
+					a.M.RequireOrganisationMembership(),
+				).Get("/", a.GetGroups)
+
+				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
+					projectSubRouter.Use(a.M.RequireGroup())
+					projectSubRouter.Use(a.M.RequireUserGroupAccess())
+
+					projectSubRouter.Get("/", a.GetGroup)
+					projectSubRouter.Put("/", a.UpdateGroup)
+					projectSubRouter.Delete("/", a.DeleteGroup)
+				})
+			})
+
 			r.Route("/applications", func(appRouter chi.Router) {
 				appRouter.Use(a.M.RequireGroup())
 				appRouter.Use(a.M.RateLimitByGroupID())

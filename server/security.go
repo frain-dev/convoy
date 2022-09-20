@@ -128,6 +128,7 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys [post]
+func _() {}
 
 // CreateAppAPIKey
 // @Summary Create an api key for app portal or the cli (API)
@@ -416,6 +417,7 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/users/{userID}/security/personal_api_keys [get]
+func _() {}
 
 // GetAPIKeys
 // @Summary Fetch multiple api keys
