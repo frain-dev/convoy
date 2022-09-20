@@ -38,7 +38,7 @@
 				<convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
 			</div>
 			<div *ngIf="!isloadingDashboardData">
-				<div class="text-16 font-medium">{{ dashboardData.events_sent }}</div>
+				<div class="text-16 font-medium">{{ dashboardData.events_sent | number }}</div>
 				<div class="text-grey-40 text-14">
 					<span class="font-normal">Event</span>
 					<span class="font-normal" *ngIf="dashboardData.events_sent > 1">s</span>
@@ -54,7 +54,7 @@
 				<convoy-skeleton-loader className="w-100px h-16px"></convoy-skeleton-loader>
 			</div>
 			<div *ngIf="!isloadingDashboardData">
-				<div class="text-16 font-medium">{{ dashboardData.apps }}</div>
+				<div class="text-16 font-medium">{{ dashboardData.apps | number }}</div>
 				<div class="text-grey-40 text-14">
 					<span class="font-normal">App</span>
 					<span class="font-normal" *ngIf="dashboardData.apps > 1">s</span>
@@ -75,11 +75,7 @@
 				<convoy-button
 					type="text"
 					color="grey"
-					[className]="
-						activeTab === tab
-							? 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] border-primary-100 transition-all ease-in-out'
-							: 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
-					"
+					[className]="activeTab === tab ? 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] border-primary-100 transition-all ease-in-out' : 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'"
 				>
 					<span class="text-14 font-semibold capitalize transition-all duration-300" [class]="activeTab === tab ? 'text-primary-100' : 'text-grey-40'">{{ tab }}</span>
 				</convoy-button>
