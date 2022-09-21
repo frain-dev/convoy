@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { APP } from 'src/app/models/app.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { CreateAppService } from './create-app.service';
@@ -18,6 +18,7 @@ export class CreateAppComponent implements OnInit {
 	appUid = this.route.snapshot.params.id;
 	isSavingApp = false;
 	isLoadingAppDetails = false;
+	confirmModal = false;
 	appsDetailsItem!: APP;
 	addNewAppForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -27,7 +28,7 @@ export class CreateAppComponent implements OnInit {
 		is_disabled: [false],
 		endpoints: this.formBuilder.array([])
 	});
-	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
 		if (!this.editAppMode) this.endpoints.push(this.newEndpoint());
@@ -67,9 +68,7 @@ export class CreateAppComponent implements OnInit {
 		let requests: any[] = [];
 
 		try {
-			const response = this.editAppMode
-				? await this.createAppService.updateApp({ appId: this.appsDetailsItem?.uid, body: this.addNewAppForm.value })
-				: await this.createAppService.createApp({ body: this.addNewAppForm.value });
+			const response = this.editAppMode ? await this.createAppService.updateApp({ appId: this.appsDetailsItem?.uid, body: this.addNewAppForm.value }) : await this.createAppService.createApp({ body: this.addNewAppForm.value });
 
 			if (!this.editAppMode) {
 				this.appUid = response.data.uid;
@@ -121,7 +120,8 @@ export class CreateAppComponent implements OnInit {
 		}
 	}
 
-	closeAppInstance() {
-		this.discardApp.emit();
+	isNewProjectRoute(): boolean {
+		if (this.router.url == '/projects/new') return true;
+		return false;
 	}
 }
