@@ -501,12 +501,13 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 
 	var groups []*datastore.Group
 	parseResponse(s.T(), w.Result(), &groups)
-	require.Equal(s.T(), 3, len(groups))
+	require.Equal(s.T(), 4, len(groups))
 
-	v := []string{groups[0].UID, groups[1].UID, groups[2].UID}
+	v := []string{groups[0].UID, groups[1].UID, groups[2].UID, groups[3].UID}
 	require.Contains(s.T(), v, group1.UID)
 	require.Contains(s.T(), v, group2.UID)
 	require.Contains(s.T(), v, group3.UID)
+	require.Contains(s.T(), v, s.DefaultGroup.UID)
 }
 
 func (s *GroupIntegrationTestSuite) TestGetGroupsWithPersonalAPIKey() {
