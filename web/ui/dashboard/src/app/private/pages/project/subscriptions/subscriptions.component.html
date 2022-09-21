@@ -68,7 +68,7 @@
 				</div>
 			</div>
 
-			<div class="flex items-end justify-between pb-8px pl-16px mt-8px" [ngClass]="{ 'border-b border-b-grey-10': subscription.type === 'incoming' }">
+			<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.app_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
 				<div class="w-full">
 					<div class="text-grey-40 text-10 mb-3">App</div>
 					<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
@@ -78,7 +78,7 @@
 						{{ subscription?.endpoint_metadata?.target_url }}
 					</div>
 				</div>
-				<div class="w-full">
+				<div class="w-full" *ngIf="subscription.endpoint_metadata">
 					<div class="text-12 flex items-center whitespace-nowrap">
 						Endpoint Secret
 						<convoy-copy-button [text]="subscription.endpoint_metadata.secret" size="md" (copyText)="copyText()"></convoy-copy-button>
@@ -94,7 +94,7 @@
 				</div>
 			</div>
 
-			<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="subscription.type === 'incoming'">
+			<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="privateService.activeProjectDetails?.type === 'incoming' && subscription.source_metadata">
 				<div class="w-full">
 					<div class="text-grey-40 text-10 mb-10px">Source</div>
 					<div class="text-12">{{ subscription.source_metadata?.name }}</div>
@@ -135,11 +135,11 @@
 					<span [class]="'ml-4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
 				</div>
 			</convoy-list-item>
-			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+			<convoy-list-item className="text-14 font-normal py-2 px-24px" *ngIf="activeSubscription?.endpoint_metadata">
 				<div class="w-[50%] text-grey-40">Endpoint</div>
 				<div class="w-[50%] text-right text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
 			</convoy-list-item>
-			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+			<convoy-list-item className="text-14 font-normal py-2 px-24px" *ngIf="activeSubscription?.app_metadata">
 				<div class="w-[50%] text-grey-40">App Name</div>
 				<a [routerLink]="'/projects/' + projectId + '/apps/' + activeSubscription?.app_metadata?.uid" class="w-[50%] font-medium text-primary-100 text-right underline">
 					{{ activeSubscription?.app_metadata?.name }}
