@@ -55,6 +55,7 @@ export class SourcesComponent implements OnInit {
 			this.isDeletingSource = false;
 			this.getSources();
 			this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
+			this.showDeleteSourceModal = false;
 			this.activeSource = undefined;
 		} catch (error) {
 			this.isDeletingSource = false;
