@@ -22,11 +22,9 @@ func Test_CreateSource(t *testing.T) {
 	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
-	sourceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SourceCollection)
+	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	require.NoError(t, sourceRepo.CreateSource(sourceCtx, source))
-
-	newSource, err := sourceRepo.FindSourceByID(sourceCtx, source.GroupID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, source.UID, newSource.UID)
@@ -43,16 +41,14 @@ func Test_FindSourceByID(t *testing.T) {
 	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
-	sourceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SourceCollection)
-
-	_, err := sourceRepo.FindSourceByID(sourceCtx, source.GroupID, source.UID)
+	_, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
 
-	require.NoError(t, sourceRepo.CreateSource(sourceCtx, source))
+	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByID(sourceCtx, source.GroupID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, source.UID, newSource.UID)
@@ -66,16 +62,14 @@ func Test_FindSourceByMaskID(t *testing.T) {
 	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
-	sourceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SourceCollection)
-
-	_, err := sourceRepo.FindSourceByMaskID(sourceCtx, source.MaskID)
+	_, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
 
-	require.NoError(t, sourceRepo.CreateSource(sourceCtx, source))
+	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByMaskID(sourceCtx, source.MaskID)
+	newSource, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
 	require.NoError(t, err)
 
 	require.Equal(t, source.MaskID, newSource.MaskID)
@@ -89,16 +83,14 @@ func Test_UpdateSource(t *testing.T) {
 	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
-	sourceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SourceCollection)
-
-	require.NoError(t, sourceRepo.CreateSource(sourceCtx, source))
+	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
 	name := "Convoy-Dev"
 	source.Name = name
 
-	require.NoError(t, sourceRepo.UpdateSource(sourceCtx, source.GroupID, source))
+	require.NoError(t, sourceRepo.UpdateSource(context.Background(), source.GroupID, source))
 
-	newSource, err := sourceRepo.FindSourceByID(sourceCtx, source.GroupID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, name, newSource.Name)
@@ -112,16 +104,14 @@ func Test_DeleteSource(t *testing.T) {
 	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
-	sourceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SourceCollection)
+	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	require.NoError(t, sourceRepo.CreateSource(sourceCtx, source))
-
-	_, err := sourceRepo.FindSourceByID(sourceCtx, source.GroupID, source.UID)
+	_, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
 	require.NoError(t, err)
 
-	require.NoError(t, sourceRepo.DeleteSourceByID(sourceCtx, source.GroupID, source.UID))
+	require.NoError(t, sourceRepo.DeleteSourceByID(context.Background(), source.GroupID, source.UID))
 
-	_, err = sourceRepo.FindSourceByID(sourceCtx, source.GroupID, source.UID)
+	_, err = sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
@@ -196,8 +186,6 @@ func Test_LoadSourcesPaged(t *testing.T) {
 			sourceRepo := NewSourceRepo(store)
 			groupId := uuid.NewString()
 
-			sourceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SourceCollection)
-
 			for i := 0; i < tc.count; i++ {
 				source := &datastore.Source{
 					UID:     uuid.NewString(),
@@ -215,10 +203,10 @@ func Test_LoadSourcesPaged(t *testing.T) {
 					},
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				}
-				require.NoError(t, sourceRepo.CreateSource(sourceCtx, source))
+				require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 			}
 
-			_, pageable, err := sourceRepo.LoadSourcesPaged(sourceCtx, groupId, &datastore.SourceFilter{}, tc.pageData)
+			_, pageable, err := sourceRepo.LoadSourcesPaged(context.Background(), groupId, &datastore.SourceFilter{}, tc.pageData)
 
 			require.NoError(t, err)
 

@@ -31,12 +31,10 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationCollection)
-	err := NewOrgRepo(store).CreateOrganisation(orgCtx, org)
+	err := NewOrgRepo(store).CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
 	uids := []string{}
-	orgInviteCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
 	for i := 1; i < 3; i++ {
 		iv := &datastore.OrganisationInvite{
 			UID:            uuid.NewString(),
@@ -50,7 +48,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
 		uids = append(uids, iv.UID)
-		err := inviteRepo.CreateOrganisationInvite(orgInviteCtx, iv)
+		err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
 		require.NoError(t, err)
 	}
 
@@ -67,11 +65,11 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
 
-		err := inviteRepo.CreateOrganisationInvite(orgInviteCtx, iv)
+		err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
 		require.NoError(t, err)
 	}
 
-	organisationInvites, _, err := inviteRepo.LoadOrganisationsInvitesPaged(orgInviteCtx, org.UID, datastore.InviteStatusPending, datastore.Pageable{
+	organisationInvites, _, err := inviteRepo.LoadOrganisationsInvitesPaged(context.Background(), org.UID, datastore.InviteStatusPending, datastore.Pageable{
 		Page:    1,
 		PerPage: 100,
 		Sort:    -1,
@@ -101,11 +99,10 @@ func TestCreateOrganisationInvite(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgInviteCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
-	err := inviteRepo.CreateOrganisationInvite(orgInviteCtx, iv)
+	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
 	require.NoError(t, err)
 
-	invite, err := inviteRepo.FetchOrganisationInviteByID(orgInviteCtx, iv.UID)
+	invite, err := inviteRepo.FetchOrganisationInviteByID(context.Background(), iv.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, iv.UID, invite.UID)
@@ -132,9 +129,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgInviteCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
-
-	err := inviteRepo.CreateOrganisationInvite(orgInviteCtx, iv)
+	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
 	require.NoError(t, err)
 
 	role := auth.Role{
@@ -149,10 +144,10 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	iv.Status = status
 	iv.UpdatedAt = updatedAt
 
-	err = inviteRepo.UpdateOrganisationInvite(orgInviteCtx, iv)
+	err = inviteRepo.UpdateOrganisationInvite(context.Background(), iv)
 	require.NoError(t, err)
 
-	invite, err := inviteRepo.FetchOrganisationInviteByID(orgInviteCtx, iv.UID)
+	invite, err := inviteRepo.FetchOrganisationInviteByID(context.Background(), iv.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, invite.UID, iv.UID)
@@ -181,15 +176,13 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgInviteCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
-
-	err := inviteRepo.CreateOrganisationInvite(orgInviteCtx, org)
+	err := inviteRepo.CreateOrganisationInvite(context.Background(), org)
 	require.NoError(t, err)
 
-	err = inviteRepo.DeleteOrganisationInvite(orgInviteCtx, org.UID)
+	err = inviteRepo.DeleteOrganisationInvite(context.Background(), org.UID)
 	require.NoError(t, err)
 
-	_, err = inviteRepo.FetchOrganisationInviteByID(orgInviteCtx, org.UID)
+	_, err = inviteRepo.FetchOrganisationInviteByID(context.Background(), org.UID)
 	require.Equal(t, datastore.ErrOrgInviteNotFound, err)
 }
 
@@ -213,12 +206,10 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgInviteCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
-
-	err := inviteRepo.CreateOrganisationInvite(orgInviteCtx, iv)
+	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
 	require.NoError(t, err)
 
-	invite, err := inviteRepo.FetchOrganisationInviteByID(orgInviteCtx, iv.UID)
+	invite, err := inviteRepo.FetchOrganisationInviteByID(context.Background(), iv.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, iv.UID, invite.UID)
@@ -246,12 +237,10 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgInviteCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
-
-	err := inviteRepo.CreateOrganisationInvite(orgInviteCtx, iv)
+	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
 	require.NoError(t, err)
 
-	invite, err := inviteRepo.FetchOrganisationInviteByToken(orgInviteCtx, iv.Token)
+	invite, err := inviteRepo.FetchOrganisationInviteByToken(context.Background(), iv.Token)
 	require.NoError(t, err)
 
 	require.Equal(t, iv.UID, invite.UID)

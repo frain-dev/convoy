@@ -26,11 +26,10 @@ func Test_FetchGroupByID(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
-	require.NoError(t, groupRepo.CreateGroup(groupCtx, newOrg))
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	// Fetch org again
-	org, err := groupRepo.FetchGroupByID(groupCtx, newOrg.UID)
+	org, err := groupRepo.FetchGroupByID(context.Background(), newOrg.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, org.UID, newOrg.UID)
@@ -121,8 +120,6 @@ func Test_CreateGroup(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			groupRepo := NewGroupRepo(store)
 
-			groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
-
 			for i, group := range tc.groups {
 				newGroup := &datastore.Group{
 					Name:           group.Name,
@@ -131,17 +128,17 @@ func Test_CreateGroup(t *testing.T) {
 				}
 
 				if i == 0 {
-					require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
+					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 				}
 
 				if i > 0 && tc.isDuplicate {
-					err := groupRepo.CreateGroup(groupCtx, newGroup)
+					err := groupRepo.CreateGroup(context.Background(), newGroup)
 					require.Error(t, err)
 					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
 				}
 
 				if i > 0 && !tc.isDuplicate {
-					require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
+					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 				}
 			}
 
@@ -156,8 +153,7 @@ func Test_LoadGroups(t *testing.T) {
 
 	orgRepo := NewGroupRepo(store)
 
-	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
-	orgs, err := orgRepo.LoadGroups(groupCtx, &datastore.GroupFilter{})
+	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
 
 	require.True(t, len(orgs) == 0)
@@ -181,11 +177,10 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		UID:  uuid.NewString(),
 	}
 
-	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
-	err := groupRepo.CreateGroup(groupCtx, group1)
+	err := groupRepo.CreateGroup(context.Background(), group1)
 	require.NoError(t, err)
 
-	err = groupRepo.CreateGroup(groupCtx, group2)
+	err = groupRepo.CreateGroup(context.Background(), group2)
 	require.NoError(t, err)
 
 	app1 := &datastore.Application{
@@ -217,7 +212,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	groups := []*datastore.Group{group1, group2}
-	err = groupRepo.FillGroupsStatistics(groupCtx, groups)
+	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
 	require.NoError(t, err)
 
 	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{

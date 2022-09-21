@@ -98,6 +98,8 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, appID, groupI
 }
 
 func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*datastore.Device, error) {
+	ctx = d.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid":             uid,
 		"group_id":        groupID,

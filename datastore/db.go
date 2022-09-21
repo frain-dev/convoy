@@ -3,7 +3,6 @@ package datastore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"time"
 
@@ -349,9 +348,6 @@ func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M, bul
 		_, err = collection.UpdateMany(ctx, filter, payload)
 		return err
 	}
-
-	fmt.Println(filter)
-	fmt.Println(payload)
 
 	var msgOperations []mongo.WriteModel
 	updateMessagesOperation := mongo.NewUpdateManyModel()

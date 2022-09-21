@@ -21,11 +21,9 @@ func Test_CreateConfiguration(t *testing.T) {
 	configRepo := NewConfigRepo(store)
 	config := generateConfig()
 
-	configCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ConfigCollection)
+	require.NoError(t, configRepo.CreateConfiguration(context.Background(), config))
 
-	require.NoError(t, configRepo.CreateConfiguration(configCtx, config))
-
-	newConfig, err := configRepo.LoadConfiguration(configCtx)
+	newConfig, err := configRepo.LoadConfiguration(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, config.UID, newConfig.UID)
@@ -40,15 +38,14 @@ func Test_LoadConfiguration(t *testing.T) {
 	configRepo := NewConfigRepo(store)
 	config := generateConfig()
 
-	configCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ConfigCollection)
-	_, err := configRepo.LoadConfiguration(configCtx)
+	_, err := configRepo.LoadConfiguration(context.Background())
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrConfigNotFound))
 
-	require.NoError(t, configRepo.CreateConfiguration(configCtx, config))
+	require.NoError(t, configRepo.CreateConfiguration(context.Background(), config))
 
-	newConfig, err := configRepo.LoadConfiguration(configCtx)
+	newConfig, err := configRepo.LoadConfiguration(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, config.UID, newConfig.UID)
@@ -62,13 +59,12 @@ func Test_UpdateConfiguration(t *testing.T) {
 	configRepo := NewConfigRepo(store)
 	config := generateConfig()
 
-	configCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ConfigCollection)
-	require.NoError(t, configRepo.CreateConfiguration(configCtx, config))
+	require.NoError(t, configRepo.CreateConfiguration(context.Background(), config))
 
 	config.IsAnalyticsEnabled = false
-	require.NoError(t, configRepo.UpdateConfiguration(configCtx, config))
+	require.NoError(t, configRepo.UpdateConfiguration(context.Background(), config))
 
-	newConfig, err := configRepo.LoadConfiguration(configCtx)
+	newConfig, err := configRepo.LoadConfiguration(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, config.UID, newConfig.UID)

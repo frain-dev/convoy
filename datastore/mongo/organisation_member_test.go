@@ -27,8 +27,6 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 
 	userMap := map[string]*datastore.UserMetadata{}
 
-	orgMemberCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationMembersCollection)
-
 	for i := 1; i < 6; i++ {
 		user := &datastore.User{
 			UID:            uuid.NewString(),
@@ -61,11 +59,11 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 			Email:     user.Email,
 		}
 
-		err := organisationMemberRepo.CreateOrganisationMember(orgMemberCtx, member)
+		err := organisationMemberRepo.CreateOrganisationMember(context.Background(), member)
 		require.NoError(t, err)
 	}
 
-	members, _, err := organisationMemberRepo.LoadOrganisationMembersPaged(orgMemberCtx, orgID, datastore.Pageable{
+	members, _, err := organisationMemberRepo.LoadOrganisationMembersPaged(context.Background(), orgID, datastore.Pageable{
 		Page:    2,
 		PerPage: 2,
 		Sort:    -1,
@@ -86,8 +84,6 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 
 	store := getStore(db)
 	organisationMemberRepo := NewOrgMemberRepo(store)
-
-	orgMemberCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationMembersCollection)
 
 	userID := uuid.NewString()
 	for i := 0; i < 7; i++ {
@@ -110,11 +106,11 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
 
-		err = organisationMemberRepo.CreateOrganisationMember(orgMemberCtx, member)
+		err = organisationMemberRepo.CreateOrganisationMember(context.Background(), member)
 		require.NoError(t, err)
 	}
 
-	organisations, _, err := organisationMemberRepo.LoadUserOrganisationsPaged(orgMemberCtx, userID, datastore.Pageable{
+	organisations, _, err := organisationMemberRepo.LoadUserOrganisationsPaged(context.Background(), userID, datastore.Pageable{
 		Page:    1,
 		PerPage: 10,
 		Sort:    -1,
@@ -144,7 +140,6 @@ func TestCreateOrganisationMember(t *testing.T) {
 	require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
 
 	organisationMemberRepo := NewOrgMemberRepo(store)
-	orgMemberCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationMembersCollection)
 
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
@@ -156,10 +151,10 @@ func TestCreateOrganisationMember(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := organisationMemberRepo.CreateOrganisationMember(orgMemberCtx, m)
+	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByID(orgMemberCtx, m.UID, m.OrganisationID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)
@@ -202,8 +197,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgMemberCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationMembersCollection)
-	err := organisationMemberRepo.CreateOrganisationMember(orgMemberCtx, m)
+	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
 	role := auth.Role{
@@ -213,10 +207,10 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	}
 	m.Role = role
 
-	err = organisationMemberRepo.UpdateOrganisationMember(orgMemberCtx, m)
+	err = organisationMemberRepo.UpdateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByID(orgMemberCtx, m.UID, m.OrganisationID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)
@@ -246,15 +240,13 @@ func TestDeleteOrganisationMember(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgMemberCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationMembersCollection)
-
-	err := organisationMemberRepo.CreateOrganisationMember(orgMemberCtx, m)
+	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	err = organisationMemberRepo.DeleteOrganisationMember(orgMemberCtx, m.UID, m.OrganisationID)
+	err = organisationMemberRepo.DeleteOrganisationMember(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
-	_, err = organisationMemberRepo.FetchOrganisationMemberByID(orgMemberCtx, m.UID, m.OrganisationID)
+	_, err = organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.Equal(t, datastore.ErrOrgMemberNotFound, err)
 }
 
@@ -278,7 +270,6 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
 
 	organisationMemberRepo := NewOrgMemberRepo(store)
-	orgMemberCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationMembersCollection)
 
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
@@ -290,10 +281,10 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := organisationMemberRepo.CreateOrganisationMember(orgMemberCtx, m)
+	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByID(orgMemberCtx, m.UID, m.OrganisationID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByID(context.Background(), m.UID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)
@@ -337,11 +328,10 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	orgMemberCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationMembersCollection)
-	err := organisationMemberRepo.CreateOrganisationMember(orgMemberCtx, m)
+	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
-	member, err := organisationMemberRepo.FetchOrganisationMemberByUserID(orgMemberCtx, m.UserID, m.OrganisationID)
+	member, err := organisationMemberRepo.FetchOrganisationMemberByUserID(context.Background(), m.UserID, m.OrganisationID)
 	require.NoError(t, err)
 
 	require.Equal(t, m.UID, member.UID)

@@ -21,8 +21,6 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 	store := getStore(db)
 	orgRepo := NewOrgRepo(store)
 
-	orgCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationCollection)
-
 	for i := 1; i < 6; i++ {
 		org := &datastore.Organisation{
 			UID:            uuid.NewString(),
@@ -32,11 +30,11 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
 
-		err := orgRepo.CreateOrganisation(orgCtx, org)
+		err := orgRepo.CreateOrganisation(context.Background(), org)
 		require.NoError(t, err)
 	}
 
-	organisations, _, err := orgRepo.LoadOrganisationsPaged(orgCtx, datastore.Pageable{
+	organisations, _, err := orgRepo.LoadOrganisationsPaged(context.Background(), datastore.Pageable{
 		Page:    2,
 		PerPage: 2,
 		Sort:    -1,
@@ -52,7 +50,6 @@ func TestCreateOrganisation(t *testing.T) {
 
 	store := getStore(db)
 	orgRepo := NewOrgRepo(store)
-	orgCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationCollection)
 
 	org := &datastore.Organisation{
 		UID:       uuid.NewString(),
@@ -61,7 +58,7 @@ func TestCreateOrganisation(t *testing.T) {
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := orgRepo.CreateOrganisation(orgCtx, org)
+	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 }
 
@@ -71,7 +68,6 @@ func TestUpdateOrganisation(t *testing.T) {
 
 	store := getStore(db)
 	orgRepo := NewOrgRepo(store)
-	orgCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationCollection)
 
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
@@ -81,16 +77,16 @@ func TestUpdateOrganisation(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := orgRepo.CreateOrganisation(orgCtx, org)
+	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
 	name := "organisation update"
 	org.Name = name
 
-	err = orgRepo.UpdateOrganisation(orgCtx, org)
+	err = orgRepo.UpdateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
-	org, err = orgRepo.FetchOrganisationByID(orgCtx, org.UID)
+	org, err = orgRepo.FetchOrganisationByID(context.Background(), org.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, name, org.Name)
@@ -102,7 +98,6 @@ func TestFetchOrganisationByID(t *testing.T) {
 
 	store := getStore(db)
 	orgRepo := NewOrgRepo(store)
-	orgCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationCollection)
 
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
@@ -112,10 +107,10 @@ func TestFetchOrganisationByID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := orgRepo.CreateOrganisation(orgCtx, org)
+	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
-	organisation, err := orgRepo.FetchOrganisationByID(orgCtx, org.UID)
+	organisation, err := orgRepo.FetchOrganisationByID(context.Background(), org.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, org.UID, organisation.UID)
@@ -127,7 +122,6 @@ func TestDeleteOrganisation(t *testing.T) {
 
 	store := getStore(db)
 	orgRepo := NewOrgRepo(store)
-	orgCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.OrganisationCollection)
 
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
@@ -137,12 +131,12 @@ func TestDeleteOrganisation(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := orgRepo.CreateOrganisation(orgCtx, org)
+	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
-	err = orgRepo.DeleteOrganisation(orgCtx, org.UID)
+	err = orgRepo.DeleteOrganisation(context.Background(), org.UID)
 	require.NoError(t, err)
 
-	_, err = orgRepo.FetchOrganisationByID(orgCtx, org.UID)
+	_, err = orgRepo.FetchOrganisationByID(context.Background(), org.UID)
 	require.Equal(t, datastore.ErrOrgNotFound, err)
 }

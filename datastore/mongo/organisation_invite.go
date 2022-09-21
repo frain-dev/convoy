@@ -42,16 +42,15 @@ func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgI
 		filter["status"] = inviteStatus
 	}
 
-	organisations := make([]datastore.OrganisationInvite, 0)
 	var invitations []datastore.OrganisationInvite
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &invitations)
 
 	if err != nil {
-		return organisations, datastore.PaginationData{}, err
+		return invitations, datastore.PaginationData{}, err
 	}
 
-	return organisations, pagination, nil
+	return invitations, pagination, nil
 }
 
 func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {

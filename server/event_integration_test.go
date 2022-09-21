@@ -379,19 +379,21 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	}
 }
 
-func (s *EventIntegrationTestSuite) GetEventDeliveriesPaged() {
+func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	eventDeliveryID := uuid.NewString()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
 	app1, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID)
 	event1, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
-	d1, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app1, event1, &app1.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
-	d2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app1, event1, &app1.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
+	d1, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app1, event1, endpoint1, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
+	d2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app1, event1, endpoint1, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
 	app2, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID)
 	event2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
-	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app2, event2, &app2.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
+	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app2, event2, endpoint2, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries?appId=%s", app1.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)

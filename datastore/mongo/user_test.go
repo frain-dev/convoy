@@ -20,8 +20,6 @@ func Test_CreateUser(t *testing.T) {
 
 	store := getStore(db)
 
-	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
-
 	tt := []struct {
 		name             string
 		users            []datastore.User
@@ -75,8 +73,8 @@ func Test_CreateUser(t *testing.T) {
 				}
 
 				if i == 0 {
-					require.NoError(t, userRepo.CreateUser(userCtx, user))
-					newUser, err := userRepo.FindUserByID(userCtx, user.UID)
+					require.NoError(t, userRepo.CreateUser(context.Background(), user))
+					newUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 					require.NoError(t, err)
 
 					require.Equal(t, user.UID, newUser.UID)
@@ -85,7 +83,7 @@ func Test_CreateUser(t *testing.T) {
 				}
 
 				if i > 0 && tc.isDuplicateEmail {
-					err := userRepo.CreateUser(userCtx, user)
+					err := userRepo.CreateUser(context.Background(), user)
 					require.Error(t, err)
 					require.ErrorIs(t, err, datastore.ErrDuplicateEmail)
 				}
@@ -102,15 +100,13 @@ func Test_FindUserByEmail(t *testing.T) {
 	userRepo := NewUserRepo(store)
 	user := generateUser(t)
 
-	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
-
-	_, err := userRepo.FindUserByEmail(userCtx, user.Email)
+	_, err := userRepo.FindUserByEmail(context.Background(), user.Email)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrUserNotFound))
 
-	require.NoError(t, userRepo.CreateUser(userCtx, user))
+	require.NoError(t, userRepo.CreateUser(context.Background(), user))
 
-	newUser, err := userRepo.FindUserByEmail(userCtx, user.Email)
+	newUser, err := userRepo.FindUserByEmail(context.Background(), user.Email)
 	require.NoError(t, err)
 
 	require.Equal(t, user.UID, newUser.UID)
@@ -126,16 +122,14 @@ func Test_FindUserByID(t *testing.T) {
 	userRepo := NewUserRepo(store)
 	user := generateUser(t)
 
-	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
-
-	_, err := userRepo.FindUserByID(userCtx, user.UID)
+	_, err := userRepo.FindUserByID(context.Background(), user.UID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrUserNotFound))
 
-	require.NoError(t, userRepo.CreateUser(userCtx, user))
+	require.NoError(t, userRepo.CreateUser(context.Background(), user))
 
-	newUser, err := userRepo.FindUserByID(userCtx, user.UID)
+	newUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, user.UID, newUser.UID)
@@ -203,8 +197,6 @@ func Test_LoadUsersPaged(t *testing.T) {
 		},
 	}
 
-	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			db, closeFn := getDB(t)
@@ -220,10 +212,10 @@ func Test_LoadUsersPaged(t *testing.T) {
 					Email:          fmt.Sprintf("%s@test.com", uuid.NewString()),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				}
-				require.NoError(t, userRepo.CreateUser(userCtx, user))
+				require.NoError(t, userRepo.CreateUser(context.Background(), user))
 			}
 
-			_, pageable, err := userRepo.LoadUsersPaged(userCtx, tc.pageData)
+			_, pageable, err := userRepo.LoadUsersPaged(context.Background(), tc.pageData)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expected.paginationData.Page, pageable.Page)
@@ -242,9 +234,7 @@ func Test_UpdateUser(t *testing.T) {
 	userRepo := NewUserRepo(store)
 	user := generateUser(t)
 
-	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
-
-	require.NoError(t, userRepo.CreateUser(userCtx, user))
+	require.NoError(t, userRepo.CreateUser(context.Background(), user))
 
 	firstName := fmt.Sprintf("test%s", uuid.NewString())
 	lastName := fmt.Sprintf("test%s", uuid.NewString())
@@ -254,9 +244,9 @@ func Test_UpdateUser(t *testing.T) {
 	user.LastName = lastName
 	user.Email = email
 
-	require.NoError(t, userRepo.UpdateUser(userCtx, user))
+	require.NoError(t, userRepo.UpdateUser(context.Background(), user))
 
-	newUser, err := userRepo.FindUserByID(userCtx, user.UID)
+	newUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, firstName, newUser.FirstName)

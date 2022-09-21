@@ -36,10 +36,9 @@ func Test_CreateDevice(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	deviceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.DeviceCollection)
-	require.NoError(t, deviceRepo.CreateDevice(deviceCtx, device))
+	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	d, err := deviceRepo.FetchDeviceByID(deviceCtx, device.UID, device.AppID, device.GroupID)
+	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)
 	require.NoError(t, err)
 
 	require.Equal(t, device.UID, d.UID)
@@ -66,14 +65,13 @@ func Test_UpdateDevice(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	deviceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.DeviceCollection)
-	require.NoError(t, deviceRepo.CreateDevice(deviceCtx, device))
+	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
 	device.Status = datastore.DeviceStatusOffline
-	err := deviceRepo.UpdateDevice(deviceCtx, device, device.AppID, device.GroupID)
+	err := deviceRepo.UpdateDevice(context.Background(), device, device.AppID, device.GroupID)
 	require.NoError(t, err)
 
-	d, err := deviceRepo.FetchDeviceByID(deviceCtx, device.UID, device.AppID, device.GroupID)
+	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)
 	require.NoError(t, err)
 
 	require.Equal(t, device.UID, d.UID)
@@ -135,13 +133,12 @@ func Test_DeleteDevice(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	deviceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.DeviceCollection)
-	require.NoError(t, deviceRepo.CreateDevice(deviceCtx, device))
+	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	err := deviceRepo.DeleteDevice(deviceCtx, device.UID, device.AppID, device.GroupID)
+	err := deviceRepo.DeleteDevice(context.Background(), device.UID, device.AppID, device.GroupID)
 	require.NoError(t, err)
 
-	_, err = deviceRepo.FetchDeviceByID(deviceCtx, device.UID, device.AppID, device.GroupID)
+	_, err = deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)
 	require.Equal(t, datastore.ErrDeviceNotFound, err)
 }
 
@@ -164,10 +161,9 @@ func Test_FetchDeviceByID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	deviceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.DeviceCollection)
-	require.NoError(t, deviceRepo.CreateDevice(deviceCtx, device))
+	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	d, err := deviceRepo.FetchDeviceByID(deviceCtx, device.UID, device.AppID, device.GroupID)
+	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)
 	require.NoError(t, err)
 	require.Equal(t, device, d)
 }
@@ -265,7 +261,6 @@ func Test_LoadDevicesPaged(t *testing.T) {
 
 			store := getStore(db)
 			deviceRepo := NewDeviceRepository(store)
-			deviceCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.DeviceCollection)
 
 			for i := 0; i < tc.count; i++ {
 				device := &datastore.Device{
@@ -281,10 +276,10 @@ func Test_LoadDevicesPaged(t *testing.T) {
 					device.AppID = tc.filter.AppID
 				}
 
-				require.NoError(t, deviceRepo.CreateDevice(deviceCtx, device))
+				require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 			}
 
-			_, pageable, err := deviceRepo.LoadDevicesPaged(deviceCtx, tc.groupID, tc.filter, tc.pageData)
+			_, pageable, err := deviceRepo.LoadDevicesPaged(context.Background(), tc.groupID, tc.filter, tc.pageData)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expected.paginationData.Total, pageable.Total)

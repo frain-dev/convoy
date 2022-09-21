@@ -25,8 +25,7 @@ func Test_UpdateApplication(t *testing.T) {
 		UID:  uuid.NewString(),
 	}
 
-	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
-	require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	app := &datastore.Application{
 		Title:          "Next application name",
@@ -34,16 +33,15 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
-	require.NoError(t, appRepo.CreateApplication(appCtx, app, app.GroupID))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	newTitle := "Newer name"
 
 	app.Title = newTitle
 
-	require.NoError(t, appRepo.UpdateApplication(appCtx, app, app.GroupID))
+	require.NoError(t, appRepo.UpdateApplication(context.Background(), app, app.GroupID))
 
-	newApp, err := appRepo.FindApplicationByID(appCtx, app.UID)
+	newApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, newTitle, newApp.Title)
@@ -55,7 +53,7 @@ func Test_UpdateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = appRepo.CreateApplication(appCtx, app2, app2.GroupID)
+	err = appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -71,8 +69,7 @@ func Test_CreateApplication(t *testing.T) {
 		UID:  uuid.NewString(),
 	}
 
-	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
-	require.NoError(t, groupRepo.CreateGroup(groupCtx, newOrg))
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	app := &datastore.Application{
 		Title:          "Next application name",
@@ -81,8 +78,7 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
-	require.NoError(t, appRepo.CreateApplication(appCtx, app, app.GroupID))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	app2 := &datastore.Application{
 		Title:          "Next application name",
@@ -91,7 +87,7 @@ func Test_CreateApplication(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := appRepo.CreateApplication(appCtx, app2, app2.GroupID)
+	err := appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
 	require.Equal(t, datastore.ErrDuplicateAppName, err)
 }
 
@@ -101,8 +97,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 
 	appRepo := NewApplicationRepo(getStore(db))
 
-	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
-	apps, _, err := appRepo.LoadApplicationsPaged(appCtx, "", "", datastore.Pageable{
+	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", "", datastore.Pageable{
 		Page:    1,
 		PerPage: 10,
 	})
@@ -117,8 +112,7 @@ func Test_FindApplicationByID(t *testing.T) {
 
 	appRepo := NewApplicationRepo(getStore(db))
 
-	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
-	_, err := appRepo.FindApplicationByID(appCtx, uuid.New().String())
+	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
 	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
@@ -129,8 +123,7 @@ func Test_FindApplicationByID(t *testing.T) {
 		Name: "Yet another Random new group",
 	}
 
-	groupCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
-	require.NoError(t, groupRepo.CreateGroup(groupCtx, newGroup))
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	app := &datastore.Application{
 		Title:   "Next application name again",
@@ -138,5 +131,5 @@ func Test_FindApplicationByID(t *testing.T) {
 		UID:     uuid.NewString(),
 	}
 
-	require.NoError(t, appRepo.CreateApplication(appCtx, app, app.GroupID))
+	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 }

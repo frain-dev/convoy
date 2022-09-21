@@ -65,7 +65,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 
 	var deliveries []datastore.EventDelivery
 
-	err := db.store.FindAll(ctx, filter, nil, nil, deliveries)
+	err := db.store.FindAll(ctx, filter, nil, nil, &deliveries)
 	if err != nil {
 		return nil, err
 	}

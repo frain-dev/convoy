@@ -82,6 +82,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		OrgInviteRepo:     cm.NewOrgInviteRepo(a.Store),
 		UserRepo:          cm.NewUserRepo(a.Store),
 		ConfigRepo:        cm.NewConfigRepo(a.Store),
+		DeviceRepo:        cm.NewDeviceRepository(a.Store),
 	})
 
 	return &ApplicationHandler{
