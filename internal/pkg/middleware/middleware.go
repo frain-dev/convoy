@@ -447,14 +447,20 @@ func (m *Middleware) RequireUserGroupAccess() func(next http.Handler) http.Handl
 			user := GetUserFromContext(r.Context())
 			group := GetGroupFromContext(r.Context())
 
-			_, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
+			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
 			if err != nil {
 				log.WithError(err).Error("failed to fetch organisation member")
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 
-			next.ServeHTTP(w, r)
+			if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Group == group.UID {
+				r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		})
 	}
 }
@@ -638,7 +644,7 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 			}
 
 			if util.IsStringEmpty(groupID) {
-				groupID = r.URL.Query().Get("projectID")
+				groupID = chi.URLParam(r, "projectID")
 			}
 
 			if util.IsStringEmpty(groupID) {

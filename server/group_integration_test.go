@@ -43,9 +43,6 @@ func (s *GroupIntegrationTestSuite) SetupSuite() {
 func (s *GroupIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
-
 	user, err := testdb.SeedDefaultUser(s.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
@@ -54,13 +51,17 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
+	// Setup Default Group.
+	s.DefaultGroup, err = testdb.SeedDefaultGroup(s.DB, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
+
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
 		Password: testdb.DefaultUserPassword,
 	})
 
 	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
 	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
@@ -96,6 +97,54 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 		MessagesSent: 1,
 		TotalApps:    1,
 	}, *respGroup.Statistics)
+}
+
+func (s *GroupIntegrationTestSuite) TestGetGroupWithPersonalAPIKey() {
+	expectedStatusCode := http.StatusOK
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
+	req := createRequest(http.MethodGet, url, key, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respGroup datastore.Group
+	parseResponse(s.T(), w.Result(), &respGroup)
+
+	require.Equal(s.T(), s.DefaultGroup.UID, respGroup.UID)
+	require.Equal(s.T(), s.DefaultGroup.Name, respGroup.Name)
+}
+
+func (s *GroupIntegrationTestSuite) TestGetGroupWithPersonalAPIKey_UnauthorizedRole() {
+	expectedStatusCode := http.StatusUnauthorized
+
+	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	require.NoError(s.T(), err)
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
+	req := createRequest(http.MethodGet, url, key, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *GroupIntegrationTestSuite) TestGetGroup_GroupNotFound() {
@@ -144,6 +193,56 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup_GroupNotFound() {
 	req := createRequest(http.MethodDelete, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
+	expectedStatusCode := http.StatusOK
+	groupID := uuid.NewString()
+
+	// Just Before.
+	group, err := testdb.SeedGroup(s.DB, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	require.NoError(s.T(), err)
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s", group.UID)
+	req := createRequest(http.MethodDelete, url, key, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	_, err = s.DB.GroupRepo().FetchGroupByID(context.Background(), groupID)
+	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
+}
+
+func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey_UnauthorizedRole() {
+	expectedStatusCode := http.StatusUnauthorized
+
+	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	require.NoError(s.T(), err)
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
+	req := createRequest(http.MethodDelete, url, key, nil)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -206,6 +305,84 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	require.NotEmpty(s.T(), respGroup.APIKey.Key)
 }
 
+func (s *GroupIntegrationTestSuite) TestCreateGroupWithPersonalAPIKey() {
+	expectedStatusCode := http.StatusCreated
+
+	bodyStr := `{
+    "name": "test-group",
+	"type": "outgoing",
+    "logo_url": "",
+    "config": {
+        "strategy": {
+            "type": "linear",
+            "duration": 10,
+            "retry_count": 2
+        },
+        "signature": {
+            "header": "X-Convoy-Signature",
+            "hash": "SHA512"
+        },
+        "disable_endpoint": false,
+        "replay_attacks": false
+    },
+    "rate_limit": 5000,
+    "rate_limit_duration": "1m"
+}`
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
+	body := serialize(bodyStr)
+
+	req := createRequest(http.MethodPost, url, key, body)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respGroup models.CreateGroupResponse
+	parseResponse(s.T(), w.Result(), &respGroup)
+	require.NotEmpty(s.T(), respGroup.Group.UID)
+	require.Equal(s.T(), 5000, respGroup.Group.RateLimit)
+	require.Equal(s.T(), "1m", respGroup.Group.RateLimitDuration)
+	require.Equal(s.T(), "test-group", respGroup.Group.Name)
+	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
+
+	require.Equal(s.T(), auth.RoleAdmin, respGroup.APIKey.Role.Type)
+	require.Equal(s.T(), respGroup.Group.UID, respGroup.APIKey.Role.Group)
+	require.Equal(s.T(), "test-group's default key", respGroup.APIKey.Name)
+	require.NotEmpty(s.T(), respGroup.APIKey.Key)
+}
+
+func (s *GroupIntegrationTestSuite) TestCreateGroupWithPersonalAPIKey_UnauthorizedRole() {
+	expectedStatusCode := http.StatusUnauthorized
+
+	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	require.NoError(s.T(), err)
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
+	req := createRequest(http.MethodPost, url, key, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
 func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	groupID := uuid.NewString()
 	expectedStatusCode := http.StatusAccepted
@@ -248,6 +425,60 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	require.Equal(s.T(), "group_1", g.Name)
 }
 
+func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey() {
+	expectedStatusCode := http.StatusAccepted
+	groupID := uuid.NewString()
+
+	// Just Before.
+	group, err := testdb.SeedGroup(s.DB, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	require.NoError(s.T(), err)
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
+
+	body := serialize(`{"name":"update_group"}`)
+	url := fmt.Sprintf("/api/v1/projects/%s", group.UID)
+	req := createRequest(http.MethodPut, url, key, body)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respGroup datastore.Group
+	parseResponse(s.T(), w.Result(), &respGroup)
+
+	require.Equal(s.T(), groupID, respGroup.UID)
+	require.Equal(s.T(), "update_group", respGroup.Name)
+}
+
+func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey_UnauthorizedRole() {
+	expectedStatusCode := http.StatusUnauthorized
+
+	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	require.NoError(s.T(), err)
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
+	req := createRequest(http.MethodPut, url, key, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
 func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
@@ -272,11 +503,41 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	parseResponse(s.T(), w.Result(), &groups)
 	require.Equal(s.T(), 3, len(groups))
 
-	v := []string{group1.UID, group2.UID, group3.UID}
+	v := []string{groups[0].UID, groups[1].UID, groups[2].UID}
 	require.Contains(s.T(), v, group1.UID)
 	require.Contains(s.T(), v, group2.UID)
 	require.Contains(s.T(), v, group3.UID)
+}
 
+func (s *GroupIntegrationTestSuite) TestGetGroupsWithPersonalAPIKey() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+
+	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, key, nil)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var groups []*datastore.Group
+	parseResponse(s.T(), w.Result(), &groups)
+	require.Equal(s.T(), 3, len(groups))
+
+	v := []string{groups[0].UID, groups[1].UID, groups[2].UID}
+	require.Contains(s.T(), v, group1.UID)
+	require.Contains(s.T(), v, group2.UID)
+	require.Contains(s.T(), v, s.DefaultGroup.UID)
 }
 
 func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
