@@ -197,7 +197,8 @@ type Event struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" bson:"data" valid:"required~please provide your data"`
+	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
+	CustomHeaders map[string]string `json:"custom_headers"`
 }
 
 type IDs struct {

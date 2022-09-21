@@ -38,18 +38,7 @@ func init() {
 	})
 
 	govalidator.TagMap["supported_source"] = govalidator.Validator(func(source string) bool {
-		sources := map[string]bool{
-			string(datastore.HTTPSource):     true,
-			string(datastore.RestApiSource):  true,
-			string(datastore.PubSubSource):   true,
-			string(datastore.DBChangeStream): true,
-		}
-
-		if _, ok := sources[source]; !ok {
-			return false
-		}
-
-		return true
+		return datastore.SourceType(source).IsValid()
 	})
 
 	govalidator.TagMap["supported_verifier"] = govalidator.Validator(func(verifier string) bool {

@@ -70,7 +70,6 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 		}
 	}
 
-	perPage += 20
 	page += 1
 
 	return ea.track(perPage, page)
