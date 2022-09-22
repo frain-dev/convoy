@@ -8,13 +8,14 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 )
 
-func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, eventQueue queue.Queuer) {
+func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, store datastore.Store, eventQueue queue.Queuer) {
 	if statuses == nil {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
@@ -56,6 +57,9 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		var wg sync.WaitGroup
 
 		wg.Add(1)
+		eventDeliveryRepo := mongo.NewEventDeliveryRepository(store)
+		groupRepo := mongo.NewGroupRepo(store)
+
 		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, groupRepo, deliveryChan, q, &wg)
 
 		counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, status, searchParams)

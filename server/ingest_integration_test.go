@@ -13,7 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/require"
 
@@ -22,29 +22,31 @@ import (
 
 type IngestIntegrationTestSuite struct {
 	suite.Suite
-	DB           convoyMongo.Client
+	DB           cm.Client
 	Router       http.Handler
 	ConvoyApp    *ApplicationHandler
 	DefaultGroup *datastore.Group
 }
 
-func (s *IngestIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+func (i *IngestIntegrationTestSuite) SetupSuite() {
+	i.DB = getDB()
+	i.ConvoyApp = buildServer()
+	i.Router = i.ConvoyApp.BuildRoutes()
 }
 
 func (i *IngestIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(i.DB)
 
 	// Setup Default Group.
-	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.DB, "")
+	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
-	initRealmChain(i.T(), i.DB.APIRepo(), i.DB.UserRepo(), i.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(i.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(i.ConvoyApp.A.Store)
+	initRealmChain(i.T(), apiRepo, userRepo, i.ConvoyApp.A.Cache)
 }
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {
@@ -83,7 +85,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NotHTTPSource() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "non-http", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "non-http", v)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/ingest/%s", maskID)
@@ -112,7 +114,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodHmac() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -148,7 +150,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadHmac() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -181,7 +183,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodAPIKey() {
 			HeaderValue: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -213,7 +215,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadAPIKey() {
 			HeaderValue: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -245,7 +247,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodBasicAuth() {
 			Password: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -277,7 +279,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadBasicAuth() {
 			Password: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -305,7 +307,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
 	v := &datastore.VerifierConfig{
 		Type: datastore.NoopVerifier,
 	}
-	_, _ = testdb.SeedSource(i.DB, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)

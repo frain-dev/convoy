@@ -21,7 +21,9 @@ func Test_CreateDevice(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepository(db, datastore.New(db, DeviceCollection))
+	store := getStore(db)
+
+	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:            uuid.NewString(),
 		GroupID:        uuid.NewString(),
@@ -33,6 +35,7 @@ func Test_CreateDevice(t *testing.T) {
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
+
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
 	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)
@@ -47,7 +50,9 @@ func Test_UpdateDevice(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepository(db, datastore.New(db, DeviceCollection))
+	store := getStore(db)
+
+	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:            uuid.NewString(),
 		GroupID:        uuid.NewString(),
@@ -59,6 +64,7 @@ func Test_UpdateDevice(t *testing.T) {
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
+
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
 	device.Status = datastore.DeviceStatusOffline
@@ -78,7 +84,9 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepository(db, datastore.New(db, DeviceCollection))
+	store := getStore(db)
+
+	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:            uuid.NewString(),
 		GroupID:        uuid.NewString(),
@@ -90,6 +98,7 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
+
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
 	err := deviceRepo.UpdateDeviceLastSeen(context.Background(), device, device.AppID, device.GroupID, datastore.DeviceStatusOffline)
@@ -109,7 +118,9 @@ func Test_DeleteDevice(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepository(db, datastore.New(db, DeviceCollection))
+	store := getStore(db)
+
+	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:            uuid.NewString(),
 		GroupID:        uuid.NewString(),
@@ -121,6 +132,7 @@ func Test_DeleteDevice(t *testing.T) {
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
+
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
 	err := deviceRepo.DeleteDevice(context.Background(), device.UID, device.AppID, device.GroupID)
@@ -134,7 +146,9 @@ func Test_FetchDeviceByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepository(db, datastore.New(db, DeviceCollection))
+	store := getStore(db)
+
+	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:            uuid.NewString(),
 		GroupID:        uuid.NewString(),
@@ -146,6 +160,7 @@ func Test_FetchDeviceByID(t *testing.T) {
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
+
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
 	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.AppID, device.GroupID)
@@ -244,8 +259,8 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			db, closeFn := getDB(t)
 			defer closeFn()
 
-			store := getStore(db, DeviceCollection)
-			deviceRepo := NewDeviceRepository(db, store)
+			store := getStore(db)
+			deviceRepo := NewDeviceRepository(store)
 
 			for i := 0; i < tc.count; i++ {
 				device := &datastore.Device{

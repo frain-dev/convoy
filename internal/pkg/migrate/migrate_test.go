@@ -219,7 +219,7 @@ func TestCheckPendingMigrations(t *testing.T) {
 }
 
 func tableCount(t *testing.T, db *mongo.Database, collectionName string) int64 {
-	store := datastore.New(db, collectionName)
+	store := datastore.New(db)
 	filter := map[string]interface{}{}
 	count, err := store.Count(context.Background(), filter)
 	assert.NoError(t, err)
