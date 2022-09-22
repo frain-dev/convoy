@@ -1,0 +1,38 @@
+<div class="max-w-[1300px] m-auto">
+	<h1 class="text-center font-bold text-20 mt-60px">Set up is as easy as one, two, three!</h1>
+	<p class="text-center text-grey-40 text-16 max-w-[621px] mt-10px mb-110px m-auto">Follow our simple guide and you’ll be sending and recieving webhook events in no time!</p>
+
+	<div class="grid grid-cols-[repeat(auto-fill,minmax(350px,_1fr))] gap-80px">
+		<div class="rounded-16px p-32px bg-white-100 border border-[{{step.border}}]" *ngFor="let step of onboardingSteps; let i = index">
+			<div class="rounded-12px w-48px h-48px flex items-center justify-center text-20 text-white-100 mb-32px" [class]="step.stepColor">
+				{{ i + 1 }}
+			</div>
+			<h1 class="text-20 font-bold text-grey-100">
+				{{ step.description }}
+			</h1>
+			<p class="my-16px text-16 text-grey-80">
+				{{ step.description }}
+			</p>
+			<convoy-button size="sm">
+				Get Started
+				<svg width="24" height="24" class="ml-8px fill-white-100">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</convoy-button>
+		</div>
+	</div>
+</div>
+
+<convoy-modal position="center" *ngIf="showCreateModal">
+	<div class="p-40px" modalBody>
+		<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
+		<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
+		<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
+			<convoy-input label="What's your bussiness name?" name="name" formControlName="name" placeholder="e.g. Kuda" errorMessage="Organisation name is required"></convoy-input>
+			<div class="flex items-center w-full">
+				<convoy-button buttonType="button" type="outline" className="hover:text-danger-100 hover:border-danger-100 transition-all duration-300 mr-24px" (click)="showCreateModal = false">Cancel</convoy-button>
+				<convoy-button className="self-stretch">Submit</convoy-button>
+			</div>
+		</form>
+	</div>
+</convoy-modal>

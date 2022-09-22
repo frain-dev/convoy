@@ -77,6 +77,7 @@
 </ng-container>
 
 <convoy-page *ngIf="organisations.length == 0">
+
 	<convoy-empty-state
 		className="h-[50vh]"
 		imgSrc="/assets/img/org-empty-img.svg"
@@ -88,7 +89,15 @@
 </convoy-page>
 
 <convoy-page *ngIf="noData && !isLoadingProjects">
-	<convoy-empty-state className="h-[50vh]" imgSrc="/assets/img/group-empty-img.svg" heading="You have no project yet" description="Create a project to start sending/receiving webhooks" buttonText="Create Project" (onAction)="goToCreateProjectPage()"></convoy-empty-state>
+	<convoy-empty-state
+		type="table"
+		className="h-[50vh]"
+		imgSrc="/assets/img/new-empty-state.png"
+		heading="You currently do not have any projects"
+		description="Create a project to start sending/receiving webhooks"
+		buttonText="Create Project"
+		(onAction)="goToCreateProjectPage()"
+	></convoy-empty-state>
 </convoy-page>
 
 <app-create-organisation *ngIf="showOrganisationModal" (closeModal)="setOrganisation()"></app-create-organisation>

@@ -39,6 +39,10 @@ const routes: Routes = [
 			{
 				path: 'settings',
 				loadComponent: () => import('./pages/settings/settings.component').then(mod => mod.SettingsComponent)
+			},
+            {
+				path: 'welcome',
+				loadComponent: () => import('./pages/onboarding/onboarding.component').then(mod => mod.OnboardingComponent)
 			}
 		]
 	}
