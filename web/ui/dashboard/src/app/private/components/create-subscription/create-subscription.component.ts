@@ -87,15 +87,17 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-			const duration = this.convertTime(response.data.retry_config.duration);
-			this.subscriptionForm.patchValue({
-				retry_config: {
-					duration: duration
-				}
-			});
 			if (!this.token) this.onUpdateAppSelection();
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
+			if (response.data?.retry_config) {
+				const duration = this.convertTime(response.data.retry_config.duration);
+				this.subscriptionForm.patchValue({
+					retry_config: {
+						duration: duration
+					}
+				});
+			}
 			return;
 		} catch (error) {
 			return error;

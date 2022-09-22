@@ -53,6 +53,7 @@ export class ProjectComponent implements OnInit {
 		try {
 			const projectDetails = await this.privateService.getProjectDetails();
 			this.projectDetails = projectDetails.data;
+			localStorage.setItem('PROJECT_CONFIG', JSON.stringify(projectDetails.data?.config));
 			if (this.projectDetails.type === 'outgoing') this.sideBarItems.splice(1, 1);
 			this.isLoadingProjectDetails = false;
 		} catch (error) {

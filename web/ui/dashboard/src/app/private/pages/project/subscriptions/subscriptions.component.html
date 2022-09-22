@@ -117,7 +117,7 @@
 		</convoy-card>
 	</div>
 
-	<convoy-card className="pb-20px ml-8px w-full max-w-[382px] min-w-[310px] border-l border-l-grey-10 desktop:max-w-none desktop:ml-0 transition-all duration-200 min-h-[70vh]" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
+	<convoy-card className="pb-20px ml-8px min-w-[366px] max-w-[382px] self-stretch w-full border-l border-l-grey-10 desktop:ml-0 desktop:max-w-none transition-all duration-200 min-h-[70vh]" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
 		<div class="flex items-center justify-between border-b border-b-grey-10 px-24px pt-24px pb-16px">
 			<h2 class="font-semibold">{{ activeSubscription?.name }}</h2>
 			<a [routerLink]="['./']" [queryParams]="{}" class="w-32px h-32px bg-primary-500 flex items-center justify-center rounded-[6px]" tabindex="0">
@@ -150,6 +150,18 @@
 				<a [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: activeSubscription?.uid }" class="w-[50%] font-medium text-primary-100 text-right underline">
 					{{ activeSubscription?.source_metadata?.name }}
 				</a>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Retry Mechanism</div>
+				<div class="w-[50%] text-right">{{ activeSubscription?.retry_config ? activeSubscription?.retry_config?.type : activeProjectConfig().strategy?.type }}</div>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Retry Duration</div>
+				<div class="w-[50%] text-right">{{ activeSubscription?.retry_config ? activeSubscription?.retry_config?.duration : activeProjectConfig().strategy?.duration }}</div>
+			</convoy-list-item>
+			<convoy-list-item className="text-14 font-normal py-2 px-24px">
+				<div class="w-[50%] text-grey-40">Retry Limit</div>
+				<div class="w-[50%] text-right">{{ activeSubscription?.retry_config ? activeSubscription?.retry_config?.retry_count : activeProjectConfig().strategy?.retry_count }}</div>
 			</convoy-list-item>
 			<convoy-list-item className="text-14 font-normal py-2 px-24px">
 				<div class="w-[50%] text-grey-40">Created At</div>
