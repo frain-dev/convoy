@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -86,6 +87,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		UID:            uuid.New().String(),
 		EventType:      datastore.EventType(newMessage.EventType),
 		Data:           newMessage.Data,
+		Headers:        e.getCustomHeaders(newMessage),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		AppID:          app.UID,
@@ -439,4 +441,18 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}
 	return nil
+}
+
+func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHeader {
+	var headers map[string][]string
+
+	if event.CustomHeaders != nil {
+		headers = make(map[string][]string)
+
+		for key, value := range event.CustomHeaders {
+			headers[key] = []string{value}
+		}
+	}
+
+	return headers
 }

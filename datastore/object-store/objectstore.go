@@ -9,6 +9,7 @@ type ObjectStoreOptions struct {
 	AccessKey        string
 	SecretKey        string
 	Region           string
+	Endpoint         string
 	SessionToken     string
 	OnPremStorageDir string
 }

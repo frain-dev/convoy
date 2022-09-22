@@ -28,7 +28,7 @@ import (
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events [post]
+// @Router /api/v1/events [post]
 func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.Event
 	err := util.ReadJSON(r, &newMessage)
@@ -59,7 +59,7 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/replay [put]
+// @Router /api/v1/events/{eventID}/replay [put]
 func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
@@ -84,7 +84,7 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID} [get]
+// @Router /api/v1/events/{eventID} [get]
 func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("App event fetched successfully",
@@ -102,7 +102,7 @@ func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/{eventDeliveryID} [get]
+// @Router /api/v1/eventdeliveries/{eventDeliveryID} [get]
 func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
@@ -120,7 +120,7 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/{eventDeliveryID}/resend [put]
+// @Router /api/v1/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
@@ -146,7 +146,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/batchretry [post]
+// @Router /api/v1/eventdeliveries/batchretry [post]
 func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 
@@ -200,7 +200,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Success 200 {object} util.ServerResponse{data=Stub{num=integer}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/countbatchretryevents [get]
+// @Router /api/v1/eventdeliveries/countbatchretryevents [get]
 func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
@@ -243,7 +243,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries/forceresend [post]
+// @Router /api/v1/eventdeliveries/forceresend [post]
 func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
@@ -278,7 +278,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events [get]
+// @Router /api/v1/events [get]
 func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	config, err := config.Get()
 	if err != nil {
@@ -344,7 +344,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /eventdeliveries [get]
+// @Router /api/v1/eventdeliveries [get]
 func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {

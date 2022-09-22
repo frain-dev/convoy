@@ -335,6 +335,8 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 					SupportEmail: a.SupportEmail,
 				}
 				appMap[sub.AppID] = aa
+			} else {
+				log.Errorf("an error occured fetching application for subscription: %v", err)
 			}
 		}
 
@@ -351,6 +353,8 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 					IsDisabled: ev.IsDisabled,
 				}
 				sourceMap[sub.SourceID] = source
+			} else {
+				log.Errorf("an error occured fetching source for subscription: %v", err)
 			}
 		}
 
@@ -367,6 +371,8 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 					RateLimitDuration: en.RateLimitDuration,
 				}
 				endpointMap[sub.EndpointID] = endpoint
+			} else {
+				log.Errorf("an error occured fetching endpoint for subscription: %v", err)
 			}
 		}
 

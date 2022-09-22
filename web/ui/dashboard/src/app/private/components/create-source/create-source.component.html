@@ -70,7 +70,7 @@
 					[required]="true"
 					className="mb-0"
 				></convoy-input>
-				
+
 				<convoy-input type="text" autocomplete="secret" name="secret" formControlName="secret" errorMessage="Enter webhook signing secret" label="Webhook signing secret" placeholder="Secret goes here" [required]="true" className="mb-0"></convoy-input>
 			</div>
 		</convoy-card>
@@ -86,12 +86,14 @@
 	</div>
 
 	<div class="flex justify-end mt-32px">
-		<convoy-button type="outline" buttonType="button" className="mr-16px" (clickItem)="onAction.emit({ action: 'close' })">Cancel</convoy-button>
+		<convoy-button type="outline" buttonType="button" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (clickItem)="confirmModal = true">Cancel</convoy-button>
 		<convoy-button [disable]="isloading">
-			{{ action === 'update' ? 'Update' : 'Create' }} Source
+			{{ isNewProjectRoute() ? 'Save and Proceed' : action === 'update' ? 'Update Source' : 'Create Source' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
 		</convoy-button>
 	</div>
 </form>
+
+<convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="onAction.emit({ action: 'close' })" (closeModal)="confirmModal = false"></convoy-confirmation-modal>

@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -13,8 +15,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/dchest/uniuri"
 )
 
 type SourceService struct {
@@ -27,8 +27,14 @@ func NewSourceService(sourceRepo datastore.SourceRepository, cache cache.Cache) 
 }
 
 func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Source, g *datastore.Group) (*datastore.Source, error) {
-	if err := util.Validate(newSource); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	if newSource.Provider.IsValid() {
+		if err := validateSourceForProvider(newSource); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+	} else {
+		if err := util.Validate(newSource); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
 	}
 
 	if newSource.Verifier.Type == datastore.HMacVerifier && newSource.Verifier.HMac == nil {
@@ -49,7 +55,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		MaskID:         uniuri.NewLen(16),
 		Name:           newSource.Name,
 		Type:           newSource.Type,
-		Provider:       datastore.SourceProvider(newSource.Provider),
+		Provider:       newSource.Provider,
 		Verifier:       &newSource.Verifier,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -66,6 +72,28 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	}
 
 	return source, nil
+}
+
+func validateSourceForProvider(newSource *models.Source) error {
+	if util.IsStringEmpty(newSource.Name) {
+		return errors.New("please provide a source name")
+	}
+
+	if !newSource.Type.IsValid() {
+		return errors.New("please provide a valid source type")
+	}
+
+	switch newSource.Provider {
+	case datastore.GithubSourceProvider,
+		datastore.ShopifySourceProvider,
+		datastore.TwitterSourceProvider:
+		verifierConfig := newSource.Verifier
+		if verifierConfig.HMac == nil || verifierConfig.HMac.Secret == "" {
+			return fmt.Errorf("hmac secret is required for %s source", newSource.Provider)
+		}
+	}
+
+	return nil
 }
 
 func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, sourceUpdate *models.UpdateSource, source *datastore.Source) (*datastore.Source, error) {
@@ -116,7 +144,6 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, so
 
 func (s *SourceService) FindSourceByID(ctx context.Context, g *datastore.Group, id string) (*datastore.Source, error) {
 	source, err := s.sourceRepo.FindSourceByID(ctx, g.UID, id)
-
 	if err != nil {
 		if err == datastore.ErrSourceNotFound {
 			return nil, util.NewServiceError(http.StatusNotFound, err)
@@ -151,9 +178,8 @@ func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Group
 }
 
 func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Group, source *datastore.Source) error {
-	//ToDo: add check here to ensure the source doesn't have any existing subscriptions
+	// ToDo: add check here to ensure the source doesn't have any existing subscriptions
 	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID)
-
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete source"))
 	}
