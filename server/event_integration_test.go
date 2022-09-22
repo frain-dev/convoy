@@ -408,8 +408,9 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	// Deep Assert.
 	var respEvents []datastore.EventDelivery
 	resp := pagedResponse{Content: &respEvents}
-	parseResponse(s.T(), w.Result(), &respEvents)
-	require.Equal(s.T(), 2, resp.Pagination.Total)
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), int64(2), resp.Pagination.Total)
+	require.Equal(s.T(), 2, len(respEvents))
 
 	v := []*datastore.EventDelivery{d1, d2}
 	for i, delivery := range v {

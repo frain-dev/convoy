@@ -80,7 +80,7 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 		primitive.E{Key: "rate_limit_duration", Value: o.RateLimitDuration},
 	}
 
-	err := db.store.UpdateByID(ctx, o.UID, update)
+	err := db.store.UpdateByID(ctx, o.UID, bson.M{"$set": update})
 	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
 		return datastore.ErrDuplicateGroupName
 	}

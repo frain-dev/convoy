@@ -95,7 +95,7 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 		primitive.E{Key: "reset_password_expires_at", Value: user.ResetPasswordExpiresAt},
 	}
 
-	err := u.store.UpdateByID(ctx, user.UID, update)
+	err := u.store.UpdateByID(ctx, user.UID, bson.M{"$set": update})
 
 	if mongo.IsDuplicateKeyError(err) {
 		return datastore.ErrDuplicateEmail

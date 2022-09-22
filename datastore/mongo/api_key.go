@@ -82,6 +82,7 @@ func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*d
 
 func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 	ctx = db.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid": bson.M{
 			"$in": uids,
@@ -93,7 +94,7 @@ func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 		"document_status": datastore.DeletedDocumentStatus,
 	}
 
-	return db.store.UpdateMany(ctx, filter, updateAsDeleted, false)
+	return db.store.UpdateMany(ctx, filter, bson.M{"$set": updateAsDeleted}, false)
 }
 
 func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {

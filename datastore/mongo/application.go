@@ -221,11 +221,13 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 	app.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	update := bson.M{
-		"endpoints":     app.Endpoints,
-		"updated_at":    app.UpdatedAt,
-		"title":         app.Title,
-		"support_email": app.SupportEmail,
-		"is_disabled":   app.IsDisabled,
+		"$set": bson.M{
+			"endpoints":     app.Endpoints,
+			"updated_at":    app.UpdatedAt,
+			"title":         app.Title,
+			"support_email": app.SupportEmail,
+			"is_disabled":   app.IsDisabled,
+		},
 	}
 
 	return db.store.UpdateByID(ctx, app.UID, update)
@@ -251,11 +253,13 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
-	return db.store.UpdateMany(ctx, bson.M{"group_id": groupID}, update, false)
+	return db.store.UpdateMany(ctx, bson.M{"group_id": groupID}, bson.M{"$set": update}, false)
 }
 
 func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Application) error {

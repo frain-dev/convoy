@@ -300,7 +300,7 @@ func (d *MongoStore) UpdateByID(ctx context.Context, id string, payload interfac
 	}
 	collection := d.Database.Collection(col)
 
-	_, err = collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
+	_, err = collection.UpdateOne(ctx, bson.M{"uid": id}, payload, nil)
 	return err
 }
 
