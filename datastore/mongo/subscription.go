@@ -53,13 +53,10 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 		"endpoint_id": subscription.EndpointID,
 
 		"filter_config.event_types": subscription.FilterConfig.EventTypes,
-		"alert_config.count":        subscription.AlertConfig.Count,
-		"alert_config.threshold":    subscription.AlertConfig.Threshold,
-
-		"retry_config.type":        string(subscription.RetryConfig.Type),
-		"retry_config.duration":    subscription.RetryConfig.Duration,
-		"retry_config.retry_count": subscription.RetryConfig.RetryCount,
-		"disable_endpoint":         subscription.DisableEndpoint,
+		"alert_config":              subscription.AlertConfig,
+		"retry_config":              subscription.RetryConfig,
+		"disable_endpoint":          subscription.DisableEndpoint,
+		"rate_limit_config":         subscription.RateLimitConfig,
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)

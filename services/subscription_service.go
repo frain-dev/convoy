@@ -148,26 +148,50 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 	}
 
 	if update.AlertConfig != nil && update.AlertConfig.Count > 0 {
+		if subscription.AlertConfig == nil {
+			subscription.AlertConfig = &datastore.AlertConfiguration{}
+		}
+
 		subscription.AlertConfig.Count = update.AlertConfig.Count
 	}
 
 	if update.AlertConfig != nil && !util.IsStringEmpty(update.AlertConfig.Threshold) {
+		if subscription.AlertConfig == nil {
+			subscription.AlertConfig = &datastore.AlertConfiguration{}
+		}
+
 		subscription.AlertConfig.Threshold = update.AlertConfig.Threshold
 	}
 
 	if update.RetryConfig != nil && !util.IsStringEmpty(string(update.RetryConfig.Type)) {
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
 		subscription.RetryConfig.Type = update.RetryConfig.Type
 	}
 
 	if update.RetryConfig != nil && !util.IsStringEmpty(update.RetryConfig.Duration) {
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
 		subscription.RetryConfig.Duration = retryConfig.Duration
 	}
 
 	if update.RetryConfig != nil && update.RetryConfig.IntervalSeconds > 0 {
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
 		subscription.RetryConfig.RetryCount = retryConfig.RetryCount
 	}
 
 	if update.RetryConfig != nil && update.RetryConfig.RetryCount > 0 {
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
 		subscription.RetryConfig.RetryCount = update.RetryConfig.RetryCount
 	}
 
@@ -176,10 +200,16 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 	}
 
 	if update.RateLimitConfig != nil && update.RateLimitConfig.Count > 0 {
+		if subscription.RateLimitConfig == nil {
+			subscription.RateLimitConfig = &datastore.RateLimitConfiguration{}
+		}
 		subscription.RateLimitConfig.Count = update.RateLimitConfig.Count
 	}
 
 	if update.RateLimitConfig != nil && update.RateLimitConfig.Duration > 0 {
+		if subscription.RateLimitConfig == nil {
+			subscription.RateLimitConfig = &datastore.RateLimitConfiguration{}
+		}
 		subscription.RateLimitConfig.Duration = update.RateLimitConfig.Duration
 	}
 
