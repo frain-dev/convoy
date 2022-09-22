@@ -3,13 +3,15 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
 import { SOURCE } from 'src/app/models/group.model';
+import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 import { PrivateService } from '../../private.service';
 import { CreateSubscriptionService } from './create-subscription.service';
 
 @Component({
 	selector: 'app-create-subscription',
 	templateUrl: './create-subscription.component.html',
-	styleUrls: ['./create-subscription.component.scss']
+	styleUrls: ['./create-subscription.component.scss'],
+	providers: [FormatSecondsPipe]
 })
 export class CreateSubscriptionComponent implements OnInit {
 	subscriptionForm: FormGroup = this.formBuilder.group({
@@ -56,7 +58,14 @@ export class CreateSubscriptionComponent implements OnInit {
 	showError = false;
 	confirmModal = false;
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, public router: Router) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private privateService: PrivateService,
+		private createSubscriptionService: CreateSubscriptionService,
+		private route: ActivatedRoute,
+		public router: Router,
+		private formatSeconds: FormatSecondsPipe
+	) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -92,7 +101,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {
-				const duration = this.convertTime(response.data.retry_config.duration);
+				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
 				this.subscriptionForm.patchValue({
 					retry_config: {
 						duration: duration
@@ -255,15 +264,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
 	}
 
-	convertTime(timeValue: number): string {
-		if (timeValue >= 60) {
-			const timeInMinutes = Math.floor(timeValue / 60);
-			const remainderSeconds = timeValue % 60;
-			return `${timeInMinutes}m${remainderSeconds ? `${remainderSeconds}s` : ''}`;
-		}
-
-		return `${timeValue}s`;
-	}
 	isNewProjectRoute(): boolean {
 		if (this.router.url == '/projects/new') return true;
 		return false;
