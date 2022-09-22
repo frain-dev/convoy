@@ -33,14 +33,14 @@ type args struct {
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
+	cache := mocks.NewMockCache(ctrl)
+	queue := mocks.NewMockQueuer(ctrl)
+	search := mocks.NewMockSearcher(ctrl)
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
-	cache := mocks.NewMockCache(ctrl)
-	queue := mocks.NewMockQueuer(ctrl)
-	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	search := mocks.NewMockSearcher(ctrl)
+	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 
 	return &args{
 		appRepo:           appRepo,

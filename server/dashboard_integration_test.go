@@ -19,7 +19,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
@@ -30,7 +30,7 @@ import (
 
 type DashboardIntegrationTestSuite struct {
 	suite.Suite
-	DB              convoyMongo.Client
+	DB              cm.Client
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -49,17 +49,17 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default User
-	user, err := testdb.SeedDefaultUser(s.DB)
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
 	// Setup Default Organisation
-	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, s.DefaultOrg.UID)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -70,7 +70,9 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
@@ -91,7 +93,8 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := s.DB.AppRepo().CreateApplication(ctx, application, application.GroupID)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+	err := appRepo.CreateApplication(ctx, application, application.GroupID)
 	require.NoError(s.T(), err)
 
 	events := []datastore.Event{
@@ -169,8 +172,9 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		},
 	}
 
+	eventRepo := cm.NewEventRepository(s.ConvoyApp.A.Store)
 	for i := range events {
-		err = s.DB.EventRepo().CreateEvent(ctx, &events[i])
+		err = eventRepo.CreateEvent(ctx, &events[i])
 		require.NoError(s.T(), err)
 	}
 
@@ -281,7 +285,9 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			initRealmChain(t, s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
+			apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
+			userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+			initRealmChain(t, apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/groups/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
 			err = s.AuthenticatorFn(req, s.Router)

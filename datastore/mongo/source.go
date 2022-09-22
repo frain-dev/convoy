@@ -7,27 +7,23 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type sourceRepo struct {
-	innerDB *mongo.Database
-	client  *mongo.Collection
-	store   datastore.Store
+	store datastore.Store
 }
 
-func NewSourceRepo(db *mongo.Database, store datastore.Store) datastore.SourceRepository {
+func NewSourceRepo(store datastore.Store) datastore.SourceRepository {
 	return &sourceRepo{
-		innerDB: db,
-		client:  db.Collection(SourceCollection),
-		store:   store,
+		store: store,
 	}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
+	ctx = s.setCollectionInContext(ctx)
 	source.ID = primitive.NewObjectID()
 
 	err := s.store.Save(ctx, source, nil)
@@ -35,15 +31,18 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 }
 
 func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *datastore.Source) error {
+	ctx = s.setCollectionInContext(ctx)
 	filter := bson.M{"uid": source.UID, "group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
 
-	update := bson.D{
-		primitive.E{Key: "name", Value: source.Name},
-		primitive.E{Key: "type", Value: source.Type},
-		primitive.E{Key: "is_disabled", Value: source.IsDisabled},
-		primitive.E{Key: "verifier", Value: source.Verifier},
-		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "provider_config", Value: source.ProviderConfig},
+	update := bson.M{
+		"$set": bson.M{
+			"name":            source.Name,
+			"type":            source.Type,
+			"is_disabled":     source.IsDisabled,
+			"verifier":        source.Verifier,
+			"updated_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"provider_config": source.ProviderConfig,
+		},
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)
@@ -51,6 +50,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *d
 }
 
 func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id string) (*datastore.Source, error) {
+	ctx = s.setCollectionInContext(ctx)
 	source := &datastore.Source{}
 
 	filter := bson.M{"uid": id, "group_id": groupId}
@@ -64,6 +64,7 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id stri
 }
 
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*datastore.Source, error) {
+	ctx = s.setCollectionInContext(ctx)
 	source := &datastore.Source{}
 
 	filter := bson.M{"mask_id": maskId}
@@ -77,11 +78,14 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*da
 }
 
 func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id string) error {
+	ctx = s.setCollectionInContext(ctx)
 	filter := bson.M{"uid": id, "group_id": groupId}
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)
@@ -89,13 +93,15 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+	ctx = s.setCollectionInContext(ctx)
 	var sources []datastore.Source
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID, "type": f.Type, "provider": f.Provider}
 
 	removeUnusedFields(filter)
+	pagination, err := s.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &sources)
 
-	paginatedData, err := pager.New(s.client).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", -1).Filter(filter).Decode(&sources).Find()
 	if err != nil {
 		return sources, datastore.PaginationData{}, err
 	}
@@ -104,7 +110,11 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 		sources = make([]datastore.Source, 0)
 	}
 
-	return sources, datastore.PaginationData(paginatedData.Pagination), nil
+	return sources, pagination, nil
+}
+
+func (db *sourceRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.SourceCollection)
 }
 
 func removeUnusedFields(filter map[string]interface{}) {

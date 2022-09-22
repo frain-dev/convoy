@@ -12,27 +12,25 @@ import (
 )
 
 type configRepo struct {
-	innerDB *mongo.Database
-	client  *mongo.Collection
-	store   datastore.Store
+	store datastore.Store
 }
 
-func NewConfigRepo(db *mongo.Database, store datastore.Store) datastore.ConfigurationRepository {
+func NewConfigRepo(store datastore.Store) datastore.ConfigurationRepository {
 	return &configRepo{
-		innerDB: db,
-		client:  db.Collection(ConfigCollection),
-		store:   store,
+		store: store,
 	}
 }
 
 func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.Configuration) error {
+	ctx = c.setCollectionInContext(ctx)
 	config.ID = primitive.NewObjectID()
 
-	err := c.store.Save(ctx, config, nil)
-	return err
+	return c.store.Save(ctx, config, nil)
 }
 
 func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configuration, error) {
+	ctx = c.setCollectionInContext(ctx)
+
 	config := &datastore.Configuration{}
 
 	filter := bson.M{}
@@ -47,15 +45,23 @@ func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configur
 }
 
 func (c *configRepo) UpdateConfiguration(ctx context.Context, config *datastore.Configuration) error {
+	ctx = c.setCollectionInContext(ctx)
+
 	filter := bson.M{"uid": config.UID}
 
-	update := bson.D{
-		primitive.E{Key: "is_analytics_enabled", Value: config.IsAnalyticsEnabled},
-		primitive.E{Key: "is_signup_enabled", Value: config.IsSignupEnabled},
-		primitive.E{Key: "storage_policy", Value: config.StoragePolicy},
-		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
+	update := bson.M{
+		"$set": bson.M{
+			"is_analytics_enabled": config.IsAnalyticsEnabled,
+			"is_signup_enabled":    config.IsSignupEnabled,
+			"storage_policy":       config.StoragePolicy,
+			"updated_at":           primitive.NewDateTimeFromTime(time.Now()),
+		},
 	}
 
 	err := c.store.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (db *configRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.ConfigCollection)
 }
