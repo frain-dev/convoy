@@ -24,7 +24,7 @@
 			<ul class="pl-8px pr-24px">
 				<li class="relative">
 					<button class="flex items-center text-grey-40 py-8px pl-24px my-8px rounded-8px transition-all duration-200 w-full" (click)="showHelpDropdown = !showHelpDropdown">
-						<svg width="18" height="18" class="mr-10px" class="fill-grey-40">
+						<svg width="18" height="18" class="fill-grey-40 mr-10px">
 							<use xlink:href="#help-icon"></use>
 						</svg>
 						<span class="font-medium text-14 transition-all duration-200" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">Help</span>
@@ -35,23 +35,12 @@
 							<convoy-list-item className="py-6px pl-16px text-14 hover:bg-primary-500 capitalize border-b-0">
 								<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
 									<path
-										d="M11.0832 4.6665H10.4998V2.9165C10.4998 2.45238 10.3155 2.00726 9.98727 1.67907C9.65909 1.35088 9.21397 1.1665 8.74984 1.1665H2.9165C2.45238 1.1665 2.00726 1.35088 1.67907 1.67907C1.35088 2.00726 1.1665 2.45238 1.1665 2.9165V9.9165C1.16708 10.0317 1.20173 10.1441 1.26609 10.2396C1.33045 10.3351 1.42164 10.4094 1.52817 10.4532C1.5974 10.4858 1.67332 10.5018 1.74984 10.4998C1.82661 10.5003 1.90271 10.4856 1.97378 10.4565C2.04485 10.4275 2.1095 10.3847 2.164 10.3307L3.80317 8.68567H4.6665V9.52567C4.6665 9.9898 4.85088 10.4349 5.17907 10.7631C5.50726 11.0913 5.95237 11.2757 6.4165 11.2757H10.4532L11.8357 12.664C11.8902 12.7181 11.9548 12.7608 12.0259 12.7899C12.097 12.8189 12.1731 12.8336 12.2498 12.8332C12.3264 12.8351 12.4023 12.8192 12.4715 12.7865C12.578 12.7427 12.6692 12.6684 12.7336 12.5729C12.7979 12.4774 12.8326 12.365 12.8332 12.2498V6.4165C12.8332 5.95237 12.6488 5.50726 12.3206 5.17907C11.9924 4.85088 11.5473 4.6665 11.0832 4.6665ZM4.6665 6.4165V7.519H3.564C3.48723 7.51856 3.41113 7.53327 3.34006 7.5623C3.26899 7.59133 3.20434 7.63411 3.14984 7.68817L2.33317 8.51067V2.9165C2.33317 2.76179 2.39463 2.61342 2.50403 2.50403C2.61342 2.39463 2.76179 2.33317 2.9165 2.33317H8.74984C8.90455 2.33317 9.05292 2.39463 9.16232 2.50403C9.27171 2.61342 9.33317 2.76179 9.33317 2.9165V4.6665H6.4165C5.95237 4.6665 5.50726 4.85088 5.17907 5.17907C4.85088 5.50726 4.6665 5.95237 4.6665 6.4165ZM11.6665 10.844L11.0832 10.2607C11.0291 10.2056 10.9647 10.1617 10.8936 10.1317C10.8225 10.1016 10.7462 10.086 10.669 10.0857H6.4165C6.26179 10.0857 6.11342 10.0242 6.00402 9.91482C5.89463 9.80542 5.83317 9.65705 5.83317 9.50234V6.4165C5.83317 6.26179 5.89463 6.11342 6.00402 6.00402C6.11342 5.89463 6.26179 5.83317 6.4165 5.83317H11.0832C11.2379 5.83317 11.3863 5.89463 11.4956 6.00402C11.605 6.11342 11.6665 6.26179 11.6665 6.4165V10.844Z"
-										fill="#737A91"
-									/>
-								</svg>
-
-								<a href="#" class="w-full ml-14px">Live Chat</a>
-							</convoy-list-item>
-
-							<convoy-list-item className="py-6px pl-16px text-14 hover:bg-primary-500 capitalize border-b-0">
-								<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-									<path
 										d="M11.0832 2.3335H2.9165C2.45238 2.3335 2.00726 2.51787 1.67907 2.84606C1.35088 3.17425 1.1665 3.61937 1.1665 4.0835V9.91683C1.1665 10.381 1.35088 10.8261 1.67907 11.1543C2.00726 11.4825 2.45238 11.6668 2.9165 11.6668H11.0832C11.5473 11.6668 11.9924 11.4825 12.3206 11.1543C12.6488 10.8261 12.8332 10.381 12.8332 9.91683V4.0835C12.8332 3.61937 12.6488 3.17425 12.3206 2.84606C11.9924 2.51787 11.5473 2.3335 11.0832 2.3335V2.3335ZM10.844 3.50016L7.414 6.93016C7.35978 6.98484 7.29526 7.02823 7.22417 7.05785C7.15309 7.08746 7.07684 7.10271 6.99984 7.10271C6.92283 7.10271 6.84659 7.08746 6.7755 7.05785C6.70442 7.02823 6.6399 6.98484 6.58567 6.93016L3.15567 3.50016H10.844ZM11.6665 9.91683C11.6665 10.0715 11.605 10.2199 11.4956 10.3293C11.3863 10.4387 11.2379 10.5002 11.0832 10.5002H2.9165C2.76179 10.5002 2.61342 10.4387 2.50403 10.3293C2.39463 10.2199 2.33317 10.0715 2.33317 9.91683V4.32266L5.76317 7.75266C6.0913 8.08038 6.53609 8.26446 6.99984 8.26446C7.46359 8.26446 7.90838 8.08038 8.2365 7.75266L11.6665 4.32266V9.91683Z"
 										fill="#737A91"
 									/>
 								</svg>
 
-								<a href="mailto:support@getconvoy.io" class="w-full ml-14px">Email Us</a>
+								<a href="mailto:support@getconvoy.io" target="_blank" class="w-full ml-14px">Email Us</a>
 							</convoy-list-item>
 
 							<convoy-list-item className="py-6px pl-16px text-14 hover:bg-primary-500 capitalize border-b-0">
@@ -62,7 +51,7 @@
 									/>
 								</svg>
 
-								<a href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ" class="w-full ml-14px">Ask Community</a>
+								<a href="https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ" target="_blank" class="w-full ml-14px">Ask Community</a>
 							</convoy-list-item>
 
 							<convoy-list-item className="py-6px pl-16px text-14 hover:bg-primary-500 capitalize border-b-0">
@@ -73,7 +62,7 @@
 									/>
 								</svg>
 
-								<a href="https://calendly.com/d/d6k-jw2-wgj/convoy-user-demo" class="w-full ml-14px">Schedule A Call</a>
+								<a href="https://calendly.com/d/d6k-jw2-wgj/convoy-user-demo" target="_blank" class="w-full ml-14px">Schedule A Call</a>
 							</convoy-list-item>
 
 							<hr class="ml-8px border border-grey-20 my-8px" />
@@ -86,7 +75,7 @@
 									/>
 								</svg>
 
-								<a href="https://github.com/frain-dev/convoy/blob/main/CHANGELOG.md" class="w-full ml-14px">Changelog</a>
+								<a href="https://github.com/frain-dev/convoy/blob/main/CHANGELOG.md" target="_blank" class="w-full ml-14px">Changelog</a>
 							</convoy-list-item>
 						</ul>
 					</div>

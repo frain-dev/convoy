@@ -36,7 +36,7 @@ export class ProjectComponent implements OnInit {
 	shouldShowFullSideBar = true;
 	projectDetails!: GROUP;
 	isLoadingProjectDetails: boolean = true;
-	showHelpDropdown = true;
+	showHelpDropdown = false;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
 		const uid = { uid: this.route.snapshot.params.id };
