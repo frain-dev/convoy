@@ -36,14 +36,18 @@ export class HttpService {
 					},
 					error => {
 						if (axios.isAxiosError(error)) {
+							const errorResponse: any = error.response;
+							let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
 							if (error.response?.status == 401 && this.router.url.split('/')[1] !== 'app') {
 								this.router.navigate(['/login'], { replaceUrl: true });
 								localStorage.removeItem('CONVOY_AUTH');
+                                this.generalService.showNotification({
+                                    message: errorMessage,
+                                    style: 'error'
+                                });
 								return Promise.reject(error);
 							}
 
-							const errorResponse: any = error.response;
-							let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
 							this.generalService.showNotification({
 								message: errorMessage,
 								style: 'error'

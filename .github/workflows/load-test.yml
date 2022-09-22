@@ -1,0 +1,33 @@
+name: Run Load Test
+
+on:
+  schedule:
+    - cron: '30 14 * * *'
+    - cron: '30 18 * * *'
+    - cron: '30 21 * * *'
+
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Manual workflow name"
+        required: true
+
+
+jobs:
+   load_test: 
+     name: K6 Load Test
+     runs-on: ubuntu-latest
+
+     steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Run Local K6 Test
+        uses: grafana/k6-action@v0.2.0
+        with:
+         filename: loadtest/convoy.js 
+         flags: --out influxdb=${{ secrets.INFLUXDB_BASE_URL }}
+        env: 
+           BASE_URL: ${{ secrets.CONVOY_BASE_URL }}
+           API_KEY: ${{ secrets.CONVOY_API_KEY }}
+           APP_ID: ${{ secrets.CONVOY_APP_ID }}

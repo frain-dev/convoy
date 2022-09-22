@@ -75,6 +75,113 @@ func TestSourceService_CreateSource(t *testing.T) {
 			},
 		},
 		{
+			name: "should_create_github_source",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name:     "Convoy-Prod",
+					Type:     datastore.HTTPSource,
+					Provider: datastore.GithubSourceProvider,
+					Verifier: datastore.VerifierConfig{
+						HMac: &datastore.HMac{
+							Secret: "Convoy-Secret",
+						},
+					},
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantSource: &datastore.Source{
+				Name:     "Convoy-Prod",
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: &datastore.VerifierConfig{
+					HMac: &datastore.HMac{
+						Secret: "Convoy-Secret",
+					},
+				},
+			},
+			dbFn: func(so *SourceService) {
+				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
+				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
+		{
+			name: "should_error_for_empty_name",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name:     "",
+					Type:     datastore.HTTPSource,
+					Provider: datastore.GithubSourceProvider,
+					Verifier: datastore.VerifierConfig{
+						HMac: &datastore.HMac{
+							Secret: "Convoy-Secret",
+						},
+					},
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "please provide a source name",
+		},
+		{
+			name: "should_error_for_invalid_type",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name:     "Convoy-Prod",
+					Type:     "abc",
+					Provider: datastore.GithubSourceProvider,
+					Verifier: datastore.VerifierConfig{
+						HMac: &datastore.HMac{
+							Secret: "Convoy-Secret",
+						},
+					},
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "please provide a valid source type",
+		},
+		{
+			name: "should_error_for_empty_hmac_secret",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name:     "Convoy-Prod",
+					Type:     datastore.HTTPSource,
+					Provider: datastore.GithubSourceProvider,
+					Verifier: datastore.VerifierConfig{
+						HMac: &datastore.HMac{
+							Secret: "",
+						},
+					},
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "hmac secret is required for github source",
+		},
+		{
+			name: "should_error_for_nil_hmac",
+			args: args{
+				ctx: ctx,
+				newSource: &models.Source{
+					Name:     "Convoy-Prod",
+					Type:     datastore.HTTPSource,
+					Provider: datastore.GithubSourceProvider,
+					Verifier: datastore.VerifierConfig{HMac: nil},
+				},
+				group: &datastore.Group{UID: "12345"},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "hmac secret is required for github source",
+		},
+		{
 			name: "should_set_default_forward_header_for_shopify_source",
 			args: args{
 				ctx: ctx,
@@ -474,7 +581,6 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			require.Nil(t, err)
 		})
 	}
-
 }
 
 func TestSourceService_LoadSourcesPaged(t *testing.T) {
@@ -536,7 +642,6 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 						Next:      2,
 						TotalPage: 3,
 					}, nil)
-
 			},
 		},
 
@@ -557,7 +662,6 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 				s.EXPECT().
 					LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
-
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusInternalServerError,

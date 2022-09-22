@@ -92,6 +92,22 @@ const (
 	ShopifySourceProvider SourceProvider = "shopify"
 )
 
+func (s SourceProvider) IsValid() bool {
+	switch s {
+	case GithubSourceProvider, TwitterSourceProvider, ShopifySourceProvider:
+		return true
+	}
+	return false
+}
+
+func (s SourceType) IsValid() bool {
+	switch s {
+	case HTTPSource, RestApiSource, PubSubSource, DBChangeStream:
+		return true
+	}
+	return false
+}
+
 const (
 	NoopVerifier      VerifierType = "noop"
 	HMacVerifier      VerifierType = "hmac"
@@ -218,10 +234,12 @@ type Endpoint struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-var ErrOrgNotFound = errors.New("organisation not found")
-var ErrDeviceNotFound = errors.New("device not found")
-var ErrOrgInviteNotFound = errors.New("organisation invite not found")
-var ErrOrgMemberNotFound = errors.New("organisation member not found")
+var (
+	ErrOrgNotFound       = errors.New("organisation not found")
+	ErrDeviceNotFound    = errors.New("device not found")
+	ErrOrgInviteNotFound = errors.New("organisation invite not found")
+	ErrOrgMemberNotFound = errors.New("organisation member not found")
+)
 
 type Group struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
@@ -392,9 +410,11 @@ type Event struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
-type SubscriptionType string
-type EventDeliveryStatus string
-type HttpHeader map[string]string
+type (
+	SubscriptionType    string
+	EventDeliveryStatus string
+	HttpHeader          map[string]string
+)
 
 func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 	for k, v := range h {
@@ -554,9 +574,9 @@ type Subscription struct {
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source      `json:"source_metadata,omitempty" bson:"-"`
-	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
-	App      *Application `json:"app_metadata,omitempty" bson:"-"`
+	Source   *Source      `json:"source_metadata" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"-"`
+	App      *Application `json:"app_metadata" bson:"-"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -690,8 +710,9 @@ type S3Storage struct {
 	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
 	AccessKey    string `json:"-" bson:"access_key" valid:"required~please provide an access key"`
 	SecretKey    string `json:"-" bson:"secret_key" valid:"required~please provide a secret key"`
-	SessionToken string `json:"-" bson:"session_token"`
 	Region       string `json:"region" bson:"region" valid:"required~please provide AWS bucket region"`
+	SessionToken string `json:"-" bson:"session_token"`
+	Endpoint     string `json:"endpoint" bson:"endpoint"`
 }
 
 type OnPremStorage struct {
@@ -797,8 +818,10 @@ func (p *Password) Matches() (bool, error) {
 	return true, err
 }
 
-type EventMap map[string]*Event
-type SourceMap map[string]*Source
-type DeviceMap map[string]*Device
-type AppMap map[string]*Application
-type EndpointMap map[string]*Endpoint
+type (
+	EventMap    map[string]*Event
+	SourceMap   map[string]*Source
+	DeviceMap   map[string]*Device
+	AppMap      map[string]*Application
+	EndpointMap map[string]*Endpoint
+)

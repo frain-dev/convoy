@@ -21,7 +21,7 @@ const (
 	DailyUserCount         string = "Daily User Count"
 	MixPanelDevToken       string = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
 	MixPanelProdToken      string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
-	PerPage                int    = 20
+	PerPage                int    = 50
 	Page                   int    = 1
 )
 

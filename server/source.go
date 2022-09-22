@@ -24,7 +24,7 @@ import (
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /sources [post]
+// @Router /api/v1/sources [post]
 func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.Source
 	if err := util.ReadJSON(r, &newSource); err != nil {
@@ -56,7 +56,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /sources/{sourceID} [get]
+// @Router /api/v1/sources/{sourceID} [get]
 func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
@@ -84,7 +84,7 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /sources/{sourceID} [put]
+// @Router /api/v1/sources/{sourceID} [put]
 func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
@@ -123,7 +123,7 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /sources/{sourceID} [delete]
+// @Router /api/v1/sources/{sourceID} [delete]
 func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
@@ -153,7 +153,7 @@ func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /sources [get]
+// @Router /api/v1/sources [get]
 func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())

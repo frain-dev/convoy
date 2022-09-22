@@ -2,8 +2,8 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProjectComponent } from './project.component';
 import { Routes, RouterModule } from '@angular/router';
-import { PageComponent } from 'src/app/components/page/page.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
+import { GithubStarComponent } from 'src/app/components/github-star/github-star.component';
 
 const routes: Routes = [
 	{
@@ -53,6 +53,6 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [ProjectComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), PageComponent, ButtonComponent]
+	imports: [CommonModule, RouterModule.forChild(routes), ButtonComponent, GithubStarComponent]
 })
 export class ProjectModule {}

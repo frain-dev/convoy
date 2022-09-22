@@ -14,7 +14,7 @@
 	<div class="flex items-center">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" [ngClass]="{ active: appsSearchString != undefined && appsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-			<input type="search" placeholder="Search apps" [(ngModel)]="appsSearchString" (change)="searchApps({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
+			<input type="search" placeholder="Search apps" [(ngModel)]="appsSearchString" (keyup)="searchApps({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
 			<convoy-button *ngIf="appsSearchString && appsSearchString.length > 0" className="transition-all duration-200" type="icon">
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</convoy-button>
@@ -48,11 +48,12 @@
 	</div>
 	<convoy-button size="sm" className="h-36px" id="create-app-modal-button" routerLink="./new">Create An App</convoy-button>
 </div>
+<convoy-card *ngIf="isloadingApps">
+	<convoy-table-loader id="events_loader_loader" [tableHead]="appsTableHead"></convoy-table-loader>
+</convoy-card>
 
-<convoy-card>
-	<convoy-table-loader id="events_loader_loader" [tableHead]="appsTableHead" *ngIf="isloadingApps"></convoy-table-loader>
-
-	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingApps && displayedApps && displayedApps.length > 0">
+<convoy-card *ngIf="!isloadingApps && displayedApps && displayedApps.length > 0">
+	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
 		<convoy-table>
 			<convoy-table-head class="contents">
 				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of appsTableHead; let i = index">{{ head }}</convoy-table-head-cell>
@@ -104,11 +105,21 @@
 			</tbody>
 		</convoy-table>
 	</div>
-
-	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No app to show here" className="h-[50vh]" id="events-empty-state" *ngIf="!isloadingApps && displayedApps?.length === 0"></convoy-empty-state>
 </convoy-card>
 
-<div class="flex items-center mt-16px">
+<convoy-card className="mt-16px" *ngIf="!isloadingApps && displayedApps?.length === 0">
+	<convoy-empty-state
+		imgSrc="/assets/img/group-empty-img.svg"
+		[heading]="appsSearchString && appsSearchString.length > 0 ? 'An app with the name “' + appsSearchString + '” does not exist' : 'Create your first application'"
+		[buttonText]="appsSearchString && appsSearchString.length > 0 ? '' : 'Create Application'"
+		[description]="appsSearchString && appsSearchString.length > 0 ? '' : 'An application is either your backend application or your users application. It can hold multiple endpoints which listen for your webhook events that are sent or received.'"
+		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/apps/new')"
+		className="h-[50vh]"
+		id="events-empty-state"
+	></convoy-empty-state>
+</convoy-card>
+
+<div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedApps?.length === 0 }">
 	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev }" [disable]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>

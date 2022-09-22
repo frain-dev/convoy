@@ -9,7 +9,7 @@
 		<div class="flex justify-between">
 			<div class="mr-2px last-of-type:mr-0 w-full group" *ngFor="let data of paginatedData; let i = index">
 				<div class="flex items-end h-100px hover:cursor-pointer">
-					<div [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 group-hover:bg-opacity-100' : 'bg-grey-10 group-hover:bg-grey-40'" class="min-h-[4px] w-full rounded-4px transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
+					<div [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 rounded-tl-8px rounded-tr-8px' : 'bg-grey-10 rounded-4px group-hover:bg-grey-40'" class="min-h-[4px] w-full transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
 						<div
 							class="
 								absolute
@@ -19,15 +19,27 @@
 								transition-all
 								duration-300
 								bg-white-100
-								shadow-sm
-								rounded-8px
+								shadow-[0px_8px_8px_rgba(50,50,71,0.08),0px_8px_16px_rgba(50,50,71,0.06)]
+								rounded-12px
 								w-120px
-								p-14px
+								px-14px
+								py-8px
 								text-black text-12 text-left
-								bottom-[calc(100%+15px)]
+								bottom-[calc(100%+8px)]
 								left-1/2
 								-translate-x-1/2
 								z-10
+								before:content-['']
+								before:left-1/2
+								before:-translate-x-1/2
+								before:border-[3px] before:border-white-100
+								before:absolute
+								before:-bottom-[20px]
+								before:rounded-12px
+								before:shadow-[0px_2.66667px_2.66667px_rgba(50,50,71,0.06),0px_2.66667px_5.33333px_rgba(50,50,71,0.06)]
+								before:h-12px
+								before:w-12px
+								before:bg-primary-100
 								after:content-['']
 								after:absolute
 								after:-bottom-[20px]
@@ -36,6 +48,7 @@
 								after:border-[12px] after:border-t-white-100 after:border-b-transparent after:border-x-transparent
 								after:outline-1 after:outline-grey-20
 							"
+							[ngClass]="{ 'before:hidden': data.data === 0 }"
 						>
 							<h3 class="font-semibold">{{ data.label }}</h3>
 							<p class="text-14">Events: {{ data.data }}</p>

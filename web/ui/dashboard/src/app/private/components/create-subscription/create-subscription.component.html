@@ -82,9 +82,9 @@
 	</convoy-card>
 
 	<div class="flex justify-end mt-32px">
-		<convoy-button className="mr-16px text-14" type="outline" buttonType="button" (click)="onAction.emit({ action: 'cancel' })">Cancel</convoy-button>
+		<convoy-button className="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="outline" buttonType="button" (click)="confirmModal = true">Cancel</convoy-button>
 		<convoy-button className="text-14">
-			{{ action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
+			{{ isNewProjectRoute() ? 'Save and Proceed' : action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
@@ -109,3 +109,5 @@
 		<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false"></app-create-endpoint>
 	</div>
 </convoy-modal>
+
+<convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="onAction.emit({ action: 'cancel' })" (closeModal)="confirmModal = false"></convoy-confirmation-modal>

@@ -30,7 +30,7 @@ func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastor
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
 	organisations := make([]datastore.Organisation, 0)
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&organisations).Find()
+	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Filter(filter).Decode(&organisations).Find()
 	if err != nil {
 		return organisations, datastore.PaginationData{}, err
 	}
