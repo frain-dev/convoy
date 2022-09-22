@@ -39,6 +39,7 @@ export class CreateProjectComponent implements OnInit {
 	isCreatingProject = false;
 	showApiKey = false;
 	enableMoreConfig = false;
+    confirmModal = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [

@@ -36,7 +36,7 @@ $ docker run \
 	-p 5005:5005 \
 	--name convoy-server \
 	-v `pwd`/convoy.json:/convoy.json \
-	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.6.5
+	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:latest
 ```
 
 ### Option 2: Spin up an instance with third-party dependencies on a Linux VM

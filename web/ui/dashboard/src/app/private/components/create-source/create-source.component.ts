@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CreateSourceService } from './create-source.service';
 
 @Component({
@@ -51,8 +51,9 @@ export class CreateSourceComponent implements OnInit {
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
+	confirmModal = false;
 
-	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
 		this.action === 'update' && this.getSourceDetails();
@@ -117,6 +118,11 @@ export class CreateSourceComponent implements OnInit {
 
 		if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) return true;
 
+		return false;
+	}
+
+	isNewProjectRoute(): boolean {
+		if (this.router.url == '/projects/new') return true;
 		return false;
 	}
 }

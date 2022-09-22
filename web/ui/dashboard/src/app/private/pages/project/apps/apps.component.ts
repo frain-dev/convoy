@@ -35,7 +35,7 @@ export class AppsComponent implements OnInit {
 	filteredApps!: APP[];
 	@ViewChild('appTableDropdown') appTableDropdown!: DropdownComponent;
 
-	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}
+	constructor(public router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}
 
 	ngOnInit() {
 		this.getApps();
@@ -100,4 +100,5 @@ export class AppsComponent implements OnInit {
 		this.currentAppId = '';
 		this.showDeleteAppModal = true;
 	}
+
 }

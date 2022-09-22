@@ -54,6 +54,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	isloadingAppPortalAppDetails = false;
 	token: string = this.route.snapshot.params.token;
 	showError = false;
+	confirmModal = false;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -260,5 +261,9 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 
 		return `${timeValue}s`;
+  }
+	isNewProjectRoute(): boolean {
+		if (this.router.url == '/projects/new') return true;
+		return false;
 	}
 }

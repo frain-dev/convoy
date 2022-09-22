@@ -111,7 +111,7 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	err = a.S.OrganisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
 	if err != nil {
 		log.WithError(err).Error("failed to process organisation member invite")
-		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("")))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -128,7 +128,7 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 // @Success 200 {object} util.ServerResponse{data=datastore.User}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /users/token [get]
+// @Router /ui/users/token [get]
 func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	user, iv, err := a.S.OrganisationInviteService.FindUserByInviteToken(r.Context(), token)

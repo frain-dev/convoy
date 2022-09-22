@@ -21,7 +21,7 @@ import (
 // @Success 200 {object} util.ServerResponse{data=datastore.DeliveryAttempt}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
+// @Router /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
 func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempt fetched successfully",
@@ -39,7 +39,7 @@ func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.R
 // @Success 200 {object} util.ServerResponse{data=[]datastore.DeliveryAttempt}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
+// @Router /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
 func (a *ApplicationHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempts fetched successfully",

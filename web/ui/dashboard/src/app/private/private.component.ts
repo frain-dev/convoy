@@ -37,6 +37,10 @@ export class PrivateComponent implements OnInit {
 		this.router.navigateByUrl('/login');
 	}
 
+    get isProjectDetailsPage(){
+        return this.router.url.includes("/projects/")
+    }
+
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
