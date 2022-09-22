@@ -25,14 +25,13 @@ type pagedResponse struct {
 // @Tags Application
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID} [get]
+// @Router /api/v1/projects/{projectID}/applications/{appID} [get]
 func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("App fetched successfully",
 		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
 }
@@ -47,11 +46,11 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param q query string false "app title"
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Application}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications [get]
+// @Router /api/v1/projects/{projectID}/applications [get]
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
@@ -74,14 +73,13 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Tags Application
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param application body models.Application true "Application Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications [post]
+// @Router /api/v1/projects/{projectID}/applications [post]
 func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
-
 	var newApp models.Application
 	err := util.ReadJSON(r, &newApp)
 	if err != nil {
@@ -105,13 +103,13 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Tags Application
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Param application body models.Application true "Application Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID} [put]
+// @Router /api/v1/projects/{projectID}/applications/{appID} [put]
 func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	var appUpdate models.UpdateApplication
 	err := util.ReadJSON(r, &appUpdate)
@@ -137,12 +135,12 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Tags Application
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID} [delete]
+// @Router /api/v1/projects/{projectID}/applications/{appID} [delete]
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
 	err := a.S.AppService.DeleteApplication(r.Context(), app)
@@ -161,13 +159,13 @@ func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints [post]
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints [post]
 func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	e, err := m.ParseEndpointFromBody(r)
@@ -193,13 +191,13 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints/{endpointID} [get]
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint fetched successfully",
 		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
@@ -211,12 +209,12 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints [get]
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints [get]
 func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
 
@@ -230,14 +228,14 @@ func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints/{endpointID} [put]
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [put]
 func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	e, err := m.ParseEndpointFromBody(r)
@@ -264,13 +262,13 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints/{endpointID} [delete]
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
 	e := m.GetApplicationEndpointFromContext(r.Context())
@@ -285,8 +283,9 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 }
 
 func (a *ApplicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("Apps fetched successfully",
-		pagedResponse{Content: *m.GetApplicationsFromContext(r.Context()),
-			Pagination: m.GetPaginationDataFromContext(r.Context())}, http.StatusOK))
+		pagedResponse{
+			Content:    *m.GetApplicationsFromContext(r.Context()),
+			Pagination: m.GetPaginationDataFromContext(r.Context()),
+		}, http.StatusOK))
 }

@@ -15,15 +15,15 @@ import (
 // @Tags DeliveryAttempts
 // @Accept  json
 // @Produce  json
+// @Param projectID path string true "Project id"
 // @Param eventID path string true "event id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Param deliveryAttemptID path string true "delivery attempt id"
 // @Success 200 {object} util.ServerResponse{data=datastore.DeliveryAttempt}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
+// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
 func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempt fetched successfully",
 		*m.GetDeliveryAttemptFromContext(r.Context()), http.StatusOK))
 }
@@ -34,14 +34,14 @@ func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.R
 // @Tags DeliveryAttempts
 // @Accept  json
 // @Produce  json
+// @Param projectID path string true "Project id"
 // @Param eventID path string true "event id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.DeliveryAttempt}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
+// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
 func (a *ApplicationHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempts fetched successfully",
 		*m.GetDeliveryAttemptsFromContext(r.Context()), http.StatusOK))
 }
