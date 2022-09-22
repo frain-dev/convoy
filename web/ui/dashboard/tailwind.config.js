@@ -55,7 +55,7 @@ module.exports = {
 			18: ['18px', '30px'],
 			20: ['20px', '30px'],
 			24: ['24px', '35px'],
-			h1: ['24px', '140%'],
+			h1: ['20px', '140%'],
 			h2: ['18px', '140%'],
 			h3: ['16px', '140%'],
 			h4: ['14px', '140%']
@@ -111,6 +111,7 @@ module.exports = {
 			'dark-green': '#327D63',
 			'light-green': '#47B38D',
 			black: '#16192C',
+            'dark-grey': '#B2B2B2',
 			transparent: 'transparent'
 		}
 	},

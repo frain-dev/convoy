@@ -12,4 +12,7 @@
 	:root {
 		--color-white: 252, 252, 252;
 	}
+    h1 {
+		@apply text-h1;
+	}
 }
