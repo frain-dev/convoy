@@ -95,10 +95,11 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param appID path string true "application ID"
+// @Param appAPIKey body models.APIKey true "APIKey details"
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /security/applications/{appID}/keys [post]
+// @Router /api/v1/security/applications/{appID}/keys [post]
 func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Request) {
 	var keyType datastore.KeyType
 	var newApiKey models.CreateAppApiKey

@@ -23,13 +23,13 @@ func createConfigService(a *ApplicationHandler) *services.ConfigService {
 // LoadConfiguration
 // @Summary Fetch configuration
 // @Description This endpoint fetches configuration
-// @Tags Source
+// @Tags Configuration
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.ConfigurationResponse}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /configuration [get]
+// @Router /ui/configuration [get]
 func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
 	configService := createConfigService(a)
 	config, err := configService.LoadConfiguration(r.Context())
@@ -60,14 +60,14 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 // CreateConfiguration
 // @Summary Create a configuration
 // @Description This endpoint creates a configuration
-// @Tags Application
+// @Tags Configuration
 // @Accept  json
 // @Produce  json
 // @Param application body models.Configuration true "Configuration Details"
 // @Success 200 {object} util.ServerResponse{data=models.ConfigurationResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /configuration [post]
+// @Router /ui/configuration [post]
 func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
@@ -99,14 +99,14 @@ func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 // UpdateConfiguration
 // @Summary Update configuration
 // @Description This endpoint updates configuration
-// @Tags Application
+// @Tags Configuration
 // @Accept  json
 // @Produce  json
 // @Param application body models.Configuration true "Configuration Details"
 // @Success 202 {object} util.ServerResponse{data=models.ConfigurationResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /configuration [put]
+// @Router /ui/configuration [put]
 func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {

@@ -22,7 +22,7 @@ export class SubscriptionsComponent implements OnInit {
 	showUpdateSubscriptionModal = false;
 	showDeleteSubscriptionModal = false;
 
-	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
+	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
 		this.projectId = this.privateService.activeProjectDetails.uid;
 
 		const urlParam = route.snapshot.params.id;

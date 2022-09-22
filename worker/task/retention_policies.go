@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -33,8 +34,8 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 			log.WithError(err)
 			return err
 		}
-		filter := &datastore.GroupFilter{}
 
+		filter := &datastore.GroupFilter{}
 		groups, err := groupRepo.LoadGroups(context.Background(), filter)
 		if err != nil {
 			log.WithError(err).Error("failed to load groups.")
@@ -70,6 +71,7 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 		exportDir := convoy.TmpExportDir
 		objectStoreOpts := objectstore.ObjectStoreOptions{
 			Bucket:       config.StoragePolicy.S3.Bucket,
+			Endpoint:     config.StoragePolicy.S3.Endpoint,
 			AccessKey:    config.StoragePolicy.S3.AccessKey,
 			SecretKey:    config.StoragePolicy.S3.SecretKey,
 			SessionToken: config.StoragePolicy.S3.SessionToken,
@@ -100,13 +102,15 @@ func GetArgsByCollection(collection string, uri string, exportDir string, expDat
 	switch collection {
 	case "events":
 		query := fmt.Sprintf(`{ "group_id": "%s", "document_status": "Active", "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
-		out := fmt.Sprint(exportDir, group.OrganisationID, "/", group.UID, "/", "events/", time.Now().UTC().Format(time.RFC3339), "/", "events.json") //<org-id>/<project-id>/events/<today-as-ISODateTime>
+		//orgs/<org-id>/projects/<project-id>/events/<today-as-ISODateTime>
+		out := fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 
 	case "eventdeliveries":
 		query := fmt.Sprintf(`{ "group_id": "%s", "document_status": "Active", "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
-		out := fmt.Sprint(exportDir, group.OrganisationID, "/", group.UID, "/", "eventdeliveries/", time.Now().UTC().Format(time.RFC3339), "/", "event_deliveries.json") //<org-id>/<project-id>/events/<today-as-ISODateTime>
+		//orgs/<org-id>/projects/<project-id>/eventdeliveries/<today-as-ISODateTime>
+		out := fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 	default:
@@ -119,76 +123,75 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 	if err != nil {
 		return err
 	}
-	mongoExporter := &util.MongoExporter{
-		Args: args,
-	}
+
+	mongoExporter := &util.MongoExporter{Args: args}
 	numDocs, err := mongoExporter.Export()
 	if err != nil {
 		return err
 	}
-	if numDocs > 0 {
-		//upload to object store
-		err = objectStoreClient.Save(out)
+
+	if numDocs == 0 {
+		log.Printf("there is nothing to backup, will remove temp file at %s", out)
+		return os.Remove(out)
+	}
+
+	//upload to object store
+	err = objectStoreClient.Save(out)
+	if err != nil {
+		return err
+	}
+
+	switch collection {
+	case "events":
+		evntFilter := &datastore.EventFilter{
+			GroupID:        group.UID,
+			CreatedAtStart: 0,
+			CreatedAtEnd:   expDate.Unix(),
+		}
+		err = eventRepo.DeleteGroupEvents(ctx, evntFilter, true)
+		if err != nil {
+			return err
+		}
+		groupMetaData := group.Metadata
+		//update retain count
+		if groupMetaData == nil {
+			group.Metadata = &datastore.GroupMetadata{
+				RetainedEvents: int(numDocs),
+			}
+
+		} else {
+			group.Metadata.RetainedEvents += int(numDocs)
+		}
+		err = groupRepo.UpdateGroup(ctx, group)
 		if err != nil {
 			return err
 		}
 
-		//delete documents
-		f := &datastore.Filter{
-			Group: group,
-			SearchParams: datastore.SearchParams{
-				CreatedAtStart: 0,
-				CreatedAtEnd:   expDate.Unix(),
-			},
+	case "eventdeliveries":
+		evntDeliveryFilter := &datastore.EventDeliveryFilter{
+			GroupID:        group.UID,
+			CreatedAtStart: 0,
+			CreatedAtEnd:   expDate.Unix(),
 		}
-
-		sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
-			GroupID:      f.Group.UID,
-			SearchParams: f.SearchParams,
-		}}
-
-		err = searcher.Remove(collection, sf)
+		err = eventDeliveriesRepo.DeleteGroupEventDeliveries(ctx, evntDeliveryFilter, true)
 		if err != nil {
 			return err
-		}
-
-		switch collection {
-		case "events":
-			evntFilter := &datastore.EventFilter{
-				GroupID:        group.UID,
-				CreatedAtStart: 0,
-				CreatedAtEnd:   expDate.Unix(),
-			}
-			err = eventRepo.DeleteGroupEvents(ctx, evntFilter, true)
-			if err != nil {
-				return err
-			}
-			groupMetaData := group.Metadata
-			//update retain count
-			if groupMetaData == nil {
-				group.Metadata = &datastore.GroupMetadata{
-					RetainedEvents: int(numDocs),
-				}
-
-			} else {
-				group.Metadata.RetainedEvents += int(numDocs)
-			}
-			err = groupRepo.UpdateGroup(ctx, group)
-			if err != nil {
-				return err
-			}
-
-		case "eventdeliveries":
-			evntDeliveryFilter := &datastore.EventDeliveryFilter{
-				GroupID:        group.UID,
-				CreatedAtStart: 0,
-				CreatedAtEnd:   expDate.Unix(),
-			}
-			err = eventDeliveriesRepo.DeleteGroupEventDeliveries(ctx, evntDeliveryFilter, true)
-			if err != nil {
-				return err
-			}
 		}
 	}
+
+	//delete documents
+	sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
+		GroupID: group.UID,
+		SearchParams: datastore.SearchParams{
+			CreatedAtStart: 0,
+			CreatedAtEnd:   expDate.Unix(),
+		},
+	}}
+
+	err = searcher.Remove(collection, sf)
+	if err != nil {
+		log.WithError(err).Error("typesense: an error occured deleting typesense record")
+	}
+
 	return nil
 }

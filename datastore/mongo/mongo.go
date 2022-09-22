@@ -166,6 +166,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "organisation_id", Value: 1},
 					{Key: "name", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
@@ -175,6 +176,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 				},
@@ -184,6 +186,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
 					{Key: "app_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 				},
@@ -192,6 +195,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "app_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 				},
@@ -209,6 +213,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "app_id", Value: 1},
 					{Key: "group_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
 				},
@@ -217,6 +222,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "app_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
 				},
@@ -225,6 +231,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
 				},
@@ -241,6 +248,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "event_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
 				},
@@ -248,6 +256,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
+					{Key: "deleted_at", Value: 1},
 					{Key: "event_id", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
@@ -257,6 +266,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
 					{Key: "group_id", Value: 1},
@@ -268,11 +278,13 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "uid", Value: 1},
 					{Key: "document_status", Value: 1},
+					{Key: "deleted_at", Value: 1},
 				},
 			},
 
 			{
 				Keys: bson.D{
+					{Key: "deleted_at", Value: 1},
 					{Key: "group_id", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
@@ -281,6 +293,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 					{Key: "group_id", Value: 1},
@@ -289,6 +302,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 					{Key: "app_id", Value: 1},
@@ -308,6 +322,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
 					{Key: "document_status", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "created_at", Value: 1},
 				},
 			},
@@ -315,6 +330,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
 					{Key: "document_status", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "title", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
@@ -326,6 +342,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "organisation_id", Value: 1},
 					{Key: "invitee_email", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
@@ -344,6 +361,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "organisation_id", Value: 1},
 					{Key: "user_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
@@ -354,6 +372,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "email", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
@@ -380,6 +399,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "source_id", Value: 1},
 					{Key: "device_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),
