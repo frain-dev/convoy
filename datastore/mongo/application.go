@@ -288,7 +288,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 			return nil, err
 		}
 
-		return nil, nil
+		return "success", nil
 	})
 
 	log.Printf("[mongodb]: trxn result: %+v", res)

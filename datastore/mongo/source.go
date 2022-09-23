@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -79,8 +80,6 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*da
 
 func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id string) error {
 	ctx = s.setCollectionInContext(ctx)
-	filter := bson.M{"uid": id, "group_id": groupId}
-
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
@@ -88,7 +87,32 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 		},
 	}
 
-	err := s.store.UpdateOne(ctx, filter, update)
+	res, err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		srcfilter := bson.M{"uid": id, "group_id": groupId}
+		err := s.store.UpdateOne(sessCtx, srcfilter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		err = s.deleteSubscription(sessCtx, id, update)
+		if err != nil {
+			return nil, err
+		}
+
+		return "success", nil
+	})
+
+	log.Printf("[mongodb]: trxn result: %+v", res)
+
+	return err
+}
+
+func (s *sourceRepo) deleteSubscription(ctx context.Context, sourceId string, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+	filter := bson.M{"source_id": sourceId}
+	err := s.store.UpdateMany(ctx, filter, update, true)
+
 	return err
 }
 
