@@ -122,6 +122,13 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "from", Value: datastore.AppCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
+			{Key: "pipeline", Value: mongo.Pipeline{
+				bson.D{{
+					Key: "$match", Value: bson.D{
+						{Key: "document_status", Value: "Active"},
+					}},
+				},
+			}},
 			{Key: "as", Value: "group_apps"},
 		}},
 	}
