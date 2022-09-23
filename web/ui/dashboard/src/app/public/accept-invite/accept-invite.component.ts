@@ -1,11 +1,17 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ButtonComponent } from 'src/app/components/button/button.component';
+import { InputComponent } from 'src/app/components/input/input.component';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AcceptInviteService } from './accept-invite.service';
 
 @Component({
 	selector: 'app-accept-invite',
+    standalone: true,
+    imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent, LoaderModule],
 	templateUrl: './accept-invite.component.html',
 	styleUrls: ['./accept-invite.component.scss']
 })
