@@ -180,13 +180,44 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 
 func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	ctx = db.setCollectionInContext(ctx)
-
-	err := db.store.DeleteByID(ctx, uid, false)
-	if err != nil {
-		return err
+	updateAsDeleted := bson.M{
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
-	return nil
+	_, err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		err := db.store.DeleteByID(sessCtx, uid, false)
+		if err != nil {
+			return nil, err
+		}
+
+		var apps []datastore.Application
+
+		ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.AppCollection)
+		filter := bson.M{"group_id": uid}
+		err = db.store.FindAll(ctx, filter, nil, nil, &apps)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, app := range apps {
+			err = db.deleteAppEvents(sessCtx, uid, updateAsDeleted)
+			if err != nil {
+				return nil, err
+			}
+
+			err = db.deleteApp(sessCtx, app.UID, updateAsDeleted)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return "success", nil
+	})
+
+	return err
 }
 
 func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
@@ -207,6 +238,20 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 	}
 
 	return groups, err
+}
+
+func (db *groupRepo) deleteAppEvents(ctx context.Context, groupId string, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
+
+	filter := bson.M{"group_id": groupId}
+	return db.store.UpdateMany(ctx, filter, update, true)
+}
+
+func (db *groupRepo) deleteApp(ctx context.Context, app_id string, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.AppCollection)
+
+	filter := bson.M{"uid": app_id}
+	return db.store.UpdateMany(ctx, filter, update, true)
 }
 
 func (db *groupRepo) setCollectionInContext(ctx context.Context) context.Context {

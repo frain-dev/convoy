@@ -361,7 +361,7 @@ func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M, bul
 		return err
 	}
 
-	log.Infof("results of update %s op: %+v", collection.Name(), res)
+	log.Infof("\n[mongodb]: results of update %s op: %+v\n", collection.Name(), res)
 
 	return nil
 }
