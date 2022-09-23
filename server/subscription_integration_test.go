@@ -151,7 +151,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		}
 	}`, app.UID, source.UID, group.UID, endpoint.UID)
 
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", group.UID)
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, apiKey, body)
 	w := httptest.NewRecorder()
@@ -387,7 +387,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	_, _ = testdb.SeedSubscription(s.DB, app, group, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", group.UID, subscriptionId)
 	req := createRequest(http.MethodGet, url, apiKey, nil)
 	w := httptest.NewRecorder()
 

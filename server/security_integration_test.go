@@ -227,7 +227,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 }
 
 func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelongToGroup() {
-	expectedStatusCode := http.StatusBadRequest
+	expectedStatusCode := http.StatusUnauthorized
 
 	// Switch to the native realm
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
