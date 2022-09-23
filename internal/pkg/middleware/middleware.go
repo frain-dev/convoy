@@ -446,25 +446,27 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
-			user := GetUserFromContext(r.Context())
 			group := GetGroupFromContext(r.Context())
 
-			if user != nil { // this signals that a personal api key was used for authentication
-				member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
-				if err != nil {
-					log.WithError(err).Error("failed to fetch organisation member")
+			if authUser.Metadata != nil { // this signals that a personal api key was used for authentication
+				user, _ := authUser.Metadata.(*datastore.User)
+				if user != nil {
+					member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
+					if err != nil {
+						log.WithError(err).Error("failed to fetch organisation member")
+						_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+						return
+					}
+
+					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Group == group.UID {
+						r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
+						next.ServeHTTP(w, r)
+						return
+					}
+
 					_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 					return
 				}
-
-				if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Group == group.UID {
-					r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
-					next.ServeHTTP(w, r)
-					return
-				}
-
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
-				return
 			}
 
 			// it's a project api key at this point
@@ -483,23 +485,13 @@ func (m *Middleware) RejectAppPortalKey() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
-			member := GetOrganisationMemberFromContext(r.Context())
-
-			if member != nil {
-				// A Personal api key was used to authenticate, and we know that members are not scoped to apps
-				// only projects. This means that, by default the member can create apps
-				// for more context see where this middleware is called. This behaviour should not be used lightly.
-				next.ServeHTTP(w, r)
+			if authUser.Role.App != "" {
+				// if authUser.Role.App is not empty, an app portal api key was used to authenticate
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 
-			if authUser.Role.App == "" {
-				// if authUser.Role.App is empty, then it wasn't an app portal api key that was used to authenticate
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			next.ServeHTTP(w, r)
 		})
 	}
 }

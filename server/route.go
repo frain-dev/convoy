@@ -189,38 +189,35 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			r.Use(a.M.RequireAuth())
 
 			r.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Use(a.M.RejectAppPortalKey())
 				// projectWithAuthUserRouter routes require a Personal API Key or JWT Token to work
-				projectWithAuthUserRouter := projectRouter.With(a.M.RequireAuthUserMetadata())
 
-				projectWithAuthUserRouter.With(
+				projectRouter.With(
+					a.M.RequireAuthUserMetadata(),
 					a.M.RequireOrganisation(),
 					a.M.RequireOrganisationMembership(),
 					a.M.RequireOrganisationMemberRole(auth.RoleSuperUser),
 				).Post("/", a.CreateGroup)
 
-				projectWithAuthUserRouter.With(
+				projectRouter.With(
+					a.M.RequireAuthUserMetadata(),
 					a.M.RequireOrganisation(),
 					a.M.RequireOrganisationMembership(),
 				).Get("/", a.GetGroups)
-
-				projectWithAuthUserRouter.Route("/{projectID}", func(projectWithAuthUserSubRouter chi.Router) {
-					projectWithAuthUserSubRouter.Use(a.M.RequireGroup())
-					projectWithAuthUserSubRouter.Use(a.M.RequireGroupAccess())
-
-					projectWithAuthUserSubRouter.Get("/", a.GetGroup)
-					projectWithAuthUserSubRouter.Put("/", a.UpdateGroup)
-					projectWithAuthUserSubRouter.Delete("/", a.DeleteGroup)
-				})
 
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Use(a.M.RequireGroup())
 					projectSubRouter.Use(a.M.RequireGroupAccess())
 
+					projectSubRouter.With().Get("/", a.GetGroup)
+					projectSubRouter.Put("/", a.UpdateGroup)
+					projectSubRouter.Delete("/", a.DeleteGroup)
+
 					projectSubRouter.Route("/applications", func(appRouter chi.Router) {
 						appRouter.Use(a.M.RateLimitByGroupID())
 
-						appRouter.With(a.M.RejectAppPortalKey()).Post("/", a.CreateApp)              // app portal key not allowed to create apps
-						appRouter.With(a.M.RejectAppPortalKey(), a.M.Pagination).Get("/", a.GetApps) // app portal key not allowed to get apps
+						appRouter.Post("/", a.CreateApp)
+						appRouter.With(a.M.Pagination).Get("/", a.GetApps)
 
 						appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
 							appSubRouter.Use(a.M.RequireApp())
@@ -228,7 +225,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 							appSubRouter.Get("/", a.GetApp)
 							appSubRouter.Put("/", a.UpdateApp)
-							appSubRouter.With(a.M.RejectAppPortalKey()).Delete("/", a.DeleteApp) // app portal key not allowed to delete any app, even its own app
+							appSubRouter.Delete("/", a.DeleteApp)
 
 							appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
 								endpointAppSubRouter.Post("/", a.CreateAppEndpoint)

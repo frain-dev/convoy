@@ -158,7 +158,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	bodyStr := `{"key_type":"app_portal"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
-	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/security/applications/%s/keys", s.DefaultGroup.UID, app.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
@@ -205,7 +205,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	bodyStr := `{"key_type":"cli"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
-	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/security/applications/%s/keys", s.DefaultGroup.UID, app.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
@@ -251,7 +251,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelo
 	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
-	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/security/applications/%s/keys", s.DefaultGroup.UID, app.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
