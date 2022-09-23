@@ -1,5 +1,5 @@
 <form class="pb-40px mt-40px relative" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
-	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
+	<convoy-loader *ngIf="isLoadingForm || isCreatingSubscription"></convoy-loader>
 
 	<convoy-card className="px-24px py-24px">
 		<convoy-input type="text" name="subscription-name" formControlName="name" errorMessage="Enter new subscription name" label="Subscription name" placeholder="e.g paystack-prod"></convoy-input>
