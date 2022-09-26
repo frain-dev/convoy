@@ -14,10 +14,10 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { DeleteModalModule } from 'src/app/private/components/delete-modal/delete-modal.module';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { SourceValueModule } from 'src/app/pipes/source-value/source-value.module';
+import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 
 const routes: Routes = [{ path: '', component: SourcesComponent }];
 
@@ -28,7 +28,7 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		TableLoaderModule,
 		RouterModule.forChild(routes),
 		CreateSourceModule,
-		DeleteModalModule,
+		DeleteModalComponent,
 		TableHeadComponent,
 		TableHeadCellComponent,
 		TableRowComponent,
