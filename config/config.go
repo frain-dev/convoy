@@ -61,6 +61,7 @@ type HTTPServerConfiguration struct {
 	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
 	Port        uint32 `json:"port" envconfig:"PORT"`
 	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
+	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
 }
 
 type QueueConfiguration struct {

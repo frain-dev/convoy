@@ -9,10 +9,11 @@ import { CreateEndpointModule } from '../../pages/project/apps/app-details/creat
 import { InputComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -29,7 +30,8 @@ import { CardComponent } from 'src/app/components/card/card.component';
 		TooltipComponent,
 		ToggleComponent,
 		ModalComponent,
-		CardComponent
+		CardComponent,
+        ConfirmationModalComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
@@ -25,7 +25,7 @@ import (
 
 type UserIntegrationTestSuite struct {
 	suite.Suite
-	DB        convoyMongo.Client
+	DB        cm.Client
 	Router    http.Handler
 	ConvoyApp *ApplicationHandler
 	jwt       *jwt.Jwt
@@ -46,9 +46,11 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 	config, err := config.Get()
 	require.NoError(u.T(), err)
 
-	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.ConvoyApp.S.Cache)
+	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.ConvoyApp.A.Cache)
 
-	initRealmChain(u.T(), u.DB.APIRepo(), u.DB.UserRepo(), u.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(u.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	initRealmChain(u.T(), apiRepo, userRepo, u.ConvoyApp.A.Cache)
 }
 
 func (u *UserIntegrationTestSuite) TearDownTest() {
@@ -58,7 +60,7 @@ func (u *UserIntegrationTestSuite) TearDownTest() {
 
 func (u *UserIntegrationTestSuite) Test_LoginUser() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	//Arrange Request
 	url := "/ui/auth/login"
@@ -111,7 +113,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 
 func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	//Arrange Request
 	url := "/ui/auth/login"
@@ -132,7 +134,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser() {
-	_, err := testdb.SeedConfiguration(u.DB)
+	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.Store)
 	require.NoError(u.T(), err)
 
 	r := &models.RegisterUser{
@@ -174,12 +176,13 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
-	config, err := testdb.SeedConfiguration(u.DB)
+	config, err := testdb.SeedConfiguration(u.ConvoyApp.A.Store)
 	require.NoError(u.T(), err)
 
 	// disable registration
 	config.IsSignupEnabled = false
-	require.NoError(u.T(), u.DB.ConfigurationRepo().UpdateConfiguration(context.Background(), config))
+	configRepo := cm.NewConfigRepo(u.ConvoyApp.A.Store)
+	require.NoError(u.T(), configRepo.UpdateConfiguration(context.Background(), config))
 
 	r := &models.RegisterUser{
 		FirstName:        "test",
@@ -210,7 +213,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
-	_, err := testdb.SeedConfiguration(u.DB)
+	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.Store)
 	require.NoError(u.T(), err)
 
 	r := &models.RegisterUser{
@@ -240,7 +243,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
-	_, err := testdb.SeedConfiguration(u.DB)
+	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.Store)
 	require.NoError(u.T(), err)
 
 	r := &models.RegisterUser{
@@ -271,7 +274,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
 
 func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -303,7 +306,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 
 func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -328,7 +331,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 
 func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -353,7 +356,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 
 func (u *UserIntegrationTestSuite) Test_LogoutUser() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -390,7 +393,7 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 
 func (u *UserIntegrationTestSuite) Test_GetUser() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -419,7 +422,7 @@ func (u *UserIntegrationTestSuite) Test_GetUser() {
 
 func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -450,7 +453,8 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 
-	dbUser, err := u.DB.UserRepo().FindUserByID(context.Background(), user.UID)
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	dbUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 
 	require.Equal(u.T(), dbUser.UID, response.UID)
 	require.Equal(u.T(), firstName, dbUser.FirstName)
@@ -461,7 +465,7 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 
 func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -490,7 +494,8 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 
-	dbUser, err := u.DB.UserRepo().FindUserByID(context.Background(), user.UID)
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	dbUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 
 	p := datastore.Password{Plaintext: newPassword, Hash: []byte(dbUser.Password)}
 	isMatch, err := p.Matches()
@@ -503,7 +508,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 
 func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -530,7 +535,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password(
 
 func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirmation() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -557,7 +562,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirma
 
 func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	newPassword := "123456789"
 
@@ -575,7 +580,8 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	dbUser, err := u.DB.UserRepo().FindUserByEmail(context.Background(), user.Email)
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	dbUser, err := userRepo.FindUserByEmail(context.Background(), user.Email)
 	require.NoError(u.T(), err)
 
 	var response datastore.User
@@ -594,7 +600,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	require.Equal(u.T(), http.StatusOK, w.Code)
 	parseResponse(u.T(), w.Result(), &response)
 
-	dbUser, err = u.DB.UserRepo().FindUserByID(context.Background(), user.UID)
+	dbUser, err = userRepo.FindUserByID(context.Background(), user.UID)
 	require.NoError(u.T(), err)
 
 	p := datastore.Password{Plaintext: newPassword, Hash: []byte(dbUser.Password)}
@@ -607,7 +613,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 
 func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 	password := "123456"
-	user, _ := testdb.SeedUser(u.DB, "", password)
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	newPassword := "123456789"
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 
 	"github.com/frain-dev/convoy"
@@ -42,13 +43,13 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(c.DB)
 
 	// Setup Default Group
-	c.DefaultGroup, _ = testdb.SeedDefaultGroup(c.DB, "")
+	c.DefaultGroup, _ = testdb.SeedDefaultGroup(c.ConvoyApp.A.Store, "")
 
-	user, err := testdb.SeedDefaultUser(c.DB)
+	user, err := testdb.SeedDefaultUser(c.ConvoyApp.A.Store)
 	require.NoError(c.T(), err)
 	c.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(c.DB, user)
+	org, err := testdb.SeedDefaultOrganisation(c.ConvoyApp.A.Store, user)
 	require.NoError(c.T(), err)
 	c.DefaultOrg = org
 
@@ -61,7 +62,9 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(c.T(), err)
 
-	initRealmChain(c.T(), c.DB.APIRepo(), c.DB.UserRepo(), c.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(c.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(c.ConvoyApp.A.Store)
+	initRealmChain(c.T(), apiRepo, userRepo, c.ConvoyApp.A.Cache)
 }
 
 func (c *ConfigurationIntegrationTestSuite) TearDownTest() {
@@ -70,7 +73,7 @@ func (c *ConfigurationIntegrationTestSuite) TearDownTest() {
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
-	config, err := testdb.SeedConfiguration(c.DB)
+	config, err := testdb.SeedConfiguration(c.ConvoyApp.A.Store)
 	require.NoError(c.T(), err)
 
 	// Arrange Request
@@ -125,7 +128,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
-	_, err := testdb.SeedConfiguration(c.DB)
+	_, err := testdb.SeedConfiguration(c.ConvoyApp.A.Store)
 	require.NoError(c.T(), err)
 
 	// Arrange Request

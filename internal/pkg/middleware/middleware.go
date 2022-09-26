@@ -19,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -72,6 +71,7 @@ type Middleware struct {
 	orgInviteRepo     datastore.OrganisationInviteRepository
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
+	deviceRepo        datastore.DeviceRepository
 	cache             cache.Cache
 	logger            logger.Logger
 	limiter           limiter.RateLimiter
@@ -91,6 +91,7 @@ type CreateMiddleware struct {
 	OrgInviteRepo     datastore.OrganisationInviteRepository
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
+	DeviceRepo        datastore.DeviceRepository
 	Cache             cache.Cache
 	Logger            logger.Logger
 	Limiter           limiter.RateLimiter
@@ -111,6 +112,7 @@ func NewMiddleware(cs *CreateMiddleware) *Middleware {
 		orgInviteRepo:     cs.OrgInviteRepo,
 		userRepo:          cs.UserRepo,
 		configRepo:        cs.ConfigRepo,
+		deviceRepo:        cs.DeviceRepo,
 		cache:             cs.Cache,
 		logger:            cs.Logger,
 		limiter:           cs.Limiter,
@@ -562,6 +564,11 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 				eventDelivery.Endpoint = endpoint
 			}
 
+			device, err := m.deviceRepo.FetchDeviceByID(r.Context(), eventDelivery.DeviceID, a.UID, a.GroupID)
+			if err == nil {
+				eventDelivery.CLIMetadata.HostName = device.HostName
+			}
+
 			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))
 			next.ServeHTTP(w, r)
 		})
@@ -655,36 +662,6 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 						_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 						return
 					}
-				}
-			} else {
-				// TODO(all): maybe we should only use default-group if require_auth is false?
-				groupCacheKey := convoy.GroupsCacheKey.Get("default-group").String()
-				err = m.cache.Get(r.Context(), groupCacheKey, &group)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
-					return
-				}
-
-				if group == nil {
-					group, err = m.GetDefaultGroup(r, m.groupRepo)
-					if err != nil {
-						event := "an error occurred while loading default group"
-						statusCode := http.StatusBadRequest
-
-						if errors.Is(err, mongo.ErrNoDocuments) {
-							event = err.Error()
-							statusCode = http.StatusNotFound
-						}
-
-						_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
-						return
-					}
-				}
-
-				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-					return
 				}
 			}
 
@@ -1015,28 +992,6 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-//func (m *Middleware) fetchGroupApps() func(next http.Handler) http.Handler {
-//	return func(next http.Handler) http.Handler {
-//
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//
-//			pageable := GetPageableFromContext(r.Context())
-//
-//			group := GetGroupFromContext(r.Context())
-//
-//			apps, paginationData, err := m.appRepo.LoadApplicationsPagedByGroupId(r.Context(), group.UID, pageable)
-//			if err != nil {
-//				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps", http.StatusInternalServerError))
-//				return
-//			}
-//
-//			r = r.WithContext(setApplicationsInContext(r.Context(), &apps))
-//			r = r.WithContext(setPaginationDataInContext(r.Context(), &paginationData))
-//			next.ServeHTTP(w, r)
-//		})
-//	}
-//}
-
 func ShouldAuthRoute(r *http.Request) bool {
 	guestRoutes := []string{
 		"/ui/auth/login",
@@ -1188,11 +1143,6 @@ func GetEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
 	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
 }
 
-func setApplicationsInContext(ctx context.Context,
-	apps *[]datastore.Application) context.Context {
-	return context.WithValue(ctx, appCtx, apps)
-}
-
 func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
 	return ctx.Value(appCtx).(*[]datastore.Application)
 }
@@ -1220,10 +1170,6 @@ func setPageableInContext(ctx context.Context, pageable datastore.Pageable) cont
 
 func GetPageableFromContext(ctx context.Context) datastore.Pageable {
 	return ctx.Value(pageableCtx).(datastore.Pageable)
-}
-
-func setPaginationDataInContext(ctx context.Context, p *datastore.PaginationData) context.Context {
-	return context.WithValue(ctx, pageDataCtx, p)
 }
 
 func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {

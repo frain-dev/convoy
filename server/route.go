@@ -10,13 +10,14 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/services"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -27,44 +28,17 @@ import (
 
 type ApplicationHandler struct {
 	M *middleware.Middleware
-	S Services
-	R Repos
+	A App
 }
 
-type Repos struct {
-	EventRepo         datastore.EventRepository
-	EventDeliveryRepo datastore.EventDeliveryRepository
-	AppRepo           datastore.ApplicationRepository
-	GroupRepo         datastore.GroupRepository
-	ApiKeyRepo        datastore.APIKeyRepository
-	SubRepo           datastore.SubscriptionRepository
-	SourceRepo        datastore.SourceRepository
-	OrgRepo           datastore.OrganisationRepository
-	OrgMemberRepo     datastore.OrganisationMemberRepository
-	OrgInviteRepo     datastore.OrganisationInviteRepository
-	UserRepo          datastore.UserRepository
-	ConfigRepo        datastore.ConfigurationRepository
-}
-
-type Services struct {
+type App struct {
+	Store    datastore.Store
 	Queue    queue.Queuer
 	Logger   logger.Logger
 	Tracer   tracer.Tracer
 	Cache    cache.Cache
 	Limiter  limiter.RateLimiter
 	Searcher searcher.Searcher
-
-	AppService                *services.AppService
-	EventService              *services.EventService
-	GroupService              *services.GroupService
-	SecurityService           *services.SecurityService
-	SourceService             *services.SourceService
-	ConfigService             *services.ConfigService
-	UserService               *services.UserService
-	SubService                *services.SubcriptionService
-	OrganisationService       *services.OrganisationService
-	OrganisationMemberService *services.OrganisationMemberService
-	OrganisationInviteService *services.OrganisationInviteService
 }
 
 //go:embed ui/build
@@ -89,72 +63,38 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 }
 
-func NewApplicationHandler(r Repos, s Services) *ApplicationHandler {
-	as := services.NewAppService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Cache)
-	es := services.NewEventService(r.AppRepo, r.EventRepo, r.EventDeliveryRepo, s.Queue, s.Cache, s.Searcher, r.SubRepo, r.SourceRepo)
-	gs := services.NewGroupService(r.ApiKeyRepo, r.AppRepo, r.GroupRepo, r.EventRepo, r.EventDeliveryRepo, s.Limiter, s.Cache)
-	ss := services.NewSecurityService(r.GroupRepo, r.ApiKeyRepo)
-	os := services.NewOrganisationService(r.OrgRepo, r.OrgMemberRepo)
-	rs := services.NewSubscriptionService(r.SubRepo, r.AppRepo, r.SourceRepo)
-	sos := services.NewSourceService(r.SourceRepo, s.Cache)
-	ois := services.NewOrganisationInviteService(r.OrgRepo, r.UserRepo, r.OrgMemberRepo, r.OrgInviteRepo, s.Queue)
-	om := services.NewOrganisationMemberService(r.OrgMemberRepo)
-	cs := services.NewConfigService(r.ConfigRepo)
-	us := services.NewUserService(r.UserRepo, s.Cache, s.Queue, cs, os)
+func NewApplicationHandler(a App) *ApplicationHandler {
 
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
-		EventRepo:         r.EventRepo,
-		EventDeliveryRepo: r.EventDeliveryRepo,
-		AppRepo:           r.AppRepo,
-		GroupRepo:         r.GroupRepo,
-		ApiKeyRepo:        r.ApiKeyRepo,
-		SubRepo:           r.SubRepo,
-		SourceRepo:        r.SourceRepo,
-		OrgRepo:           r.OrgRepo,
-		OrgMemberRepo:     r.OrgMemberRepo,
-		OrgInviteRepo:     r.OrgInviteRepo,
-		UserRepo:          r.UserRepo,
-		ConfigRepo:        r.ConfigRepo,
-		Cache:             s.Cache,
-		Logger:            s.Logger,
-		Limiter:           s.Limiter,
-		Tracer:            s.Tracer,
+		Cache:             a.Cache,
+		Logger:            a.Logger,
+		Limiter:           a.Limiter,
+		Tracer:            a.Tracer,
+		EventRepo:         cm.NewEventRepository(a.Store),
+		EventDeliveryRepo: cm.NewEventDeliveryRepository(a.Store),
+		AppRepo:           cm.NewApplicationRepo(a.Store),
+		GroupRepo:         cm.NewGroupRepo(a.Store),
+		ApiKeyRepo:        cm.NewApiKeyRepo(a.Store),
+		SubRepo:           cm.NewSubscriptionRepo(a.Store),
+		SourceRepo:        cm.NewSourceRepo(a.Store),
+		OrgRepo:           cm.NewOrgRepo(a.Store),
+		OrgMemberRepo:     cm.NewOrgMemberRepo(a.Store),
+		OrgInviteRepo:     cm.NewOrgInviteRepo(a.Store),
+		UserRepo:          cm.NewUserRepo(a.Store),
+		ConfigRepo:        cm.NewConfigRepo(a.Store),
+		DeviceRepo:        cm.NewDeviceRepository(a.Store),
 	})
 
 	return &ApplicationHandler{
 		M: m,
-		R: Repos{
-			EventRepo:         r.EventRepo,
-			EventDeliveryRepo: r.EventDeliveryRepo,
-			AppRepo:           r.AppRepo,
-			GroupRepo:         r.GroupRepo,
-			ApiKeyRepo:        r.ApiKeyRepo,
-			SubRepo:           r.SubRepo,
-			SourceRepo:        r.SourceRepo,
-			OrgRepo:           r.OrgRepo,
-			OrgMemberRepo:     r.OrgMemberRepo,
-			OrgInviteRepo:     r.OrgInviteRepo,
-			UserRepo:          r.UserRepo,
-			ConfigRepo:        r.ConfigRepo,
-		},
-		S: Services{
-			Queue:                     s.Queue,
-			Cache:                     s.Cache,
-			Searcher:                  s.Searcher,
-			Logger:                    s.Logger,
-			Tracer:                    s.Tracer,
-			Limiter:                   s.Limiter,
-			AppService:                as,
-			EventService:              es,
-			GroupService:              gs,
-			SecurityService:           ss,
-			SourceService:             sos,
-			ConfigService:             cs,
-			UserService:               us,
-			SubService:                rs,
-			OrganisationService:       os,
-			OrganisationMemberService: om,
-			OrganisationInviteService: ois,
+		A: App{
+			Store:    a.Store,
+			Queue:    a.Queue,
+			Cache:    a.Cache,
+			Searcher: a.Searcher,
+			Logger:   a.Logger,
+			Tracer:   a.Tracer,
+			Limiter:  a.Limiter,
 		},
 	}
 }
@@ -259,7 +199,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(a.M.RequireApp())
 					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.Post("/", a.CreateAppPortalAPIKey)
+					securitySubRouter.Post("/", a.CreateAppAPIKey)
 				})
 			})
 
@@ -397,7 +337,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.Post("/", a.CreateAppPortalAPIKey)
+									keySubRouter.Post("/", a.CreateAppAPIKey)
+									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
+									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 								})
 
 								appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
@@ -411,6 +353,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
 									})
+								})
+
+								appSubRouter.Route("/devices", func(deviceRouter chi.Router) {
+									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
 								})
 							})
 						})
@@ -513,10 +459,20 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					e.Put("/", a.UpdateAppEndpoint)
 				})
 			})
+
+			appRouter.Route("/keys", func(keySubRouter chi.Router) {
+				keySubRouter.Use(a.M.RequireBaseUrl())
+				keySubRouter.Post("/", a.CreateAppAPIKey)
+				keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
+				keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
+			})
+
+			appRouter.Route("/devices", func(deviceRouter chi.Router) {
+				deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+			})
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
-
 			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -556,11 +512,11 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		})
 	})
 
+	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
 	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 	router.HandleFunc("/*", reactRootHandler)
 
-	metrics.RegisterQueueMetrics(a.S.Queue)
-	metrics.RegisterDBMetrics(a.R.EventDeliveryRepo)
+	metrics.RegisterQueueMetrics(a.A.Queue)
 	prometheus.MustRegister(metrics.RequestDuration())
 
 	return router

@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -97,15 +96,15 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	return apiKey, key, nil
 }
 
-func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *datastore.Group, app *datastore.Application, baseUrl *string) (*datastore.APIKey, string, error) {
-	if app.GroupID != group.UID {
+func (ss *SecurityService) CreateAppAPIKey(ctx context.Context, d *models.CreateAppApiKey) (*datastore.APIKey, string, error) {
+	if d.App.GroupID != d.Group.UID {
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("app does not belong to group"))
 	}
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
-		Group: group.UID,
-		App:   app.UID,
+		Group: d.Group.UID,
+		App:   d.App.UID,
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -119,30 +118,31 @@ func (ss *SecurityService) CreateAppPortalAPIKey(ctx context.Context, group *dat
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
-	expiresAt := time.Now().Add(30 * time.Minute)
+	var expiresAt time.Time
+	if d.KeyType == datastore.CLIKey {
+		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(d.Expiration))
+	} else if d.KeyType == datastore.AppPortalKey {
+		expiresAt = time.Now().Add(30 * time.Minute)
+	}
 
 	apiKey := &datastore.APIKey{
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
-		Name:           app.Title,
-		Type:           datastore.AppPortalKey,
+		Name:           d.Name,
+		Type:           d.KeyType,
 		Role:           role,
 		Hash:           encodedKey,
 		Salt:           salt,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
 		log.WithError(err).Error("failed to create api key")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
-	}
-
-	if !util.IsStringEmpty(*baseUrl) {
-		*baseUrl = fmt.Sprintf("%s/app/%s?groupID=%s&appId=%s", *baseUrl, key, group.UID, app.UID)
 	}
 
 	return apiKey, key, nil
@@ -207,8 +207,8 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 	return apiKey, nil
 }
 
-func (ss *SecurityService) GetAPIKeys(ctx context.Context, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
-	apiKeys, paginationData, err := ss.apiKeyRepo.LoadAPIKeysPaged(ctx, pageable)
+func (ss *SecurityService) GetAPIKeys(ctx context.Context, f *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+	apiKeys, paginationData, err := ss.apiKeyRepo.LoadAPIKeysPaged(ctx, f, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load api keys"))

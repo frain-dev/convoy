@@ -12,10 +12,19 @@ components:
     datastore.APIKey:
       properties:
         created_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         deleted_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         expires_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         hash:
           type: string
@@ -32,6 +41,9 @@ components:
         uid:
           type: string
         updated_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
       type: object
     datastore.AlertConfiguration:
@@ -82,6 +94,13 @@ components:
         username:
           type: string
       type: object
+    datastore.CLIMetadata:
+      properties:
+        event_type:
+          type: string
+        host_name:
+          type: string
+      type: object
     datastore.DeliveryAttempt:
       properties:
         api_version:
@@ -115,6 +134,27 @@ components:
         updated_at:
           type: string
         url:
+          type: string
+      type: object
+    datastore.Device:
+      properties:
+        app_id:
+          type: string
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        group_id:
+          type: string
+        host_name:
+          type: string
+        last_seen_at:
+          type: string
+        status:
+          type: string
+        uid:
+          type: string
+        updated_at:
           type: string
       type: object
     datastore.Endpoint:
@@ -159,10 +199,10 @@ components:
           type: string
         event_type:
           type: string
-        forwarded_headers:
-          $ref: '#/components/schemas/datastore.HttpHeader'
         group_id:
           type: string
+        headers:
+          $ref: '#/components/schemas/httpheader.HTTPHeader'
         matched_endpoints:
           description: TODO(all) remove this field
           type: integer
@@ -175,6 +215,8 @@ components:
           type: string
         source_id:
           type: string
+        source_metadata:
+          $ref: '#/components/schemas/datastore.Source'
         uid:
           type: string
         updated_at:
@@ -186,11 +228,15 @@ components:
           type: string
         app_metadata:
           $ref: '#/components/schemas/datastore.Application'
+        cli_metadata:
+          $ref: '#/components/schemas/datastore.CLIMetadata'
         created_at:
           type: string
         deleted_at:
           type: string
         description:
+          type: string
+        device_id:
           type: string
         endpoint_id:
           type: string
@@ -200,10 +246,10 @@ components:
           type: string
         event_metadata:
           $ref: '#/components/schemas/datastore.Event'
-        forwarded_headers:
-          $ref: '#/components/schemas/datastore.HttpHeader'
         group_id:
           type: string
+        headers:
+          $ref: '#/components/schemas/httpheader.HTTPHeader'
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
         status:
@@ -403,7 +449,7 @@ components:
         count:
           type: integer
         duration:
-          type: string
+          type: integer
       type: object
     datastore.RetentionPolicyConfiguration:
       properties:
@@ -422,6 +468,8 @@ components:
     datastore.S3Storage:
       properties:
         bucket:
+          type: string
+        endpoint:
           type: string
         region:
           type: string
@@ -492,6 +540,8 @@ components:
           type: string
         deleted_at:
           type: string
+        device_id:
+          type: string
         endpoint_metadata:
           $ref: '#/components/schemas/datastore.Endpoint'
         filter_config:
@@ -557,6 +607,12 @@ components:
         type:
           type: string
       type: object
+    httpheader.HTTPHeader:
+      additionalProperties:
+        items:
+          type: string
+        type: array
+      type: object
     models.APIKey:
       properties:
         expires_at:
@@ -600,6 +656,8 @@ components:
       properties:
         is_analytics_enabled:
           type: boolean
+        is_signup_enabled:
+          type: boolean
         storage_policy:
           $ref: '#/components/schemas/datastore.StoragePolicyConfiguration'
       type: object
@@ -612,6 +670,8 @@ components:
         deleted_at:
           type: integer
         is_analytics_enabled:
+          type: boolean
+        is_signup_enabled:
           type: boolean
         storage_policy:
           $ref: '#/components/schemas/datastore.StoragePolicyConfiguration'
@@ -643,6 +703,10 @@ components:
       properties:
         app_id:
           type: string
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
         data:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
@@ -683,8 +747,14 @@ components:
     models.LoginUserResponse:
       properties:
         created_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         deleted_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         email:
           type: string
@@ -692,13 +762,14 @@ components:
           type: string
         last_name:
           type: string
-        role:
-          $ref: '#/components/schemas/auth.Role'
         token:
           $ref: '#/components/schemas/models.Token'
         uid:
           type: string
         updated_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
       type: object
     models.Organisation:
@@ -728,6 +799,19 @@ components:
         url:
           type: string
       type: object
+    models.RegisterUser:
+      properties:
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        org_name:
+          type: string
+        password:
+          type: string
+      type: object
     models.ResetPassword:
       properties:
         password:
@@ -746,10 +830,6 @@ components:
       type: object
     models.Source:
       properties:
-        forward_headers:
-          items:
-            type: string
-          type: array
         is_disabled:
           type: boolean
         name:
@@ -764,8 +844,14 @@ components:
     models.SourceResponse:
       properties:
         created_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         deleted_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         group_id:
           type: string
@@ -784,6 +870,9 @@ components:
         uid:
           type: string
         updated_at:
+          description: |-
+            NextSendTime denotes the next time a Event will be published in
+            case it failed the first time
           type: integer
         url:
           type: string
@@ -805,8 +894,6 @@ components:
         retry_config:
           $ref: '#/components/schemas/datastore.RetryConfiguration'
         source_id:
-          type: string
-        type:
           type: string
       type: object
     models.Token:
@@ -860,7 +947,7 @@ components:
         pagination:
           $ref: '#/components/schemas/datastore.PaginationData'
       type: object
-    server.serverResponse:
+    util.ServerResponse:
       properties:
         data:
           items:
@@ -891,7 +978,7 @@ info:
   version: 0.1.12
 openapi: 3.0.3
 paths:
-  /applications:
+  /api/v1/applications:
     get:
       description: This fetches all applications
       parameters:
@@ -927,7 +1014,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -945,7 +1032,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -956,7 +1043,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -967,7 +1054,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1001,7 +1088,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Application'
@@ -1012,7 +1099,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1023,7 +1110,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1034,7 +1121,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1045,7 +1132,7 @@ paths:
       summary: Create an application
       tags:
       - Application
-  /applications/{appID}:
+  /api/v1/applications/{appID}:
     delete:
       description: This endpoint deletes an app
       parameters:
@@ -1067,7 +1154,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1078,7 +1165,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1089,7 +1176,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1100,7 +1187,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1132,7 +1219,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Application'
@@ -1143,7 +1230,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1154,7 +1241,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1165,7 +1252,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1205,7 +1292,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Application'
@@ -1216,7 +1303,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1227,7 +1314,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1238,7 +1325,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1249,7 +1336,7 @@ paths:
       summary: Update an application
       tags:
       - Application
-  /applications/{appID}/endpoints:
+  /api/v1/applications/{appID}/endpoints:
     get:
       description: This endpoint fetches an application's endpoints
       parameters:
@@ -1271,7 +1358,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       items:
@@ -1284,7 +1371,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1295,7 +1382,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1306,7 +1393,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1346,7 +1433,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Endpoint'
@@ -1357,7 +1444,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1368,7 +1455,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1379,7 +1466,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1390,7 +1477,7 @@ paths:
       summary: Create an application endpoint
       tags:
       - Application Endpoints
-  /applications/{appID}/endpoints/{endpointID}:
+  /api/v1/applications/{appID}/endpoints/{endpointID}:
     delete:
       description: This endpoint deletes an application endpoint
       parameters:
@@ -1418,7 +1505,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1429,7 +1516,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1440,7 +1527,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1451,7 +1538,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1489,7 +1576,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Endpoint'
@@ -1500,7 +1587,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1511,7 +1598,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1522,7 +1609,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1568,7 +1655,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Endpoint'
@@ -1579,7 +1666,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1590,7 +1677,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1601,7 +1688,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -1612,358 +1699,7 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
-  /auth/login:
-    post:
-      description: This endpoint logs in a user
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.LoginUser'
-        description: User Details
-        required: true
-        x-originalParamName: user
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.LoginUserResponse'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      summary: Login a user
-      tags:
-      - User
-  /auth/logout:
-    post:
-      description: This endpoint logs out a user
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Logs out a user
-      tags:
-      - User
-  /auth/token/refresh:
-    post:
-      description: This endpoint refreshes an access token
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Token'
-        description: Token Details
-        required: true
-        x-originalParamName: token
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.Token'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      summary: Refresh an access token
-      tags:
-      - User
-  /configuration:
-    get:
-      description: This endpoint fetches configuration
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
-                      - properties:
-                          content:
-                            items:
-                              $ref: '#/components/schemas/models.ConfigurationResponse'
-                            type: array
-                        type: object
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch configuration
-      tags:
-      - Source
-    post:
-      description: This endpoint creates a configuration
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Configuration'
-        description: Configuration Details
-        required: true
-        x-originalParamName: application
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.ConfigurationResponse'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Create a configuration
-      tags:
-      - Application
-    put:
-      description: This endpoint updates configuration
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Configuration'
-        description: Configuration Details
-        required: true
-        x-originalParamName: application
-      responses:
-        "202":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.ConfigurationResponse'
-                  type: object
-          description: Accepted
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Update configuration
-      tags:
-      - Application
-  /eventdeliveries:
+  /api/v1/eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
       parameters:
@@ -2021,7 +1757,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2044,7 +1780,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2055,7 +1791,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2066,7 +1802,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2077,7 +1813,7 @@ paths:
       summary: Get event deliveries
       tags:
       - EventDelivery
-  /eventdeliveries/{eventDeliveryID}:
+  /api/v1/eventdeliveries/{eventDeliveryID}:
     get:
       description: This endpoint fetches an event delivery.
       parameters:
@@ -2099,7 +1835,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2115,7 +1851,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2126,7 +1862,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2137,7 +1873,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2148,7 +1884,7 @@ paths:
       summary: Get event delivery
       tags:
       - EventDelivery
-  /eventdeliveries/{eventDeliveryID}/resend:
+  /api/v1/eventdeliveries/{eventDeliveryID}/resend:
     put:
       description: This endpoint resends an app event
       parameters:
@@ -2170,7 +1906,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2186,7 +1922,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2197,7 +1933,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2208,7 +1944,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2219,7 +1955,7 @@ paths:
       summary: Resend an app event
       tags:
       - EventDelivery
-  /eventdeliveries/batchretry:
+  /api/v1/eventdeliveries/batchretry:
     post:
       description: This endpoint resends multiple app events
       parameters:
@@ -2250,7 +1986,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2261,7 +1997,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2272,7 +2008,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2283,7 +2019,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2294,7 +2030,7 @@ paths:
       summary: Batch Resend app events
       tags:
       - EventDelivery
-  /eventdeliveries/countbatchretryevents:
+  /api/v1/eventdeliveries/countbatchretryevents:
     get:
       description: This endpoint counts app events that will be affected by a batch
         retry operation
@@ -2341,7 +2077,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2357,7 +2093,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2368,7 +2104,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2379,7 +2115,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2390,7 +2126,7 @@ paths:
       summary: Count affected eventDeliveries
       tags:
       - EventDelivery
-  /eventdeliveries/forceresend:
+  /api/v1/eventdeliveries/forceresend:
     post:
       description: This endpoint force resends multiple app events
       parameters:
@@ -2421,7 +2157,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2432,7 +2168,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2443,7 +2179,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2454,7 +2190,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2465,7 +2201,7 @@ paths:
       summary: Force Resend app events
       tags:
       - EventDelivery
-  /events:
+  /api/v1/events:
     get:
       description: This endpoint fetches app events with pagination
       parameters:
@@ -2511,7 +2247,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2534,7 +2270,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2545,7 +2281,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2556,7 +2292,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2590,7 +2326,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2606,7 +2342,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2617,7 +2353,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2628,7 +2364,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2639,7 +2375,7 @@ paths:
       summary: Create app event
       tags:
       - Events
-  /events/{eventID}:
+  /api/v1/events/{eventID}:
     get:
       description: This endpoint fetches an app event
       parameters:
@@ -2661,7 +2397,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2677,7 +2413,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2688,7 +2424,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2699,7 +2435,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2710,7 +2446,7 @@ paths:
       summary: Get app event
       tags:
       - Events
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
+  /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       description: This endpoint fetches an app message's delivery attempts
       parameters:
@@ -2732,7 +2468,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       items:
@@ -2745,7 +2481,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2756,7 +2492,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2767,7 +2503,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2778,7 +2514,7 @@ paths:
       summary: Get delivery attempts
       tags:
       - DeliveryAttempts
-  /events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+  /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
     get:
       description: This endpoint fetches an app event delivery attempt
       parameters:
@@ -2806,7 +2542,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.DeliveryAttempt'
@@ -2817,7 +2553,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2828,7 +2564,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2839,7 +2575,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2850,7 +2586,7 @@ paths:
       summary: Get delivery attempt
       tags:
       - DeliveryAttempts
-  /events/{eventID}/replay:
+  /api/v1/events/{eventID}/replay:
     put:
       description: This endpoint replays an app event
       parameters:
@@ -2872,7 +2608,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -2888,7 +2624,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2899,7 +2635,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2910,7 +2646,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -2921,256 +2657,10 @@ paths:
       summary: Replay app event
       tags:
       - Events
-  /groups:
-    get:
-      description: This endpoint fetches groups
-      parameters:
-      - description: group name
-        in: query
-        name: name
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      items:
-                        $ref: '#/components/schemas/datastore.Group'
-                      type: array
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get groups
-      tags:
-      - Group
-  /groups/{groupID}:
-    delete:
-      description: This endpoint deletes a group using its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a group
-      tags:
-      - Group
-    get:
-      description: This endpoint fetches a group by its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.Group'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get a group
-      tags:
-      - Group
-    put:
-      description: This endpoint updates a group
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Group'
-        description: Group Details
-        required: true
-        x-originalParamName: group
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.Group'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Update a group
-      tags:
-      - Group
-  /security/applications/{appID}/keys:
+  /api/v1/security/applications/{appID}/keys:
     post:
       description: This endpoint creates an api key that will be used by app portal
+        or the cli
       parameters:
       - description: application ID
         in: path
@@ -3178,13 +2668,21 @@ paths:
         required: true
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.APIKey'
+        description: APIKey details
+        required: true
+        x-originalParamName: appAPIKey
       responses:
         "201":
           content:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/models.PortalAPIKeyResponse'
@@ -3195,7 +2693,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3206,7 +2704,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3217,7 +2715,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3225,10 +2723,10 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Create an api key for app portal (API)
+      summary: Create an api key for app portal or the cli (API)
       tags:
       - APIKey
-  /sources:
+  /api/v1/sources:
     get:
       description: This endpoint fetches multiple sources
       parameters:
@@ -3253,7 +2751,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -3271,7 +2769,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3282,7 +2780,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3293,7 +2791,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3327,7 +2825,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/models.SourceResponse'
@@ -3338,7 +2836,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3349,7 +2847,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3360,7 +2858,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3371,7 +2869,7 @@ paths:
       summary: Create a source
       tags:
       - Source
-  /sources/{sourceID}:
+  /api/v1/sources/{sourceID}:
     delete:
       description: This endpoint deletes a source
       parameters:
@@ -3393,7 +2891,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3404,7 +2902,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3415,7 +2913,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3426,7 +2924,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3458,7 +2956,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/models.SourceResponse'
@@ -3469,7 +2967,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3480,7 +2978,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3491,7 +2989,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3531,7 +3029,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/models.SourceResponse'
@@ -3542,7 +3040,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3553,7 +3051,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3564,7 +3062,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3575,7 +3073,7 @@ paths:
       summary: Update a source
       tags:
       - Source
-  /subscriptions:
+  /api/v1/subscriptions:
     get:
       description: This endpoint fetches all the subscriptions
       parameters:
@@ -3611,7 +3109,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -3629,7 +3127,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3640,7 +3138,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3651,7 +3149,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3671,13 +3169,21 @@ paths:
         required: true
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Subscription'
+        description: Subscription details
+        required: true
+        x-originalParamName: subscription
       responses:
         "200":
           content:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -3695,7 +3201,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3706,7 +3212,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3717,7 +3223,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3728,7 +3234,7 @@ paths:
       summary: Creates a subscription
       tags:
       - Subscriptions
-  /subscriptions/{subscriptionID}:
+  /api/v1/subscriptions/{subscriptionID}:
     delete:
       description: This endpoint deletes a subscription
       parameters:
@@ -3750,7 +3256,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3761,7 +3267,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3772,7 +3278,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3783,7 +3289,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3793,7 +3299,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete subscription
       tags:
-      - Application
+      - Subscriptions
     get:
       description: This endpoint fetches an Subscription by it's id
       parameters:
@@ -3815,7 +3321,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Subscription'
@@ -3826,7 +3332,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3837,7 +3343,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3848,7 +3354,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3858,7 +3364,7 @@ paths:
       - ApiKeyAuth: []
       summary: Gets a subscription
       tags:
-      - Subscription
+      - Subscriptions
     put:
       description: This endpoint updates a subscription
       parameters:
@@ -3882,7 +3388,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Subscription'
@@ -3893,7 +3399,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3904,7 +3410,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3915,7 +3421,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3925,8 +3431,8 @@ paths:
       - ApiKeyAuth: []
       summary: Update a subscription
       tags:
-      - Subscription
-  /subscriptions/{subscriptionID}/toggle_status:
+      - Subscriptions
+  /api/v1/subscriptions/{subscriptionID}/toggle_status:
     put:
       description: This endpoint updates a subscription
       parameters:
@@ -3942,7 +3448,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Subscription'
@@ -3953,7 +3459,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3964,7 +3470,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3975,7 +3481,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -3985,7 +3491,565 @@ paths:
       - ApiKeyAuth: []
       summary: Toggles a subscription's status from active <-> inactive
       tags:
-      - Subscription
+      - Subscriptions
+  /devices/{appID}:
+    get:
+      description: This endpoint fetches devices for an app
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
+      - description: app id
+        in: path
+        name: appID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/datastore.Device'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch devices for an app
+      tags:
+      - Source
+  /ui/auth/login:
+    post:
+      description: This endpoint logs in a user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.LoginUser'
+        description: User Details
+        required: true
+        x-originalParamName: user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.LoginUserResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      summary: Login a user
+      tags:
+      - User
+  /ui/auth/logout:
+    post:
+      description: This endpoint logs out a user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Logs out a user
+      tags:
+      - User
+  /ui/auth/register:
+    post:
+      description: This endpoint registers a new user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.RegisterUser'
+        description: User Details
+        required: true
+        x-originalParamName: user
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.LoginUserResponse'
+                  type: object
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      summary: Registers a user
+      tags:
+      - User
+  /ui/auth/token/refresh:
+    post:
+      description: This endpoint refreshes an access token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Token'
+        description: Token Details
+        required: true
+        x-originalParamName: token
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.Token'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      summary: Refresh an access token
+      tags:
+      - User
+  /ui/configuration:
+    get:
+      description: This endpoint fetches configuration
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/models.ConfigurationResponse'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch configuration
+      tags:
+      - Configuration
+    post:
+      description: This endpoint creates a configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Configuration'
+        description: Configuration Details
+        required: true
+        x-originalParamName: application
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.ConfigurationResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create a configuration
+      tags:
+      - Configuration
+    put:
+      description: This endpoint updates configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Configuration'
+        description: Configuration Details
+        required: true
+        x-originalParamName: application
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.ConfigurationResponse'
+                  type: object
+          description: Accepted
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Update configuration
+      tags:
+      - Configuration
+  /ui/organiastions/{orgID}/groups/{groupID}:
+    delete:
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        schema:
+          type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group
+      tags:
+      - Group
   /ui/organisations:
     get:
       description: This endpoint fetches multiple organisations
@@ -4011,7 +4075,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -4029,7 +4093,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4040,7 +4104,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4051,7 +4115,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4078,7 +4142,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Organisation'
@@ -4089,7 +4153,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4100,7 +4164,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4111,7 +4175,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4138,7 +4202,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4149,7 +4213,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4160,7 +4224,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4171,7 +4235,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4197,7 +4261,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Organisation'
@@ -4208,7 +4272,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4219,7 +4283,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4230,7 +4294,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4264,7 +4328,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Organisation'
@@ -4275,7 +4339,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4286,7 +4350,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4297,7 +4361,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4309,6 +4373,72 @@ paths:
       tags:
       - Organisation
   /ui/organisations/{orgID}/groups:
+    get:
+      description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      items:
+                        $ref: '#/components/schemas/datastore.Group'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get groups
+      tags:
+      - Group
     post:
       description: This endpoint creates a group
       parameters:
@@ -4332,7 +4462,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Group'
@@ -4343,7 +4473,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4354,7 +4484,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4365,7 +4495,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4376,6 +4506,223 @@ paths:
       summary: Create a group
       tags:
       - Group
+  /ui/organisations/{orgID}/groups/{groupID}:
+    get:
+      description: This endpoint fetches a group by its id
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        schema:
+          type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Group'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get a group
+      tags:
+      - Group
+    put:
+      description: This endpoint updates a group
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        schema:
+          type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Group'
+        description: Group Details
+        required: true
+        x-originalParamName: group
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Group'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Update a group
+      tags:
+      - Group
+  /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke:
+    put:
+      description: This endpoint revokes app's an api key
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Group id
+        in: path
+        name: groupID
+        required: true
+        schema:
+          type: string
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        schema:
+          type: string
+      - description: API Key id
+        in: path
+        name: keyID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke an App's API Key
+      tags:
+      - APIKey
   /ui/organisations/{orgID}/invites:
     post:
       description: This endpoint invites a user to join an organisation
@@ -4400,7 +4747,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4411,7 +4758,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4422,7 +4769,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4433,7 +4780,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4466,7 +4813,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.OrganisationInvite'
@@ -4477,7 +4824,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4488,7 +4835,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4499,7 +4846,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4532,7 +4879,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4543,7 +4890,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4554,7 +4901,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4565,7 +4912,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4607,7 +4954,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4618,7 +4965,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4629,7 +4976,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4640,7 +4987,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4682,7 +5029,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -4700,7 +5047,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4711,7 +5058,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4722,7 +5069,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4755,7 +5102,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4766,7 +5113,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4777,7 +5124,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4788,7 +5135,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4820,7 +5167,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.OrganisationMember'
@@ -4831,7 +5178,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4842,7 +5189,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4853,7 +5200,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4893,7 +5240,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.Organisation'
@@ -4904,7 +5251,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4915,7 +5262,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4926,7 +5273,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4937,6 +5284,72 @@ paths:
       summary: Update an organisation's member
       tags:
       - Organisation
+  /ui/organisations/{orgID}/security/applications/{appID}/keys:
+    get:
+      description: This endpoint fetches multiple api keys belonging to an app
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.PortalAPIKeyResponse'
+                  type: object
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple api keys belonging to an app
+      tags:
+      - APIKey
   /ui/organisations/{orgID}/security/keys:
     get:
       description: This endpoint fetches multiple api keys
@@ -4968,7 +5381,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       allOf:
@@ -4986,7 +5399,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -4997,7 +5410,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5008,7 +5421,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5043,7 +5456,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/models.APIKeyResponse'
@@ -5054,7 +5467,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5065,7 +5478,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5076,7 +5489,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5109,7 +5522,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.APIKey'
@@ -5120,7 +5533,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5131,7 +5544,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5142,7 +5555,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5174,7 +5587,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.APIKey'
@@ -5185,7 +5598,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5196,7 +5609,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5207,7 +5620,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5240,7 +5653,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5251,7 +5664,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5262,7 +5675,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5273,7 +5686,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5313,7 +5726,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5324,7 +5737,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5335,7 +5748,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5346,7 +5759,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5357,7 +5770,7 @@ paths:
       summary: Accept or decline an organisation invite
       tags:
       - Organisation
-  /users/{userID}/password:
+  /ui/users/{userID}/password:
     put:
       description: This endpoint updates a user's password
       parameters:
@@ -5381,7 +5794,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.User'
@@ -5392,7 +5805,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5403,7 +5816,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5414,7 +5827,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5425,7 +5838,7 @@ paths:
       summary: Updates a user's password
       tags:
       - User
-  /users/{userID}/profile:
+  /ui/users/{userID}/profile:
     get:
       description: This endpoint fetches a user
       parameters:
@@ -5441,7 +5854,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.User'
@@ -5452,7 +5865,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5463,7 +5876,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5474,7 +5887,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5508,7 +5921,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.User'
@@ -5519,7 +5932,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5530,7 +5943,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5541,7 +5954,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5552,7 +5965,7 @@ paths:
       summary: Updates a user
       tags:
       - User
-  /users/forgot-password:
+  /ui/users/forgot-password:
     post:
       description: This endpoint generates a password reset token
       requestBody:
@@ -5569,7 +5982,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.User'
@@ -5580,7 +5993,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5591,7 +6004,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5602,7 +6015,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5611,7 +6024,7 @@ paths:
       summary: Send password reset token
       tags:
       - User
-  /users/reset-password:
+  /ui/users/reset-password:
     post:
       description: This endpoint resets a users password
       parameters:
@@ -5635,7 +6048,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.User'
@@ -5646,7 +6059,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5657,7 +6070,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5668,7 +6081,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5677,7 +6090,7 @@ paths:
       summary: Reset user password
       tags:
       - User
-  /users/token:
+  /ui/users/token:
     get:
       description: This endpoint finds a user by an invite token
       parameters:
@@ -5693,7 +6106,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/datastore.User'
@@ -5704,7 +6117,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5715,7 +6128,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5726,7 +6139,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                - $ref: '#/components/schemas/server.serverResponse'
+                - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
                       $ref: '#/components/schemas/server.Stub'
@@ -5738,10 +6151,18 @@ paths:
       tags:
       - Organisation
 servers:
-- url: https://cloud.staging.getconvoy.io/api/v1
+- url: https://dashboard.getconvoy.io/
 tags:
+- description: User related APIs
+  name: User
 - description: Application related APIs
   name: Application
+- description: Configuration related APIs
+  name: Configuration
+- description: Source related APIs
+  name: Source
+- description: Subscription related APIs
+  name: Subscriptions
 - description: Endpoint related APIs
   name: Application Endpoints
 - description: Event related APIs

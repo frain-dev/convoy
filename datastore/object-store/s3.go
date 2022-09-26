@@ -2,6 +2,7 @@ package objectstore
 
 import (
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -18,6 +19,7 @@ type S3Client struct {
 func NewS3Client(opts ObjectStoreOptions) (ObjectStore, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(opts.Region),
+		Endpoint:    aws.String(opts.Endpoint),
 		Credentials: credentials.NewStaticCredentials(opts.AccessKey, opts.SecretKey, opts.SessionToken),
 	})
 	if err != nil {
@@ -42,12 +44,14 @@ func (s3 *S3Client) Save(filename string) error {
 
 	defer file.Close()
 
+	names := strings.Split(filename, "/tmp/")
 	uploader := s3manager.NewUploader(s3.session)
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s3.opts.Bucket),
-		Key:    aws.String(filename),
+		Key:    aws.String(names[1]),
 		Body:   file,
 	})
+
 	if err != nil {
 		log.WithError(err).Errorf("Unable to save %q to %q, %v", filename, s3.opts.Bucket, err)
 		return err
