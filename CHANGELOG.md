@@ -1,9 +1,14 @@
+## 0.6.8
+
+-   [Bugfix] Fix subscriptions page error #1026
+-   [Bugfix] Add deleted_at to MongoDB indexes #1027
+-   [Bugfix] Dismiss modal when a source is deleted #1026
+
 ## 0.6.7
 
 -   [Bugfix] Fix analytics query #1001
 -   [Bugfix] Fix middleware layer for app portal #988
 -   [Bugfix] Fix endpoint notification email bug #981
-
 
 ## 0.6.6
 
