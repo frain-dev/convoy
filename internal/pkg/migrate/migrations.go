@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,10 +30,11 @@ var Migrations = []*Migration{
 				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
 			}
 
-			store := datastore.New(db, cm.GroupCollection)
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			var groups []*Group
-			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
 			if err != nil {
 				return err
 			}
@@ -49,8 +49,12 @@ var Migrations = []*Migration{
 					newDuration = uint64(duration.Seconds())
 				}
 
-				update := bson.M{"config.ratelimit.duration": newDuration}
-				err = store.UpdateByID(context.Background(), group.UID, update)
+				update := bson.M{
+					"$set": bson.M{
+						"config.ratelimit.duration": newDuration,
+					},
+				}
+				err = store.UpdateByID(ctx, group.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err
@@ -61,10 +65,11 @@ var Migrations = []*Migration{
 		},
 		Rollback: func(db *mongo.Database) error {
 
-			store := datastore.New(db, cm.GroupCollection)
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			var groups []*datastore.Group
-			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
 			if err != nil {
 				return err
 			}
@@ -77,8 +82,12 @@ var Migrations = []*Migration{
 					return err
 				}
 
-				update := bson.M{"config.ratelimit.duration": newDuration.String()}
-				err = store.UpdateByID(context.Background(), group.UID, update)
+				update := bson.M{
+					"$set": bson.M{
+						"config.ratelimit.duration": newDuration,
+					},
+				}
+				err = store.UpdateByID(ctx, group.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err
@@ -102,10 +111,11 @@ var Migrations = []*Migration{
 				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
 			}
 
-			store := datastore.New(db, cm.SubscriptionCollection)
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
 
 			var subscriptions []*Subscription
-			err := store.FindAll(context.Background(), nil, nil, nil, &subscriptions)
+			err := store.FindAll(ctx, nil, nil, nil, &subscriptions)
 			if err != nil {
 				return err
 			}
@@ -119,8 +129,13 @@ var Migrations = []*Migration{
 					newDuration = uint64(duration.Seconds())
 				}
 
-				update := bson.M{"retry_config.duration": newDuration}
-				err = store.UpdateByID(context.Background(), subscription.UID, update)
+				update := bson.M{
+					"$set": bson.M{
+						"retry_config.duration": newDuration,
+					},
+				}
+
+				err = store.UpdateByID(ctx, subscription.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err
@@ -130,10 +145,11 @@ var Migrations = []*Migration{
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
-			store := datastore.New(db, cm.SubscriptionCollection)
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
 
 			var subscriptions []*datastore.Subscription
-			err := store.FindAll(context.Background(), nil, nil, nil, &subscriptions)
+			err := store.FindAll(ctx, nil, nil, nil, &subscriptions)
 			if err != nil {
 				return err
 			}
@@ -145,8 +161,13 @@ var Migrations = []*Migration{
 				if err != nil {
 					return err
 				}
-				update := bson.M{"retry_config.duration": newDuration.String()}
-				err = store.UpdateByID(context.Background(), subscription.UID, update)
+
+				update := bson.M{
+					"$set": bson.M{
+						"retry_config.duration": newDuration.String(),
+					},
+				}
+				err = store.UpdateByID(ctx, subscription.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err
@@ -159,10 +180,11 @@ var Migrations = []*Migration{
 	{
 		ID: "20220919100029_add_default_group_configuration",
 		Migrate: func(db *mongo.Database) error {
-			store := datastore.New(db, cm.GroupCollection)
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			var groups []*datastore.Group
-			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
 			if err != nil {
 				return err
 			}
@@ -181,8 +203,12 @@ var Migrations = []*Migration{
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,
 				}
 
-				update := bson.M{"config": config}
-				err = store.UpdateByID(context.Background(), group.UID, update)
+				update := bson.M{
+					"$set": bson.M{
+						"config": config,
+					},
+				}
+				err = store.UpdateByID(ctx, group.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err
@@ -192,10 +218,11 @@ var Migrations = []*Migration{
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
-			store := datastore.New(db, cm.GroupCollection)
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			var groups []*datastore.Group
-			err := store.FindAll(context.Background(), nil, nil, nil, &groups)
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
 			if err != nil {
 				return err
 			}
@@ -207,8 +234,12 @@ var Migrations = []*Migration{
 					continue
 				}
 
-				update := bson.M{"config": nil}
-				err = store.UpdateByID(context.Background(), group.UID, update)
+				update := bson.M{
+					"$set": bson.M{
+						"config": nil,
+					},
+				}
+				err = store.UpdateByID(ctx, group.UID, update)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err

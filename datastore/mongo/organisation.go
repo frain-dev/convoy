@@ -6,49 +6,51 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type orgRepo struct {
-	innerDB *mongo.Database
-	inner   *mongo.Collection
-	store   datastore.Store
+	store datastore.Store
 }
 
-func NewOrgRepo(db *mongo.Database, store datastore.Store) datastore.OrganisationRepository {
+func NewOrgRepo(store datastore.Store) datastore.OrganisationRepository {
 	return &orgRepo{
-		innerDB: db,
-		inner:   db.Collection(OrganisationCollection),
-		store:   store,
+		store: store,
 	}
 }
 
+func (db *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
+	ctx = db.setCollectionInContext(ctx)
+	org.ID = primitive.NewObjectID()
+	return db.store.Save(ctx, org, nil)
+}
+
 func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	ctx = db.setCollectionInContext(ctx)
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
-	organisations := make([]datastore.Organisation, 0)
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Filter(filter).Decode(&organisations).Find()
+	var organisations []datastore.Organisation
+
+	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &organisations)
+
 	if err != nil {
 		return organisations, datastore.PaginationData{}, err
 	}
 
-	return organisations, datastore.PaginationData(paginatedData.Pagination), nil
-}
-
-func (db *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	org.ID = primitive.NewObjectID()
-	err := db.store.Save(ctx, org, nil)
-	return err
+	return organisations, pagination, nil
 }
 
 func (db *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
+	ctx = db.setCollectionInContext(ctx)
 	org.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{
-		primitive.E{Key: "name", Value: org.Name},
-		primitive.E{Key: "updated_at", Value: org.UpdatedAt},
+	update := bson.M{
+		"$set": bson.M{
+			"name":       org.Name,
+			"updated_at": org.UpdatedAt,
+		},
 	}
 
 	err := db.store.UpdateOne(ctx, bson.M{"uid": org.UID}, update)
@@ -56,9 +58,12 @@ func (db *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organi
 }
 
 func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
+	ctx = db.setCollectionInContext(ctx)
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
 	err := db.store.UpdateOne(ctx, bson.M{"uid": uid}, update)
@@ -70,6 +75,7 @@ func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 }
 
 func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
+	ctx = db.setCollectionInContext(ctx)
 	org := new(datastore.Organisation)
 
 	err := db.store.FindByID(ctx, id, nil, org)
@@ -78,4 +84,8 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datas
 	}
 
 	return org, err
+}
+
+func (db *orgRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.OrganisationCollection)
 }

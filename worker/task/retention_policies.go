@@ -18,6 +18,7 @@ import (
 )
 
 func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
+
 	return func(ctx context.Context, t *asynq.Task) error {
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {

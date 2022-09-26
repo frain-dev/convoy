@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/verifier"
@@ -27,7 +28,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	source, err := a.S.SourceService.FindSourceByMaskID(r.Context(), maskID)
+	sourceService := createSourceService(a)
+	source, err := sourceService.FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -124,7 +126,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Delay:   0,
 	}
 
-	err = a.S.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -139,19 +141,20 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	var source *datastore.Source
 	sourceCacheKey := convoy.SourceCacheKey.Get(maskID).String()
 
-	err := a.S.Cache.Get(r.Context(), sourceCacheKey, &source)
+	err := a.A.Cache.Get(r.Context(), sourceCacheKey, &source)
 	if err != nil {
 		log.Error(err)
 	}
 
 	if source == nil {
-		source, err = a.S.SourceService.FindSourceByMaskID(r.Context(), maskID)
+		sourceService := createSourceService(a)
+		source, err = sourceService.FindSourceByMaskID(r.Context(), maskID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
 
-		err = a.S.Cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
+		err = a.A.Cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
 		if err != nil {
 			log.Error(err)
 		}
@@ -178,7 +181,8 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = c.HandleRequest(w, r, source, a.R.SourceRepo)
+	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
