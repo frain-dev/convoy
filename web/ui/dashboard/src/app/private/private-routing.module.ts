@@ -41,7 +41,7 @@ const routes: Routes = [
 				loadComponent: () => import('./pages/settings/settings.component').then(mod => mod.SettingsComponent)
 			},
             {
-				path: 'welcome',
+				path: 'get-started',
 				loadComponent: () => import('./pages/onboarding/onboarding.component').then(mod => mod.OnboardingComponent)
 			}
 		]

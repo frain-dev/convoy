@@ -8,13 +8,16 @@
 
 				<nav class="ml-130px desktop:ml-20px transition-all duration-200">
 					<ul class="flex items-center">
-						<li>
+						<li *ngIf="!organisations?.length || !projects?.length">
+							<a routerLink="/get-started" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Get Started</a>
+						</li>
+						<li *ngIf="organisations?.length && projects?.length">
 							<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
 						</li>
-						<li>
+						<li *ngIf="organisations?.length && projects?.length">
 							<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
 						</li>
-						<li>
+						<li *ngIf="organisations?.length && projects?.length">
 							<a routerLink="/settings" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Settings</a>
 						</li>
 					</ul>
@@ -72,7 +75,6 @@
 							<li class="py-8px">
 								<a (click)="dropdownComponent.show = false" routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
 							</li>
-
 						</ul>
 						<div class="border-t border-t-grey-10">
 							<convoy-button type="text" color="danger" className="font-medium px-24px py-20px text-14" (click)="logout()">Logout</convoy-button>
@@ -82,7 +84,7 @@
 			</div>
 		</div>
 	</header>
-    <convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
+	<convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
 
 	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 

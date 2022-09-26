@@ -220,10 +220,10 @@ export class EventComponent implements OnInit {
 			// to show app name or source name on events table header
 			if (this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventsTableHead[1] = 'Source Name';
 
+			this.pushEvents.emit(this.events);
 			this.eventsDetailsItem = this.events?.content[0];
 			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 
-			this.pushEvents.emit(this.events);
 			this.isloadingEvents = false;
 			return eventsResponse;
 		} catch (error: any) {

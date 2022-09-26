@@ -1,0 +1,7 @@
+<convoy-modal position="center" (closeModal)="closeModal.emit()">
+	<div class="p-40px" modalBody>
+		<p class="text-center text-16 font-semibold text-black max-w-[220px] m-auto mb-38px">{{ successText }}</p>
+		<img src="/assets/img/new-success.gif" loop="1" alt="Success gif" class="h-120px w-120px border-[12px] border-grey-10 rounded-[100%] m-auto mb-70px" />
+		<convoy-button *ngIf="buttonText" (click)="closeModal.emit()">{{ buttonText }}</convoy-button>
+	</div>
+</convoy-modal>

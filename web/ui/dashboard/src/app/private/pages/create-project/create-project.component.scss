@@ -1,61 +1,7 @@
-.page {
-	max-width: calc(834px + 48px);
-	width: 100%;
-}
+.active {
+	@apply transition-all duration-300 relative after:bottom-0 after:h-[3px] after:w-full after:left-0 after:right-0 after:bg-primary-100 after:absolute after:rounded-tl-16px after:rounded-tr-16px;
 
-.setup-step--step {
-	.line {
-		height: 4px;
-		width: 240px;
-		background: var(--primary-color-500);
+	span {
+		@apply font-semibold text-primary-100 transition-all duration-300;
 	}
-	.checkbox {
-		border-color: var(--grey-color-400);
-	}
-	.text {
-		color: var(--grey-color);
-	}
-
-	&:not(:last-of-type) {
-		margin-right: 32px;
-	}
-
-	&.current {
-		.checkbox {
-			border-color: var(--primary-color-300);
-			border-width: 5px;
-		}
-
-		.line {
-			background: var(--primary-color-300);
-		}
-
-		.text {
-			color: var(--grey-color);
-		}
-	}
-
-	&.done {
-		.line {
-			background: var(--primary-color);
-		}
-
-		.checkbox {
-			border-color: var(--primary-color);
-			border-width: 5px;
-		}
-
-		.text {
-			color: var(--color-black);
-		}
-	}
-}
-select {
-	-webkit-appearance: none;
-	-moz-appearance: none;
-	appearance: none;
-	background: transparent url(../../../../assets/img/arrow-down-icon.svg) no-repeat;
-	background-size: 5%;
-	background-position-x: 96%;
-	background-position-y: 15px;
 }
