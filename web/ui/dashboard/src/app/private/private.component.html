@@ -81,6 +81,7 @@
 			</div>
 		</div>
 	</header>
+    <convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
 
 	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 

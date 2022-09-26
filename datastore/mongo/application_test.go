@@ -17,8 +17,8 @@ func Test_UpdateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(db, getStore(db, GroupCollection))
-	appRepo := NewApplicationRepo(db, getStore(db, AppCollection))
+	groupRepo := NewGroupRepo(getStore(db))
+	appRepo := NewApplicationRepo(getStore(db))
 
 	newGroup := &datastore.Group{
 		Name: "Random new group",
@@ -61,8 +61,8 @@ func Test_CreateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(db, getStore(db, GroupCollection))
-	appRepo := NewApplicationRepo(db, getStore(db, AppCollection))
+	groupRepo := NewGroupRepo(getStore(db))
+	appRepo := NewApplicationRepo(getStore(db))
 
 	newOrg := &datastore.Group{
 		Name: "Random new group 2",
@@ -95,7 +95,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(db, getStore(db, AppCollection))
+	appRepo := NewApplicationRepo(getStore(db))
 
 	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", "", datastore.Pageable{
 		Page:    1,
@@ -110,14 +110,14 @@ func Test_FindApplicationByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(db, getStore(db, AppCollection))
+	appRepo := NewApplicationRepo(getStore(db))
 
 	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
 	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
 
-	groupRepo := NewGroupRepo(db, getStore(db, GroupCollection))
+	groupRepo := NewGroupRepo(getStore(db))
 
 	newGroup := &datastore.Group{
 		Name: "Yet another Random new group",

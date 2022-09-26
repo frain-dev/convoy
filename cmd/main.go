@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 	_ "time/tzdata"
 
@@ -11,11 +13,13 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/internal/pkg/migrate"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy/logger"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -31,7 +35,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 )
 
 func main() {
@@ -51,7 +55,7 @@ func main() {
 	}
 
 	app := &app{}
-	db := &mongo.Client{}
+	db := &cm.Client{}
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
@@ -62,7 +66,8 @@ func main() {
 func ensureDefaultUser(ctx context.Context, a *app) error {
 	pageable := datastore.Pageable{}
 
-	users, _, err := a.userRepo.LoadUsersPaged(ctx, pageable)
+	userRepo := cm.NewUserRepo(a.store)
+	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)
@@ -90,7 +95,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = a.userRepo.CreateUser(ctx, defaultUser)
+	err = userRepo.CreateUser(ctx, defaultUser)
 	if err != nil {
 		return fmt.Errorf("failed to create user - %w", err)
 	}
@@ -101,31 +106,20 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 }
 
 type app struct {
-	apiKeyRepo        datastore.APIKeyRepository
-	groupRepo         datastore.GroupRepository
-	applicationRepo   datastore.ApplicationRepository
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	subRepo           datastore.SubscriptionRepository
-	orgRepo           datastore.OrganisationRepository
-	orgMemberRepo     datastore.OrganisationMemberRepository
-	orgInviteRepo     datastore.OrganisationInviteRepository
-	sourceRepo        datastore.SourceRepository
-	userRepo          datastore.UserRepository
-	configRepo        datastore.ConfigurationRepository
-	queue             queue.Queuer
-	logger            logger.Logger
-	tracer            tracer.Tracer
-	cache             cache.Cache
-	limiter           limiter.RateLimiter
-	searcher          searcher.Searcher
+	store    datastore.Store
+	queue    queue.Queuer
+	logger   logger.Logger
+	tracer   tracer.Tracer
+	cache    cache.Cache
+	limiter  limiter.RateLimiter
+	searcher searcher.Searcher
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), time.Second*1)
 }
 
-func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
+func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -166,12 +160,24 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 
 		apm.SetApplication(nRApp)
 
-		database, err := mongo.New(cfg)
+		database, err := cm.New(cfg)
 		if err != nil {
 			return err
 		}
 
 		*db = *database
+
+		// Check Pending Migrations
+		if len(cmd.Aliases) > 0 {
+			alias := cmd.Aliases[0]
+			shouldSkip := strings.HasPrefix(alias, "migrate")
+			if !shouldSkip {
+				err := checkPendingMigrations(cfg.Database.Dsn, db)
+				if err != nil {
+					return err
+				}
+			}
+		}
 
 		var tr tracer.Tracer
 		var ca cache.Cache
@@ -227,19 +233,9 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 			return err
 		}
 
-		app.subRepo = db.SubRepo()
-		app.apiKeyRepo = db.APIRepo()
-		app.groupRepo = db.GroupRepo()
-		app.eventRepo = db.EventRepo()
-		app.applicationRepo = db.AppRepo()
-		app.eventDeliveryRepo = db.EventDeliveryRepo()
-		app.sourceRepo = db.SourceRepo()
-		app.userRepo = db.UserRepo()
-		app.configRepo = db.ConfigurationRepo()
-		app.orgRepo = db.OrganisationRepo()
-		app.orgMemberRepo = db.OrganisationMemberRepo()
-		app.orgInviteRepo = db.OrganisationInviteRepo()
+		s := datastore.New(db.Database())
 
+		app.store = s
 		app.queue = q
 		app.logger = lo
 		app.tracer = tr
@@ -251,12 +247,8 @@ func preRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) 
 	}
 }
 
-func postRun(app *app, db *mongo.Client) func(cmd *cobra.Command, args []string) error {
+func postRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if *db == (mongo.Client{}) {
-			return nil
-		}
-
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)
@@ -277,21 +269,25 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
 	cmd.AddCommand(addVersionCommand())
-	cmd.AddCommand(addCreateCommand(app))
-	cmd.AddCommand(addGetComamnd(app))
 	cmd.AddCommand(addServerCommand(app))
 	cmd.AddCommand(addWorkerCommand(app))
 	cmd.AddCommand(addRetryCommand(app))
 	cmd.AddCommand(addSchedulerCommand(app))
-	cmd.AddCommand(addUpgradeCommand(app))
+	cmd.AddCommand(addMigrateCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
+	cmd.AddCommand(addListenCommand(app))
+	cmd.AddCommand(addLoginCommand())
+	cmd.AddCommand(addListAppsCommand())
+	cmd.AddCommand(addStreamCommand(app))
+	cmd.AddCommand(addSwitchCommand())
+
 }
 
 type ConvoyCli struct {
 	cmd *cobra.Command
 }
 
-func NewCli(app *app, db *mongo.Client) ConvoyCli {
+func NewCli(app *app, db *cm.Client) ConvoyCli {
 	cmd := &cobra.Command{
 		Use:     "Convoy",
 		Version: convoy.GetVersion(),
@@ -349,4 +345,30 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	return c, nil
+}
+
+func checkPendingMigrations(dbDsn string, db *cm.Client) error {
+	c := db.Client().(*mongo.Database).Client()
+	u, err := url.Parse(dbDsn)
+	if err != nil {
+		return err
+	}
+
+	dbName := strings.TrimPrefix(u.Path, "/")
+	opts := &migrate.Options{
+		DatabaseName: dbName,
+	}
+
+	m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
+
+	pm, err := m.CheckPendingMigrations(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if pm {
+		return migrate.ErrPendingMigrationsFound
+	}
+
+	return nil
 }

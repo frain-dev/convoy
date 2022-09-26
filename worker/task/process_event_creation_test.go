@@ -29,17 +29,18 @@ type args struct {
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
 	search            searcher.Searcher
+	deviceRepo        datastore.DeviceRepository
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
+	cache := mocks.NewMockCache(ctrl)
+	queue := mocks.NewMockQueuer(ctrl)
+	search := mocks.NewMockSearcher(ctrl)
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
-	cache := mocks.NewMockCache(ctrl)
-	queue := mocks.NewMockQueuer(ctrl)
-	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	search := mocks.NewMockSearcher(ctrl)
+	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 
 	return &args{
 		appRepo:           appRepo,
@@ -113,6 +114,7 @@ func TestProcessEventCreated(t *testing.T) {
 						UID:        "456",
 						AppID:      "app-id-1",
 						EndpointID: "098",
+						Type:       datastore.SubscriptionTypeAPI,
 						Status:     datastore.ActiveSubscriptionStatus,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
@@ -186,6 +188,7 @@ func TestProcessEventCreated(t *testing.T) {
 						UID:        "456",
 						AppID:      "app-id-1",
 						EndpointID: "098",
+						Type:       datastore.SubscriptionTypeAPI,
 						Status:     datastore.ActiveSubscriptionStatus,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
@@ -234,7 +237,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search)
+			fn := ProcessEventCreation(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

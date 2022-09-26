@@ -132,11 +132,11 @@ type RegisterUser struct {
 }
 
 type LoginUserResponse struct {
-	UID       string    `json:"uid"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Token     Token     `json:"token"`
+	UID       string `json:"uid"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Token     Token  `json:"token"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
@@ -197,7 +197,8 @@ type Event struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" bson:"data" valid:"required~please provide your data"`
+	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
+	CustomHeaders map[string]string `json:"custom_headers"`
 }
 
 type IDs struct {
@@ -245,7 +246,6 @@ type WebhookRequest struct {
 
 type Subscription struct {
 	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
-	Type       string `json:"type" bson:"type" valid:"required~please provide a valid subscription type"`
 	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
@@ -289,4 +289,13 @@ type ForgotPassword struct {
 type ResetPassword struct {
 	Password             string `json:"password" valid:"required~please provide the password field"`
 	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
+}
+
+type CreateAppApiKey struct {
+	Group      *datastore.Group
+	App        *datastore.Application
+	Name       string `json:"name"`
+	BaseUrl    string
+	KeyType    datastore.KeyType `json:"key_type"`
+	Expiration int               `json:"expiration"`
 }

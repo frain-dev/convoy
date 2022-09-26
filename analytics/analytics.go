@@ -8,6 +8,7 @@ import (
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
@@ -81,9 +82,16 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	return a, nil
 }
 
-func TrackDailyAnalytics(Repo *Repo, cfg config.Configuration) func(context.Context, *asynq.Task) error {
+func TrackDailyAnalytics(store datastore.Store, cfg config.Configuration) func(context.Context, *asynq.Task) error {
+	repo := &Repo{
+		ConfigRepo: cm.NewConfigRepo(store),
+		EventRepo:  cm.NewEventRepository(store),
+		GroupRepo:  cm.NewGroupRepo(store),
+		OrgRepo:    cm.NewOrgRepo(store),
+		UserRepo:   cm.NewUserRepo(store),
+	}
 	return func(ctx context.Context, t *asynq.Task) error {
-		a, err := newAnalytics(Repo, cfg)
+		a, err := newAnalytics(repo, cfg)
 		if err != nil {
 			log.WithError(err).Error("Failed to initialize analytics")
 			return nil

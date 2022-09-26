@@ -21,9 +21,8 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, OrganisationMembersCollection)
-	userStore := getStore(db, UserCollection)
-	organisationMemberRepo := NewOrgMemberRepo(db, store)
+	store := getStore(db)
+	organisationMemberRepo := NewOrgMemberRepo(store)
 	orgID := uuid.NewString()
 
 	userMap := map[string]*datastore.UserMetadata{}
@@ -39,7 +38,9 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
-		require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
+
+		userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
+		require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
 
 		member := &datastore.OrganisationMember{
 			UID:            uuid.NewString(),
@@ -81,9 +82,8 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgMemberStore := getStore(db, OrganisationMembersCollection)
-	orgStore := getStore(db, OrganisationCollection)
-	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
+	store := getStore(db)
+	organisationMemberRepo := NewOrgMemberRepo(store)
 
 	userID := uuid.NewString()
 	for i := 0; i < 7; i++ {
@@ -93,7 +93,7 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 		}
 		org := &datastore.Organisation{UID: uuid.NewString(), DocumentStatus: status}
 
-		err := NewOrgRepo(db, orgStore).CreateOrganisation(context.Background(), org)
+		err := NewOrgRepo(store).CreateOrganisation(context.Background(), org)
 		require.NoError(t, err)
 
 		member := &datastore.OrganisationMember{
@@ -124,7 +124,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userStore := getStore(db, UserCollection)
+	store := getStore(db)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -135,10 +135,11 @@ func TestCreateOrganisationMember(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
 
-	orgMemberStore := getStore(db, OrganisationMembersCollection)
-	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
+	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
+	require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
+
+	organisationMemberRepo := NewOrgMemberRepo(store)
 
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
@@ -171,7 +172,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userStore := getStore(db, UserCollection)
+	store := getStore(db)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -182,10 +183,10 @@ func TestUpdateOrganisationMember(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
+	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
+	require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
 
-	orgMemberStore := getStore(db, OrganisationMembersCollection)
-	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
+	organisationMemberRepo := NewOrgMemberRepo(store)
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: uuid.NewString(),
@@ -226,8 +227,8 @@ func TestDeleteOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgMemberStore := getStore(db, OrganisationMembersCollection)
-	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
+	store := getStore(db)
+	organisationMemberRepo := NewOrgMemberRepo(store)
 
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
@@ -253,7 +254,7 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userStore := getStore(db, UserCollection)
+	store := getStore(db)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -264,9 +265,11 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
-	orgMemberStore := getStore(db, OrganisationMembersCollection)
-	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
+
+	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
+	require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
+
+	organisationMemberRepo := NewOrgMemberRepo(store)
 
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
@@ -299,7 +302,7 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userStore := getStore(db, UserCollection)
+	store := getStore(db)
 	user := &datastore.User{
 		UID:            uuid.NewString(),
 		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
@@ -310,10 +313,11 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	require.NoError(t, NewUserRepo(db, userStore).CreateUser(context.Background(), user))
 
-	orgMemberStore := getStore(db, OrganisationMembersCollection)
-	organisationMemberRepo := NewOrgMemberRepo(db, orgMemberStore)
+	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
+	require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
+
+	organisationMemberRepo := NewOrgMemberRepo(store)
 	m := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: uuid.NewString(),

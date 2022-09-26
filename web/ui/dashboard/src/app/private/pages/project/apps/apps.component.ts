@@ -1,12 +1,12 @@
 import { Location } from '@angular/common';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { APP } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 @Component({
 	selector: 'app-apps',
@@ -35,7 +35,7 @@ export class AppsComponent implements OnInit {
 	filteredApps!: APP[];
 	@ViewChild('appTableDropdown') appTableDropdown!: DropdownComponent;
 
-	constructor(private router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}
+	constructor(public router: Router, private route: ActivatedRoute, private generalService: GeneralService, public privateService: PrivateService, private location: Location) {}
 
 	ngOnInit() {
 		this.getApps();
@@ -100,4 +100,5 @@ export class AppsComponent implements OnInit {
 		this.currentAppId = '';
 		this.showDeleteAppModal = true;
 	}
+
 }

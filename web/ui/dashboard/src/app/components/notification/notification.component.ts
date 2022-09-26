@@ -18,7 +18,7 @@ export class NotificationComponent implements OnInit {
 		error: 'bg-danger-500 text-danger-100',
 		info: 'bg-primary-500 text-primary-100',
 		success: 'bg-success-500 text-success-100'
-	}
+	};
 	constructor(private generalService: GeneralService) {}
 
 	async ngOnInit() {
@@ -33,6 +33,4 @@ export class NotificationComponent implements OnInit {
 	dismissNotification() {
 		this.generalService.dismissNotification();
 	}
-
-	
 }

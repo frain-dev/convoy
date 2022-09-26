@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
@@ -25,7 +26,8 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	searcher := mocks.NewMockSearcher(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo)
+	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
+	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo, deviceRepo)
 }
 
 func TestEventService_CreateAppEvent(t *testing.T) {
@@ -217,6 +219,68 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				AppID:            "123",
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
+			},
+		},
+
+		{
+			name: "should_create_event_with_custom_headers",
+			dbFn: func(es *EventService) {
+				c, _ := es.cache.(*mocks.MockCache)
+				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Application{
+					Title:   "test_app",
+					UID:     "123",
+					GroupID: "abc",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID: "ref",
+						},
+						{
+							UID: "abcd",
+						},
+					},
+					SupportEmail: "test_app@gmail.com",
+				}, nil)
+
+				eq, _ := es.queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+					Times(1).Return(nil)
+			},
+			args: args{
+				ctx: ctx,
+				newMessage: &models.Event{
+					AppID:         "123",
+					EventType:     "payment.created",
+					Data:          bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					CustomHeaders: map[string]string{"X-Test-Signature": "Test"},
+				},
+				g: &datastore.Group{
+					UID:  "abc",
+					Name: "test_group",
+					Config: &datastore.GroupConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   1000,
+							RetryCount: 10,
+						},
+						Signature:       &datastore.SignatureConfiguration{},
+						DisableEndpoint: false,
+						ReplayAttacks:   false,
+					},
+				},
+			},
+			wantEvent: &datastore.Event{
+				EventType:        datastore.EventType("payment.created"),
+				MatchedEndpoints: 0,
+				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				AppID:            "123",
+				GroupID:          "abc",
+				DocumentStatus:   datastore.ActiveDocumentStatus,
+				Headers:          httpheader.HTTPHeader{"X-Test-Signature": []string{"Test"}},
 			},
 		},
 

@@ -12,7 +12,8 @@ import { ButtonComponent } from '../button/button.component';
 export class TooltipComponent implements OnInit {
 	@Input('size') size: 'sm'| 'md' = 'md';
 	@Input('position') position: 'left'| 'right' = 'left';
-  
+	@Input('img') img!: string;
+
 	constructor() {}
 
 	ngOnInit(): void {}

@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownComponent } from '../components/dropdown/dropdown.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
 import { PrivateService } from './private.service';
@@ -36,6 +36,10 @@ export class PrivateComponent implements OnInit {
 		localStorage.removeItem('CONVOY_ORG');
 		this.router.navigateByUrl('/login');
 	}
+
+    get isProjectDetailsPage(){
+        return this.router.url.includes("/projects/")
+    }
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');

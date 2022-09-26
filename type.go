@@ -93,8 +93,8 @@ const (
 
 // Exports dir
 const (
-	DefaultOnPremDir = "/var/convoy/export/"
-	TmpExportDir     = "/tmp/convoy/export/"
+	DefaultOnPremDir = "/var/convoy/export"
+	TmpExportDir     = "/tmp/convoy/export"
 )
 
 const (

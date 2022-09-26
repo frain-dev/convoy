@@ -22,7 +22,7 @@ export class SourcesComponent implements OnInit {
 	showDeleteSourceModal = false;
 	projectId = this.privateService.activeProjectDetails.uid;
 
-	constructor(private route: ActivatedRoute, private router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
+	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
 		this.route.queryParams.subscribe(params => (this.activeSource = this.sources?.content.find(source => source.uid === params?.id)));
 
 		const urlParam = route.snapshot.params.id;
@@ -55,6 +55,7 @@ export class SourcesComponent implements OnInit {
 			this.isDeletingSource = false;
 			this.getSources();
 			this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
+			this.showDeleteSourceModal = false;
 			this.activeSource = undefined;
 		} catch (error) {
 			this.isDeletingSource = false;

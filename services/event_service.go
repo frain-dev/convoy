@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -31,11 +32,12 @@ type EventService struct {
 	subRepo           datastore.SubscriptionRepository
 	cache             cache.Cache
 	searcher          searcher.Searcher
+	deviceRepo        datastore.DeviceRepository
 }
 
 func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo}
+	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, deviceRepo datastore.DeviceRepository) *EventService {
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -85,6 +87,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		UID:            uuid.New().String(),
 		EventType:      datastore.EventType(newMessage.EventType),
 		Data:           newMessage.Data,
+		Headers:        e.getCustomHeaders(newMessage),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		AppID:          app.UID,
@@ -229,12 +232,6 @@ func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []str
 		return 0, 0, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	err = e.validateEventDeliveryStatus(deliveries)
-	if err != nil {
-		log.WithError(err).Error("event delivery status validation failed")
-		return 0, 0, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	failures := 0
 	for _, delivery := range deliveries {
 		err := e.forceResendEventDelivery(ctx, &delivery, g)
@@ -297,6 +294,7 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 
 	appMap := datastore.AppMap{}
 	eventMap := datastore.EventMap{}
+	deviceMap := datastore.DeviceMap{}
 	endpointMap := datastore.EndpointMap{}
 
 	for i, ed := range deliveries {
@@ -322,6 +320,20 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 				}
 				eventMap[ed.EventID] = event
 			}
+		}
+
+		if !util.IsStringEmpty(ed.DeviceID) {
+			if _, ok := deviceMap[ed.DeviceID]; !ok {
+				dev, err := e.deviceRepo.FetchDeviceByID(ctx, ed.DeviceID, ed.AppID, ed.GroupID)
+				if err == nil {
+					device := &datastore.Device{
+						UID:      dev.UID,
+						HostName: dev.HostName,
+					}
+					deviceMap[ed.DeviceID] = device
+				}
+			}
+			deliveries[i].CLIMetadata.HostName = deviceMap[ed.DeviceID].HostName
 		}
 
 		if _, ok := endpointMap[ed.EndpointID]; !ok {
@@ -429,4 +441,18 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 		return fmt.Errorf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err)
 	}
 	return nil
+}
+
+func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHeader {
+	var headers map[string][]string
+
+	if event.CustomHeaders != nil {
+		headers = make(map[string][]string)
+
+		for key, value := range event.CustomHeaders {
+			headers[key] = []string{value}
+		}
+	}
+
+	return headers
 }
