@@ -18,7 +18,7 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
 @NgModule({
 	declarations: [SubscriptionsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DeleteModalModule, StatusColorModule, ButtonComponent, ModalComponent, CardComponent, ListItemComponent, TagComponent, EmptyStateComponent, CopyButtonComponent, FormatSecondsPipe]
+	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, StatusColorModule, ButtonComponent, ModalComponent, CardComponent, ListItemComponent, TagComponent, EmptyStateComponent, CopyButtonComponent, FormatSecondsPipe, DeleteModalComponent]
 
 })
 export class SubscriptionsModule {}
