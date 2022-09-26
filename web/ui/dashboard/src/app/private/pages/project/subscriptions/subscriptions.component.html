@@ -68,33 +68,35 @@
 					</div>
 				</div>
 
-			<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.app_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
-				<div class="w-full">
-					<div class="text-grey-40 text-10 mb-3">App</div>
-					<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
-				</div>
-				<div class="w-full">
-					<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
-						{{ subscription?.endpoint_metadata?.target_url }}
+				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.app_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
+					<div class="w-full">
+						<div class="text-grey-40 text-10 mb-3">App</div>
+						<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
 					</div>
-				</div>
-				<div class="w-full" *ngIf="subscription.endpoint_metadata">
-					<div class="text-12 flex items-center whitespace-nowrap">
-						Endpoint Secret
-						<convoy-copy-button [text]="subscription.endpoint_metadata.secret" size="md" (copyText)="copyText()"></convoy-copy-button>
+					<div class="w-full">
+						<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
+							{{ subscription?.endpoint_metadata?.target_url }}
+						</div>
+					</div>
+					<div class="w-full" *ngIf="subscription.endpoint_metadata">
+						<div class="text-12 flex items-center whitespace-nowrap">
+							Endpoint Secret
+							<convoy-copy-button [text]="subscription.endpoint_metadata.secret" size="md" (copyText)="copyText()"></convoy-copy-button>
+						</div>
 					</div>
 				</div>
 
-			<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="privateService.activeProjectDetails?.type === 'incoming' && subscription.source_metadata">
-				<div class="w-full">
-					<div class="text-grey-40 text-10 mb-10px">Source</div>
-					<div class="text-12">{{ subscription.source_metadata?.name }}</div>
-				</div>
-				<div class="w-full">
-					<div class="text-12 uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
-				</div>
-				<div class="w-full">
-					<div class="text-12 uppercase">{{ subscription.source_metadata?.type }}</div>
+				<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="privateService.activeProjectDetails?.type === 'incoming' && subscription.source_metadata">
+					<div class="w-full">
+						<div class="text-grey-40 text-10 mb-10px">Source</div>
+						<div class="text-12">{{ subscription.source_metadata?.name }}</div>
+					</div>
+					<div class="w-full">
+						<div class="text-12 uppercase">{{ subscription.source_metadata?.verifier?.type }}</div>
+					</div>
+					<div class="w-full">
+						<div class="text-12 uppercase">{{ subscription.source_metadata?.type }}</div>
+					</div>
 				</div>
 			</convoy-card>
 		</div>
