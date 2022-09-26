@@ -1,3 +1,33 @@
+## 0.7.0-rc.1
+
+-   [Feature] Add a command to run convoy migrations #989 #996 #993
+-   [Feature] Storybook setup #927
+-   [Feature] Add load test scripts #997
+-   [Feature] Add convoy websocket cli event streaming server and client #931
+-   [Feature] Add support for custom headers for outgoing events #1012
+-   [Bugfix] Use typesense multi search #994
+-   [Bugfix] Fix retention policy export #998
+-   [Bugfix] Allow discarded events to be retried #1016
+-   [Bugfix] Validate source providers separately #1024
+-   [Enhancement] Fixed API spec annotations #1005
+-   [Enhancement] Refactor Store Dependency #1006
+
+## 0.6.8
+
+-   [Bugfix] Fix subscriptions page error #1026
+-   [Bugfix] Add deleted_at to MongoDB indexes #1027
+-   [Bugfix] Dismiss modal when a source is deleted #1026
+
+## 0.6.7
+
+-   [Bugfix] Fix analytics query #1001
+-   [Bugfix] Fix middleware layer for app portal #988
+-   [Bugfix] Fix endpoint notification email bug #981
+
+## 0.6.6
+
+-   [Bugfix] Fix project statistics lookup query #978 #979
+
 ## v0.6.5
 
 -   [Feature] Add support for user registration. #959
