@@ -175,7 +175,12 @@
 			</convoy-card>
 		</div>
 
-		<div class="flex items-center mt-16px mb-50px" [ngClass]="{ invisible: subscriptions?.content?.length === 0 }">
+		
+	</ng-container>
+
+</div>
+
+<div class="flex items-center mt-16px mb-50px" [ngClass]="{ invisible: subscriptions?.content?.length === 0 }">
 			<convoy-button
 				type="outline"
 				size="sm"
@@ -205,23 +210,20 @@
 				</svg>
 			</convoy-button>
 		</div>
+<convoy-empty-state
+	imgSrc="/assets/img/group-empty-img.svg"
+	heading="Create your first webhook subscription"
+	description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
+	buttonText="Create Subscription"
+	(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/subscriptions/new')"
+	className="h-[60vh] mt-16px"
+	id="subscriptions-empty-state"
+	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
+></convoy-empty-state>
+
+<convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
+	<ng-container modalBody>
+		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></app-create-subscription>
 	</ng-container>
-
-	<convoy-empty-state
-		imgSrc="/assets/img/group-empty-img.svg"
-		heading="Create your first webhook subscription"
-		description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
-		buttonText="Create Subscription"
-		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/subscriptions/new')"
-		className="h-[60vh] mt-16px"
-		id="subscriptions-empty-state"
-		*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
-	></convoy-empty-state>
-
-	<convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
-		<ng-container modalBody>
-			<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></app-create-subscription>
-		</ng-container>
-	</convoy-modal>
-	<app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>
-</div>
+</convoy-modal>
+<app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>
