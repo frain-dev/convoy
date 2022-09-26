@@ -181,8 +181,8 @@
 
 		<!-- app portal  -->
 		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
-            <h3 class="font-medium">App Portal</h3>
-			<div *ngIf="loadingAppPotalToken" >
+			<h3 class="font-medium">App Portal</h3>
+			<div *ngIf="loadingAppPotalToken">
 				<ul class="mt-10px">
 					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
@@ -216,7 +216,7 @@
 					<div class="bg-white-100 border-2 border-primary-500 rounded-[10px] p-16px mt-16px">
 						<div class="text-14 text-grey-40 overflow-x-scroll">{{ appPortalIframe }}</div>
 						<div class="flex justify-end">
-                            <convoy-copy-button [text]="appPortalLink"></convoy-copy-button>
+							<convoy-copy-button [text]="appPortalLink"></convoy-copy-button>
 						</div>
 					</div>
 				</ul>
@@ -226,7 +226,36 @@
 </convoy-card>
 
 <!-- app api keys and devices list  -->
-<convoy-cli></convoy-cli>
+<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
+	<div class="flex items-center justify-center border-b border-grey-10">
+		<ul class="w-full flex items-center">
+			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
+				<convoy-button
+					type="clear"
+					color="grey"
+					[className]="
+						activeTab === tab
+							? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
+							: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
+					"
+				>
+					<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+				</convoy-button>
+			</li>
+
+			<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
+				<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true">Generate New Key</convoy-button>
+			</div>
+		</ul>
+	</div>
+</convoy-card>
+
+<ng-container *ngIf="activeTab === 'cli keys'">
+	<convoy-cli-keys></convoy-cli-keys>
+</ng-container>
+<ng-container *ngIf="activeTab === 'devices'">
+	<convoy-devices></convoy-devices>
+</ng-container>
 
 <!-- send event form  -->
 <app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
