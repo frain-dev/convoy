@@ -152,15 +152,24 @@
 					</a>
 				</convoy-list-item>
 				<convoy-list-item className="text-14 font-normal py-2 px-24px">
-					<div class="w-[50%] text-grey-40">Retry Mechanism</div>
+					<div class="w-[50%] text-grey-40 flex items-center">
+						Retry Mechanism
+						<img src="/assets/img/inherit-icon.svg" alt="Inherit Icon" class="ml-4px h-16px" *ngIf="!activeSubscription?.retry_config?.type" />
+					</div>
 					<div class="w-[50%] text-right">{{ activeSubscription?.retry_config ? activeSubscription?.retry_config?.type : activeProjectConfig().strategy?.type }}</div>
 				</convoy-list-item>
 				<convoy-list-item className="text-14 font-normal py-2 px-24px">
-					<div class="w-[50%] text-grey-40">Retry Duration</div>
+					<div class="w-[50%] text-grey-40 flex items-center">
+						Retry Duration
+						<img src="/assets/img/inherit-icon.svg" alt="Inherit Icon" class="ml-4px h-16px" *ngIf="!activeSubscription?.retry_config?.duration"  />
+					</div>
 					<div class="w-[50%] text-right">{{ activeSubscription?.retry_config ? (activeSubscription?.retry_config?.duration | formatSeconds) : (activeProjectConfig().strategy?.duration | formatSeconds) }}</div>
 				</convoy-list-item>
 				<convoy-list-item className="text-14 font-normal py-2 px-24px">
-					<div class="w-[50%] text-grey-40">Retry Limit</div>
+					<div class="w-[50%] text-grey-40 flex items-center">
+						Retry Limit
+						<img src="/assets/img/inherit-icon.svg" alt="Inherit Icon" class="ml-4px h-16px" *ngIf="!activeSubscription?.retry_config?.retry_count" />
+					</div>
 					<div class="w-[50%] text-right">{{ activeSubscription?.retry_config ? activeSubscription?.retry_config?.retry_count : activeProjectConfig().strategy?.retry_count }}</div>
 				</convoy-list-item>
 				<convoy-list-item className="text-14 font-normal py-2 px-24px">
