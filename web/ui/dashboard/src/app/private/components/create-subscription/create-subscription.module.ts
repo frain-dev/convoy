@@ -32,8 +32,8 @@ import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-m
 		ToggleComponent,
 		ModalComponent,
 		CardComponent,
-    RadioComponent
-    ConfirmationModalComponent
+		RadioComponent,
+		ConfirmationModalComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

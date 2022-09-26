@@ -10,10 +10,8 @@ export interface GROUP {
 		disable_endpoint: boolean;
 		Strategy: {
 			type: string;
-			default: {
-				intervalSeconds: number;
-				retryLimit: number;
-			};
+			retry_count: number;
+			duration: number;
 		};
 		Signature: {
 			header: string;
