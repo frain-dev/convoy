@@ -149,4 +149,19 @@ export class PrivateService {
 			}
 		});
 	}
+
+    getProjects(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const groupsResponse = await this.http.request({
+					url: `${this.urlFactory('org')}/groups`,
+					method: 'get'
+				});
+
+				return resolve(groupsResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }
