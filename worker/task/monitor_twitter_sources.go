@@ -10,12 +10,17 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(sourceRepo datastore.SourceRepository, subRepo datastore.SubscriptionRepository, appRepo datastore.ApplicationRepository, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+	sourceRepo := mongo.NewSourceRepo(store)
+	subRepo := mongo.NewSubscriptionRepo(store)
+	appRepo := mongo.NewApplicationRepo(store)
+
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{Page: 1, PerPage: 100}
 		f := &datastore.SourceFilter{Provider: string(datastore.TwitterSourceProvider)}

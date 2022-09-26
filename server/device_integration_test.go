@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
@@ -41,13 +42,13 @@ func (d *DeviceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(d.DB)
 
 	// Setup Default Group.
-	d.DefaultGroup, _ = testdb.SeedDefaultGroup(d.DB, "")
+	d.DefaultGroup, _ = testdb.SeedDefaultGroup(d.ConvoyApp.A.Store, "")
 
-	user, err := testdb.SeedDefaultUser(d.DB)
+	user, err := testdb.SeedDefaultUser(d.ConvoyApp.A.Store)
 	require.NoError(d.T(), err)
 	d.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(d.DB, user)
+	org, err := testdb.SeedDefaultOrganisation(d.ConvoyApp.A.Store, user)
 	require.NoError(d.T(), err)
 	d.DefaultOrg = org
 
@@ -60,7 +61,9 @@ func (d *DeviceIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(d.T(), err)
 
-	initRealmChain(d.T(), d.DB.APIRepo(), d.DB.UserRepo(), d.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(d.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(d.ConvoyApp.A.Store)
+	initRealmChain(d.T(), apiRepo, userRepo, d.ConvoyApp.A.Cache)
 }
 
 func (d *DeviceIntegrationTestSuite) TearDownTest() {
@@ -71,11 +74,11 @@ func (d *DeviceIntegrationTestSuite) TearDownTest() {
 func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByAppID() {
 	expectedStatusCode := http.StatusOK
 
-	app, err := testdb.SeedApplication(d.DB, d.DefaultGroup, "", "", false)
+	app, err := testdb.SeedApplication(d.ConvoyApp.A.Store, d.DefaultGroup, "", "", false)
 	require.NoError(d.T(), err)
 
 	// Just Before.
-	_ = testdb.SeedDevice(d.DB, d.DefaultGroup, app.UID)
+	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultGroup, app.UID)
 
 	// Arrange
 	url := fmt.Sprintf("/ui/organisations/%s/groups/%s/apps/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, app.UID)

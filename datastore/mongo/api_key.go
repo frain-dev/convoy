@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,58 +14,54 @@ import (
 )
 
 type apiKeyRepo struct {
-	innerDB *mongo.Database
-	client  *mongo.Collection
+	store datastore.Store
 }
 
-const APIKeyCollection = "apiKeys"
-
-func NewApiKeyRepo(client *mongo.Database) datastore.APIKeyRepository {
+func NewApiKeyRepo(store datastore.Store) datastore.APIKeyRepository {
 	return &apiKeyRepo{
-		innerDB: client,
-		client:  client.Collection(APIKeyCollection, nil),
+		store: store,
 	}
 }
 
 func (db *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	apiKey.ID = primitive.NewObjectID()
+	ctx = db.setCollectionInContext(ctx)
 
+	apiKey.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(apiKey.UID) {
 		apiKey.UID = uuid.New().String()
 	}
 
-	_, err := db.client.InsertOne(ctx, apiKey)
-	return err
+	return db.store.Save(ctx, apiKey, nil)
 }
 
 func (db *apiKeyRepo) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
-	filter := bson.M{"uid": apiKey.UID}
+	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
 		"$set": apiKey,
 	}
 
-	_, err := db.client.UpdateOne(ctx, filter, update)
-	return err
+	return db.store.UpdateByID(ctx, apiKey.UID, update)
 }
 
 func (db *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*datastore.APIKey, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	apiKey := &datastore.APIKey{}
 
-	filter := bson.M{
-		"uid":             uid,
-		"document_status": datastore.ActiveDocumentStatus,
+	err := db.store.FindByID(ctx, uid, nil, apiKey)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = datastore.ErrAPIKeyNotFound
+		}
+		return nil, err
 	}
 
-	err := db.client.FindOne(ctx, filter).Decode(apiKey)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrAPIKeyNotFound
-	}
-
-	return apiKey, err
+	return apiKey, nil
 }
 
 func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
+	ctx = db.setCollectionInContext(ctx)
 	apiKey := new(datastore.APIKey)
 
 	filter := bson.M{
@@ -74,32 +69,36 @@ func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*d
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	err := db.client.FindOne(ctx, filter).Decode(apiKey)
-
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrAPIKeyNotFound
+	err := db.store.FindOne(ctx, filter, nil, apiKey)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = datastore.ErrAPIKeyNotFound
+		}
+		return nil, err
 	}
 
 	return apiKey, err
 }
 
 func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
+	ctx = db.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid": bson.M{
 			"$in": uids,
 		},
 	}
 
-	updateAsDeleted := bson.D{primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "deleted_at", Value: primitive.NewDateTimeFromTime(time.Now())},
-		primitive.E{Key: "document_status", Value: datastore.DeletedDocumentStatus},
-	}}}
+	updateAsDeleted := bson.M{
+		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+		"document_status": datastore.DeletedDocumentStatus,
+	}
 
-	_, err := db.client.UpdateMany(ctx, filter, updateAsDeleted)
-	return err
+	return db.store.UpdateMany(ctx, filter, bson.M{"$set": updateAsDeleted}, false)
 }
 
 func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
+	ctx = db.setCollectionInContext(ctx)
 	apiKey := &datastore.APIKey{}
 
 	filter := bson.M{
@@ -107,15 +106,20 @@ func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datas
 		"document_status": datastore.ActiveDocumentStatus,
 	}
 
-	err := db.client.FindOne(ctx, filter).Decode(apiKey)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrAPIKeyNotFound
+	err := db.store.FindOne(ctx, filter, nil, apiKey)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = datastore.ErrAPIKeyNotFound
+		}
+		return nil, err
 	}
 
 	return apiKey, err
 }
 
 func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	var apiKeys []datastore.APIKey
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
@@ -132,19 +136,16 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 		filter["key_type"] = f.KeyType
 	}
 
-	paginatedData, err := pager.
-		New(db.client).
-		Context(ctx).
-		Limit(int64(pageable.PerPage)).
-		Page(int64(pageable.Page)).
-		Filter(filter).
-		Sort("created_at", pageable.Sort).
-		Decode(&apiKeys).
-		Find()
+	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &apiKeys)
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	return apiKeys, datastore.PaginationData(paginatedData.Pagination), nil
+	return apiKeys, pagination, nil
+}
+
+func (db *apiKeyRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.APIKeyCollection)
 }

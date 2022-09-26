@@ -13,7 +13,10 @@
 		--color-white: 252, 252, 252;
 	}
 
-    h2{
-        @apply text-h2;
-    }
+  h1 {
+	  @apply text-h1;
+	}
+  h2{
+    @apply text-h2;
+  }
 }

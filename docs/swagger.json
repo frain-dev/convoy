@@ -9292,6 +9292,9 @@
                 "bucket": {
                     "type": "string"
                 },
+                "endpoint": {
+                    "type": "string"
+                },
                 "region": {
                     "type": "string"
                 }
@@ -9648,6 +9651,12 @@
             "properties": {
                 "app_id": {
                     "type": "string"
+                },
+                "custom_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",

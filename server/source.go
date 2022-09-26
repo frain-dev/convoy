@@ -5,13 +5,21 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
+
+func createSourceService(a *ApplicationHandler) *services.SourceService {
+	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+
+	return services.NewSourceService(sourceRepo, a.A.Cache)
+}
 
 // CreateSource
 // @Summary Create a source
@@ -34,7 +42,8 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 
 	group := m.GetGroupFromContext(r.Context())
 
-	source, err := a.S.SourceService.CreateSource(r.Context(), &newSource, group)
+	sourceService := createSourceService(a)
+	source, err := sourceService.CreateSource(r.Context(), &newSource, group)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -60,7 +69,8 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
-	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	sourceService := createSourceService(a)
+	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -94,13 +104,15 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	group := m.GetGroupFromContext(r.Context())
-	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	sourceService := createSourceService(a)
+
+	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	source, err = a.S.SourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
+	source, err = sourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -126,13 +138,15 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Router /api/v1/sources/{sourceID} [delete]
 func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
-	source, err := a.S.SourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	sourceService := createSourceService(a)
+
+	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = a.S.SourceService.DeleteSource(r.Context(), group, source)
+	err = sourceService.DeleteSource(r.Context(), group, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -162,7 +176,8 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 		Type: r.URL.Query().Get("type"),
 	}
 
-	sources, paginationData, err := a.S.SourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
+	sourceService := createSourceService(a)
+	sources, paginationData, err := sourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusInternalServerError))
 		return

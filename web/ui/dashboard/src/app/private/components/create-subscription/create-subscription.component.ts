@@ -53,6 +53,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	isloadingAppPortalAppDetails = false;
 	token: string = this.route.snapshot.params.token;
 	showError = false;
+	confirmModal = false;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -154,7 +155,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
 	}
 
-    async onCreateEndpoint(newEndpoint: ENDPOINT) {
+	async onCreateEndpoint(newEndpoint: ENDPOINT) {
 		await this.getApps();
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 	}
@@ -243,5 +244,10 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	goToSubsriptionsPage() {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+	}
+
+	isNewProjectRoute(): boolean {
+		if (this.router.url == '/projects/new') return true;
+		return false;
 	}
 }

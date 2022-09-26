@@ -18,8 +18,8 @@ func Test_CreateSource(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, SourceCollection)
-	sourceRepo := NewSourceRepo(db, store)
+	store := getStore(db)
+	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -37,8 +37,8 @@ func Test_FindSourceByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, SourceCollection)
-	sourceRepo := NewSourceRepo(db, store)
+	store := getStore(db)
+	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
 	_, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
@@ -58,8 +58,8 @@ func Test_FindSourceByMaskID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, SourceCollection)
-	sourceRepo := NewSourceRepo(db, store)
+	store := getStore(db)
+	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
 	_, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
@@ -79,8 +79,8 @@ func Test_UpdateSource(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, SourceCollection)
-	sourceRepo := NewSourceRepo(db, store)
+	store := getStore(db)
+	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -100,8 +100,8 @@ func Test_DeleteSource(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, SourceCollection)
-	sourceRepo := NewSourceRepo(db, store)
+	store := getStore(db)
+	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -182,8 +182,8 @@ func Test_LoadSourcesPaged(t *testing.T) {
 			db, closeFn := getDB(t)
 			defer closeFn()
 
-			store := getStore(db, SourceCollection)
-			sourceRepo := NewSourceRepo(db, store)
+			store := getStore(db)
+			sourceRepo := NewSourceRepo(store)
 			groupId := uuid.NewString()
 
 			for i := 0; i < tc.count; i++ {

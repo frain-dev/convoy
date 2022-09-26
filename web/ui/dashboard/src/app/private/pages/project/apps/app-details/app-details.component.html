@@ -1,14 +1,14 @@
 <div class="text-12 font-medium flex items-center mb-24px uppercase">
 	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-	<svg width="16" height="16" class="mx-4px">
+	<svg width="16" height="16" class="mx-4px fill-dark-grey">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="mx-4px">
+	<svg width="16" height="16" class="mx-4px fill-dark-grey">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	<a class="cursor-pointer font-medium" (click)="goBack()">Apps</a>
-	<svg width="16" height="16" class="mx-4px">
+	<svg width="16" height="16" class="mx-4px fill-dark-grey">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
 	<span class="font-medium text-primary-100">{{ appsDetailsItem?.name || 'App' }}</span>
@@ -143,9 +143,19 @@
 							</p>
 
 							<div class="flex items-center mt-16px">
-								<convoy-button size="sm" type="text" (clickItem)="selectedEndpoint = endpoint; showAddEndpointModal = true">Edit</convoy-button>
+								<convoy-button size="sm" type="text" (clickItem)="selectedEndpoint = endpoint; showAddEndpointModal = true">
+                                    <svg width="16" height="16" class="mr-8px fill-primary-100">
+                                        <use xlink:href="#edit-icon"></use>
+                                    </svg>
+                                    Edit
+                                </convoy-button>
 								<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
-								<convoy-button size="sm" type="text" (clickItem)="selectedEndpoint = endpoint; showDeleteModal = true">Delete</convoy-button>
+								<convoy-button size="sm" type="text" color="danger" (clickItem)="selectedEndpoint = endpoint; showDeleteModal = true">
+                                    <svg width="16" height="16" class="mr-8px">
+                                        <use xlink:href="#delete-icon"></use>
+                                    </svg>
+                                    Delete
+                                </convoy-button>
 							</div>
 						</div>
 						<div class="absolute backdrop-blur-sm rounded-8px top-0 w-full h-full -ml-[15px] bg-primary-500 bg-opacity-50 flex items-center flex-col justify-center p-24px" *ngIf="endpoint.status == 'inactive'">
@@ -251,7 +261,7 @@
 <app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
 
 <!-- create endpoint form  -->
-<convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false">
+<convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false; selectedEndpoint = undefined">
 	<ng-container modalBody>
 		<app-create-endpoint [selectedEndpoint]="selectedEndpoint" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? closeEditEndpointModal() : getAppDetails(appsDetailsItem.uid); closeEditEndpointModal()"></app-create-endpoint>
 	</ng-container>
