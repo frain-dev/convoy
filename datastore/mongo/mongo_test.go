@@ -5,6 +5,7 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,7 +16,9 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
+	e := os.Getenv("TEST_MONGO_DSN")
+	fmt.Println(e)
+	return e
 }
 
 func getConfig() config.Configuration {
