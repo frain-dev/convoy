@@ -461,7 +461,7 @@ components:
     datastore.RetryConfiguration:
       properties:
         duration:
-          type: string
+          type: integer
         retry_count:
           type: integer
         type:
@@ -544,12 +544,16 @@ components:
           type: string
         device_id:
           type: string
+        disable_endpoint:
+          type: boolean
         endpoint_metadata:
           $ref: '#/components/schemas/datastore.Endpoint'
         filter_config:
           $ref: '#/components/schemas/datastore.FilterConfiguration'
         name:
           type: string
+        rate_limit_config:
+          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
         retry_config:
           $ref: '#/components/schemas/datastore.RetryConfiguration'
         source_metadata:
@@ -830,6 +834,17 @@ components:
         password_confirmation:
           type: string
       type: object
+    models.RetryConfiguration:
+      properties:
+        duration:
+          type: string
+        interval_seconds:
+          type: integer
+        retry_count:
+          type: integer
+        type:
+          type: string
+      type: object
     models.Role:
       properties:
         app:
@@ -896,14 +911,18 @@ components:
           $ref: '#/components/schemas/datastore.AlertConfiguration'
         app_id:
           type: string
+        disable_endpoint:
+          type: boolean
         endpoint_id:
           type: string
         filter_config:
           $ref: '#/components/schemas/datastore.FilterConfiguration'
         name:
           type: string
+        rate_limit_config:
+          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
         retry_config:
-          $ref: '#/components/schemas/datastore.RetryConfiguration'
+          $ref: '#/components/schemas/models.RetryConfiguration'
         source_id:
           type: string
       type: object

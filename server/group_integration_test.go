@@ -42,7 +42,7 @@ func (s *GroupIntegrationTestSuite) SetupSuite() {
 
 func (s *GroupIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
- 
+
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
@@ -52,7 +52,7 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Group.
-	s.DefaultGroup, err = testdb.SeedDefaultGroup(s.DB, s.DefaultOrg.UID)
+	s.DefaultGroup, err = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 	require.NoError(s.T(), err)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
@@ -104,7 +104,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 func (s *GroupIntegrationTestSuite) TestGetGroupWithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
@@ -128,13 +128,13 @@ func (s *GroupIntegrationTestSuite) TestGetGroupWithPersonalAPIKey() {
 func (s *GroupIntegrationTestSuite) TestGetGroupWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusUnauthorized
 
-	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
 	require.NoError(s.T(), err)
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
@@ -210,10 +210,10 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
 	groupID := uuid.NewString()
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects/%s", group.UID)
@@ -227,20 +227,21 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	_, err = s.DB.GroupRepo().FetchGroupByID(context.Background(), groupID)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
+	_, err = groupRepo.FetchGroupByID(context.Background(), groupID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
 
 func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusUnauthorized
 
-	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
 	require.NoError(s.T(), err)
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
@@ -332,7 +333,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroupWithPersonalAPIKey() {
     "rate_limit_duration": "1m"
 }`
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
@@ -365,13 +366,13 @@ func (s *GroupIntegrationTestSuite) TestCreateGroupWithPersonalAPIKey() {
 func (s *GroupIntegrationTestSuite) TestCreateGroupWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusUnauthorized
 
-	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
 	require.NoError(s.T(), err)
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
@@ -434,10 +435,10 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey() {
 	groupID := uuid.NewString()
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
 
 	body := serialize(`{"name":"update_group"}`)
@@ -462,13 +463,13 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey() {
 func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusUnauthorized
 
-	user, err := testdb.SeedUser(s.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAPI})
 	require.NoError(s.T(), err)
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), user.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects/%s", s.DefaultGroup.UID)
@@ -518,10 +519,10 @@ func (s *GroupIntegrationTestSuite) TestGetGroupsWithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 
-	_, key, err := testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)

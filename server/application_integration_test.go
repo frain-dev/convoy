@@ -30,14 +30,14 @@ import (
 
 type ApplicationIntegrationTestSuite struct {
 	suite.Suite
-	DB           cm.Client
+	DB             cm.Client
 	Router         http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultOrg     *datastore.Organisation
 	DefaultGroup   *datastore.Group
 	DefaultUser    *datastore.User
 	APIKey         string
-	PersonalAPIKey string 
+	PersonalAPIKey string
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupSuite() {
@@ -49,16 +49,16 @@ func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
-	user, err := testdb.SeedDefaultUser(s.DB)
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store,  s.DefaultOrg.UID)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	// Seed Auth
 	role := auth.Role{
@@ -66,9 +66,9 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "","")
-  
-  	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.DB, auth.Role{}, uuid.NewString(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+
+	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
 
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -134,7 +134,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", true)
+	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", true)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
@@ -151,7 +151,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := s.DB.AppRepo()
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
@@ -189,7 +189,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPer
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleApplications(s.DB, s.DefaultGroup, totalApps)
+	_ = testdb.SeedMultipleApplications(s.ConvoyApp.A.Store, s.DefaultGroup, totalApps)
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultGroup.UID)
@@ -261,7 +261,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppWithPersonalAPIKey() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := s.DB.AppRepo()
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbApp.Title, appTitle)
@@ -405,7 +405,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", isDisabled)
+	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", isDisabled)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
@@ -427,7 +427,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := s.DB.AppRepo()
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
@@ -465,7 +465,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", true)
+	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", true)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
@@ -479,7 +479,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := s.DB.AppRepo()
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	_, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.Error(s.T(), err, datastore.ErrApplicationNotFound)
 }
@@ -529,7 +529,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPI
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.DB, s.DefaultGroup, appID, "", false)
+	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
@@ -552,7 +552,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPI
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := s.DB.AppRepo()
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)

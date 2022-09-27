@@ -101,7 +101,8 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 		return
 	}
 
-	apiKey, keyString, err := a.S.SecurityService.CreatePersonalAPIKey(r.Context(), user, &newApiKey)
+	securityService := createSecurityService(a)
+	apiKey, keyString, err := securityService.CreatePersonalAPIKey(r.Context(), user, &newApiKey)
 	if err != nil {
 		log.WithError(err).Error("failed to create personal api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -300,7 +301,8 @@ func (a *ApplicationHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http
 		return
 	}
 
-	err := a.S.SecurityService.RevokePersonalAPIKey(r.Context(), chi.URLParam(r, "keyID"), user)
+	securityService := createSecurityService(a)
+	err := securityService.RevokePersonalAPIKey(r.Context(), chi.URLParam(r, "keyID"), user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
