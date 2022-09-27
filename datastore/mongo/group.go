@@ -208,6 +208,11 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 				return err
 			}
 
+			err = db.deleteAppSubscriptions(sessCtx, uid, updateAsDeleted)
+			if err != nil {
+				return err
+			}
+
 			err = db.deleteApp(sessCtx, app.UID, updateAsDeleted)
 			if err != nil {
 				return err
@@ -252,6 +257,15 @@ func (db *groupRepo) deleteApp(ctx context.Context, app_id string, update bson.M
 
 	filter := bson.M{"uid": app_id}
 	return db.store.UpdateMany(ctx, filter, update, true)
+}
+
+func (db *groupRepo) deleteAppSubscriptions(ctx context.Context, app_id string, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+	filter := bson.M{"app_id": app_id}
+	err := db.store.UpdateMany(ctx, filter, update, true)
+
+	return err
 }
 
 func (db *groupRepo) setCollectionInContext(ctx context.Context) context.Context {
