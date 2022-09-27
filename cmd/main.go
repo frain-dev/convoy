@@ -115,10 +115,6 @@ type app struct {
 	searcher searcher.Searcher
 }
 
-func getCtx() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), time.Second*1)
-}
-
 func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")

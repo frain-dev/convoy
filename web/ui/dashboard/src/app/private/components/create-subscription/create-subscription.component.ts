@@ -3,13 +3,15 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
 import { SOURCE } from 'src/app/models/group.model';
+import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 import { PrivateService } from '../../private.service';
 import { CreateSubscriptionService } from './create-subscription.service';
 
 @Component({
 	selector: 'app-create-subscription',
 	templateUrl: './create-subscription.component.html',
-	styleUrls: ['./create-subscription.component.scss']
+	styleUrls: ['./create-subscription.component.scss'],
+	providers: [FormatSecondsPipe]
 })
 export class CreateSubscriptionComponent implements OnInit {
 	subscriptionForm: FormGroup = this.formBuilder.group({
@@ -19,6 +21,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		source_id: [null, Validators.required],
 		endpoint_id: [null, Validators.required],
 		group_id: [null, Validators.required],
+		disable_endpoint: [null, Validators.required],
 		alert_config: this.formBuilder.group({
 			threshold: [null],
 			count: [null]
@@ -55,7 +58,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	showError = false;
 	confirmModal = false;
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private formatSeconds: FormatSecondsPipe) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -90,6 +93,14 @@ export class CreateSubscriptionComponent implements OnInit {
 			if (!this.token) this.onUpdateAppSelection();
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
+			if (response.data?.retry_config) {
+				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
+				this.subscriptionForm.patchValue({
+					retry_config: {
+						duration: duration
+					}
+				});
+			}
 			return;
 		} catch (error) {
 			return error;
@@ -189,7 +200,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response =
 				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
 			this.isCreatingSubscription = false;
-			this.onAction.emit(response.data);
+			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 		} catch (error) {
 			this.isCreatingSubscription = false;
 		}

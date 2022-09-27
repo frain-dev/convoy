@@ -85,6 +85,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 		"retry_config": {
 			"type": "linear",
 			"retry_count": 2,
+			"duration": "10s",
 			"interval_seconds": 10
 		},
 		"filter_config": {
@@ -92,7 +93,12 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 				"user.created",
 				"user.updated"
 			]
-		}
+		},
+		"rate_limit_config": {
+			"count": 100,
+			"duration": 5
+		},
+		"disable_endpoint": true
 	}`, app.UID, s.DefaultGroup.UID, endpoint.UID)
 
 	fmt.Println(bodyStr)
@@ -116,6 +122,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	require.NotEmpty(s.T(), subscription.UID)
 	require.Equal(s.T(), dbSub.Name, subscription.Name)
 	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
+	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
+	require.Equal(s.T(), dbSub.DisableEndpoint, subscription.DisableEndpoint)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup() {
@@ -147,13 +155,17 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		"retry_config": {
 			"type": "linear",
 			"retry_count": 2,
-			"interval_seconds": 10
+			"duration": "10s"
 		},
 		"filter_config": {
 			"event_types": [
 				"user.created",
 				"user.updated"
 			]
+		},
+		"rate_limit_config": {
+			"count": 100,
+			"duration": 5
 		}
 	}`, app.UID, source.UID, group.UID, endpoint.UID)
 
@@ -177,6 +189,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	require.NotEmpty(s.T(), subscription.UID)
 	require.Equal(s.T(), dbSub.Name, subscription.Name)
 	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
+	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
@@ -232,7 +245,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppDoesNotBel
 		"retry_config": {
 			"type": "linear",
 			"retry_count": 2,
-			"interval_seconds": 10
+			"duration": "10s"
 		},
 		"filter_config": {
 			"event_types": [
@@ -484,15 +497,16 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 		},
 		"retry_config": {
 			"type": "linear",
-			"retry_count": 2,
-			"duration": "1h"
+			"retry_count": 3,
+			"duration": "2s"
 		},
 		"filter_config": {
 			"event_types": [
 				"user.created",
 				"user.updated"
 			]
-		}
+		},
+		"disable_endpoint": false
 	}`
 
 	body := serialize(bodyStr)
@@ -514,7 +528,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
 	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
-	require.Equal(s.T(), "1h", dbSub.RetryConfig.Duration)
+	require.Equal(s.T(), subscription.RetryConfig.Duration, dbSub.RetryConfig.Duration)
+	require.Equal(s.T(), subscription.DisableEndpoint, dbSub.DisableEndpoint)
+
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveStatus() {

@@ -1,3 +1,10 @@
+## 0.7.0-rc.2
+
+-   [Feature] Create cli api keys and manage devices from the app portal #983
+-   [Bugfix] Fix Subscription Config Inheritance For Event Deliveries #995
+-   [Enhancement] Implement cascading delete for groups, apps and sources #1037
+-   [Enhancement] Add help to project sidebar #1032
+
 ## 0.7.0-rc.1
 
 -   [Feature] Add a command to run convoy migrations #989 #996 #993
