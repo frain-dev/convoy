@@ -46,10 +46,6 @@
 			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
 		</div>
 
-		<div class="flex justify-end mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
-		</div>
-
 		<div [hidden]="!enableMoreConfig">
 			<h2 class="font-semibold flex items-center mb-20px mt-30px">
 				Retry Logic
@@ -74,6 +70,14 @@
 				<convoy-input type="number" name="alert-config-count" formControlName="count" label="Count" placeholder="e.g 10"></convoy-input>
 				<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
 			</div>
+		</div>
+		<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
+		<div class="grid grid-cols-2 gap-24px">
+			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
+			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
+		</div>
+		<div class="flex justify-end mt-20px">
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
 		</div>
 	</convoy-card>
 
