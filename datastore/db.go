@@ -64,7 +64,7 @@ type Store interface {
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
 
 	Aggregate(ctx context.Context, pipeline mongo.Pipeline, result interface{}, allowDiskUse bool) error
-	WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) (interface{}, error)) (interface{}, error)
+	WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) error) error
 }
 
 // mongodb driver -> store (database) -> repo -> service -> handler
@@ -490,15 +490,22 @@ func (d *MongoStore) Aggregate(ctx context.Context, pipeline mongo.Pipeline, out
 	return cur.All(ctx, output)
 }
 
-func (d *MongoStore) WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) (interface{}, error)) (interface{}, error) {
+func (d *MongoStore) WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) error) error {
 	session, err := d.Database.Client().StartSession()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		return fn(sessCtx)
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		err := fn(sessCtx)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	})
+
+	return err
 }
 
 func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {

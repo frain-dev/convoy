@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -87,22 +86,20 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 		},
 	}
 
-	res, err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
 		srcfilter := bson.M{"uid": id, "group_id": groupId}
 		err := s.store.UpdateOne(sessCtx, srcfilter, update)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err = s.deleteSubscription(sessCtx, id, update)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		return "success", nil
+		return nil
 	})
-
-	log.Printf("[mongodb]: trxn result: %+v", res)
 
 	return err
 }

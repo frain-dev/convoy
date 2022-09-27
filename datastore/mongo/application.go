@@ -272,26 +272,24 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 		},
 	}
 
-	res, err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+	err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
 		err := db.deleteAppEvents(sessCtx, app, updateAsDeleted)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err = db.deleteSubscription(sessCtx, app, updateAsDeleted)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err = db.deleteApp(sessCtx, app, updateAsDeleted)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		return "success", nil
+		return nil
 	})
-
-	log.Printf("[mongodb]: trxn result: %+v", res)
 
 	return err
 }

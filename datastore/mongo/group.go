@@ -187,10 +187,10 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 		},
 	}
 
-	_, err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+	err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
 		err := db.store.DeleteByID(sessCtx, uid, false)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		var apps []datastore.Application
@@ -199,22 +199,22 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 		filter := bson.M{"group_id": uid}
 		err = db.store.FindAll(ctx, filter, nil, nil, &apps)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		for _, app := range apps {
 			err = db.deleteAppEvents(sessCtx, uid, updateAsDeleted)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			err = db.deleteApp(sessCtx, app.UID, updateAsDeleted)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
-		return "success", nil
+		return nil
 	})
 
 	return err
