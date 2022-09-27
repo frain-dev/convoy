@@ -56,6 +56,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 		config.Signature = &datastore.DefaultSignatureConfig
 		config.Strategy = &datastore.DefaultStrategyConfig
 		config.RateLimit = &datastore.DefaultRateLimitConfig
+		config.RetentionPolicy = &datastore.DefaultRetentionPolicy
 	} else {
 		if newGroup.Config.Signature == nil {
 			config.Signature = &datastore.DefaultSignatureConfig
@@ -68,6 +69,11 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 		if newGroup.Config.RateLimit == nil {
 			config.RateLimit = &datastore.DefaultRateLimitConfig
 		}
+
+		if newGroup.Config.RetentionPolicy == nil {
+			config.RetentionPolicy = &datastore.DefaultRetentionPolicy
+		}
+
 	}
 
 	if newGroup.RateLimit == 0 {
