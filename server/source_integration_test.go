@@ -68,7 +68,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
 	sourceID := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -86,7 +86,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -117,7 +117,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 	}
 
 	// Arrange Request
-	url := "/api/v1/sources"
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -149,8 +149,9 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 		}
 	}`
 
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -183,8 +184,9 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 		}
 	}`
 
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -210,8 +212,10 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 		}
 	}`
 
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
+
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -230,7 +234,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "%s",
 		"type": "http",
@@ -274,7 +278,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 

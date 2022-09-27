@@ -24,11 +24,11 @@ import (
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param q query string false "subscription title"
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/subscriptions [get]
+// @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
@@ -52,12 +52,12 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Tags Subscriptions
 // @Accept json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param subscriptionID path string true "application id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/subscriptions/{subscriptionID} [get]
+// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
 func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
 	group := m.GetGroupFromContext(r.Context())
@@ -77,12 +77,12 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param subscription body models.Subscription true "Subscription details"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/subscriptions [post]
+// @Router /api/v1/projects/{projectID}/subscriptions [post]
 func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
@@ -109,12 +109,12 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/subscriptions/{subscriptionID} [delete]
+// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
@@ -140,12 +140,13 @@ func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
+// @Param projectID path string true "Project id"
 // @Param subscriptionID path string true "subscription id"
 // @Param subscription body models.Subscription true "Subscription Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/subscriptions/{subscriptionID} [put]
+// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
 func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateSubscription
 	err := util.ReadJSON(r, &update)
@@ -173,11 +174,12 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
+// @Param projectID path string true "Project id"
 // @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/subscriptions/{subscriptionID}/toggle_status [put]
+// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")

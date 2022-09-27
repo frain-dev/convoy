@@ -989,7 +989,327 @@ info:
   version: 0.1.12
 openapi: 3.0.3
 paths:
-  /api/v1/applications:
+  /api/v1/projects:
+    get:
+      description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: organisation id
+        in: query
+        name: orgID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      items:
+                        $ref: '#/components/schemas/datastore.Group'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get groups
+      tags:
+      - Group
+    post:
+      description: This endpoint creates a group
+      parameters:
+      - description: Organisation id
+        in: query
+        name: orgID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Group'
+        description: Group Details
+        required: true
+        x-originalParamName: group
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Group'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create a group
+      tags:
+      - Group
+  /api/v1/projects/{projectID}:
+    delete:
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group
+      tags:
+      - Group
+    get:
+      description: This endpoint fetches a group by its id
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Group'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get a group
+      tags:
+      - Group
+    put:
+      description: This endpoint updates a group
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Group'
+        description: Group Details
+        required: true
+        x-originalParamName: group
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Group'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Update a group
+      tags:
+      - Group
+  /api/v1/projects/{projectID}/applications:
     get:
       description: This fetches all applications
       parameters:
@@ -1013,9 +1333,9 @@ paths:
         name: q
         schema:
           type: string
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1079,9 +1399,9 @@ paths:
     post:
       description: This endpoint creates an application
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1143,13 +1463,13 @@ paths:
       summary: Create an application
       tags:
       - Application
-  /api/v1/applications/{appID}:
+  /api/v1/projects/{projectID}/applications/{appID}:
     delete:
       description: This endpoint deletes an app
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1212,9 +1532,9 @@ paths:
     get:
       description: This endpoint fetches an application by it's id
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1277,9 +1597,9 @@ paths:
     put:
       description: This endpoint updates an application
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1347,13 +1667,13 @@ paths:
       summary: Update an application
       tags:
       - Application
-  /api/v1/applications/{appID}/endpoints:
+  /api/v1/projects/{projectID}/applications/{appID}/endpoints:
     get:
       description: This endpoint fetches an application's endpoints
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1418,9 +1738,9 @@ paths:
     post:
       description: This endpoint creates an application endpoint
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1488,13 +1808,13 @@ paths:
       summary: Create an application endpoint
       tags:
       - Application Endpoints
-  /api/v1/applications/{appID}/endpoints/{endpointID}:
+  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}:
     delete:
       description: This endpoint deletes an application endpoint
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1563,9 +1883,9 @@ paths:
     get:
       description: This endpoint fetches an application endpoint
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1634,9 +1954,9 @@ paths:
     put:
       description: This endpoint updates an application endpoint
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1710,7 +2030,7 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
-  /api/v1/eventdeliveries:
+  /api/v1/projects/{projectID}/eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
       parameters:
@@ -1719,9 +2039,9 @@ paths:
         name: appId
         schema:
           type: string
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1824,13 +2144,13 @@ paths:
       summary: Get event deliveries
       tags:
       - EventDelivery
-  /api/v1/eventdeliveries/{eventDeliveryID}:
+  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
     get:
       description: This endpoint fetches an event delivery.
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1895,13 +2215,165 @@ paths:
       summary: Get event delivery
       tags:
       - EventDelivery
-  /api/v1/eventdeliveries/{eventDeliveryID}/resend:
+  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
+    get:
+      description: This endpoint fetches an app message's delivery attempts
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        schema:
+          type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      items:
+                        $ref: '#/components/schemas/datastore.DeliveryAttempt'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempts
+      tags:
+      - DeliveryAttempts
+  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+    get:
+      description: This endpoint fetches an app event delivery attempt
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: event id
+        in: path
+        name: eventID
+        required: true
+        schema:
+          type: string
+      - description: event delivery id
+        in: path
+        name: eventDeliveryID
+        required: true
+        schema:
+          type: string
+      - description: delivery attempt id
+        in: path
+        name: deliveryAttemptID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.DeliveryAttempt'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get delivery attempt
+      tags:
+      - DeliveryAttempts
+  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       description: This endpoint resends an app event
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -1966,13 +2438,13 @@ paths:
       summary: Resend an app event
       tags:
       - EventDelivery
-  /api/v1/eventdeliveries/batchretry:
+  /api/v1/projects/{projectID}/eventdeliveries/batchretry:
     post:
       description: This endpoint resends multiple app events
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2041,7 +2513,7 @@ paths:
       summary: Batch Resend app events
       tags:
       - EventDelivery
-  /api/v1/eventdeliveries/countbatchretryevents:
+  /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents:
     get:
       description: This endpoint counts app events that will be affected by a batch
         retry operation
@@ -2051,9 +2523,9 @@ paths:
         name: appId
         schema:
           type: string
-      - description: group Id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2137,13 +2609,13 @@ paths:
       summary: Count affected eventDeliveries
       tags:
       - EventDelivery
-  /api/v1/eventdeliveries/forceresend:
+  /api/v1/projects/{projectID}/eventdeliveries/forceresend:
     post:
       description: This endpoint force resends multiple app events
       parameters:
-      - description: group Id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2212,7 +2684,7 @@ paths:
       summary: Force Resend app events
       tags:
       - EventDelivery
-  /api/v1/events:
+  /api/v1/projects/{projectID}/events:
     get:
       description: This endpoint fetches app events with pagination
       parameters:
@@ -2221,9 +2693,9 @@ paths:
         name: appId
         schema:
           type: string
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2317,9 +2789,9 @@ paths:
     post:
       description: This endpoint creates an app event
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2386,13 +2858,13 @@ paths:
       summary: Create app event
       tags:
       - Events
-  /api/v1/events/{eventID}:
+  /api/v1/projects/{projectID}/events/{eventID}:
     get:
       description: This endpoint fetches an app event
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2457,153 +2929,13 @@ paths:
       summary: Get app event
       tags:
       - Events
-  /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
-    get:
-      description: This endpoint fetches an app message's delivery attempts
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      items:
-                        $ref: '#/components/schemas/datastore.DeliveryAttempt'
-                      type: array
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempts
-      tags:
-      - DeliveryAttempts
-  /api/v1/events/{eventID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
-    get:
-      description: This endpoint fetches an app event delivery attempt
-      parameters:
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        schema:
-          type: string
-      - description: event delivery id
-        in: path
-        name: eventDeliveryID
-        required: true
-        schema:
-          type: string
-      - description: delivery attempt id
-        in: path
-        name: deliveryAttemptID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.DeliveryAttempt'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get delivery attempt
-      tags:
-      - DeliveryAttempts
-  /api/v1/events/{eventID}/replay:
+  /api/v1/projects/{projectID}/events/{eventID}/replay:
     put:
       description: This endpoint replays an app event
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2668,11 +3000,17 @@ paths:
       summary: Replay app event
       tags:
       - Events
-  /api/v1/security/applications/{appID}/keys:
+  /api/v1/projects/{projectID}/security/applications/{appID}/keys:
     post:
       description: This endpoint creates an api key that will be used by app portal
         or the cli
       parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
       - description: application ID
         in: path
         name: appID
@@ -2737,10 +3075,16 @@ paths:
       summary: Create an api key for app portal or the cli (API)
       tags:
       - APIKey
-  /api/v1/sources:
+  /api/v1/projects/{projectID}/sources:
     get:
       description: This endpoint fetches multiple sources
       parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
       - description: results per page
         in: query
         name: perPage
@@ -2816,9 +3160,9 @@ paths:
     post:
       description: This endpoint creates a source
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2880,13 +3224,13 @@ paths:
       summary: Create a source
       tags:
       - Source
-  /api/v1/sources/{sourceID}:
+  /api/v1/projects/{projectID}/sources/{sourceID}:
     delete:
       description: This endpoint deletes a source
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -2949,9 +3293,9 @@ paths:
     get:
       description: This endpoint fetches a source by its id
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -3014,9 +3358,9 @@ paths:
     put:
       description: This endpoint updates a source
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -3084,7 +3428,7 @@ paths:
       summary: Update a source
       tags:
       - Source
-  /api/v1/subscriptions:
+  /api/v1/projects/{projectID}/subscriptions:
     get:
       description: This endpoint fetches all the subscriptions
       parameters:
@@ -3108,9 +3452,9 @@ paths:
         name: q
         schema:
           type: string
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -3174,9 +3518,9 @@ paths:
     post:
       description: This endpoint creates a subscriptions
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -3245,13 +3589,13 @@ paths:
       summary: Creates a subscription
       tags:
       - Subscriptions
-  /api/v1/subscriptions/{subscriptionID}:
+  /api/v1/projects/{projectID}/subscriptions/{subscriptionID}:
     delete:
       description: This endpoint deletes a subscription
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -3314,9 +3658,9 @@ paths:
     get:
       description: This endpoint fetches an Subscription by it's id
       parameters:
-      - description: group id
-        in: query
-        name: groupId
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         schema:
           type: string
@@ -3379,6 +3723,12 @@ paths:
     put:
       description: This endpoint updates a subscription
       parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
       - description: subscription id
         in: path
         name: subscriptionID
@@ -3443,10 +3793,16 @@ paths:
       summary: Update a subscription
       tags:
       - Subscriptions
-  /api/v1/subscriptions/{subscriptionID}/toggle_status:
+  /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status:
     put:
       description: This endpoint updates a subscription
       parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
       - description: subscription id
         in: path
         name: subscriptionID
@@ -3995,72 +4351,6 @@ paths:
       summary: Update configuration
       tags:
       - Configuration
-  /ui/organiastions/{orgID}/groups/{groupID}:
-    delete:
-      description: This endpoint deletes a group using its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        schema:
-          type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a group
-      tags:
-      - Group
   /ui/organisations:
     get:
       description: This endpoint fetches multiple organisations
@@ -4447,7 +4737,7 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Get groups
+      summary: Get groups - UI
       tags:
       - Group
     post:
@@ -4514,10 +4804,75 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Create a group
+      summary: Create a group - UI
       tags:
       - Group
   /ui/organisations/{orgID}/groups/{groupID}:
+    delete:
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: group id
+        in: path
+        name: groupID
+        required: true
+        schema:
+          type: string
+      - description: organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group - UI
+      tags:
+      - Group
     get:
       description: This endpoint fetches a group by its id
       parameters:
@@ -4580,7 +4935,7 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Get a group
+      summary: Get a group - UI
       tags:
       - Group
     put:
@@ -4653,9 +5008,82 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Update a group
+      summary: Update a group - UI
       tags:
       - Group
+  /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys:
+    post:
+      description: This endpoint creates an api key that will be used by app portal
+        or the cli
+      parameters:
+      - description: Organisation id
+        in: path
+        name: orgID
+        required: true
+        schema:
+          type: string
+      - description: Group id
+        in: path
+        name: groupID
+        required: true
+        schema:
+          type: string
+      - description: application ID
+        in: path
+        name: appID
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.PortalAPIKeyResponse'
+                  type: object
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for app portal or the cli (UI)
+      tags:
+      - APIKey
   /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke:
     put:
       description: This endpoint revokes app's an api key
@@ -5982,6 +6410,92 @@ paths:
       tags:
       - User
   /ui/users/{userID}/security/personal_api_keys:
+    get:
+      description: This endpoint fetches multiple api keys
+      parameters:
+      - description: User id
+        in: path
+        name: userID
+        required: true
+        schema:
+          type: string
+      - description: api key type
+        in: query
+        name: keyType
+        schema:
+          type: string
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/datastore.APIKey'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple api keys
+      tags:
+      - APIKey
     post:
       description: This endpoint creates an api key that will be used by the native
         auth realm

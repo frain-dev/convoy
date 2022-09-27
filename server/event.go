@@ -23,12 +23,12 @@ import (
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param event body models.Event true "Event Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/events [post]
+// @Router /api/v1/projects/{projectID}/events [post]
 func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.Event
 	err := util.ReadJSON(r, &newMessage)
@@ -54,12 +54,12 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param eventID path string true "event id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/events/{eventID}/replay [put]
+// @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
@@ -79,14 +79,13 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param eventID path string true "event id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/events/{eventID} [get]
+// @Router /api/v1/projects/{projectID}/events/{eventID} [get]
 func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("App event fetched successfully",
 		*m.GetEventFromContext(r.Context()), http.StatusOK))
 }
@@ -97,14 +96,13 @@ func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/eventdeliveries/{eventDeliveryID} [get]
+// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
 func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
 		*m.GetEventDeliveryFromContext(r.Context()), http.StatusOK))
 }
@@ -115,14 +113,13 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Tags EventDelivery
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/eventdeliveries/{eventDeliveryID}/resend [put]
+// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
-
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 
 	err := a.S.EventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
@@ -141,12 +138,12 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/eventdeliveries/batchretry [post]
+// @Router /api/v1/projects/{projectID}/eventdeliveries/batchretry [post]
 func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 
@@ -191,7 +188,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
-// @Param groupId query string true "group Id"
+// @Param projectID path string true "Project id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
@@ -200,7 +197,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Success 200 {object} util.ServerResponse{data=Stub{num=integer}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/eventdeliveries/countbatchretryevents [get]
+// @Router /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents [get]
 func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
@@ -238,12 +235,12 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Tags EventDelivery
 // @Accept json
 // @Produce json
-// @Param groupId query string true "group Id"
+// @Param projectID path string true "Project id"
 // @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/eventdeliveries/forceresend [post]
+// @Router /api/v1/projects/{projectID}/eventdeliveries/forceresend [post]
 func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
@@ -269,7 +266,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
@@ -278,7 +275,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/events [get]
+// @Router /api/v1/projects/{projectID}/events [get]
 func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	config, err := config.Get()
 	if err != nil {
@@ -333,7 +330,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Accept json
 // @Produce json
 // @Param appId query string false "application id"
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param eventId query string false "event id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
@@ -344,7 +341,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/eventdeliveries [get]
+// @Router /api/v1/projects/{projectID}/eventdeliveries [get]
 func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
@@ -421,9 +418,7 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 
 func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			e := m.GetEventDeliveryFromContext(r.Context())
 
 			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), &e.DeliveryAttempts))

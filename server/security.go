@@ -123,11 +123,13 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "Organisation id"
+// @Param groupID path string true "Group id"
 // @Param appID path string true "application ID"
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys [post]
+func _() {}
 
 // CreateAppAPIKey
 // @Summary Create an api key for app portal or the cli (API)
@@ -135,12 +137,13 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
+// @Param projectID path string true "Project id"
 // @Param appID path string true "application ID"
 // @Param appAPIKey body models.APIKey true "APIKey details"
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/security/applications/{appID}/keys [post]
+// @Router /api/v1/projects/{projectID}/security/applications/{appID}/keys [post]
 func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Request) {
 	var keyType datastore.KeyType
 	var newApiKey models.CreateAppApiKey
@@ -416,6 +419,7 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/users/{userID}/security/personal_api_keys [get]
+func _() {}
 
 // GetAPIKeys
 // @Summary Fetch multiple api keys
