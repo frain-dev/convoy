@@ -38,8 +38,12 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any())
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any())
-				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any())
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{}, nil)
+				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{RetryConfig: &datastore.DefaultRetryConfig}, nil)
+
+				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{}, nil)
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
@@ -67,11 +71,17 @@ func TestProcessEventDelivery(t *testing.T) {
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil)
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any())
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
 						Status: datastore.InactiveSubscriptionStatus,
 					}, nil)
+
+				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{Config: &datastore.GroupConfig{
+					RateLimit: &datastore.DefaultRateLimitConfig,
+					Strategy:  &datastore.DefaultStrategyConfig,
+				}}, nil)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -160,6 +170,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
@@ -243,6 +254,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: false,
 						},
 					}, nil).Times(1)
@@ -330,6 +342,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
@@ -413,6 +426,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: false,
 						},
 					}, nil).Times(1)
@@ -500,6 +514,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
@@ -583,6 +598,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: false,
 						},
 					}, nil).Times(1)
@@ -670,6 +686,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
@@ -758,6 +775,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
@@ -851,6 +869,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
 							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
@@ -932,6 +951,107 @@ func TestProcessEventDelivery(t *testing.T) {
 
 			// Assert.
 			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}
+
+func TestProcessEventDeliveryConfig(t *testing.T) {
+	tt := []struct {
+		name                string
+		subscription        *datastore.Subscription
+		group               *datastore.Group
+		wantRetryConfig     *datastore.StrategyConfiguration
+		wantRateLimitConfig *datastore.RateLimitConfiguration
+		wantDisableEndpoint bool
+	}{
+		{
+			name: "Subscription Config is primary config",
+			subscription: &datastore.Subscription{
+				RetryConfig: &datastore.RetryConfiguration{
+					Type:       datastore.LinearStrategyProvider,
+					Duration:   2,
+					RetryCount: 3,
+				},
+				RateLimitConfig: &datastore.RateLimitConfiguration{
+					Count:    100,
+					Duration: 1,
+				},
+				DisableEndpoint: func(b bool) *bool {
+					return &b
+				}(true),
+			},
+			group: &datastore.Group{
+				Config: &datastore.GroupConfig{
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
+					DisableEndpoint: false,
+				},
+			},
+			wantRetryConfig: &datastore.StrategyConfiguration{
+				Type:       datastore.LinearStrategyProvider,
+				Duration:   2,
+				RetryCount: 3,
+			},
+			wantRateLimitConfig: &datastore.RateLimitConfiguration{
+				Count:    100,
+				Duration: 1,
+			},
+			wantDisableEndpoint: true,
+		},
+
+		{
+			name:         "Group Config is primary config",
+			subscription: &datastore.Subscription{},
+			group: &datastore.Group{
+				Config: &datastore.GroupConfig{
+					Strategy: &datastore.StrategyConfiguration{
+						Type:       datastore.ExponentialStrategyProvider,
+						Duration:   3,
+						RetryCount: 4,
+					},
+					RateLimit: &datastore.RateLimitConfiguration{
+						Count:    100,
+						Duration: 10,
+					},
+					DisableEndpoint: false,
+				},
+			},
+			wantRetryConfig: &datastore.StrategyConfiguration{
+				Type:       datastore.ExponentialStrategyProvider,
+				Duration:   3,
+				RetryCount: 4,
+			},
+			wantRateLimitConfig: &datastore.RateLimitConfiguration{
+				Count:    100,
+				Duration: 10,
+			},
+			wantDisableEndpoint: false,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			evConfig := &EventDeliveryConfig{subscription: tc.subscription, group: tc.group}
+
+			if tc.wantRetryConfig != nil {
+				rc, err := evConfig.retryConfig()
+
+				assert.Nil(t, err)
+
+				assert.Equal(t, tc.wantRetryConfig.Type, rc.Type)
+				assert.Equal(t, tc.wantRetryConfig.Duration, rc.Duration)
+				assert.Equal(t, tc.wantRetryConfig.RetryCount, rc.RetryCount)
+			}
+
+			if tc.wantRateLimitConfig != nil {
+				rlc := evConfig.rateLimitConfig()
+
+				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Count)
+				assert.Equal(t, tc.wantRateLimitConfig.Duration, rlc.Duration)
+			}
+
+			disableEndpoint := evConfig.disableEndpoint()
+			assert.Equal(t, tc.wantDisableEndpoint, disableEndpoint)
 		})
 	}
 }

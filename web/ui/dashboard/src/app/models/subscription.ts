@@ -16,7 +16,7 @@ export interface SUBSCRIPTION {
 	};
 	app_metadata?: APP;
 	alert_config?: { count: number; threshold: string };
-	retry_config?: { type: string; retry_count: number };
+	retry_config?: { type: string; retry_count: number; duration: number };
 	source_metadata: SOURCE;
 	filter_config: { event_types: string[] };
 	active_menu?: boolean;
