@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
@@ -25,7 +25,7 @@ import (
 
 type SourceIntegrationTestSuite struct {
 	suite.Suite
-	DB           convoyMongo.Client
+	DB           cm.Client
 	Router       http.Handler
 	ConvoyApp    *ApplicationHandler
 	DefaultGroup *datastore.Group
@@ -42,7 +42,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
 
 	// Seed Auth
 	role := auth.Role{
@@ -50,13 +50,15 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.DB, role, "", "test", "", "")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "","")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *SourceIntegrationTestSuite) TearDownTest() {
@@ -83,7 +85,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	sourceID := "123456789"
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
@@ -100,7 +102,8 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	dbSource, err := s.DB.SourceRepo().FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
+	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
+	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
 	require.Equal(s.T(), source.Name, dbSource.Name)
@@ -113,7 +116,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
-		_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, "", "", "", nil)
+		_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, "", "", "", nil)
 	}
 
 	// Arrange Request
@@ -231,7 +234,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	sourceID := uuid.New().String()
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
@@ -264,7 +267,8 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	dbSource, err := s.DB.SourceRepo().FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
+	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
+	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
 	require.Equal(s.T(), name, dbSource.Name)
@@ -275,7 +279,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	sourceID := uuid.New().String()
 
 	// Just Before.
-	_, _ = testdb.SeedSource(s.DB, s.DefaultGroup, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
@@ -289,7 +293,8 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	_, err := s.DB.SourceRepo().FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
+	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
+	_, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
 

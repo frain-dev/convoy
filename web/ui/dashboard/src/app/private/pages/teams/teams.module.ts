@@ -4,7 +4,6 @@ import { TeamsComponent } from './teams.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { TableLoaderModule } from '../../components/table-loader/table-loader.module';
-import { DeleteModalModule } from '../../components/delete-modal/delete-modal.module';
 import { PageComponent } from 'src/app/components/page/page.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
@@ -19,6 +18,7 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 import { BadgeComponent } from 'src/app/components/badge/badge.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
+import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -32,7 +32,7 @@ const routes: Routes = [
 		FormsModule,
 		TableLoaderModule,
 		ReactiveFormsModule,
-		DeleteModalModule,
+		DeleteModalComponent,
 		PageComponent,
 		ModalComponent,
 		DropdownComponent,

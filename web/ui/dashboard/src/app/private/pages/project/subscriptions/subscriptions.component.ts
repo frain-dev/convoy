@@ -22,7 +22,7 @@ export class SubscriptionsComponent implements OnInit {
 	showUpdateSubscriptionModal = false;
 	showDeleteSubscriptionModal = false;
 
-	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
+	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
 		this.projectId = this.privateService.activeProjectDetails.uid;
 
 		const urlParam = route.snapshot.params.id;
@@ -73,5 +73,14 @@ export class SubscriptionsComponent implements OnInit {
 		} catch (error) {
 			this.isDeletingSubscription = false;
 		}
+	}
+
+	activeProjectConfig() {
+		const projectDetails = localStorage.getItem('PROJECT_CONFIG');
+		if (projectDetails && projectDetails !== 'undefined') {
+			const config = JSON.parse(projectDetails);
+			return config;
+		}
+		return null;
 	}
 }

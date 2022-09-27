@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -23,7 +23,7 @@ import (
 
 type AppPortalIntegrationTestSuite struct {
 	suite.Suite
-	DB           convoyMongo.Client
+	DB           cm.Client
 	Router       http.Handler
 	ConvoyApp    *ApplicationHandler
 	DefaultGroup *datastore.Group
@@ -40,13 +40,15 @@ func (s *AppPortalIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.DB, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *AppPortalIntegrationTestSuite) TearDownTest() {
@@ -55,26 +57,26 @@ func (s *AppPortalIntegrationTestSuite) TearDownTest() {
 }
 
 func TestAppPortalIntegrationSuiteTest(t *testing.T) {
-	suite.Run(t, new(EventIntegrationTestSuite))
+	suite.Run(t, new(AppPortalIntegrationTestSuite))
 }
 
-func (s *EventIntegrationTestSuite) Test_GetAppEvents() {
+func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, err := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
-	app2, err := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedEvent(s.DB, app1, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+		_, err = testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
 		require.NoError(s.T(), err)
 
 	}
 
-	event, err := testdb.SeedEvent(s.DB, app2, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
 	require.NoError(s.T(), err)
 
 	role := auth.Role{
@@ -83,8 +85,8 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvents() {
 		App:   app2.UID,
 	}
 
-	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "app_portal", "")
+	// generate an app portal key 
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/events", key, nil)
@@ -105,14 +107,14 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvents() {
 	require.Equal(s.T(), event.UID, respEvents[0].UID)
 }
 
-func (s *EventIntegrationTestSuite) Test_GetAppSubscriptions() {
+func (s *AppPortalIntegrationTestSuite) Test_GetAppSubscriptions() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, err := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
-	app2, err := testdb.SeedApplication(s.DB, s.DefaultGroup, uuid.NewString(), "", false)
+	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
 	source := &datastore.Source{UID: uuid.NewString()}
@@ -120,12 +122,12 @@ func (s *EventIntegrationTestSuite) Test_GetAppSubscriptions() {
 
 	// seed subscriptions
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedSubscription(s.DB, app1, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, app1, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 		require.NoError(s.T(), err)
 
 	}
 
-	sub, err := testdb.SeedSubscription(s.DB, app2, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, app2, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	require.NoError(s.T(), err)
 
 	role := auth.Role{
@@ -135,7 +137,7 @@ func (s *EventIntegrationTestSuite) Test_GetAppSubscriptions() {
 	}
 
 	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.DB, role, uuid.NewString(), "test", "app_portal", "")
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/subscriptions", key, nil)

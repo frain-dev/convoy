@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
@@ -25,7 +25,7 @@ import (
 
 type GroupIntegrationTestSuite struct {
 	suite.Suite
-	DB              convoyMongo.Client
+	DB              cm.Client
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -42,12 +42,12 @@ func (s *GroupIntegrationTestSuite) SetupSuite() {
 
 func (s *GroupIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
-
-	user, err := testdb.SeedDefaultUser(s.DB)
+ 
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(s.DB, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
@@ -64,7 +64,9 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
-	initRealmChain(s.T(), s.DB.APIRepo(), s.DB.UserRepo(), s.ConvoyApp.S.Cache)
+	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *GroupIntegrationTestSuite) TestGetGroup() {
@@ -72,11 +74,11 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
-	app, _ := testdb.SeedApplication(s.DB, group, uuid.NewString(), "test-app", false)
-	_, _ = testdb.SeedEndpoint(s.DB, app, group.UID)
-	_, _ = testdb.SeedEvent(s.DB, app, group.UID, uuid.NewString(), "*", []byte("{}"))
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "test-app", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
+	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app, group.UID, uuid.NewString(), "*", []byte("{}"))
 
 	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -168,7 +170,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", "", datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
@@ -182,7 +184,8 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	_, err = s.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
+	_, err = groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
 
@@ -388,7 +391,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.DB, groupID, "", "test-group", datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "test-group", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
@@ -420,7 +423,8 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	g, err := s.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
+	g, err := groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "group_1", g.Name)
 }
@@ -483,9 +487,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group2, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group3, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group3, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 
 	url := fmt.Sprintf("/ui/organisations/%s/groups", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -545,9 +549,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.DB, uuid.NewString(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
-	_, _ = testdb.SeedGroup(s.DB, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
+	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
 
 	url := fmt.Sprintf("/ui/organisations/%s/groups?name=%s", s.DefaultOrg.UID, group1.Name)
 	req := createRequest(http.MethodGet, url, "", nil)

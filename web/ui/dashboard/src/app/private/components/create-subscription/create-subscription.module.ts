@@ -13,6 +13,9 @@ import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { RadioComponent } from 'src/app/components/radio/radio.component';
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
+import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -29,7 +32,10 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 		TooltipComponent,
 		ToggleComponent,
 		ModalComponent,
-		CardComponent
+		CardComponent,
+		RadioComponent,
+		ConfirmationModalComponent,
+        FormatSecondsPipe
 	],
 	exports: [CreateSubscriptionComponent]
 })

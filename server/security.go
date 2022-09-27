@@ -9,7 +9,9 @@ import (
 	"github.com/cip8/autoname"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -17,6 +19,13 @@ import (
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
+
+func createSecurityService(a *ApplicationHandler) *services.SecurityService {
+	groupRepo := mongo.NewGroupRepo(a.A.Store)
+	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
+
+	return services.NewSecurityService(groupRepo, apiKeyRepo)
+}
 
 // CreateAPIKey
 // @Summary Create an api key
@@ -39,7 +48,9 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	member := m.GetOrganisationMemberFromContext(r.Context())
-	apiKey, keyString, err := a.S.SecurityService.CreateAPIKey(r.Context(), member, &newApiKey)
+	securityService := createSecurityService(a)
+
+	apiKey, keyString, err := securityService.CreateAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
 		log.WithError(err).Error("failed to create api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -159,6 +170,7 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 	group := m.GetGroupFromContext(r.Context())
 	app := m.GetApplicationFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
+
 	k := string(newApiKey.KeyType)
 
 	if util.IsStringEmpty(k) {
@@ -186,7 +198,8 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 	newApiKey.BaseUrl = baseUrl
 	newApiKey.KeyType = keyType
 
-	apiKey, key, err := a.S.SecurityService.CreateAppAPIKey(r.Context(), &newApiKey)
+	securityService := createSecurityService(a)
+	apiKey, key, err := securityService.CreateAppAPIKey(r.Context(), &newApiKey)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -231,7 +244,8 @@ func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.
 		KeyType: datastore.CLIKey,
 	}
 
-	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), f, &pageable)
+	securityService := createSecurityService(a)
+	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -256,7 +270,9 @@ func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID}/revoke [put]
 func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
-	err := a.S.SecurityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
+	securityService := createSecurityService(a)
+
+	err := securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -311,7 +327,8 @@ func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Requ
 	app := m.GetApplicationFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 
-	key, err := a.S.SecurityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
+	securityService := createSecurityService(a)
+	key, err := securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -322,7 +339,7 @@ func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = a.S.SecurityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
+	err = securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -344,7 +361,9 @@ func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Requ
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/security/keys/{keyID} [get]
 func (a *ApplicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
-	apiKey, err := a.S.SecurityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
+	securityService := createSecurityService(a)
+
+	apiKey, err := securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -385,7 +404,8 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	apiKey, err := a.S.SecurityService.UpdateAPIKey(r.Context(), chi.URLParam(r, "keyID"), &updateApiKey.Role)
+	securityService := createSecurityService(a)
+	apiKey, err := securityService.UpdateAPIKey(r.Context(), chi.URLParam(r, "keyID"), &updateApiKey.Role)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -438,7 +458,7 @@ func _() {}
 // @Router /ui/organisations/{orgID}/security/keys [get]
 func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-
+	securityService := createSecurityService(a)
 	f := &datastore.ApiKeyFilter{}
 	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
 	if keyType.IsValid() {
@@ -454,7 +474,7 @@ func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	apiKeys, paginationData, err := a.S.SecurityService.GetAPIKeys(r.Context(), f, &pageable)
+	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

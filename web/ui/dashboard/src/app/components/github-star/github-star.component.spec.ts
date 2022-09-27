@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { CliComponent } from './cli.component';
+import { GithubStarComponent } from './github-star.component';
 
-describe('CliComponent', () => {
-  let component: CliComponent;
-  let fixture: ComponentFixture<CliComponent>;
+describe('GithubStarComponent', () => {
+  let component: GithubStarComponent;
+  let fixture: ComponentFixture<GithubStarComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CliComponent ]
+      imports: [ GithubStarComponent ]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(CliComponent);
+    fixture = TestBed.createComponent(GithubStarComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

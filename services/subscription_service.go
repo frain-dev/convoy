@@ -20,7 +20,7 @@ var (
 	ErrUpateSubscriptionError       = errors.New("failed to update subscription")
 	ErrCreateSubscriptionError      = errors.New("failed to create subscription")
 	ErrDeletedSubscriptionError     = errors.New("failed to delete subscription")
-	ErrValidateSubscriptionError    = errors.New("failed to validate group update")
+	ErrValidateSubscriptionError    = errors.New("failed to validate subscription")
 	ErrCannotFetchSubcriptionsError = errors.New("an error occurred while fetching subscriptions")
 )
 
@@ -64,6 +64,11 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		}
 	}
 
+	retryConfig, err := getRetryConfig(newSubscription.RetryConfig)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	subscription := &datastore.Subscription{
 		GroupID:    group.UID,
 		UID:        uuid.New().String(),
@@ -73,9 +78,10 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		SourceID:   newSubscription.SourceID,
 		EndpointID: newSubscription.EndpointID,
 
-		RetryConfig:  newSubscription.RetryConfig,
-		AlertConfig:  newSubscription.AlertConfig,
-		FilterConfig: newSubscription.FilterConfig,
+		RetryConfig:     retryConfig,
+		AlertConfig:     newSubscription.AlertConfig,
+		FilterConfig:    newSubscription.FilterConfig,
+		RateLimitConfig: newSubscription.RateLimitConfig,
 
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -84,18 +90,14 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
+	if newSubscription.DisableEndpoint != nil {
+		subscription.DisableEndpoint = newSubscription.DisableEndpoint
+	}
+
 	if subscription.FilterConfig == nil ||
 		subscription.FilterConfig.EventTypes == nil ||
 		len(subscription.FilterConfig.EventTypes) == 0 {
 		subscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
-	}
-
-	if subscription.AlertConfig == nil {
-		subscription.AlertConfig = &datastore.DefaultAlertConfig
-	}
-
-	if subscription.RetryConfig == nil {
-		subscription.RetryConfig = &datastore.DefaultRetryConfig
 	}
 
 	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
@@ -128,6 +130,11 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
 	}
 
+	retryConfig, err := getRetryConfig(update.RetryConfig)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	if !util.IsStringEmpty(update.Name) {
 		subscription.Name = update.Name
 	}
@@ -141,27 +148,73 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 	}
 
 	if update.AlertConfig != nil && update.AlertConfig.Count > 0 {
+		if subscription.AlertConfig == nil {
+			subscription.AlertConfig = &datastore.AlertConfiguration{}
+		}
+
 		subscription.AlertConfig.Count = update.AlertConfig.Count
 	}
 
 	if update.AlertConfig != nil && !util.IsStringEmpty(update.AlertConfig.Threshold) {
+		if subscription.AlertConfig == nil {
+			subscription.AlertConfig = &datastore.AlertConfiguration{}
+		}
+
 		subscription.AlertConfig.Threshold = update.AlertConfig.Threshold
 	}
 
 	if update.RetryConfig != nil && !util.IsStringEmpty(string(update.RetryConfig.Type)) {
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
 		subscription.RetryConfig.Type = update.RetryConfig.Type
 	}
 
 	if update.RetryConfig != nil && !util.IsStringEmpty(update.RetryConfig.Duration) {
-		subscription.RetryConfig.Duration = update.RetryConfig.Duration
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
+		subscription.RetryConfig.Duration = retryConfig.Duration
+	}
+
+	if update.RetryConfig != nil && update.RetryConfig.IntervalSeconds > 0 {
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
+		subscription.RetryConfig.RetryCount = retryConfig.RetryCount
 	}
 
 	if update.RetryConfig != nil && update.RetryConfig.RetryCount > 0 {
+		if subscription.RetryConfig == nil {
+			subscription.RetryConfig = &datastore.RetryConfiguration{}
+		}
+
 		subscription.RetryConfig.RetryCount = update.RetryConfig.RetryCount
 	}
 
 	if update.FilterConfig != nil && len(update.FilterConfig.EventTypes) > 0 {
 		subscription.FilterConfig.EventTypes = update.FilterConfig.EventTypes
+	}
+
+	if update.RateLimitConfig != nil && update.RateLimitConfig.Count > 0 {
+		if subscription.RateLimitConfig == nil {
+			subscription.RateLimitConfig = &datastore.RateLimitConfiguration{}
+		}
+		subscription.RateLimitConfig.Count = update.RateLimitConfig.Count
+	}
+
+	if update.RateLimitConfig != nil && update.RateLimitConfig.Duration > 0 {
+		if subscription.RateLimitConfig == nil {
+			subscription.RateLimitConfig = &datastore.RateLimitConfiguration{}
+		}
+		subscription.RateLimitConfig.Duration = update.RateLimitConfig.Duration
+	}
+
+	if update.DisableEndpoint != nil {
+		subscription.DisableEndpoint = update.DisableEndpoint
 	}
 
 	err = s.subRepo.UpdateSubscription(ctx, groupId, subscription)
@@ -282,6 +335,8 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 					SupportEmail: a.SupportEmail,
 				}
 				appMap[sub.AppID] = aa
+			} else {
+				log.Errorf("an error occured fetching application for subscription: %v", err)
 			}
 		}
 
@@ -298,6 +353,8 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 					IsDisabled: ev.IsDisabled,
 				}
 				sourceMap[sub.SourceID] = source
+			} else {
+				log.Errorf("an error occured fetching source for subscription: %v", err)
 			}
 		}
 
@@ -314,6 +371,8 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 					RateLimitDuration: en.RateLimitDuration,
 				}
 				endpointMap[sub.EndpointID] = endpoint
+			} else {
+				log.Errorf("an error occured fetching endpoint for subscription: %v", err)
 			}
 		}
 
@@ -323,4 +382,25 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 	}
 
 	return subscriptions, paginatedData, nil
+}
+
+func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfiguration, error) {
+	if cfg == nil {
+		return nil, nil
+	}
+
+	strategyConfig := &datastore.RetryConfiguration{Type: cfg.Type, RetryCount: cfg.RetryCount}
+	if !util.IsStringEmpty(cfg.Duration) {
+		interval, err := time.ParseDuration(cfg.Duration)
+		if err != nil {
+			return nil, err
+		}
+
+		strategyConfig.Duration = uint64(interval.Seconds())
+		return strategyConfig, nil
+	}
+
+	strategyConfig.Duration = cfg.IntervalSeconds
+	return strategyConfig, nil
+
 }

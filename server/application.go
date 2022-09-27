@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -13,6 +15,16 @@ import (
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 )
+
+func createApplicationService(a *ApplicationHandler) *services.AppService {
+	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	eventRepo := mongo.NewEventRepository(a.A.Store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+
+	return services.NewAppService(
+		appRepo, eventRepo, eventDeliveryRepo, a.A.Cache,
+	)
+}
 
 type pagedResponse struct {
 	Content    interface{}               `json:"content,omitempty"`
@@ -55,8 +67,9 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 	q := r.URL.Query().Get("q")
+	appService := createApplicationService(a)
 
-	apps, paginationData, err := a.S.AppService.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
+	apps, paginationData, err := appService.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
@@ -88,7 +101,8 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	group := m.GetGroupFromContext(r.Context())
-	app, err := a.S.AppService.CreateApp(r.Context(), &newApp, group)
+	appService := createApplicationService(a)
+	app, err := appService.CreateApp(r.Context(), &newApp, group)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -119,8 +133,9 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app := m.GetApplicationFromContext(r.Context())
+	appService := createApplicationService(a)
 
-	err = a.S.AppService.UpdateApplication(r.Context(), &appUpdate, app)
+	err = appService.UpdateApplication(r.Context(), &appUpdate, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -143,7 +158,9 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Router /api/v1/projects/{projectID}/applications/{appID} [delete]
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
-	err := a.S.AppService.DeleteApplication(r.Context(), app)
+	appService := createApplicationService(a)
+
+	err := appService.DeleteApplication(r.Context(), app)
 	if err != nil {
 		log.Errorln("failed to delete app - ", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -175,8 +192,9 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	app := m.GetApplicationFromContext(r.Context())
+	appService := createApplicationService(a)
 
-	endpoint, err := a.S.AppService.CreateAppEndpoint(r.Context(), e, app)
+	endpoint, err := appService.CreateAppEndpoint(r.Context(), e, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -246,8 +264,9 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 	app := m.GetApplicationFromContext(r.Context())
 	endPointId := chi.URLParam(r, "endpointID")
+	appService := createApplicationService(a)
 
-	endpoint, err := a.S.AppService.UpdateAppEndpoint(r.Context(), e, endPointId, app)
+	endpoint, err := appService.UpdateAppEndpoint(r.Context(), e, endPointId, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -272,8 +291,9 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
 	e := m.GetApplicationEndpointFromContext(r.Context())
+	appService := createApplicationService(a)
 
-	err := a.S.AppService.DeleteAppEndpoint(r.Context(), e, app)
+	err := appService.DeleteAppEndpoint(r.Context(), e, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

@@ -17,8 +17,8 @@ func Test_CreateConfiguration(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, ConfigCollection)
-	configRepo := NewConfigRepo(db, store)
+	store := getStore(db)
+	configRepo := NewConfigRepo(store)
 	config := generateConfig()
 
 	require.NoError(t, configRepo.CreateConfiguration(context.Background(), config))
@@ -34,8 +34,8 @@ func Test_LoadConfiguration(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, ConfigCollection)
-	configRepo := NewConfigRepo(db, store)
+	store := getStore(db)
+	configRepo := NewConfigRepo(store)
 	config := generateConfig()
 
 	_, err := configRepo.LoadConfiguration(context.Background())
@@ -55,8 +55,8 @@ func Test_UpdateConfiguration(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	store := getStore(db, ConfigCollection)
-	configRepo := NewConfigRepo(db, store)
+	store := getStore(db)
+	configRepo := NewConfigRepo(store)
 	config := generateConfig()
 
 	require.NoError(t, configRepo.CreateConfiguration(context.Background(), config))

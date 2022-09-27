@@ -20,9 +20,9 @@ import (
 func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
-	inviteStore := getStore(db, OrganisationInvitesCollection)
-	orgStore := getStore(db, OrganisationCollection)
-	inviteRepo := NewOrgInviteRepo(db, inviteStore)
+	store := getStore(db)
+
+	inviteRepo := NewOrgInviteRepo(store)
 	org := &datastore.Organisation{
 		UID:            uuid.NewString(),
 		Name:           "test_org",
@@ -31,7 +31,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	err := NewOrgRepo(db, orgStore).CreateOrganisation(context.Background(), org)
+	err := NewOrgRepo(store).CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
 	uids := []string{}
@@ -85,9 +85,9 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 func TestCreateOrganisationInvite(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db)
 
-	inviteStore := getStore(db, OrganisationInvitesCollection)
-	inviteRepo := NewOrgInviteRepo(db, inviteStore)
+	inviteRepo := NewOrgInviteRepo(store)
 	iv := &datastore.OrganisationInvite{
 		UID:            uuid.NewString(),
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
@@ -112,10 +112,9 @@ func TestCreateOrganisationInvite(t *testing.T) {
 func TestUpdateOrganisationInvite(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db)
 
-	inviteStore := getStore(db, OrganisationInvitesCollection)
-	inviteRepo := NewOrgInviteRepo(db, inviteStore)
-
+	inviteRepo := NewOrgInviteRepo(store)
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
@@ -160,10 +159,9 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 func TestDeleteOrganisationInvite(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db)
 
-	inviteStore := getStore(db, OrganisationInvitesCollection)
-	inviteRepo := NewOrgInviteRepo(db, inviteStore)
-
+	inviteRepo := NewOrgInviteRepo(store)
 	org := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
@@ -191,10 +189,9 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 func TestFetchOrganisationInviteByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db)
 
-	inviteStore := getStore(db, OrganisationInvitesCollection)
-	inviteRepo := NewOrgInviteRepo(db, inviteStore)
-
+	inviteRepo := NewOrgInviteRepo(store)
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
@@ -223,10 +220,9 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	store := getStore(db)
 
-	inviteStore := getStore(db, OrganisationInvitesCollection)
-	inviteRepo := NewOrgInviteRepo(db, inviteStore)
-
+	inviteRepo := NewOrgInviteRepo(store)
 	iv := &datastore.OrganisationInvite{
 		UID:          uuid.NewString(),
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),

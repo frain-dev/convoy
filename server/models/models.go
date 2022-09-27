@@ -257,9 +257,11 @@ type Subscription struct {
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
-	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
+	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
 }
 
 type UpdateSubscription struct {
@@ -268,9 +270,18 @@ type UpdateSubscription struct {
 	SourceID   string `json:"source_id,omitempty"`
 	EndpointID string `json:"endpoint_id,omitempty"`
 
-	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty"`
-	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty"`
-	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty"`
+	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty"`
+	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
+}
+
+type RetryConfiguration struct {
+	Type            datastore.StrategyProvider `json:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration        string                     `json:"duration,omitempty" valid:"duration~please provide a valid time duration"`
+	IntervalSeconds uint64                     `json:"interval_seconds" valid:"int~please provide a valid interval seconds"`
+	RetryCount      uint64                     `json:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 type UpdateUser struct {

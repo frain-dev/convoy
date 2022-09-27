@@ -5,8 +5,10 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { AppService } from './app.service';
+import { CliKeysComponent } from 'src/app/private/pages/project/apps/app-details/cli-keys/cli-keys.component';
 
-type PAGE_TABS = 'events' | 'event deliveries';
+type EVENT_PAGE_TABS = 'events' | 'event deliveries';
+type PAGE_TABS = 'subscriptions' | 'cli keys' | 'devices';
 
 @Component({
 	selector: 'app-app',
@@ -15,11 +17,14 @@ type PAGE_TABS = 'events' | 'event deliveries';
 })
 export class AppComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
+	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
 	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status', ''];
 	token: string = this.route.snapshot.params.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
-	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
-	activeTab: PAGE_TABS = 'events';
+	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
+	tabs: ['subscriptions', 'cli keys', 'devices'] = ['subscriptions', 'cli keys', 'devices'];
+	activeEventsTab: EVENT_PAGE_TABS = 'events';
+	activeTab: PAGE_TABS = 'subscriptions';
 	events!: { content: EVENT[]; pagination: PAGINATION };
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
 	activeSubscription?: SUBSCRIPTION;
@@ -31,6 +36,7 @@ export class AppComponent implements OnInit {
 	subscriptionId = this.route.snapshot.params.id;
 	showCreateSubscription = false;
 	showSubscriptionError = false;
+    showCliError = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
@@ -72,9 +78,13 @@ export class AppComponent implements OnInit {
 		this.activeTab = tab;
 	}
 
+	toggleEventsTab(tab: EVENT_PAGE_TABS) {
+		this.activeEventsTab = tab;
+	}
+
 	getEventDeliveries(eventId: string) {
 		this.eventDeliveryFilteredByEventId = eventId;
-		this.toggleActiveTab('event deliveries');
+		this.toggleEventsTab('event deliveries');
 	}
 
 	async deleteSubscription() {

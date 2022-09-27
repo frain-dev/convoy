@@ -9,13 +9,29 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
+
+func createEventService(a *ApplicationHandler) *services.EventService {
+	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
+	eventRepo := mongo.NewEventRepository(a.A.Store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
+
+	return services.NewEventService(
+		appRepo, eventRepo, eventDeliveryRepo,
+		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
+	)
+}
 
 // CreateAppEvent
 // @Summary Create app event
@@ -38,8 +54,9 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	g := m.GetGroupFromContext(r.Context())
+	eventService := createEventService(a)
 
-	event, err := a.S.EventService.CreateAppEvent(r.Context(), &newMessage, g)
+	event, err := eventService.CreateAppEvent(r.Context(), &newMessage, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -63,8 +80,9 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
+	eventService := createEventService(a)
 
-	err := a.S.EventService.ReplayAppEvent(r.Context(), event, g)
+	err := eventService.ReplayAppEvent(r.Context(), event, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -121,8 +139,9 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
+	eventService := createEventService(a)
 
-	err := a.S.EventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
+	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -172,7 +191,8 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 		SearchParams: searchParams,
 	}
 
-	successes, failures, err := a.S.EventService.BatchRetryEventDelivery(r.Context(), f)
+	eventService := createEventService(a)
+	successes, failures, err := eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -220,7 +240,8 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		SearchParams: searchParams,
 	}
 
-	count, err := a.S.EventService.CountAffectedEventDeliveries(r.Context(), f)
+	eventService := createEventService(a)
+	count, err := eventService.CountAffectedEventDeliveries(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -250,7 +271,8 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 		return
 	}
 
-	successes, failures, err := a.S.EventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
+	eventService := createEventService(a)
+	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -302,7 +324,8 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	}
 
 	if config.Search.Type == "typesense" && !util.IsStringEmpty(query) {
-		m, paginationData, err := a.S.EventService.Search(r.Context(), f)
+		eventService := createEventService(a)
+		m, paginationData, err := eventService.Search(r.Context(), f)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -313,7 +336,8 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	m, paginationData, err := a.S.EventService.GetEventsPaged(r.Context(), f)
+	eventService := createEventService(a)
+	m, paginationData, err := eventService.GetEventsPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
@@ -365,7 +389,8 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		SearchParams: searchParams,
 	}
 
-	ed, paginationData, err := a.S.EventService.GetEventDeliveriesPaged(r.Context(), f)
+	eventService := createEventService(a)
+	ed, paginationData, err := eventService.GetEventDeliveriesPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return

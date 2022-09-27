@@ -34,7 +34,7 @@
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="!isLoadingProjects">
 			<ng-container *ngFor="let project of projects">
-				<a [routerLink]="'/projects/' + project.uid" class="rounded-8px bg-white-100 block border border-grey-10">
+				<a [routerLink]="'/projects/' + project.uid" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
 					<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
 						<div class="flex items-center">
 							<div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">
@@ -66,7 +66,7 @@
 				</a>
 			</ng-container>
 
-			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8">
+			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
 				<svg width="22" height="22" class="mr-2" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
 				</svg>

@@ -8,27 +8,30 @@ import (
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/datastore"
-	pager "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type orgInviteRepo struct {
-	innerDB *mongo.Database
-	inner   *mongo.Collection
-	store   datastore.Store
+	store datastore.Store
 }
 
-func NewOrgInviteRepo(db *mongo.Database, store datastore.Store) datastore.OrganisationInviteRepository {
+func NewOrgInviteRepo(store datastore.Store) datastore.OrganisationInviteRepository {
 	return &orgInviteRepo{
-		innerDB: db,
-		inner:   db.Collection(OrganisationInvitesCollection),
-		store:   store,
+		store: store,
 	}
 }
 
+func (db *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	ctx = db.setCollectionInContext(ctx)
+	iv.ID = primitive.NewObjectID()
+	return db.store.Save(ctx, iv, nil)
+}
+
 func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
 
 	if !util.IsStringEmpty(orgID) {
@@ -39,50 +42,50 @@ func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgI
 		filter["status"] = inviteStatus
 	}
 
-	organisations := make([]datastore.OrganisationInvite, 0)
-	paginatedData, err := pager.New(db.inner).Context(ctx).Limit(int64(pageable.PerPage)).Page(int64(pageable.Page)).Sort("created_at", pageable.Sort).Filter(filter).Decode(&organisations).Find()
+	var invitations []datastore.OrganisationInvite
+	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
+		int64(pageable.Page), int64(pageable.PerPage), &invitations)
+
 	if err != nil {
-		return organisations, datastore.PaginationData{}, err
+		return invitations, datastore.PaginationData{}, err
 	}
 
-	return organisations, datastore.PaginationData(paginatedData.Pagination), nil
-}
-
-func (db *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
-	iv.ID = primitive.NewObjectID()
-	err := db.store.Save(ctx, iv, nil)
-	return err
+	return invitations, pagination, nil
 }
 
 func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	ctx = db.setCollectionInContext(ctx)
+
 	iv.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{
-		primitive.E{Key: "role", Value: iv.Role},
-		primitive.E{Key: "status", Value: iv.Status},
-		primitive.E{Key: "updated_at", Value: iv.UpdatedAt},
-		primitive.E{Key: "expires_at", Value: iv.ExpiresAt},
-		primitive.E{Key: "document_status", Value: iv.DocumentStatus},
+	update := bson.M{
+		"$set": bson.M{
+			"role":            iv.Role,
+			"status":          iv.Status,
+			"updated_at":      iv.UpdatedAt,
+			"expires_at":      iv.ExpiresAt,
+			"document_status": iv.DocumentStatus,
+		},
 	}
 
-	err := db.store.UpdateOne(ctx, bson.M{"uid": iv.UID}, update)
-	return err
+	return db.store.UpdateOne(ctx, bson.M{"uid": iv.UID}, update)
 }
 
 func (db *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, uid string) error {
+	ctx = db.setCollectionInContext(ctx)
+
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"$set": bson.M{
+			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"document_status": datastore.DeletedDocumentStatus,
+		},
 	}
 
-	err := db.store.UpdateOne(ctx, bson.M{"uid": uid}, update)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return db.store.UpdateOne(ctx, bson.M{"uid": uid}, update)
 }
 
 func (db *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id string) (*datastore.OrganisationInvite, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	org := &datastore.OrganisationInvite{}
 
 	err := db.store.FindByID(ctx, id, nil, org)
@@ -94,6 +97,8 @@ func (db *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id str
 }
 
 func (db *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
+	ctx = db.setCollectionInContext(ctx)
+
 	org := &datastore.OrganisationInvite{}
 
 	filter := bson.M{
@@ -107,4 +112,8 @@ func (db *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, tok
 	}
 
 	return org, err
+}
+
+func (db *orgInviteRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.OrganisationInvitesCollection)
 }

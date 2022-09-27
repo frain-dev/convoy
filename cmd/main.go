@@ -66,7 +66,8 @@ func main() {
 func ensureDefaultUser(ctx context.Context, a *app) error {
 	pageable := datastore.Pageable{}
 
-	users, _, err := a.userRepo.LoadUsersPaged(ctx, pageable)
+	userRepo := cm.NewUserRepo(a.store)
+	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)
@@ -94,7 +95,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = a.userRepo.CreateUser(ctx, defaultUser)
+	err = userRepo.CreateUser(ctx, defaultUser)
 	if err != nil {
 		return fmt.Errorf("failed to create user - %w", err)
 	}
@@ -105,25 +106,13 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 }
 
 type app struct {
-	apiKeyRepo        datastore.APIKeyRepository
-	groupRepo         datastore.GroupRepository
-	applicationRepo   datastore.ApplicationRepository
-	deviceRepo        datastore.DeviceRepository
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	subRepo           datastore.SubscriptionRepository
-	orgRepo           datastore.OrganisationRepository
-	orgMemberRepo     datastore.OrganisationMemberRepository
-	orgInviteRepo     datastore.OrganisationInviteRepository
-	sourceRepo        datastore.SourceRepository
-	userRepo          datastore.UserRepository
-	configRepo        datastore.ConfigurationRepository
-	queue             queue.Queuer
-	logger            logger.Logger
-	tracer            tracer.Tracer
-	cache             cache.Cache
-	limiter           limiter.RateLimiter
-	searcher          searcher.Searcher
+	store    datastore.Store
+	queue    queue.Queuer
+	logger   logger.Logger
+	tracer   tracer.Tracer
+	cache    cache.Cache
+	limiter  limiter.RateLimiter
+	searcher searcher.Searcher
 }
 
 func getCtx() (context.Context, context.CancelFunc) {
@@ -244,21 +233,9 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			return err
 		}
 
-		app.subRepo = db.SubRepo()
-		app.apiKeyRepo = db.APIRepo()
-		app.groupRepo = db.GroupRepo()
-		app.eventRepo = db.EventRepo()
-		app.applicationRepo = db.AppRepo()
-		app.eventDeliveryRepo = db.EventDeliveryRepo()
-		app.sourceRepo = db.SourceRepo()
-		app.deviceRepo = db.DeviceRepo()
-		app.userRepo = db.UserRepo()
-		app.configRepo = db.ConfigurationRepo()
-		app.orgRepo = db.OrganisationRepo()
-		app.orgMemberRepo = db.OrganisationMemberRepo()
-		app.orgInviteRepo = db.OrganisationInviteRepo()
-		app.deviceRepo = db.DeviceRepo()
+		s := datastore.New(db.Database())
 
+		app.store = s
 		app.queue = q
 		app.logger = lo
 		app.tracer = tr
@@ -292,8 +269,6 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
 	cmd.AddCommand(addVersionCommand())
-	cmd.AddCommand(addCreateCommand(app))
-	cmd.AddCommand(addGetComamnd(app))
 	cmd.AddCommand(addServerCommand(app))
 	cmd.AddCommand(addWorkerCommand(app))
 	cmd.AddCommand(addRetryCommand(app))

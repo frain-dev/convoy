@@ -15,13 +15,13 @@ export class GeneralService {
 		this.alertStatus.next({ message: details.message, style: details.style, show: true });
 		setTimeout(() => {
 			this.dismissNotification();
-		}, 4000);
+		}, 7000);
 	}
 
 	dismissNotification() {
 		this.alertStatus.next({ message: '', style: 'info', show: false });
-	}  
-	
+	}
+
 	apiURL(): string {
 		return `${environment.production ? location.origin : 'http://localhost:5005'}`;
 	}
