@@ -205,22 +205,5 @@ func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))
 	}
 
-	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
-	err = gs.appRepo.DeleteGroupApps(ctx, id)
-	if err != nil {
-		log.WithError(err).Error("failed to delete group apps")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group apps"))
-	}
-	evntFilter := &datastore.EventFilter{
-		GroupID:        id,
-		CreatedAtStart: 0,
-		CreatedAtEnd:   time.Now().Unix(),
-	}
-	err = gs.eventRepo.DeleteGroupEvents(ctx, evntFilter, false)
-	if err != nil {
-		log.WithError(err).Error("failed to delete group events")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group events"))
-	}
-
 	return nil
 }

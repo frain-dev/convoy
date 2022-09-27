@@ -272,30 +272,26 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 		},
 	}
 
-	err := db.updateMessagesInApp(ctx, app, updateAsDeleted)
-	if err != nil {
-		return err
-	}
-
-	err = db.deleteApp(ctx, app, updateAsDeleted)
-	if err != nil {
-		log.Errorf("%s an error has occurred while deleting app - %s", app.UID, err)
-
-		rollback := bson.M{
-			"$set": bson.M{
-				"deleted_at":      nil,
-				"document_status": datastore.ActiveDocumentStatus,
-			},
-		}
-		err2 := db.updateMessagesInApp(ctx, app, rollback)
-		if err2 != nil {
-			log.Errorf("%s failed to rollback deleted app messages - %s", app.UID, err2)
+	err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
+		err := db.deleteAppEvents(sessCtx, app, updateAsDeleted)
+		if err != nil {
+			return err
 		}
 
-		return err
-	}
+		err = db.deleteSubscription(sessCtx, app, updateAsDeleted)
+		if err != nil {
+			return err
+		}
 
-	return nil
+		err = db.deleteApp(sessCtx, app, updateAsDeleted)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application, groupID string) error {
@@ -318,15 +314,13 @@ func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Appl
 	return nil
 }
 
-func (db *appRepo) updateMessagesInApp(ctx context.Context, app *datastore.Application, update bson.M) error {
-	ctx = db.setCollectionInContext(ctx)
+func (db *appRepo) deleteAppEvents(ctx context.Context, app *datastore.Application, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 
 	filter := bson.M{"app_id": app.UID}
 	err := db.store.UpdateMany(ctx, filter, update, true)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, update bson.M) error {
@@ -351,4 +345,13 @@ func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoi
 		}
 	}
 	return nil, datastore.ErrEndpointNotFound
+}
+
+func (db *appRepo) deleteSubscription(ctx context.Context, app *datastore.Application, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+	filter := bson.M{"app_id": app.UID}
+	err := db.store.UpdateMany(ctx, filter, update, true)
+
+	return err
 }

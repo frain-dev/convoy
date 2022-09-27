@@ -168,13 +168,15 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	groupRepo := NewGroupRepo(store)
 
 	group1 := &datastore.Group{
-		Name: "group1",
-		UID:  uuid.NewString(),
+		Name:           "group1",
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	group2 := &datastore.Group{
-		Name: "group2",
-		UID:  uuid.NewString(),
+		Name:           "group2",
+		UID:            uuid.NewString(),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	err := groupRepo.CreateGroup(context.Background(), group1)
@@ -184,13 +186,15 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	app1 := &datastore.Application{
-		UID:     uuid.NewString(),
-		GroupID: group1.UID,
+		UID:            uuid.NewString(),
+		GroupID:        group1.UID,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	app2 := &datastore.Application{
-		UID:     uuid.NewString(),
-		GroupID: group2.UID,
+		UID:            uuid.NewString(),
+		GroupID:        group2.UID,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	appRepo := NewApplicationRepo(getStore(db))
@@ -202,9 +206,10 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	event := &datastore.Event{
-		UID:     uuid.NewString(),
-		GroupID: app1.GroupID,
-		AppID:   app1.UID,
+		UID:            uuid.NewString(),
+		GroupID:        app1.GroupID,
+		AppID:          app1.UID,
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
