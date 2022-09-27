@@ -10,13 +10,13 @@ import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { DeleteModalModule } from '../../components/delete-modal/delete-modal.module';
+import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
 import { SettingsService } from './settings.service';
 
 @Component({
 	selector: 'convoy-settings',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, CardComponent, PageComponent, DeleteModalModule, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent],
+	imports: [CommonModule, ReactiveFormsModule, CardComponent, PageComponent, DeleteModalComponent, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent],
 	templateUrl: './settings.component.html',
 	styleUrls: ['./settings.component.scss']
 })
