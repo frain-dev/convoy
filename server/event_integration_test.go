@@ -360,7 +360,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	app2, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
 
-	url := fmt.Sprintf("/api/v1/events?appId=%s&sourceId=%s", app1.UID, sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/events?appId=%s&sourceId=%s", s.DefaultGroup.UID, app1.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
