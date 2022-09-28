@@ -163,6 +163,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		Secret:            e.Secret,
 		RateLimit:         e.RateLimit,
 		HttpTimeout:       e.HttpTimeout,
+		Authentication:    e.Authentication,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -278,6 +279,10 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 
 			if !util.IsStringEmpty(e.Secret) {
 				endpoint.Secret = e.Secret
+			}
+
+			if e.Authentication != nil {
+				endpoint.Authentication = e.Authentication
 			}
 
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())

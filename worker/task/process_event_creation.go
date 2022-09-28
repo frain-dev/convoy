@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -95,6 +96,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 
 		for _, s := range subscriptions {
 			ec.subscription = &s
+			headers := event.Headers
 			app, err := appRepo.FindApplicationByID(ctx, s.AppID)
 			if err != nil {
 				log.Errorf("Error fetching applcation %s", err)
@@ -108,7 +110,13 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
-			s.Endpoint = endpoint
+				if endpoint.Authentication != nil {
+					headers = make(httpheader.HTTPHeader)
+					headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
+					headers.MergeHeaders(event.Headers)
+				}
+
+				s.Endpoint = endpoint
 			}
 
 			rc, err := ec.retryConfig()
@@ -134,7 +142,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				EventID:        event.UID,
 				EndpointID:     s.EndpointID,
 				DeviceID:       s.DeviceID,
-				Headers:        event.Headers,
+				Headers:        headers,
 
 				Status:           getEventDeliveryStatus(ctx, &s, app, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
