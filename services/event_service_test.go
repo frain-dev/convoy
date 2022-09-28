@@ -395,9 +395,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 
 		{
 			name: "should_fail_to_create_event",
-			dbFn: func(es *EventService) {
-
-			},
+			dbFn: func(es *EventService) {},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
@@ -584,6 +582,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 		})
 	}
 }
+
 func TestEventService_GetEventDelivery(t *testing.T) {
 	ctx := context.Background()
 
@@ -1077,8 +1076,9 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group: &datastore.Group{UID: "123"},
-					AppID: "abc",
+					Group:    &datastore.Group{UID: "123"},
+					SourceID: "bcv",
+					AppID:    "abc",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -1092,19 +1092,24 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
-				ed.EXPECT().LoadEventsPaged(
-					gomock.Any(),
-					"123",
-					"abc",
-					datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-					datastore.Pageable{
+				f := &datastore.Filter{
+					Query:    "",
+					Group:    &datastore.Group{UID: "123"},
+					AppID:    "abc",
+					EventID:  "",
+					SourceID: "bcv",
+					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
 						Sort:    1,
-					}).
+					},
+					Status: nil,
+					SearchParams: datastore.SearchParams{
+						CreatedAtStart: 13323,
+						CreatedAtEnd:   1213,
+					},
+				}
+				ed.EXPECT().LoadEventsPaged(gomock.Any(), f).
 					Times(1).
 					Return([]datastore.Event{{UID: "1234"}}, datastore.PaginationData{
 						Total:     1,
@@ -1161,7 +1166,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
 				ed.EXPECT().
-					LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					LoadEventsPaged(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -1245,7 +1250,6 @@ func TestEventService_SearchEvents(t *testing.T) {
 				ed.EXPECT().FindEventsByIDs(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return([]datastore.Event{{UID: "1234"}}, nil)
-
 			},
 			wantEvents: []datastore.Event{
 				{UID: "1234"},
