@@ -62,7 +62,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	})
 
 	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
