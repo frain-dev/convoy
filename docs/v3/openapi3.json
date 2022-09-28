@@ -4664,6 +4664,14 @@
 						}
 					},
 					{
+						"description": "source id",
+						"in": "query",
+						"name": "sourceId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "start date",
 						"in": "query",
 						"name": "startDate",

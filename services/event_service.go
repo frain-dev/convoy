@@ -166,6 +166,7 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 		Query: filter.Query,
 		FilterBy: datastore.FilterBy{
 			AppID:        filter.AppID,
+			SourceID:     filter.SourceID,
 			GroupID:      filter.Group.UID,
 			SearchParams: filter.SearchParams,
 		},
@@ -252,7 +253,7 @@ func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []str
 }
 
 func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
-	events, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter.Group.UID, filter.AppID, filter.SearchParams, filter.Pageable)
+	events, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch events")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))

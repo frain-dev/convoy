@@ -33,7 +33,6 @@ func (ea *EventAnalytics) Track() error {
 func (ea *EventAnalytics) track(perPage, page int) error {
 	ctx := context.Background()
 	orgs, _, err := ea.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, Page: page, Sort: -1})
-
 	if err != nil {
 		return err
 	}
@@ -51,12 +50,17 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 		}
 
 		for _, group := range groups {
-			filter := datastore.SearchParams{
-				CreatedAtStart: time.Unix(0, 0).Unix(),
-				CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
+			filter := &datastore.Filter{
+				Group:    group,
+				AppID:    "",
+				Pageable: datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
+				SearchParams: datastore.SearchParams{
+					CreatedAtStart: time.Unix(0, 0).Unix(),
+					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
+				},
 			}
 
-			_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, group.UID, "", filter, datastore.Pageable{PerPage: 20, Page: 1, Sort: -1})
+			_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, filter)
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue

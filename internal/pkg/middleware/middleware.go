@@ -1300,8 +1300,11 @@ func GetAppIDFromContext(r *http.Request) string {
 		return appID
 	}
 
-	appID := r.URL.Query().Get("appId")
-	return appID
+	return r.URL.Query().Get("appId")
+}
+
+func GetSourceIDFromContext(r *http.Request) string {
+	return r.URL.Query().Get("sourceId")
 }
 
 func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {

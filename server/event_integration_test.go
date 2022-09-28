@@ -49,9 +49,9 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 		Type:  auth.RoleAdmin,
 		Group: s.DefaultGroup.UID,
 	}
- 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "","")
- 
+
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
@@ -141,7 +141,7 @@ func (s *EventIntegrationTestSuite) Test_GetAppEvent_Valid_Event() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
+	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, eventID, "*", "", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/%s", s.DefaultGroup.UID, eventID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
@@ -165,7 +165,7 @@ func (s *EventIntegrationTestSuite) Test_ReplayAppEvent_Valid_Event() {
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
+	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, eventID, "*", "", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/%s/replay", s.DefaultGroup.UID, eventID)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
@@ -266,7 +266,7 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
-	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
@@ -289,7 +289,7 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
-	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, event, &app.Endpoints[0], s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
@@ -320,7 +320,7 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
-	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, &datastore.Endpoint{}, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	e1, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, event, &app.Endpoints[0], s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
 	e2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, event, &app.Endpoints[0], s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
@@ -349,18 +349,18 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 
 func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	eventID := uuid.NewString()
+	sourceID := uuid.NewString()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
 	app1, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	e1, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
-	e2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
+	e1, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
+	e2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
 
 	app2, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, eventID, "*", []byte(`{}`))
+	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
 
-	url := fmt.Sprintf("/api/v1/projects/%s/events?appId=%s", s.DefaultGroup.UID, app1.UID)
-
+	url := fmt.Sprintf("/api/v1/events?appId=%s&sourceId=%s", app1.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -390,13 +390,13 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	// Just Before.
 	app1, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID)
-	event1, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	event1, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	d1, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app1, event1, endpoint1, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 	d2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app1, event1, endpoint1, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
 	app2, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID)
-	event2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	event2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app2, event2, endpoint2, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?appId=%s", s.DefaultGroup.UID, app1.UID)

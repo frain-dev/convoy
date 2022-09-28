@@ -10,6 +10,7 @@ type Filter struct {
 	Group        *Group
 	AppID        string
 	EventID      string
+	SourceID     string
 	Pageable     Pageable
 	Status       []EventDeliveryStatus
 	SearchParams SearchParams
@@ -30,6 +31,7 @@ type ApiKeyFilter struct {
 type FilterBy struct {
 	AppID        string
 	GroupID      string
+	SourceID     string
 	SearchParams SearchParams
 }
 
@@ -41,6 +43,10 @@ func (f *FilterBy) String() *string {
 
 	if len(f.AppID) > 0 {
 		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", f.AppID))
+	}
+
+	if len(f.SourceID) > 0 {
+		filterByBuilder.WriteString(fmt.Sprintf(" && source_id:=%s", f.SourceID))
 	}
 
 	s = filterByBuilder.String()

@@ -289,6 +289,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Produce  json
 // @Param appId query string false "application id"
 // @Param projectID path string true "Project id"
+// @Param sourceId query string false "source id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
@@ -319,6 +320,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		Query:        query,
 		Group:        group,
 		AppID:        m.GetAppIDFromContext(r),
+		SourceID:     m.GetSourceIDFromContext(r),
 		Pageable:     pageable,
 		SearchParams: searchParams,
 	}

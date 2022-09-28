@@ -45,7 +45,6 @@ func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgI
 	var invitations []datastore.OrganisationInvite
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &invitations)
-
 	if err != nil {
 		return invitations, datastore.PaginationData{}, err
 	}
