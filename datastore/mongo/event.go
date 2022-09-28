@@ -24,10 +24,12 @@ func NewEventRepository(store datastore.Store) datastore.EventRepository {
 	}
 }
 
-var dailyIntervalFormat = "%Y-%m-%d" // 1 day
-var weeklyIntervalFormat = "%Y-%m"   // 1 week
-var monthlyIntervalFormat = "%Y-%m"  // 1 month
-var yearlyIntervalFormat = "%Y"      // 1 month
+var (
+	dailyIntervalFormat   = "%Y-%m-%d" // 1 day
+	weeklyIntervalFormat  = "%Y-%m"    // 1 week
+	monthlyIntervalFormat = "%Y-%m"    // 1 month
+	yearlyIntervalFormat  = "%Y"       // 1 month
+)
 
 func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) error {
 	ctx = db.setCollectionInContext(ctx)
@@ -116,21 +118,25 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 		return nil, errors.New("specified data cannot be generated for period")
 	}
 	groupStage := bson.D{
-		{Key: "$group", Value: bson.D{
-			{Key: "_id",
-				Value: bson.D{
-					{Key: "total_time",
-						Value: bson.D{{Key: "$dateToString", Value: bson.D{{Key: "date", Value: "$created_at"}, {Key: "format", Value: format}}}},
+		{
+			Key: "$group", Value: bson.D{
+				{
+					Key: "_id",
+					Value: bson.D{
+						{
+							Key:   "total_time",
+							Value: bson.D{{Key: "$dateToString", Value: bson.D{{Key: "date", Value: "$created_at"}, {Key: "format", Value: format}}}},
+						},
+						{Key: "index", Value: bson.D{{Key: "$trunc", Value: bson.D{{
+							Key: "$divide", Value: bson.A{
+								bson.D{{Key: timeComponent, Value: "$created_at"}},
+								interval,
+							},
+						}}}}},
 					},
-					{Key: "index", Value: bson.D{{Key: "$trunc", Value: bson.D{{Key: "$divide", Value: bson.A{
-						bson.D{{Key: timeComponent, Value: "$created_at"}},
-						interval,
-					},
-					}}}}},
 				},
+				{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
 			},
-			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
-		},
 		},
 	}
 	sortStage := bson.D{{Key: "$sort", Value: bson.D{primitive.E{Key: "_id", Value: 1}}}}
@@ -177,29 +183,26 @@ func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datas
 	return event, err
 }
 
-func (db *eventRepo) LoadEventsPaged(ctx context.Context, groupID string, appId string, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
+func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(searchParams)}
+	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(f.SearchParams)}
 
-	hasAppFilter := !util.IsStringEmpty(appId)
-	hasGroupFilter := !util.IsStringEmpty(groupID)
+	if !util.IsStringEmpty(f.AppID) {
+		filter["app_id"] = f.AppID
+	}
 
-	if hasAppFilter && hasGroupFilter {
-		filter = bson.M{"group_id": groupID, "app_id": appId, "document_status": datastore.ActiveDocumentStatus,
-			"created_at": getCreatedDateFilter(searchParams)}
-	} else if hasAppFilter {
-		filter = bson.M{"app_id": appId, "document_status": datastore.ActiveDocumentStatus,
-			"created_at": getCreatedDateFilter(searchParams)}
-	} else if hasGroupFilter {
-		filter = bson.M{"group_id": groupID, "document_status": datastore.ActiveDocumentStatus,
-			"created_at": getCreatedDateFilter(searchParams)}
+	if !util.IsStringEmpty(f.Group.UID) {
+		filter["group_id"] = f.Group.UID
+	}
+
+	if !util.IsStringEmpty(f.SourceID) {
+		filter["source_id"] = f.SourceID
 	}
 
 	var events []datastore.Event
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
-		int64(pageable.Page), int64(pageable.PerPage), &events)
-
+		int64(f.Pageable.Page), int64(f.Pageable.PerPage), &events)
 	if err != nil {
 		return events, datastore.PaginationData{}, err
 	}

@@ -77,7 +77,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	require.NoError(s.T(), err)
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "test-app", false)
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
-	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app, group.UID, uuid.NewString(), "*", []byte("{}"))
+	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app, group.UID, uuid.NewString(), "*", "", []byte("{}"))
 
 	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -280,7 +280,6 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	require.Contains(s.T(), v, group1.UID)
 	require.Contains(s.T(), v, group2.UID)
 	require.Contains(s.T(), v, group3.UID)
-
 }
 
 func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {

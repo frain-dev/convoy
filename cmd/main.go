@@ -68,7 +68,6 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 
 	userRepo := cm.NewUserRepo(a.store)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
-
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)
 	}
@@ -149,7 +148,6 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			newrelic.ConfigDistributedTracerEnabled(nwCfg.DistributedTracerEnabled),
 			newrelic.ConfigEnabled(nwCfg.ConfigEnabled),
 		)
-
 		if err != nil {
 			return err
 		}
@@ -276,7 +274,6 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addListAppsCommand())
 	cmd.AddCommand(addStreamCommand(app))
 	cmd.AddCommand(addSwitchCommand())
-
 }
 
 type ConvoyCli struct {
