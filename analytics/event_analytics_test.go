@@ -22,7 +22,6 @@ func provideEventAnalytics(ctrl *gomock.Controller) *EventAnalytics {
 }
 
 func Test_TrackEventAnalytics(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		dbFn    func(ea *EventAnalytics)
@@ -37,7 +36,7 @@ func Test_TrackEventAnalytics(t *testing.T) {
 				gomock.InOrder(
 					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return([]datastore.Organisation{{UID: "123"}}, datastore.PaginationData{}, nil),
 					groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test-group"}}, nil),
-					eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
+					eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
 					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
 				)
 			},
