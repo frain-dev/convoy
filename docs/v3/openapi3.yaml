@@ -1008,6 +1008,83 @@ info:
   version: 0.1.12
 openapi: 3.0.3
 paths:
+  /api/v1/organisations:
+    get:
+      description: This endpoint fetches the organisations a user is part of, this
+        route can only be accessed with a personal api key
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - properties:
+                          content:
+                            items:
+                              $ref: '#/components/schemas/datastore.Organisation'
+                            type: array
+                        type: object
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Get organisations
+      tags:
+      - Organisation
   /api/v1/projects:
     get:
       description: This endpoint fetches groups
@@ -4377,7 +4454,7 @@ paths:
       - Configuration
   /ui/organisations:
     get:
-      description: This endpoint fetches multiple organisations
+      description: This endpoint fetches the organisations a user is part of
       parameters:
       - description: results per page
         in: query
