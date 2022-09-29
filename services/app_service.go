@@ -135,6 +135,10 @@ func (a *AppService) DeleteApplication(ctx context.Context, app *datastore.Appli
 }
 
 func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, app *datastore.Application) (*datastore.Endpoint, error) {
+	if err := util.Validate(e); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	// Events being nil means it wasn't passed at all, which automatically
 	// translates into a accept all scenario. This is quite different from
 	// an empty array which signifies a blacklist all events -- no events
@@ -199,6 +203,9 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 }
 
 func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, endPointId string, app *datastore.Application) (*datastore.Endpoint, error) {
+	if err := util.Validate(e); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
 
 	endpoints, endpoint, err := updateEndpointIfFound(&app.Endpoints, endPointId, e)
 	if err != nil {

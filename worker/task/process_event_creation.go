@@ -110,7 +110,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
-				if endpoint.Authentication != nil {
+				if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
 					headers = make(httpheader.HTTPHeader)
 					headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
 					headers.MergeHeaders(event.Headers)

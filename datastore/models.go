@@ -94,6 +94,10 @@ const (
 	ShopifySourceProvider SourceProvider = "shopify"
 )
 
+const (
+	APIKeyAuthentication EndpointAuthenticationType = "api_key"
+)
+
 func (s SourceProvider) IsValid() bool {
 	switch s {
 	case GithubSourceProvider, TwitterSourceProvider, ShopifySourceProvider:
@@ -238,7 +242,7 @@ type Endpoint struct {
 }
 
 type EndpointAuthentication struct {
-	Type   EndpointAuthenticationType `json:"type,omitempty" bson:"type"`
+	Type   EndpointAuthenticationType `json:"type,omitempty" bson:"type" valid:"required~please provide an authentication type,in(api_key)~unsupported authentication type"`
 	ApiKey *ApiKey                    `json:"api_key" bson:"api_key"`
 }
 
