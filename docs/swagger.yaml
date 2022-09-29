@@ -459,7 +459,7 @@ definitions:
   datastore.RetryConfiguration:
     properties:
       duration:
-        type: string
+        type: integer
       retry_count:
         type: integer
       type:
@@ -543,12 +543,16 @@ definitions:
         type: string
       device_id:
         type: string
+      disable_endpoint:
+        type: boolean
       endpoint_metadata:
         $ref: '#/definitions/datastore.Endpoint'
       filter_config:
         $ref: '#/definitions/datastore.FilterConfiguration'
       name:
         type: string
+      rate_limit_config:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
       retry_config:
         $ref: '#/definitions/datastore.RetryConfiguration'
       source_metadata:
@@ -820,6 +824,17 @@ definitions:
       password_confirmation:
         type: string
     type: object
+  models.RetryConfiguration:
+    properties:
+      duration:
+        type: string
+      interval_seconds:
+        type: integer
+      retry_count:
+        type: integer
+      type:
+        type: string
+    type: object
   models.Role:
     properties:
       app:
@@ -886,14 +901,18 @@ definitions:
         $ref: '#/definitions/datastore.AlertConfiguration'
       app_id:
         type: string
+      disable_endpoint:
+        type: boolean
       endpoint_id:
         type: string
       filter_config:
         $ref: '#/definitions/datastore.FilterConfiguration'
       name:
         type: string
+      rate_limit_config:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
       retry_config:
-        $ref: '#/definitions/datastore.RetryConfiguration'
+        $ref: '#/definitions/models.RetryConfiguration'
       source_id:
         type: string
     type: object
@@ -2083,6 +2102,10 @@ paths:
       - description: application id
         in: query
         name: appId
+        type: string
+      - description: source id
+        in: query
+        name: sourceId
         type: string
       - description: group id
         in: query

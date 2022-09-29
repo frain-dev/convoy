@@ -340,7 +340,7 @@ func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datasto
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(store datastore.Store, app *datastore.Application, groupID string, uid, eventType string, data []byte) (*datastore.Event, error) {
+func SeedEvent(store datastore.Store, app *datastore.Application, groupID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -351,6 +351,7 @@ func SeedEvent(store datastore.Store, app *datastore.Application, groupID string
 		Data:           data,
 		AppID:          app.UID,
 		GroupID:        groupID,
+		SourceID:       sourceID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -453,7 +454,6 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 }
 
 func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
-
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -487,7 +487,7 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	sourceRepo := cm.NewSourceRepo(store)
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
@@ -566,7 +566,7 @@ func SeedUser(store datastore.Store, email, password string) (*datastore.User, e
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	userRepo := cm.NewUserRepo(store)
 	err = userRepo.CreateUser(context.TODO(), user)
 	if err != nil {
@@ -585,7 +585,7 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	configRepo := cm.NewConfigRepo(store)
 	err := configRepo.CreateConfiguration(context.TODO(), config)
 	if err != nil {

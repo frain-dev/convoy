@@ -104,7 +104,6 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /api/v1/events/{eventID} [get]
 func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("App event fetched successfully",
 		*m.GetEventFromContext(r.Context()), http.StatusOK))
 }
@@ -122,7 +121,6 @@ func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /api/v1/eventdeliveries/{eventDeliveryID} [get]
 func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
 		*m.GetEventDeliveryFromContext(r.Context()), http.StatusOK))
 }
@@ -140,7 +138,6 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Security ApiKeyAuth
 // @Router /api/v1/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
-
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 	eventService := createEventService(a)
 
@@ -291,6 +288,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
+// @Param sourceId query string false "source id"
 // @Param groupId query string true "group id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
@@ -322,6 +320,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		Query:        query,
 		Group:        group,
 		AppID:        m.GetAppIDFromContext(r),
+		SourceID:     m.GetSourceIDFromContext(r),
 		Pageable:     pageable,
 		SearchParams: searchParams,
 	}
@@ -446,9 +445,7 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 
 func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			e := m.GetEventDeliveryFromContext(r.Context())
 
 			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), &e.DeliveryAttempts))
