@@ -46,6 +46,7 @@ export class ProjectsComponent implements OnInit {
 			const projectsResponse = await this.privateService.getProjects();
 			projectsResponse.data.length > 0 ? (this.noData = false) : (this.noData = true);
 			this.projects = projectsResponse.data;
+			this.privateService.activeProjectDetails.uid = '';
 			this.isLoadingProjects = false;
 		} catch (error) {
 			this.isLoadingProjects = false;

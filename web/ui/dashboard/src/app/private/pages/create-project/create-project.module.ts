@@ -11,11 +11,13 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
+import { LoaderModule } from '../../components/loader/loader.module';
+import { SdkDocumentationComponent } from '../../components/sdk-documentation/sdk-documentation.component';
 
 const routes: Routes = [{ path: '', component: CreateProjectComponent }];
 
 @NgModule({
 	declarations: [CreateProjectComponent],
-	imports: [CommonModule, ReactiveFormsModule, FormsModule, CreateAppModule, RouterModule.forChild(routes), CreateSourceModule, CreateProjectComponentModule, CreateSubscriptionModule, ModalComponent, CardComponent, TooltipComponent, ButtonComponent]
+	imports: [CommonModule, ReactiveFormsModule, FormsModule, CreateAppModule, RouterModule.forChild(routes), CreateSourceModule, CreateProjectComponentModule, CreateSubscriptionModule, ModalComponent, CardComponent, TooltipComponent, ButtonComponent, LoaderModule, SdkDocumentationComponent]
 })
 export class CreateProjectModule {}

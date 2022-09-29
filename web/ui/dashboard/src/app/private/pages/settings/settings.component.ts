@@ -21,8 +21,8 @@ import { SettingsService } from './settings.service';
 	styleUrls: ['./settings.component.scss']
 })
 export class SettingsComponent implements OnInit {
-	activePage: 'organisation settings' = 'organisation settings';
-	settingsMenu: ['organisation settings'] = ['organisation settings'];
+	activePage: 'organisation settings' | 'configuration settings' = 'organisation settings';
+	settingsMenu: ['organisation settings', 'configuration settings'] = ['organisation settings', 'configuration settings'];
 	regions = [
 		'us-east-2',
 		'us-east-1',
@@ -145,7 +145,7 @@ export class SettingsComponent implements OnInit {
 		}
 	}
 
-	toggleActivePage(activePage: 'organisation settings') {
+	toggleActivePage(activePage: 'organisation settings' | 'configuration settings') {
 		this.activePage = activePage;
 		this.activePage === 'organisation settings' ? this.getOrganisationDetails() : this.fetchConfigSettings();
 		if (!this.router.url.split('/')[2]) this.addPageToUrl();

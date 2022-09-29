@@ -184,6 +184,17 @@ export class EventsComponent implements OnInit {
 		return dateArray;
 	}
 
+	get isProjectConfigurationComplete() {
+		const configurationComplete = localStorage.getItem('isActiveProjectConfigurationComplete');
+		return configurationComplete ? JSON.parse(configurationComplete) : false;
+	}
+
+	get emptyStateDescription() {
+		return this.isProjectConfigurationComplete
+			? `You have not ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'sent' : 'received'} any webhook events yet. Learn how to do that in our docs`
+			: `You have not completed this projects setup, please complete setup to start ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'receiving' : 'sending'} events`;
+	}
+
 	getDateRange() {
 		const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 		return this.dateRange(startDate, endDate);

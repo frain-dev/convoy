@@ -25,15 +25,9 @@ export class CreateProjectComponent implements OnInit {
 	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
 	projects!: GROUP[];
-	tabs = [
-		{ label: 'Javascript', id: 'javascript' },
-		{ label: 'Python', id: 'python' },
-		{ label: 'PHP', id: 'php' },
-		{ label: 'Ruby', id: 'ruby' },
-		{ label: 'Golang', id: 'golang' }
-	];
-	activeTab = 'javascript';
+
 	showInfo = false;
+	isLoadingProjects = false;
 
 	constructor(private router: Router, private location: Location, public privateService: PrivateService, private generalService: GeneralService) {}
 
@@ -54,11 +48,14 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getProjects() {
+		this.isLoadingProjects = true;
 		try {
 			const projectsResponse = await this.privateService.getProjects();
 			this.projects = projectsResponse.data;
+			this.isLoadingProjects = false;
 			if (this.projects.length === 0) this.showInfo = true;
 		} catch (error) {
+			this.isLoadingProjects = false;
 			return error;
 		}
 	}
@@ -68,7 +65,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	onProjectOnboardingComplete() {
-		this.generalService.showNotification({ message: 'Project setup complete', style: 'success' });
+		this.generalService.showNotification({ message: `${this.privateService.activeProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid);
 	}
 
@@ -82,30 +79,5 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
-	switchTabs(activeTab: string) {
-		switch (activeTab) {
-			case 'javascript':
-				this.activeTab = 'javascript';
-				// this.fetchPageData('convoy-js');
-				break;
-			case 'python':
-				this.activeTab = 'python';
-				// this.fetchPageData('convoy-pyhton');
-				break;
-			case 'php':
-				this.activeTab = 'php';
-				// this.fetchPageData('convoy-php');
-				break;
-			case 'ruby':
-				this.activeTab = 'ruby';
-				// this.fetchPageData('convoy-ruby');
-				break;
-			case 'golang':
-				this.activeTab = 'golang';
-				// this.fetchPageData('convoy-ruby');
-				break;
-			default:
-				break;
-		}
-	}
+
 }

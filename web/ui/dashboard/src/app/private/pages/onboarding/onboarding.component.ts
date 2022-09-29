@@ -56,9 +56,9 @@ export class OnboardingComponent implements OnInit {
 		this.creatingOrganisation = true;
 		try {
 			const response = await this.privateService.addOrganisation(this.addOrganisationForm.value);
-			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.generalService.showNotification({ style: 'success', message: response.message, type: 'modal' });
 			this.creatingOrganisation = false;
-            location.reload()
+			location.reload();
 			this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
 			this.showCreateModal = false;
 		} catch {

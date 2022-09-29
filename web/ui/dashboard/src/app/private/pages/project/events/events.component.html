@@ -11,17 +11,15 @@
 </div>
 
 <ng-container *ngIf="!isloadingDashboardData && dashboardData.events_sent === 0">
-	<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." description="You have not sent any webhook events yet. Learn how to do that in our docs">
+	<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
 		<div emptyStateCTA>
-			<convoy-button>
-                <svg width="16" height="16" class="mr-8px fill-white-100">
-                    <use xlink:href="#add-icon"></use>
-                </svg>
-                Start receiving Events
-            </convoy-button>
-            <convoy-button type="clear" className="mt-10px" routerLink="/projects/new">
-                Complete project setup
-            </convoy-button>
+			<convoy-button *ngIf="isProjectConfigurationComplete">
+				<svg width="16" height="16" class="mr-8px fill-white-100">
+					<use xlink:href="#add-icon"></use>
+				</svg>
+				Start {{ privateService.activeProjectDetails?.type === 'incoming' ? 'receiving' : 'sending' }} events
+			</convoy-button>
+			<convoy-button *ngIf="!isProjectConfigurationComplete" type="clear" className="mt-10px" routerLink="/projects/new">Complete project setup</convoy-button>
 		</div>
 	</convoy-empty-state>
 </ng-container>

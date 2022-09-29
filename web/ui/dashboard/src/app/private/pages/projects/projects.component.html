@@ -77,7 +77,6 @@
 </ng-container>
 
 <convoy-page *ngIf="organisations.length == 0">
-
 	<convoy-empty-state
 		className="h-[50vh]"
 		imgSrc="/assets/img/org-empty-img.svg"
@@ -87,7 +86,6 @@
 		(onAction)="showOrganisationModal = true"
 	></convoy-empty-state>
 </convoy-page>
-
 <convoy-page *ngIf="noData && !isLoadingProjects">
 	<convoy-empty-state
 		type="table"
