@@ -64,7 +64,6 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 }
 
 func NewApplicationHandler(a App) *ApplicationHandler {
-
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		Cache:             a.Cache,
 		Logger:            a.Logger,
@@ -120,6 +119,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			r.Use(chiMiddleware.AllowContentType("application/json"))
 			r.Use(a.M.JsonResponse)
 			r.Use(a.M.RequireAuth())
+
+			r.With(a.M.Pagination, a.M.RequireAuthUserMetadata()).Get("/organisations", a.GetOrganisationsPaged)
 
 			r.Route("/projects", func(projectRouter chi.Router) {
 				projectRouter.Use(a.M.RejectAppPortalKey())

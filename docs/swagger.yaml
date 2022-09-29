@@ -1004,6 +1004,76 @@ info:
   title: Convoy API Specification
   version: 0.1.12
 paths:
+  /api/v1/organisations:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches the organisations a user is part of, this
+        route can only be accessed with a personal api key
+      parameters:
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/datastore.Organisation'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get organisations
+      tags:
+      - Organisation
   /api/v1/projects:
     get:
       consumes:
@@ -4050,7 +4120,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches multiple organisations
+      description: This endpoint fetches the organisations a user is part of
       parameters:
       - description: results per page
         in: query
