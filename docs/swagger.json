@@ -2051,6 +2051,12 @@
                     },
                     {
                         "type": "string",
+                        "description": "source id",
+                        "name": "sourceId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "group id",
                         "name": "groupId",
                         "in": "query",
@@ -9276,7 +9282,7 @@
             "type": "object",
             "properties": {
                 "duration": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "retry_count": {
                     "type": "integer"
@@ -9405,6 +9411,9 @@
                 "device_id": {
                     "type": "string"
                 },
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
                 "endpoint_metadata": {
                     "$ref": "#/definitions/datastore.Endpoint"
                 },
@@ -9413,6 +9422,9 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "rate_limit_config": {
+                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
                 "retry_config": {
                     "$ref": "#/definitions/datastore.RetryConfiguration"
@@ -9817,6 +9829,23 @@
                 }
             }
         },
+        "models.RetryConfiguration": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string"
+                },
+                "interval_seconds": {
+                    "type": "integer"
+                },
+                "retry_count": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Role": {
             "type": "object",
             "properties": {
@@ -9907,6 +9936,9 @@
                 "app_id": {
                     "type": "string"
                 },
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
                 "endpoint_id": {
                     "type": "string"
                 },
@@ -9916,8 +9948,11 @@
                 "name": {
                     "type": "string"
                 },
+                "rate_limit_config": {
+                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
+                },
                 "retry_config": {
-                    "$ref": "#/definitions/datastore.RetryConfiguration"
+                    "$ref": "#/definitions/models.RetryConfiguration"
                 },
                 "source_id": {
                     "type": "string"

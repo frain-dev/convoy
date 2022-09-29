@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	datastore "github.com/frain-dev/convoy/datastore"
 	gomock "github.com/golang/mock/gomock"
 	bson "go.mongodb.org/mongo-driver/bson"
 	mongo "go.mongodb.org/mongo-driver/mongo"
@@ -136,17 +137,18 @@ func (mr *MockStoreMockRecorder) FindByID(ctx, id, projection, result interface{
 }
 
 // FindMany mocks base method.
-func (m *MockStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, limit, skip int64, results interface{}) error {
+func (m *MockStore) FindMany(ctx context.Context, filter, projection bson.M, sort interface{}, page, limit int64, results interface{}) (datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindMany", ctx, filter, projection, sort, limit, skip, results)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "FindMany", ctx, filter, projection, sort, page, limit, results)
+	ret0, _ := ret[0].(datastore.PaginationData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // FindMany indicates an expected call of FindMany.
-func (mr *MockStoreMockRecorder) FindMany(ctx, filter, projection, sort, limit, skip, results interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) FindMany(ctx, filter, projection, sort, page, limit, results interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMany", reflect.TypeOf((*MockStore)(nil).FindMany), ctx, filter, projection, sort, limit, skip, results)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMany", reflect.TypeOf((*MockStore)(nil).FindMany), ctx, filter, projection, sort, page, limit, results)
 }
 
 // FindManyWithDeletedAt mocks base method.
@@ -234,17 +236,17 @@ func (mr *MockStoreMockRecorder) UpdateByID(ctx, id, payload interface{}) *gomoc
 }
 
 // UpdateMany mocks base method.
-func (m *MockStore) UpdateMany(ctx context.Context, filter, payload bson.M) error {
+func (m *MockStore) UpdateMany(ctx context.Context, filter, payload bson.M, bulk bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateMany", ctx, filter, payload)
+	ret := m.ctrl.Call(m, "UpdateMany", ctx, filter, payload, bulk)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateMany indicates an expected call of UpdateMany.
-func (mr *MockStoreMockRecorder) UpdateMany(ctx, filter, payload interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) UpdateMany(ctx, filter, payload, bulk interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMany", reflect.TypeOf((*MockStore)(nil).UpdateMany), ctx, filter, payload)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMany", reflect.TypeOf((*MockStore)(nil).UpdateMany), ctx, filter, payload, bulk)
 }
 
 // UpdateOne mocks base method.
@@ -259,4 +261,18 @@ func (m *MockStore) UpdateOne(ctx context.Context, filter bson.M, payload interf
 func (mr *MockStoreMockRecorder) UpdateOne(ctx, filter, payload interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOne", reflect.TypeOf((*MockStore)(nil).UpdateOne), ctx, filter, payload)
+}
+
+// WithTransaction mocks base method.
+func (m *MockStore) WithTransaction(ctx context.Context, fn func(mongo.SessionContext) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTransaction", ctx, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WithTransaction indicates an expected call of WithTransaction.
+func (mr *MockStoreMockRecorder) WithTransaction(ctx, fn interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTransaction", reflect.TypeOf((*MockStore)(nil).WithTransaction), ctx, fn)
 }
