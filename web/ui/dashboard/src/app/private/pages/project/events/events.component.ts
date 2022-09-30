@@ -191,7 +191,7 @@ export class EventsComponent implements OnInit {
 
 	get emptyStateDescription() {
 		return this.isProjectConfigurationComplete
-			? `You have not ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'sent' : 'received'} any webhook events yet. Learn how to do that in our docs`
+			? `You have not ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'received' : 'sent'} any webhook events yet. Learn how to do that in our docs`
 			: `You have not completed this projects setup, please complete setup to start ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'receiving' : 'sending'} events`;
 	}
 
@@ -206,5 +206,10 @@ export class EventsComponent implements OnInit {
 
 	openApp(appId: string) {
 		this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails.uid}/apps/${appId}`);
+	}
+
+	setUpEvents() {
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails.uid}/apps`);
+		if (this.privateService.activeProjectDetails?.type === 'incoming') this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails.uid}/apps`);
 	}
 }

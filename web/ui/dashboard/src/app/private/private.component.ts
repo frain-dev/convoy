@@ -68,7 +68,6 @@ export class PrivateComponent implements OnInit {
 			const projectsResponse = await this.privateService.getProjects();
 			this.projects = projectsResponse.data;
 			if (this.projects.length === 0) this.router.navigateByUrl('/get-started');
-            else this.router.navigateByUrl('/projects');
 		} catch (error) {
 			return error;
 		}
@@ -100,5 +99,15 @@ export class PrivateComponent implements OnInit {
 		this.showAddOrganisationModal = false;
 		this.getOrganizations();
 		if (event?.action === 'created') this.selectOrganisation(this.userOrganization);
+	}
+
+	get isProjectDetailsPage() {
+		return this.router.url.includes('/projects/');
+	}
+
+	get showHelpCard() {
+		const formUrls = ['apps/new', 'sources/new', 'subscriptions/new'];
+		const checkForCreateForms = formUrls.some(url => this.router.url.includes(url));
+		return this.router.url === '/projects' || this.router.url === '/projects/new' || checkForCreateForms;
 	}
 }

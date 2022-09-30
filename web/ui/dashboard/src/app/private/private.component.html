@@ -84,11 +84,16 @@
 			</div>
 		</div>
 	</header>
-	<convoy-github-star></convoy-github-star>
+	<convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
 
 	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 
 	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 
 	<router-outlet></router-outlet>
+</div>
+
+<div class="absolute left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-50" *ngIf="showHelpCard">
+    <img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
+    <a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
 </div>

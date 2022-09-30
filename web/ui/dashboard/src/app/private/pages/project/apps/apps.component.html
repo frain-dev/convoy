@@ -109,12 +109,12 @@
 
 <convoy-card className="mt-16px" *ngIf="!isloadingApps && displayedApps?.length === 0">
 	<convoy-empty-state
-		imgSrc="/assets/img/group-empty-img.svg"
+		imgSrc="/assets/img/new-empty-state.png"
 		[heading]="appsSearchString && appsSearchString.length > 0 ? 'An app with the name “' + appsSearchString + '” does not exist' : 'Create your first application'"
 		[buttonText]="appsSearchString && appsSearchString.length > 0 ? '' : 'Create Application'"
 		[description]="appsSearchString && appsSearchString.length > 0 ? '' : 'An application is either your backend application or your users application. It can hold multiple endpoints which listen for your webhook events that are sent or received.'"
 		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/apps/new')"
-		className="h-[50vh]"
+		className="h-[65vh]"
 		id="events-empty-state"
 	></convoy-empty-state>
 </convoy-card>

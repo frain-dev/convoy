@@ -35,16 +35,21 @@ export class CreateProjectComponent implements OnInit {
 		this.getProjects();
 
 		if (this.privateService.activeProjectDetails?.uid) {
-			this.toggleActiveStage({ project: 'setupSDK' });
+			this.privateService.activeProjectDetails?.type === 'incoming' ? this.toggleActiveStage({ project: 'setupSDK' }) : this.toggleActiveStage({ project: 'createApplication' });
 			this.projectType = this.privateService.activeProjectDetails?.type;
 		}
 	}
 
 	async createProject(newProjectData: { action: string; data: GROUP }) {
 		this.projectType = newProjectData.data.type;
-		newProjectData.data.type === 'incoming' ? (this.projectType = 'incoming') : (this.projectType = 'outgoing');
-		if (newProjectData.data.type === 'outgoing') this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
-		this.toggleActiveStage({ project: 'setupSDK' });
+		if (newProjectData.data.type === 'outgoing') {
+			this.projectType = 'outgoing';
+			this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
+			this.toggleActiveStage({ project: 'createApplication' });
+		} else {
+			this.projectType = 'incoming';
+			this.toggleActiveStage({ project: 'setupSDK' });
+		}
 	}
 
 	async getProjects() {

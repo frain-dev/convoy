@@ -11,7 +11,6 @@ import { ButtonComponent } from '../button/button.component'
 })
 export class EmptyStateComponent implements OnInit {
 	@Input('imgSrc') imgSrc!: string;
-	@Input('imgHeight') imgHeight!: string;
 	@Input('heading') heading!: string;
 	@Input('description') description!: string;
 	@Input('buttonText') buttonText!: string;

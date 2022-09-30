@@ -13,7 +13,7 @@
 <ng-container *ngIf="!isloadingDashboardData && dashboardData.events_sent === 0">
 	<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
 		<div emptyStateCTA>
-			<convoy-button *ngIf="isProjectConfigurationComplete">
+			<convoy-button *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
 				<svg width="16" height="16" class="mr-8px fill-white-100">
 					<use xlink:href="#add-icon"></use>
 				</svg>

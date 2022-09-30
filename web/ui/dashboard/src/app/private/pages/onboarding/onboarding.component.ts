@@ -43,7 +43,7 @@ export class OnboardingComponent implements OnInit {
 	constructor(private privateService: PrivateService, private formBuilder: FormBuilder, private generalService: GeneralService, public router: Router) {}
 
 	ngOnInit() {
-		Promise.all([this.getOrganizations(), this.getProjects()]);
+		this.getOrganizations();
 	}
 
 	async addNewOrganisation() {
@@ -71,7 +71,10 @@ export class OnboardingComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
-			if (this.organisations?.length) this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
+			if (this.organisations?.length) {
+				this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
+				this.getProjects();
+			}
 			this.isloadingOrganisations = false;
 		} catch (error) {
 			this.isloadingOrganisations = false;

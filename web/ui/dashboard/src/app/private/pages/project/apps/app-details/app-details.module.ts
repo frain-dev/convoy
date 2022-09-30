@@ -14,6 +14,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CliKeysComponent } from './cli-keys/cli-keys.component';
 import { DevicesComponent } from './devices/devices.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 const routes: Routes = [
 	{
@@ -38,6 +39,7 @@ const routes: Routes = [
 		CopyButtonComponent,
         CliKeysComponent,
         DevicesComponent,
+        TooltipComponent,
 		RouterModule.forChild(routes)
 	]
 })

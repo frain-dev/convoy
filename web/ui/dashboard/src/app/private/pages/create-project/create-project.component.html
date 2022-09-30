@@ -2,10 +2,7 @@
 	<div class="pt-40px pb-60px" modalBody>
 		<convoy-loader *ngIf="isLoadingProjects"></convoy-loader>
 		<ng-container *ngIf="!isLoadingProjects">
-			<div class="absolute left-50px top-[600px] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px">
-				<img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
-				<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
-			</div>
+
 
 			<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)" *ngIf="projectStage === 'createProject'"></app-create-project-component>
 
