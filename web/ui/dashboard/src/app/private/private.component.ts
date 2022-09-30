@@ -68,6 +68,7 @@ export class PrivateComponent implements OnInit {
 			const projectsResponse = await this.privateService.getProjects();
 			this.projects = projectsResponse.data;
 			if (this.projects.length === 0) this.router.navigateByUrl('/get-started');
+            else this.router.navigateByUrl('/projects');
 		} catch (error) {
 			return error;
 		}

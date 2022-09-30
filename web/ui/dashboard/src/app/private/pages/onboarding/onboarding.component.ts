@@ -43,7 +43,7 @@ export class OnboardingComponent implements OnInit {
 	constructor(private privateService: PrivateService, private formBuilder: FormBuilder, private generalService: GeneralService, public router: Router) {}
 
 	ngOnInit() {
-		this.getOrganizations();
+		Promise.all([this.getOrganizations(), this.getProjects()]);
 	}
 
 	async addNewOrganisation() {
@@ -75,6 +75,16 @@ export class OnboardingComponent implements OnInit {
 			this.isloadingOrganisations = false;
 		} catch (error) {
 			this.isloadingOrganisations = false;
+			return error;
+		}
+	}
+
+	async getProjects() {
+		try {
+			const projectsResponse = await this.privateService.getProjects();
+			const projects = projectsResponse.data;
+			if (projects.length > 0) this.router.navigateByUrl('/projects');
+		} catch (error) {
 			return error;
 		}
 	}

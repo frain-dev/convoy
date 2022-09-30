@@ -39,7 +39,7 @@ export class ProjectComponent implements OnInit {
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
 		const uid = { uid: this.route.snapshot.params.id };
 		this.privateService.activeProjectDetails = { ...this.privateService.activeProjectDetails, ...uid };
-		this.getApps();
+		this.getSubscriptions();
 	}
 
 	ngOnInit() {
@@ -65,24 +65,6 @@ export class ProjectComponent implements OnInit {
 			const subscriptionsResponse = await this.privateService.getSubscriptions({ page: 1 });
 			subscriptionsResponse.data?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
 		} catch (error) {
-			return error;
-		}
-	}
-
-	async getSources() {
-		try {
-			const sourcesResponse = await this.privateService.getSources({ page: 1 });
-			sourcesResponse.data?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : this.getSubscriptions();
-		} catch (error) {
-			return error;
-		}
-	}
-
-	async getApps() {
-		try {
-			const appsResponse = await this.privateService.getApps({ pageNo: 1 });
-			appsResponse.data?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : this.privateService.activeProjectDetails?.type === 'incoming' ? this.getSources() : this.getSubscriptions();
-		} catch (error: any) {
 			return error;
 		}
 	}
