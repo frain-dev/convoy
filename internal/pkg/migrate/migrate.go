@@ -203,7 +203,8 @@ func (m *Migrator) RollbackTo(ctx context.Context, migrationID string) error {
 }
 
 func (m *Migrator) CheckPendingMigrations(ctx context.Context) (bool, error) {
-	store := datastore.New(m.db, m.opts.CollectionName)
+	store := datastore.New(m.db)
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, m.opts.CollectionName)
 
 	filter := bson.M{
 		"id": bson.M{
@@ -268,11 +269,11 @@ func (m *Migrator) migrate(ctx context.Context, migrationID string) error {
 }
 
 func (m *Migrator) unknownMigrationsHaveHappened() (bool, error) {
-	store := datastore.New(m.db, m.opts.CollectionName)
+	store := datastore.New(m.db)
+	ctx := context.WithValue(context.Background(), datastore.CollectionCtx, m.opts.CollectionName)
 
 	var appliedMigrations []*MigrationDoc
-	ctx := context.Background()
-	err := store.FindMany(ctx, nil, nil, nil, 0, 0, &appliedMigrations)
+	_, err := store.FindMany(ctx, nil, nil, nil, 0, 0, &appliedMigrations)
 	if err != nil {
 		return false, err
 	}
@@ -317,19 +318,21 @@ func (m *Migrator) commit() error {
 func (m *Migrator) migrationRan(migration *Migration) (bool, error) {
 	var count int64
 
-	store := datastore.New(m.db, m.opts.CollectionName)
+	store := datastore.New(m.db)
+	ctx := context.WithValue(context.Background(), datastore.CollectionCtx, m.opts.CollectionName)
 
 	filter := map[string]interface{}{
 		"id": migration.ID,
 	}
 
-	count, err := store.Count(context.Background(), filter)
+	count, err := store.Count(ctx, filter)
 
 	return count > 0, err
 }
 
 func (m *Migrator) insertMigration(ctx context.Context, id string) error {
-	store := datastore.New(m.db, m.opts.CollectionName)
+	store := datastore.New(m.db)
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, m.opts.CollectionName)
 
 	var result MigrationDoc
 	payload := &MigrationDoc{ID: id, DocumentStatus: datastore.ActiveDocumentStatus}
@@ -408,7 +411,8 @@ func (m *Migrator) rollbackMigration(ctx context.Context, migration *Migration) 
 		return err
 	}
 
-	store := datastore.New(m.db, m.opts.CollectionName)
+	store := datastore.New(m.db)
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, m.opts.CollectionName)
 
 	filter := map[string]interface{}{
 		"id": migration.ID,
@@ -443,8 +447,10 @@ func (m *Migrator) defaultinitSchema(ctx context.Context, db *mongo.Database) (b
 	// save the last schema if nothing dey.
 	filter := map[string]interface{}{}
 
-	store := datastore.New(m.db, m.opts.CollectionName)
-	count, err := store.Count(context.Background(), filter)
+	store := datastore.New(m.db)
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, m.opts.CollectionName)
+
+	count, err := store.Count(ctx, filter)
 	if err != nil {
 		return false, err
 	}

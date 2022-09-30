@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package task
 
 import (
@@ -48,7 +45,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) TearDownTest() {
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents() {
 	//seed instance configuration
-	_, err := seedConfiguration(r.DB)
+	_, err := seedConfiguration(r.ConvoyApp.store)
 	require.NoError(r.T(), err)
 
 	//seed group
@@ -70,21 +67,21 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.DB, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
 	//seed event
 	duration, err := time.ParseDuration("80h")
 	require.NoError(r.T(), err)
 
-	event, err := seedEvent(r.DB, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
+	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt:      time.Now().UTC().Add(-duration),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
 	require.NoError(r.T(), err)
 
 	//seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.DB, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC().Add(-duration),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
@@ -98,14 +95,14 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	//check that event and eventdelivery repos are empty
-	_, err = r.DB.EventRepo().FindEventByID(context.Background(), event.UID)
+	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventNotFound)
 
-	_, err = r.DB.EventDeliveryRepo().FindEventDeliveryByID(context.Background(), eventDelivery.UID)
+	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
 
 	//check the number of retained events on groups
-	g, err := r.DB.GroupRepo().FetchGroupByID(context.Background(), group.UID)
+	g, err := r.ConvoyApp.groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), g.Metadata.RetainedEvents, 1)
 
@@ -113,7 +110,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Documents() {
 	//seed instance configuration
-	_, err := seedConfiguration(r.DB)
+	_, err := seedConfiguration(r.ConvoyApp.store)
 	require.NoError(r.T(), err)
 
 	//seed group
@@ -135,18 +132,18 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.DB, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
 	//seed event
-	event, err := seedEvent(r.DB, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
+	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt:      time.Now().UTC(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
 	require.NoError(r.T(), err)
 
 	//seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.DB, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
@@ -160,11 +157,11 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	require.NoError(r.T(), err)
 
 	//check that event and eventdelivery is not empty
-	e, err := r.DB.EventRepo().FindEventByID(context.Background(), event.UID)
+	e, err := r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), e.UID, event.UID)
 
-	ed, err := r.DB.EventDeliveryRepo().FindEventDeliveryByID(context.Background(), eventDelivery.UID)
+	ed, err := r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), ed.UID, eventDelivery.UID)
 }
@@ -201,13 +198,20 @@ func buildApplication() *applicationHandler {
 
 	db := getDB()
 	searcher := noopsearcher.NewNoopSearcher()
+	store := datastore.New(db.Database())
+
+	groupRepo := convoyMongo.NewGroupRepo(store)
+	eventRepo := convoyMongo.NewEventRepository(store)
+	configRepo := convoyMongo.NewConfigRepo(store)
+	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
 
 	app := &applicationHandler{
-		groupRepo:         db.GroupRepo(),
-		eventRepo:         db.EventRepo(),
-		configRepo:        db.ConfigurationRepo(),
-		eventDeliveryRepo: db.EventDeliveryRepo(),
+		groupRepo:         groupRepo,
+		eventRepo:         eventRepo,
+		configRepo:        configRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
 		searcher:          searcher,
+		store:             store,
 	}
 
 	return app
@@ -219,9 +223,10 @@ type applicationHandler struct {
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	searcher          searcher.Searcher
+	store             datastore.Store
 }
 
-func seedEvent(db convoyMongo.Client, appID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
+func seedEvent(store datastore.Store, appID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -238,7 +243,8 @@ func seedEvent(db convoyMongo.Client, appID string, groupID string, uid, eventTy
 	}
 
 	// Seed Data.
-	err := db.EventRepo().CreateEvent(context.TODO(), ev)
+	eventRepo := convoyMongo.NewEventRepository(store)
+	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +252,7 @@ func seedEvent(db convoyMongo.Client, appID string, groupID string, uid, eventTy
 	return ev, nil
 }
 
-func seedEventDelivery(db convoyMongo.Client, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(store datastore.Store, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -265,7 +271,8 @@ func seedEventDelivery(db convoyMongo.Client, appID string, eventID string, endp
 	}
 
 	// Seed Data.
-	err := db.EventDeliveryRepo().CreateEventDelivery(context.TODO(), eventDelivery)
+	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
+	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +280,7 @@ func seedEventDelivery(db convoyMongo.Client, appID string, eventID string, endp
 	return eventDelivery, nil
 }
 
-func seedConfiguration(db convoyMongo.Client) (*datastore.Configuration, error) {
+func seedConfiguration(store datastore.Store) (*datastore.Configuration, error) {
 	defaultStorage := &datastore.DefaultStoragePolicy
 	defaultStorage.OnPrem.Path = "/tmp/convoy/export/"
 
@@ -285,7 +292,8 @@ func seedConfiguration(db convoyMongo.Client) (*datastore.Configuration, error) 
 	}
 
 	//Seed Data
-	err := db.ConfigurationRepo().CreateConfiguration(context.TODO(), config)
+	configRepo := convoyMongo.NewConfigRepo(store)
+	err := configRepo.CreateConfiguration(context.TODO(), config)
 	if err != nil {
 		return nil, err
 	}

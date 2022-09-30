@@ -4,10 +4,18 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 )
+
+func createDeviceService(a *ApplicationHandler) *services.DeviceService {
+	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
+
+	return services.NewDeviceService(deviceRepo)
+}
 
 // FindDevicesByAppID
 // @Summary Fetch devices for an app
@@ -32,7 +40,8 @@ func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.R
 		AppID: app.UID,
 	}
 
-	devices, paginationData, err := a.S.DeviceService.LoadDevicesPaged(r.Context(), group, f, pageable)
+	deviceService := createDeviceService(a)
+	devices, paginationData, err := deviceService.LoadDevicesPaged(r.Context(), group, f, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching devices", http.StatusInternalServerError))
 		return

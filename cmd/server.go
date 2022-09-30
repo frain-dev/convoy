@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	route "github.com/frain-dev/convoy/server"
@@ -144,7 +145,9 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	start := time.Now()
 	log.Info("Starting Convoy server...")
 
-	err := realm_chain.Init(&cfg.Auth, a.apiKeyRepo, a.userRepo, a.cache)
+	apiKeyRepo := cm.NewApiKeyRepo(a.store)
+	userRepo := cm.NewUserRepo(a.store)
+	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.cache)
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize realm chain")
 	}
@@ -156,21 +159,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	srv := server.NewServer(cfg.Server.HTTP.Port)
 
 	handler := route.NewApplicationHandler(
-		route.Repos{
-			EventRepo:         a.eventRepo,
-			EventDeliveryRepo: a.eventDeliveryRepo,
-			AppRepo:           a.applicationRepo,
-			GroupRepo:         a.groupRepo,
-			ApiKeyRepo:        a.apiKeyRepo,
-			SubRepo:           a.subRepo,
-			SourceRepo:        a.sourceRepo,
-			OrgRepo:           a.orgRepo,
-			OrgMemberRepo:     a.orgMemberRepo,
-			OrgInviteRepo:     a.orgInviteRepo,
-			UserRepo:          a.userRepo,
-			ConfigRepo:        a.configRepo,
-			DeviceRepo:        a.deviceRepo,
-		}, route.Services{
+		route.App{
+			Store:    a.store,
 			Queue:    a.queue,
 			Logger:   a.logger,
 			Tracer:   a.tracer,
@@ -192,47 +182,46 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			log.WithError(err).Error("failed to create worker")
 		}
 
+		appRepo := cm.NewApplicationRepo(a.store)
+		eventRepo := cm.NewEventRepository(a.store)
+		eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
+		groupRepo := cm.NewGroupRepo(a.store)
+		subRepo := cm.NewSubscriptionRepo(a.store)
+		deviceRepo := cm.NewDeviceRepository(a.store)
+		configRepo := cm.NewConfigRepo(a.store)
+
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-			a.applicationRepo,
-			a.eventDeliveryRepo,
-			a.groupRepo,
+			appRepo,
+			eventDeliveryRepo,
+			groupRepo,
 			a.limiter,
-			a.subRepo,
+			subRepo,
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-			a.applicationRepo,
-			a.eventRepo,
-			a.groupRepo,
-			a.eventDeliveryRepo,
+			appRepo,
+			eventRepo,
+			groupRepo,
+			eventDeliveryRepo,
 			a.cache,
 			a.queue,
-			a.subRepo,
+			subRepo,
 			a.searcher,
-			a.deviceRepo))
+			deviceRepo))
 
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
 			cfg,
-			a.configRepo,
-			a.groupRepo,
-			a.eventRepo,
-			a.eventDeliveryRepo,
+			configRepo,
+			groupRepo,
+			eventRepo,
+			eventDeliveryRepo,
 			a.searcher))
 
 		consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
-			a.sourceRepo,
-			a.subRepo,
-			a.applicationRepo,
+			a.store,
 			a.queue))
 
-		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(&analytics.Repo{
-			ConfigRepo: a.configRepo,
-			EventRepo:  a.eventRepo,
-			GroupRepo:  a.groupRepo,
-			OrgRepo:    a.orgRepo,
-			UserRepo:   a.userRepo,
-		}, cfg))
-
+		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))

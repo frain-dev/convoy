@@ -1,0 +1,36 @@
+<convoy-card className="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
+	<!-- empty state for both devices -->
+	<ng-container *ngIf="showError || (!isFetchingDevices && devices?.length === 0)">
+		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No CLI devices yet" type="table" className="h-[30vh]" id="empty-state"></convoy-empty-state>
+	</ng-container>
+
+	<!-- loader for both devices  -->
+	<ng-container *ngIf="isFetchingDevices">
+		<div class="flex justify-between items-center p-22px" *ngFor="let index of loaderIndex">
+			<div>
+				<div class="flex items-center mb-8px">
+					<convoy-skeleton-loader className="h-20px w-100px"></convoy-skeleton-loader>
+					<convoy-skeleton-loader className="h-14px w-60px ml-10px"></convoy-skeleton-loader>
+				</div>
+				<convoy-skeleton-loader className="h-14px w-120px"></convoy-skeleton-loader>
+			</div>
+			<convoy-skeleton-loader className="h-14px w-120px"></convoy-skeleton-loader>
+		</div>
+	</ng-container>
+
+	<!-- fetched devices  -->
+	<ng-container *ngIf="!isFetchingDevices && devices">
+		<div class="flex justify-between items-center p-22px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let device of devices">
+			<div>
+				<div class="flex items-center">
+					<h3 class="font-semibold mr-14px">{{ device.host_name }}</h3>
+					<convoy-tag [type]="device.status | statuscolor">{{ device.status }}</convoy-tag>
+				</div>
+			</div>
+
+			<div>
+				<p class="text-grey-40 text-10 mt-8px">Last Seen: {{ device.last_seen_at | date: 'medium' }}</p>
+			</div>
+		</div>
+	</ng-container>
+</convoy-card>

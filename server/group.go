@@ -4,12 +4,27 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
+
+func createGroupService(a *ApplicationHandler) *services.GroupService {
+	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
+	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	groupRepo := mongo.NewGroupRepo(a.A.Store)
+	eventRepo := mongo.NewEventRepository(a.A.Store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+
+	return services.NewGroupService(
+		apiKeyRepo, appRepo, groupRepo,
+		eventRepo, eventDeliveryRepo, a.A.Limiter, a.A.Cache,
+	)
+}
 
 // GetGroup
 // @Summary Get a group
@@ -26,7 +41,9 @@ import (
 func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	group := m.GetGroupFromContext(r.Context())
-	err := a.S.GroupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
+	groupService := createGroupService(a)
+
+	err := groupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -50,8 +67,9 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Router /ui/organiastions/{orgID}/groups/{groupID} [delete]
 func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
+	groupService := createGroupService(a)
 
-	err := a.S.GroupService.DeleteGroup(r.Context(), group.UID)
+	err := groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -83,7 +101,9 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 
 	org := m.GetOrganisationFromContext(r.Context())
 	member := m.GetOrganisationMemberFromContext(r.Context())
-	group, apiKey, err := a.S.GroupService.CreateGroup(r.Context(), &newGroup, org, member)
+	groupService := createGroupService(a)
+
+	group, apiKey, err := groupService.CreateGroup(r.Context(), &newGroup, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -119,7 +139,9 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	g := m.GetGroupFromContext(r.Context())
-	group, err := a.S.GroupService.UpdateGroup(r.Context(), g, &update)
+	groupService := createGroupService(a)
+
+	group, err := groupService.UpdateGroup(r.Context(), g, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -146,8 +168,9 @@ func (a *ApplicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 
 	filter := &datastore.GroupFilter{OrgID: org.UID}
 	filter.Names = append(filter.Names, name)
+	groupService := createGroupService(a)
 
-	groups, err := a.S.GroupService.GetGroups(r.Context(), filter)
+	groups, err := groupService.GetGroups(r.Context(), filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

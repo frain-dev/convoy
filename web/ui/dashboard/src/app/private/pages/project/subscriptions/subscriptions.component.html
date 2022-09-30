@@ -46,7 +46,7 @@
 		<convoy-button buttonType="button" size="sm" routerLink="./new">Create a Subscription</convoy-button>
 	</div>
 	<div class="min-h-[70vh] w-full min-w-[485px] flex items-start">
-		<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100%_-_382px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
+		<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100%_-_370px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
 			<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
 				<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10 cursor-pointer" routerLink="./" [queryParams]="{ id: subscription.uid }">
 					<div class="flex items-center">
@@ -105,19 +105,11 @@
 					<div class="w-full">
 						<div class="text-12 uppercase">{{ subscription.source_metadata?.type }}</div>
 					</div>
-					<div class="flex items-center w-[50%] justify-end">
-						<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: subscription.source_metadata?.uid }">
-							<div class="whitespace-nowrap">Go to Source</div>
-							<svg width="18" height="18" class="ml-2" fill="#477db3">
-								<use xlink:href="#arrow-right-icon"></use>
-							</svg>
-						</a>
-					</div>
 				</div>
 			</convoy-card>
 		</div>
 
-		<convoy-card className="pb-20px ml-8px w-full max-w-[382px] min-w-[310px] border-l border-l-grey-10 desktop:max-w-none desktop:ml-0 transition-all duration-200 min-h-[70vh]" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
+		<convoy-card className="pb-20px ml-8px w-full max-w-[370px] min-w-[366px] border-l border-l-grey-10 desktop:max-w-none desktop:ml-0 transition-all duration-200 min-h-[70vh]" *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid">
 			<div class="flex items-center justify-between border-b border-b-grey-10 px-24px pt-24px pb-16px">
 				<h2 class="font-semibold">{{ activeSubscription?.name }}</h2>
 				<a [routerLink]="['./']" [queryParams]="{}" class="w-32px h-32px bg-primary-500 flex items-center justify-center rounded-[6px]" tabindex="0">
@@ -183,37 +175,6 @@
 	id="subscriptions-empty-state"
 	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
 ></convoy-empty-state>
-
-<div class="flex items-center mt-16px mb-50px" [ngClass]="{ invisible: subscriptions?.content?.length === 0 }">
-	<convoy-button
-		type="outline"
-		size="sm"
-		className="pl-4px pr-16px py-4px border-primary-300"
-		routerLink="./"
-		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.prev } : { page: subscriptions?.pagination?.prev }"
-		[disable]="subscriptions?.pagination?.prev === 0"
-		(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</convoy-button>
-	<convoy-button
-		type="outline"
-		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.next } : { page: subscriptions?.pagination?.next }"
-		[disable]="subscriptions?.pagination?.next === 0"
-		(click)="getSubscriptions({ page: subscriptions?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</convoy-button>
-</div>
 
 <convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
 	<ng-container modalBody>

@@ -24,7 +24,6 @@ func newActiveGroupAnalytics(groupRepo datastore.GroupRepository, eventRepo data
 		client:     client,
 		instanceID: instanceID,
 	}
-
 }
 
 func (a *ActiveGroupAnalytics) Track() error {
@@ -34,7 +33,6 @@ func (a *ActiveGroupAnalytics) Track() error {
 func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
 	ctx := context.Background()
 	orgs, _, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, Page: page, Sort: -1})
-
 	if err != nil {
 		return err
 	}
@@ -52,12 +50,17 @@ func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
 		}
 
 		for _, group := range groups {
-			filter := datastore.SearchParams{
-				CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
-				CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
+			filter := &datastore.Filter{
+				Group:    group,
+				AppID:    "",
+				Pageable: datastore.Pageable{Sort: -1},
+				SearchParams: datastore.SearchParams{
+					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
+					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
+				},
 			}
 
-			events, _, err := a.eventRepo.LoadEventsPaged(ctx, group.UID, "", filter, datastore.Pageable{Sort: -1})
+			events, _, err := a.eventRepo.LoadEventsPaged(ctx, filter)
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue
@@ -72,7 +75,6 @@ func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
 	page += 1
 
 	return a.track(perPage, page, count)
-
 }
 
 func (a *ActiveGroupAnalytics) Name() string {

@@ -124,7 +124,7 @@ func (h *Hub) StartEventSender() {
 
 func (h *Hub) StartEventWatcher() {
 	fn := h.watchEventDeliveriesCollection()
-	err := h.watchCollectionFn(fn, m.EventDeliveryCollection, h.close)
+	err := h.watchCollectionFn(fn, datastore.EventDeliveryCollection, h.close)
 	if err != nil {
 		log.WithError(err).Error("database collection watcher exited unexpectedly")
 	}

@@ -12,31 +12,32 @@
 	:root {
 		--color-white: 252, 252, 252;
 	}
-    h1 {
+
+	h1 {
 		@apply text-h1;
 	}
-    h2 {
+	h2 {
 		@apply text-h2;
 	}
-    h3 {
+	h3 {
 		@apply text-h3;
 	}
-    h4 {
+	h4 {
 		@apply text-h4;
 	}
 
-    .docs {
-        article {
-            h3 {
-                @apply text-h3 font-semibold mb-8px;
-            }
-            p{
-                @apply mb-24px;
-            }
+	.docs {
+		article {
+			h3 {
+				@apply text-h3 font-semibold mb-8px;
+			}
+			p {
+				@apply mb-24px;
+			}
 
-            pre {
-                @apply rounded-8px font-normal px-16px py-20px bg-[#F3F3F8] mb-22px font-menlo text-[rgba(22,25,44,.66)] whitespace-pre overflow-auto;
-            }
-        }
-    }
+			pre {
+				@apply rounded-8px font-normal px-16px py-20px bg-[#F3F3F8] mb-22px font-menlo text-[rgba(22,25,44,.66)] whitespace-pre overflow-auto;
+			}
+		}
+	}
 }
