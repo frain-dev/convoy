@@ -1,36 +1,34 @@
 name: Build docker image
 
 on:
-  workflow_dispatch:
-    inputs:
-      name:
-        description: "Manual workflow name"
-        required: true
-    
+    workflow_dispatch:
+        inputs:
+            name:
+                description: "Manual workflow name"
+                required: true
 
 jobs:
-  deploy:
-    runs-on: "ubuntu-latest"
-    steps:
+    deploy:
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
 
-    - name: Checkout code
-      uses: actions/checkout@v2
+            - name: Get the version
+              id: get_version
+              run: echo ::set-output name=tag::$(cat VERSION)
 
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=tag::$(cat VERSION)
+            - name: Authenticate
+              uses: actions-hub/docker/login@master
+              env:
+                  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+                  DOCKER_PASSWORD: ${{ secrets.PAT }}
+                  DOCKER_REGISTRY_URL: ghcr.io
 
-    - name: Authenticate
-      uses: actions-hub/docker/login@master
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.PAT }}
-        DOCKER_REGISTRY_URL: ghcr.io
+            - name: Build latest image
+              run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} .
 
-    - name: Build latest image
-      run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} .
-
-    - name: Push
-      uses: actions-hub/docker@master
-      with:
-        args:  push ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }}
+            - name: Push
+              uses: actions-hub/docker@master
+              with:
+                  args: push ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }}
