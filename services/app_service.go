@@ -135,10 +135,6 @@ func (a *AppService) DeleteApplication(ctx context.Context, app *datastore.Appli
 }
 
 func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, app *datastore.Application) (*datastore.Endpoint, error) {
-	if err := util.Validate(e); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	// Events being nil means it wasn't passed at all, which automatically
 	// translates into a accept all scenario. This is quite different from
 	// an empty array which signifies a blacklist all events -- no events
@@ -167,7 +163,6 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		Secret:            e.Secret,
 		RateLimit:         e.RateLimit,
 		HttpTimeout:       e.HttpTimeout,
-		Authentication:    e.Authentication,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
@@ -180,6 +175,13 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
 		}
 	}
+
+	auth, err := validateEndpointAuthentication(e)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+	
+	endpoint.Authentication = auth
 
 	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
 	if err != nil {
@@ -288,9 +290,12 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Secret = e.Secret
 			}
 
-			if e.Authentication != nil {
-				endpoint.Authentication = e.Authentication
+			auth, err := validateEndpointAuthentication(e)
+			if err != nil {
+				return nil, nil, err
 			}
+
+			e.Authentication = auth
 
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
@@ -298,4 +303,20 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 		}
 	}
 	return endpoints, nil, datastore.ErrEndpointNotFound
+}
+
+func validateEndpointAuthentication(e models.Endpoint) (*datastore.EndpointAuthentication, error) {
+	if e.Authentication != nil && !util.IsStringEmpty(string(e.Authentication.Type)) {
+		if err := util.Validate(e); err != nil {
+			return nil, err
+		}
+
+		if e.Authentication.ApiKey == nil && e.Authentication.Type == datastore.APIKeyAuthentication {
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key field is required"))
+		}
+
+		return e.Authentication, nil
+	}
+
+	return nil, nil
 }
