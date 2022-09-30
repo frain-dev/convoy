@@ -1,4 +1,4 @@
-## Installation
+### Installation
 
 Install convoy-go with
 
@@ -6,7 +6,7 @@ Install convoy-go with
 $ go get github.com/frain-dev/convoy-go
 ```
 
-## Setup Client
+### Setup Client
 
 ```go[example]
 import (

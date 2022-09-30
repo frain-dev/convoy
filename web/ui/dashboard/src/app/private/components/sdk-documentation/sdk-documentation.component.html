@@ -12,17 +12,5 @@
 		</li>
 	</div>
 
-	<ng-container *ngIf="activeTab === 'javascript'">
-		<!-- <h3 class="font-semibold">Step1: Installation</h3>
-		<p>Install convoy.js with</p>
-
-		<prism language="bash" code="npm install convoy.js" title="terminal"></prism> -->
-
-		<div [innerHTML]="documentation"></div>
-	</ng-container>
-
-	<ng-container *ngIf="activeTab === 'python'"></ng-container>
-	<ng-container *ngIf="activeTab === 'php'"></ng-container>
-	<ng-container *ngIf="activeTab === 'ruby'"></ng-container>
-	<ng-container *ngIf="activeTab === 'golang'"></ng-container>
+	<div class="docs" [innerHTML]="documentation"></div>
 </div>

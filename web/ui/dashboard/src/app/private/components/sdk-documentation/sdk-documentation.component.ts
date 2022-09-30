@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrismModule } from '../prism/prism.module';
 import Markdoc from '@markdoc/markdoc';
+import axios from 'axios';
 
 @Component({
 	selector: 'convoy-sdk-documentation',
@@ -30,23 +31,23 @@ export class SdkDocumentationComponent implements OnInit {
 		switch (activeTab) {
 			case 'javascript':
 				this.activeTab = 'javascript';
-				this.documentation = this.fetchDocumentation('./content/sdks/convoy-js.md');
+				this.renderDocumentation('/content/sdks/convoy-js.md');
 				break;
 			case 'python':
 				this.activeTab = 'python';
-				this.documentation = this.fetchDocumentation('./content/sdks/convoy-js.md');
+				this.renderDocumentation('/content/sdks/convoy-python.md');
 				break;
 			case 'php':
 				this.activeTab = 'php';
-				this.documentation = this.fetchDocumentation('./content/sdks/convoy-js.md');
+				this.renderDocumentation('/content/sdks/convoy-php.md');
 				break;
 			case 'ruby':
 				this.activeTab = 'ruby';
-				this.documentation = this.fetchDocumentation('./content/sdks/convoy-js.md');
+				this.renderDocumentation('/content/sdks/convoy-rb.md');
 				break;
 			case 'golang':
 				this.activeTab = 'golang';
-				this.documentation = this.fetchDocumentation('./content/sdks/convoy-js.md');
+				this.renderDocumentation('/content/sdks/convoy-go.md');
 				break;
 			default:
 				break;
@@ -54,10 +55,27 @@ export class SdkDocumentationComponent implements OnInit {
 	}
 
 	fetchDocumentation(mdContent: string) {
-		const ast = Markdoc.parse(mdContent);
+		return new Promise(async (resolve, reject) => {
+			try {
+				const http = await axios.create();
+				const results = http.request({
+					method: 'get',
+					url: mdContent
+				});
+				resolve(results);
+			} catch (error) {
+				reject(error);
+			}
+		});
+	}
+
+	async renderDocumentation(mdContent: string) {
+		const results: any = await this.fetchDocumentation(mdContent);
+
+		const ast = Markdoc.parse(results.data);
 
 		const content = Markdoc.transform(ast);
 
-		return Markdoc.renderers.html(content);
+		this.documentation = Markdoc.renderers.html(content);
 	}
 }
