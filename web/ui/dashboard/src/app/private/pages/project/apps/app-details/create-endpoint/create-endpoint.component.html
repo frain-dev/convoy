@@ -12,7 +12,14 @@
 			placeholder="e.g 10s"
 			tooltipContent="This specifies how long the socket stays open in the absense of a response."
 			tooltipSize="sm"
+			tooltipPosition="right"
 		></convoy-input>
+		<ng-container formGroupName="authentication">
+			<ng-container formGroupName="api_key">
+				<convoy-input type="text" autocomplete="header-name" formControlName="header_name" label="Authentication Header Name" placeholder="Header name"></convoy-input>
+				<convoy-input type="text" autocomplete="header-value" formControlName="header_value" label="Authentication Header Value" placeholder="Header value"></convoy-input>
+			</ng-container>
+		</ng-container>
 	</form>
 
 	<div class="flex justify-end mt-40px">

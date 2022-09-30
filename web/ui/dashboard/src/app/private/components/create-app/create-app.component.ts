@@ -48,7 +48,14 @@ export class CreateAppComponent implements OnInit {
 			url: ['', Validators.required],
 			description: ['', Validators.required],
 			secret: [null],
-			http_timeout: [null]
+			http_timeout: [null],
+			authentication: this.formBuilder.group({
+				type: ['api_key'],
+				api_key: this.formBuilder.group({
+					header_name: [''],
+					header_value: ['']
+				})
+			})
 		});
 	}
 

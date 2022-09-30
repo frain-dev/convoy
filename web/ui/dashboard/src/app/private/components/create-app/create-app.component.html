@@ -55,6 +55,12 @@
 							tooltipPosition="right"
 							tooltipContent="This specifies how long the socket stays open in the absense of a response."
 						></convoy-input>
+						<ng-container formGroupName="authentication">
+							<ng-container formGroupName="api_key">
+								<convoy-input type="text" autocomplete="header-name" [name]="'header-name' + i" formControlName="header_name" label="Authentication Header Name" placeholder="Header name"></convoy-input>
+								<convoy-input type="text" autocomplete="header-value" [name]="'header-value' + i" formControlName="header_value" label="Authentication Header Value" placeholder="Header value"></convoy-input>
+							</ng-container>
+						</ng-container>
 					</div>
 				</div>
 			</div>
