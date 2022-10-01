@@ -40,6 +40,8 @@ export class CreateEndpointComponent implements OnInit {
 		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAsTouched();
 		this.savingEndpoint = true;
 
+		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete this.addNewEndpointForm.value.authentication;
+
 		try {
 			const response = this.selectedEndpoint
 				? await this.appDetailsService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid || '', body: this.addNewEndpointForm.value, token: this.token })
