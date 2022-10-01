@@ -19,7 +19,14 @@ export class CreateEndpointComponent implements OnInit {
 		url: ['', Validators.required],
 		secret: [null],
 		http_timeout: [null],
-		description: ['', Validators.required]
+		description: ['', Validators.required],
+		authentication: this.formBuilder.group({
+			type: ['api_key'],
+			api_key: this.formBuilder.group({
+				header_name: [''],
+				header_value: ['']
+			})
+		})
 	});
 	token: string = this.route.snapshot.params.token;
 
@@ -33,12 +40,14 @@ export class CreateEndpointComponent implements OnInit {
 		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAsTouched();
 		this.savingEndpoint = true;
 
+		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete this.addNewEndpointForm.value.authentication;
+
 		try {
 			const response = this.selectedEndpoint
 				? await this.appDetailsService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid || '', body: this.addNewEndpointForm.value, token: this.token })
 				: await this.appDetailsService.addNewEndpoint({ appId: this.appId, body: this.addNewEndpointForm.value, token: this.token });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.onAction.emit({ action: 'savedEndpoint', data: response.data});
+			this.onAction.emit({ action: 'savedEndpoint', data: response.data });
 			this.addNewEndpointForm.reset();
 			this.savingEndpoint = false;
 			return;
@@ -50,12 +59,9 @@ export class CreateEndpointComponent implements OnInit {
 
 	updateEndpointForm() {
 		if (this.selectedEndpoint) {
+			this.addNewEndpointForm.patchValue(this.selectedEndpoint);
 			this.addNewEndpointForm.patchValue({
-				url: this.selectedEndpoint.target_url,
-				description: this.selectedEndpoint.description,
-				http_timeout: this.selectedEndpoint.http_timeout,
-				rate_limit: this.selectedEndpoint.rate_limit,
-				rate_limit_duration: this.selectedEndpoint.rate_limit_duration
+				url: this.selectedEndpoint.target_url
 			});
 		}
 	}
