@@ -41,11 +41,13 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 
 	configResponse := []*models.ConfigurationResponse{}
 	if config != nil {
-		policy := &datastore.S3Storage{}
-		policy.Bucket = config.StoragePolicy.S3.Bucket
-		policy.Endpoint = config.StoragePolicy.S3.Endpoint
-		policy.Region = config.StoragePolicy.S3.Region
-		config.StoragePolicy.S3 = policy
+		if config.StoragePolicy.Type == datastore.S3 {
+			policy := &datastore.S3Storage{}
+			policy.Bucket = config.StoragePolicy.S3.Bucket
+			policy.Endpoint = config.StoragePolicy.S3.Endpoint
+			policy.Region = config.StoragePolicy.S3.Region
+			config.StoragePolicy.S3 = policy
+		}
 
 		c := &models.ConfigurationResponse{
 			UID:                config.UID,
