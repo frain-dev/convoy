@@ -691,6 +691,68 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			wantErr: false,
 		},
+
+		{
+			name: "should_create_app_endpoint_with_custom_authentication",
+			args: args{
+				ctx: ctx,
+				e: models.Endpoint{
+					Secret:            "1234",
+					RateLimit:         100,
+					RateLimitDuration: "1m",
+					URL:               "https://google.com",
+					Description:       "test_endpoint",
+					Authentication: &datastore.EndpointAuthentication{
+						Type: datastore.APIKeyAuthentication,
+						ApiKey: &datastore.ApiKey{
+							HeaderName:  "x-api-key",
+							HeaderValue: "x-api-key",
+						},
+					},
+				},
+				app: &datastore.Application{UID: "abc"},
+			},
+			dbFn: func(app *AppService) {
+				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
+				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+			},
+			wantApp: &datastore.Application{
+				UID: "abc",
+				Endpoints: []datastore.Endpoint{
+					{
+						Secret:            "1234",
+						TargetURL:         "https://google.com",
+						Description:       "test_endpoint",
+						RateLimit:         100,
+						RateLimitDuration: "1m0s",
+						DocumentStatus:    datastore.ActiveDocumentStatus,
+					},
+				},
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Secret:            "1234",
+				TargetURL:         "https://google.com",
+				Description:       "test_endpoint",
+				RateLimit:         100,
+				RateLimitDuration: "1m0s",
+				DocumentStatus:    datastore.ActiveDocumentStatus,
+				Authentication: &datastore.EndpointAuthentication{
+					Type: datastore.APIKeyAuthentication,
+					ApiKey: &datastore.ApiKey{
+						HeaderName:  "x-api-key",
+						HeaderValue: "x-api-key",
+					},
+				},
+			},
+			wantErr: false,
+		},
+
 		{
 			name: "should_error_for_invalid_rate_limit_duration",
 			args: args{
