@@ -28,33 +28,6 @@ type StdLogger interface {
 	WithError(err error) *logrus.Entry
 }
 
-// NewLogger creates and returns a new instance of Logger.
-// Log level is set to DebugLevel by default.
-func NewLogger(out io.Writer, f map[string]interface{}) *Logger {
-	log := &logrus.Logger{
-		Out: out,
-		Formatter: &logrus.JSONFormatter{
-			TimestampFormat: "2006-01-02 15:04:05",
-		},
-		Level: logrus.DebugLevel,
-	}
-
-	log.SetReportCaller(true)
-
-	entry := log.WithFields(
-		logrus.Fields(f),
-	)
-
-	return &Logger{logger: log, entry: entry}
-}
-
-// Logger logs message to io.Writer at various log levels.
-type Logger struct {
-	logger *logrus.Logger
-
-	entry *logrus.Entry
-}
-
 // Level represents a log level.
 type Level int32
 
@@ -114,6 +87,29 @@ func (l Level) ToLogrusLevel() (logrus.Level, error) {
 	default:
 		return 0, fmt.Errorf("not a valid log Level: %q", l)
 	}
+}
+
+// NewLogger creates and returns a new instance of Logger.
+// Log level is set to DebugLevel by default.
+func NewLogger(out io.Writer, source string) *Logger {
+	log := &logrus.Logger{
+		Out: out,
+		Formatter: &logrus.JSONFormatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+		},
+		Level: logrus.DebugLevel,
+	}
+
+	log.SetReportCaller(true)
+
+	return &Logger{logger: log, entry: logrus.WithField("source", source)}
+}
+
+// Logger logs message to io.Writer at various log levels.
+type Logger struct {
+	logger *logrus.Logger
+
+	entry *logrus.Entry
 }
 
 func (l *Logger) Debug(args ...interface{}) {

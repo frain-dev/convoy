@@ -191,7 +191,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			q = redisqueue.NewQueue(opts)
 		}
 
-		lo := log.NewLogger(os.Stdout, map[string]interface{}{"system": "server"})
+		lo := log.NewLogger(os.Stdout, "server")
 		if err != nil {
 			return err
 		}
