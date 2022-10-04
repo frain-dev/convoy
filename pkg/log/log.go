@@ -3,14 +3,30 @@ package log
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
 
-logger := log.NewLogger(os.StdOut, map[string]interface{}{ "system": "server" })
-logger.SetLevel(log.InfoLevel)
+var (
+	_ StdLogger = &Logger{}
+)
 
-logger.WithLogger().WithError(err).Error("Log: It did not work!")
+type StdLogger interface {
+	Info(args ...interface{})
+	Debug(args ...interface{})
+	Warn(args ...interface{})
+	Error(args ...interface{})
+
+	Debugf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Warnf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatalf(format string, args ...interface{})
+
+	WithLogger() *logrus.Logger
+	WithError(err error) *logrus.Entry
+}
 
 // NewLogger creates and returns a new instance of Logger.
 // Log level is set to DebugLevel by default.
@@ -22,6 +38,8 @@ func NewLogger(out io.Writer, f map[string]interface{}) *Logger {
 		},
 		Level: logrus.DebugLevel,
 	}
+
+	log.SetReportCaller(true)
 
 	entry := log.WithFields(
 		logrus.Fields(f),
@@ -138,6 +156,10 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.Fatal(fmt.Sprintf(format, args...))
 }
 
+func (l *Logger) WithError(err error) *logrus.Entry {
+	return l.entry.WithError(err)
+}
+
 func (l *Logger) WithLogger() *logrus.Logger {
 	return l.logger
 }
@@ -151,4 +173,23 @@ func (l *Logger) SetLevel(v Level) {
 	}
 
 	l.logger.SetLevel(lvl)
+}
+
+// ParseLevel takes a string level and returns the Logrus log level constant.
+func ParseLevel(lvl string) (Level, error) {
+	switch strings.ToLower(lvl) {
+	case "fatal":
+		return FatalLevel, nil
+	case "error":
+		return ErrorLevel, nil
+	case "warn", "warning":
+		return WarnLevel, nil
+	case "info":
+		return InfoLevel, nil
+	case "debug":
+		return DebugLevel, nil
+	}
+
+	var l Level
+	return l, fmt.Errorf("not a valid Level: %q", lvl)
 }

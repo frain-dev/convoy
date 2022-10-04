@@ -320,17 +320,7 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	if !util.IsStringEmpty(logLevel) {
-		c.Logger.ServerLog.Level = logLevel
-	}
-
-	// CONVOY_LOGGER_PROVIDER
-	logger, err := cmd.Flags().GetString("logger")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(logger) {
-		c.Logger.Type = config.LoggerProvider(logger)
+		c.Logger.Level = logLevel
 	}
 
 	// SSL

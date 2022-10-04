@@ -8631,15 +8631,12 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "expires_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "hash": {
@@ -8664,7 +8661,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -8842,6 +8838,9 @@
         "datastore.Endpoint": {
             "type": "object",
             "properties": {
+                "authentication": {
+                    "$ref": "#/definitions/datastore.EndpointAuthentication"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -8870,6 +8869,17 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.EndpointAuthentication": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "$ref": "#/definitions/datastore.ApiKey"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -9632,6 +9642,9 @@
         "models.Endpoint": {
             "type": "object",
             "properties": {
+                "authentication": {
+                    "$ref": "#/definitions/datastore.EndpointAuthentication"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -9728,11 +9741,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "email": {
@@ -9751,7 +9762,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -9884,11 +9894,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "group_id": {
@@ -9916,7 +9924,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "url": {

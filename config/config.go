@@ -44,6 +44,9 @@ var DefaultConfiguration = Configuration{
 			Dsn: "redis://localhost:6378",
 		},
 	},
+	Logger: LoggerConfiguration{
+		Level: "error",
+	},
 }
 
 type DatabaseConfiguration struct {
@@ -110,13 +113,8 @@ type SMTPConfiguration struct {
 	ReplyTo  string `json:"reply-to" envconfig:"CONVOY_SMTP_REPLY_TO"`
 }
 
-type ServerLogger struct {
-	Level string `json:"level" envconfig:"CONVOY_LOGGER_LEVEL"`
-}
-
 type LoggerConfiguration struct {
-	Type      LoggerProvider `json:"type" envconfig:"CONVOY_LOGGER_PROVIDER"`
-	ServerLog ServerLogger   `json:"server_log"`
+	Level string `json:"level" envconfig:"CONVOY_LOGGER_LEVEL"`
 }
 
 type TracerConfiguration struct {

@@ -18,15 +18,12 @@
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"expires_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"hash": {
@@ -51,7 +48,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -229,6 +225,9 @@
 			},
 			"datastore.Endpoint": {
 				"properties": {
+					"authentication": {
+						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -257,6 +256,17 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.EndpointAuthentication": {
+				"properties": {
+					"api_key": {
+						"$ref": "#/components/schemas/datastore.ApiKey"
+					},
+					"type": {
 						"type": "string"
 					}
 				},
@@ -1018,6 +1028,9 @@
 			},
 			"models.Endpoint": {
 				"properties": {
+					"authentication": {
+						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
 					"description": {
 						"type": "string"
 					},
@@ -1114,11 +1127,9 @@
 			"models.LoginUserResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"email": {
@@ -1137,7 +1148,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -1270,11 +1280,9 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"group_id": {
@@ -1302,7 +1310,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"url": {
