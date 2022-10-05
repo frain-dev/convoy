@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"hash"
 )
 
@@ -26,7 +25,11 @@ var (
 )
 
 type Scheme struct {
-	Secret   []string
+	// Secret represents the list of currently active secrets used for
+	// a signing scheme. It is used to implement rolled secrets.
+	// It's order is irrelevant.
+	Secret []string
+
 	Hash     string
 	Encoding string
 }
@@ -49,38 +52,31 @@ type Signature struct {
 }
 
 func (s *Signature) ComputeHeaderValue() (string, error) {
-	fmt.Println(string(s.Payload))
-	buf := bytes.NewBuffer([]byte{})
-	encoder := json.NewEncoder(buf)
-	encoder.SetEscapeHTML(false)
-
-	err := encoder.Encode(s.Payload)
+	tBuf, err := s.encodePayload()
 	if err != nil {
 		return "", err
 	}
 
-	fmt.Println(buf.String())
+	if !s.Advanced {
+		sch := s.Schemes[len(s.Schemes)-1]
+		sec := sch.Secret[len(sch.Secret)-1]
 
-	tBuf := bytes.TrimSuffix(buf.Bytes(), []byte("\n"))
-
-	sch := s.Schemes[len(s.Schemes)-1]
-	sec := sch.Secret[len(sch.Secret)-1]
-
-	var hStr string
-	switch sch.Encoding {
-	case "hex":
-		if hStr, err = s.generateHexSignature(sch.Hash, sec, tBuf); err != nil {
-			return "", err
+		var hStr string
+		switch sch.Encoding {
+		case "hex":
+			if hStr, err = s.generateHexSignature(sch.Hash, sec, tBuf); err != nil {
+				return "", err
+			}
+		case "base64":
+			if hStr, err = s.generateBase64Signature(sch.Hash, sec, tBuf); err != nil {
+				return "", err
+			}
+		default:
+			return "", ErrInvalidEncoding
 		}
-	case "base64":
-		if hStr, err = s.generateBase64Signature(sch.Hash, sec, tBuf); err != nil {
-			return "", err
-		}
-	default:
-		return "", ErrInvalidEncoding
+
+		return hStr, nil
 	}
-
-	return hStr, nil
 }
 
 func (s *Signature) generateHexSignature(hash, secret string, buf []byte) (string, error) {
@@ -122,4 +118,17 @@ func (s *Signature) getHashFunction(algo string) (func() hash.Hash, error) {
 	default:
 		return nil, ErrInvalidHash
 	}
+}
+
+func (s *Signature) encodePayload() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.SetEscapeHTML(false)
+
+	err := encoder.Encode(s.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n")), nil
 }
