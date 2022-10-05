@@ -5,6 +5,20 @@ import { APP } from 'src/app/models/app.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { CreateAppService } from './create-app.service';
 
+interface endpoint {
+	url: string;
+	description: string;
+	secret: string;
+	http_timeout: string;
+	authentication?: {
+		type: string;
+		api_key: {
+			header_name: string;
+			header_value: string;
+		};
+	};
+}
+
 @Component({
 	selector: 'app-create-app',
 	templateUrl: './create-app.component.html',
@@ -51,7 +65,14 @@ export class CreateAppComponent implements OnInit {
 			url: ['', Validators.required],
 			description: ['', Validators.required],
 			secret: [null],
-			http_timeout: [null]
+			http_timeout: [null],
+			authentication: this.formBuilder.group({
+				type: ['api_key'],
+				api_key: this.formBuilder.group({
+					header_name: [''],
+					header_value: ['']
+				})
+			})
 		});
 	}
 
@@ -76,7 +97,8 @@ export class CreateAppComponent implements OnInit {
 			if (!this.editAppMode) {
 				this.appUid = response.data.uid;
 				const endpointData = this.addNewAppForm.value.endpoints;
-				endpointData.forEach((item: any) => {
+				endpointData.forEach((item: endpoint) => {
+					if (!item.authentication?.api_key.header_name && !item.authentication?.api_key.header_value) delete item.authentication;
 					requests.push(this.addNewEndpoint(item));
 				});
 				this.saveNewEndpoints(requests);
