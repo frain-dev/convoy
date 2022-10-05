@@ -17,4 +17,3 @@ Or install it yourself as:
 ```console[terminal]
 $ gem install convoy
 ```
-
