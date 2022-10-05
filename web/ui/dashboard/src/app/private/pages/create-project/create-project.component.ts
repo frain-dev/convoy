@@ -33,23 +33,11 @@ export class CreateProjectComponent implements OnInit {
 
 	ngOnInit() {
 		this.getProjects();
-
-		if (this.privateService.activeProjectDetails?.uid) {
-			this.privateService.activeProjectDetails?.type === 'incoming' ? this.toggleActiveStage({ project: 'setupSDK' }) : this.toggleActiveStage({ project: 'createApplication' });
-			this.projectType = this.privateService.activeProjectDetails?.type;
-		}
 	}
 
 	async createProject(newProjectData: { action: string; data: GROUP }) {
-		this.projectType = newProjectData.data.type;
-		if (newProjectData.data.type === 'outgoing') {
-			this.projectType = 'outgoing';
-			this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
-			this.toggleActiveStage({ project: 'createApplication' });
-		} else {
-			this.projectType = 'incoming';
-			this.toggleActiveStage({ project: 'setupSDK' });
-		}
+		const projectId = newProjectData.data.uid;
+		this.router.navigateByUrl('/projects/' + projectId + '/configure');
 	}
 
 	async getProjects() {
@@ -67,20 +55,5 @@ export class CreateProjectComponent implements OnInit {
 
 	cancel() {
 		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid) : this.location.back();
-	}
-
-	onProjectOnboardingComplete() {
-		this.generalService.showNotification({ message: `${this.privateService.activeProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid);
-	}
-
-	toggleActiveStage(stageDetails: { project: STAGES; prevStage?: STAGES }) {
-		this.projectStage = stageDetails.project;
-		if (stageDetails.project !== 'setupSDK') {
-			this.projectStages.forEach(item => {
-				if (item.id === stageDetails.project) item.currentStage = 'current';
-				if (item.id === stageDetails.prevStage) item.currentStage = 'done';
-			});
-		}
 	}
 }
