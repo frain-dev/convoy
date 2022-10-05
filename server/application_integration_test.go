@@ -532,7 +532,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",

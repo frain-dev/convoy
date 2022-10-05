@@ -161,6 +161,8 @@ definitions:
     type: object
   datastore.Endpoint:
     properties:
+      authentication:
+        $ref: '#/definitions/datastore.EndpointAuthentication'
       created_at:
         type: string
       deleted_at:
@@ -180,6 +182,13 @@ definitions:
       uid:
         type: string
       updated_at:
+        type: string
+    type: object
+  datastore.EndpointAuthentication:
+    properties:
+      api_key:
+        $ref: '#/definitions/datastore.ApiKey'
+      type:
         type: string
     type: object
   datastore.Event:
@@ -691,6 +700,8 @@ definitions:
     type: object
   models.Endpoint:
     properties:
+      authentication:
+        $ref: '#/definitions/datastore.EndpointAuthentication'
       description:
         type: string
       events:
