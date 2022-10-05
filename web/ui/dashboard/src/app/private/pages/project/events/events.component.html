@@ -10,21 +10,24 @@
 	<span class="text-primary-100 font-medium">Events</span>
 </div>
 
-<ng-container *ngIf="!isloadingDashboardData && dashboardData.events_sent === 0">
+<ng-container *ngIf="!isloadingDashboardData && eventsFetched?.length === 0">
 	<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
 		<div emptyStateCTA>
 			<convoy-button *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
-				<svg width="16" height="16" class="mr-8px fill-white-100">
+				<svg width="16" height="16" class="mr-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 					<use xlink:href="#add-icon"></use>
 				</svg>
-				Start {{ privateService.activeProjectDetails?.type === 'incoming' ? 'receiving' : 'sending' }} events
+				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Learn how to receive events' : 'Start sending events' }}
+				<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
 			</convoy-button>
-			<convoy-button *ngIf="!isProjectConfigurationComplete" type="clear" className="mt-10px" routerLink="/projects/new">Complete project setup</convoy-button>
+			<convoy-button *ngIf="!isProjectConfigurationComplete" className="mt-10px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</convoy-button>
 		</div>
 	</convoy-empty-state>
 </ng-container>
 
-<ng-container *ngIf="!isloadingDashboardData && dashboardData.events_sent > 0">
+<ng-container *ngIf="!isloadingDashboardData && eventsFetched?.length">
 	<div class="py-24px flex items-center">
 		<date-filter (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></date-filter>
 		<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px">
@@ -86,14 +89,10 @@
 	<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
 		<div class="flex items-center justify-center">
 			<ul class="w-full flex items-center pl-18px">
-				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)" class="first-of-type:mr-18px">
-					<convoy-button
-						type="text"
-						color="grey"
-						[className]="activeTab === tab ? 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] border-primary-100 transition-all ease-in-out' : 'py-16px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'"
-					>
-						<span class="text-14 font-semibold capitalize transition-all duration-300" [class]="activeTab === tab ? 'text-primary-100' : 'text-grey-40'">{{ tab }}</span>
-					</convoy-button>
+				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)" class="mr-24px !list-none last-of-type:mr-0">
+					<button class="py-16px px-6px flex items-center" [class]="activeTab === tab ? 'active' : ''">
+						<span class="text-14 text-left text-grey-60 font-semibold mobile:min-w-[80px] capitalize transition-all duration-300">{{ tab }}</span>
+					</button>
 				</li>
 
 				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
@@ -127,3 +126,5 @@
 		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 	</div>
 </ng-container>
+
+<send-event *ngIf="showAddEventModal" (onAction)="$event?.action == 'cancel' ? (showAddEventModal = false) : fetchEvents(); showAddEventModal = false"></send-event>

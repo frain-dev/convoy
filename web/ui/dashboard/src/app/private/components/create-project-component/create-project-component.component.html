@@ -6,13 +6,8 @@
 
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
 		<div class="project-types grid grid-cols-2 gap-24px">
-			<convoy-tooltip className="min-w-[350px]" position="center" [withIcon]="false" tooltipContent="Create an incoming webhooks project to proxy events from third-party providers to your endpoints">
-				<convoy-radio tooltipToggle formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
-			</convoy-tooltip>
-
-			<convoy-tooltip className="min-w-[350px]" position="center" [withIcon]="false" tooltipContent="Create an outgoing webhooks project to publish events to your customer-provided endpoints">
-				<convoy-radio tooltipToggle formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
-			</convoy-tooltip>
+			<convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
+			<convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
 		</div>
 		<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
 			<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
