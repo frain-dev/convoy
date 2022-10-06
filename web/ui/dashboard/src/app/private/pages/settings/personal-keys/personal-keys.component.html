@@ -1,7 +1,7 @@
 <div class="flex justify-between items-center mb-28px">
-	<h3 class="font-semibold">Personal Access Tokens</h3>
+	<h3 class="font-semibold">{{ showCreateNewTokenForm ? 'Generate Token' : 'Personal Access Tokens' }}</h3>
 
-	<convoy-button size="sm" (click)="showCreateNewTokenForm = true">
+	<convoy-button size="sm" *ngIf="!showCreateNewTokenForm" (click)="showCreateNewTokenForm = true">
 		<svg width="16" height="16" class="mr-8px fill-white-100">
 			<use xlink:href="#plus-icon"></use>
 		</svg>
@@ -9,8 +9,8 @@
 	</convoy-button>
 </div>
 
-<ng-container *ngIf="isFetchingKeys">
-	<div class="flex justify-between items-center p-22px" *ngFor="let index of loaderIndex">
+<ng-container *ngIf="isFetchingKeys && !showCreateNewTokenForm">
+	<div class="flex justify-between items-center py-12px" *ngFor="let index of loaderIndex">
 		<div>
 			<div class="flex items-center mb-8px">
 				<convoy-skeleton-loader className="h-20px w-100px"></convoy-skeleton-loader>
@@ -22,15 +22,17 @@
 	</div>
 </ng-container>
 
-<ng-container *ngIf="!isFetchingKeys && personalAccessKeys">
+<ng-container *ngIf="!isFetchingKeys && personalAccessKeys && !showCreateNewTokenForm">
 	<div class="flex justify-between items-center py-12px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of personalAccessKeys.content">
 		<div>
 			<div class="flex items-center">
 				<p class="font-medium text-12 mr-14px">{{ key.name }}</p>
-				<convoy-tag type="grey" className="mr-10px">{{ key.role.type }}</convoy-tag>
 				<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 			</div>
-			<p class="text-grey-40 text-10 mt-8px">Expires At: {{ key.expires_at | date: 'medium' }}</p>
+			<p class="text-grey-40 text-10 mt-8px">
+				<span *ngIf="key.created_at">Created on: ({{ key.created_at | date: 'medium' }})</span>
+				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'medium' }})</span>
+			</p>
 		</div>
 		<convoy-button size="sm" type="text" color="danger" (click)="selectedKey = key; showRevokeKeyModal = true">
 			<svg width="16" height="16" class="mr-8px fill-danger-100">
@@ -40,7 +42,8 @@
 		</convoy-button>
 	</div>
 </ng-container>
-<div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys.content?.length === 0 }">
+
+<div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys.content?.length === 0 || showCreateNewTokenForm }">
 	<convoy-button
 		type="outline"
 		size="sm"
@@ -71,28 +74,28 @@
 	</convoy-button>
 </div>
 
-<convoy-modal *ngIf="showAccessKey">
-	<div class="flex flex-col items-center justify-center min-h-[80vh] px-30px" modalBody>
-		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
-		<h2 class="font-semibold mt-16px">Cli Key Generated Successfully</h2>
-		<p class="text-14 text-grey-60 font-normal text-center mb-16px mt-8px">Your Cli Key has been created. Please copy this key and save it somewhere safe.</p>
-		<p class="text-14 text-danger-100 mb-40px text-center">For security reasons, we cannot show it to you again</p>
-		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px mb-32px">
-			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ accessKey }}</span>
-			<convoy-copy-button [text]="accessKey"></convoy-copy-button>
-		</div>
-		<convoy-button (click)="showAccessKey = false; fetchPersonalKeys()" buttonType="button">Done</convoy-button>
-	</div>
-</convoy-modal>
-
-<!-- <convoy-modal title="Generate CLI key" (closeModal)="generateKeyModal = false; generateKeyForm.reset()" *ngIf="generateKeyModal">
-	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()" modalBody>
-		<convoy-input autocomplete="name" name="name" formControlName="name" label="Name" placeholder="CLI key name"></convoy-input>
+<ng-container *ngIf="showCreateNewTokenForm">
+	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
+		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" [required]="true"></convoy-input>
 		<convoy-select label="Expiration" name="expiration" formControlName="expiration" [options]="expirationDates"></convoy-select>
-		<div class="flex justify-end">
+		<div class="flex justify-end mt-60px">
+			<convoy-button buttonType="button" (click)="showCreateNewTokenForm = false" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
 			<convoy-button>Generate Key</convoy-button>
 		</div>
 	</form>
-</convoy-modal> -->
+</ng-container>
+
+<convoy-modal position="center" *ngIf="showAccessKey">
+	<div class="flex flex-col items-center justify-center py-60px px-30px" modalBody>
+		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
+		<h2 class="font-semibold mt-16px">Generate Token</h2>
+		<p class="text-14 text-grey-60 font-normal text-center mb-60px mt-8px max-w-[270px] m-auto">Your access code has been generated successfully</p>
+		<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
+			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ accessKey }}</span>
+			<convoy-copy-button [text]="accessKey"></convoy-copy-button>
+		</div>
+		<convoy-button size="sm" className="px-40px" (click)="showAccessKey = false; fetchPersonalKeys()" buttonType="button">Done</convoy-button>
+	</div>
+</convoy-modal>
 
 <app-delete-modal *ngIf="showRevokeKeyModal" [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="showRevokeKeyModal = false" (deleteData)="revokeKey()"></app-delete-modal>

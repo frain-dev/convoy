@@ -8,7 +8,7 @@
 				<li *ngFor="let menu of settingsMenu">
 					<convoy-button
 						type="unstyled"
-						[className]="activePage === menu.name ? 'bg-primary-500 text-primary-100 rounded-8px transition-all duration-200 py-12px !px-16px' : 'text-grey-40 rounded-8px transition-all duration-200 py-12px !px-16px'"
+						[className]="activePage === menu.name ? 'bg-primary-500 text-primary-100 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px' : 'text-grey-40 rounded-8px transition-all duration-200 py-12px !px-16px'"
 						(click)="toggleActivePage(menu.name)"
 					>
 						<svg

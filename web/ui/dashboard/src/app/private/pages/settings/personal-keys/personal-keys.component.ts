@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -29,7 +29,7 @@ export class PersonalKeysComponent implements OnInit {
 		{ name: '90 days', uid: 90 }
 	];
 	generateKeyForm: FormGroup = this.formBuilder.group({
-		name: [''],
+		name: ['', Validators.required],
 		expiration: ['']
 	});
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute) {}
