@@ -66,4 +66,48 @@ export class SettingsService {
 			}
 		});
 	}
+
+	fetchPersonalKeys(requestDetails: { userId: string; pageNo: number }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/${requestDetails.userId}/security/personal_api_keys?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=10`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	generatePersonalKey(userId: string, requestDetails: { name: string; expiration: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/${userId}/security/personal_api_keys`,
+					method: 'post',
+					body: requestDetails
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	revokeKey(requestDetails: { userId: string; keyId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/${requestDetails.userId}/security/personal_api_keys/${requestDetails.keyId}/revoke`,
+					method: 'put',
+                    body: null
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }
