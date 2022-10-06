@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	cm "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
@@ -39,6 +40,7 @@ type App struct {
 	Cache    cache.Cache
 	Limiter  limiter.RateLimiter
 	Searcher searcher.Searcher
+	FFlag    fflag.FeatureFlag
 }
 
 //go:embed ui/build
@@ -95,6 +97,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 			Logger:   a.Logger,
 			Tracer:   a.Tracer,
 			Limiter:  a.Limiter,
+			FFlag:    a.FFlag,
 		},
 	}
 }
@@ -220,6 +223,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				sourceRouter.Use(a.M.RequireGroup())
 				sourceRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 				sourceRouter.Use(a.M.RequireBaseUrl())
+				sourceRouter.Use(fflag.CanAccessFeature(a.A.FFlag))
 
 				sourceRouter.Post("/", a.CreateSource)
 				sourceRouter.Get("/{sourceID}", a.GetSourceByID)

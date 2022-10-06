@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/migrate"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
@@ -112,6 +113,7 @@ type app struct {
 	cache    cache.Cache
 	limiter  limiter.RateLimiter
 	searcher searcher.Searcher
+	fflag    fflag.FeatureFlag
 }
 
 func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
@@ -227,6 +229,11 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			return err
 		}
 
+		ff, err := fflag.NewFeatureFlagClient(cfg)
+		if err != nil {
+			return err
+		}
+
 		s := datastore.New(db.Database())
 
 		app.store = s
@@ -236,6 +243,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		app.cache = ca
 		app.limiter = li
 		app.searcher = se
+		app.fflag = ff
 
 		return ensureDefaultUser(context.Background(), app)
 	}
