@@ -9,7 +9,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash"
+	"strings"
+	"time"
 )
 
 var (
@@ -61,22 +64,56 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 		sch := s.Schemes[len(s.Schemes)-1]
 		sec := sch.Secret[len(sch.Secret)-1]
 
-		var hStr string
-		switch sch.Encoding {
-		case "hex":
-			if hStr, err = s.generateHexSignature(sch.Hash, sec, tBuf); err != nil {
-				return "", err
-			}
-		case "base64":
-			if hStr, err = s.generateBase64Signature(sch.Hash, sec, tBuf); err != nil {
-				return "", err
-			}
-		default:
-			return "", ErrInvalidEncoding
+		sig, err := s.generateSignature(sch, sec, tBuf)
+		if err != nil {
+			return "", err
 		}
 
-		return hStr, nil
+		return sig, nil
 	}
+
+	var hStr strings.Builder
+
+	// Add timestamp.
+	t := fmt.Sprintf("t=%d,", time.Now().Unix())
+	hStr.WriteString(t)
+
+	for k, sch := range s.Schemes {
+		v := fmt.Sprintf("v%d=", k)
+
+		var hSig string
+		for _, sec := range sch.Secret {
+			sig, err := s.generateSignature(sch, sec, tBuf)
+			if err != nil {
+				return "", err
+			}
+
+			hSig = fmt.Sprintf("%s%s,", v, sig)
+			hStr.WriteString(hSig)
+		}
+
+	}
+
+	return hStr.String(), nil
+}
+
+func (s *Signature) generateSignature(sch Scheme, sec string, buf []byte) (string, error) {
+	var sig string
+	var err error
+	switch sch.Encoding {
+	case "hex":
+		if sig, err = s.generateHexSignature(sch.Hash, sec, buf); err != nil {
+			return "", err
+		}
+	case "base64":
+		if sig, err = s.generateBase64Signature(sch.Hash, sec, buf); err != nil {
+			return "", err
+		}
+	default:
+		return "", ErrInvalidEncoding
+	}
+
+	return sig, nil
 }
 
 func (s *Signature) generateHexSignature(hash, secret string, buf []byte) (string, error) {

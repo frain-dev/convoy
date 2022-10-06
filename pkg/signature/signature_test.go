@@ -27,8 +27,8 @@ func Test_Advanced_Signatures(t *testing.T) {
 			},
 			assertion: assertSignatureVersionMapping([]string{
 				"v0=a32dd2ae40bc678d67473679532190d7130f602c16b13c2ed868075b27789db9",
-				"v0=e88d7e30fa711ac90e4c38710764e37e7dedd274d32bdef49f6627ea6d63d5f1",
-				"v0=e438ab8eeeeb423cac6c5fa664d70116e72ec40c2416e912711cf4911fe06515",
+				"v0=2c9cc82f5e3c665ca6df2ac000742cccbfaf05d63dbc43461d6ebbbc1a2c2a33",
+				"v0=df51a848684dac3901d2b8bd17e5c8d2d971b15c544fa923493232df1fe0fbad",
 			}),
 		},
 		"should_generate_multiple_signatures_for_multiple_schemes": {
@@ -49,8 +49,8 @@ func Test_Advanced_Signatures(t *testing.T) {
 				Advanced: true,
 			},
 			assertion: assertSignatureVersionMapping([]string{
-				"v1=vh3shYSLzp2RdCAG4c+gtzkehvKA9yoC7VHS1M6GmpUSMaFRRr9UV+Vy7hdTtlbjMFA5ghC1Rl6+J0wLCwu3Cg==",
-				"v0=6caf1bbbda9764281d0160dfa9a401c15186c8c3730e00e0276d894bace2f441",
+				"v1=D5njmbkByEKf1+Vlte9XFrMiGGBLpxmkDbvxiduvnxD/ZMjjelYR0NSl1SxWokP+GZkcS77cT1cUwYAsCiFP8g==",
+				"v0=ecf51ec27c7fe4c71298067890c6512dbb74186edf4eb5ee43c1c9c7d5c2b0e8",
 			}),
 		},
 		"should_map_signatures_to_schemes_correctly": {
@@ -176,6 +176,9 @@ func Test_Simple_Signatures(t *testing.T) {
 			tc.assertion(t, tc.expected, sig)
 		})
 	}
+}
+
+func Test_ComputeHeaderValue_Errors(t *testing.T) {
 }
 
 func assertSignatureIncludesTimestamp(t require.TestingT, v interface{}, args ...interface{}) {
