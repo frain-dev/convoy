@@ -49,9 +49,6 @@ type Signature struct {
 	// of this type. You're either generating a simplistic header
 	// or a complex header.
 	Advanced bool
-
-	// Cached value
-	computedValue string
 }
 
 func (s *Signature) ComputeHeaderValue() (string, error) {
