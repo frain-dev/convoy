@@ -42,7 +42,7 @@
 				<div class="text-grey-40 text-14">
 					<span class="font-normal">Event</span>
 					<span class="font-normal" *ngIf="dashboardData.events_sent > 1">s</span>
-					Sent
+					{{ this.privateService.activeProjectDetails.type === 'outgoing' ? 'Sent' : 'Received' }}
 				</div>
 			</div>
 		</li>

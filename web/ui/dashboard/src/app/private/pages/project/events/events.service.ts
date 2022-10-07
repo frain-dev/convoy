@@ -9,13 +9,13 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class EventsService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string; token?: string }): Promise<HTTP_RESPONSE> {
+	getEvents(requestDetails: { pageNo: number; startDate: string; endDate: string; appId: string; query?: string; token?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/events?sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${
-						requestDetails.endDate
-					}&appId=${requestDetails.appId}&query=${requestDetails?.query}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/events?sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}&query=${
+						requestDetails?.query
+					}&sourceId=${requestDetails.sourceId}`,
 					method: 'get',
 					token: requestDetails.token
 				});
@@ -31,9 +31,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${
-						requestDetails.startDate
-					}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
+						requestDetails.appId
+					}${requestDetails.statusQuery}`,
 					method: 'get',
 					token: requestDetails.token
 				});
@@ -128,9 +128,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${
-						requestDetails.pageNo
-					}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
+						requestDetails.appId
+					}${requestDetails.statusQuery || ''}`,
 					method: 'post',
 					body: null,
 					token: requestDetails.token
@@ -147,9 +147,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${
-						requestDetails.pageNo
-					}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});

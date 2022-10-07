@@ -13,7 +13,16 @@
 
 			<app-time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></app-time-filter>
 
-			<convoy-dropdown size="lg" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [active]="!!eventApp" [hidden]="appPortalToken">
+			<convoy-dropdown
+				size="lg"
+				position="left"
+				buttonSize="sm"
+				buttonType="outline"
+				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
+				[active]="!!eventApp"
+				[hidden]="appPortalToken"
+				*ngIf="this.privateService.activeProjectDetails.type === 'outgoing'"
+			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Apps</span>
@@ -34,7 +43,37 @@
 					</ul>
 
 					<div *ngIf="!!eventApp" class="p-10px pb-20px">
-						<convoy-button type="text" size="sm" (clickItem)="clearEventFilters(); showEventsAppsDropdown = false">Clear</convoy-button>
+						<convoy-button type="text" size="sm" (clickItem)="clearEventFilters('eventsApp'); showEventsAppsDropdown = false">Clear</convoy-button>
+					</div>
+				</ng-container>
+			</convoy-dropdown>
+
+			<convoy-dropdown
+				size="lg"
+				position="left"
+				buttonSize="sm"
+				buttonType="outline"
+				buttonClass="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px"
+				[active]="!!eventSource"
+				#sourcesDropdown
+				*ngIf="this.privateService.activeProjectDetails.type === 'incoming'"
+			>
+				<ng-container dropdownToggle>
+					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
+					<span class="text-grey-40 w-full">All Sources</span>
+					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</ng-container>
+
+				<ng-container>
+					<ul class="min-h-[100px] px-10px pb-10px">
+						<li class="py-8px flex items-center justify-between border-b border-grey-10" *ngFor="let source of filterSources">
+							<label class="text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
+							<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid" [checked]="source.uid === eventSource" (change)="updateSourceFilter(source.uid, $event)" />
+						</li>
+					</ul>
+
+					<div *ngIf="!!eventSource" class="p-10px pb-20px">
+						<convoy-button type="text" size="sm" (clickItem)="clearEventFilters('eventsSource'); showEventsSourcesDropdown = false">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -113,12 +152,12 @@
 						<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
 						<ul>
 							<convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['./event-deliveries/' + delivery.uid]" className="cursor-pointer !justify-start">
-                                <div class="flex items-center">
-                                    <svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
-                                        <use xlink:href="#cli-icon"></use>
-                                    </svg>
-                                    <convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
-                                </div>
+								<div class="flex items-center">
+									<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
+										<use xlink:href="#cli-icon"></use>
+									</svg>
+									<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
+								</div>
 								<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
 									{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
 								</div>

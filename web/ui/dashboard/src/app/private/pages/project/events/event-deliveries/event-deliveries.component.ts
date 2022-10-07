@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
@@ -13,6 +12,8 @@ import { TimeFilterComponent } from 'src/app/private/components/time-filter/time
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
+import { PrivateService } from 'src/app/private/private.service';
+import { SOURCE } from 'src/app/models/group.model';
 
 @Component({
 	selector: 'app-event-deliveries',
@@ -29,6 +30,7 @@ export class EventDeliveriesComponent implements OnInit {
 	showEventDeliveriesStatusDropdown = false;
 	eventDeliveriesStatusFilterActive = false;
 	showEventDeliveriesAppsDropdown = false;
+	showEventDeliveriesSourceDropdown = false;
 	showOverlay = false;
 	fetchingCount = false;
 	showBatchRetryModal = false;
@@ -38,6 +40,7 @@ export class EventDeliveriesComponent implements OnInit {
 	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
 	eventDeliveriesApp?: string;
+	eventDeliveriesSource?: string;
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
@@ -52,9 +55,11 @@ export class EventDeliveriesComponent implements OnInit {
 	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
 	@ViewChild('appsFilterDropdown') appDropdownComponent!: DropdownComponent;
+	@ViewChild('sourcesFilterDropdown') sourcesFilterDropdown!: DropdownComponent;
 	appPortalToken = this.route.snapshot.params?.token;
+	filterSources: SOURCE[] = [];
 
-	constructor(private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe, private route: ActivatedRoute, private router: Router) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, private route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
 
 	ngAfterViewInit() {
 		if (!this.appPortalToken) {
@@ -170,10 +175,11 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ addToURL: true });
 	}
 
-	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status') {
+	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status' | 'source') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.appDropdownComponent.show = false;
+		this.sourcesFilterDropdown.show = false;
 		this.dateFilter.clearDate();
 		this.eventDeliveryTimerFilter.filterStartHour = 0;
 		this.eventDeliveryTimerFilter.filterStartMinute = 0;
@@ -197,9 +203,14 @@ export class EventDeliveriesComponent implements OnInit {
 				filterItems = ['eventDelsTime'];
 				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				break;
+			case 'source':
+				filterItems = ['eventDelsSource'];
+				this.eventDeliveriesSource = undefined;
+				break;
 			default:
-				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus', 'eventDelsSource'];
 				this.eventDeliveriesApp = undefined;
+				this.eventDeliveriesSource = undefined;
 				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				this.eventDeliveryFilteredByEventId = undefined;
 				this.eventDeliveryFilteredByStatus = [];
@@ -245,10 +256,25 @@ export class EventDeliveriesComponent implements OnInit {
 		).data.content;
 	}
 
+	async getSourcesForFilter() {
+		try {
+			const sourcesResponse = (await this.privateService.getSources()).data.content;
+			this.filterSources = sourcesResponse;
+		} catch (error) {}
+	}
+
 	updateAppFilter(appId: string, isChecked: any) {
 		this.showOverlay = false;
 		this.showEventDeliveriesAppsDropdown = !this.showEventDeliveriesAppsDropdown;
 		isChecked.target.checked ? (this.eventDeliveriesApp = appId) : (this.eventDeliveriesApp = undefined);
+
+		this.getEventDeliveries({ addToURL: true, fromFilter: true });
+	}
+
+	updateSourceFilter(sourceId: string, isChecked: any) {
+		this.showOverlay = false;
+		this.showEventDeliveriesSourceDropdown = !this.showEventDeliveriesSourceDropdown;
+		isChecked.target.checked ? (this.eventDeliveriesSource = sourceId) : (this.eventDeliveriesSource = undefined);
 
 		this.getEventDeliveries({ addToURL: true, fromFilter: true });
 	}
