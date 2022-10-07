@@ -76,8 +76,8 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 }
 
 // CreatePersonalAPIKey
-// @Summary Create an api key
-// @Description This endpoint creates an api key that will be used by the native auth realm
+// @Summary Create a personal api key
+// @Description This endpoint creates a personal api key that can be used to authenticate to this user's context
 // @Tags APIKey
 // @Accept  json
 // @Produce  json

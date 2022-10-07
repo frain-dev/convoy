@@ -4404,15 +4404,6 @@
 						}
 					},
 					{
-						"description": "event id",
-						"in": "path",
-						"name": "eventID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
 						"description": "event delivery id",
 						"in": "path",
 						"name": "eventDeliveryID",
@@ -4534,15 +4525,6 @@
 						"description": "Project id",
 						"in": "path",
 						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "event id",
-						"in": "path",
-						"name": "eventID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -12309,7 +12291,7 @@
 				]
 			},
 			"post": {
-				"description": "This endpoint creates an api key that will be used by the native auth realm",
+				"description": "This endpoint creates a personal api key that can be used to authenticate to this user's context",
 				"parameters": [
 					{
 						"description": "User id",
@@ -12428,7 +12410,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create an api key",
+				"summary": "Create a personal api key",
 				"tags": [
 					"APIKey"
 				]

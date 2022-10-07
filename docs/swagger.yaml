@@ -2200,11 +2200,6 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: event id
-        in: path
-        name: eventID
-        required: true
-        type: string
       - description: event delivery id
         in: path
         name: eventDeliveryID
@@ -2265,11 +2260,6 @@ paths:
       - description: Project id
         in: path
         name: projectID
-        required: true
-        type: string
-      - description: event id
-        in: path
-        name: eventID
         required: true
         type: string
       - description: event delivery id
@@ -6067,8 +6057,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint creates an api key that will be used by the native
-        auth realm
+      description: This endpoint creates a personal api key that can be used to authenticate
+        to this user's context
       parameters:
       - description: User id
         in: path
@@ -6122,7 +6112,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create an api key
+      summary: Create a personal api key
       tags:
       - APIKey
   /ui/users/{userID}/security/personal_api_keys/{keyID}/revoke:
