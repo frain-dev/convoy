@@ -57,7 +57,7 @@ export class CreateSourceComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private privateService: PrivateService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
-		this.action === 'update' ? this.getSourceDetails() : this.getSources();
+		if (this.action === 'update') this.getSourceDetails();
 	}
 
 	async getSourceDetails() {

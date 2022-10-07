@@ -114,7 +114,7 @@
 		[buttonText]="appsSearchString && appsSearchString.length > 0 ? '' : 'Create Application'"
 		[description]="appsSearchString && appsSearchString.length > 0 ? '' : 'An application is either your backend application or your users application. It can hold multiple endpoints which listen for your webhook events that are sent or received.'"
 		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/apps/new')"
-		className="h-[65vh]"
+		className="min-h-[65vh]"
 		id="events-empty-state"
 	></convoy-empty-state>
 </convoy-card>

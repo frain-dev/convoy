@@ -3,15 +3,19 @@
 	<p class="text-grey-60 text-14 max-w-[555px] mb-34px">Select your preffered and follow the intstructions below to install your SDK to get started.</p>
 	<ul class="flex flex-row w-full mb-20px">
 		<li *ngFor="let tab of tabs" class="list-none mr-40px last-of-type:mr-0">
-			<convoy-button type="unstyled" [className]="activeTab === tab.id ? 'bg-primary-500 rounded-12px h-60px w-60px flex justify-center items-center border border-primary-100' : 'bg-primary-500 rounded-12px h-60px w-60px flex justify-center items-center'" (click)="switchTabs(tab.id)">
+			<convoy-button
+				type="unstyled"
+				[className]="activeTab === tab.id ? 'bg-primary-500 rounded-12px h-60px w-60px flex justify-center items-center border border-primary-100' : 'bg-primary-500 rounded-12px h-60px w-60px flex justify-center items-center'"
+				(click)="switchTabs(tab.id)"
+			>
 				<img [src]="'/assets/img/' + tab.id + '.png'" alt="sdk icon" />
 			</convoy-button>
 		</li>
 	</ul>
-	<div class="flex flex-row m-auto w-full mt-32px mb-24px border-b border-b-grey-10">
+	<div class="flex flex-row m-auto w-full mt-40px mb-24px border-b border-b-grey-10">
 		<li *ngFor="let step of steps" class="mr-24px !list-none last-of-type:mr-0">
 			<button class="pb-10px flex items-center" [class]="activeStep === step ? 'active' : ''" (click)="switchStep(step)">
-				<span class="text-14 text-left text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ step }}</span>
+				<span class="text-14 text-left text-grey-60 tracking-[0.02em] mobile:min-w-[80px] font-medium">{{ step }}</span>
 			</button>
 		</li>
 	</div>
