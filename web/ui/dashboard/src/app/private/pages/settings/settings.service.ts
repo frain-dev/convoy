@@ -71,7 +71,7 @@ export class SettingsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/users/${requestDetails.userId}/security/personal_api_keys?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=10`,
+					url: `/users/${requestDetails.userId}/security/personal_api_keys?keyType=personal_key&sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=10`,
 					method: 'get'
 				});
 				return resolve(response);

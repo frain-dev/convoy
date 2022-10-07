@@ -1,14 +1,14 @@
 <convoy-page size="small">
 	<convoy-card className="flex p-0">
 		<div class="border-r border-r-grey-10 w-full max-w-[300px]">
-			<div class="border-b border-b-grey-10 px-40px pt-16px pb-10px">
+			<div class="border-b border-b-grey-10 px-40px py-20px">
 				<h3 class="font-semibold">Settings</h3>
 			</div>
 			<ul class="pl-40px py-32px">
 				<li *ngFor="let menu of settingsMenu">
 					<convoy-button
 						type="unstyled"
-						[className]="activePage === menu.name ? 'bg-primary-500 text-primary-100 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px' : 'text-grey-40 rounded-8px transition-all duration-200 py-12px !px-16px'"
+						[className]="activePage === menu.name ? 'bg-primary-500 text-primary-100 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px' : 'text-grey-40 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px'"
 						(click)="toggleActivePage(menu.name)"
 					>
 						<svg
@@ -25,7 +25,7 @@
 				</li>
 			</ul>
 		</div>
-		<div class="p-32px w-full">
+		<div class="px-32px py-18px min-h-[60vh] w-full">
 			<ng-container *ngIf="activePage === 'organisation settings'">
 				<organisation-settings></organisation-settings>
 			</ng-container>

@@ -30,7 +30,7 @@ export class PersonalKeysComponent implements OnInit {
 	];
 	generateKeyForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		expiration: ['']
+		expires_at: ['']
 	});
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute) {}
 

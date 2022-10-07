@@ -43,7 +43,7 @@
 	</div>
 </ng-container>
 
-<div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys.content?.length === 0 || showCreateNewTokenForm }">
+<div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys.content?.length === 0 || personalAccessKeys.content?.length < 10 || showCreateNewTokenForm }">
 	<convoy-button
 		type="outline"
 		size="sm"
@@ -76,8 +76,8 @@
 
 <ng-container *ngIf="showCreateNewTokenForm">
 	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
-		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" [required]="true"></convoy-input>
-		<convoy-select label="Expiration" name="expiration" formControlName="expiration" [options]="expirationDates"></convoy-select>
+		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
+		<convoy-select label="Expiry Date" name="expires_at" formControlName="expires_at" [options]="expirationDates"></convoy-select>
 		<div class="flex justify-end mt-60px">
 			<convoy-button buttonType="button" (click)="showCreateNewTokenForm = false" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
 			<convoy-button>Generate Key</convoy-button>
