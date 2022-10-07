@@ -142,7 +142,7 @@
 	description="Sources are how your webhook events are routed into the Convoy."
 	buttonText="Create Source"
 	(onAction)="router.navigateByUrl('/projects/' + projectId + '/sources/new')"
-	className="h-[65vh] mt-16px"
+	className="min-h-[65vh] mt-16px"
 	id="sources-empty-state"
 	*ngIf="!isLoadingSources && sources?.content?.length == 0"
 ></convoy-empty-state>

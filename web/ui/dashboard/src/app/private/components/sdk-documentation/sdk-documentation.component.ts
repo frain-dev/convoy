@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrismModule } from '../prism/prism.module';
 import Markdoc from '@markdoc/markdoc';
@@ -13,6 +13,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 	styleUrls: ['./sdk-documentation.component.scss']
 })
 export class SdkDocumentationComponent implements OnInit {
+	@Output() onAction = new EventEmitter<any>();
 	tabs = [
 		{ label: 'Javascript', id: 'js' },
 		{ label: 'Python', id: 'python' },
@@ -114,5 +115,10 @@ export class SdkDocumentationComponent implements OnInit {
 		const content = Markdoc.transform(ast);
 
 		this.documentation = Markdoc.renderers.html(content);
+	}
+
+	nextStep() {
+		let stepIndex = this.steps.findIndex(step => step === this.activeStep) + 1;
+		stepIndex === this.steps.length ? this.onAction.emit() : this.switchStep(this.steps[stepIndex]);
 	}
 }

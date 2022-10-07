@@ -1,6 +1,4 @@
 <div class="sticky mt-32px">
-	<h2 class="font-semibold mb-8px">SDK installation</h2>
-	<p class="text-grey-60 text-14 max-w-[555px] mb-34px">Select your preffered and follow the intstructions below to install your SDK to get started.</p>
 	<ul class="flex flex-row w-full mb-20px">
 		<li *ngFor="let tab of tabs" class="list-none mr-40px last-of-type:mr-0">
 			<convoy-button
@@ -12,6 +10,7 @@
 			</convoy-button>
 		</li>
 	</ul>
+
 	<div class="flex flex-row m-auto w-full mt-40px mb-24px border-b border-b-grey-10">
 		<li *ngFor="let step of steps" class="mr-24px !list-none last-of-type:mr-0">
 			<button class="pb-10px flex items-center" [class]="activeStep === step ? 'active' : ''" (click)="switchStep(step)">
@@ -21,4 +20,13 @@
 	</div>
 
 	<div class="docs" [innerHTML]="documentation"></div>
+
+	<div class="flex justify-end">
+		<convoy-button size="sm" className="mr-16px" (click)="nextStep()">
+			{{ steps[steps.length - 1] === activeStep ? 'Complete Setup' : 'Next' }}
+			<svg width="12" height="12" class="ml-8px fill-white-100">
+				<use xlink:href="#arrow-right-icon"></use>
+			</svg>
+		</convoy-button>
+	</div>
 </div>
