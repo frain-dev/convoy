@@ -720,11 +720,11 @@ type StoragePolicyConfiguration struct {
 
 type S3Storage struct {
 	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
-	AccessKey    string `json:"-" bson:"access_key" valid:"required~please provide an access key"`
-	SecretKey    string `json:"-" bson:"secret_key" valid:"required~please provide a secret key"`
-	Region       string `json:"region" bson:"region" valid:"required~please provide AWS bucket region"`
+	AccessKey    string `json:"access_key,omitempty" bson:"access_key" valid:"required~please provide an access key"`
+	SecretKey    string `json:"secret_key,omitempty" bson:"secret_key" valid:"required~please provide a secret key"`
+	Region       string `json:"region,omitempty" bson:"region"`
 	SessionToken string `json:"-" bson:"session_token"`
-	Endpoint     string `json:"endpoint" bson:"endpoint"`
+	Endpoint     string `json:"endpoint,omitempty" bson:"endpoint"`
 }
 
 type OnPremStorage struct {

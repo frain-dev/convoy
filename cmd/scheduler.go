@@ -17,11 +17,11 @@ import (
 )
 
 func addSchedulerCommand(a *app) *cobra.Command {
-	var cronspec string
+	var exportCronSpec string
 	var port uint32
 	cmd := &cobra.Command{
 		Use:   "scheduler",
-		Short: "schedule a periodic task.",
+		Short: "scheduler runs periodic tasks",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
@@ -38,7 +38,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			//register tasks
 			s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
 			s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
-			s.RegisterTask("@every 24h", convoy.ScheduleQueue, convoy.RetentionPolicies)
+			s.RegisterTask(exportCronSpec, convoy.ScheduleQueue, convoy.RetentionPolicies)
 
 			// Start scheduler
 			s.Start()
@@ -60,7 +60,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&cronspec, "cronspec", "", "scheduler time interval '@every <duration>'")
-	cmd.Flags().Uint32Var(&port, "port", 5007, "port to serve Metrics")
+	cmd.Flags().StringVar(&exportCronSpec, "export-spec", "@every 24h", "export scheduler time interval '@every <duration>'")
+	cmd.Flags().Uint32Var(&port, "port", 5007, "port to serve metrics")
 	return cmd
 }
