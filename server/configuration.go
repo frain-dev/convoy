@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
@@ -40,6 +41,14 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 
 	configResponse := []*models.ConfigurationResponse{}
 	if config != nil {
+		if config.StoragePolicy.Type == datastore.S3 {
+			policy := &datastore.S3Storage{}
+			policy.Bucket = config.StoragePolicy.S3.Bucket
+			policy.Endpoint = config.StoragePolicy.S3.Endpoint
+			policy.Region = config.StoragePolicy.S3.Region
+			config.StoragePolicy.S3 = policy
+		}
+
 		c := &models.ConfigurationResponse{
 			UID:                config.UID,
 			IsAnalyticsEnabled: config.IsAnalyticsEnabled,
