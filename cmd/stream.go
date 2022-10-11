@@ -1,14 +1,8 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
-
 	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 
 	cm "github.com/frain-dev/convoy/datastore/mongo"
@@ -70,50 +64,23 @@ func addStreamCommand(a *app) *cobra.Command {
 				Cache:     a.cache,
 			})
 
-			router := socket.BuildRoutes(h, r, m)
+			handler := socket.BuildRoutes(h, r, m)
 
 			if c.Server.HTTP.SocketPort != 0 {
 				socketPort = c.Server.HTTP.SocketPort
 			}
 
-			srv := &http.Server{
-				Handler: router,
-				Addr:    fmt.Sprintf(":%d", socketPort),
-			}
+			srv := server.NewServer(socketPort, func() {
+				h.Stop()
+			})
 
-			go func() {
-				//service connections
-				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					log.WithError(err).Fatal("failed to listen")
-				}
-			}()
+			srv.SetHandler(handler)
 
-			log.Infof("Worker running on port %v", socketPort)
-			gracefulShutdown(srv, h)
+			log.Infof("Stream server running on port %v", socketPort)
+			srv.Listen()
 		},
 	}
 
 	cmd.Flags().Uint32Var(&socketPort, "socket-port", 5008, "Socket port")
 	return cmd
-}
-
-func gracefulShutdown(srv *http.Server, hub *socket.Hub) {
-	// Wait for interrupt signal to gracepfully shutdown the server with a timeout of 10 seconds
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-	hub.Stop()
-
-	log.Info("Stopping websocket server")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		log.WithError(err).Fatal("Server Shutdown")
-	}
-
-	log.Info("Websocket server exiting")
-
-	time.Sleep(2 * time.Second) // allow all websocket connections close themselves
 }
