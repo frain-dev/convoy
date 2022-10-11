@@ -8,8 +8,12 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
+	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 
@@ -70,7 +74,8 @@ func addStreamCommand(a *app) *cobra.Command {
 				Cache:     a.cache,
 			})
 
-			router := socket.BuildRoutes(h, r, m)
+			router := chi.NewRouter()
+			handler := socket.BuildRoutes(h, r, m)
 
 			if c.Server.HTTP.SocketPort != 0 {
 				socketPort = c.Server.HTTP.SocketPort
@@ -80,6 +85,11 @@ func addStreamCommand(a *app) *cobra.Command {
 				Handler: router,
 				Addr:    fmt.Sprintf(":%d", socketPort),
 			}
+
+			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+				_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy Stream %v", convoy.GetVersion()), nil, http.StatusOK))
+			})
+			router.Handle("/*", handler)
 
 			go func() {
 				//service connections
