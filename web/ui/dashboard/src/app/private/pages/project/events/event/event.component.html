@@ -20,8 +20,7 @@
 				buttonType="outline"
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				[active]="!!eventApp"
-				[hidden]="appPortalToken"
-				*ngIf="this.privateService.activeProjectDetails.type === 'outgoing'"
+				[hidden]="appPortalToken || this.privateService.activeProjectDetails.type === 'incoming'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -43,7 +42,7 @@
 					</ul>
 
 					<div *ngIf="!!eventApp" class="p-10px pb-20px">
-						<convoy-button type="text" size="sm" (clickItem)="clearEventFilters('eventsApp'); showEventsAppsDropdown = false">Clear</convoy-button>
+						<convoy-button size="sm" (clickItem)="clearEventFilters('eventsApp')">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -56,7 +55,7 @@
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px"
 				[active]="!!eventSource"
 				#sourcesDropdown
-				*ngIf="this.privateService.activeProjectDetails.type === 'incoming'"
+				[hidden]="this.privateService.activeProjectDetails.type === 'outgoing'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -73,7 +72,7 @@
 					</ul>
 
 					<div *ngIf="!!eventSource" class="p-10px pb-20px">
-						<convoy-button type="text" size="sm" (clickItem)="clearEventFilters('eventsSource'); showEventsSourcesDropdown = false">Clear</convoy-button>
+						<convoy-button size="sm" (clickItem)="clearEventFilters('eventsSource')">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -89,7 +88,8 @@
 					(eventApp?.length == 0 || eventApp == undefined) &&
 					(eventsSearchString?.length == 0 || eventsSearchString == undefined) &&
 					eventsTimeFilterData.startTime == 'T00:00:00' &&
-					eventsTimeFilterData.endTime == 'T23:59:59'
+					eventsTimeFilterData.endTime == 'T23:59:59' &&
+					(eventSource?.length == 0 || eventSource == undefined)
 				)
 			"
 		>
@@ -118,11 +118,11 @@
 								<convoy-table-cell class="contents" className="pl-16px">
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
-								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openApp.emit(event.app_metadata?.uid)">
-									<span class="underline text-primary-100">{{ event.app_metadata?.name }}</span>
+								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
+									<span [routerLink]="'/projects/' + privateService.activeProjectDetails.uid + '/apps/' + event.app_metadata.uid" class="underline text-primary-100">{{ event.app_metadata.name }}</span>
 								</convoy-table-cell>
-								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openSource.emit(event.source_metadata?.uid)">
-									<span class="underline text-primary-100">{{ event.source_metadata?.name }}</span>
+								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
+									<span [routerLink]="'/projects/' + privateService.activeProjectDetails.uid + '/sources'" [queryParams]="{ id: event.source_metadata.uid }" class="underline text-primary-100">{{ event.source_metadata?.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 								<convoy-table-cell class="contents">

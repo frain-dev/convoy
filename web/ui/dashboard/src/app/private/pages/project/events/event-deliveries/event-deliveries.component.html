@@ -21,7 +21,7 @@
 
 					<div class="flex items-center mt-10px p-10px">
 						<convoy-button size="sm" (clickItem)="statusDropdown.show = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</convoy-button>
-						<convoy-button size="sm" type="clear" (clickItem)="clearFilters('status'); showEventDeliveriesStatusDropdown = false; showOverlay = false">Clear</convoy-button>
+						<convoy-button size="sm" type="clear" (clickItem)="clearFilters('status')">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -34,8 +34,7 @@
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				#appsFilterDropdown
 				[active]="!!eventDeliveriesApp"
-				[hidden]="appPortalToken"
-				*ngIf="this.privateService.activeProjectDetails.type === 'outgoing'"
+				[hidden]="appPortalToken || this.privateService.activeProjectDetails.type === 'incoming'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -70,7 +69,7 @@
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				#sourcesFilterDropdown
 				[active]="!!eventDeliveriesSource"
-				*ngIf="this.privateService.activeProjectDetails.type === 'incoming'"
+				[hidden]="this.privateService.activeProjectDetails.type === 'outgoing'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -79,7 +78,7 @@
 				</ng-container>
 
 				<ng-container>
-					<ul class="min-h-[100px] px-10px pb-10px">
+					<ul class="min-h-[100px] pt-10px px-10px pb-10px">
 						<convoy-list-item *ngFor="let source of filterSources" className="pt-4px pb-4px">
 							<label [for]="source.uid + 'eventDel'" class="text-12 block w-full">{{ source.name }}</label>
 							<input type="checkbox" name="app" [value]="source.uid" [id]="source.uid + 'eventDel'" [checked]="source.uid === eventDeliveriesSource" (change)="updateSourceFilter(source.uid, $event)" />
@@ -128,7 +127,8 @@
 					(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
 					!eventDeliveriesStatusFilterActive &&
 					eventDelsTimeFilterData.startTime == 'T00:00:00' &&
-					eventDelsTimeFilterData.endTime == 'T23:59:59'
+					eventDelsTimeFilterData.endTime == 'T23:59:59' &&
+					(eventDeliveriesSource?.length == 0 || eventDeliveriesSource == undefined)
 				)
 			"
 		>

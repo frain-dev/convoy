@@ -33,9 +33,6 @@ export class EventComponent implements OnInit {
 	eventApp?: string;
 	eventSource?: string;
 	showEventFilterCalendar: boolean = false;
-	showOverlay: boolean = false;
-	showEventsAppsDropdown: boolean = false;
-	showEventsSourcesDropdown: boolean = false;
 	isloadingEvents: boolean = false;
 	selectedEventsDateOption: string = '';
 	eventDetailsTabs = [
@@ -84,7 +81,6 @@ export class EventComponent implements OnInit {
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch' | 'eventsSource') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.appDropdownComponent.show = false;
 		this.dateFilter.clearDate();
 		this.timeFilter.filterStartHour = 0;
 		this.timeFilter.filterStartMinute = 0;
@@ -94,6 +90,7 @@ export class EventComponent implements OnInit {
 		switch (filterType) {
 			case 'eventsApp':
 				filterItems = ['eventsApp'];
+				this.appDropdownComponent.show = false;
 				break;
 			case 'eventsDate':
 				filterItems = ['eventsStartDate', 'eventsEndDate'];
@@ -135,18 +132,12 @@ export class EventComponent implements OnInit {
 	}
 
 	updateAppFilter(appId: string, isChecked: any) {
-		this.showOverlay = false;
-		this.showEventsAppsDropdown = !this.showEventsAppsDropdown;
 		isChecked.target.checked ? (this.eventApp = appId) : (this.eventApp = undefined);
-
 		this.getEvents({ addToURL: true });
 	}
 
 	updateSourceFilter(sourceId: string, isChecked: any) {
-		this.showOverlay = false;
-		this.showEventsSourcesDropdown = !this.showEventsSourcesDropdown;
 		isChecked.target.checked ? (this.eventSource = sourceId) : (this.eventSource = undefined);
-
 		this.getEvents({ addToURL: true });
 	}
 
@@ -212,6 +203,7 @@ export class EventComponent implements OnInit {
 		if (startDate) queryParams.eventsStartDate = startDate;
 		if (endDate) queryParams.eventsEndDate = endDate;
 		if (this.eventApp) queryParams.eventsApp = this.eventApp;
+		queryParams.eventsSource = this.eventSource;
 		queryParams.eventsSearch = this.eventsSearchString;
 
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
