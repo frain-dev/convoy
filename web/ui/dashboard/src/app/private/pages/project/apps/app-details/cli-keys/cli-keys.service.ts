@@ -13,7 +13,7 @@ export class CliKeysService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? '/apps/keys' : `${this.privateService.urlFactory('org_project')}/apps/keys`,
+					url: requestDetails.token ? '/apps/keys' : `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys`,
 					method: 'post',
 					body: requestDetails.body,
 					token: requestDetails.token
