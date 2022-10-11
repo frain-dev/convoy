@@ -23,15 +23,15 @@
 </ng-container>
 
 <ng-container *ngIf="!isFetchingKeys && personalAccessKeys && !showCreateNewTokenForm">
-	<div class="flex justify-between items-center py-12px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of personalAccessKeys.content">
+	<div class="flex justify-between items-center py-12px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of personalAccessKeys?.content">
 		<div>
 			<div class="flex items-center">
 				<p class="font-medium text-12 mr-14px">{{ key.name }}</p>
 				<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 			</div>
 			<p class="text-grey-40 text-10 mt-8px">
-				<span *ngIf="key.created_at">Created on: ({{ key.created_at | date: 'medium' }})</span>
-				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'medium' }})</span>
+				<span *ngIf="key.created_at" class="mr-4px">Created on: ({{ key.created_at | date: 'mediumDate' }})</span>
+				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'mediumDate' }})</span>
 			</p>
 		</div>
 		<convoy-button size="sm" type="text" color="danger" (click)="selectedKey = key; showRevokeKeyModal = true">
@@ -43,7 +43,7 @@
 	</div>
 </ng-container>
 
-<div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys.content?.length === 0 || personalAccessKeys.content?.length < 10 || showCreateNewTokenForm }">
+<div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys?.content?.length === 0 || personalAccessKeys?.content?.length < 10 || showCreateNewTokenForm }">
 	<convoy-button
 		type="outline"
 		size="sm"
@@ -77,7 +77,7 @@
 <ng-container *ngIf="showCreateNewTokenForm">
 	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
 		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
-		<convoy-select label="Expiry Date" name="expires_at" formControlName="expires_at" [options]="expirationDates"></convoy-select>
+		<convoy-date-form formType="input" (selectedDate)="getSelectedDate($event)" (clearDates)="getSelectedDate()"></convoy-date-form>
 		<div class="flex justify-end mt-60px">
 			<convoy-button buttonType="button" (click)="showCreateNewTokenForm = false" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
 			<convoy-button>Generate Key</convoy-button>

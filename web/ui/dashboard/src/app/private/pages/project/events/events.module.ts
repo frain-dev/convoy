@@ -12,6 +12,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { ChartComponent } from 'src/app/components/chart/chart.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DateFormComponent } from 'src/app/components/date-form/date-form.component';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
@@ -29,7 +30,8 @@ const routes: Routes = [{ path: '', component: EventsComponent }];
 		ListItemComponent,
 		CardComponent,
         ChartComponent,
-        SkeletonLoaderComponent
+        SkeletonLoaderComponent,
+        DateFormComponent
 	],
 	providers: [DatePipe]
 })

@@ -19,11 +19,12 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { DateFormComponent } from 'src/app/components/date-form/date-form.component';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
 @NgModule({
 	declarations: [SettingsComponent, PersonalKeysComponent, OrganisationSettingsComponent, ConfigurationsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), ReactiveFormsModule, CardComponent, PageComponent, DeleteModalComponent, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent, SkeletonLoaderComponent, TagComponent, ModalComponent, CopyButtonComponent, StatusColorModule]
+	imports: [CommonModule, RouterModule.forChild(routes), ReactiveFormsModule, CardComponent, PageComponent, DeleteModalComponent, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent, SkeletonLoaderComponent, TagComponent, ModalComponent, CopyButtonComponent, DateFormComponent, StatusColorModule]
 })
 export class SettingsModule {}

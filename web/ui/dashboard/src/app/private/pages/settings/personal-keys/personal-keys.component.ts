@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { format } from 'date-fns';
 import { PAGINATION } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { SettingsService } from '../settings.service';
@@ -11,7 +12,7 @@ import { SettingsService } from '../settings.service';
 	styleUrls: ['./personal-keys.component.scss']
 })
 export class PersonalKeysComponent implements OnInit {
-	showCreateNewTokenForm = false;
+	showCreateNewTokenForm = true;
 	isFetchingKeys = false;
 	isGeneratingNewKey = false;
 	showAccessKey = false;
@@ -22,15 +23,10 @@ export class PersonalKeysComponent implements OnInit {
 	accessKey!: string;
 	loaderIndex: number[] = [0, 1, 2];
 	personalAccessKeys!: { content: any; pagination: PAGINATION };
-	expirationDates = [
-		{ name: '7 days', uid: 7 },
-		{ name: '14 days', uid: 14 },
-		{ name: '30 days', uid: 30 },
-		{ name: '90 days', uid: 90 }
-	];
+
 	generateKeyForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		expires_at: ['']
+		expires_at: [null]
 	});
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute) {}
 
@@ -49,8 +45,11 @@ export class PersonalKeysComponent implements OnInit {
 	}
 
 	async generateNewKey() {
+		if (this.generateKeyForm.invalid) {
+			this.generateKeyForm.markAllAsTouched();
+			return;
+		}
 		this.isGeneratingNewKey = true;
-		this.generateKeyForm.value.expiration = parseInt(this.generateKeyForm.value.expiration);
 		try {
 			const response = await this.settingService.generatePersonalKey(this.userId, this.generateKeyForm.value);
 			this.accessKey = response.data.key;
@@ -89,6 +88,13 @@ export class PersonalKeysComponent implements OnInit {
 		} catch {
 			this.isRevokingKey = false;
 		}
+	}
+
+	getSelectedDate(date?: any) {
+		const selectedDate = `${format(date, 'yyyy-MM-dd')}T11:59:59Z`;
+		this.generateKeyForm.patchValue({
+			expires_at: selectedDate
+		});
 	}
 
 	getKeyStatus(expiryDate: Date): string {
