@@ -43,6 +43,9 @@
 	</div>
 </ng-container>
 
+<ng-container *ngIf="!isFetchingKeys && personalAccessKeys?.content?.length === 0 && !showCreateNewTokenForm">
+	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No personal access token" type="table" buttonText="Create New Token" className="min-h-[40vh]" (onAction)="showCreateNewTokenForm = true"></convoy-empty-state>
+</ng-container>
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys?.content?.length === 0 || personalAccessKeys?.content?.length < 10 || showCreateNewTokenForm }">
 	<convoy-button
 		type="outline"

@@ -20,11 +20,12 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { DateFormComponent } from 'src/app/components/date-form/date-form.component';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
 @NgModule({
 	declarations: [SettingsComponent, PersonalKeysComponent, OrganisationSettingsComponent, ConfigurationsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), ReactiveFormsModule, CardComponent, PageComponent, DeleteModalComponent, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent, SkeletonLoaderComponent, TagComponent, ModalComponent, CopyButtonComponent, DateFormComponent, StatusColorModule]
+	imports: [CommonModule, RouterModule.forChild(routes), ReactiveFormsModule, CardComponent, PageComponent, DeleteModalComponent, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent, SkeletonLoaderComponent, TagComponent, ModalComponent, CopyButtonComponent, DateFormComponent, StatusColorModule, EmptyStateComponent]
 })
 export class SettingsModule {}

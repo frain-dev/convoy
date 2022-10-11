@@ -12,7 +12,7 @@ import { SettingsService } from '../settings.service';
 	styleUrls: ['./personal-keys.component.scss']
 })
 export class PersonalKeysComponent implements OnInit {
-	showCreateNewTokenForm = true;
+	showCreateNewTokenForm = false;
 	isFetchingKeys = false;
 	isGeneratingNewKey = false;
 	showAccessKey = false;
