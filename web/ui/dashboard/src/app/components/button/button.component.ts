@@ -15,7 +15,7 @@ export class ButtonComponent implements OnInit {
 	@Input('buttonType') buttonType!: 'button' | 'submit' | 'reset';
 	@Input('className') class = '';
 	@Input('size') size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
-	@Input('type') type: 'default' | 'outline' | 'clear' | 'text' | 'link' | 'icon' = 'default';
+	@Input('type') type: 'default' | 'outline' | 'clear' | 'text' | 'link' | 'icon' | 'unstyled' = 'default';
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'grey' = 'primary';
 	@Input('texture') texture: 'deep' | 'light' = 'deep';
 	@Input('index') tabIndex = 0;
@@ -34,8 +34,9 @@ export class ButtonComponent implements OnInit {
 			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100`,
 			clear: `border-none text-${this.color}-100`,
 			text: `border-0 text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-			link: `border-none text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''} underline decoration-${this.color}-${colorLevel}`
+			link: `border-none text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''} underline decoration-${this.color}-${colorLevel}`,
+			unstyled: ''
 		};
-		return `${this.type !== 'text' && this.type !== 'icon' ? this.buttonSizes[this.size] : ''} ${this.buttonTypes[this.type]} ${this.class}`;
+		return `${this.type !== 'text' && this.type !== 'icon' && this.type !== 'unstyled' ? this.buttonSizes[this.size] : ''} ${this.buttonTypes[this.type]} ${this.class}`;
 	}
 }
