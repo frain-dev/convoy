@@ -1,7 +1,7 @@
-<div class="flex justify-between items-center mb-28px">
-	<h3 class="font-semibold">{{ showCreateNewTokenForm ? 'Generate Token' : 'Personal Access Tokens' }}</h3>
+<div class="flex justify-between items-center mb-28px" *ngIf="!showCreateNewTokenForm && personalAccessKeys?.content?.length > 0">
+	<h3 class="font-semibold">Personal Access Tokens</h3>
 
-	<convoy-button size="sm" *ngIf="!showCreateNewTokenForm" (click)="showCreateNewTokenForm = true">
+	<convoy-button size="sm" (click)="showCreateNewTokenForm = true">
 		<svg width="16" height="16" class="mr-8px fill-white-100">
 			<use xlink:href="#plus-icon"></use>
 		</svg>
@@ -44,7 +44,7 @@
 </ng-container>
 
 <ng-container *ngIf="!isFetchingKeys && personalAccessKeys?.content?.length === 0 && !showCreateNewTokenForm">
-	<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No personal access token" type="table" buttonText="Create New Token" className="min-h-[40vh]" (onAction)="showCreateNewTokenForm = true"></convoy-empty-state>
+	<convoy-empty-state imgSrc="/assets/img/new-empty-state.png" heading="You currently do not have any personal access tokens." type="table" buttonText="Generate New Token" className="min-h-[50vh]" (onAction)="showCreateNewTokenForm = true"></convoy-empty-state>
 </ng-container>
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys?.content?.length === 0 || personalAccessKeys?.content?.length < 10 || showCreateNewTokenForm }">
 	<convoy-button
@@ -78,6 +78,7 @@
 </div>
 
 <ng-container *ngIf="showCreateNewTokenForm">
+	<h3 class="font-semibold mb-28px">Generate Token</h3>
 	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
 		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
 		<convoy-date-form formType="input" (selectedDate)="getSelectedDate($event)" (clearDates)="getSelectedDate()"></convoy-date-form>
