@@ -4,7 +4,6 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { SubscriptionsService } from './subscriptions.service';
 
 @Component({
 	selector: 'app-subscriptions',
@@ -22,7 +21,7 @@ export class SubscriptionsComponent implements OnInit {
 	showUpdateSubscriptionModal = false;
 	showDeleteSubscriptionModal = false;
 
-	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
+	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {
 		this.projectId = this.privateService.activeProjectDetails.uid;
 
 		const urlParam = route.snapshot.params.id;
@@ -39,8 +38,9 @@ export class SubscriptionsComponent implements OnInit {
 		this.isLoadindingSubscriptions = true;
 
 		try {
-			const subscriptionsResponse = await this.subscriptionsService.getSubscriptions({ page: requestDetails?.page });
+			const subscriptionsResponse = await this.privateService.getSubscriptions({ page: requestDetails?.page });
 			this.subscriptions = subscriptionsResponse.data;
+			this.subscriptions?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
 			this.isLoadindingSubscriptions = false;
 		} catch (error) {
 			this.isLoadindingSubscriptions = false;
@@ -64,7 +64,7 @@ export class SubscriptionsComponent implements OnInit {
 		this.isDeletingSubscription = true;
 
 		try {
-			const response = await this.subscriptionsService.deleteSubscription(this.activeSubscription?.uid || '');
+			const response = await this.privateService.deleteSubscription(this.activeSubscription?.uid || '');
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
 			delete this.activeSubscription;

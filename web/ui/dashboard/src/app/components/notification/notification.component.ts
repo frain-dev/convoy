@@ -12,7 +12,7 @@ import { ButtonComponent } from '../button/button.component';
 	styleUrls: ['./notification.component.scss']
 })
 export class NotificationComponent implements OnInit {
-	notification!: { message: string; style: NOTIFICATION_STATUS; show: boolean };
+	notification!: { message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean };
 	statusTypes = {
 		warning: 'bg-warning-500 text-warning-100',
 		error: 'bg-danger-500 text-danger-100',

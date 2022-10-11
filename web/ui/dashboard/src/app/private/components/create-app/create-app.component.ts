@@ -45,7 +45,10 @@ export class CreateAppComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private createAppService: CreateAppService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
-		if (!this.editAppMode) this.endpoints.push(this.newEndpoint());
+		if (!this.editAppMode) {
+			this.endpoints.push(this.newEndpoint());
+			this.getApps();
+		}
 		if (this.editAppMode) await this.getAppDetails();
 	}
 
@@ -136,6 +139,18 @@ export class CreateAppComponent implements OnInit {
 			const response = await this.createAppService.getApp(this.appUid);
 			this.appsDetailsItem = response.data;
 			this.addNewAppForm.patchValue(response.data);
+			this.isLoadingAppDetails = false;
+		} catch {
+			this.isLoadingAppDetails = false;
+		}
+	}
+
+	async getApps() {
+		this.isLoadingAppDetails = true;
+		try {
+			const response = await this.createAppService.getApps();
+			const apps = response.data.content;
+			if(apps.length > 0) this.createApp.emit()
 			this.isLoadingAppDetails = false;
 		} catch {
 			this.isLoadingAppDetails = false;
