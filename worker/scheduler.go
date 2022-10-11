@@ -2,12 +2,13 @@ package worker
 
 import (
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 )
 
 type Scheduler struct {
+	log   log.StdLogger
 	queue queue.Queuer
 	inner *asynq.Scheduler
 }
@@ -23,7 +24,7 @@ func NewScheduler(queue queue.Queuer) *Scheduler {
 
 func (s *Scheduler) Start() {
 	if err := s.inner.Start(); err != nil {
-		log.Fatal(err)
+		s.log.WithError(err).Fatal("Could not start scheduler")
 	}
 }
 
@@ -31,7 +32,7 @@ func (s *Scheduler) RegisterTask(cronspec string, queue convoy.QueueName, taskNa
 	task := asynq.NewTask(string(taskName), nil)
 	_, err := s.inner.Register(cronspec, task, asynq.Queue(string(queue)))
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to register %s scheduler task", taskName)
+		s.log.WithError(err).Fatalf("Failed to register %s scheduler task", taskName)
 	}
 }
 
