@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -41,7 +40,7 @@ func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 
 	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load organisations")
+		a.A.Logger.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
