@@ -103,7 +103,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
-
 	w := httptest.NewRecorder()
 
 	// Act

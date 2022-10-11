@@ -37,6 +37,6 @@ export class ButtonComponent implements OnInit {
 			link: `border-none text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''} underline decoration-${this.color}-${colorLevel}`,
 			unstyled: ''
 		};
-		return `${this.type !== 'text' && this.type !== 'icon' ? this.buttonSizes[this.size] : ''} ${this.buttonTypes[this.type]} ${this.class}`;
+		return `${this.type !== 'text' && this.type !== 'icon' && this.type !== 'unstyled' ? this.buttonSizes[this.size] : ''} ${this.buttonTypes[this.type]} ${this.class}`;
 	}
 }

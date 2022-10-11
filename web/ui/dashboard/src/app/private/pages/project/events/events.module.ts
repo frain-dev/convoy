@@ -13,6 +13,9 @@ import { ChartComponent } from 'src/app/components/chart/chart.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { DateFormComponent } from 'src/app/components/date-form/date-form.component';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
+import { SendEventComponent } from '../apps/app-details/send-event/send-event.component';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
@@ -31,7 +34,10 @@ const routes: Routes = [{ path: '', component: EventsComponent }];
 		CardComponent,
         ChartComponent,
         SkeletonLoaderComponent,
-        DateFormComponent
+        DateFormComponent,
+        EmptyStateComponent,
+        SendEventComponent,
+        ModalComponent
 	],
 	providers: [DatePipe]
 })
