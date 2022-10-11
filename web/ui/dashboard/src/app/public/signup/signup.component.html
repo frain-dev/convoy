@@ -1,25 +1,34 @@
-<div class="bg-[url('/assets/img/background-pattern.svg')] bg-center min-h-screen flex flex-col items-center justify-center bg-cover">
+<div class="min-h-screen flex flex-col items-center justify-center w-full">
 	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
-	<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
-		<!-- We don't have this component or need it yet. Temporary hold; it might be used here. -->
-		<!-- <div class="bg-primary-500 mb-20px border border-primary-100 border-dashed rounded-8px py-10px px-16px flex">
-			<img src="/assets/img/ideas.svg" alt="idea" class="mr-8px" />
-			<div class="text-12">Please note that our cloud platform is in private beta.</div>
-		</div> -->
+	<ng-container *ngIf="!isSignUpDone">
+		<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
+			<!-- We don't have this component or need it yet. Temporary hold; it might be used here. -->
+			<!-- <div class="bg-primary-500 mb-20px border border-primary-100 border-dashed rounded-8px py-10px px-16px flex">
+             <img src="/assets/img/ideas.svg" alt="idea" class="mr-8px" />
+             <div class="text-12">Please note that our cloud platform is in private beta.</div>
+         </div> -->
 
-		<form [formGroup]="signupForm" (ngSubmit)="signup()" class="flex flex-wrap justify-between">
-			<convoy-input class="w-full" type="text" name="org_name" formControlName="org_name" errorMessage="Please enter your business name" label="Business Name" placeholder="Convoy"></convoy-input>
-			<convoy-input class="w-full" type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Please enter your email" label="Email" placeholder="super@default.com"></convoy-input>
-			<convoy-input type="text" autocomplete="name" name="name" formControlName="first_name" errorMessage="Please enter your first name" label="First Name" placeholder="John"></convoy-input>
-			<convoy-input type="text" autocomplete="family-name" name="last_name" formControlName="last_name" errorMessage="Please enter last name" label="Last Name" placeholder="Doe"></convoy-input>
-			<convoy-input type="password" class="w-full" autocomplete="new-password" formControlName="password" name="password" errorMessage="Password is required" label="Password"></convoy-input>
+			<form [formGroup]="signupForm" (ngSubmit)="signup()" class="flex flex-wrap justify-between">
+				<convoy-input class="w-full" type="text" name="org_name" formControlName="org_name" errorMessage="Please enter your business name" label="Business Name" placeholder="Convoy"></convoy-input>
+				<convoy-input class="w-full" type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Please enter your email" label="Email" placeholder="super@default.com"></convoy-input>
+				<convoy-input type="text" autocomplete="name" name="name" formControlName="first_name" errorMessage="Please enter your first name" label="First Name" placeholder="John"></convoy-input>
+				<convoy-input type="text" autocomplete="family-name" name="last_name" formControlName="last_name" errorMessage="Please enter last name" label="Last Name" placeholder="Doe"></convoy-input>
+				<convoy-input type="password" class="w-full" autocomplete="new-password" formControlName="password" name="password" errorMessage="Password is required" label="Password"></convoy-input>
 
-			<convoy-button [disable]="disableSignupBtn" size="lg" class="w-full">
-				<span class="text-14" *ngIf="!disableSignupBtn">Signup</span>
-				<img *ngIf="disableSignupBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
-			</convoy-button>
-		</form>
-
-		<convoy-button type="link" className="mt-12px w-full" routerLink="/login" size="sm">Login</convoy-button>
-	</section>
+				<convoy-button [disable]="disableSignupBtn" size="lg" class="w-full">
+					<span class="text-14" *ngIf="!disableSignupBtn">Signup</span>
+					<img *ngIf="disableSignupBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
+				</convoy-button>
+			</form>
+		</section>
+	</ng-container>
+	<ng-container *ngIf="isSignUpDone">
+		<h1 class="font-bold text-20 mb-30px text-center">Thanks for signing up! 💻</h1>
+		<section class="max-w-[445px] mx-auto my-0 px-34px py-64px w-full bg-white-100 shadow-default rounded-8px flex items-center justify-center flex-col">
+			<p class="text-center text-16 text-grey-40 mb-48px">A verification link has been sent to your email address. Click the link to complete your account verification.</p>
+			<img src="/assets/img/new-success.gif" loop="1" alt="Succes gif" class="h-150px mb-70px"/>
+            <convoy-button className="w-320px" (click)="router.navigateByUrl('/')">Done</convoy-button>
+		</section>
+	</ng-container>
+	<convoy-button type="link" className="mt-34px w-full" (click)="router.navigateByUrl('/login')" size="sm">Log in if you already have an account</convoy-button>
 </div>

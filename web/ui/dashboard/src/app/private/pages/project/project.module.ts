@@ -54,6 +54,6 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [ProjectComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), ButtonComponent, GithubStarComponent, ListItemComponent]
+	imports: [CommonModule, RouterModule.forChild(routes), ButtonComponent, GithubStarComponent, ListItemComponent, GithubStarComponent]
 })
 export class ProjectModule {}

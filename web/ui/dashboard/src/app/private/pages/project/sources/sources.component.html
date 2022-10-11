@@ -120,7 +120,7 @@
 				<div class="flex justify-end mt-40px mr-24px">
 					<convoy-button type="outline" color="danger" size="sm" (click)="showDeleteSourceModal = true">
 						Delete
-						<svg width="18" height="18" class="ml-8px">
+						<svg width="18" height="18" class="ml-8px fill-danger-100">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
 					</convoy-button>
@@ -137,12 +137,12 @@
 </ng-container>
 
 <convoy-empty-state
-	imgSrc="/assets/img/group-empty-img.svg"
+	imgSrc="/assets/img/new-empty-state.png"
 	heading="Create your first source"
 	description="Sources are how your webhook events are routed into the Convoy."
 	buttonText="Create Source"
 	(onAction)="router.navigateByUrl('/projects/' + projectId + '/sources/new')"
-	className="h-[50vh] mt-16px"
+	className="min-h-[65vh] mt-16px"
 	id="sources-empty-state"
 	*ngIf="!isLoadingSources && sources?.content?.length == 0"
 ></convoy-empty-state>
