@@ -1,14 +1,4 @@
-<div class="flex justify-between items-center mb-28px" *ngIf="!showCreateNewTokenForm && personalAccessKeys?.content?.length > 0">
-	<h3 class="font-semibold">Personal Access Tokens</h3>
-
-	<convoy-button size="sm" (click)="showCreateNewTokenForm = true">
-		<svg width="16" height="16" class="mr-8px fill-white-100">
-			<use xlink:href="#plus-icon"></use>
-		</svg>
-		Create New Token
-	</convoy-button>
-</div>
-
+<!-- loader  -->
 <ng-container *ngIf="isFetchingKeys && !showCreateNewTokenForm">
 	<div class="flex justify-between items-center py-12px" *ngFor="let index of loaderIndex">
 		<div>
@@ -22,6 +12,19 @@
 	</div>
 </ng-container>
 
+<!-- personal access tken header  -->
+<div class="flex justify-between items-center mb-28px" *ngIf="!showCreateNewTokenForm && personalAccessKeys?.content?.length > 0">
+	<h3 class="font-semibold">Personal Access Tokens</h3>
+
+	<convoy-button size="sm" (click)="showCreateNewTokenForm = true">
+		<svg width="16" height="16" class="mr-8px fill-white-100">
+			<use xlink:href="#plus-icon"></use>
+		</svg>
+		Create New Token
+	</convoy-button>
+</div>
+
+<!-- personal access token  -->
 <ng-container *ngIf="!isFetchingKeys && personalAccessKeys && !showCreateNewTokenForm">
 	<div class="flex justify-between items-center py-12px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of personalAccessKeys?.content">
 		<div>
@@ -43,9 +46,26 @@
 	</div>
 </ng-container>
 
+<!-- empty state  -->
 <ng-container *ngIf="!isFetchingKeys && personalAccessKeys?.content?.length === 0 && !showCreateNewTokenForm">
 	<convoy-empty-state imgSrc="/assets/img/new-empty-state.png" heading="You currently do not have any personal access tokens." type="table" buttonText="Generate New Token" className="min-h-[50vh]" (onAction)="showCreateNewTokenForm = true"></convoy-empty-state>
 </ng-container>
+
+
+<!-- generate personal access token form  -->
+<ng-container *ngIf="showCreateNewTokenForm">
+	<h3 class="font-semibold mb-28px">Generate Token</h3>
+	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
+		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
+		<convoy-date-form formType="input" (selectedDate)="getSelectedDate($event)" (clearDates)="getSelectedDate()"></convoy-date-form>
+		<div class="flex justify-end mt-60px">
+			<convoy-button buttonType="button" (click)="showCreateNewTokenForm = false" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
+			<convoy-button>Generate Key</convoy-button>
+		</div>
+	</form>
+</ng-container>
+
+<!-- pagination button  -->
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys?.content?.length === 0 || personalAccessKeys?.content?.length < 10 || showCreateNewTokenForm }">
 	<convoy-button
 		type="outline"
@@ -77,18 +97,7 @@
 	</convoy-button>
 </div>
 
-<ng-container *ngIf="showCreateNewTokenForm">
-	<h3 class="font-semibold mb-28px">Generate Token</h3>
-	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
-		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
-		<convoy-date-form formType="input" (selectedDate)="getSelectedDate($event)" (clearDates)="getSelectedDate()"></convoy-date-form>
-		<div class="flex justify-end mt-60px">
-			<convoy-button buttonType="button" (click)="showCreateNewTokenForm = false" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
-			<convoy-button>Generate Key</convoy-button>
-		</div>
-	</form>
-</ng-container>
-
+<!-- token generated  -->
 <convoy-modal position="center" *ngIf="showAccessKey">
 	<div class="flex flex-col items-center justify-center py-60px px-30px" modalBody>
 		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
@@ -102,4 +111,6 @@
 	</div>
 </convoy-modal>
 
+
+<!-- revoke token modal  -->
 <app-delete-modal *ngIf="showRevokeKeyModal" [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="showRevokeKeyModal = false" (deleteData)="revokeKey()"></app-delete-modal>
