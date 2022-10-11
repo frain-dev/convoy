@@ -2,7 +2,7 @@
 	<img *ngIf="imgSrc" [src]="imgSrc" alt="empty state" class="mb-4" />
 	<h2 class="font-semibold mb-2 text-center">{{ heading }}</h2>
 	<p *ngIf="description" class="text-14 text-grey-60 w-full max-w-[600px] text-center mt-8px">{{ description }}</p>
-	<convoy-button *ngIf="buttonText" className="mt-42px" (click)="onAction.emit()">{{ buttonText }}</convoy-button>
+	<convoy-button *ngIf="buttonText" className="mt-22px" (click)="onAction.emit()">{{ buttonText }}</convoy-button>
 	<div class="empty:hidden">
 		<ng-content select="[emptyStateCTA]"></ng-content>
 	</div>
