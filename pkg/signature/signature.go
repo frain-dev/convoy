@@ -28,8 +28,8 @@ var (
 )
 
 type Scheme struct {
-	// Secret represents the list of currently active secrets used for
-	// a signing scheme. It is used to implement rolled secrets.
+	// Secret represents a list of active secrets used for
+	// a scheme. It is used to implement rolled secrets.
 	// It's order is irrelevant.
 	Secret []string
 
@@ -52,11 +52,13 @@ type Signature struct {
 }
 
 func (s *Signature) ComputeHeaderValue() (string, error) {
+	// Encode Payload
 	tBuf, err := s.encodePayload()
 	if err != nil {
 		return "", err
 	}
 
+	// Generate Simple Signatures
 	if !s.Advanced {
 		sch := s.Schemes[len(s.Schemes)-1]
 		sec := sch.Secret[len(sch.Secret)-1]
@@ -69,6 +71,7 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 		return sig, nil
 	}
 
+	// Generate Advanced Signatures
 	var hStr strings.Builder
 
 	// Add timestamp.
