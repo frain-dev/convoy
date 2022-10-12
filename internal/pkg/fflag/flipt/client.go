@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	flipt "go.flipt.io/flipt-grpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -20,7 +21,7 @@ type Flipt struct {
 }
 
 func NewFliptClient(host string) (*Flipt, error) {
-	conn, err := grpc.Dial(host, grpc.WithInsecure())
+	conn, err := grpc.Dial(host, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -35,10 +36,8 @@ func NewFliptClient(host string) (*Flipt, error) {
 }
 
 func (f *Flipt) IsEnabled(flagKey string, evaluate map[string]string) (bool, error) {
-	flag, err := f.client.Evaluate(context.Background(), &flipt.EvaluationRequest{
-		FlagKey:  flagKey,
-		EntityId: uuid.NewString(),
-		Context:  evaluate,
+	flag, err := f.client.GetFlag(context.Background(), &flipt.GetFlagRequest{
+		Key: flagKey,
 	})
 
 	if err != nil {
@@ -50,5 +49,22 @@ func (f *Flipt) IsEnabled(flagKey string, evaluate map[string]string) (bool, err
 		return false, ErrFliptFlagNotFound
 	}
 
-	return flag.Match, nil
+	// The flag not being enabled means everybody has
+	// access to that feature
+	if !flag.Enabled {
+		return true, nil
+	}
+
+	result, err := f.client.Evaluate(context.Background(), &flipt.EvaluationRequest{
+		FlagKey:  flagKey,
+		EntityId: uuid.NewString(),
+		Context:  evaluate,
+	})
+
+	if err != nil {
+		log.WithError(err).Errorf("failed to connect to flipt server")
+		return false, ErrFliptServerError
+	}
+
+	return result.Match, nil
 }

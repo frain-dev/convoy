@@ -202,7 +202,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(a.M.RequireApp())
 					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.Post("/", a.CreateAppAPIKey)
+					securitySubRouter.With(fflag.CanAccessFeature(a.A.FFlag, fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 				})
 			})
 
@@ -223,7 +223,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				sourceRouter.Use(a.M.RequireGroup())
 				sourceRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 				sourceRouter.Use(a.M.RequireBaseUrl())
-				sourceRouter.Use(fflag.CanAccessFeature(a.A.FFlag))
 
 				sourceRouter.Post("/", a.CreateSource)
 				sourceRouter.Get("/{sourceID}", a.GetSourceByID)
@@ -341,7 +340,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.Post("/", a.CreateAppAPIKey)
+									keySubRouter.With(fflag.CanAccessFeature(a.A.FFlag, fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
 									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 								})
