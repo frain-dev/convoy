@@ -22,14 +22,14 @@
 					<use xlink:href="#arrow-right-icon"></use>
 				</svg>
 			</convoy-button>
-			<convoy-button *ngIf="!isProjectConfigurationComplete" className="mt-10px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</convoy-button>
+			<convoy-button *ngIf="!isProjectConfigurationComplete" className="mt-36px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</convoy-button>
 		</div>
 	</convoy-empty-state>
 </ng-container>
 
 <ng-container *ngIf="!isloadingDashboardData && eventsFetched?.length">
 	<div class="py-24px flex items-center">
-		<date-filter (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></date-filter>
+		<convoy-date-form (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-form>
 		<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px">
 			<ng-container dropdownToggle>
 				<span class="text-grey-60 mr-4px">Filter By:</span>
