@@ -1,7 +1,11 @@
 package fflag
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -15,6 +19,10 @@ import (
 type IsEnabledFunc func(r *http.Request, ff FeatureFlag) error
 
 var (
+	ErrFeatureNotAvailable = errors.New("this feature is not yet available for you")
+)
+
+var (
 	CanCreateCLIAPIKey = "can_create_cli_api_key"
 )
 
@@ -23,7 +31,17 @@ var Features = map[string]IsEnabledFunc{
 		group := middleware.GetGroupFromContext(r.Context())
 
 		var apiKey models.CreateAppApiKey
-		if err := util.ReadJSON(r, &apiKey); err != nil {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+
+		// Replace the body with a new reader after reading from the original
+		// request
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+
+		err = json.Unmarshal(body, &apiKey)
+		if err != nil {
 			return err
 		}
 
@@ -38,7 +56,7 @@ var Features = map[string]IsEnabledFunc{
 			}
 
 			if !isEnabled {
-				return errors.New("this feature is not yet avaiable for you, sorry")
+				return ErrFeatureNotAvailable
 			}
 		}
 
@@ -52,7 +70,7 @@ func CanAccessFeature(ff FeatureFlag, fn IsEnabledFunc) func(next http.Handler) 
 			err := fn(r, ff)
 
 			if err != nil {
-				statusCode := http.StatusForbidden
+				statusCode := http.StatusInternalServerError
 
 				if errors.Is(err, flipt.ErrFliptServerError) {
 					statusCode = http.StatusInternalServerError
@@ -60,6 +78,10 @@ func CanAccessFeature(ff FeatureFlag, fn IsEnabledFunc) func(next http.Handler) 
 
 				if errors.Is(err, flipt.ErrFliptFlagNotFound) {
 					statusCode = http.StatusNotFound
+				}
+
+				if errors.Is(err, ErrFeatureNotAvailable) {
+					statusCode = http.StatusForbidden
 				}
 
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))

@@ -126,8 +126,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"key_type":"app_portal"}"`
-	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+	bodyStr := `{"key_type":"app_portal"}`
+	body := serialize(bodyStr)
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
 
@@ -175,8 +175,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"key_type":"cli"}"`
-	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+	bodyStr := `{"key_type":"cli"}`
+	body := serialize(bodyStr)
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)
 
@@ -223,7 +223,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelo
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys", app.UID)

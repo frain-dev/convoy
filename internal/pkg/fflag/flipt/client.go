@@ -41,7 +41,7 @@ func (f *Flipt) IsEnabled(flagKey string, evaluate map[string]string) (bool, err
 	})
 
 	if err != nil {
-		log.WithError(err).Errorf("failed to connect to flipt server")
+		log.WithError(err).Error("failed to connect to flipt server")
 		return false, ErrFliptServerError
 	}
 
@@ -62,7 +62,7 @@ func (f *Flipt) IsEnabled(flagKey string, evaluate map[string]string) (bool, err
 	})
 
 	if err != nil {
-		log.WithError(err).Errorf("failed to connect to flipt server")
+		log.WithError(err).Error("failed to connect to flipt server")
 		return false, ErrFliptServerError
 	}
 
