@@ -75,6 +75,36 @@ export class PrivateService {
 		});
 	}
 
+    deleteSubscription(subscriptionId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const sourceResponse = await this.http.request({
+					url: `${this.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
+					method: 'delete'
+				});
+
+				return resolve(sourceResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+    getSubscriptions(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const subscriptionsResponse = await this.http.request({
+					url: `${this.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}`,
+					method: 'get'
+				});
+
+				return resolve(subscriptionsResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	getSources(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
@@ -133,5 +163,35 @@ export class PrivateService {
 				return reject(error);
 			}
 		})
+	}
+
+    addOrganisation(requestDetails: { name: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/organisations`,
+					method: 'post',
+					body: requestDetails
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+    getProjects(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const groupsResponse = await this.http.request({
+					url: `${this.urlFactory('org')}/groups`,
+					method: 'get'
+				});
+
+				return resolve(groupsResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 }

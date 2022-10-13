@@ -101,7 +101,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 		"disable_endpoint": true
 	}`, app.UID, s.DefaultGroup.UID, endpoint.UID)
 
-	fmt.Println(bodyStr)
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
 	w := httptest.NewRecorder()

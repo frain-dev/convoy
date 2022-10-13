@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -126,52 +125,60 @@ func (h *Hub) StartEventWatcher() {
 	fn := h.watchEventDeliveriesCollection()
 	err := h.watchCollectionFn(fn, datastore.EventDeliveryCollection, h.close)
 	if err != nil {
-		log.WithError(err).Error("database collection watcher exited unexpectedly")
+		log.WithError(err).Fatal("database collection watcher exited unexpectedly")
 	}
 }
 
-func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) error {
-	return func(doc map[string]interface{}) error {
+func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) {
+	return func(doc map[string]interface{}) {
 		var ed *datastore.EventDelivery
 		b, err := json.Marshal(doc)
 		if err != nil {
-			return err
+			log.WithError(err).Error("failed to marshal doc")
+			return
 		}
 
 		err = json.Unmarshal(b, &ed)
 		if err != nil {
-			return err
+			log.WithError(err).Error("failed to unmarshal json")
+			return
 		}
 
+		// this isn't a cli event deliery
 		if ed.CLIMetadata == nil {
-			return nil
+			return
 		}
 
 		// map[Data:base64Str Subtype:int]
 		var dataMap convoy.GenericMap
 		err = json.Unmarshal(ed.Metadata.Data, &dataMap)
 		if err != nil {
-			return err
+			log.WithError(err).Error("failed to unmarshal metadata")
+			return
 		}
 
 		value, exists := dataMap["Data"]
 		if !exists {
-			return errors.New("'Data' field doesn't exist in map")
+			log.Error("'Data' field doesn't exist in map")
+			return
 		}
 
 		vBytes, err := json.Marshal(value)
 		if err != nil {
-			return err
+			log.Error(err)
+			return
 		}
 
 		vStr, err := strconv.Unquote(string(vBytes))
 		if err != nil {
-			return err
+			log.Error(err)
+			return
 		}
 
 		dataBytes, err := base64.StdEncoding.DecodeString(vStr)
 		if err != nil {
-			return err
+			log.Error(err)
+			return
 		}
 
 		events <- &CLIEvent{
@@ -183,8 +190,6 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 			DeviceID:  ed.DeviceID,
 			GroupID:   ed.GroupID,
 		}
-
-		return nil
 	}
 }
 
@@ -240,9 +245,9 @@ func (h *Hub) Stop() {
 	close(h.close)
 }
 
-type WatchCollectionFn func(fn func(doc map[string]interface{}) error, collection string, stop chan struct{}) error
+type WatchCollectionFn func(fn func(doc map[string]interface{}), collection string, stop chan struct{}) error
 
-func watchCollection(fn func(map[string]interface{}) error, collection string, stop chan struct{}) error {
+func watchCollection(fn func(map[string]interface{}), collection string, stop chan struct{}) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -283,10 +288,7 @@ func watchCollection(fn func(map[string]interface{}) error, collection string, s
 
 				if (*document)["operationType"].(string) == "insert" {
 					doc := (*document)["fullDocument"].(convoy.GenericMap)
-					err := fn(doc)
-					if err != nil {
-						return err
-					}
+					fn(doc)
 				}
 			}
 		}

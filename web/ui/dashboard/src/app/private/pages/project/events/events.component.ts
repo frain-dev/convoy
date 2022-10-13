@@ -38,13 +38,17 @@ export class EventsComponent implements OnInit {
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
+	eventsFetched!: EVENT[];
 	chartData!: CHARTDATA[];
+	showAddEventModal = false;
 
-	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router) {
-		this.fetchDashboardData();
-	}
+	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, public router: Router) {}
 
 	async ngOnInit() {
+		this.isloadingDashboardData = true;
+		await Promise.all([this.fetchDashboardData(), this.fetchEvents()]);
+		this.isloadingDashboardData = false;
+
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 	}
 
@@ -67,17 +71,17 @@ export class EventsComponent implements OnInit {
 
 	async fetchDashboardData() {
 		try {
-			this.isloadingDashboardData = true;
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
+			if (this.dashboardData.events_sent === 0) this.fetchEvents();
 			const chatLabels = this.getDateRange();
 			this.initConvoyChart(dashboardResponse, chatLabels);
 
-			this.isloadingDashboardData = false;
+			return;
 		} catch (error: any) {
-			this.isloadingDashboardData = false;
+			return;
 		}
 	}
 
@@ -113,8 +117,6 @@ export class EventsComponent implements OnInit {
 			});
 		});
 		this.chartData = chartData;
-		// const difference = chartData.length % 6 > 0 ? (chartData.length + 5) / 6 : chartData.length / 6;
-		// const periodDiff = [this.chartData[0], this.chartData[difference], this.chartData[difference + 6]];
 	}
 
 	dateRange(startDate: string, endDate: string): { date: string; index: number }[] {
@@ -184,6 +186,28 @@ export class EventsComponent implements OnInit {
 		return dateArray;
 	}
 
+	async fetchEvents() {
+		try {
+			const response = await this.eventsService.getEvents({ pageNo: 1, startDate: '', endDate: '', appId: '' });
+			this.eventsFetched = response.data.content;
+
+			return;
+		} catch (error: any) {
+			return;
+		}
+	}
+
+	get isProjectConfigurationComplete() {
+		const configurationComplete = localStorage.getItem('isActiveProjectConfigurationComplete');
+		return configurationComplete ? JSON.parse(configurationComplete) : false;
+	}
+
+	get emptyStateDescription() {
+		return this.isProjectConfigurationComplete
+			? `You have not ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'received' : 'sent'} any webhook events yet. Learn how to do that in our docs`
+			: `You have not completed this projects setup, please complete setup to start ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'receiving' : 'sending'} events`;
+	}
+
 	getDateRange() {
 		const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 		return this.dateRange(startDate, endDate);
@@ -195,5 +219,10 @@ export class EventsComponent implements OnInit {
 
 	openApp(appId: string) {
 		this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails.uid}/apps/${appId}`);
+	}
+
+	setUpEvents() {
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.showAddEventModal = true;
+		if (this.privateService.activeProjectDetails?.type === 'incoming') window.open('https://getconvoy.io/docs/getting-started/receiving-webhook-example', '_blank');
 	}
 }
