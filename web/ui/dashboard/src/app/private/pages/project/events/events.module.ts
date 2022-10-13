@@ -15,6 +15,7 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { SendEventComponent } from '../apps/app-details/send-event/send-event.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
@@ -31,11 +32,12 @@ const routes: Routes = [{ path: '', component: EventsComponent }];
 		ButtonComponent,
 		ListItemComponent,
 		CardComponent,
-        ChartComponent,
-        SkeletonLoaderComponent,
-        EmptyStateComponent,
-        SendEventComponent,
-        ModalComponent
+		ChartComponent,
+		SkeletonLoaderComponent,
+		EmptyStateComponent,
+		SendEventComponent,
+		ModalComponent,
+		LoaderModule
 	],
 	providers: [DatePipe]
 })
