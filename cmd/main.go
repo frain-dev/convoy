@@ -9,6 +9,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/cache"
@@ -251,6 +252,15 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 
 func postRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		ff, ok := app.fflag.(*flipt.Flipt)
+		if ok {
+			// close the connection to the flipt server
+			err := ff.Disconnect()
+			if err != nil {
+				return err
+			}
+		}
+
 		err := db.Disconnect(context.Background())
 		if err == nil {
 			os.Exit(0)

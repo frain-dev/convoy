@@ -18,6 +18,7 @@ var (
 
 type Flipt struct {
 	client flipt.FliptClient
+	conn   *grpc.ClientConn
 }
 
 func NewFliptClient(host string) (*Flipt, error) {
@@ -32,6 +33,7 @@ func NewFliptClient(host string) (*Flipt, error) {
 
 	return &Flipt{
 		client: client,
+		conn:   conn,
 	}, nil
 }
 
@@ -67,4 +69,8 @@ func (f *Flipt) IsEnabled(flagKey string, evaluate map[string]string) (bool, err
 	}
 
 	return result.Match, nil
+}
+
+func (f *Flipt) Disconnect() error {
+	return f.conn.Close()
 }
