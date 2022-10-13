@@ -99,6 +99,10 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if len(payload) == 0 {
+		payload = []byte("{}")
+	}
+
 	// 3.2 On success
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
