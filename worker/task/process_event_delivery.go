@@ -2,9 +2,12 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/signature"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -21,9 +24,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var ErrDeliveryAttemptFailed = errors.New("error sending event")
-var ErrRateLimit = errors.New("rate limit error")
-var defaultDelay time.Duration = 30
+var (
+	ErrDeliveryAttemptFailed               = errors.New("error sending event")
+	ErrRateLimit                           = errors.New("rate limit error")
+	defaultDelay             time.Duration = 30
+)
 
 type SignatureValues struct {
 	HMAC      string
@@ -111,7 +116,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		}
 
 		var attempt datastore.DeliveryAttempt
-		var secret = endpoint.Secret
 
 		cfg, err := config.Get()
 		if err != nil {
@@ -135,7 +139,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		dispatch := net.NewDispatcher(httpDuration)
 
-		var done = true
+		done := true
 
 		e := endpoint
 		if ed.Status == datastore.SuccessEventStatus {
@@ -154,7 +158,8 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		sig, err := util.GenerateSignatureHeader(g.Config.ReplayAttacks, g.Config.Signature.Hash, secret, ed.Metadata.Data)
+		sig := newSignature(endpoint, g, "hex", ed.Metadata.Data)
+		header, err := sig.ComputeHeaderValue()
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -163,7 +168,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.EncodedData, g, sig.Hmac, sig.Timestamp, int64(cfg.MaxResponseSize), ed.Headers)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.Payload, g, header, sig.Timestamp, int64(cfg.MaxResponseSize), ed.Headers)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -245,7 +250,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				ed.Status = datastore.FailureEventStatus
 			}
 
-			
 			if g.Config.DisableEndpoint && subscription.Status != datastore.PendingSubscriptionStatus {
 				subscriptionStatus := datastore.InactiveSubscriptionStatus
 
@@ -274,8 +278,22 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		return nil
 	}
 }
-func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
 
+func newSignature(endpoint *datastore.Endpoint, g *datastore.Group, encoding string, data json.RawMessage) *signature.Signature {
+	s := &signature.Signature{Advanced: endpoint.AdvancedSignatures, Payload: data}
+
+	for _, sc := range endpoint.Secrets {
+		s.Schemes = append(s.Schemes, signature.Scheme{
+			Secret:   []string{sc.Value},
+			Hash:     g.Config.Signature.Hash,
+			Encoding: encoding,
+		})
+	}
+
+	return s
+}
+
+func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
 	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 

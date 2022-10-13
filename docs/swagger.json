@@ -8836,6 +8836,9 @@
         "datastore.Endpoint": {
             "type": "object",
             "properties": {
+                "advanced_signatures": {
+                    "type": "boolean"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -8856,6 +8859,12 @@
                 },
                 "secret": {
                     "type": "string"
+                },
+                "secrets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastore.Secret"
+                    }
                 },
                 "target_url": {
                     "type": "string"
@@ -9296,6 +9305,26 @@
                     "type": "string"
                 },
                 "region": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.Secret": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }

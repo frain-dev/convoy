@@ -229,6 +229,9 @@
 			},
 			"datastore.Endpoint": {
 				"properties": {
+					"advanced_signatures": {
+						"type": "boolean"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -249,6 +252,12 @@
 					},
 					"secret": {
 						"type": "string"
+					},
+					"secrets": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.Secret"
+						},
+						"type": "array"
 					},
 					"target_url": {
 						"type": "string"
@@ -689,6 +698,26 @@
 						"type": "string"
 					},
 					"region": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.Secret": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					},
+					"value": {
 						"type": "string"
 					}
 				},

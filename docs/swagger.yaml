@@ -159,6 +159,8 @@ definitions:
     type: object
   datastore.Endpoint:
     properties:
+      advanced_signatures:
+        type: boolean
       created_at:
         type: string
       deleted_at:
@@ -173,6 +175,10 @@ definitions:
         type: string
       secret:
         type: string
+      secrets:
+        items:
+          $ref: '#/definitions/datastore.Secret'
+        type: array
       target_url:
         type: string
       uid:
@@ -472,6 +478,19 @@ definitions:
       endpoint:
         type: string
       region:
+        type: string
+    type: object
+  datastore.Secret:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+      value:
         type: string
     type: object
   datastore.SignatureConfiguration:

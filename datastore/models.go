@@ -214,10 +214,12 @@ type Application struct {
 type SubscriptionStatus string
 
 type Endpoint struct {
-	UID         string `json:"uid" bson:"uid"`
-	TargetURL   string `json:"target_url" bson:"target_url"`
-	Description string `json:"description" bson:"description"`
-	Secret      string `json:"secret" bson:"secret"`
+	UID                string   `json:"uid" bson:"uid"`
+	TargetURL          string   `json:"target_url" bson:"target_url"`
+	Description        string   `json:"description" bson:"description"`
+	Secret             string   `json:"secret" bson:"secret"`
+	Secrets            []Secret `json:"secrets" bson:"secrets"`
+	AdvancedSignatures bool     `json:"advanced_signatures" bson:"advanced_signatures"`
 
 	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
@@ -228,6 +230,15 @@ type Endpoint struct {
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type Secret struct {
+	UID            string             `json:"uid" bson:"uid"`
+	Value          string             `json:"value" bson:"value"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 }
 
 var (
@@ -559,16 +570,16 @@ type APIKey struct {
 }
 
 type Subscription struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	Name       string             `json:"name" bson:"name"`
-	Type       SubscriptionType   `json:"type" bson:"type"`
-	Status     SubscriptionStatus `json:"status" bson:"status"`
-	AppID      string             `json:"-" bson:"app_id"`
-	GroupID    string             `json:"-" bson:"group_id"`
-	SourceID   string             `json:"-" bson:"source_id"`
-	EndpointID string             `json:"-" bson:"endpoint_id"`
-	DeviceID   string             `json:"device_id" bson:"device_id"`
+	ID     primitive.ObjectID `json:"-" bson:"_id"`
+	UID    string             `json:"uid" bson:"uid"`
+	Name   string             `json:"name" bson:"name"`
+	Type   SubscriptionType   `json:"type" bson:"type"`
+	Status SubscriptionStatus `json:"status" bson:"status"`
+	// AppID      string             `json:"-" bson:"app_id"`
+	GroupID    string `json:"-" bson:"group_id"`
+	SourceID   string `json:"-" bson:"source_id"`
+	EndpointID string `json:"-" bson:"endpoint_id"`
+	DeviceID   string `json:"device_id" bson:"device_id"`
 
 	Source   *Source      `json:"source_metadata" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"-"`
