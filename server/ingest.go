@@ -136,7 +136,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. Return 200
-	_ = render.Render(w, r, util.NewServerResponse("Event received", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
