@@ -42,12 +42,13 @@ export class EventsComponent implements OnInit {
 	chartData!: CHARTDATA[];
 	showAddEventModal = false;
 
-	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, public router: Router) {
-		this.fetchDashboardData();
-		this.fetchEvents();
-	}
+	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, public router: Router) {}
 
 	async ngOnInit() {
+		this.isloadingDashboardData = true;
+		await Promise.all([this.fetchDashboardData(), this.fetchEvents()]);
+		this.isloadingDashboardData = false;
+
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 	}
 
@@ -70,7 +71,6 @@ export class EventsComponent implements OnInit {
 
 	async fetchDashboardData() {
 		try {
-			this.isloadingDashboardData = true;
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
 			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
@@ -79,9 +79,9 @@ export class EventsComponent implements OnInit {
 			const chatLabels = this.getDateRange();
 			this.initConvoyChart(dashboardResponse, chatLabels);
 
-			this.isloadingDashboardData = false;
+			return;
 		} catch (error: any) {
-			this.isloadingDashboardData = false;
+			return;
 		}
 	}
 
@@ -117,8 +117,6 @@ export class EventsComponent implements OnInit {
 			});
 		});
 		this.chartData = chartData;
-		// const difference = chartData.length % 6 > 0 ? (chartData.length + 5) / 6 : chartData.length / 6;
-		// const periodDiff = [this.chartData[0], this.chartData[difference], this.chartData[difference + 6]];
 	}
 
 	dateRange(startDate: string, endDate: string): { date: string; index: number }[] {
@@ -190,14 +188,12 @@ export class EventsComponent implements OnInit {
 
 	async fetchEvents() {
 		try {
-			this.isloadingDashboardData = true;
-
 			const response = await this.eventsService.getEvents({ pageNo: 1, startDate: '', endDate: '', appId: '' });
 			this.eventsFetched = response.data.content;
 
-			this.isloadingDashboardData = false;
+			return;
 		} catch (error: any) {
-			this.isloadingDashboardData = false;
+			return;
 		}
 	}
 
