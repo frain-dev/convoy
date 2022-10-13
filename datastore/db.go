@@ -24,7 +24,7 @@ const (
 	OrganisationCollection        = "organisations"
 	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
-	AppCollection                 = "applications"
+	EndpointCollection            = "endpoints"
 	EventCollection               = "events"
 	SourceCollection              = "sources"
 	UserCollection                = "users"
@@ -521,8 +521,8 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return OrganisationInvitesCollection, nil
 	case "organisation_members":
 		return OrganisationMembersCollection, nil
-	case "applications":
-		return AppCollection, nil
+	case "endpoints":
+		return EndpointCollection, nil
 	case "events":
 		return EventCollection, nil
 	case "sources":

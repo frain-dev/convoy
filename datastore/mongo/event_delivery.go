@@ -160,8 +160,8 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return db.store.UpdateOne(ctx, filter, update)
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	filter := getFilter(groupID, appID, eventID, status, searchParams)
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, endpointID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+	filter := getFilter(groupID, endpointID, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	var eventDeliveries []datastore.EventDelivery
@@ -179,8 +179,8 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	return eventDeliveries, pagination, nil
 }
 
-func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
-	filter := getFilter(groupID, appID, eventID, status, searchParams)
+func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID, endpointID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	filter := getFilter(groupID, endpointID, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	var count int64
@@ -216,11 +216,11 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 	return nil
 }
 
-func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
+func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, endpointID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"app_id":          appId,
+		"endpoint_id":     endpointID,
 		"device_id":       deviceId,
 		"status":          datastore.DiscardedEventStatus,
 		"created_at":      getCreatedDateFilter(searchParams),
@@ -241,20 +241,20 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EventDeliveryCollection)
 }
 
-func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
+func getFilter(groupID string, endpointID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
 
 	filter := bson.M{
 		"document_status": datastore.ActiveDocumentStatus,
 		"created_at":      getCreatedDateFilter(searchParams),
 	}
 
-	hasAppFilter := !util.IsStringEmpty(appID)
+	hasEndpointFilter := !util.IsStringEmpty(endpointID)
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 	hasEventFilter := !util.IsStringEmpty(eventID)
 	hasStatusFilter := len(status) > 0
 
-	if hasAppFilter {
-		filter["app_id"] = appID
+	if hasEndpointFilter {
+		filter["endpoint_id"] = endpointID
 	}
 
 	if hasGroupFilter {

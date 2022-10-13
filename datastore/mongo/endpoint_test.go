@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_UpdateApplication(t *testing.T) {
+func Test_UpdateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
 	groupRepo := NewGroupRepo(getStore(db))
-	appRepo := NewApplicationRepo(getStore(db))
+	endpointRepo := NewEndpointRepo(getStore(db))
 
 	newGroup := &datastore.Group{
 		Name: "Random new group",
@@ -27,42 +27,42 @@ func Test_UpdateApplication(t *testing.T) {
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
-	app := &datastore.Application{
+	endpoint := &datastore.Endpoint{
 		Title:          "Next application name",
 		GroupID:        newGroup.UID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
+	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
 
 	newTitle := "Newer name"
 
-	app.Title = newTitle
+	endpoint.Title = newTitle
 
-	require.NoError(t, appRepo.UpdateApplication(context.Background(), app, app.GroupID))
+	require.NoError(t, endpointRepo.UpdateEndpoint(context.Background(), endpoint, endpoint.GroupID))
 
-	newApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
+	newApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, newTitle, newApp.Title)
 
-	app2 := &datastore.Application{
+	app2 := &datastore.Endpoint{
 		Title:          newTitle,
 		GroupID:        newGroup.UID,
 		UID:            uuid.NewString(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err = appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
-	require.Equal(t, datastore.ErrDuplicateAppName, err)
+	err = endpointRepo.CreateEndpoint(context.Background(), app2, app2.GroupID)
+	require.Equal(t, datastore.ErrDuplicateEndpointName, err)
 }
 
-func Test_CreateApplication(t *testing.T) {
+func Test_CreateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
 	groupRepo := NewGroupRepo(getStore(db))
-	appRepo := NewApplicationRepo(getStore(db))
+	endpointRepo := NewEndpointRepo(getStore(db))
 
 	newOrg := &datastore.Group{
 		Name: "Random new group 2",
@@ -71,48 +71,48 @@ func Test_CreateApplication(t *testing.T) {
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
-	app := &datastore.Application{
+	endpoint := &datastore.Endpoint{
 		Title:          "Next application name",
 		GroupID:        newOrg.UID,
 		UID:            uuid.NewString(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
+	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
 
-	app2 := &datastore.Application{
+	endpoint2 := &datastore.Endpoint{
 		Title:          "Next application name",
 		GroupID:        newOrg.UID,
 		UID:            uuid.NewString(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	err := appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
-	require.Equal(t, datastore.ErrDuplicateAppName, err)
+	err := endpointRepo.CreateEndpoint(context.Background(), endpoint2, endpoint2.GroupID)
+	require.Equal(t, datastore.ErrDuplicateEndpointName, err)
 }
 
-func Test_LoadApplicationsPaged(t *testing.T) {
+func Test_LoadEndpointsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(getStore(db))
+	endpointRepo := NewEndpointRepo(getStore(db))
 
-	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", "", datastore.Pageable{
+	endpoints, _, err := endpointRepo.LoadEndpointsPaged(context.Background(), "", "", datastore.Pageable{
 		Page:    1,
 		PerPage: 10,
 	})
 	require.NoError(t, err)
 
-	require.True(t, len(apps) == 0)
+	require.True(t, len(endpoints) == 0)
 }
 
-func Test_FindApplicationByID(t *testing.T) {
+func Test_FindEndpointByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(getStore(db))
+	endpointRepo := NewEndpointRepo(getStore(db))
 
-	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
+	_, err := endpointRepo.FindEndpointByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
 	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
@@ -125,11 +125,11 @@ func Test_FindApplicationByID(t *testing.T) {
 
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
-	app := &datastore.Application{
-		Title:   "Next application name again",
+	endpoint := &datastore.Endpoint{
+		Title:   "Next endpoint name again",
 		GroupID: newGroup.UID,
 		UID:     uuid.NewString(),
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
+	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
 }

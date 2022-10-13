@@ -8,7 +8,7 @@ import (
 type Filter struct {
 	Query        string
 	Group        *Group
-	AppID        string
+	EndpointID   string
 	EventID      string
 	SourceID     string
 	Pageable     Pageable
@@ -22,13 +22,13 @@ type SourceFilter struct {
 }
 
 type ApiKeyFilter struct {
-	GroupID string
-	AppID   string
-	KeyType KeyType
+	GroupID    string
+	EndpointID string
+	KeyType    KeyType
 }
 
 type FilterBy struct {
-	AppID        string
+	EndpointID   string
 	GroupID      string
 	SourceID     string
 	SearchParams SearchParams
@@ -40,8 +40,8 @@ func (f *FilterBy) String() *string {
 	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", f.GroupID))
 	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd))
 
-	if len(f.AppID) > 0 {
-		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", f.AppID))
+	if len(f.EndpointID) > 0 {
+		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", f.EndpointID))
 	}
 
 	if len(f.SourceID) > 0 {

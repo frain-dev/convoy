@@ -202,35 +202,25 @@ const (
 	PendingSubscriptionStatus  SubscriptionStatus = "pending"
 )
 
-type Application struct {
-	ID              primitive.ObjectID `json:"-" bson:"_id"`
-	UID             string             `json:"uid" bson:"uid"`
-	GroupID         string             `json:"group_id" bson:"group_id"`
-	Title           string             `json:"name" bson:"title"`
-	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
-	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
-
-	Endpoints []Endpoint         `json:"endpoints,omitempty" bson:"endpoints"`
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-	Events int64 `json:"events,omitempty" bson:"-"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
-}
-
 type SubscriptionStatus string
 
 type Endpoint struct {
-	UID         string `json:"uid" bson:"uid"`
-	TargetURL   string `json:"target_url" bson:"target_url"`
-	Description string `json:"description" bson:"description"`
-	Secret      string `json:"secret" bson:"secret"`
+	ID              primitive.ObjectID `json:"-" bson:"_id"`
+	UID             string             `json:"uid" bson:"uid"`
+	GroupID         string             `json:"group_id" bson:"group_id"`
+	TargetURL       string             `json:"target_url" bson:"target_url"`
+	Title           string             `json:"title" bson:"title"`
+	OwnerID         string             `json:"owner_id" bson:"owner_id"`
+	Secret          string             `json:"secret" bson:"secret"`
+	Description     string             `json:"description" bson:"description"`
+	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
 
-	HttpTimeout       string                  `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                     `json:"rate_limit" bson:"rate_limit"`
+	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
+	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
+	Events      int64  `json:"events,omitempty" bson:"-"`
+	IsDisabled  bool   `json:"is_disabled,omitempty" bson:"is_disabled"`
+
 	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
 
@@ -317,7 +307,7 @@ type RetentionPolicyConfiguration struct {
 type GroupStatistics struct {
 	GroupID      string `json:"-" bson:"group_id"`
 	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
-	TotalApps    int64  `json:"total_apps" bson:"total_apps"`
+	TotalApps    int64  `json:"total_endpoints" bson:"total_endpoints"`
 }
 
 type GroupFilter struct {
@@ -359,7 +349,7 @@ func (g *GroupFilter) ToGenericMap() map[string]interface{} {
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt > 0 }
 
-func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }
+func (o *Group) IsOwner(e *Endpoint) bool { return o.UID == e.GroupID }
 
 var (
 	ErrUserNotFound                  = errors.New("user not found")
@@ -372,7 +362,7 @@ var (
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
-	ErrDuplicateAppName              = errors.New("an application with this name exists")
+	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
@@ -406,9 +396,9 @@ type Event struct {
 	ProviderID string                `json:"provider_id,omitempty" bson:"provider_id"`
 	SourceID   string                `json:"source_id,omitempty" bson:"source_id"`
 	GroupID    string                `json:"group_id,omitempty" bson:"group_id"`
-	AppID      string                `json:"app_id,omitempty" bson:"app_id"`
+	EndpointID string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
 	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	App        *Application          `json:"app_metadata,omitempty" bson:"-"`
+	Endpoint   *Endpoint             `json:"endpoint_metadata,omitempty" bson:"-"`
 	Source     *Source               `json:"source_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
@@ -526,7 +516,6 @@ type DeliveryAttempt struct {
 type EventDelivery struct {
 	ID             primitive.ObjectID    `json:"-" bson:"_id"`
 	UID            string                `json:"uid" bson:"uid"`
-	AppID          string                `json:"app_id,omitempty" bson:"app_id"`
 	GroupID        string                `json:"group_id,omitempty" bson:"group_id"`
 	EventID        string                `json:"event_id,omitempty" bson:"event_id"`
 	EndpointID     string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
@@ -534,9 +523,8 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
-	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
-	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
-	App      *Application `json:"app_metadata,omitempty" bson:"-"`
+	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" bson:"-"`
+	Event    *Event    `json:"event_metadata,omitempty" bson:"-"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
@@ -580,15 +568,13 @@ type Subscription struct {
 	Name       string             `json:"name" bson:"name"`
 	Type       SubscriptionType   `json:"type" bson:"type"`
 	Status     SubscriptionStatus `json:"status" bson:"status"`
-	AppID      string             `json:"-" bson:"app_id"`
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source      `json:"source_metadata" bson:"-"`
-	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"-"`
-	App      *Application `json:"app_metadata" bson:"-"`
+	Source   *Source   `json:"source_metadata" bson:"-"`
+	Endpoint *Endpoint `json:"endpoint_metadata" bson:"-"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -748,7 +734,7 @@ type Device struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
 	GroupID        string             `json:"group_id,omitempty" bson:"group_id"`
-	AppID          string             `json:"app_id,omitempty" bson:"app_id"`
+	EndpointID     string             `json:"endpoint_id,omitempty" bson:"endpoint_id"`
 	HostName       string             `json:"host_name,omitempty" bson:"host_name"`
 	Status         DeviceStatus       `json:"status,omitempty" bson:"status"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
@@ -834,6 +820,5 @@ type (
 	EventMap    map[string]*Event
 	SourceMap   map[string]*Source
 	DeviceMap   map[string]*Device
-	AppMap      map[string]*Application
 	EndpointMap map[string]*Endpoint
 )

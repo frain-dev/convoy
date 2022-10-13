@@ -128,8 +128,8 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 		filter["role.group"] = f.GroupID
 	}
 
-	if !util.IsStringEmpty(f.AppID) {
-		filter["role.app"] = f.AppID
+	if !util.IsStringEmpty(f.EndpointID) {
+		filter["role.endpoint"] = f.EndpointID
 	}
 
 	if !util.IsStringEmpty(string(f.KeyType)) {

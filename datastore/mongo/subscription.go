@@ -68,8 +68,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	ctx = s.setCollectionInContext(ctx)
 	filter := bson.M{"group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
 
-	if !util.IsStringEmpty(f.AppID) {
-		filter["app_id"] = f.AppID
+	if !util.IsStringEmpty(f.EndpointID) {
+		filter["endpoint_id"] = f.EndpointID
 	}
 
 	var subscriptions []datastore.Subscription
@@ -109,10 +109,10 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 	return subscription, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, endpointID string, eventType datastore.EventType) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
-	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType), "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"group_id": groupId, "endpoint_id": endpointID, "filter_config.event_types": string(eventType), "document_status": datastore.ActiveDocumentStatus}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
@@ -123,11 +123,11 @@ func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, gro
 	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, groupId string, endpointID string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"app_id":          appID,
+		"endpoint_id":     endpointID,
 		"group_id":        groupId,
 		"document_status": datastore.ActiveDocumentStatus,
 	}

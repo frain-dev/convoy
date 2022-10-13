@@ -86,20 +86,23 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(datastore.OrganisationInvitesCollection, "uid", true, nil)
 	c.ensureIndex(datastore.OrganisationInvitesCollection, "token", true, nil)
 
-	c.ensureIndex(datastore.AppCollection, "group_id", false, nil)
-	c.ensureIndex(datastore.UserCollection, "uid", true, nil)
-	c.ensureIndex(datastore.AppCollection, "uid", true, nil)
+	c.ensureIndex(datastore.EndpointCollection, "uid", true, nil)
+	c.ensureIndex(datastore.EndpointCollection, "group_id", false, nil)
 
 	c.ensureIndex(datastore.EventCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EventCollection, "app_id", false, nil)
 	c.ensureIndex(datastore.EventCollection, "group_id", false, nil)
-	c.ensureIndex(datastore.AppCollection, "group_id", false, nil)
-	c.ensureIndex(datastore.EventDeliveryCollection, "status", false, nil)
+
 	c.ensureIndex(datastore.SourceCollection, "uid", true, nil)
 	c.ensureIndex(datastore.SourceCollection, "mask_id", true, nil)
+
 	c.ensureIndex(datastore.SubscriptionCollection, "uid", true, nil)
 	c.ensureIndex(datastore.SubscriptionCollection, "filter_config.event_type", false, nil)
-	c.ensureCompoundIndex(datastore.AppCollection)
+
+	c.ensureIndex(datastore.UserCollection, "uid", true, nil)
+	c.ensureIndex(datastore.EventDeliveryCollection, "status", false, nil)
+
+	c.ensureCompoundIndex(datastore.EndpointCollection)
 	c.ensureCompoundIndex(datastore.EventCollection)
 	c.ensureCompoundIndex(datastore.UserCollection)
 	c.ensureCompoundIndex(datastore.GroupCollection)
@@ -317,7 +320,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			},
 		},
 
-		datastore.AppCollection: {
+		datastore.EndpointCollection: {
 			{
 				Keys: bson.D{
 					{Key: "group_id", Value: 1},
