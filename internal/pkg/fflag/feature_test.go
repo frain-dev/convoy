@@ -34,7 +34,6 @@ func TestFeatureFlags_CLI(t *testing.T) {
 		statusCode int
 		IsEnabled  IsEnabledFunc
 		mockFn     func(ff *FF)
-		handlerFn  func() http.HandlerFunc
 	}{
 		{
 			name:       "can_create_cli_api_key",
