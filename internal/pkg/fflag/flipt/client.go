@@ -3,6 +3,8 @@ package flipt
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/url"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -21,8 +23,15 @@ type Flipt struct {
 	conn   *grpc.ClientConn
 }
 
-func NewFliptClient(host string) (*Flipt, error) {
-	conn, err := grpc.Dial(host, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewFliptClient(host string, port uint32) (*Flipt, error) {
+	hostInfo, err := url.Parse(host)
+	if err != nil {
+		log.WithError(err).Error("Error parsing host URL")
+		return nil, err
+	}
+
+	grpcUrl := fmt.Sprintf("%s:%d", hostInfo.Host, port)
+	conn, err := grpc.Dial(grpcUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

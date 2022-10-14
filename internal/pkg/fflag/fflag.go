@@ -16,7 +16,7 @@ type FeatureFlag interface {
 
 func NewFeatureFlagClient(c config.Configuration) (FeatureFlag, error) {
 	if c.FeatureFlag.Type == config.FeatureFlagProvider(fliptProvider) {
-		client, err := flipt.NewFliptClient(c.FeatureFlag.Flipt.Host)
+		client, err := flipt.NewFliptClient(c.FeatureFlag.Flipt.Host, c.FeatureFlag.Flipt.GRPCPort)
 		return client, err
 	}
 

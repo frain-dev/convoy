@@ -165,7 +165,8 @@ type FeatureFlagConfiguration struct {
 }
 
 type FliptConfiguration struct {
-	Host string `json:"host" envconfig:"CONVOY_FLIPT_HOST"`
+	Host     string `json:"host" envconfig:"CONVOY_FLIPT_HOST"`
+	GRPCPort uint32 `json:"grpc_port" envconfig:"CONVOY_FLIPT_GRPC_PORT"`
 }
 
 const (

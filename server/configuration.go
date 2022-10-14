@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
+	convoyConfig "github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
@@ -39,6 +40,12 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	co, err := convoyConfig.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	configResponse := []*models.ConfigurationResponse{}
 	if config != nil {
 		if config.StoragePolicy.Type == datastore.S3 {
@@ -55,6 +62,7 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 			IsSignupEnabled:    config.IsSignupEnabled,
 			StoragePolicy:      config.StoragePolicy,
 			ApiVersion:         convoy.GetVersion(),
+			FliptHost:          co.FeatureFlag.Flipt.Host,
 			CreatedAt:          config.CreatedAt,
 			UpdatedAt:          config.UpdatedAt,
 			DeletedAt:          config.DeletedAt,
