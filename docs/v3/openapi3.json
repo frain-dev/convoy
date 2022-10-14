@@ -3,7 +3,7 @@
 		"schemas": {
 			"auth.Role": {
 				"properties": {
-					"app": {
+					"endpoint": {
 						"type": "string"
 					},
 					"group": {
@@ -18,15 +18,12 @@
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"expires_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"hash": {
@@ -51,7 +48,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -74,47 +70,6 @@
 						"type": "string"
 					},
 					"header_value": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.Application": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"endpoints": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.Endpoint"
-						},
-						"type": "array"
-					},
-					"events": {
-						"type": "integer"
-					},
-					"group_id": {
-						"type": "string"
-					},
-					"is_disabled": {
-						"type": "boolean"
-					},
-					"name": {
-						"type": "string"
-					},
-					"slack_webhook_url": {
-						"type": "string"
-					},
-					"support_email": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
 						"type": "string"
 					}
 				},
@@ -197,13 +152,13 @@
 			},
 			"datastore.Device": {
 				"properties": {
-					"app_id": {
-						"type": "string"
-					},
 					"created_at": {
 						"type": "string"
 					},
 					"deleted_at": {
+						"type": "string"
+					},
+					"endpoint_id": {
 						"type": "string"
 					},
 					"group_id": {
@@ -229,6 +184,9 @@
 			},
 			"datastore.Endpoint": {
 				"properties": {
+					"authentication": {
+						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -238,7 +196,19 @@
 					"description": {
 						"type": "string"
 					},
+					"events": {
+						"type": "integer"
+					},
+					"group_id": {
+						"type": "string"
+					},
 					"http_timeout": {
+						"type": "string"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"owner_id": {
 						"type": "string"
 					},
 					"rate_limit": {
@@ -250,7 +220,16 @@
 					"secret": {
 						"type": "string"
 					},
+					"slack_webhook_url": {
+						"type": "string"
+					},
+					"support_email": {
+						"type": "string"
+					},
 					"target_url": {
+						"type": "string"
+					},
+					"title": {
 						"type": "string"
 					},
 					"uid": {
@@ -262,14 +241,19 @@
 				},
 				"type": "object"
 			},
+			"datastore.EndpointAuthentication": {
+				"properties": {
+					"api_key": {
+						"$ref": "#/components/schemas/datastore.ApiKey"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.Event": {
 				"properties": {
-					"app_id": {
-						"type": "string"
-					},
-					"app_metadata": {
-						"$ref": "#/components/schemas/datastore.Application"
-					},
 					"created_at": {
 						"type": "string"
 					},
@@ -282,6 +266,12 @@
 					},
 					"deleted_at": {
 						"type": "string"
+					},
+					"endpoint_id": {
+						"type": "string"
+					},
+					"endpoint_metadata": {
+						"$ref": "#/components/schemas/datastore.Endpoint"
 					},
 					"event_type": {
 						"type": "string"
@@ -317,12 +307,6 @@
 			},
 			"datastore.EventDelivery": {
 				"properties": {
-					"app_id": {
-						"type": "string"
-					},
-					"app_metadata": {
-						"$ref": "#/components/schemas/datastore.Application"
-					},
 					"cli_metadata": {
 						"$ref": "#/components/schemas/datastore.CLIMetadata"
 					},
@@ -469,7 +453,7 @@
 					"messages_sent": {
 						"type": "integer"
 					},
-					"total_apps": {
+					"total_endpoints": {
 						"type": "integer"
 					}
 				},
@@ -682,6 +666,9 @@
 			},
 			"datastore.S3Storage": {
 				"properties": {
+					"access_key": {
+						"type": "string"
+					},
 					"bucket": {
 						"type": "string"
 					},
@@ -689,6 +676,9 @@
 						"type": "string"
 					},
 					"region": {
+						"type": "string"
+					},
+					"secret_key": {
 						"type": "string"
 					}
 				},
@@ -784,9 +774,6 @@
 				"properties": {
 					"alert_config": {
 						"$ref": "#/components/schemas/datastore.AlertConfiguration"
-					},
-					"app_metadata": {
-						"$ref": "#/components/schemas/datastore.Application"
 					},
 					"created_at": {
 						"type": "string"
@@ -956,23 +943,6 @@
 				},
 				"type": "object"
 			},
-			"models.Application": {
-				"properties": {
-					"is_disabled": {
-						"type": "boolean"
-					},
-					"name": {
-						"type": "string"
-					},
-					"slack_webhook_url": {
-						"type": "string"
-					},
-					"support_email": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"models.Configuration": {
 				"properties": {
 					"is_analytics_enabled": {
@@ -1018,16 +988,19 @@
 			},
 			"models.Endpoint": {
 				"properties": {
+					"authentication": {
+						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
 					"description": {
 						"type": "string"
 					},
-					"events": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
 					"http_timeout": {
+						"type": "string"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"name": {
 						"type": "string"
 					},
 					"rate_limit": {
@@ -1039,6 +1012,12 @@
 					"secret": {
 						"type": "string"
 					},
+					"slack_webhook_url": {
+						"type": "string"
+					},
+					"support_email": {
+						"type": "string"
+					},
 					"url": {
 						"type": "string"
 					}
@@ -1047,9 +1026,6 @@
 			},
 			"models.Event": {
 				"properties": {
-					"app_id": {
-						"type": "string"
-					},
 					"custom_headers": {
 						"additionalProperties": {
 							"type": "string"
@@ -1062,6 +1038,9 @@
 							"type": "integer"
 						},
 						"type": "array"
+					},
+					"endpoint_id": {
+						"type": "string"
 					},
 					"event_type": {
 						"type": "string"
@@ -1114,11 +1093,9 @@
 			"models.LoginUserResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"email": {
@@ -1137,7 +1114,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -1270,11 +1246,9 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"group_id": {
@@ -1302,7 +1276,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"url": {
@@ -1318,9 +1291,6 @@
 				"properties": {
 					"alert_config": {
 						"$ref": "#/components/schemas/datastore.AlertConfiguration"
-					},
-					"app_id": {
-						"type": "string"
 					},
 					"disable_endpoint": {
 						"type": "boolean"
@@ -1468,690 +1438,14 @@
 	},
 	"openapi": "3.0.3",
 	"paths": {
-		"/api/v1/applications": {
+		"/api/v1/endpoints": {
 			"get": {
-				"description": "This fetches all applications",
-				"parameters": [
-					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
-						"in": "query",
-						"name": "sort",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "app title",
-						"in": "query",
-						"name": "q",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "group id",
-						"in": "query",
-						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/server.pagedResponse"
-														},
-														{
-															"properties": {
-																"content": {
-																	"items": {
-																		"$ref": "#/components/schemas/datastore.Application"
-																	},
-																	"type": "array"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get all applications",
-				"tags": [
-					"Application"
-				]
-			},
-			"post": {
-				"description": "This endpoint creates an application",
+				"description": "This endpoint fetches an endpoints",
 				"parameters": [
 					{
 						"description": "group id",
 						"in": "query",
 						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Application"
-							}
-						}
-					},
-					"description": "Application Details",
-					"required": true,
-					"x-originalParamName": "application"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Application"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Create an application",
-				"tags": [
-					"Application"
-				]
-			}
-		},
-		"/api/v1/applications/{appID}": {
-			"delete": {
-				"description": "This endpoint deletes an app",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "query",
-						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Delete app",
-				"tags": [
-					"Application"
-				]
-			},
-			"get": {
-				"description": "This endpoint fetches an application by it's id",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "query",
-						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Application"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get an application",
-				"tags": [
-					"Application"
-				]
-			},
-			"put": {
-				"description": "This endpoint updates an application",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "query",
-						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Application"
-							}
-						}
-					},
-					"description": "Application Details",
-					"required": true,
-					"x-originalParamName": "application"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Application"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Update an application",
-				"tags": [
-					"Application"
-				]
-			}
-		},
-		"/api/v1/applications/{appID}/endpoints": {
-			"get": {
-				"description": "This endpoint fetches an application's endpoints",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "query",
-						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -2256,27 +1550,18 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get application endpoints",
+				"summary": "Get endpoints",
 				"tags": [
-					"Application Endpoints"
+					"Endpoints"
 				]
 			},
 			"post": {
-				"description": "This endpoint creates an application endpoint",
+				"description": "This endpoint creates an endpoint",
 				"parameters": [
 					{
 						"description": "group id",
 						"in": "query",
 						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -2390,29 +1675,20 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create an application endpoint",
+				"summary": "Create an endpoint",
 				"tags": [
 					"Application Endpoints"
 				]
 			}
 		},
-		"/api/v1/applications/{appID}/endpoints/{endpointID}": {
+		"/api/v1/endpoints/{endpointID}": {
 			"delete": {
-				"description": "This endpoint deletes an application endpoint",
+				"description": "This endpoint deletes an endpoint",
 				"parameters": [
 					{
 						"description": "group id",
 						"in": "query",
 						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -2523,27 +1799,18 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Delete application endpoint",
+				"summary": "Delete endpoint",
 				"tags": [
-					"Application Endpoints"
+					"Endpoints"
 				]
 			},
 			"get": {
-				"description": "This endpoint fetches an application endpoint",
+				"description": "This endpoint fetches an endpoint",
 				"parameters": [
 					{
 						"description": "group id",
 						"in": "query",
 						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -2654,27 +1921,18 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get application endpoint",
+				"summary": "Get endpoint",
 				"tags": [
-					"Application Endpoints"
+					"Endpoints"
 				]
 			},
 			"put": {
-				"description": "This endpoint updates an application endpoint",
+				"description": "This endpoint updates an endpoint",
 				"parameters": [
 					{
 						"description": "group id",
 						"in": "query",
 						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -2797,9 +2055,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Update an application endpoint",
+				"summary": "Update an endpoint",
 				"tags": [
-					"Application Endpoints"
+					"Endpoints"
 				]
 			}
 		},

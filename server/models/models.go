@@ -161,18 +161,19 @@ type User struct {
 	Role      auth.Role `json:"role" bson:"role"`
 }
 
-type Application struct {
-	AppName         string `json:"name" bson:"name" valid:"required~please provide your appName"`
+type Endpoint struct {
+	URL             string `json:"url" bson:"url"`
+	Secret          string `json:"secret" bson:"secret"`
+	Description     string `json:"description" bson:"description"`
+	Name            string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
 	SupportEmail    string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
 	IsDisabled      bool   `json:"is_disabled"`
 	SlackWebhookURL string `json:"slack_webhook_url" bson:"slack_webhook_url"`
-}
 
-type UpdateApplication struct {
-	AppName         *string `json:"name" bson:"name" valid:"required~please provide your appName"`
-	SupportEmail    *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled      *bool   `json:"is_disabled"`
-	SlackWebhookURL *string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
 
 type Source struct {
@@ -192,8 +193,8 @@ type UpdateSource struct {
 }
 
 type Event struct {
-	AppID     string `json:"app_id" bson:"app_id" valid:"required~please provide an app id"`
-	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide an endpoint id"`
+	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -221,18 +222,6 @@ type MessageResponse struct {
 	Data   json.RawMessage `json:"data" bson:"data"`
 }
 
-type Endpoint struct {
-	URL         string   `json:"url" bson:"url"`
-	Secret      string   `json:"secret" bson:"secret"`
-	Description string   `json:"description" bson:"description"`
-	Events      []string `json:"events" bson:"events"`
-
-	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
-}
-
 type DashboardSummary struct {
 	EventsSent   uint64                     `json:"events_sent" bson:"events_sent"`
 	Applications int                        `json:"apps" bson:"apps"`
@@ -247,7 +236,6 @@ type WebhookRequest struct {
 
 type Subscription struct {
 	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
-	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
@@ -303,9 +291,9 @@ type ResetPassword struct {
 	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
 }
 
-type CreateAppApiKey struct {
+type CreateEndpointApiKey struct {
 	Group      *datastore.Group
-	App        *datastore.Application
+	Endpoint   *datastore.Endpoint
 	Name       string `json:"name"`
 	BaseUrl    string
 	KeyType    datastore.KeyType `json:"key_type"`

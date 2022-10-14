@@ -18,12 +18,11 @@ import (
 
 func provideGroupService(ctrl *gomock.Controller) *GroupService {
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
+	return NewGroupService(apiKeyRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
 }
 
 func TestGroupService_CreateGroup(t *testing.T) {

@@ -24,7 +24,7 @@ import (
 var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be force resent")
 
 type EventService struct {
-	appRepo           datastore.ApplicationRepository
+	endpointRepo      datastore.EndpointRepository
 	sourceRepo        datastore.SourceRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -35,13 +35,13 @@ type EventService struct {
 	deviceRepo        datastore.DeviceRepository
 }
 
-func NewEventService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+func NewEventService(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
 	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, deviceRepo datastore.DeviceRepository,
 ) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}
+	return &EventService{endpointRepo: endpointRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}
 }
 
-func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
+func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
 	if g == nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
 	}
@@ -50,22 +50,22 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	var app *datastore.Application
-	appCacheKey := convoy.ApplicationsCacheKey.Get(newMessage.AppID).String()
+	var endpoint *datastore.Endpoint
+	endpointCacheKey := convoy.EndpointsCacheKey.Get(newMessage.EndpointID).String()
 
-	err := e.cache.Get(ctx, appCacheKey, &app)
+	err := e.cache.Get(ctx, endpointCacheKey, &endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	if app == nil {
-		app, err = e.appRepo.FindApplicationByID(ctx, newMessage.AppID)
+	if endpoint == nil {
+		endpoint, err = e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID)
 		if err != nil {
 
-			msg := "an error occurred while retrieving app details"
+			msg := "an error occurred while retrieving endpoint details"
 			statusCode := http.StatusBadRequest
 
-			if errors.Is(err, datastore.ErrApplicationNotFound) {
+			if errors.Is(err, datastore.ErrEndpointNotFound) {
 				msg = err.Error()
 				statusCode = http.StatusNotFound
 			}
@@ -74,14 +74,19 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 			return nil, util.NewServiceError(statusCode, errors.New(msg))
 		}
 
-		err = e.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+		err = e.cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if len(app.Endpoints) == 0 {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("app has no configured endpoints"))
+	subscriptions, err := e.subRepo.FindSubscriptionsByEndpointID(ctx, g.UID, endpoint.UID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(subscriptions) == 0 {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("endpoint has no subscriptions"))
 	}
 
 	event := &datastore.Event{
@@ -91,8 +96,8 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 		Headers:        e.getCustomHeaders(newMessage),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		AppID:          app.UID,
-		GroupID:        app.GroupID,
+		EndpointID:     endpoint.UID,
+		GroupID:        endpoint.GroupID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
@@ -122,7 +127,7 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	return event, nil
 }
 
-func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
+func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
 	taskName := convoy.CreateEventProcessor
 	eventByte, err := json.Marshal(event)
 	if err != nil {
@@ -144,7 +149,7 @@ func (e *EventService) ReplayAppEvent(ctx context.Context, event *datastore.Even
 	return nil
 }
 
-func (e *EventService) GetAppEvent(ctx context.Context, id string) (*datastore.Event, error) {
+func (e *EventService) GetEvent(ctx context.Context, id string) (*datastore.Event, error) {
 	event, err := e.eventRepo.FindEventByID(ctx, id)
 	if err != nil {
 		log.WithError(err).Error("failed to find event by id")
@@ -159,7 +164,7 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 	ids, paginationData, err := e.searcher.Search(filter.Group.UID, &datastore.SearchFilter{
 		Query: filter.Query,
 		FilterBy: datastore.FilterBy{
-			AppID:        filter.AppID,
+			EndpointID:   filter.EndpointID,
 			SourceID:     filter.SourceID,
 			GroupID:      filter.Group.UID,
 			SearchParams: filter.SearchParams,
@@ -191,7 +196,7 @@ func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datast
 }
 
 func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *datastore.Filter) (int, int, error) {
-	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
+	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.EndpointID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")
 		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
@@ -211,7 +216,7 @@ func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *data
 }
 
 func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter *datastore.Filter) (int64, error) {
-	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams)
+	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, filter.Group.UID, filter.EndpointID, filter.EventID, filter.Status, filter.SearchParams)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching event deliveries")
 		return 0, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
@@ -253,19 +258,19 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
-	appMap := datastore.AppMap{}
+	endpointMap := datastore.EndpointMap{}
 	sourceMap := datastore.SourceMap{}
 
 	for i, event := range events {
-		if _, ok := appMap[event.AppID]; !ok {
-			a, _ := e.appRepo.FindApplicationByID(ctx, event.AppID)
-			aa := &datastore.Application{
+		if _, ok := endpointMap[event.EndpointID]; !ok {
+			a, _ := e.endpointRepo.FindEndpointByID(ctx, event.EndpointID)
+			aa := &datastore.Endpoint{
 				UID:          a.UID,
 				Title:        a.Title,
 				GroupID:      a.GroupID,
 				SupportEmail: a.SupportEmail,
 			}
-			appMap[event.AppID] = aa
+			endpointMap[event.EndpointID] = aa
 		}
 
 		if _, ok := sourceMap[event.SourceID]; !ok && !util.IsStringEmpty(event.SourceID) {
@@ -279,7 +284,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 			}
 		}
 
-		events[i].App = appMap[event.AppID]
+		events[i].Endpoint = endpointMap[event.EndpointID]
 		events[i].Source = sourceMap[event.SourceID]
 	}
 
@@ -287,28 +292,30 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 }
 
 func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	deliveries, paginationData, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.AppID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
+	deliveries, paginationData, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.EndpointID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
 	}
 
-	appMap := datastore.AppMap{}
 	eventMap := datastore.EventMap{}
 	deviceMap := datastore.DeviceMap{}
 	endpointMap := datastore.EndpointMap{}
 
 	for i, ed := range deliveries {
-		if _, ok := appMap[ed.AppID]; !ok {
-			a, err := e.appRepo.FindApplicationByID(ctx, ed.AppID)
+		if _, ok := endpointMap[ed.EndpointID]; !ok {
+			a, err := e.endpointRepo.FindEndpointByID(ctx, ed.EndpointID)
 			if err == nil {
-				aa := &datastore.Application{
+				aa := &datastore.Endpoint{
 					UID:          a.UID,
 					Title:        a.Title,
+					TargetURL:    a.TargetURL,
+					HttpTimeout:  a.HttpTimeout,
+					Secret:       a.Secret,
 					GroupID:      a.GroupID,
 					SupportEmail: a.SupportEmail,
 				}
-				appMap[ed.AppID] = aa
+				endpointMap[ed.EndpointID] = aa
 			}
 		}
 
@@ -325,7 +332,7 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 
 		if !util.IsStringEmpty(ed.DeviceID) {
 			if _, ok := deviceMap[ed.DeviceID]; !ok {
-				dev, err := e.deviceRepo.FetchDeviceByID(ctx, ed.DeviceID, ed.AppID, ed.GroupID)
+				dev, err := e.deviceRepo.FetchDeviceByID(ctx, ed.DeviceID, ed.EndpointID, ed.GroupID)
 				if err == nil {
 					device := &datastore.Device{
 						UID:      dev.UID,
@@ -337,23 +344,6 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 			deliveries[i].CLIMetadata.HostName = deviceMap[ed.DeviceID].HostName
 		}
 
-		if _, ok := endpointMap[ed.EndpointID]; !ok {
-			en, err := e.appRepo.FindApplicationEndpointByID(ctx, ed.AppID, ed.EndpointID)
-			if err == nil {
-				endpoint := &datastore.Endpoint{
-					UID:               en.UID,
-					TargetURL:         en.TargetURL,
-					DocumentStatus:    en.DocumentStatus,
-					Secret:            en.Secret,
-					HttpTimeout:       en.HttpTimeout,
-					RateLimit:         en.RateLimit,
-					RateLimitDuration: en.RateLimitDuration,
-				}
-				endpointMap[ed.EndpointID] = endpoint
-			}
-		}
-
-		deliveries[i].App = appMap[ed.AppID]
 		deliveries[i].Event = eventMap[ed.EventID]
 		deliveries[i].Endpoint = endpointMap[ed.EndpointID]
 	}

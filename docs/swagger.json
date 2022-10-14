@@ -21,14 +21,14 @@
     "host": "dashboard.getconvoy.io",
     "basePath": "/",
     "paths": {
-        "/api/v1/applications": {
+        "/api/v1/endpoints": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This fetches all applications",
+                "description": "This endpoint fetches an endpoints",
                 "consumes": [
                     "application/json"
                 ],
@@ -36,609 +36,15 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Endpoints"
                 ],
-                "summary": "Get all applications",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "app title",
-                        "name": "q",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupId",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/server.pagedResponse"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "content": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "$ref": "#/definitions/datastore.Application"
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint creates an application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Create an application",
+                "summary": "Get endpoints",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "group id",
                         "name": "groupId",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "description": "Application Details",
-                        "name": "application",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Application"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Application"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/applications/{appID}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches an application by it's id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Get an application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Application"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates an application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Update an application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Application Details",
-                        "name": "application",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Application"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Application"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint deletes an app",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Delete app",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/applications/{appID}/endpoints": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches an application's endpoints",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application Endpoints"
-                ],
-                "summary": "Get application endpoints",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
                         "required": true
                     }
                 ],
@@ -726,7 +132,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an application endpoint",
+                "description": "This endpoint creates an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -736,20 +142,13 @@
                 "tags": [
                     "Application Endpoints"
                 ],
-                "summary": "Create an application endpoint",
+                "summary": "Create an endpoint",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "group id",
                         "name": "groupId",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
                         "required": true
                     },
                     {
@@ -838,14 +237,14 @@
                 }
             }
         },
-        "/api/v1/applications/{appID}/endpoints/{endpointID}": {
+        "/api/v1/endpoints/{endpointID}": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an application endpoint",
+                "description": "This endpoint fetches an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -853,22 +252,15 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application Endpoints"
+                    "Endpoints"
                 ],
-                "summary": "Get application endpoint",
+                "summary": "Get endpoint",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "group id",
                         "name": "groupId",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
                         "required": true
                     },
                     {
@@ -960,7 +352,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates an application endpoint",
+                "description": "This endpoint updates an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -968,22 +360,15 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application Endpoints"
+                    "Endpoints"
                 ],
-                "summary": "Update an application endpoint",
+                "summary": "Update an endpoint",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "group id",
                         "name": "groupId",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
                         "required": true
                     },
                     {
@@ -1084,7 +469,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint deletes an application endpoint",
+                "description": "This endpoint deletes an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -1092,22 +477,15 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application Endpoints"
+                    "Endpoints"
                 ],
-                "summary": "Delete application endpoint",
+                "summary": "Delete endpoint",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "group id",
                         "name": "groupId",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
                         "required": true
                     },
                     {
@@ -8616,7 +7994,7 @@
         "auth.Role": {
             "type": "object",
             "properties": {
-                "app": {
+                "endpoint": {
                     "type": "string"
                 },
                 "group": {
@@ -8631,15 +8009,12 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "expires_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "hash": {
@@ -8664,7 +8039,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -8687,47 +8061,6 @@
                     "type": "string"
                 },
                 "header_value": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.Application": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "endpoints": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/datastore.Endpoint"
-                    }
-                },
-                "events": {
-                    "type": "integer"
-                },
-                "group_id": {
-                    "type": "string"
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "support_email": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -8810,13 +8143,13 @@
         "datastore.Device": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
                 "deleted_at": {
+                    "type": "string"
+                },
+                "endpoint_id": {
                     "type": "string"
                 },
                 "group_id": {
@@ -8842,6 +8175,9 @@
         "datastore.Endpoint": {
             "type": "object",
             "properties": {
+                "authentication": {
+                    "$ref": "#/definitions/datastore.EndpointAuthentication"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -8851,7 +8187,19 @@
                 "description": {
                     "type": "string"
                 },
+                "events": {
+                    "type": "integer"
+                },
+                "group_id": {
+                    "type": "string"
+                },
                 "http_timeout": {
+                    "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "owner_id": {
                     "type": "string"
                 },
                 "rate_limit": {
@@ -8863,7 +8211,16 @@
                 "secret": {
                     "type": "string"
                 },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "support_email": {
+                    "type": "string"
+                },
                 "target_url": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 },
                 "uid": {
@@ -8874,15 +8231,20 @@
                 }
             }
         },
+        "datastore.EndpointAuthentication": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "$ref": "#/definitions/datastore.ApiKey"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.Event": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.Application"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -8895,6 +8257,12 @@
                 },
                 "deleted_at": {
                     "type": "string"
+                },
+                "endpoint_id": {
+                    "type": "string"
+                },
+                "endpoint_metadata": {
+                    "$ref": "#/definitions/datastore.Endpoint"
                 },
                 "event_type": {
                     "type": "string"
@@ -8930,12 +8298,6 @@
         "datastore.EventDelivery": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.Application"
-                },
                 "cli_metadata": {
                     "$ref": "#/definitions/datastore.CLIMetadata"
                 },
@@ -9082,7 +8444,7 @@
                 "messages_sent": {
                     "type": "integer"
                 },
-                "total_apps": {
+                "total_endpoints": {
                     "type": "integer"
                 }
             }
@@ -9295,6 +8657,9 @@
         "datastore.S3Storage": {
             "type": "object",
             "properties": {
+                "access_key": {
+                    "type": "string"
+                },
                 "bucket": {
                     "type": "string"
                 },
@@ -9302,6 +8667,9 @@
                     "type": "string"
                 },
                 "region": {
+                    "type": "string"
+                },
+                "secret_key": {
                     "type": "string"
                 }
             }
@@ -9398,9 +8766,6 @@
                 "alert_config": {
                     "description": "subscription config",
                     "$ref": "#/definitions/datastore.AlertConfiguration"
-                },
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.Application"
                 },
                 "created_at": {
                     "type": "string"
@@ -9569,23 +8934,6 @@
                 }
             }
         },
-        "models.Application": {
-            "type": "object",
-            "properties": {
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "support_email": {
-                    "type": "string"
-                }
-            }
-        },
         "models.Configuration": {
             "type": "object",
             "properties": {
@@ -9632,16 +8980,19 @@
         "models.Endpoint": {
             "type": "object",
             "properties": {
+                "authentication": {
+                    "$ref": "#/definitions/datastore.EndpointAuthentication"
+                },
                 "description": {
                     "type": "string"
                 },
-                "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "http_timeout": {
+                    "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "name": {
                     "type": "string"
                 },
                 "rate_limit": {
@@ -9653,6 +9004,12 @@
                 "secret": {
                     "type": "string"
                 },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "support_email": {
+                    "type": "string"
+                },
                 "url": {
                     "type": "string"
                 }
@@ -9661,9 +9018,6 @@
         "models.Event": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
                 "custom_headers": {
                     "type": "object",
                     "additionalProperties": {
@@ -9676,6 +9030,9 @@
                     "items": {
                         "type": "integer"
                     }
+                },
+                "endpoint_id": {
+                    "type": "string"
                 },
                 "event_type": {
                     "type": "string"
@@ -9728,11 +9085,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "email": {
@@ -9751,7 +9106,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -9884,11 +9238,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "group_id": {
@@ -9916,7 +9268,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "url": {
@@ -9932,9 +9283,6 @@
             "properties": {
                 "alert_config": {
                     "$ref": "#/definitions/datastore.AlertConfiguration"
-                },
-                "app_id": {
-                    "type": "string"
                 },
                 "disable_endpoint": {
                     "type": "boolean"

@@ -358,7 +358,6 @@ var (
 	ErrGroupNotFound                 = errors.New("group not found")
 	ErrAPIKeyNotFound                = errors.New("api key not found")
 	ErrEndpointNotFound              = errors.New("endpoint not found")
-	ErrApplicationNotFound           = errors.New("application not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")

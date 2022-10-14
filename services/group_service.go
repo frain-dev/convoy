@@ -22,7 +22,6 @@ import (
 
 type GroupService struct {
 	apiKeyRepo        datastore.APIKeyRepository
-	appRepo           datastore.ApplicationRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -30,10 +29,9 @@ type GroupService struct {
 	cache             cache.Cache
 }
 
-func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
+func NewGroupService(apiKeyRepo datastore.APIKeyRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
 	return &GroupService{
 		apiKeyRepo:        apiKeyRepo,
-		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,

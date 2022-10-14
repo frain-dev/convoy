@@ -18,7 +18,7 @@ import (
 )
 
 func provideEventService(ctrl *gomock.Controller) *EventService {
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
@@ -27,10 +27,10 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo, deviceRepo)
+	return NewEventService(endpointRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo, deviceRepo)
 }
 
-func TestEventService_CreateAppEvent(t *testing.T) {
+func TestEventService_CreateEvent(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx        context.Context
@@ -53,33 +53,31 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Application{
-					Title:   "test_app",
-					UID:     "123",
-					GroupID: "abc",
-					Endpoints: []datastore.Endpoint{
-						{
-							UID: "ref",
-						},
-						{
-							UID: "abcd",
-						},
-					},
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
+
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Subscription{
+					{UID: "abc"},
+				}, nil)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:  "abc",
@@ -100,7 +98,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				AppID:            "123",
+				EndpointID:       "123",
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
@@ -112,33 +110,31 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Application{
-					Title:   "test_app",
-					UID:     "123",
-					GroupID: "abc",
-					Endpoints: []datastore.Endpoint{
-						{
-							UID: "ref",
-						},
-						{
-							UID: "abcd",
-						},
-					},
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
+
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Subscription{
+					{UID: "abc"},
+				}, nil)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:  "abc",
@@ -156,30 +152,22 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				AppID:            "123",
+				EndpointID:       "123",
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 		{
-			name: "should_create_event_for_disabled_app",
+			name: "should_create_event_for_disabled_endpoint",
 			dbFn: func(es *EventService) {
 				c, _ := es.cache.(*mocks.MockCache)
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Application{
-					Title: "test_app",
-					Endpoints: []datastore.Endpoint{
-						{
-							UID: "ref",
-						},
-						{
-							UID: "abcd",
-						},
-					},
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
 					UID:          "123",
 					GroupID:      "abc",
 					IsDisabled:   true,
@@ -189,13 +177,19 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
+
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Subscription{
+					{UID: "abc"},
+				}, nil)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:  "abc",
@@ -216,12 +210,11 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				AppID:            "123",
+				EndpointID:       "123",
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
-
 		{
 			name: "should_create_event_with_custom_headers",
 			dbFn: func(es *EventService) {
@@ -229,31 +222,29 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Application{
-					Title:   "test_app",
-					UID:     "123",
-					GroupID: "abc",
-					Endpoints: []datastore.Endpoint{
-						{
-							UID: "ref",
-						},
-						{
-							UID: "abcd",
-						},
-					},
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
+
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Subscription{
+					{UID: "abc"},
+				}, nil)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:         "123",
+					EndpointID:    "123",
 					EventType:     "payment.created",
 					Data:          bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 					CustomHeaders: map[string]string{"X-Test-Signature": "Test"},
@@ -277,13 +268,12 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				AppID:            "123",
+				EndpointID:       "123",
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				Headers:          httpheader.HTTPHeader{"X-Test-Signature": []string{"Test"}},
 			},
 		},
-
 		{
 			name: "should_error_for_invalid_strategy_config",
 			dbFn: func(es *EventService) {
@@ -291,29 +281,27 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Application{
-					Title:   "test_app",
-					UID:     "123",
-					GroupID: "abc",
-					Endpoints: []datastore.Endpoint{
-						{
-							UID: "ref",
-						},
-						{
-							UID: "abcd",
-						},
-					},
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
 					SupportEmail: "test_app@gmail.com",
+				}, nil)
+
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Subscription{
+					{UID: "abc"},
 				}, nil)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:    "abc",
@@ -326,82 +314,85 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 			wantErrMsg:  "retry strategy not defined in configuration",
 		},
 		{
-			name: "should_error_for_empty_app_id",
+			name: "should_error_for_empty_endpoint_id",
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "app_id:please provide an app id",
+			wantErrMsg:  "endpoint_id:please provide an endpoint id",
 		},
 		{
-			name: "should_error_for_application_not_found",
+			name: "should_error_for_endpoint_not_found",
 			dbFn: func(es *EventService) {
 				c, _ := es.cache.(*mocks.MockCache)
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(nil, datastore.ErrApplicationNotFound)
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
+					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusNotFound,
-			wantErrMsg:  "application not found",
+			wantErrMsg:  "endpoint not found",
 		},
 		{
-			name: "should_error_for_zero_app_subscriptions",
+			name: "should_error_for_zero_endpoint_subscriptions",
 			dbFn: func(es *EventService) {
 				c, _ := es.cache.(*mocks.MockCache)
 				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Application{
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
+					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
 					GroupID:      "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
+
+				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Subscription{}, nil)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "app has no configured endpoints",
+			wantErrMsg:  "endpoint has no subscriptions",
 		},
-
 		{
 			name: "should_fail_to_create_event",
 			dbFn: func(es *EventService) {},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					AppID:     "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 			},
 			wantErr:     true,
@@ -420,7 +411,7 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			event, err := es.CreateAppEvent(tc.args.ctx, tc.args.newMessage, tc.args.g)
+			event, err := es.CreateEvent(tc.args.ctx, tc.args.newMessage, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -436,17 +427,17 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 
 			stripVariableFields(t, "event", event)
 
-			m1 := tc.wantEvent.AppID
-			m2 := event.AppID
+			m1 := tc.wantEvent.EndpointID
+			m2 := event.EndpointID
 
-			tc.wantEvent.AppID, event.AppID = "", ""
+			tc.wantEvent.EndpointID, event.EndpointID = "", ""
 			require.Equal(t, tc.wantEvent, event)
 			require.Equal(t, m1, m2)
 		})
 	}
 }
 
-func TestEventService_GetAppEvent(t *testing.T) {
+func TestEventService_GetEvent(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
@@ -500,7 +491,7 @@ func TestEventService_GetAppEvent(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			event, err := es.GetAppEvent(tc.args.ctx, tc.args.id)
+			event, err := es.GetEvent(tc.args.ctx, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -570,7 +561,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			err := es.ReplayAppEvent(tc.args.ctx, tc.args.event, tc.args.g)
+			err := es.ReplayEvent(tc.args.ctx, tc.args.event, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -673,9 +664,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "13429",
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "13429",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -744,9 +735,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "13429",
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "13429",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -857,10 +848,10 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "ref",
-					Status:  []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "ref",
+					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
 						CreatedAtEnd:   1213,
@@ -887,10 +878,10 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "ref",
-					Status:  []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "ref",
+					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
 						CreatedAtEnd:   1213,
@@ -1076,9 +1067,9 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:    &datastore.Group{UID: "123"},
-					SourceID: "bcv",
-					AppID:    "abc",
+					Group:      &datastore.Group{UID: "123"},
+					SourceID:   "bcv",
+					EndpointID: "abc",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -1093,11 +1084,11 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
 				f := &datastore.Filter{
-					Query:    "",
-					Group:    &datastore.Group{UID: "123"},
-					AppID:    "abc",
-					EventID:  "",
-					SourceID: "bcv",
+					Query:      "",
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "",
+					SourceID:   "bcv",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -1120,8 +1111,8 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 						TotalPage: 2,
 					}, nil)
 
-				ap, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
+				ap, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				ap.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
 					UID:          "abc",
 					Title:        "Title",
 					GroupID:      "123",
@@ -1131,7 +1122,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			wantEvents: []datastore.Event{
 				{
 					UID: "1234",
-					App: &datastore.Application{
+					Endpoint: &datastore.Endpoint{
 						UID:          "abc",
 						Title:        "Title",
 						GroupID:      "123",
@@ -1153,10 +1144,10 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "ref",
-					Status:  []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "ref",
+					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
 						CreatedAtEnd:   1213,
@@ -1220,8 +1211,8 @@ func TestEventService_SearchEvents(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group: &datastore.Group{UID: "123"},
-					AppID: "abc",
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -1268,10 +1259,10 @@ func TestEventService_SearchEvents(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "ref",
-					Status:  []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "ref",
+					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
 						CreatedAtEnd:   1213,
@@ -1335,9 +1326,9 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "123",
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "123",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -1368,7 +1359,10 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						Sort:    1,
 					}).
 					Times(1).
-					Return([]datastore.EventDelivery{{UID: "1234"}}, datastore.PaginationData{
+					Return([]datastore.EventDelivery{{
+						UID:        "1234",
+						EndpointID: "12345",
+					}}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,
 						PerPage:   2,
@@ -1377,22 +1371,14 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						TotalPage: 2,
 					}, nil)
 
-				ap, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
-					UID:          "abc",
-					Title:        "Title",
-					GroupID:      "123",
-					SupportEmail: "SupportEmail",
-				}, nil).Times(1)
-
 				ev, _ := es.eventRepo.(*mocks.MockEventRepository)
 				ev.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Return(&datastore.Event{
 					UID:       "123",
 					EventType: "incoming",
 				}, nil)
 
-				en, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				en.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
+				en, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				en.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
 					UID:               "1234",
 					TargetURL:         "http://localhost.com",
 					DocumentStatus:    "Active",
@@ -1404,25 +1390,17 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			},
 			wantEventDeliveries: []datastore.EventDelivery{
 				{
-					UID: "1234",
-					App: &datastore.Application{
-						UID:          "abc",
-						Title:        "Title",
-						GroupID:      "123",
-						SupportEmail: "SupportEmail",
-					},
+					UID:        "1234",
+					EndpointID: "12345",
 					Event: &datastore.Event{
 						UID:       "123",
 						EventType: "incoming",
 					},
 					Endpoint: &datastore.Endpoint{
-						UID:               "1234",
-						TargetURL:         "http://localhost.com",
-						DocumentStatus:    "Active",
-						Secret:            "Secret",
-						HttpTimeout:       "30s",
-						RateLimit:         10,
-						RateLimitDuration: "1h",
+						UID:         "1234",
+						TargetURL:   "http://localhost.com",
+						Secret:      "Secret",
+						HttpTimeout: "30s",
 					},
 				},
 			},
@@ -1440,10 +1418,10 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:   &datastore.Group{UID: "123"},
-					AppID:   "abc",
-					EventID: "ref",
-					Status:  []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					Group:      &datastore.Group{UID: "123"},
+					EndpointID: "abc",
+					EventID:    "ref",
+					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
 						CreatedAtEnd:   1213,

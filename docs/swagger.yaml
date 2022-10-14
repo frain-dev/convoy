@@ -2,7 +2,7 @@ basePath: /
 definitions:
   auth.Role:
     properties:
-      app:
+      endpoint:
         type: string
       group:
         type: string
@@ -12,19 +12,10 @@ definitions:
   datastore.APIKey:
     properties:
       created_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       deleted_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       expires_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       hash:
         type: string
@@ -41,9 +32,6 @@ definitions:
       uid:
         type: string
       updated_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
     type: object
   datastore.AlertConfiguration:
@@ -58,33 +46,6 @@ definitions:
       header_name:
         type: string
       header_value:
-        type: string
-    type: object
-  datastore.Application:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      endpoints:
-        items:
-          $ref: '#/definitions/datastore.Endpoint'
-        type: array
-      events:
-        type: integer
-      group_id:
-        type: string
-      is_disabled:
-        type: boolean
-      name:
-        type: string
-      slack_webhook_url:
-        type: string
-      support_email:
-        type: string
-      uid:
-        type: string
-      updated_at:
         type: string
     type: object
   datastore.BasicAuth:
@@ -138,11 +99,11 @@ definitions:
     type: object
   datastore.Device:
     properties:
-      app_id:
-        type: string
       created_at:
         type: string
       deleted_at:
+        type: string
+      endpoint_id:
         type: string
       group_id:
         type: string
@@ -159,13 +120,23 @@ definitions:
     type: object
   datastore.Endpoint:
     properties:
+      authentication:
+        $ref: '#/definitions/datastore.EndpointAuthentication'
       created_at:
         type: string
       deleted_at:
         type: string
       description:
         type: string
+      events:
+        type: integer
+      group_id:
+        type: string
       http_timeout:
+        type: string
+      is_disabled:
+        type: boolean
+      owner_id:
         type: string
       rate_limit:
         type: integer
@@ -173,19 +144,28 @@ definitions:
         type: string
       secret:
         type: string
+      slack_webhook_url:
+        type: string
+      support_email:
+        type: string
       target_url:
+        type: string
+      title:
         type: string
       uid:
         type: string
       updated_at:
         type: string
     type: object
+  datastore.EndpointAuthentication:
+    properties:
+      api_key:
+        $ref: '#/definitions/datastore.ApiKey'
+      type:
+        type: string
+    type: object
   datastore.Event:
     properties:
-      app_id:
-        type: string
-      app_metadata:
-        $ref: '#/definitions/datastore.Application'
       created_at:
         type: string
       data:
@@ -197,6 +177,10 @@ definitions:
         type: array
       deleted_at:
         type: string
+      endpoint_id:
+        type: string
+      endpoint_metadata:
+        $ref: '#/definitions/datastore.Endpoint'
       event_type:
         type: string
       group_id:
@@ -224,10 +208,6 @@ definitions:
     type: object
   datastore.EventDelivery:
     properties:
-      app_id:
-        type: string
-      app_metadata:
-        $ref: '#/definitions/datastore.Application'
       cli_metadata:
         $ref: '#/definitions/datastore.CLIMetadata'
       created_at:
@@ -324,7 +304,7 @@ definitions:
     properties:
       messages_sent:
         type: integer
-      total_apps:
+      total_endpoints:
         type: integer
     type: object
   datastore.HMac:
@@ -467,11 +447,15 @@ definitions:
     type: object
   datastore.S3Storage:
     properties:
+      access_key:
+        type: string
       bucket:
         type: string
       endpoint:
         type: string
       region:
+        type: string
+      secret_key:
         type: string
     type: object
   datastore.SignatureConfiguration:
@@ -535,8 +519,6 @@ definitions:
       alert_config:
         $ref: '#/definitions/datastore.AlertConfiguration'
         description: subscription config
-      app_metadata:
-        $ref: '#/definitions/datastore.Application'
       created_at:
         type: string
       deleted_at:
@@ -646,17 +628,6 @@ definitions:
       uid:
         type: string
     type: object
-  models.Application:
-    properties:
-      is_disabled:
-        type: boolean
-      name:
-        type: string
-      slack_webhook_url:
-        type: string
-      support_email:
-        type: string
-    type: object
   models.Configuration:
     properties:
       is_analytics_enabled:
@@ -687,13 +658,15 @@ definitions:
     type: object
   models.Endpoint:
     properties:
+      authentication:
+        $ref: '#/definitions/datastore.EndpointAuthentication'
       description:
         type: string
-      events:
-        items:
-          type: string
-        type: array
       http_timeout:
+        type: string
+      is_disabled:
+        type: boolean
+      name:
         type: string
       rate_limit:
         type: integer
@@ -701,13 +674,15 @@ definitions:
         type: string
       secret:
         type: string
+      slack_webhook_url:
+        type: string
+      support_email:
+        type: string
       url:
         type: string
     type: object
   models.Event:
     properties:
-      app_id:
-        type: string
       custom_headers:
         additionalProperties:
           type: string
@@ -719,6 +694,8 @@ definitions:
         items:
           type: integer
         type: array
+      endpoint_id:
+        type: string
       event_type:
         type: string
     type: object
@@ -752,14 +729,8 @@ definitions:
   models.LoginUserResponse:
     properties:
       created_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       deleted_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       email:
         type: string
@@ -772,9 +743,6 @@ definitions:
       uid:
         type: string
       updated_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
     type: object
   models.Organisation:
@@ -860,14 +828,8 @@ definitions:
   models.SourceResponse:
     properties:
       created_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       deleted_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       group_id:
         type: string
@@ -886,9 +848,6 @@ definitions:
       uid:
         type: string
       updated_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       url:
         type: string
@@ -899,8 +858,6 @@ definitions:
     properties:
       alert_config:
         $ref: '#/definitions/datastore.AlertConfiguration'
-      app_id:
-        type: string
       disable_endpoint:
         type: boolean
       endpoint_id:
@@ -993,342 +950,15 @@ info:
   title: Convoy API Specification
   version: 0.1.12
 paths:
-  /api/v1/applications:
+  /api/v1/endpoints:
     get:
       consumes:
       - application/json
-      description: This fetches all applications
-      parameters:
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      - description: app title
-        in: query
-        name: q
-        type: string
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/datastore.Application'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get all applications
-      tags:
-      - Application
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an application
+      description: This endpoint fetches an endpoints
       parameters:
       - description: group id
         in: query
         name: groupId
-        required: true
-        type: string
-      - description: Application Details
-        in: body
-        name: application
-        required: true
-        schema:
-          $ref: '#/definitions/models.Application'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Application'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an application
-      tags:
-      - Application
-  /api/v1/applications/{appID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes an app
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete app
-      tags:
-      - Application
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an application by it's id
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Application'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get an application
-      tags:
-      - Application
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates an application
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        type: string
-      - description: Application Details
-        in: body
-        name: application
-        required: true
-        schema:
-          $ref: '#/definitions/models.Application'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Application'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update an application
-      tags:
-      - Application
-  /api/v1/applications/{appID}/endpoints:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an application's endpoints
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         type: string
       produces:
@@ -1374,22 +1004,17 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get application endpoints
+      summary: Get endpoints
       tags:
-      - Application Endpoints
+      - Endpoints
     post:
       consumes:
       - application/json
-      description: This endpoint creates an application endpoint
+      description: This endpoint creates an endpoint
       parameters:
       - description: group id
         in: query
         name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         type: string
       - description: Endpoint Details
@@ -1439,23 +1064,18 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create an application endpoint
+      summary: Create an endpoint
       tags:
       - Application Endpoints
-  /api/v1/applications/{appID}/endpoints/{endpointID}:
+  /api/v1/endpoints/{endpointID}:
     delete:
       consumes:
       - application/json
-      description: This endpoint deletes an application endpoint
+      description: This endpoint deletes an endpoint
       parameters:
       - description: group id
         in: query
         name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         type: string
       - description: endpoint id
@@ -1504,22 +1124,17 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Delete application endpoint
+      summary: Delete endpoint
       tags:
-      - Application Endpoints
+      - Endpoints
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an application endpoint
+      description: This endpoint fetches an endpoint
       parameters:
       - description: group id
         in: query
         name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         type: string
       - description: endpoint id
@@ -1568,22 +1183,17 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get application endpoint
+      summary: Get endpoint
       tags:
-      - Application Endpoints
+      - Endpoints
     put:
       consumes:
       - application/json
-      description: This endpoint updates an application endpoint
+      description: This endpoint updates an endpoint
       parameters:
       - description: group id
         in: query
         name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         type: string
       - description: endpoint id
@@ -1638,9 +1248,9 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Update an application endpoint
+      summary: Update an endpoint
       tags:
-      - Application Endpoints
+      - Endpoints
   /api/v1/eventdeliveries:
     get:
       consumes:

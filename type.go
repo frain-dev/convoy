@@ -76,7 +76,7 @@ const (
 	MonitorTwitterSources TaskName = "monitor twitter sources"
 	RetentionPolicies     TaskName = "retention_policies"
 	EmailProcessor        TaskName = "EmailProcessor"
-	ApplicationsCacheKey  CacheKey = "applications"
+	EndpointsCacheKey     CacheKey = "endpoints"
 	GroupsCacheKey        CacheKey = "groups"
 	TokenCacheKey         CacheKey = "tokens"
 	SourceCacheKey        CacheKey = "sources"
