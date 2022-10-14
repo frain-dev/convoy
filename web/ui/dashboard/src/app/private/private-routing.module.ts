@@ -21,6 +21,10 @@ const routes: Routes = [
 				loadChildren: () => import('./pages/create-project/create-project.module').then(m => m.CreateProjectModule)
 			},
 			{
+				path: 'projects/:id/configure',
+				loadComponent: () => import('./pages/configure-project/configure-project.component').then(mod => mod.ConfigureProjectComponent)
+			},
+			{
 				path: 'projects/:id',
 				loadChildren: () => import('./pages/project/project.module').then(m => m.ProjectModule)
 			},
@@ -39,6 +43,10 @@ const routes: Routes = [
 			{
 				path: 'settings',
 				loadComponent: () => import('./pages/settings/settings.component').then(mod => mod.SettingsComponent)
+			},
+			{
+				path: 'get-started',
+				loadComponent: () => import('./pages/onboarding/onboarding.component').then(mod => mod.OnboardingComponent)
 			}
 		]
 	}

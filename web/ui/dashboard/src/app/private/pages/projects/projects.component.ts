@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { ORGANIZATION_DATA } from 'src/app/models/organisation.model';
 import { PrivateService } from '../../private.service';
-import { ProjectsService } from './projects.service';
 
 @Component({
 	selector: 'app-projects',
@@ -19,7 +18,7 @@ export class ProjectsComponent implements OnInit {
 	showOrganisationModal = false;
 	isloadingOrganisations = false;
 
-	constructor(private projectsService: ProjectsService, private privateService: PrivateService, private router: Router) {}
+	constructor(private privateService: PrivateService, private router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingOrganisations = true;
@@ -44,9 +43,10 @@ export class ProjectsComponent implements OnInit {
 
 	async getProjects() {
 		try {
-			const projectsResponse = await this.projectsService.getProjects();
+			const projectsResponse = await this.privateService.getProjects();
 			projectsResponse.data.length > 0 ? (this.noData = false) : (this.noData = true);
 			this.projects = projectsResponse.data;
+			this.privateService.activeProjectDetails.uid = '';
 			this.isLoadingProjects = false;
 		} catch (error) {
 			this.isLoadingProjects = false;

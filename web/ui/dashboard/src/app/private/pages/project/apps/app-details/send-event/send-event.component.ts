@@ -12,7 +12,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';
 
 @Component({
-	selector: 'app-send-event',
+	selector: 'send-event',
 	standalone: true,
 	imports: [CommonModule, ModalComponent, SelectComponent, InputComponent, ButtonComponent, ReactiveFormsModule],
 	templateUrl: './send-event.component.html',

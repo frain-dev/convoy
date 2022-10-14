@@ -2,7 +2,6 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { PrivateService } from '../../private.service';
-import { ProjectService } from './project.service';
 
 @Component({
 	selector: 'app-project',
@@ -41,6 +40,7 @@ export class ProjectComponent implements OnInit {
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
 		const uid = { uid: this.route.snapshot.params.id };
 		this.privateService.activeProjectDetails = { ...this.privateService.activeProjectDetails, ...uid };
+		this.getSubscriptions();
 	}
 
 	ngOnInit() {
@@ -59,6 +59,15 @@ export class ProjectComponent implements OnInit {
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
+		}
+	}
+
+	async getSubscriptions() {
+		try {
+			const subscriptionsResponse = await this.privateService.getSubscriptions({ page: 1 });
+			subscriptionsResponse.data?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
+		} catch (error) {
+			return error;
 		}
 	}
 

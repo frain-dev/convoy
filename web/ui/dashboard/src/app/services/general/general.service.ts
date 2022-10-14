@@ -7,12 +7,12 @@ import { environment } from 'src/environments/environment';
 	providedIn: 'root'
 })
 export class GeneralService {
-	alertStatus: BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; show: boolean }> = new BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; show: boolean }>({ message: 'testing', style: 'info', show: false });
+	alertStatus: BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }> = new BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }>({ message: 'testing', style: 'info', type: 'alert', show: false });
 
 	constructor() {}
 
-	showNotification(details: { message: string; style: NOTIFICATION_STATUS }) {
-		this.alertStatus.next({ message: details.message, style: details.style, show: true });
+	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
+		this.alertStatus.next({ message: details.message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
 		setTimeout(() => {
 			this.dismissNotification();
 		}, 7000);
@@ -85,7 +85,7 @@ export class GeneralService {
 				break;
 		}
 
-		return { startDate, endDate};
+		return { startDate, endDate };
 	}
 
 	getDate(date: Date) {

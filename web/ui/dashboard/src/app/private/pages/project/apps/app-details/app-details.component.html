@@ -100,6 +100,7 @@
 				<div class="flex items-center">
 					<convoy-button size="sm" type="text" (clickItem)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</convoy-button>
 					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
+
 					<convoy-button *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
 				</div>
 			</div>
@@ -151,7 +152,7 @@
 								</convoy-button>
 								<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
 								<convoy-button size="sm" type="text" color="danger" (clickItem)="selectedEndpoint = endpoint; showDeleteModal = true">
-									<svg width="16" height="16" class="mr-8px">
+									<svg width="16" height="16" class="mr-8px fill-danger-100">
 										<use xlink:href="#delete-icon"></use>
 									</svg>
 									Delete
@@ -228,25 +229,17 @@
 <!-- app api keys and devices list  -->
 <convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
 	<div class="flex items-center justify-center border-b border-grey-10">
-		<ul class="w-full flex items-center">
-			<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
-				<convoy-button
-					type="clear"
-					color="grey"
-					[className]="
-						activeTab === tab
-							? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
-							: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
-					"
-				>
-					<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
-				</convoy-button>
-			</li>
+        <ul class="flex flex-row m-auto w-full mt-32px border-b border-b-grey-10">
+            <li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+                <button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
+                    <span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+                </button>
+            </li>
 
-			<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
+            <div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
 				<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true">Generate New Key</convoy-button>
 			</div>
-		</ul>
+        </ul>
 	</div>
 </convoy-card>
 
@@ -258,7 +251,7 @@
 </ng-container>
 
 <!-- send event form  -->
-<app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
+<send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></send-event>
 
 <!-- create endpoint form  -->
 <convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false; selectedEndpoint = undefined">
