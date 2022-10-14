@@ -52,7 +52,7 @@ func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datas
 
 	err := db.store.FindByID(ctx, id, nil, endpoint)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		err = datastore.ErrApplicationNotFound
+		err = datastore.ErrEndpointNotFound
 		return endpoint, err
 	}
 
