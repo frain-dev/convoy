@@ -4,6 +4,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -36,12 +37,14 @@ func (i *IngestIntegrationTestSuite) SetupSuite() {
 
 func (i *IngestIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(i.DB)
+	var err error = nil
 
 	// Setup Default Group.
-	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
+	i.DefaultGroup, err = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
+	require.NoError(i.T(), err)
 
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(i.ConvoyApp.A.Store)
@@ -323,6 +326,40 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
+}
+
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestBody() {
+	maskID := "123456"
+	sourceID := "123456789"
+	expectedStatusCode := http.StatusOK
+
+	// Just Before
+	v := &datastore.VerifierConfig{
+		Type: datastore.NoopVerifier,
+	}
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+
+	bodyStr := ``
+	body := serialize(bodyStr)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	i.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(i.T(), expectedStatusCode, w.Code)
+
+	var response map[string]interface{}
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(i.T(), err)
+
+	// Check the lenght of the request body
+	require.Equal(i.T(), float64(2), response["data"].(float64))
 }
 
 func TestIngestIntegrationTestSuite(t *testing.T) {
