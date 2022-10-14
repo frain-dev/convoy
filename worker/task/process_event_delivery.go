@@ -158,7 +158,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		sig := newSignature(endpoint, g, "hex", ed.Metadata.Data)
+		sig := newSignature(endpoint, g, ed.Metadata.Data)
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
@@ -279,15 +279,22 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 	}
 }
 
-func newSignature(endpoint *datastore.Endpoint, g *datastore.Group, encoding string, data json.RawMessage) *signature.Signature {
+func newSignature(endpoint *datastore.Endpoint, g *datastore.Group, data json.RawMessage) *signature.Signature {
 	s := &signature.Signature{Advanced: endpoint.AdvancedSignatures, Payload: data}
 
-	for _, sc := range endpoint.Secrets {
-		s.Schemes = append(s.Schemes, signature.Scheme{
-			Secret:   []string{sc.Value},
-			Hash:     g.Config.Signature.Hash,
-			Encoding: encoding,
-		})
+	for _, version := range g.Config.Signature.Versions {
+		scheme := signature.Scheme{
+			Hash:     version.Hash,
+			Encoding: version.Encoding.String(),
+		}
+
+		for _, sc := range endpoint.Secrets {
+			if sc.DeletedAt == 0 {
+				// the secret has not been expired
+				scheme.Secret = append(scheme.Secret, sc.Value)
+			}
+		}
+		s.Schemes = append(s.Schemes, scheme)
 	}
 
 	return s

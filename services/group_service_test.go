@@ -57,7 +57,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -99,7 +98,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				Config: &datastore.GroupConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
-						Hash:   "SHA256",
 					},
 					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
@@ -130,7 +128,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -172,7 +169,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				Config: &datastore.GroupConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
-						Hash:   "SHA256",
 					},
 					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
@@ -225,7 +221,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				RateLimit:         5000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature:       &datastore.DefaultSignatureConfig,
+					Signature:       &datastore.SignatureConfiguration{},
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					DisableEndpoint: false,
@@ -246,7 +242,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 					},
 				},
@@ -277,7 +272,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				Config: &datastore.GroupConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
-						Hash:   "SHA256",
 					},
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
@@ -299,7 +293,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -364,7 +357,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -407,7 +399,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				return
 			}
 
-			//fmt.Println("eee", err.Error())
+			// fmt.Println("eee", err.Error())
 			require.Nil(t, err)
 			require.NotEmpty(t, group.UID)
 			require.NotEmpty(t, group.ID)
@@ -458,7 +450,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -477,7 +468,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -498,7 +488,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 				Config: &datastore.GroupConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
-						Hash:   "SHA256",
 					},
 					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
@@ -530,7 +519,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -557,7 +545,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					Config: &datastore.GroupConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
-							Hash:   "SHA256",
 						},
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",

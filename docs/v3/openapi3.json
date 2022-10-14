@@ -725,10 +725,30 @@
 			},
 			"datastore.SignatureConfiguration": {
 				"properties": {
+					"header": {
+						"type": "string"
+					},
+					"versions": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.SignatureVersion"
+						},
+						"type": "array"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.SignatureVersion": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"encoding": {
+						"type": "string"
+					},
 					"hash": {
 						"type": "string"
 					},
-					"header": {
+					"uid": {
 						"type": "string"
 					}
 				},
@@ -1041,6 +1061,9 @@
 			},
 			"models.Endpoint": {
 				"properties": {
+					"advanced_signatures": {
+						"type": "boolean"
+					},
 					"description": {
 						"type": "string"
 					},
@@ -2654,7 +2677,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get application endpoint",
+				"summary": "Get application endpoint secret",
 				"tags": [
 					"Application Endpoints"
 				]
@@ -2798,6 +2821,139 @@
 					}
 				],
 				"summary": "Update an application endpoint",
+				"tags": [
+					"Application Endpoints"
+				]
+			}
+		},
+		"/api/v1/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire": {
+			"delete": {
+				"description": "This endpoint fetches an application endpoint",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "endpoint id",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Endpoint"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get application endpoint secret",
 				"tags": [
 					"Application Endpoints"
 				]

@@ -129,7 +129,14 @@ func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, er
 			},
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
-				Hash:   "SHA512",
+				Versions: []datastore.SignatureVersion{
+					{
+						UID:       uuid.NewString(),
+						Hash:      "SHA256",
+						Encoding:  datastore.HexEncoding,
+						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					},
+				},
 			},
 			DisableEndpoint: false,
 			ReplayAttacks:   false,
@@ -453,7 +460,6 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 }
 
 func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
-
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -487,7 +493,7 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	sourceRepo := cm.NewSourceRepo(store)
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
@@ -566,7 +572,7 @@ func SeedUser(store datastore.Store, email, password string) (*datastore.User, e
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	userRepo := cm.NewUserRepo(store)
 	err = userRepo.CreateUser(context.TODO(), user)
 	if err != nil {
@@ -585,7 +591,7 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	configRepo := cm.NewConfigRepo(store)
 	err := configRepo.CreateConfiguration(context.TODO(), config)
 	if err != nil {

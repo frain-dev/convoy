@@ -152,8 +152,15 @@ func TestProcessEventDelivery(t *testing.T) {
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
-								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Header: "X-Convoy-Signature",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -236,7 +243,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -323,7 +337,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -406,7 +427,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.StrategyProvider("default"),
@@ -493,7 +521,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -576,7 +611,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -663,7 +705,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -751,7 +800,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -843,8 +899,15 @@ func TestProcessEventDelivery(t *testing.T) {
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
-								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Header: "X-Convoy-Signature",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,

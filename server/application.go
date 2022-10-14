@@ -44,7 +44,6 @@ type pagedResponse struct {
 // @Security ApiKeyAuth
 // @Router /api/v1/applications/{appID} [get]
 func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("App fetched successfully",
 		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
 }
@@ -94,7 +93,6 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/applications [post]
 func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
-
 	var newApp models.Application
 	err := util.ReadJSON(r, &newApp)
 	if err != nil {
@@ -304,9 +302,63 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint deleted successfully", nil, http.StatusOK))
 }
 
-func (a *ApplicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Request) {
+// CreateAppEndpointSecret
+// @Summary Get application endpoint secret
+// @Description This endpoint fetches an application endpoint
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param groupId query string true "group id"
+// @Param appID path string true "application id"
+// @Param endpointID path string true "endpoint id"
+// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/applications/{appID}/endpoints/{endpointID} [get]
+func (a *ApplicationHandler) CreateAppEndpointSecret(w http.ResponseWriter, r *http.Request) {
+	s := &models.EndpointSecret{}
+	err := util.ReadJSON(r, s)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Apps fetched successfully",
-		pagedResponse{Content: *m.GetApplicationsFromContext(r.Context()),
-			Pagination: m.GetPaginationDataFromContext(r.Context())}, http.StatusOK))
+	app := m.GetApplicationFromContext(r.Context())
+
+	as := createApplicationService(a)
+	_, err = as.CreateAppEndpointSecret(r.Context(), s, chi.URLParam(r, "endpointID"), app)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("endpoint secret created successfully",
+		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
+}
+
+// ExpireEndpointSecret
+// @Summary Get application endpoint secret
+// @Description This endpoint fetches an application endpoint
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param groupId query string true "group id"
+// @Param appID path string true "application id"
+// @Param endpointID path string true "endpoint id"
+// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire [delete]
+func (a *ApplicationHandler) ExpireEndpointSecret(w http.ResponseWriter, r *http.Request) {
+	app := m.GetApplicationFromContext(r.Context())
+
+	as := createApplicationService(a)
+	err := as.ExpireEndpointSecret(r.Context(), chi.URLParam(r, "secretID"), chi.URLParam(r, "endpointID"), app)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("endpoint secret expired successfully",
+		nil, http.StatusOK))
 }

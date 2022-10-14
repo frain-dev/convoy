@@ -222,14 +222,19 @@ type MessageResponse struct {
 }
 
 type Endpoint struct {
-	URL         string   `json:"url" bson:"url"`
-	Secret      string   `json:"secret" bson:"secret"`
-	Description string   `json:"description" bson:"description"`
-	Events      []string `json:"events" bson:"events"`
+	URL                string   `json:"url" bson:"url"`
+	Secret             string   `json:"secret" bson:"secret"`
+	Description        string   `json:"description" bson:"description"`
+	Events             []string `json:"events" bson:"events"`
+	AdvancedSignatures *bool    `json:"advanced_signatures" bson:"advanced_signatures"`
 
 	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
 	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+}
+
+type EndpointSecret struct {
+	Value string `json:"value"`
 }
 
 type DashboardSummary struct {

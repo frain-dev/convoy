@@ -7,6 +7,9 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -120,6 +123,10 @@ const (
 	HexEncoding    EncodingType = "hex"
 )
 
+func (e EncodingType) String() string {
+	return string(e)
+}
+
 const (
 	OutgoingGroup GroupType = "outgoing"
 	IncomingGroup GroupType = "incoming"
@@ -158,11 +165,6 @@ var (
 		RetryCount: 10,
 	}
 
-	DefaultSignatureConfig = SignatureConfiguration{
-		Header: "X-Convoy-Signature",
-		Hash:   "SHA256",
-	}
-
 	DefaultRateLimitConfig = RateLimitConfiguration{
 		Count:    1000,
 		Duration: 60,
@@ -185,6 +187,20 @@ var (
 		},
 	}
 )
+
+func GetDefaultSignatureConfig() *SignatureConfiguration {
+	return &SignatureConfiguration{
+		Header: "X-Convoy-Signature",
+		Versions: []SignatureVersion{
+			{
+				UID:       uuid.NewString(),
+				Hash:      "SHA256",
+				Encoding:  HexEncoding,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			},
+		},
+	}
+}
 
 const (
 	ActiveSubscriptionStatus   SubscriptionStatus = "active"
@@ -209,6 +225,16 @@ type Application struct {
 	Events int64 `json:"events,omitempty" bson:"-"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+func (app *Application) FindEndpoint(id string) (*Endpoint, error) {
+	for i := range app.Endpoints {
+		endpoint := &app.Endpoints[i]
+		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+			return endpoint, nil
+		}
+	}
+	return nil, ErrEndpointNotFound
 }
 
 type SubscriptionStatus string
@@ -296,13 +322,18 @@ type StrategyConfiguration struct {
 }
 
 type SignatureConfiguration struct {
-	Header config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
-	Hash   string                         `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Header   config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
+	Versions []SignatureVersion             `json:"versions" bson:"versions"`
+
+	// Hash     string `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	// Encoding string `json:"encoding" bson:"encoding" valid:"required~please provide a valid signature header"`
 }
 
-type SignatureValues struct {
-	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
-	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+type SignatureVersion struct {
+	UID       string             `json:"uid" bson:"uid"`
+	Hash      string             `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Encoding  EncodingType       `json:"encoding" bson:"encoding" valid:"required~please provide a valid signature header"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -570,16 +601,16 @@ type APIKey struct {
 }
 
 type Subscription struct {
-	ID     primitive.ObjectID `json:"-" bson:"_id"`
-	UID    string             `json:"uid" bson:"uid"`
-	Name   string             `json:"name" bson:"name"`
-	Type   SubscriptionType   `json:"type" bson:"type"`
-	Status SubscriptionStatus `json:"status" bson:"status"`
-	// AppID      string             `json:"-" bson:"app_id"`
-	GroupID    string `json:"-" bson:"group_id"`
-	SourceID   string `json:"-" bson:"source_id"`
-	EndpointID string `json:"-" bson:"endpoint_id"`
-	DeviceID   string `json:"device_id" bson:"device_id"`
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	Name       string             `json:"name" bson:"name"`
+	Type       SubscriptionType   `json:"type" bson:"type"`
+	Status     SubscriptionStatus `json:"status" bson:"status"`
+	AppID      string             `json:"-" bson:"app_id"`
+	GroupID    string             `json:"-" bson:"group_id"`
+	SourceID   string             `json:"-" bson:"source_id"`
+	EndpointID string             `json:"-" bson:"endpoint_id"`
+	DeviceID   string             `json:"device_id" bson:"device_id"`
 
 	Source   *Source      `json:"source_metadata" bson:"-"`
 	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"-"`

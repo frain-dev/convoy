@@ -495,9 +495,22 @@ definitions:
     type: object
   datastore.SignatureConfiguration:
     properties:
+      header:
+        type: string
+      versions:
+        items:
+          $ref: '#/definitions/datastore.SignatureVersion'
+        type: array
+    type: object
+  datastore.SignatureVersion:
+    properties:
+      created_at:
+        type: string
+      encoding:
+        type: string
       hash:
         type: string
-      header:
+      uid:
         type: string
     type: object
   datastore.Source:
@@ -702,6 +715,8 @@ definitions:
     type: object
   models.Endpoint:
     properties:
+      advanced_signatures:
+        type: boolean
       description:
         type: string
       events:
@@ -1568,7 +1583,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get application endpoint
+      summary: Get application endpoint secret
       tags:
       - Application Endpoints
     put:
@@ -1639,6 +1654,71 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update an application endpoint
+      tags:
+      - Application Endpoints
+  /api/v1/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint fetches an application endpoint
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Endpoint'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get application endpoint secret
       tags:
       - Application Endpoints
   /api/v1/eventdeliveries:
