@@ -39,11 +39,10 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(i.T(), i.DB)
 
 	// Setup Default Group.
-	i.DefaultGroup, err = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
-	require.NoError(i.T(), err)
+	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
 
 	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(i.ConvoyApp.A.Store)
