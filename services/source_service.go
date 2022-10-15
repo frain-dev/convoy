@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -182,7 +181,6 @@ func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Group, so
 	// ToDo: add check here to ensure the source doesn't have any existing subscriptions
 	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID)
 	if err != nil {
-		log.WithError(err).Error("LMAO")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete source"))
 	}
 
