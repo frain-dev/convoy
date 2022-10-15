@@ -13,10 +13,13 @@ type Scheduler struct {
 	inner *asynq.Scheduler
 }
 
-func NewScheduler(queue queue.Queuer) *Scheduler {
-	scheduler := asynq.NewScheduler(queue.Options().RedisClient, nil)
+func NewScheduler(queue queue.Queuer, log log.StdLogger) *Scheduler {
+	scheduler := asynq.NewScheduler(queue.Options().RedisClient, &asynq.SchedulerOpts{
+		Logger: log,
+	})
 
 	return &Scheduler{
+		log:   log,
 		inner: scheduler,
 		queue: queue,
 	}

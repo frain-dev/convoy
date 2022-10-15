@@ -17,6 +17,7 @@ type StdLogger interface {
 	Debug(args ...interface{})
 	Warn(args ...interface{})
 	Error(args ...interface{})
+	Fatal(args ...interface{})
 
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
@@ -100,9 +101,9 @@ func NewLogger(out io.Writer, source string) *Logger {
 		Level: logrus.DebugLevel,
 	}
 
-	log.SetReportCaller(true)
+	log.SetReportCaller(false)
 
-	return &Logger{logger: log, entry: logrus.WithField("source", source)}
+	return &Logger{logger: log, entry: log.WithField("source", source)}
 }
 
 // Logger logs message to io.Writer at various log levels.
@@ -113,23 +114,23 @@ type Logger struct {
 }
 
 func (l *Logger) Debug(args ...interface{}) {
-	l.logger.Debug(args...)
+	l.entry.Debug(args...)
 }
 
 func (l *Logger) Info(args ...interface{}) {
-	l.logger.Info(args...)
+	l.entry.Info(args...)
 }
 
 func (l *Logger) Warn(args ...interface{}) {
-	l.logger.Warn(args...)
+	l.entry.Warn(args...)
 }
 
 func (l *Logger) Error(args ...interface{}) {
-	l.logger.Error(args...)
+	l.entry.Error(args...)
 }
 
 func (l *Logger) Fatal(args ...interface{}) {
-	l.logger.Fatal(args...)
+	l.entry.Fatal(args...)
 }
 
 func (l *Logger) Debugf(format string, args ...interface{}) {

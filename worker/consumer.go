@@ -30,6 +30,7 @@ func NewConsumer(q queue.Queuer, l log.StdLogger) (*Consumer, error) {
 				return true
 			},
 			RetryDelayFunc: task.GetRetryDelay,
+			Logger:         l,
 		},
 	)
 

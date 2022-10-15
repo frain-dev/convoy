@@ -270,7 +270,7 @@ func LoadConfig(p string) error {
 			return err
 		}
 	} else if errors.Is(err, os.ErrNotExist) {
-		log.Info("convoy config.json not detected, will look for env vars or cli args")
+		log.Info("convoy.json not detected, will look for env vars or cli args")
 	}
 
 	// override config from environment variables

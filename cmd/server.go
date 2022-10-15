@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -11,11 +12,11 @@ import (
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/pkg/log"
 	route "github.com/frain-dev/convoy/server"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -88,7 +89,7 @@ func addServerCommand(a *app) *cobra.Command {
 			err = StartConvoyServer(a, c, withWorkers)
 
 			if err != nil {
-				log.Printf("Error starting convoy server: %v", err)
+				a.logger.Errorf("Error starting convoy server: %v", err)
 				return err
 			}
 			return nil
@@ -97,7 +98,7 @@ func addServerCommand(a *app) *cobra.Command {
 
 	cmd.Flags().StringVar(&apiKeyAuthConfig, "api-auth", "", "API-Key authentication credentials")
 	cmd.Flags().StringVar(&basicAuthConfig, "basic-auth", "", "Basic authentication credentials")
-	cmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level")
+	cmd.Flags().StringVar(&logLevel, "log-level", "error", "Log level")
 	cmd.Flags().StringVar(&logger, "logger", "info", "Logger")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
@@ -143,18 +144,26 @@ func addServerCommand(a *app) *cobra.Command {
 
 func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error {
 	start := time.Now()
-	log.Info("Starting Convoy server...")
+	a.logger.Info("Starting Convoy server...")
 
 	apiKeyRepo := cm.NewApiKeyRepo(a.store)
 	userRepo := cm.NewUserRepo(a.store)
 	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.cache)
 	if err != nil {
-		log.WithError(err).Fatal("failed to initialize realm chain")
+		a.logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
+
+	lo := log.NewLogger(os.Stdout, "api server")
+	lvl, err := log.ParseLevel(cfg.Logger.Level)
+	if err != nil {
+		return err
+	}
+
+	lo.SetLevel(lvl)
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
@@ -162,7 +171,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		route.App{
 			Store:    a.store,
 			Queue:    a.queue,
-			Logger:   a.logger,
+			Logger:   lo,
 			Tracer:   a.tracer,
 			Cache:    a.cache,
 			Limiter:  a.limiter,
@@ -172,14 +181,22 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	if withWorkers {
 		sc, err := smtp.NewClient(&cfg.SMTP)
 		if err != nil {
-			log.WithError(err).Error("Failed to create smtp client")
+			a.logger.WithError(err).Error("Failed to create smtp client")
 			return err
 		}
 
-		// register worker.
-		consumer, err := worker.NewConsumer(a.queue, a.logger)
+		lo := log.NewLogger(os.Stdout, "worker")
+		lvl, err := log.ParseLevel(cfg.Logger.Level)
 		if err != nil {
-			log.WithError(err).Error("failed to create worker")
+			return err
+		}
+
+		lo.SetLevel(lvl)
+
+		// register worker.
+		consumer, err := worker.NewConsumer(a.queue, lo)
+		if err != nil {
+			a.logger.WithError(err).Error("failed to create worker")
 		}
 
 		appRepo := cm.NewApplicationRepo(a.store)
@@ -227,22 +244,22 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 		//start worker
-		log.Infof("Starting Convoy workers...")
+		a.logger.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}
 
 	srv.SetHandler(handler.BuildRoutes())
 
-	log.Infof("Started convoy server in %s", time.Since(start))
+	a.logger.Infof("Started convoy server in %s", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
-		log.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		a.logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		return nil
 	}
 
-	log.Infof("Server running on port %v", cfg.Server.HTTP.Port)
+	a.logger.Infof("Server running on port %v", cfg.Server.HTTP.Port)
 	srv.Listen()
 	return nil
 }
