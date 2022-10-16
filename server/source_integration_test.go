@@ -188,7 +188,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/sources/groupID=%s", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/sources?groupID=%s", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
