@@ -302,9 +302,9 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint deleted successfully", nil, http.StatusOK))
 }
 
-// CreateAppEndpointSecret
-// @Summary Get application endpoint secret
-// @Description This endpoint fetches an application endpoint
+// CreateEndpointSecret
+// @Summary Create application endpoint secret
+// @Description This endpoint creates an endpoint secret
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
@@ -314,8 +314,8 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints/{endpointID} [get]
-func (a *ApplicationHandler) CreateAppEndpointSecret(w http.ResponseWriter, r *http.Request) {
+// @Router /api/v1/applications/{appID}/endpoints/{endpointID}/secrets [post]
+func (a *ApplicationHandler) CreateEndpointSecret(w http.ResponseWriter, r *http.Request) {
 	s := &models.EndpointSecret{}
 	err := util.ReadJSON(r, s)
 	if err != nil {
