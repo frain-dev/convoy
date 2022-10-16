@@ -253,7 +253,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery_Re
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	eventDelivery, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, &datastore.Event{}, &datastore.Endpoint{}, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
 
-	url := fmt.Sprintf("/api/v1eventdeliveries/%s?groupID=%s", eventDeliveryID, s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/eventdeliveries/%s?groupID=%s", eventDeliveryID, s.DefaultGroup.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
