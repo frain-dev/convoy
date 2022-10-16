@@ -19,18 +19,24 @@ func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.R
 		"/api/v1/sources",
 	}
 
-	groupID := r.URL.Query().Get("groupID")
-	if util.IsStringEmpty(groupID) {
-		_ = render.Render(w, r, util.NewErrorResponse("groupID query is missing", http.StatusBadRequest))
-		return
-	}
-
 	for _, route := range redirectRoutes {
 		if strings.HasPrefix(r.URL.Path, route) {
+
+			groupID := r.URL.Query().Get("groupID")
+			if util.IsStringEmpty(groupID) {
+				_ = render.Render(w, r, util.NewErrorResponse("groupID query is missing", http.StatusBadRequest))
+				return
+			}
+
 			stripped := r.URL.Path[7:] // remove the /api/v1
 			redirectURL := fmt.Sprintf("/api/v1/projects/%s%s", groupID, stripped)
-			// r.URL.Path = redirectURL
-			http.Redirect(w, r, redirectURL, http.StatusFound)
+			r.Header.Set("Location", redirectURL)
+			fmt.Println("48484", redirectURL)
+			r.URL.Path = redirectURL
+
+			fwd, _ := http.NewRequest(r.Method, redirectURL, r.Body)
+			fwd.Header = r.Header
+			a.Router.ServeHTTP(w, fwd)
 			return
 		}
 	}

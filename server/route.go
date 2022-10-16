@@ -27,8 +27,9 @@ import (
 )
 
 type ApplicationHandler struct {
-	M *middleware.Middleware
-	A App
+	M      *middleware.Middleware
+	Router http.Handler
+	A      App
 }
 
 type App struct {
@@ -243,6 +244,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					})
 				})
 			})
+
+			r.HandleFunc("/*", a.RedirectToProjects)
 		})
 	})
 
@@ -527,6 +530,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 	metrics.RegisterQueueMetrics(a.A.Queue)
 	prometheus.MustRegister(metrics.RequestDuration())
-
+	a.Router = router
 	return router
 }
