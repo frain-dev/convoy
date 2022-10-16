@@ -30,8 +30,6 @@ func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.R
 
 			stripped := r.URL.Path[7:] // remove the /api/v1
 			redirectURL := fmt.Sprintf("/api/v1/projects/%s%s", groupID, stripped)
-			r.Header.Set("Location", redirectURL)
-			fmt.Println("48484", redirectURL)
 			r.URL.Path = redirectURL
 
 			fwd, _ := http.NewRequest(r.Method, redirectURL, r.Body)

@@ -153,6 +153,55 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)
 }
 
+func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProjects() {
+	expectedStatusCode := http.StatusCreated
+
+	// Switch to the native realm
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
+	require.NoError(s.T(), err)
+
+	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
+
+	role := auth.Role{
+		Type:  auth.RoleAdmin,
+		Group: s.DefaultGroup.UID,
+	}
+
+	// Generate api key for this group, use the key to authenticate for this request later on
+	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "api", "")
+	require.NoError(s.T(), err)
+
+	// Arrange Request.
+	bodyStr := `{"key_type":"app_portal"}"`
+	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+
+	url := fmt.Sprintf("/api/v1/security/applications/%s/keys?groupID=%s", app.UID, s.DefaultGroup.UID)
+
+	req := createRequest(http.MethodPost, url, "", body)
+	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var apiKeyResponse models.PortalAPIKeyResponse
+	parseResponse(s.T(), w.Result(), &apiKeyResponse)
+	require.NotEmpty(s.T(), apiKeyResponse.Key)
+	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/app/%s?groupID=%s&appId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, app.UID))
+	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.AppPortalKey))
+	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
+	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)
+}
+
 func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
