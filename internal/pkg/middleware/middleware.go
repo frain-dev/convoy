@@ -1054,17 +1054,17 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-func ShouldAuthRoute(r *http.Request) bool {
-	guestRoutes := []string{
-		"/ui/auth/login",
-		"/ui/auth/token/refresh",
-		"/ui/organisations/process_invite",
-		"/ui/users/token",
-		"/ui/users/forgot-password",
-		"/ui/users/reset-password",
-		"/ui/auth/register",
-	}
+var guestRoutes = []string{
+	"/ui/auth/login",
+	"/ui/auth/token/refresh",
+	"/ui/organisations/process_invite",
+	"/ui/users/token",
+	"/ui/users/forgot-password",
+	"/ui/users/reset-password",
+	"/ui/auth/register",
+}
 
+func ShouldAuthRoute(r *http.Request) bool {
 	for _, route := range guestRoutes {
 		if r.URL.Path == route {
 			return false
