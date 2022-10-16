@@ -478,11 +478,15 @@ definitions:
     type: object
   datastore.S3Storage:
     properties:
+      access_key:
+        type: string
       bucket:
         type: string
       endpoint:
         type: string
       region:
+        type: string
+      secret_key:
         type: string
     type: object
   datastore.SignatureConfiguration:

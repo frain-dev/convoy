@@ -699,6 +699,9 @@
 			},
 			"datastore.S3Storage": {
 				"properties": {
+					"access_key": {
+						"type": "string"
+					},
 					"bucket": {
 						"type": "string"
 					},
@@ -706,6 +709,9 @@
 						"type": "string"
 					},
 					"region": {
+						"type": "string"
+					},
+					"secret_key": {
 						"type": "string"
 					}
 				},
