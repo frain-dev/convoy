@@ -80,7 +80,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app, group.UID, uuid.NewString(), "*", "", []byte("{}"))
 
-	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -152,7 +152,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroupWithPersonalAPIKey_UnauthorizedR
 func (s *GroupIntegrationTestSuite) TestGetGroup_GroupNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
-	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, uuid.NewString())
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, uuid.NewString())
 	req := createRequest(http.MethodGet, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -173,7 +173,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
 	req := createRequest(http.MethodDelete, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -192,7 +192,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 func (s *GroupIntegrationTestSuite) TestDeleteGroup_GroupNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
-	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, uuid.NewString())
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, uuid.NewString())
 	req := createRequest(http.MethodDelete, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -281,7 +281,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 }`
 
 	body := serialize(bodyStr)
-	url := fmt.Sprintf("/ui/organisations/%s/groups", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects", s.DefaultOrg.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
@@ -395,7 +395,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "test-group", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/ui/organisations/%s/groups/%s", s.DefaultOrg.UID, group.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
 
 	bodyStr := `{
     "name": "group_1",
@@ -492,7 +492,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	group3, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 
-	url := fmt.Sprintf("/ui/organisations/%s/groups", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -554,7 +554,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
 	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
 
-	url := fmt.Sprintf("/ui/organisations/%s/groups?name=%s", s.DefaultOrg.UID, group1.Name)
+	url := fmt.Sprintf("/ui/organisations/%s/projects?name=%s", s.DefaultOrg.UID, group1.Name)
 	req := createRequest(http.MethodGet, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
