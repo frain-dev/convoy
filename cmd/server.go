@@ -167,7 +167,6 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			Cache:    a.cache,
 			Limiter:  a.limiter,
 			Searcher: a.searcher,
-			FFlag:    a.fflag,
 		})
 
 	if withWorkers {

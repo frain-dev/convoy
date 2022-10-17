@@ -7,22 +7,22 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/require"
 )
 
 type FF struct {
-	featureFlag FeatureFlag
 	cache       cache.Cache
 	groupRepo   datastore.GroupRepository
 }
 
 func provideServices(ctrl *gomock.Controller) *FF {
 	return &FF{
-		featureFlag: mocks.NewMockFeatureFlag(ctrl),
 		cache:       mocks.NewMockCache(ctrl),
 		groupRepo:   mocks.NewMockGroupRepository(ctrl),
 	}
@@ -34,6 +34,8 @@ func TestFeatureFlags_CLI(t *testing.T) {
 		statusCode int
 		IsEnabled  IsEnabledFunc
 		mockFn     func(ff *FF)
+		nFn        func() func()
+		cfgPath    string
 	}{
 		{
 			name:       "can_create_cli_api_key",
@@ -49,11 +51,22 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				}, nil)
 
 				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			nFn: func() func() {
+				httpmock.Activate()
 
-				f, _ := ff.featureFlag.(*mocks.MockFeatureFlag)
-				f.EXPECT().IsEnabled(gomock.Any(), gomock.Any()).Return(true, nil)
+				httpmock.RegisterResponder("GET", "http://localhost:8080/api/v1/flags/can_create_cli_api_key",
+					httpmock.NewStringResponder(200, `{"enabled": true}`))
+
+				httpmock.RegisterResponder("POST", "http://localhost:8080/api/v1/evaluate",
+					httpmock.NewStringResponder(200, `{"match": true }`))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
 			},
 			IsEnabled: Features[CanCreateCLIAPIKey],
+			cfgPath:   "../../../server/testdata/Auth_Config/none-convoy.json",
 		},
 
 		{
@@ -70,24 +83,39 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				}, nil)
 
 				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			nFn: func() func() {
+				httpmock.Activate()
 
-				f, _ := ff.featureFlag.(*mocks.MockFeatureFlag)
-				f.EXPECT().IsEnabled(gomock.Any(), gomock.Any()).Return(false, nil)
+				httpmock.RegisterResponder("GET", "http://localhost:8080/api/v1/flags/can_create_cli_api_key",
+					httpmock.NewStringResponder(200, `{"enabled": true}`))
+
+				httpmock.RegisterResponder("POST", "http://localhost:8080/api/v1/evaluate",
+					httpmock.NewStringResponder(200, `{"match": false }`))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
 			},
 			IsEnabled: Features[CanCreateCLIAPIKey],
+			cfgPath:   "../../../server/testdata/Auth_Config/none-convoy.json",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			err := config.LoadConfig(tc.cfgPath)
+			if err != nil {
+				t.Errorf("Failed to load config file: %v", err)
+			}
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			ss := provideServices(ctrl)
-
 			m := middleware.NewMiddleware(&middleware.CreateMiddleware{Cache: ss.cache, GroupRepo: ss.groupRepo})
 
-			fn := m.RequireGroup()(CanAccessFeature(ss.featureFlag, tc.IsEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fn := m.RequireGroup()(CanAccessFeature(tc.IsEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, err := w.Write([]byte(`Hello`))
 
@@ -96,6 +124,11 @@ func TestFeatureFlags_CLI(t *testing.T) {
 
 			if tc.mockFn != nil {
 				tc.mockFn(ss)
+			}
+
+			if tc.nFn != nil {
+				deferFn := tc.nFn()
+				defer deferFn()
 			}
 
 			recorder := httptest.NewRecorder()

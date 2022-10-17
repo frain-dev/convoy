@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	noopfflag "github.com/frain-dev/convoy/internal/pkg/fflag/noop"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -113,7 +112,6 @@ func buildServer() *ApplicationHandler {
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
-	fflag := noopfflag.NewNoopFeatureFlag()
 
 	return NewApplicationHandler(
 		App{
@@ -124,7 +122,6 @@ func buildServer() *ApplicationHandler {
 			Cache:    cache,
 			Limiter:  limiter,
 			Searcher: searcher,
-			FFlag:    fflag,
 		})
 }
 
