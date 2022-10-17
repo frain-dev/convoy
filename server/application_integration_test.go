@@ -571,7 +571,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToP
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
-	expectedStatusCode := http.StatusCreated
+	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
 	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
