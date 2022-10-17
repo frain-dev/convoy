@@ -27,8 +27,9 @@ import (
 )
 
 type ApplicationHandler struct {
-	M *middleware.Middleware
-	A App
+	M      *middleware.Middleware
+	Router http.Handler
+	A      App
 }
 
 type App struct {
@@ -243,6 +244,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					})
 				})
 			})
+
+			r.HandleFunc("/*", a.RedirectToProjects)
 		})
 	})
 
@@ -316,23 +319,13 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					})
 				})
 
-				orgSubRouter.Route("/security", func(securityRouter chi.Router) {
-					securityRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
-
-					securityRouter.Post("/keys", a.CreateAPIKey)
-					securityRouter.With(a.M.Pagination).Get("/keys", a.GetAPIKeys)
-					securityRouter.Get("/keys/{keyID}", a.GetAPIKeyByID)
-					securityRouter.Put("/keys/{keyID}", a.UpdateAPIKey)
-					securityRouter.Put("/keys/{keyID}/revoke", a.RevokeAPIKey)
-				})
-
-				orgSubRouter.Route("/groups", func(groupRouter chi.Router) {
+				orgSubRouter.Route("/projects", func(groupRouter chi.Router) {
 					groupRouter.Route("/", func(orgSubRouter chi.Router) {
 						groupRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateGroup)
 						groupRouter.Get("/", a.GetGroups)
 					})
 
-					groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
+					groupRouter.Route("/{projectID}", func(groupSubRouter chi.Router) {
 						groupSubRouter.Use(a.M.RequireGroup())
 						groupSubRouter.Use(a.M.RateLimitByGroupID())
 						groupSubRouter.Use(a.M.RequireOrganisationGroupMember())
@@ -537,6 +530,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 	metrics.RegisterQueueMetrics(a.A.Queue)
 	prometheus.MustRegister(metrics.RequestDuration())
-
+	a.Router = router
 	return router
 }

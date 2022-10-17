@@ -52,7 +52,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "","")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -109,7 +109,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	s.Router.ServeHTTP(w, req)
 
 	// Assert
-	//require.Equal(s.T(), http.StatusCreated, w.Code)
+	// require.Equal(s.T(), http.StatusCreated, w.Code)
 
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
@@ -135,7 +135,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		Group: group.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "","")
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
@@ -190,6 +190,61 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	require.Equal(s.T(), dbSub.Name, subscription.Name)
 	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
 	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
+}
+
+func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup_RedirectToProjects() {
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test_group", "", datastore.IncomingGroup, nil)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:  auth.RoleAdmin,
+		Group: group.UID,
+	}
+
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
+	bodyStr := fmt.Sprintf(`{
+		"name": "sub-1",
+		"type": "incoming",
+		"app_id": "%s",
+        "source_id":"%s",
+		"group_id": "%s",
+		"endpoint_id": "%s",
+		"alert_config": {
+			"threshold": "1h",
+			"count": 10
+		},
+		"retry_config": {
+			"type": "linear",
+			"retry_count": 2,
+			"duration": "10s"
+		},
+		"filter_config": {
+			"event_types": [
+				"user.created",
+				"user.updated"
+			]
+		},
+		"rate_limit_config": {
+			"count": 100,
+			"duration": 5
+		}
+	}`, app.UID, source.UID, group.UID, endpoint.UID)
+
+	url := fmt.Sprintf("/api/v1/subscriptions?groupID=%s", group.UID)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, apiKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
@@ -398,7 +453,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 		Group: group.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "","")
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Just Before
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
@@ -534,7 +589,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
 	require.Equal(s.T(), subscription.RetryConfig.Duration, dbSub.RetryConfig.Duration)
 	require.Equal(s.T(), subscription.DisableEndpoint, dbSub.DisableEndpoint)
-
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveStatus() {

@@ -94,6 +94,27 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 	require.Equal(s.T(), event.AppID, appID)
 }
 
+func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event_RedirectToProjects() {
+	appID := uuid.NewString()
+	expectedStatusCode := http.StatusTemporaryRedirect
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	_, _ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, []string{"*"}, 2)
+
+	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
+	body := serialize(bodyStr, appID)
+
+	url := fmt.Sprintf("/api/v1/events?groupID=%s", s.DefaultGroup.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
 func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
 	appID := uuid.NewString()
 	expectedStatusCode := http.StatusBadRequest
@@ -215,6 +236,25 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	var respEventDelivery datastore.EventDelivery
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
+}
+
+func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery_RedirectToProjects() {
+	eventDeliveryID := uuid.NewString()
+	expectedStatusCode := http.StatusTemporaryRedirect
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, &datastore.Event{}, &datastore.Endpoint{}, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
+
+	url := fmt.Sprintf("/api/v1/eventdeliveries/%s?groupID=%s", eventDeliveryID, s.DefaultGroup.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {

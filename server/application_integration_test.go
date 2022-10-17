@@ -89,7 +89,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s", appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -564,6 +564,41 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 	require.Equal(s.T(), dbEndpoint.Authentication, endpoint.Authentication)
+}
+
+func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToProjectsAPI() {
+	appID := uuid.New().String()
+	f := faker.New()
+	endpointURL := f.Internet().URL()
+	secret := f.Lorem().Text(25)
+	expectedStatusCode := http.StatusTemporaryRedirect
+
+	// Just Before.
+	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/applications/%s/endpoints?groupID=%s", appID, s.DefaultGroup.UID)
+	plainBody := fmt.Sprintf(`{
+		"url": "%s",
+		"secret": "%s",
+		"description": "default endpoint",
+		"authentication": {
+			"type": "api_key",
+			"api_key": {
+				"header_name": "x-api-key",
+				"header_value": "testapikey"
+			}
+		}
+	}`, endpointURL, secret)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+	fmt.Println("ff", w.Body.String())
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPIKey() {

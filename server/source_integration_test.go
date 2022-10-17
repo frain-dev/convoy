@@ -50,7 +50,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "","")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -170,6 +170,34 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 	require.Equal(s.T(), "convoy-prod", source.Name)
 	require.Equal(s.T(), datastore.SourceType("http"), source.Type)
 	require.Equal(s.T(), datastore.VerifierType("hmac"), source.Verifier.Type)
+}
+
+func (s *SourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects() {
+	bodyStr := `{
+		"name": "convoy-prod",
+		"type": "http",
+		"is_disabled": false,
+		"verifier": {
+			"type": "hmac",
+			"hmac": {
+				"encoding": "base64",
+				"header": "X-Convoy-Header",
+				"hash": "SHA512",
+				"secret": "convoy-secret"
+			}
+		}
+	}`
+
+	url := fmt.Sprintf("/api/v1/sources?groupID=%s", s.DefaultGroup.UID)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
 }
 
 func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
