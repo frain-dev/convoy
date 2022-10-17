@@ -65,19 +65,16 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
-type StrategyProvider string
-
-type GroupType string
-
-type SourceType string
-
-type SourceProvider string
-
-type VerifierType string
-
-type EncodingType string
-
-type StorageType string
+type (
+	StrategyProvider string
+	GroupType        string
+	SourceType       string
+	SourceProvider   string
+	VerifierType     string
+	EncodingType     string
+	StorageType      string
+	KeyType          string
+)
 
 type EndpointAuthenticationType string
 
@@ -140,6 +137,7 @@ const (
 	ProjectKey   KeyType = "project"
 	AppPortalKey KeyType = "app_portal"
 	CLIKey       KeyType = "cli"
+	PersonalKey  KeyType = "personal_key"
 )
 
 func (k KeyType) IsValidAppKey() bool {
@@ -149,6 +147,14 @@ func (k KeyType) IsValidAppKey() bool {
 	default:
 		return false
 	}
+}
+
+func (k KeyType) IsValid() bool {
+	switch k {
+	case AppPortalKey, CLIKey, ProjectKey, PersonalKey:
+		return true
+	}
+	return false
 }
 
 const (
@@ -555,8 +561,6 @@ type CLIMetadata struct {
 	HostName  string `json:"host_name,omitempty" bson:"-"`
 }
 
-type KeyType string
-
 type APIKey struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
@@ -566,6 +570,7 @@ type APIKey struct {
 	Hash      string             `json:"hash,omitempty" bson:"hash"`
 	Salt      string             `json:"salt,omitempty" bson:"salt"`
 	Type      KeyType            `json:"key_type" bson:"key_type"`
+	UserID    string             `json:"user_id" bson:"user_id"`
 	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`

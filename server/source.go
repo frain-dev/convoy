@@ -27,12 +27,12 @@ func createSourceService(a *ApplicationHandler) *services.SourceService {
 // @Tags Source
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param source body models.Source true "Source Details"
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/sources [post]
+// @Router /api/v1/projects/{projectID}/sources [post]
 func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.Source
 	if err := util.ReadJSON(r, &newSource); err != nil {
@@ -54,18 +54,18 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", sr, http.StatusCreated))
 }
 
-// GetSource
+// GetSourceByID
 // @Summary Get a source
 // @Description This endpoint fetches a source by its id
 // @Tags Source
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param sourceID path string true "source id"
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/sources/{sourceID} [get]
+// @Router /api/v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
@@ -88,13 +88,13 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 // @Tags Source
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param sourceID path string true "source id"
 // @Param source body models.Source true "Source Details"
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/sources/{sourceID} [put]
+// @Router /api/v1/projects/{projectID}/sources/{sourceID} [put]
 func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
@@ -130,12 +130,12 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Tags Source
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID path string true "Project id"
 // @Param sourceID path string true "source id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/sources/{sourceID} [delete]
+// @Router /api/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 	sourceService := createSourceService(a)
@@ -161,13 +161,14 @@ func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // @Tags Source
 // @Accept  json
 // @Produce  json
+// @Param projectID path string true "Project id"
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/sources [get]
+// @Router /api/v1/projects/{projectID}/sources [get]
 func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())

@@ -12,7 +12,7 @@ import (
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
-
+ 
 func createGroupService(a *ApplicationHandler) *services.GroupService {
 	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
 	appRepo := mongo.NewApplicationRepo(a.A.Store)
@@ -26,8 +26,21 @@ func createGroupService(a *ApplicationHandler) *services.GroupService {
 	)
 }
 
-// GetGroup
+// GetGroup - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Get a group
+// @Description This endpoint fetches a group by its id
+// @Tags Group
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID} [get]
+func _() {}
+
+// GetGroup
+// @Summary Get a group - UI
 // @Description This endpoint fetches a group by its id
 // @Tags Group
 // @Accept  json
@@ -39,7 +52,6 @@ func createGroupService(a *ApplicationHandler) *services.GroupService {
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups/{groupID} [get]
 func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
-
 	group := m.GetGroupFromContext(r.Context())
 	groupService := createGroupService(a)
 
@@ -53,8 +65,21 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 		group, http.StatusOK))
 }
 
-// DeleteGroup
+// DeleteGroup - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Delete a group
+// @Description This endpoint deletes a group using its id
+// @Tags Group
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID} [delete]
+func _() {}
+
+// DeleteGroup
+// @Summary Delete a group - UI
 // @Description This endpoint deletes a group using its id
 // @Tags Group
 // @Accept  json
@@ -64,7 +89,7 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organiastions/{orgID}/groups/{groupID} [delete]
+// @Router /ui/organisations/{orgID}/groups/{groupID} [delete]
 func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 	groupService := createGroupService(a)
@@ -79,8 +104,22 @@ func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 		nil, http.StatusOK))
 }
 
-// CreateGroup
+// CreateGroup - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Create a group
+// @Description This endpoint creates a group
+// @Tags Group
+// @Accept  json
+// @Produce  json
+// @Param orgID query string true "Organisation id"
+// @Param group body models.Group true "Group Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects [post]
+func _() {}
+
+// CreateGroup
+// @Summary Create a group - UI
 // @Description This endpoint creates a group
 // @Tags Group
 // @Accept  json
@@ -117,8 +156,22 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Group created successfully", resp, http.StatusCreated))
 }
 
-// UpdateGroup
+// UpdateGroup - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Update a group
+// @Description This endpoint updates a group
+// @Tags Group
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Param group body models.Group true "Group Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID} [put]
+func _() {}
+
+// UpdateGroup
+// @Summary Update a group - UI
 // @Description This endpoint updates a group
 // @Tags Group
 // @Accept  json
@@ -150,8 +203,22 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Group updated successfully", group, http.StatusAccepted))
 }
 
-// GetGroups
+// GetGroups - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Get groups
+// @Description This endpoint fetches groups
+// @Tags Group
+// @Accept  json
+// @Produce  json
+// @Param name query string false "group name"
+// @Param orgID query string true "organisation id"
+// @Success 200 {object} util.ServerResponse{data=[]datastore.Group}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects [get]
+func _() {}
+
+// GetGroups
+// @Summary Get groups - UI
 // @Description This endpoint fetches groups
 // @Tags Group
 // @Accept  json
