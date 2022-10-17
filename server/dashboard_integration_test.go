@@ -288,7 +288,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
 			initRealmChain(t, apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
-			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/groups/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
+			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
 			err = s.AuthenticatorFn(req, s.Router)
 			require.NoError(s.T(), err)
 

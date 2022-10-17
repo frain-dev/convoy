@@ -62,7 +62,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	})
 
 	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
@@ -233,6 +233,47 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	req := createRequest(http.MethodGet, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var organisations []datastore.Organisation
+	pagedResp := pagedResponse{Content: &organisations}
+	parseResponse(s.T(), w.Result(), &pagedResp)
+
+	require.Equal(s.T(), 2, len(organisations))
+
+	uids := []string{s.DefaultOrg.UID, org.UID}
+	for _, org := range organisations {
+		require.Contains(s.T(), uids, org.UID)
+	}
+}
+
+func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPIKey() {
+	expectedStatusCode := http.StatusOK
+
+	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.Store, uuid.NewString(), "", "test-org")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, org, s.DefaultUser, &auth.Role{
+		Type:  auth.RoleAdmin,
+		Group: uuid.NewString(),
+		App:   "",
+	})
+	require.NoError(s.T(), err)
+
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := "/api/v1/organisations?page=1&perPage=2"
+	req := createRequest(http.MethodGet, url, key, nil)
 
 	w := httptest.NewRecorder()
 

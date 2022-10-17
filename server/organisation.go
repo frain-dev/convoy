@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/datastore"
+
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
@@ -31,14 +33,28 @@ func createOrganisationService(a *ApplicationHandler) *services.OrganisationServ
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [get]
 func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully",
 		m.GetOrganisationFromContext(r.Context()), http.StatusOK))
 }
 
+// GetOrganisationsPaged - this is a duplicate annotation for the api/v1 route of this handler
+// @Summary Get organisations
+// @Description This endpoint fetches the organisations a user is part of, this route can only be accessed with a personal api key
+// @Tags Organisation
+// @Accept  json
+// @Produce  json
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Organisation}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/organisations [get]
+func _() {}
+
 // GetOrganisationsPaged
 // @Summary Get organisations
-// @Description This endpoint fetches multiple organisations
+// @Description This endpoint fetches the organisations a user is part of
 // @Tags Organisation
 // @Accept  json
 // @Produce  json
@@ -49,7 +65,7 @@ func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /ui/organisations [get]
-func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { //TODO: change to GetUserOrganisationsPaged
+func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
 	pageable := m.GetPageableFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
 	orgService := createOrganisationService(a)
@@ -63,6 +79,21 @@ func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
 		pagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
+}
+
+func (a *ApplicationHandler) GetUserOrganisations(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
+	user := m.GetUserFromContext(r.Context())
+
+	orgService := createOrganisationService(a)
+	organisations, _, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, datastore.Pageable{Sort: -1})
+	if err != nil {
+		log.WithError(err).Error("failed to load organisations")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
+		organisations, http.StatusOK))
 }
 
 // CreateOrganisation

@@ -50,7 +50,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -70,7 +70,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
 	sourceID := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -88,7 +88,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -120,7 +120,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 	}
 
 	// Arrange Request
-	url := "/api/v1/sources"
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -152,8 +152,9 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 		}
 	}`
 
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -171,6 +172,34 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 	require.Equal(s.T(), datastore.VerifierType("hmac"), source.Verifier.Type)
 }
 
+func (s *SourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects() {
+	bodyStr := `{
+		"name": "convoy-prod",
+		"type": "http",
+		"is_disabled": false,
+		"verifier": {
+			"type": "hmac",
+			"hmac": {
+				"encoding": "base64",
+				"header": "X-Convoy-Header",
+				"hash": "SHA512",
+				"secret": "convoy-secret"
+			}
+		}
+	}`
+
+	url := fmt.Sprintf("/api/v1/sources?groupID=%s", s.DefaultGroup.UID)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
+}
+
 func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 	bodyStr := `{
 		"type": "http",
@@ -186,8 +215,9 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 		}
 	}`
 
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -213,8 +243,10 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 		}
 	}`
 
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
+
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/sources", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -233,7 +265,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "%s",
 		"type": "http",
@@ -278,7 +310,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/sources/%s", sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
