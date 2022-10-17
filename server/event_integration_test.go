@@ -96,7 +96,7 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event() {
 
 func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event_RedirectToProjects() {
 	appID := uuid.NewString()
-	expectedStatusCode := http.StatusCreated
+	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
@@ -113,13 +113,6 @@ func (s *EventIntegrationTestSuite) Test_CreateAppEvent_Valid_Event_RedirectToPr
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.AppID, appID)
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateAppEvent_App_has_no_endpoint() {
@@ -247,11 +240,11 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 
 func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery_RedirectToProjects() {
 	eventDeliveryID := uuid.NewString()
-	expectedStatusCode := http.StatusOK
+	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	eventDelivery, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, &datastore.Event{}, &datastore.Endpoint{}, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
+	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, &datastore.Event{}, &datastore.Endpoint{}, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s?groupID=%s", eventDeliveryID, s.DefaultGroup.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
@@ -262,11 +255,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery_Re
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var respEventDelivery datastore.EventDelivery
-	parseResponse(s.T(), w.Result(), &respEventDelivery)
-	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
 }
 
 func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {

@@ -197,15 +197,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects() {
 	s.Router.ServeHTTP(w, req)
 
 	// Assert
-	require.Equal(s.T(), http.StatusCreated, w.Code)
-
-	var source datastore.Source
-	parseResponse(s.T(), w.Result(), &source)
-
-	require.NotEmpty(s.T(), source.UID)
-	require.Equal(s.T(), "convoy-prod", source.Name)
-	require.Equal(s.T(), datastore.SourceType("http"), source.Type)
-	require.Equal(s.T(), datastore.VerifierType("hmac"), source.Verifier.Type)
+	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
 }
 
 func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {

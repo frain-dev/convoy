@@ -244,19 +244,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	s.Router.ServeHTTP(w, req)
 
 	// Assert
-	require.Equal(s.T(), http.StatusCreated, w.Code)
-
-	var subscription *datastore.Subscription
-	parseResponse(s.T(), w.Result(), &subscription)
-
-	subRepo := cm.NewSubscriptionRepo(s.ConvoyApp.A.Store)
-	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), group.UID, subscription.UID)
-	require.NoError(s.T(), err)
-
-	require.NotEmpty(s.T(), subscription.UID)
-	require.Equal(s.T(), dbSub.Name, subscription.Name)
-	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
-	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
+	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {

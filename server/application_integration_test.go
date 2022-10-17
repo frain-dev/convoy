@@ -599,16 +599,6 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToP
 	fmt.Println("ff", w.Body.String())
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var endpoint datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
-	require.Equal(s.T(), dbEndpoint.Authentication, endpoint.Authentication)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPIKey() {

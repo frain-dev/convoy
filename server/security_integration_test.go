@@ -154,7 +154,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 }
 
 func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProjects() {
-	expectedStatusCode := http.StatusCreated
+	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Switch to the native realm
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
@@ -191,15 +191,6 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProj
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var apiKeyResponse models.PortalAPIKeyResponse
-	parseResponse(s.T(), w.Result(), &apiKeyResponse)
-	require.NotEmpty(s.T(), apiKeyResponse.Key)
-	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/app/%s?groupID=%s&appId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, app.UID))
-	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.AppPortalKey))
-	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
-	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)
 }
 
 func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
