@@ -9,33 +9,45 @@ import (
 	"github.com/go-chi/render"
 )
 
+var redirectRoutes = []string{
+	"/api/v1/applications",
+	"/api/v1/events",
+	"/api/v1/eventdeliveries",
+	"/api/v1/security",
+	"/api/v1/subscriptions",
+	"/api/v1/sources",
+}
+
 func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.Request) {
-	redirectRoutes := []string{
-		"/api/v1/applications",
-		"/api/v1/events",
-		"/api/v1/eventdeliveries",
-		"/api/v1/security",
-		"/api/v1/subscriptions",
-		"/api/v1/sources",
+	groupID := r.URL.Query().Get("groupID")
+	if util.IsStringEmpty(groupID) {
+		_ = render.Render(w, r, util.NewErrorResponse("groupID query is missing", http.StatusBadRequest))
+		return
 	}
 
-	for _, route := range redirectRoutes {
-		if strings.HasPrefix(r.URL.Path, route) {
+	rElems := strings.Split(r.URL.Path, "/")
 
-			groupID := r.URL.Query().Get("groupID")
-			if util.IsStringEmpty(groupID) {
-				_ = render.Render(w, r, util.NewErrorResponse("groupID query is missing", http.StatusBadRequest))
-				return
-			}
+	if !(cap(rElems) > 3) {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid path", http.StatusBadRequest))
+		return
+	}
 
-			stripped := r.URL.Path[7:] // remove the /api/v1
-			redirectURL := fmt.Sprintf("/api/v1/projects/%s%s", groupID, stripped)
-			r.URL.Path = redirectURL
+	resourcePrefix := strings.Join(rElems[:4], "/")
 
-			fwd, _ := http.NewRequest(r.Method, redirectURL, r.Body)
-			fwd.Header = r.Header
-			a.Router.ServeHTTP(w, fwd)
-			return
+	if ok := contains(redirectRoutes, resourcePrefix); ok {
+		forwardedPath := strings.Join(rElems[3:], "/")
+		redirectPrefix := fmt.Sprintf("/api/v1/projects/%s/", groupID)
+		redirectURL := redirectPrefix + forwardedPath
+
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	}
+}
+
+func contains(sl []string, name string) bool {
+	for _, value := range sl {
+		if value == name {
+			return true
 		}
 	}
+	return false
 }
