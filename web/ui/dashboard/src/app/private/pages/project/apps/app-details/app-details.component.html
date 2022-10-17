@@ -100,6 +100,7 @@
 				<div class="flex items-center">
 					<convoy-button size="sm" type="text" (clickItem)="showAddEndpointModal = !showAddEndpointModal">Add Endpoints</convoy-button>
 					<div *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="w-[1px] h-22px mx-16px border-l border-l-grey-10"></div>
+
 					<convoy-button *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" size="sm" type="text" [disable]="appsDetailsItem && appsDetailsItem?.endpoints?.length == 0" (clickItem)="showAddEventModal = true">Send Event</convoy-button>
 				</div>
 			</div>
@@ -144,18 +145,18 @@
 
 							<div class="flex items-center mt-16px">
 								<convoy-button size="sm" type="text" (clickItem)="selectedEndpoint = endpoint; showAddEndpointModal = true">
-                                    <svg width="16" height="16" class="mr-8px fill-primary-100">
-                                        <use xlink:href="#edit-icon"></use>
-                                    </svg>
-                                    Edit
-                                </convoy-button>
+									<svg width="16" height="16" class="mr-8px fill-primary-100">
+										<use xlink:href="#edit-icon"></use>
+									</svg>
+									Edit
+								</convoy-button>
 								<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
 								<convoy-button size="sm" type="text" color="danger" (clickItem)="selectedEndpoint = endpoint; showDeleteModal = true">
-                                    <svg width="16" height="16" class="mr-8px">
-                                        <use xlink:href="#delete-icon"></use>
-                                    </svg>
-                                    Delete
-                                </convoy-button>
+									<svg width="16" height="16" class="mr-8px fill-danger-100">
+										<use xlink:href="#delete-icon"></use>
+									</svg>
+									Delete
+								</convoy-button>
 							</div>
 						</div>
 						<div class="absolute backdrop-blur-sm rounded-8px top-0 w-full h-full -ml-[15px] bg-primary-500 bg-opacity-50 flex items-center flex-col justify-center p-24px" *ngIf="endpoint.status == 'inactive'">
@@ -181,8 +182,8 @@
 
 		<!-- app portal  -->
 		<div class="pt-32px" [hidden]="privateService.activeProjectDetails?.type === 'incoming'" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-t-grey-10 w-full': shouldRenderSmallSize }">
-            <h3 class="font-medium">App Portal</h3>
-			<div *ngIf="loadingAppPotalToken" >
+			<h3 class="font-medium">App Portal</h3>
+			<div *ngIf="loadingAppPotalToken">
 				<ul class="mt-10px">
 					<convoy-list-item className="border-none">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
@@ -216,7 +217,7 @@
 					<div class="bg-white-100 border-2 border-primary-500 rounded-[10px] p-16px mt-16px">
 						<div class="text-14 text-grey-40 overflow-x-scroll">{{ appPortalIframe }}</div>
 						<div class="flex justify-end">
-                            <convoy-copy-button [text]="appPortalLink"></convoy-copy-button>
+							<convoy-copy-button [text]="appPortalLink"></convoy-copy-button>
 						</div>
 					</div>
 				</ul>
@@ -226,10 +227,31 @@
 </convoy-card>
 
 <!-- app api keys and devices list  -->
-<convoy-cli></convoy-cli>
+<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
+	<div class="flex items-center justify-center border-b border-grey-10">
+        <ul class="flex flex-row m-auto w-full mt-32px border-b border-b-grey-10">
+            <li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+                <button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
+                    <span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+                </button>
+            </li>
+
+            <div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
+				<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true">Generate New Key</convoy-button>
+			</div>
+        </ul>
+	</div>
+</convoy-card>
+
+<ng-container *ngIf="activeTab === 'cli keys'">
+	<convoy-cli-keys></convoy-cli-keys>
+</ng-container>
+<ng-container *ngIf="activeTab === 'devices'">
+	<convoy-devices></convoy-devices>
+</ng-container>
 
 <!-- send event form  -->
-<app-send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></app-send-event>
+<send-event *ngIf="showAddEventModal" [appId]="appsDetailsItem.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getAppDetails(appsDetailsItem.uid); showAddEventModal = false"></send-event>
 
 <!-- create endpoint form  -->
 <convoy-modal *ngIf="showAddEndpointModal" [title]="selectedEndpoint ? 'Update Endpoint' : 'Add Endpoint'" (closeModal)="showAddEndpointModal = false; selectedEndpoint = undefined">

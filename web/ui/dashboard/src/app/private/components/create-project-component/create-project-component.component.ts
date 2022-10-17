@@ -39,7 +39,7 @@ export class CreateProjectComponent implements OnInit {
 	isCreatingProject = false;
 	showApiKey = false;
 	enableMoreConfig = false;
-    confirmModal = false;
+	confirmModal = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
@@ -84,8 +84,8 @@ export class CreateProjectComponent implements OnInit {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.isCreatingProject = false;
 			this.projectForm.reset();
+			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success', type: this.privateService.activeProjectDetails?.uid ? 'modal' : 'alert' });
 			this.privateService.activeProjectDetails = response.data.group;
-			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.group;
 			this.showApiKey = true;

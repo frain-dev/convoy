@@ -71,12 +71,12 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 	require.NoError(s.T(), err)
 
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+		_, err = testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 		require.NoError(s.T(), err)
 
 	}
 
-	event, err := testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, uuid.NewString(), "*", []byte(`{}`))
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
 	role := auth.Role{
@@ -85,17 +85,17 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 		App:   app2.UID,
 	}
 
-	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal")
+	// generate an app portal key 
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/events", key, nil)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	s.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	var respEvents []datastore.Event
@@ -137,16 +137,16 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppSubscriptions() {
 	}
 
 	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal")
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/subscriptions", key, nil)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	s.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	var respSubs []datastore.Subscription

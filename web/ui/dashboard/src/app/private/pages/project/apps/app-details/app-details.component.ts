@@ -1,11 +1,12 @@
 import { Location } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from './app-details.service';
+import { CliKeysComponent } from './cli-keys/cli-keys.component';
 
 @Component({
 	selector: 'app-app-details',
@@ -13,6 +14,7 @@ import { AppDetailsService } from './app-details.service';
 	styleUrls: ['./app-details.component.scss']
 })
 export class AppDetailsComponent implements OnInit {
+	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
 	showAddEndpointModal = false;
 	showAddEventModal = false;
 	showEndpointSecret = false;
@@ -31,6 +33,8 @@ export class AppDetailsComponent implements OnInit {
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint?: ENDPOINT;
+	tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
+	activeTab: 'cli keys' | 'devices' = 'cli keys';
 
 	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService) {}
 
@@ -99,6 +103,10 @@ export class AppDetailsComponent implements OnInit {
 		} catch {
 			this.isDeletingEndpoint = false;
 		}
+	}
+
+	toggleActiveTab(tab: 'cli keys' | 'devices') {
+		this.activeTab = tab;
 	}
 
 	checkScreenSize() {

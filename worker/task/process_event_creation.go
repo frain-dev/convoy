@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -91,10 +92,11 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		intervalSeconds := group.Config.Strategy.Duration
-		retryLimit := group.Config.Strategy.RetryCount
+		ec := &EventDeliveryConfig{group: group}
 
 		for _, s := range subscriptions {
+			ec.subscription = &s
+			headers := event.Headers
 			app, err := appRepo.FindApplicationByID(ctx, s.AppID)
 			if err != nil {
 				log.Errorf("Error fetching applcation %s", err)
@@ -108,15 +110,27 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
+				if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
+					headers = make(httpheader.HTTPHeader)
+					headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
+					headers.MergeHeaders(event.Headers)
+				}
+
 				s.Endpoint = endpoint
+			}
+
+			rc, err := ec.retryConfig()
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+
 			}
 
 			metadata := &datastore.Metadata{
 				NumTrials:       0,
-				RetryLimit:      retryLimit,
+				RetryLimit:      rc.RetryCount,
 				Data:            event.Data,
-				IntervalSeconds: intervalSeconds,
-				Strategy:        group.Config.Strategy.Type,
+				IntervalSeconds: rc.Duration,
+				Strategy:        rc.Type,
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			}
 
@@ -128,7 +142,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				EventID:        event.UID,
 				EndpointID:     s.EndpointID,
 				DeviceID:       s.DeviceID,
-				Headers:        event.Headers,
+				Headers:        headers,
 
 				Status:           getEventDeliveryStatus(ctx, &s, app, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},

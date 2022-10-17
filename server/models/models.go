@@ -60,6 +60,11 @@ type APIKey struct {
 	ExpiresAt time.Time         `json:"expires_at"`
 }
 
+type PersonalAPIKey struct {
+	Name      string    `json:"name"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
 type Role struct {
 	Type  auth.RoleType `json:"type"`
 	Group string        `json:"group"`
@@ -80,10 +85,12 @@ type APIKeyByIDResponse struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
+
 type APIKeyResponse struct {
 	APIKey
 	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
+	UserID    string    `json:"user_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -227,9 +234,10 @@ type Endpoint struct {
 	Description string   `json:"description" bson:"description"`
 	Events      []string `json:"events" bson:"events"`
 
-	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
 
 type DashboardSummary struct {
@@ -250,9 +258,11 @@ type Subscription struct {
 	SourceID   string `json:"source_id" bson:"source_id"`
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
-	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
+	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
 }
 
 type UpdateSubscription struct {
@@ -261,9 +271,18 @@ type UpdateSubscription struct {
 	SourceID   string `json:"source_id,omitempty"`
 	EndpointID string `json:"endpoint_id,omitempty"`
 
-	AlertConfig  *datastore.AlertConfiguration  `json:"alert_config,omitempty"`
-	RetryConfig  *datastore.RetryConfiguration  `json:"retry_config,omitempty"`
-	FilterConfig *datastore.FilterConfiguration `json:"filter_config,omitempty"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty"`
+	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty"`
+	DisableEndpoint *bool                             `json:"disable_endpoint" bson:"disable_endpoint"`
+}
+
+type RetryConfiguration struct {
+	Type            datastore.StrategyProvider `json:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration        string                     `json:"duration,omitempty" valid:"duration~please provide a valid time duration"`
+	IntervalSeconds uint64                     `json:"interval_seconds" valid:"int~please provide a valid interval seconds"`
+	RetryCount      uint64                     `json:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 type UpdateUser struct {
