@@ -42,7 +42,6 @@ type ConfigurationResponse struct {
 	IsSignupEnabled    bool                                  `json:"is_signup_enabled"`
 	ApiVersion         string                                `json:"api_version"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
-	FliptHost          string                                `json:"flipt_host"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`

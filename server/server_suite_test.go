@@ -113,7 +113,6 @@ func buildServer() *ApplicationHandler {
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
-	fflag := noopfflag.NewNoopFeatureFlag()
 
 	return NewApplicationHandler(
 		App{
@@ -124,7 +123,6 @@ func buildServer() *ApplicationHandler {
 			Cache:    cache,
 			Limiter:  limiter,
 			Searcher: searcher,
-			FFlag:    fflag,
 		})
 }
 

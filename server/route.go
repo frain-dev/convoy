@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
@@ -40,7 +41,6 @@ type App struct {
 	Cache    cache.Cache
 	Limiter  limiter.RateLimiter
 	Searcher searcher.Searcher
-	FFlag    fflag.FeatureFlag
 }
 
 //go:embed ui/build
@@ -97,7 +97,6 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 			Logger:   a.Logger,
 			Tracer:   a.Tracer,
 			Limiter:  a.Limiter,
-			FFlag:    a.FFlag,
 		},
 	}
 }
@@ -202,7 +201,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(a.M.RequireApp())
 					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.With(fflag.CanAccessFeature(a.A.FFlag, fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
+					securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 				})
 			})
 
@@ -340,7 +339,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.With(fflag.CanAccessFeature(a.A.FFlag, fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
+									keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
 									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 								})
@@ -439,6 +438,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			configRouter.Put("/", a.UpdateConfiguration)
 
 		})
+
+		uiRouter.Post("/flags", flipt.BatchEvaluate)
 	})
 
 	//App Portal API.
