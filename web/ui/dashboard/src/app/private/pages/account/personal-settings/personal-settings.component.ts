@@ -4,14 +4,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { PAGINATION } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { SettingsService } from '../settings.service';
+import { AccountService } from '../account.service';
 
 @Component({
-	selector: 'personal-keys',
-	templateUrl: './personal-keys.component.html',
-	styleUrls: ['./personal-keys.component.scss']
+	selector: 'personal-settings',
+	templateUrl: './personal-settings.component.html',
+	styleUrls: ['./personal-settings.component.scss']
 })
-export class PersonalKeysComponent implements OnInit {
+export class PersonalSettingsComponent implements OnInit {
 	showCreateNewTokenForm = false;
 	isFetchingKeys = false;
 	isGeneratingNewKey = false;
@@ -23,12 +23,12 @@ export class PersonalKeysComponent implements OnInit {
 	accessKey!: string;
 	loaderIndex: number[] = [0, 1, 2];
 	personalAccessKeys!: { content: any; pagination: PAGINATION };
-
 	generateKeyForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		expires_at: [null]
 	});
-	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute) {}
+
+	constructor(private formBuilder: FormBuilder, private accountService: AccountService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute) {}
 
 	ngOnInit() {
 		this.getUserId();
@@ -51,7 +51,7 @@ export class PersonalKeysComponent implements OnInit {
 		}
 		this.isGeneratingNewKey = true;
 		try {
-			const response = await this.settingService.generatePersonalKey(this.userId, this.generateKeyForm.value);
+			const response = await this.accountService.generatePersonalKey(this.userId, this.generateKeyForm.value);
 			this.accessKey = response.data.key;
 			this.showCreateNewTokenForm = false;
 			this.showAccessKey = true;
@@ -68,7 +68,7 @@ export class PersonalKeysComponent implements OnInit {
 		this.isFetchingKeys = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.settingService.fetchPersonalKeys({ userId: this.userId, pageNo: page });
+			const response = await this.accountService.fetchPersonalKeys({ userId: this.userId, pageNo: page });
 			this.personalAccessKeys = response.data;
 			console.log(response);
 			this.isFetchingKeys = false;
@@ -80,7 +80,7 @@ export class PersonalKeysComponent implements OnInit {
 	async revokeKey() {
 		this.isRevokingKey = true;
 		try {
-			const response = await this.settingService.revokeKey({ userId: this.userId, keyId: this.selectedKey?.uid });
+			const response = await this.accountService.revokeKey({ userId: this.userId, keyId: this.selectedKey?.uid });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingKey = false;
 			this.showRevokeKeyModal = false;
