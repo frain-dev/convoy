@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	noopfflag "github.com/frain-dev/convoy/internal/pkg/fflag/noop"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
