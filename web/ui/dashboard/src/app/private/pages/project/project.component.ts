@@ -2,7 +2,6 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { PrivateService } from '../../private.service';
-import { ProjectService } from './project.service';
 
 @Component({
 	selector: 'app-project',
@@ -36,10 +35,12 @@ export class ProjectComponent implements OnInit {
 	shouldShowFullSideBar = true;
 	projectDetails!: GROUP;
 	isLoadingProjectDetails: boolean = true;
+	showHelpDropdown = false;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
 		const uid = { uid: this.route.snapshot.params.id };
 		this.privateService.activeProjectDetails = { ...this.privateService.activeProjectDetails, ...uid };
+		this.getSubscriptions();
 	}
 
 	ngOnInit() {
@@ -53,10 +54,20 @@ export class ProjectComponent implements OnInit {
 		try {
 			const projectDetails = await this.privateService.getProjectDetails();
 			this.projectDetails = projectDetails.data;
+			localStorage.setItem('PROJECT_CONFIG', JSON.stringify(projectDetails.data?.config));
 			if (this.projectDetails.type === 'outgoing') this.sideBarItems.splice(1, 1);
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
+		}
+	}
+
+	async getSubscriptions() {
+		try {
+			const subscriptionsResponse = await this.privateService.getSubscriptions({ page: 1 });
+			subscriptionsResponse.data?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
+		} catch (error) {
+			return error;
 		}
 	}
 

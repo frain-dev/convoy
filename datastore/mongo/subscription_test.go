@@ -28,7 +28,7 @@ func createSubscription() *datastore.Subscription {
 		},
 		RetryConfig: &datastore.RetryConfiguration{
 			Type:       "linear",
-			Duration:   "1m",
+			Duration:   3,
 			RetryCount: 10,
 		},
 		FilterConfig: &datastore.FilterConfiguration{

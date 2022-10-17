@@ -56,6 +56,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 		config.Signature = datastore.GetDefaultSignatureConfig()
 		config.Strategy = &datastore.DefaultStrategyConfig
 		config.RateLimit = &datastore.DefaultRateLimitConfig
+		config.RetentionPolicy = &datastore.DefaultRetentionPolicy
 	} else {
 		if newGroup.Config.Signature == nil {
 			config.Signature = datastore.GetDefaultSignatureConfig()
@@ -70,6 +71,11 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 		if newGroup.Config.RateLimit == nil {
 			config.RateLimit = &datastore.DefaultRateLimitConfig
 		}
+
+		if newGroup.Config.RetentionPolicy == nil {
+			config.RetentionPolicy = &datastore.DefaultRetentionPolicy
+		}
+
 	}
 
 	if newGroup.RateLimit == 0 {
@@ -213,23 +219,6 @@ func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 	if err != nil {
 		log.WithError(err).Error("failed to delete group")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))
-	}
-
-	// TODO(daniel,subomi): is returning http error necessary for these? since the group itself has been deleted
-	err = gs.appRepo.DeleteGroupApps(ctx, id)
-	if err != nil {
-		log.WithError(err).Error("failed to delete group apps")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group apps"))
-	}
-	evntFilter := &datastore.EventFilter{
-		GroupID:        id,
-		CreatedAtStart: 0,
-		CreatedAtEnd:   time.Now().Unix(),
-	}
-	err = gs.eventRepo.DeleteGroupEvents(ctx, evntFilter, false)
-	if err != nil {
-		log.WithError(err).Error("failed to delete group events")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group events"))
 	}
 
 	return nil

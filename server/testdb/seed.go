@@ -282,7 +282,7 @@ func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, 
 }
 
 // SeedAPIKey creates random api key for integration tests.
-func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType string) (*datastore.APIKey, string, error) {
+func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -300,6 +300,7 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType string
 		UID:            uid,
 		MaskID:         maskID,
 		Name:           name,
+		UserID:         userID,
 		Type:           datastore.KeyType(keyType),
 		Role:           role,
 		Hash:           encodedKey,
@@ -347,7 +348,7 @@ func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datasto
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(store datastore.Store, app *datastore.Application, groupID string, uid, eventType string, data []byte) (*datastore.Event, error) {
+func SeedEvent(store datastore.Store, app *datastore.Application, groupID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -358,6 +359,7 @@ func SeedEvent(store datastore.Store, app *datastore.Application, groupID string
 		Data:           data,
 		AppID:          app.UID,
 		GroupID:        groupID,
+		SourceID:       sourceID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
@@ -108,6 +107,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						Count:    1000,
 						Duration: 60,
 					},
+					RetentionPolicy: &datastore.DefaultRetentionPolicy,
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
@@ -179,6 +179,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 						Count:    1000,
 						Duration: 60,
 					},
+					RetentionPolicy: &datastore.DefaultRetentionPolicy,
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
@@ -224,6 +225,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Signature:       &datastore.SignatureConfiguration{},
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
+					RetentionPolicy: &datastore.DefaultRetentionPolicy,
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
@@ -275,6 +277,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					},
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
+					RetentionPolicy: &datastore.DefaultRetentionPolicy,
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
@@ -893,11 +896,6 @@ func TestGroupService_DeleteGroup(t *testing.T) {
 				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().DeleteGroup(gomock.Any(), "12345").Times(1).Return(nil)
 
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().DeleteGroupApps(gomock.Any(), "12345").Times(1).Return(nil)
-
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().DeleteGroupEvents(gomock.Any(), &datastore.EventFilter{GroupID: "12345", CreatedAtStart: 0, CreatedAtEnd: time.Now().Unix()}, false).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -914,43 +912,6 @@ func TestGroupService_DeleteGroup(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to delete group",
-		},
-		{
-			name: "should_fail_to_delete_group_apps",
-			args: args{
-				ctx: ctx,
-				id:  "12345",
-			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().DeleteGroup(gomock.Any(), "12345").Times(1).Return(nil)
-
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().DeleteGroupApps(gomock.Any(), "12345").Times(1).Return(errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to delete group apps",
-		},
-		{
-			name: "should_fail_to_delete_group_messages",
-			args: args{
-				ctx: ctx,
-				id:  "12345",
-			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().DeleteGroup(gomock.Any(), "12345").Times(1).Return(nil)
-
-				a, _ := gs.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().DeleteGroupApps(gomock.Any(), "12345").Times(1).Return(nil)
-
-				e, _ := gs.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().DeleteGroupEvents(gomock.Any(), &datastore.EventFilter{GroupID: "12345", CreatedAtStart: 0, CreatedAtEnd: time.Now().Unix()}, false).Times(1).Return(errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to delete group events",
 		},
 	}
 	for _, tc := range tests {

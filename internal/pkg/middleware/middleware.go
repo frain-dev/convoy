@@ -184,9 +184,7 @@ func (m *Middleware) JsonResponse(next http.Handler) http.Handler {
 
 func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			appID := chi.URLParam(r, "appID")
 
 			var app *datastore.Application
@@ -227,7 +225,6 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 
 func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
 
@@ -310,7 +307,7 @@ func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next ht
 
 			group := GetGroupFromContext(r.Context())
 			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
-				if !util.IsStringEmpty(authUser.Role.App) { //we're dealing with an app portal token at this point
+				if !util.IsStringEmpty(authUser.Role.App) { // we're dealing with an app portal token at this point
 					app := GetApplicationFromContext(r.Context())
 
 					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
@@ -363,9 +360,7 @@ func ParseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
 
 func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			app := GetApplicationFromContext(r.Context())
 			endPointId := chi.URLParam(r, "endpointID")
 
@@ -383,9 +378,7 @@ func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 
 func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			eventId := chi.URLParam(r, "eventID")
 
 			event, err := m.eventRepo.FindEventByID(r.Context(), eventId)
@@ -411,10 +404,12 @@ func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 
 func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			orgID := chi.URLParam(r, "orgID")
+
+			if util.IsStringEmpty(orgID) {
+				orgID = r.URL.Query().Get("orgID")
+			}
 
 			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
 			if err != nil {
@@ -431,7 +426,6 @@ func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler 
 
 func (m *Middleware) RequireAuthUserMetadata() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
 			user, ok := authUser.Metadata.(*datastore.User)
@@ -447,9 +441,79 @@ func (m *Middleware) RequireAuthUserMetadata() func(next http.Handler) http.Hand
 	}
 }
 
+// RequireGroupAccess checks if the given authentication creds can access the group. It handles PATs as well
+func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
+
+			if authUser.Metadata != nil { // this signals that a personal api key was used for authentication
+				user, _ := authUser.Metadata.(*datastore.User)
+				if user != nil {
+					member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
+					if err != nil {
+						log.WithError(err).Error("failed to fetch organisation member")
+						_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+						return
+					}
+
+					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Group == group.UID {
+						r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
+						next.ServeHTTP(w, r)
+						return
+					}
+
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+					return
+				}
+			}
+
+			// it's a project api key at this point
+			if authUser.Role.Type.Is(auth.RoleAdmin) && authUser.Role.Group == group.UID {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		})
+	}
+}
+
+// RejectAppPortalKey ensures that an app portal api key was not used for authentication
+func (m *Middleware) RejectAppPortalKey() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			if authUser.Role.App != "" {
+				// if authUser.Role.App is not empty, an app portal api key was used to authenticate
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			app := GetApplicationFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
+
+			if app.GroupID != group.UID {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user := GetUserFromContext(r.Context())
 			org := GetOrganisationFromContext(r.Context())
@@ -469,11 +533,10 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 
 func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			member := GetOrganisationMemberFromContext(r.Context())
 			if member.Role.Type.Is(auth.RoleSuperUser) {
-				//superuser has access to everything
+				// superuser has access to everything
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -491,11 +554,10 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 
 func (m *Middleware) RequireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			member := GetOrganisationMemberFromContext(r.Context())
 			if member.Role.Type.Is(auth.RoleSuperUser) {
-				//superuser has access to everything
+				// superuser has access to everything
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -577,9 +639,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 
 func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			id := chi.URLParam(r, "deliveryAttemptID")
 			attempts := GetDeliveryAttemptsFromContext(r.Context())
 
@@ -605,7 +665,6 @@ func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*
 }
 
 func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
-
 	groups, err := groupRepo.LoadGroups(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
 	if err != nil {
 		return nil, err
@@ -629,6 +688,10 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 
 			if util.IsStringEmpty(groupID) {
 				groupID = r.URL.Query().Get("groupID")
+			}
+
+			if util.IsStringEmpty(groupID) {
+				groupID = chi.URLParam(r, "projectID")
 			}
 
 			if util.IsStringEmpty(groupID) {
@@ -726,7 +789,6 @@ func (m *Middleware) RequireAuthorizedUser() func(next http.Handler) http.Handle
 			}
 
 			next.ServeHTTP(w, r)
-
 		})
 	}
 }
@@ -819,7 +881,8 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 
 		return &auth.Credential{
 			Type:  auth.CredentialTypeJWT,
-			Token: authToken}, nil
+			Token: authToken,
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
@@ -843,7 +906,7 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 		}
 
 		var err error
-		var sort = -1 // desc by default
+		sort := -1 // desc by default
 		order := strings.ToLower(rawSort)
 		if order == "asc" {
 			sort = 1
@@ -871,7 +934,6 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 			if logger.CanLogHttpRequest(m.logger) {
@@ -992,17 +1054,17 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-func ShouldAuthRoute(r *http.Request) bool {
-	guestRoutes := []string{
-		"/ui/auth/login",
-		"/ui/auth/token/refresh",
-		"/ui/organisations/process_invite",
-		"/ui/users/token",
-		"/ui/users/forgot-password",
-		"/ui/users/reset-password",
-		"/ui/auth/register",
-	}
+var guestRoutes = []string{
+	"/ui/auth/login",
+	"/ui/auth/token/refresh",
+	"/ui/organisations/process_invite",
+	"/ui/users/token",
+	"/ui/users/forgot-password",
+	"/ui/users/reset-password",
+	"/ui/auth/register",
+}
 
+func ShouldAuthRoute(r *http.Request) bool {
 	for _, route := range guestRoutes {
 		if r.URL.Path == route {
 			return false
@@ -1021,7 +1083,6 @@ func EnsurePeriod(start time.Time, end time.Time) error {
 }
 
 func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
-
 	var messagesSent uint64
 
 	messages, err := m.eventRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
@@ -1099,7 +1160,8 @@ func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 }
 
 func setApplicationInContext(ctx context.Context,
-	app *datastore.Application) context.Context {
+	app *datastore.Application,
+) context.Context {
 	return context.WithValue(ctx, appCtx, app)
 }
 
@@ -1108,7 +1170,8 @@ func GetApplicationFromContext(ctx context.Context) *datastore.Application {
 }
 
 func setOrganisationInContext(ctx context.Context,
-	org *datastore.Organisation) context.Context {
+	org *datastore.Organisation,
+) context.Context {
 	return context.WithValue(ctx, orgCtx, org)
 }
 
@@ -1117,7 +1180,8 @@ func GetOrganisationFromContext(ctx context.Context) *datastore.Organisation {
 }
 
 func setOrganisationMemberInContext(ctx context.Context,
-	organisationMember *datastore.OrganisationMember) context.Context {
+	organisationMember *datastore.OrganisationMember,
+) context.Context {
 	return context.WithValue(ctx, orgMemberCtx, organisationMember)
 }
 
@@ -1126,7 +1190,8 @@ func GetOrganisationMemberFromContext(ctx context.Context) *datastore.Organisati
 }
 
 func setEventInContext(ctx context.Context,
-	event *datastore.Event) context.Context {
+	event *datastore.Event,
+) context.Context {
 	return context.WithValue(ctx, eventCtx, event)
 }
 
@@ -1135,7 +1200,8 @@ func GetEventFromContext(ctx context.Context) *datastore.Event {
 }
 
 func setEventDeliveryInContext(ctx context.Context,
-	eventDelivery *datastore.EventDelivery) context.Context {
+	eventDelivery *datastore.EventDelivery,
+) context.Context {
 	return context.WithValue(ctx, eventDeliveryCtx, eventDelivery)
 }
 
@@ -1148,7 +1214,8 @@ func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
 }
 
 func setApplicationEndpointInContext(ctx context.Context,
-	endpoint *datastore.Endpoint) context.Context {
+	endpoint *datastore.Endpoint,
+) context.Context {
 	return context.WithValue(ctx, endpointCtx, endpoint)
 }
 
@@ -1177,7 +1244,8 @@ func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData
 }
 
 func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *datastore.DeliveryAttempt) context.Context {
+	attempt *datastore.DeliveryAttempt,
+) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
@@ -1186,7 +1254,8 @@ func GetDeliveryAttemptFromContext(ctx context.Context) *datastore.DeliveryAttem
 }
 
 func SetDeliveryAttemptsInContext(ctx context.Context,
-	attempts *[]datastore.DeliveryAttempt) context.Context {
+	attempts *[]datastore.DeliveryAttempt,
+) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
 }
 
@@ -1231,8 +1300,11 @@ func GetAppIDFromContext(r *http.Request) string {
 		return appID
 	}
 
-	appID := r.URL.Query().Get("appId")
-	return appID
+	return r.URL.Query().Get("appId")
+}
+
+func GetSourceIDFromContext(r *http.Request) string {
+	return r.URL.Query().Get("sourceId")
 }
 
 func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {

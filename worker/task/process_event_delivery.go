@@ -63,35 +63,22 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
+		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
+		if err != nil {
+			log.WithError(err).Error("could not find error")
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
+
 		switch ed.Status {
 		case datastore.ProcessingEventStatus,
 			datastore.SuccessEventStatus:
 			return nil
 		}
 
-		var rateLimitDuration time.Duration
-		if util.IsStringEmpty(endpoint.RateLimitDuration) {
-			rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
-			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint rate limit")
-				return nil
-			}
-		} else {
-			rateLimitDuration, err = time.ParseDuration(endpoint.RateLimitDuration)
-			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint rate limit")
-				return nil
-			}
-		}
+		ec := &EventDeliveryConfig{subscription: subscription, group: g}
+		rlc := ec.rateLimitConfig()
 
-		var rateLimit int
-		if endpoint.RateLimit == 0 {
-			rateLimit = convoy.RATE_LIMIT
-		} else {
-			rateLimit = endpoint.RateLimit
-		}
-
-		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rateLimit, int(rateLimitDuration))
+		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
 			return nil
 		}
@@ -104,7 +91,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
 		}
 
-		_, err = rateLimiter.Allow(context.Background(), endpoint.TargetURL, rateLimit, int(rateLimitDuration))
+		_, err = rateLimiter.Allow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
 			return nil
 		}
@@ -150,12 +137,6 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		if subscription.Status == datastore.InactiveSubscriptionStatus {
 			log.Debugf("subscription %s is inactive, failing to send.", e.TargetURL)
 			return nil
-		}
-
-		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
-		if err != nil {
-			log.WithError(err).Error("could not find error")
-			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		sig := newSignature(endpoint, g, ed.Metadata.Data)
@@ -212,7 +193,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			log.Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
-		if done && subscription.Status == datastore.PendingSubscriptionStatus && g.Config.DisableEndpoint {
+		if done && subscription.Status == datastore.PendingSubscriptionStatus && ec.disableEndpoint() {
 			subscriptionStatus := datastore.ActiveSubscriptionStatus
 			err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
 			if err != nil {
@@ -250,7 +231,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				ed.Status = datastore.FailureEventStatus
 			}
 
-			if g.Config.DisableEndpoint && subscription.Status != datastore.PendingSubscriptionStatus {
+			if ec.disableEndpoint() && subscription.Status != datastore.PendingSubscriptionStatus {
 				subscriptionStatus := datastore.InactiveSubscriptionStatus
 
 				err := subRepo.UpdateSubscriptionStatus(context.Background(), g.UID, subscription.UID, subscriptionStatus)
@@ -324,4 +305,58 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
+}
+
+type EventDeliveryConfig struct {
+	group        *datastore.Group
+	subscription *datastore.Subscription
+}
+
+type RetryConfig struct {
+	Type       datastore.StrategyProvider
+	Duration   uint64
+	RetryCount uint64
+}
+
+type RateLimitConfig struct {
+	Count    int
+	Duration uint64
+}
+
+func (ec *EventDeliveryConfig) disableEndpoint() bool {
+	if ec.subscription.DisableEndpoint != nil {
+		return *ec.subscription.DisableEndpoint
+	}
+
+	return ec.group.Config.DisableEndpoint
+}
+
+func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
+	rc := &RetryConfig{}
+
+	if ec.subscription.RetryConfig != nil {
+		rc.Duration = ec.subscription.RetryConfig.Duration
+		rc.RetryCount = ec.subscription.RetryConfig.RetryCount
+		rc.Type = ec.subscription.RetryConfig.Type
+	} else {
+		rc.Duration = ec.group.Config.Strategy.Duration
+		rc.RetryCount = ec.group.Config.Strategy.RetryCount
+		rc.Type = ec.group.Config.Strategy.Type
+	}
+
+	return rc, nil
+}
+
+func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
+	rlc := &RateLimitConfig{}
+
+	if ec.subscription.RateLimitConfig != nil {
+		rlc.Count = ec.subscription.RateLimitConfig.Count
+		rlc.Duration = ec.subscription.RateLimitConfig.Duration
+	} else {
+		rlc.Count = ec.group.Config.RateLimit.Count
+		rlc.Duration = ec.group.Config.RateLimit.Duration
+	}
+
+	return rlc
 }

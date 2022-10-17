@@ -17,11 +17,12 @@ import (
 )
 
 type Server struct {
-	s *http.Server
-	M *middleware.Middleware
+	s      *http.Server
+	M      *middleware.Middleware
+	StopFn func()
 }
 
-func NewServer(port uint32) *Server {
+func NewServer(port uint32, stopFn func()) *Server {
 
 	srv := &Server{
 		s: &http.Server{
@@ -29,6 +30,7 @@ func NewServer(port uint32) *Server {
 			WriteTimeout: time.Second * 30,
 			Addr:         fmt.Sprintf(":%d", port),
 		},
+		StopFn: stopFn,
 	}
 
 	return srv
@@ -43,8 +45,11 @@ func (s *Server) SetHandler(handler http.Handler) {
 	s.s.Handler = router
 }
 
-func (s *Server) Listen() {
+func (s *Server) SetStopFunction(fn func()) {
+	s.StopFn = fn
+}
 
+func (s *Server) Listen() {
 	go func() {
 		//service connections
 		if err := s.s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -71,6 +76,9 @@ func (s *Server) gracefulShutdown() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
+
+	// run stop function
+	s.StopFn()
 
 	log.Info("Stopping server")
 

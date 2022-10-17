@@ -176,6 +176,13 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		}
 	}
 
+	auth, err := validateEndpointAuthentication(e)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	endpoint.Authentication = auth
+
 	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
 	if err != nil {
 		log.WithError(err).Error("failed to create application endpoint")
@@ -198,6 +205,10 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 }
 
 func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, endPointId string, app *datastore.Application) (*datastore.Endpoint, error) {
+	if err := util.Validate(e); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	endpoints, endpoint, err := updateEndpointIfFound(&app.Endpoints, endPointId, e)
 	if err != nil {
 		return endpoint, util.NewServiceError(http.StatusBadRequest, err)
@@ -338,10 +349,33 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.Secret = e.Secret
 			}
 
+			auth, err := validateEndpointAuthentication(e)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			e.Authentication = auth
+
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
 			return endpoints, &endpoint, nil
 		}
 	}
 	return endpoints, nil, datastore.ErrEndpointNotFound
+}
+
+func validateEndpointAuthentication(e models.Endpoint) (*datastore.EndpointAuthentication, error) {
+	if e.Authentication != nil && !util.IsStringEmpty(string(e.Authentication.Type)) {
+		if err := util.Validate(e); err != nil {
+			return nil, err
+		}
+
+		if e.Authentication.ApiKey == nil && e.Authentication.Type == datastore.APIKeyAuthentication {
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key field is required"))
+		}
+
+		return e.Authentication, nil
+	}
+
+	return nil, nil
 }
