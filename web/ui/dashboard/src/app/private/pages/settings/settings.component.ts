@@ -16,7 +16,6 @@ export class SettingsComponent implements OnInit {
 		{ name: 'organisation settings', icon: 'settings' },
 		// hidden for cloud instance
 		// { name: 'configuration settings', icon: 'settings' },
-		{ name: 'personal access tokens', icon: 'key' }
 	];
 
 	constructor(private router: Router, private route: ActivatedRoute) {}
