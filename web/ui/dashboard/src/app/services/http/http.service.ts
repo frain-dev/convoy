@@ -88,28 +88,4 @@ export class HttpService {
 			}
 		});
 	}
-
-	async flipt(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const http = axios.create();
-
-				// make request
-				const { data, status } = await http.request({
-					method: requestDetails.method,
-					url: 'http://localhost:8080/api/v1/batch-evaluate',
-					data: requestDetails.body
-				});
-				resolve(data);
-			} catch (error) {
-				if (axios.isAxiosError(error)) {
-					console.log('error message: ', error.message);
-					return reject(error.message);
-				} else {
-					console.log('unexpected error: ', error);
-					return reject('An unexpected error occurred');
-				}
-			}
-		});
-	}
 }
