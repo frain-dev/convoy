@@ -11,7 +11,6 @@ import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
-import { PersonalKeysComponent } from './personal-keys/personal-keys.component';
 import { OrganisationSettingsComponent } from './organisation-settings/organisation-settings.component';
 import { ConfigurationsComponent } from './configurations/configurations.component';
 import { RouterModule, Routes } from '@angular/router';
@@ -25,7 +24,7 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
 @NgModule({
-	declarations: [SettingsComponent, PersonalKeysComponent, OrganisationSettingsComponent, ConfigurationsComponent],
+	declarations: [SettingsComponent, OrganisationSettingsComponent, ConfigurationsComponent],
 	imports: [CommonModule, RouterModule.forChild(routes), ReactiveFormsModule, CardComponent, PageComponent, DeleteModalComponent, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent, SkeletonLoaderComponent, TagComponent, ModalComponent, CopyButtonComponent, DateFormComponent, StatusColorModule, EmptyStateComponent]
 })
 export class SettingsModule {}
