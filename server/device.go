@@ -34,10 +34,10 @@ func createDeviceService(a *ApplicationHandler) *services.DeviceService {
 func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
-	app := m.GetApplicationFromContext(r.Context())
+	endpoint := m.GetEndpointFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{
-		AppID: app.UID,
+		EndpointID: endpoint.UID,
 	}
 
 	deviceService := createDeviceService(a)

@@ -21,14 +21,14 @@ import (
 
 func createEventService(a *ApplicationHandler) *services.EventService {
 	sourceRepo := mongo.NewSourceRepo(a.A.Store)
-	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
 	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
 
 	return services.NewEventService(
-		appRepo, eventRepo, eventDeliveryRepo,
+		endpointRepo, eventRepo, eventDeliveryRepo,
 		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
 	)
 }
@@ -56,7 +56,7 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 	g := m.GetGroupFromContext(r.Context())
 	eventService := createEventService(a)
 
-	event, err := eventService.CreateAppEvent(r.Context(), &newMessage, g)
+	event, err := eventService.CreateEvent(r.Context(), &newMessage, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -82,7 +82,7 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 	event := m.GetEventFromContext(r.Context())
 	eventService := createEventService(a)
 
-	err := eventService.ReplayAppEvent(r.Context(), event, g)
+	err := eventService.ReplayEvent(r.Context(), event, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -179,10 +179,10 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:   m.GetGroupFromContext(r.Context()),
-		AppID:   m.GetAppIDFromContext(r),
-		EventID: r.URL.Query().Get("eventId"),
-		Status:  status,
+		Group:      m.GetGroupFromContext(r.Context()),
+		EndpointID: m.GetEndpointIDFromContext(r),
+		EventID:    r.URL.Query().Get("eventId"),
+		Status:     status,
 		Pageable: datastore.Pageable{
 			Page:    0,
 			PerPage: 1000000000000, // large number so we get everything in most cases
@@ -234,7 +234,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 
 	f := &datastore.Filter{
 		Group:        m.GetGroupFromContext(r.Context()),
-		AppID:        m.GetAppIDFromContext(r),
+		EndpointID:   m.GetEndpointIDFromContext(r),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
 		SearchParams: searchParams,
@@ -319,7 +319,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	f := &datastore.Filter{
 		Query:        query,
 		Group:        group,
-		AppID:        m.GetAppIDFromContext(r),
+		EndpointID:   m.GetEndpointIDFromContext(r),
 		SourceID:     m.GetSourceIDFromContext(r),
 		Pageable:     pageable,
 		SearchParams: searchParams,
@@ -384,7 +384,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 
 	f := &datastore.Filter{
 		Group:        m.GetGroupFromContext(r.Context()),
-		AppID:        m.GetAppIDFromContext(r),
+		EndpointID:   m.GetEndpointIDFromContext(r),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
 		Pageable:     m.GetPageableFromContext(r.Context()),

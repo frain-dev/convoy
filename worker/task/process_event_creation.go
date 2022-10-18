@@ -19,7 +19,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 
 		var event datastore.Event
@@ -51,28 +51,28 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 		}
 
 		if group.Type == datastore.OutgoingGroup {
-			var app *datastore.Application
+			var endpoint *datastore.Endpoint
 
-			appCacheKey := convoy.ApplicationsCacheKey.Get(event.AppID).String()
-			err = cache.Get(ctx, appCacheKey, &app)
+			endpointCacheKey := convoy.EndpointsCacheKey.Get(event.EndpointID).String()
+			err = cache.Get(ctx, endpointCacheKey, &endpoint)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			// cache miss, load from db
-			if app == nil {
-				app, err = appRepo.FindApplicationByID(ctx, event.AppID)
+			if endpoint == nil {
+				endpoint, err = endpointRepo.FindEndpointByID(ctx, event.EndpointID)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
-				err = cache.Set(ctx, appCacheKey, app, 10*time.Minute)
+				err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 			}
 
-			subs, err := subRepo.FindSubscriptionsByAppID(ctx, group.UID, app.UID)
+			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, group.UID, endpoint.UID)
 			if err != nil {
 				return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
@@ -97,14 +97,14 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 		for _, s := range subscriptions {
 			ec.subscription = &s
 			headers := event.Headers
-			app, err := appRepo.FindApplicationByID(ctx, s.AppID)
+			app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
 			if err != nil {
 				log.Errorf("Error fetching applcation %s", err)
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
-				endpoint, err := appRepo.FindApplicationEndpointByID(ctx, app.UID, s.EndpointID)
+				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
 				if err != nil {
 					log.Errorf("Error fetching endpoint %s", err)
 					return &EndpointError{Err: err, delay: 10 * time.Second}
@@ -136,7 +136,6 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 
 			eventDelivery := &datastore.EventDelivery{UID: uuid.New().String(),
 				SubscriptionID: s.UID,
-				AppID:          app.UID,
 				Metadata:       metadata,
 				GroupID:        group.UID,
 				EventID:        event.UID,
@@ -210,8 +209,8 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 	return matched
 }
 
-func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, app *datastore.Application, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
-	if app.IsDisabled {
+func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
+	if endpoint.IsDisabled {
 		return datastore.DiscardedEventStatus
 	}
 
@@ -219,7 +218,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 		return datastore.DiscardedEventStatus
 	} else {
 		if !util.IsStringEmpty(subscription.DeviceID) {
-			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, app.UID, app.GroupID)
+			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.GroupID)
 			if err != nil {
 				log.WithError(err).Error("an error occurred fetching the subcriptions's device")
 				return datastore.DiscardedEventStatus

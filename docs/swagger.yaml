@@ -759,7 +759,7 @@ definitions:
     type: object
   models.PortalAPIKeyResponse:
     properties:
-      app_id:
+      endpoint_id:
         type: string
       group_id:
         type: string
@@ -2120,16 +2120,16 @@ paths:
       summary: Replay app event
       tags:
       - Events
-  /api/v1/security/applications/{appID}/keys:
+  /api/v1/security/endpoints/{endpointID}/keys:
     post:
       consumes:
       - application/json
-      description: This endpoint creates an api key that will be used by app portal
-        or the cli
+      description: This endpoint creates an api key that will be used by endpoint
+        portal or the cli
       parameters:
-      - description: application ID
+      - description: Endpoint ID
         in: path
-        name: appID
+        name: endpointID
         required: true
         type: string
       - description: APIKey details
@@ -2179,7 +2179,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create an api key for app portal or the cli (API)
+      summary: Create an api key for endpoint portal or the cli (API)
       tags:
       - APIKey
   /api/v1/sources:
@@ -3924,11 +3924,11 @@ paths:
       summary: Update a group
       tags:
       - Group
-  /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke:
+  /ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys/{keyID}/revoke:
     put:
       consumes:
       - application/json
-      description: This endpoint revokes app's an api key
+      description: This endpoint revokes endpoint's an api key
       parameters:
       - description: Organisation id
         in: path
@@ -3940,9 +3940,9 @@ paths:
         name: groupID
         required: true
         type: string
-      - description: application id
+      - description: Endpoint id
         in: path
-        name: appID
+        name: endpointID
         required: true
         type: string
       - description: API Key id
@@ -3991,7 +3991,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Revoke an App's API Key
+      summary: Revoke an Endpoint's API Key
       tags:
       - APIKey
   /ui/organisations/{orgID}/invites:
@@ -4500,20 +4500,20 @@ paths:
       summary: Update an organisation's member
       tags:
       - Organisation
-  /ui/organisations/{orgID}/security/applications/{appID}/keys:
+  /ui/organisations/{orgID}/security/endpoints/{endpointID}/keys:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches multiple api keys belonging to an app
+      description: This endpoint fetches multiple api keys belonging to an endpoint
       parameters:
       - description: Organisation id
         in: path
         name: orgID
         required: true
         type: string
-      - description: application ID
+      - description: Endpoint ID
         in: path
-        name: appID
+        name: endpointID
         required: true
         type: string
       produces:
@@ -4557,7 +4557,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Fetch multiple api keys belonging to an app
+      summary: Fetch multiple api keys belonging to an endpoint
       tags:
       - APIKey
   /ui/organisations/{orgID}/security/keys:

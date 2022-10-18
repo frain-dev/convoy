@@ -2170,14 +2170,14 @@
                 }
             }
         },
-        "/api/v1/security/applications/{appID}/keys": {
+        "/api/v1/security/endpoints/{endpointID}/keys": {
             "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an api key that will be used by app portal or the cli",
+                "description": "This endpoint creates an api key that will be used by endpoint portal or the cli",
                 "consumes": [
                     "application/json"
                 ],
@@ -2187,12 +2187,12 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Create an api key for app portal or the cli (API)",
+                "summary": "Create an api key for endpoint portal or the cli (API)",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "application ID",
-                        "name": "appID",
+                        "description": "Endpoint ID",
+                        "name": "endpointID",
                         "in": "path",
                         "required": true
                     },
@@ -5622,14 +5622,14 @@
                 }
             }
         },
-        "/ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke": {
+        "/ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys/{keyID}/revoke": {
             "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint revokes app's an api key",
+                "description": "This endpoint revokes endpoint's an api key",
                 "consumes": [
                     "application/json"
                 ],
@@ -5639,7 +5639,7 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Revoke an App's API Key",
+                "summary": "Revoke an Endpoint's API Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -5657,8 +5657,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "application id",
-                        "name": "appID",
+                        "description": "Endpoint id",
+                        "name": "endpointID",
                         "in": "path",
                         "required": true
                     },
@@ -6670,14 +6670,14 @@
                 }
             }
         },
-        "/ui/organisations/{orgID}/security/applications/{appID}/keys": {
+        "/ui/organisations/{orgID}/security/endpoints/{endpointID}/keys": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches multiple api keys belonging to an app",
+                "description": "This endpoint fetches multiple api keys belonging to an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -6687,7 +6687,7 @@
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Fetch multiple api keys belonging to an app",
+                "summary": "Fetch multiple api keys belonging to an endpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -6698,8 +6698,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "application ID",
-                        "name": "appID",
+                        "description": "Endpoint ID",
+                        "name": "endpointID",
                         "in": "path",
                         "required": true
                     }
@@ -9132,7 +9132,7 @@
         "models.PortalAPIKeyResponse": {
             "type": "object",
             "properties": {
-                "app_id": {
+                "endpoint_id": {
                     "type": "string"
                 },
                 "group_id": {

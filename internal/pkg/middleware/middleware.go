@@ -202,7 +202,7 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 			if endpoint == nil {
 				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID)
 				if err != nil {
-					if errors.Is(err, datastore.ErrApplicationNotFound) {
+					if errors.Is(err, datastore.ErrEndpointNotFound) {
 						event = err.Error()
 						statusCode = http.StatusNotFound
 					}
@@ -228,7 +228,7 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
 
-			if !util.IsStringEmpty(authUser.Role.App) {
+			if !util.IsStringEmpty(authUser.Role.Endpoint) {
 				endpointID := authUser.Role.Endpoint
 				r = r.WithContext(setEndpointIDInContext(r.Context(), endpointID))
 			}
@@ -522,7 +522,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 				eventDelivery.Endpoint = endpoint
 			}
 
-			device, err := m.deviceRepo.FetchDeviceByID(r.Context(), eventDelivery.DeviceID, a.UID, a.GroupID)
+			device, err := m.deviceRepo.FetchDeviceByID(r.Context(), eventDelivery.DeviceID, en.UID, en.GroupID)
 			if err == nil {
 				eventDelivery.CLIMetadata.HostName = device.HostName
 			}
@@ -549,15 +549,6 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
-	for _, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			return &endpoint, nil
-		}
-	}
-	return nil, datastore.ErrEndpointNotFound
 }
 
 func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
@@ -1173,6 +1164,14 @@ func setHostInContext(ctx context.Context, baseUrl string) context.Context {
 
 func GetHostFromContext(ctx context.Context) string {
 	return ctx.Value(hostCtx).(string)
+}
+
+func GetEndpointIDFromContext(r *http.Request) string {
+	if appID, ok := r.Context().Value(endpointIdCtx).(string); ok {
+		return appID
+	}
+
+	return r.URL.Query().Get("endpointId")
 }
 
 func GetSourceIDFromContext(r *http.Request) string {

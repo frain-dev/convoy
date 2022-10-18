@@ -1140,7 +1140,7 @@
 			},
 			"models.PortalAPIKeyResponse": {
 				"properties": {
-					"app_id": {
+					"endpoint_id": {
 						"type": "string"
 					},
 					"group_id": {
@@ -3868,14 +3868,14 @@
 				]
 			}
 		},
-		"/api/v1/security/applications/{appID}/keys": {
+		"/api/v1/security/endpoints/{endpointID}/keys": {
 			"post": {
-				"description": "This endpoint creates an api key that will be used by app portal or the cli",
+				"description": "This endpoint creates an api key that will be used by endpoint portal or the cli",
 				"parameters": [
 					{
-						"description": "application ID",
+						"description": "Endpoint ID",
 						"in": "path",
-						"name": "appID",
+						"name": "endpointID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -3989,7 +3989,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create an api key for app portal or the cli (API)",
+				"summary": "Create an api key for endpoint portal or the cli (API)",
 				"tags": [
 					"APIKey"
 				]
@@ -7751,9 +7751,9 @@
 				]
 			}
 		},
-		"/ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke": {
+		"/ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys/{keyID}/revoke": {
 			"put": {
-				"description": "This endpoint revokes app's an api key",
+				"description": "This endpoint revokes endpoint's an api key",
 				"parameters": [
 					{
 						"description": "Organisation id",
@@ -7774,9 +7774,9 @@
 						}
 					},
 					{
-						"description": "application id",
+						"description": "Endpoint id",
 						"in": "path",
-						"name": "appID",
+						"name": "endpointID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -7887,7 +7887,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Revoke an App's API Key",
+				"summary": "Revoke an Endpoint's API Key",
 				"tags": [
 					"APIKey"
 				]
@@ -8941,9 +8941,9 @@
 				]
 			}
 		},
-		"/ui/organisations/{orgID}/security/applications/{appID}/keys": {
+		"/ui/organisations/{orgID}/security/endpoints/{endpointID}/keys": {
 			"get": {
-				"description": "This endpoint fetches multiple api keys belonging to an app",
+				"description": "This endpoint fetches multiple api keys belonging to an endpoint",
 				"parameters": [
 					{
 						"description": "Organisation id",
@@ -8955,9 +8955,9 @@
 						}
 					},
 					{
-						"description": "application ID",
+						"description": "Endpoint ID",
 						"in": "path",
-						"name": "appID",
+						"name": "endpointID",
 						"required": true,
 						"schema": {
 							"type": "string"
@@ -9059,7 +9059,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Fetch multiple api keys belonging to an app",
+				"summary": "Fetch multiple api keys belonging to an endpoint",
 				"tags": [
 					"APIKey"
 				]

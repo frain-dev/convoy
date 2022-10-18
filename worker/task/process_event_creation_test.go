@@ -21,7 +21,7 @@ import (
 )
 
 type args struct {
-	appRepo           datastore.ApplicationRepository
+	endpointRepo      datastore.EndpointRepository
 	eventRepo         datastore.EventRepository
 	groupRepo         datastore.GroupRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -37,13 +37,13 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	queue := mocks.NewMockQueuer(ctrl)
 	search := mocks.NewMockSearcher(ctrl)
 	groupRepo := mocks.NewMockGroupRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 
 	return &args{
-		appRepo:           appRepo,
+		endpointRepo:      endpointRepo,
 		eventRepo:         eventRepo,
 		groupRepo:         groupRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
@@ -71,7 +71,7 @@ func TestProcessEventCreated(t *testing.T) {
 				ProviderID: uuid.NewString(),
 				SourceID:   "source-id-1",
 				GroupID:    "group-id-1",
-				AppID:      "app-id-1",
+				EndpointID: "endpoint-id-1",
 				Data:       []byte(`{}`),
 				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
@@ -100,20 +100,19 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
 
-				mockCache.EXPECT().Get(gomock.Any(), "applications:app-id-1", gomock.Any()).Times(1).Return(nil)
+				mockCache.EXPECT().Get(gomock.Any(), "applications:endpoint-id-1", gomock.Any()).Times(1).Return(nil)
 
-				a, _ := args.appRepo.(*mocks.MockApplicationRepository)
+				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
-				app := &datastore.Application{UID: "app-id-1"}
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").Times(1).Return(app, nil)
-				mockCache.EXPECT().Set(gomock.Any(), "applications:app-id-1", app, 10*time.Minute).Times(1).Return(nil)
+				endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(app, nil)
+				mockCache.EXPECT().Set(gomock.Any(), "applications:endpoint-id-1", app, 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{
 					{
 						UID:        "456",
-						AppID:      "app-id-1",
-						EndpointID: "098",
+						EndpointID: "endpoint-id-1",
 						Type:       datastore.SubscriptionTypeAPI,
 						Status:     datastore.ActiveSubscriptionStatus,
 						FilterConfig: &datastore.FilterConfiguration{
@@ -121,15 +120,15 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionsByAppID(gomock.Any(), "group-id-1", "app-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "group-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").Times(1).Return(app, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(app, nil)
 
 				endpoint := &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
-				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "app-id-1", "098").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -150,7 +149,7 @@ func TestProcessEventCreated(t *testing.T) {
 				ProviderID: uuid.NewString(),
 				SourceID:   "source-id-1",
 				GroupID:    "group-id-1",
-				AppID:      "app-id-1",
+				EndpointID: "endpoint-id-1",
 				Data:       []byte(`{}`),
 				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
@@ -179,15 +178,14 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
 
-				a, _ := args.appRepo.(*mocks.MockApplicationRepository)
-				app := &datastore.Application{UID: "app-id-1"}
+				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
+				endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{
 					{
 						UID:        "456",
-						AppID:      "app-id-1",
-						EndpointID: "098",
+						EndpointID: "endpoint-id-1",
 						Type:       datastore.SubscriptionTypeAPI,
 						Status:     datastore.ActiveSubscriptionStatus,
 						FilterConfig: &datastore.FilterConfiguration{
@@ -200,10 +198,10 @@ func TestProcessEventCreated(t *testing.T) {
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").Times(1).Return(app, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(app, nil)
 
 				endpoint := &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
-				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), "app-id-1", "098").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", "098").
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -237,7 +235,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.appRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search, args.deviceRepo)
+			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

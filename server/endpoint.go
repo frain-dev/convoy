@@ -11,16 +11,15 @@ import (
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
-func createEndpointService(a *ApplicationHandler) *services.endpointService {
+func createEndpointService(a *ApplicationHandler) *services.EndpointService {
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
 
-	return services.NewendpointService(
+	return services.NewEndpointService(
 		endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache,
 	)
 }
@@ -50,10 +49,10 @@ func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	endpoint, err := endpointService.CreateAppEndpoint(r.Context(), e, app)
+	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -91,10 +90,19 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /api/v1/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	q := r.URL.Query().Get("q")
+	pageable := m.GetPageableFromContext(r.Context())
 
-	app.Endpoints = m.FilterDeletedEndpoints(app.Endpoints)
-	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully", app.Endpoints, http.StatusOK))
+	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), group.UID, q, pageable)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully",
+		pagedResponse{Content: &endpoints, Pagination: &paginationData}, http.StatusOK))
 }
 
 // UpdateEndpoint
@@ -119,10 +127,9 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 	}
 
 	endpoint := m.GetEndpointFromContext(r.Context())
-	endPointId := chi.URLParam(r, "endpointID")
 	endpointService := createEndpointService(a)
 
-	endpoint, err = endpointService.UpdateAppEndpoint(r.Context(), e, endPointId, endpoint)
+	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -145,9 +152,10 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Router /api/v1/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	err := endpointService.DeleteEndpoint(r.Context(), endpoint)
+	err := endpointService.DeleteEndpoint(r.Context(), endpoint, group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

@@ -123,15 +123,15 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			r.Use(a.M.RequireAuth())
 
 			r.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-				endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
-				endpointAppSubRouter.Get("/", a.GetAppEndpoints)
+				endpointAppSubRouter.Post("/", a.CreateEndpoint)
+				endpointAppSubRouter.Get("/", a.GetEndpoints)
 
 				endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-					e.Use(a.M.RequireAppEndpoint())
+					e.Use(a.M.RequireEndpoint())
 
-					e.Get("/", a.GetAppEndpoint)
-					e.Put("/", a.UpdateAppEndpoint)
-					e.Delete("/", a.DeleteAppEndpoint)
+					e.Get("/", a.GetEndpoint)
+					e.Put("/", a.UpdateEndpoint)
+					e.Delete("/", a.DeleteEndpoint)
 				})
 
 			})
@@ -176,12 +176,11 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			})
 
 			r.Route("/security", func(securityRouter chi.Router) {
-				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
+				securityRouter.Route("/applications/{endpointID}/keys", func(securitySubRouter chi.Router) {
 					securitySubRouter.Use(a.M.RequireGroup())
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
-					securitySubRouter.Use(a.M.RequireApp())
 					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.Post("/", a.CreateAppAPIKey)
+					securitySubRouter.Post("/", a.CreateEndpointAPIKey)
 				})
 			})
 
@@ -304,15 +303,15 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteGroup)
 
 						groupSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-							endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
-							endpointAppSubRouter.Get("/", a.GetAppEndpoints)
+							endpointAppSubRouter.Post("/", a.CreateEndpoint)
+							endpointAppSubRouter.Get("/", a.GetEndpoints)
 
 							endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-								e.Use(a.M.RequireAppEndpoint())
+								e.Use(a.M.RequireEndpoint())
 
-								e.Get("/", a.GetAppEndpoint)
-								e.Put("/", a.UpdateAppEndpoint)
-								e.Delete("/", a.DeleteAppEndpoint)
+								e.Get("/", a.GetEndpoint)
+								e.Put("/", a.UpdateEndpoint)
+								e.Delete("/", a.DeleteEndpoint)
 							})
 						})
 
@@ -402,26 +401,26 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
 		portalRouter.Use(a.M.RequireAuth())
-		portalRouter.Use(a.M.RequireAppPortalApplication())
-		portalRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
+		//portalRouter.Use(a.M.RequireAppPortalApplication())
+		//portalRouter.Use(a.M.RequirePortalPermission(auth.RoleAdmin))
 
 		portalRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-			endpointAppSubRouter.Get("/", a.GetAppEndpoints)
-			endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
+			endpointAppSubRouter.Get("/", a.GetEndpoints)
+			endpointAppSubRouter.Post("/", a.CreateEndpoint)
 
 			endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-				e.Use(a.M.RequireAppEndpoint())
+				e.Use(a.M.RequireEndpoint())
 
-				e.Get("/", a.GetAppEndpoint)
-				e.Put("/", a.UpdateAppEndpoint)
+				e.Get("/", a.GetEndpoint)
+				e.Put("/", a.UpdateEndpoint)
 			})
 		})
 
 		portalRouter.Route("/keys", func(keySubRouter chi.Router) {
 			keySubRouter.Use(a.M.RequireBaseUrl())
-			keySubRouter.Post("/", a.CreateAppAPIKey)
-			keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
-			keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
+			keySubRouter.Post("/", a.CreateEndpointAPIKey)
+			keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
+			keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
 		})
 
 		portalRouter.Route("/devices", func(deviceRouter chi.Router) {
