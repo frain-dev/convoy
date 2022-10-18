@@ -19,7 +19,12 @@ var redirectRoutes = []string{
 }
 
 func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.Request) {
-	groupID := r.URL.Query().Get("groupID")
+	groupID := r.URL.Query().Get("groupId")
+
+	if util.IsStringEmpty(groupID) {
+		groupID = r.URL.Query().Get("groupID")
+	}
+
 	if util.IsStringEmpty(groupID) {
 		_ = render.Render(w, r, util.NewErrorResponse("groupID query is missing", http.StatusBadRequest))
 		return
