@@ -20,7 +20,7 @@ export class CreateProjectComponentService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/groups`,
+					url: `${this.privateService.urlFactory('org')}/projects`,
 					body: requestDetails,
 					method: 'post'
 				});
