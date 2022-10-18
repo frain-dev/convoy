@@ -739,6 +739,75 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 	require.Len(s.T(), dbEndpoints, len(endpoints))
 }
 
+func (s *ApplicationIntegrationTestSuite) Test_CreateEndpointSecret() {
+	appID := uuid.New().String()
+	f := faker.New()
+	secret := f.Lorem().Text(25)
+	expectedStatusCode := http.StatusCreated
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	e, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, app.GroupID)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s/secrets", s.DefaultGroup.UID, appID, e.UID)
+	plainBody := fmt.Sprintf(`{"value": "%s"}`, secret)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+	app, err := appRepo.FindApplicationByID(context.Background(), appID)
+	require.NoError(s.T(), err)
+	dbEndpoint, err := app.FindEndpoint(e.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), secret, dbEndpoint.Secrets[0].Value)
+}
+
+func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
+	appID := uuid.New().String()
+	f := faker.New()
+	secret := f.Lorem().Text(25)
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	e, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, app.GroupID)
+	sc, _ := testdb.SeedEndpointSecret(s.ConvoyApp.A.Store, app, e, secret)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s/secrets/%s/expire", s.DefaultGroup.UID, appID, e.UID, sc.UID)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+	app, err := appRepo.FindApplicationByID(context.Background(), appID)
+	require.NoError(s.T(), err)
+	dbEndpoint, err := app.FindEndpoint(e.UID)
+	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), dbEndpoint.Secrets[0].DeletedAt)
+}
+
 func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 	appID := uuid.New().String()
 	expectedStatusCode := http.StatusOK

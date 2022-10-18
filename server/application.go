@@ -313,7 +313,7 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints/{endpointID}/secrets [post]
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets [post]
 func (a *ApplicationHandler) CreateEndpointSecret(w http.ResponseWriter, r *http.Request) {
 	s := &models.EndpointSecret{}
 	err := util.ReadJSON(r, s)
@@ -332,7 +332,7 @@ func (a *ApplicationHandler) CreateEndpointSecret(w http.ResponseWriter, r *http
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("endpoint secret created successfully",
-		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
+		*m.GetApplicationFromContext(r.Context()), http.StatusCreated))
 }
 
 // ExpireEndpointSecret
@@ -347,7 +347,7 @@ func (a *ApplicationHandler) CreateEndpointSecret(w http.ResponseWriter, r *http
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire [delete]
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire [delete]
 func (a *ApplicationHandler) ExpireEndpointSecret(w http.ResponseWriter, r *http.Request) {
 	app := m.GetApplicationFromContext(r.Context())
 

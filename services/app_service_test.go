@@ -25,6 +25,7 @@ func provideAppService(ctrl *gomock.Controller) *AppService {
 func boolPtr(b bool) *bool {
 	return &b
 }
+
 func stringPtr(s string) *string {
 	return &s
 }
@@ -177,7 +178,6 @@ func TestAppService_CreateApp(t *testing.T) {
 }
 
 func TestAppService_LoadApplicationsPaged(t *testing.T) {
-
 	ctx := context.Background()
 
 	type args struct {
@@ -587,7 +587,6 @@ func TestAppService_DeleteApplication(t *testing.T) {
 }
 
 func TestAppService_CreateAppEndpoint(t *testing.T) {
-
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
@@ -1177,6 +1176,307 @@ func TestAppService_DeleteAppEndpoint(t *testing.T) {
 
 			require.Nil(t, err)
 			require.Equal(t, tc.wantApp, tc.args.app)
+		})
+	}
+}
+
+func TestAppService_CreateAppEndpointSecret(t *testing.T) {
+	ctx := context.Background()
+	type args struct {
+		ctx        context.Context
+		s          *models.EndpointSecret
+		endPointId string
+		app        *datastore.Application
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(as *AppService)
+		want        *datastore.Secret
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_create_endpoint_secret",
+			args: args{
+				ctx:        ctx,
+				s:          &models.EndpointSecret{Value: "secret"},
+				endPointId: "1234",
+				app: &datastore.Application{
+					UID:     "abc",
+					GroupID: "1234",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID:                "1234",
+							Secrets:            nil,
+							AdvancedSignatures: false,
+							DocumentStatus:     datastore.ActiveDocumentStatus,
+						},
+					},
+				},
+			},
+			dbFn: func(as *AppService) {
+				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+			},
+			want: &datastore.Secret{
+				Value:          "secret",
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_create_endpoint_secret_despite_cache_fail",
+			args: args{
+				ctx:        ctx,
+				s:          &models.EndpointSecret{Value: "secret"},
+				endPointId: "1234",
+				app: &datastore.Application{
+					UID:     "abc",
+					GroupID: "1234",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID:                "1234",
+							Secrets:            nil,
+							AdvancedSignatures: false,
+							DocumentStatus:     datastore.ActiveDocumentStatus,
+						},
+					},
+				},
+			},
+			dbFn: func(as *AppService) {
+				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+			},
+			want: &datastore.Secret{
+				Value:          "secret",
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_find_endpoint",
+			args: args{
+				ctx:        ctx,
+				s:          &models.EndpointSecret{Value: "secret"},
+				endPointId: "1234",
+				app: &datastore.Application{
+					UID:       "abc",
+					GroupID:   "1234",
+					Endpoints: []datastore.Endpoint{},
+				},
+			},
+			dbFn:        func(as *AppService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "endpoint not found",
+		},
+		{
+			name: "should_fail_to_update_app",
+			args: args{
+				ctx:        ctx,
+				s:          &models.EndpointSecret{Value: "secret"},
+				endPointId: "1234",
+				app: &datastore.Application{
+					UID:     "abc",
+					GroupID: "1234",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID:                "1234",
+							Secrets:            nil,
+							AdvancedSignatures: false,
+							DocumentStatus:     datastore.ActiveDocumentStatus,
+						},
+					},
+				},
+			},
+			dbFn: func(as *AppService) {
+				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "an error occurred while updating saving endpoint secret",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			as := provideAppService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(as)
+			}
+
+			got, err := as.CreateAppEndpointSecret(tt.args.ctx, tt.args.s, tt.args.endPointId, tt.args.app)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tt.want.Value, got.Value)
+		})
+	}
+}
+
+func TestAppService_ExpireEndpointSecret(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx        context.Context
+		secretID   string
+		endPointId string
+		app        *datastore.Application
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(as *AppService)
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_expire_endpoint_secret",
+			args: args{
+				ctx:        ctx,
+				secretID:   "1234",
+				endPointId: "abc",
+				app: &datastore.Application{
+					UID:     "abc",
+					GroupID: "1234",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID: "abc",
+							Secrets: []datastore.Secret{
+								{
+									UID:   "1234",
+									Value: "test_secret",
+								},
+							},
+							AdvancedSignatures: false,
+							DocumentStatus:     datastore.ActiveDocumentStatus,
+						},
+					},
+				},
+			},
+			dbFn: func(as *AppService) {
+				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+			},
+			wantErr:     false,
+			wantErrCode: 0,
+			wantErrMsg:  "",
+		},
+		{
+			name: "should_expire_endpoint_secret_despite_cache_fail",
+			args: args{
+				ctx:        ctx,
+				endPointId: "1234",
+				app: &datastore.Application{
+					UID:     "abc",
+					GroupID: "1234",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID:                "1234",
+							Secrets:            nil,
+							AdvancedSignatures: false,
+							DocumentStatus:     datastore.ActiveDocumentStatus,
+						},
+					},
+				},
+			},
+			dbFn: func(as *AppService) {
+				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_find_endpoint",
+			args: args{
+				ctx:        ctx,
+				endPointId: "1234",
+				app: &datastore.Application{
+					UID:       "abc",
+					GroupID:   "1234",
+					Endpoints: []datastore.Endpoint{},
+				},
+			},
+			dbFn:        func(as *AppService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "endpoint not found",
+		},
+		{
+			name: "should_fail_to_update_application",
+			args: args{
+				ctx:        ctx,
+				endPointId: "1234",
+				app: &datastore.Application{
+					UID:     "abc",
+					GroupID: "1234",
+					Endpoints: []datastore.Endpoint{
+						{UID: "1234"},
+					},
+				},
+			},
+			dbFn: func(as *AppService) {
+				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to expire endpoint secret",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			as := provideAppService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(as)
+			}
+
+			err := as.ExpireEndpointSecret(tt.args.ctx, tt.args.secretID, tt.args.endPointId, tt.args.app)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			e, err := tt.args.app.FindEndpoint(tt.args.endPointId)
+			require.NoError(t, err)
+
+			for _, sc := range e.Secrets {
+				if sc.UID == tt.args.secretID {
+					require.NotEmpty(t, sc.DeletedAt)
+				}
+			}
 		})
 	}
 }

@@ -1053,136 +1053,6 @@ info:
   title: Convoy API Specification
   version: 0.1.12
 paths:
-  /api/v1/applications/{appID}/endpoints/{endpointID}/secrets:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an endpoint secret
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        type: string
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Endpoint'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create application endpoint secret
-      tags:
-      - Application Endpoints
-  /api/v1/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint fetches an application endpoint
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        type: string
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Endpoint'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get application endpoint secret
-      tags:
-      - Application Endpoints
   /api/v1/organisations:
     get:
       consumes:
@@ -2189,6 +2059,136 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update an application endpoint
+      tags:
+      - Application Endpoints
+  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an endpoint secret
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Endpoint'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create application endpoint secret
+      tags:
+      - Application Endpoints
+  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint fetches an application endpoint
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Endpoint'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get application endpoint secret
       tags:
       - Application Endpoints
   /api/v1/projects/{projectID}/eventdeliveries:

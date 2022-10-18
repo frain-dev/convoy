@@ -246,7 +246,7 @@ func (a *AppService) CreateAppEndpointSecret(ctx context.Context, s *models.Endp
 
 	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app endpoints"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating saving endpoint secret"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
@@ -273,7 +273,7 @@ func (a *AppService) ExpireEndpointSecret(ctx context.Context, secretID string, 
 
 	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating app endpoints"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
