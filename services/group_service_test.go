@@ -222,7 +222,15 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				RateLimit:         5000,
 				RateLimitDuration: "1m",
 				Config: &datastore.GroupConfig{
-					Signature:       &datastore.SignatureConfiguration{},
+					Signature: &datastore.SignatureConfiguration{
+						Header: "X-Convoy-Signature",
+						Versions: []datastore.SignatureVersion{
+							{
+								Hash:     "SHA256",
+								Encoding: datastore.HexEncoding,
+							},
+						},
+					},
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,
@@ -895,7 +903,6 @@ func TestGroupService_DeleteGroup(t *testing.T) {
 			dbFn: func(gs *GroupService) {
 				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().DeleteGroup(gomock.Any(), "12345").Times(1).Return(nil)
-
 			},
 			wantErr: false,
 		},

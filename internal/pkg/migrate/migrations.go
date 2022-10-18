@@ -64,7 +64,6 @@ var Migrations = []*Migration{
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
-
 			store := datastore.New(db)
 			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
@@ -197,7 +196,7 @@ var Migrations = []*Migration{
 				}
 
 				config = &datastore.GroupConfig{
-					Signature:       &datastore.DefaultSignatureConfig,
+					Signature:       datastore.GetDefaultSignatureConfig(),
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,

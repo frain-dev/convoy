@@ -259,7 +259,6 @@ type Endpoint struct {
 	UID                string   `json:"uid" bson:"uid"`
 	TargetURL          string   `json:"target_url" bson:"target_url"`
 	Description        string   `json:"description" bson:"description"`
-	Secret             string   `json:"secret" bson:"secret"`
 	Secrets            []Secret `json:"secrets" bson:"secrets"`
 	AdvancedSignatures bool     `json:"advanced_signatures" bson:"advanced_signatures"`
 

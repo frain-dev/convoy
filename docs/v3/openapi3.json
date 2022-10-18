@@ -256,9 +256,6 @@
 					"rate_limit_duration": {
 						"type": "string"
 					},
-					"secret": {
-						"type": "string"
-					},
 					"secrets": {
 						"items": {
 							"$ref": "#/components/schemas/datastore.Secret"
@@ -1117,8 +1114,11 @@
 					"rate_limit_duration": {
 						"type": "string"
 					},
-					"secret": {
-						"type": "string"
+					"secrets": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					},
 					"url": {
 						"type": "string"

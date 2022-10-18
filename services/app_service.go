@@ -160,7 +160,6 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		UID:               uuid.New().String(),
 		TargetURL:         e.URL,
 		Description:       e.Description,
-		Secret:            e.Secret,
 		RateLimit:         e.RateLimit,
 		HttpTimeout:       e.HttpTimeout,
 		RateLimitDuration: duration.String(),
@@ -169,10 +168,30 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
-	if util.IsStringEmpty(e.Secret) {
-		endpoint.Secret, err = util.GenerateSecret()
+	if len(e.Secrets) == 0 {
+		sc, err := util.GenerateSecret()
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
+		}
+
+		endpoint.Secrets = []datastore.Secret{
+			{
+				UID:            uuid.NewString(),
+				Value:          sc,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+		}
+	} else {
+		for _, v := range e.Secrets {
+			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
+				UID:            uuid.NewString(),
+				Value:          v,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			})
 		}
 	}
 
@@ -343,10 +362,6 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 
 			if !util.IsStringEmpty(e.HttpTimeout) {
 				endpoint.HttpTimeout = e.HttpTimeout
-			}
-
-			if !util.IsStringEmpty(e.Secret) {
-				endpoint.Secret = e.Secret
 			}
 
 			auth, err := validateEndpointAuthentication(e)

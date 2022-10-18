@@ -607,7 +607,12 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			name: "should_create_app_endpoint",
 			args: args{
 				ctx: ctx,
-				e:   models.Endpoint{Secret: "1234", URL: "https://google.com", Description: "test_endpoint", Events: []string{"payment.created"}},
+				e: models.Endpoint{
+					Secrets:     []string{"1234"},
+					URL:         "https://google.com",
+					Description: "test_endpoint",
+					Events:      []string{"payment.created"},
+				},
 				app: &datastore.Application{UID: "abc"},
 			},
 			dbFn: func(app *AppService) {
@@ -624,7 +629,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				UID: "abc",
 				Endpoints: []datastore.Endpoint{
 					{
-						Secret:            "1234",
+						Secrets: []datastore.Secret{
+							{Value: "1234"},
+						},
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
 						RateLimit:         5000,
@@ -634,7 +641,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "1234",
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         5000,
@@ -649,7 +658,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secret:            "1234",
+					Secrets:           []string{"1234"},
 					RateLimit:         100,
 					RateLimitDuration: "1m",
 					URL:               "https://google.com",
@@ -671,7 +680,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				UID: "abc",
 				Endpoints: []datastore.Endpoint{
 					{
-						Secret:            "1234",
+						Secrets: []datastore.Secret{
+							{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+						},
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
 						RateLimit:         100,
@@ -681,7 +692,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "1234",
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
@@ -696,7 +709,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secret:            "1234",
+					Secrets:           []string{"1234"},
 					RateLimit:         100,
 					RateLimitDuration: "1m",
 					URL:               "https://google.com",
@@ -725,7 +738,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				UID: "abc",
 				Endpoints: []datastore.Endpoint{
 					{
-						Secret:            "1234",
+						Secrets: []datastore.Secret{
+							{Value: "1234"},
+						},
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
 						RateLimit:         100,
@@ -735,7 +750,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "1234",
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
@@ -757,7 +774,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secret:            "1234",
+					Secrets:           []string{"1234"},
 					RateLimit:         100,
 					RateLimitDuration: "m",
 					URL:               "https://google.com",
@@ -774,7 +791,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secret:            "1234",
+					Secrets:           []string{"1234"},
 					RateLimit:         100,
 					RateLimitDuration: "1m",
 					URL:               "https://google.com",
@@ -830,10 +847,24 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 		a.CreatedAt, a.UpdatedAt, a.DeletedAt = 0, 0, 0
 	case "group":
 		g := v.(*datastore.Group)
+		if g.Config != nil {
+			for i := range g.Config.Signature.Versions {
+				v := &g.Config.Signature.Versions[i]
+				v.UID = ""
+				v.CreatedAt = 0
+			}
+		}
 		g.UID = ""
 		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
 	case "endpoint":
 		e := v.(*datastore.Endpoint)
+
+		for i := range e.Secrets {
+			s := &e.Secrets[i]
+			s.UID = ""
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, 0
+		}
+
 		e.UID = ""
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
 	case "event":
@@ -887,7 +918,6 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secret:            "newly-generated-secret",
 					Events:            []string{"payment.created", "payment.success"},
 					URL:               "https://fb.com",
 					RateLimit:         10000,
@@ -905,7 +935,6 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 						{
 							UID:       "endpoint2",
 							TargetURL: "https://netflix.com",
-							Secret:    "old-assigned-secret",
 						},
 					},
 				},
@@ -916,12 +945,10 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 					{
 						UID:       "endpoint1",
 						TargetURL: "https://google.com",
-						Secret:    "",
 					},
 					{
 						UID:               "endpoint2",
 						TargetURL:         "https://fb.com",
-						Secret:            "newly-generated-secret",
 						RateLimit:         10000,
 						RateLimitDuration: "1m0s",
 						HttpTimeout:       "20s",
@@ -929,7 +956,6 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "newly-generated-secret",
 				UID:               "endpoint2",
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,

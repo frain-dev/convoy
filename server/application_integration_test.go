@@ -535,7 +535,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
-		"secret": "%s",
+		"secrets": ["%s","abc"],
 		"description": "default endpoint",
 		"authentication": {
 			"type": "api_key",
@@ -563,6 +563,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
+	require.Equal(s.T(), secret, dbEndpoint.Secrets[0].Value)
+	require.Equal(s.T(), "abc", dbEndpoint.Secrets[1].Value)
 	require.Equal(s.T(), dbEndpoint.Authentication, endpoint.Authentication)
 }
 
@@ -642,7 +644,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	appID := uuid.New().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
-	secret := f.Lorem().Text(25)
 	rand.Seed(time.Now().UnixNano())
 	num := rand.Intn(10) + 1
 	eventTypes, _ := json.Marshal(f.Lorem().Words(num))
@@ -656,10 +657,9 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultGroup.UID, appID, endpoint.UID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
-		"secret": "%s",
 		"events": %s,
 		"description": "default endpoint"
-	}`, endpointURL, secret, eventTypes)
+	}`, endpointURL, eventTypes)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -678,7 +678,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
-	require.Equal(s.T(), dbEndpoint.Secret, secret)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
@@ -708,7 +707,6 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
-	require.Equal(s.T(), dbEndpoint.Secret, resp.Secret)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {

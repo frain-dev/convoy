@@ -177,8 +177,6 @@ definitions:
         type: integer
       rate_limit_duration:
         type: string
-      secret:
-        type: string
       secrets:
         items:
           $ref: '#/definitions/datastore.Secret'
@@ -752,8 +750,10 @@ definitions:
         type: integer
       rate_limit_duration:
         type: string
-      secret:
-        type: string
+      secrets:
+        items:
+          type: string
+        type: array
       url:
         type: string
     type: object

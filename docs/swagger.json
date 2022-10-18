@@ -10279,9 +10279,6 @@
                 "rate_limit_duration": {
                     "type": "string"
                 },
-                "secret": {
-                    "type": "string"
-                },
                 "secrets": {
                     "type": "array",
                     "items": {
@@ -11141,8 +11138,11 @@
                 "rate_limit_duration": {
                     "type": "string"
                 },
-                "secret": {
-                    "type": "string"
+                "secrets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "url": {
                     "type": "string"
