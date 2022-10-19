@@ -1,6 +1,5 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PrismModule } from '../prism/prism.module';
 import Markdoc from '@markdoc/markdoc';
 import axios from 'axios';
 import { ButtonComponent } from 'src/app/components/button/button.component';
@@ -8,7 +7,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 @Component({
 	selector: 'sdk-documentation',
 	standalone: true,
-	imports: [CommonModule, PrismModule, ButtonComponent],
+	imports: [CommonModule, ButtonComponent],
 	templateUrl: './sdk-documentation.component.html',
 	styleUrls: ['./sdk-documentation.component.scss']
 })
@@ -109,11 +108,8 @@ export class SdkDocumentationComponent implements OnInit {
 
 	async renderDocumentation(mdContent: string) {
 		const results: any = await this.fetchDocumentation(mdContent);
-
 		const ast = Markdoc.parse(results.data);
-
 		const content = Markdoc.transform(ast);
-
 		this.documentation = Markdoc.renderers.html(content);
 	}
 
