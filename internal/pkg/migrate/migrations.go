@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/sirupsen/logrus"
 
@@ -239,6 +242,78 @@ var Migrations = []*Migration{
 					},
 				}
 				err = store.UpdateByID(ctx, group.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration")
+					return err
+				}
+			}
+
+			return nil
+		},
+	},
+
+	{
+		ID: "20221019100029_move_secret_fields_to_secrets",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
+
+			var apps []*datastore.Application
+			err := store.FindAll(ctx, nil, nil, nil, &apps)
+			if err != nil {
+				return err
+			}
+
+			for _, app := range apps {
+				for i := range app.Endpoints {
+					endpoint := &app.Endpoints[i]
+					if endpoint.Secret == "" {
+						continue
+					}
+
+					endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
+						UID:            uuid.NewString(),
+						Value:          endpoint.Secret,
+						CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+						UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+						DocumentStatus: datastore.ActiveDocumentStatus,
+					})
+					endpoint.Secret = ""
+					endpoint.AdvancedSignatures = false // explicitly set default
+				}
+
+				err = store.UpdateByID(ctx, app.UID, app)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
+
+			var apps []*datastore.Application
+			err := store.FindAll(ctx, nil, nil, nil, &apps)
+			if err != nil {
+				return err
+			}
+
+			for _, app := range apps {
+				for i := range app.Endpoints {
+					endpoint := &app.Endpoints[i]
+					if len(endpoint.Secrets) == 0 {
+						continue
+					}
+
+					endpoint.Secret = endpoint.Secrets[len(endpoint.Secrets)].Value // TODO(daniel): len(endpoint.Secrets) or 0?
+					endpoint.Secrets = nil
+					endpoint.AdvancedSignatures = false // explicitly set default
+				}
+
+				err = store.UpdateByID(ctx, app.UID, app)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration")
 					return err

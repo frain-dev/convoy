@@ -259,6 +259,7 @@ type Endpoint struct {
 	UID                string   `json:"uid" bson:"uid"`
 	TargetURL          string   `json:"target_url" bson:"target_url"`
 	Description        string   `json:"description" bson:"description"`
+	Secret             string   `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
 	Secrets            []Secret `json:"secrets" bson:"secrets"`
 	AdvancedSignatures bool     `json:"advanced_signatures" bson:"advanced_signatures"`
 
