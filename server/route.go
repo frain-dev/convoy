@@ -527,6 +527,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			})
 		})
 
+		portalRouter.Get("/project", a.GetGroup)
 		portalRouter.Post("/flags", flipt.BatchEvaluate)
 	})
 
