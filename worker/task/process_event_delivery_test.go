@@ -122,6 +122,9 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 					}, nil)
 				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Application{
@@ -211,6 +214,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -302,6 +308,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -397,6 +406,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -488,6 +500,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -583,6 +598,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -674,6 +692,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -769,6 +790,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -869,6 +893,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockApplicationRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						TargetURL:         "https://google.com",
 						RateLimitDuration: "1m",
