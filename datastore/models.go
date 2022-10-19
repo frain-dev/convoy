@@ -584,16 +584,16 @@ type Subscription struct {
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
 	Type       SubscriptionType   `json:"type" bson:"type"`
-	Status     SubscriptionStatus `json:"status" bson:"status"`
 	AppID      string             `json:"-" bson:"app_id"`
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
+	Status     SubscriptionStatus `json:"status" bson:"status"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source      `json:"source_metadata" bson:"-"`
-	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"-"`
-	App      *Application `json:"app_metadata" bson:"-"`
+	Source   *Source      `json:"source_metadata" bson:"source_metadata,omitempty"`
+	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"endpoint_metadata,omitempty"`
+	App      *Application `json:"app_metadata" bson:"app_metadata,omitempty"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
