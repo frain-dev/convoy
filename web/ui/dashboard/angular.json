@@ -32,7 +32,8 @@
 						"assets": ["src/favicon.ico", "src/assets", "src/content"],
 						"styles": ["src/styles.scss"],
 						"scripts": [],
-						"preserveSymlinks": true
+						"preserveSymlinks": true,
+						"allowedCommonJsDependencies": ["prismjs"]
 					},
 					"configurations": {
 						"production": {
