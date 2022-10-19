@@ -3,11 +3,9 @@ package net
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -27,15 +25,13 @@ func TestDispatcher_SendRequest(t *testing.T) {
 	buf := make([]byte, config.MaxResponseSize*2)
 	configSignature := config.SignatureHeaderProvider(config.DefaultSignatureHeader.String())
 	_, _ = rand.Read(buf)
-	timestamp := fmt.Sprint(time.Now().Unix())
 	type args struct {
-		endpoint        string
-		method          string
-		jsonData        json.RawMessage
-		headers         httpheader.HTTPHeader
-		group           *datastore.Group
-		convoyTimestamp string
-		hmac            string
+		endpoint string
+		method   string
+		jsonData json.RawMessage
+		headers  httpheader.HTTPHeader
+		group    *datastore.Group
+		hmac     string
 	}
 	tests := []struct {
 		name    string
@@ -59,8 +55,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 						ReplayAttacks: false,
 					},
 				},
-				convoyTimestamp: "",
-				hmac:            "12345",
+				hmac: "12345",
 			},
 			want: &Response{
 				Status:     "200",
@@ -107,8 +102,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 						ReplayAttacks: false,
 					},
 				},
-				convoyTimestamp: "",
-				hmac:            "12345",
+				hmac: "12345",
 			},
 			want: &Response{
 				Status:     "200",
@@ -153,8 +147,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 						ReplayAttacks: false,
 					},
 				},
-				convoyTimestamp: "",
-				hmac:            "12345",
+				hmac: "12345",
 			},
 			want: &Response{
 				Status:     "200",
@@ -198,8 +191,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 						ReplayAttacks: false,
 					},
 				},
-				hmac:            "12345",
-				convoyTimestamp: "",
+				hmac: "12345",
 			},
 			want: &Response{
 				Status:     "",
@@ -232,8 +224,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 						ReplayAttacks: false,
 					},
 				},
-				hmac:            "",
-				convoyTimestamp: timestamp,
+				hmac: "",
 			},
 			want: &Response{
 				Status:         "",
@@ -262,8 +253,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 						ReplayAttacks: true,
 					},
 				},
-				hmac:            "css",
-				convoyTimestamp: "",
+				hmac: "css",
 			},
 			want: &Response{
 				Status:         "",
@@ -292,8 +282,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 						ReplayAttacks: false,
 					},
 				},
-				hmac:            "css",
-				convoyTimestamp: "",
+				hmac: "css",
 			},
 			want: &Response{
 				Status:         "",
@@ -318,7 +307,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, tt.args.convoyTimestamp, config.MaxResponseSize, tt.args.headers)
+			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, config.MaxResponseSize, tt.args.headers)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)

@@ -172,11 +172,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									e.Get("/", a.GetAppEndpoint)
 									e.Put("/", a.UpdateAppEndpoint)
 									e.Delete("/", a.DeleteAppEndpoint)
+									e.Put("/expire_secret", a.ExpireSecret)
 
-									e.Route("/secrets", func(secretRouter chi.Router) {
-										secretRouter.Post("/", a.CreateEndpointSecret)
-										secretRouter.Delete("/{secretID}/expire", a.ExpireEndpointSecret)
-									})
 								})
 							})
 						})
@@ -370,11 +367,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Get("/", a.GetAppEndpoint)
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
+										e.Put("/expire_secret", a.ExpireSecret)
 
-										e.Route("/secrets", func(secretRouter chi.Router) {
-											secretRouter.Post("/", a.CreateEndpointSecret)
-											secretRouter.Delete("/{secretID}/expire", a.ExpireEndpointSecret)
-										})
 									})
 								})
 

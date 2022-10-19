@@ -12,19 +12,10 @@ definitions:
   datastore.APIKey:
     properties:
       created_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       deleted_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       expires_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       hash:
         type: string
@@ -41,9 +32,6 @@ definitions:
       uid:
         type: string
       updated_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       user_id:
         type: string
@@ -499,6 +487,8 @@ definitions:
         type: string
       deleted_at:
         type: string
+      expires_at:
+        type: string
       uid:
         type: string
       updated_at:
@@ -805,14 +795,8 @@ definitions:
   models.LoginUserResponse:
     properties:
       created_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       deleted_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       email:
         type: string
@@ -825,9 +809,6 @@ definitions:
       uid:
         type: string
       updated_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
     type: object
   models.Organisation:
@@ -920,14 +901,8 @@ definitions:
   models.SourceResponse:
     properties:
       created_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       deleted_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       group_id:
         type: string
@@ -946,9 +921,6 @@ definitions:
       uid:
         type: string
       updated_at:
-        description: |-
-          NextSendTime denotes the next time a Event will be published in
-          case it failed the first time
         type: integer
       url:
         type: string
@@ -2061,11 +2033,12 @@ paths:
       summary: Update an application endpoint
       tags:
       - Application Endpoints
-  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets:
-    post:
+  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret:
+    put:
       consumes:
       - application/json
-      description: This endpoint creates an endpoint secret
+      description: This endpoint expires the current endpoint secret and generates
+        a new one.
       parameters:
       - description: group id
         in: query
@@ -2123,72 +2096,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create application endpoint secret
-      tags:
-      - Application Endpoints
-  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint fetches an application endpoint
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        type: string
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Endpoint'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get application endpoint secret
+      summary: Expire and generate new application endpoint secret
       tags:
       - Application Endpoints
   /api/v1/projects/{projectID}/eventdeliveries:

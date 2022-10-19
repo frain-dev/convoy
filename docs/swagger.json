@@ -1859,14 +1859,14 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets": {
-            "post": {
+        "/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an endpoint secret",
+                "description": "This endpoint expires the current endpoint secret and generates a new one.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1876,124 +1876,7 @@
                 "tags": [
                     "Application Endpoints"
                 ],
-                "summary": "Create application endpoint secret",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "groupId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "endpoint id",
-                        "name": "endpointID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire": {
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches an application endpoint",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application Endpoints"
-                ],
-                "summary": "Get application endpoint secret",
+                "summary": "Expire and generate new application endpoint secret",
                 "parameters": [
                     {
                         "type": "string",
@@ -10041,15 +9924,12 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "expires_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "hash": {
@@ -10074,7 +9954,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "user_id": {
@@ -10754,6 +10633,9 @@
                 "deleted_at": {
                     "type": "string"
                 },
+                "expires_at": {
+                    "type": "string"
+                },
                 "uid": {
                     "type": "string"
                 },
@@ -11219,11 +11101,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "email": {
@@ -11242,7 +11122,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -11386,11 +11265,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "group_id": {
@@ -11418,7 +11295,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "url": {

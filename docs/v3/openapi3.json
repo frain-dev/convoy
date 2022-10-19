@@ -18,15 +18,12 @@
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"expires_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"hash": {
@@ -51,7 +48,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"user_id": {
@@ -731,6 +727,9 @@
 					"deleted_at": {
 						"type": "string"
 					},
+					"expires_at": {
+						"type": "string"
+					},
 					"uid": {
 						"type": "string"
 					},
@@ -1195,11 +1194,9 @@
 			"models.LoginUserResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"email": {
@@ -1218,7 +1215,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -1362,11 +1358,9 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"group_id": {
@@ -1394,7 +1388,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"url": {
@@ -3644,9 +3637,9 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets": {
-			"post": {
-				"description": "This endpoint creates an endpoint secret",
+		"/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret": {
+			"put": {
+				"description": "This endpoint expires the current endpoint secret and generates a new one.",
 				"parameters": [
 					{
 						"description": "group id",
@@ -3771,140 +3764,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create application endpoint secret",
-				"tags": [
-					"Application Endpoints"
-				]
-			}
-		},
-		"/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/secrets/{secretID}/expire": {
-			"delete": {
-				"description": "This endpoint fetches an application endpoint",
-				"parameters": [
-					{
-						"description": "group id",
-						"in": "query",
-						"name": "groupId",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "application id",
-						"in": "path",
-						"name": "appID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "endpoint id",
-						"in": "path",
-						"name": "endpointID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get application endpoint secret",
+				"summary": "Expire and generate new application endpoint secret",
 				"tags": [
 					"Application Endpoints"
 				]

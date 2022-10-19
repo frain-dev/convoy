@@ -241,8 +241,9 @@ type Endpoint struct {
 	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
 
-type EndpointSecret struct {
-	Value string `json:"value"`
+type ExpireSecret struct {
+	Secret    string `json:"secret"`
+	ExpiresAt int    `json:"expires_at"`
 }
 
 type DashboardSummary struct {

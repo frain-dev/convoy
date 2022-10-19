@@ -275,9 +275,20 @@ type Endpoint struct {
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
+func (e *Endpoint) GetActiveSecretIndex() (int, error) {
+	for idx, secret := range e.Secrets {
+		if secret.ExpiresAt == 0 {
+			return idx, nil
+		}
+	}
+	return 0, ErrNoActiveSecret
+}
+
 type Secret struct {
-	UID            string             `json:"uid" bson:"uid"`
-	Value          string             `json:"value" bson:"value"`
+	UID   string `json:"uid" bson:"uid"`
+	Value string `json:"value" bson:"value"`
+
+	ExpiresAt      primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
@@ -425,6 +436,7 @@ var (
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
 	ErrDuplicateEmail                = errors.New("a user with this email already exists")
+	ErrNoActiveSecret                = errors.New("no active secret found")
 )
 
 type AppMetadata struct {

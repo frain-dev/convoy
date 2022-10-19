@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -23,10 +25,11 @@ type AppService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	cache             cache.Cache
+	queue             queue.Queuer
 }
 
-func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) *AppService {
-	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache}
+func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, queue queue.Queuer) *AppService {
+	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache, queue: queue}
 }
 
 func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {
@@ -248,60 +251,78 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 	return endpoint, nil
 }
 
-func (a *AppService) CreateAppEndpointSecret(ctx context.Context, s *models.EndpointSecret, endPointId string, app *datastore.Application) (*datastore.Secret, error) {
+func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, endPointId string, app *datastore.Application) (*datastore.Application, error) {
 	endpoint, err := app.FindEndpoint(endPointId)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
+	idx, err := endpoint.GetActiveSecretIndex()
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	expiresAt := time.Now().Add(time.Hour * time.Duration(s.ExpiresAt))
+	endpoint.Secrets[idx].ExpiresAt = primitive.NewDateTimeFromTime(expiresAt)
+
+	secret := endpoint.Secrets[idx]
+
+	body := struct {
+		AppID      string `json:"app_id"`
+		EndpointID string `json:"endpoint_id"`
+		SecretID   string `json:"secret_id"`
+	}{
+		AppID:      app.UID,
+		EndpointID: endpoint.UID,
+		SecretID:   secret.UID,
+	}
+
+	jobByte, err := json.Marshal(body)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	payload := json.RawMessage(jobByte)
+
+	job := &queue.Job{
+		ID:      secret.UID,
+		Payload: payload,
+		Delay:   time.Hour * time.Duration(s.ExpiresAt),
+	}
+
+	taskName := convoy.ExpireSecretsProcessor
+	err = a.queue.Write(taskName, convoy.DefaultQueue, job)
+	if err != nil {
+		log.Errorf("Error occurred sending new event to the queue %s", err)
+	}
+
+	newSecret := s.Secret
+	if len(newSecret) == 0 {
+		newSecret, err = util.GenerateSecret()
+		if err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
+		}
+	}
+
 	sc := datastore.Secret{
 		UID:            uuid.NewString(),
-		Value:          s.Value,
+		Value:          newSecret,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
+
+	fmt.Printf("BEFORE ENDPOINT LENGTH: %d\n", len(endpoint.Secrets))
+
 	endpoint.Secrets = append(endpoint.Secrets, sc)
 
+	fmt.Printf("AFTER ENDPOINT LENGTH: %d\n", len(endpoint.Secrets))
 	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating saving endpoint secret"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
 	}
 
-	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-	if err != nil {
-		log.WithError(err).Error("failed to update application cache")
-	}
-
-	return &sc, nil
-}
-
-func (a *AppService) ExpireEndpointSecret(ctx context.Context, secretID string, endPointId string, app *datastore.Application) error {
-	endpoint, err := app.FindEndpoint(endPointId)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, err)
-	}
-
-	for i := range endpoint.Secrets {
-		secret := &endpoint.Secrets[i]
-		if secret.UID == secretID && secret.DeletedAt == 0 {
-			secret.DeletedAt = primitive.NewDateTimeFromTime(time.Now())
-		}
-	}
-
-	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
-	}
-
-	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-	if err != nil {
-		log.WithError(err).Error("failed to update application cache")
-	}
-
-	return nil
+	return app, nil
 }
 
 func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoint, app *datastore.Application) error {
