@@ -473,10 +473,8 @@ type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
-	// NextSendTime denotes the next time a Event will be published in
-	// case it failed the first time
-	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
+	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
 	NumTrials uint64 `json:"num_trials" bson:"num_trials"`

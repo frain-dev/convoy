@@ -61,8 +61,8 @@ type APIKey struct {
 }
 
 type PersonalAPIKey struct {
-	Name      string    `json:"name"`
-	ExpiresAt time.Time `json:"expires_at"`
+	Name       string `json:"name"`
+	Expiration int    `json:"expiration"`
 }
 
 type Role struct {
