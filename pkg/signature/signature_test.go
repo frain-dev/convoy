@@ -23,12 +23,15 @@ func Test_Advanced_Signatures(t *testing.T) {
 						Encoding: "hex",
 					},
 				},
+				generateTimestampFn: func() string {
+					return "1257894000"
+				},
 				Advanced: true,
 			},
 			assertion: assertSignatureVersionMapping([]string{
-				"v0=a32dd2ae40bc678d67473679532190d7130f602c16b13c2ed868075b27789db9",
-				"v0=2c9cc82f5e3c665ca6df2ac000742cccbfaf05d63dbc43461d6ebbbc1a2c2a33",
-				"v0=df51a848684dac3901d2b8bd17e5c8d2d971b15c544fa923493232df1fe0fbad",
+				"v1=5b255b0b867c5540679bad7dfa11be73ffd4ee248647646fb325ccbe19167439",
+				"v1=9942b27103f8f5f5ce4cd3751524dbb7087a596487c784655a33f528cd4d7400",
+				"v1=d5589c4f5e51d74e6116c8d5db2704d76cdf88521e2cdd749d2d5091e3d6183c",
 			}),
 		},
 		"should_generate_multiple_signatures_for_multiple_schemes": {
@@ -46,11 +49,14 @@ func Test_Advanced_Signatures(t *testing.T) {
 						Encoding: "base64",
 					},
 				},
+				generateTimestampFn: func() string {
+					return "1257894000"
+				},
 				Advanced: true,
 			},
 			assertion: assertSignatureVersionMapping([]string{
-				"v1=D5njmbkByEKf1+Vlte9XFrMiGGBLpxmkDbvxiduvnxD/ZMjjelYR0NSl1SxWokP+GZkcS77cT1cUwYAsCiFP8g==",
-				"v0=ecf51ec27c7fe4c71298067890c6512dbb74186edf4eb5ee43c1c9c7d5c2b0e8",
+				"v2=HEfgcRgjEFAl0rS/Vig/WvanDWsBNWx7y6htFUcou5hKXj4tPKy/4K/v8HXuIl2MeiPT8bYZvYHTd5ORhvN93Q==",
+				"v1=c97c302e4a991a7d4a72b60c3f9a0c3adb3611cd0acc632994a72ace04d6509c",
 			}),
 		},
 		"should_map_signatures_to_schemes_correctly": {
@@ -68,11 +74,14 @@ func Test_Advanced_Signatures(t *testing.T) {
 						Encoding: "base64",
 					},
 				},
+				generateTimestampFn: func() string {
+					return "1257894000"
+				},
 				Advanced: true,
 			},
 			assertion: assertSignatureVersionMapping([]string{
-				"v0=ecf51ec27c7fe4c71298067890c6512dbb74186edf4eb5ee43c1c9c7d5c2b0e8",
-				"v1=xdz+2j9aMVQUUjSy0KUz/CsjD4jaD6wHJGGf1c3eZzrWxHTf1cAjZ3aL07O9NZXMhg5gajfi+TYuBU1aoU18xA==",
+				"v1=c97c302e4a991a7d4a72b60c3f9a0c3adb3611cd0acc632994a72ace04d6509c",
+				"v2=fKtYNaWP+THgLxwIifnkzGLBeCf8iWdGmFtKr0DM93+KCU1vksP8DmT8EbTwlF5Q0F2FmjOXxSxcUBkyuMlmVQ==",
 			}),
 		},
 		"should_include_timestamp_in_computed_value": {
@@ -200,7 +209,7 @@ func assertSignatureVersionMapping(c []string) func(require.TestingT, interface{
 	}
 }
 
-// returns [ "t=", "v0=", "v1=" ... ]
+// returns [ "t=", "v1=", "v2=" ... ]
 func parseSignature(s string) (out []string) {
 	ss := strings.Split(s, ",")
 

@@ -49,6 +49,10 @@ type Signature struct {
 	// of this type. You're either generating a simplistic header
 	// or a complex header.
 	Advanced bool
+
+	// This function is used to generate a timestamp for signing
+	// your payload. It is only added to aid testing.
+	generateTimestampFn func() string
 }
 
 func (s *Signature) ComputeHeaderValue() (string, error) {
@@ -72,18 +76,30 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 	}
 
 	// Generate Advanced Signatures
+	var signedPayload strings.Builder
 	var hStr strings.Builder
+	var ts string
 
 	// Add timestamp.
-	t := fmt.Sprintf("t=%d,", time.Now().Unix())
+	if s.generateTimestampFn != nil {
+		ts = s.generateTimestampFn()
+	} else {
+		ts = fmt.Sprintf("%d", time.Now().Unix())
+	}
+
+	t := fmt.Sprintf("t=%s,", ts)
+	signedPayload.WriteString(ts)
+	signedPayload.WriteString(",")
+	signedPayload.WriteString(string(tBuf))
+
 	hStr.WriteString(t)
 
 	for k, sch := range s.Schemes {
-		v := fmt.Sprintf("v%d=", k)
+		v := fmt.Sprintf("v%d=", k+1)
 
 		var hSig string
 		for _, sec := range sch.Secret {
-			sig, err := s.generateSignature(sch, sec, tBuf)
+			sig, err := s.generateSignature(sch, sec, []byte(signedPayload.String()))
 			if err != nil {
 				return "", err
 			}
