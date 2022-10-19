@@ -29,8 +29,9 @@ import (
 )
 
 type ApplicationHandler struct {
-	M *middleware.Middleware
-	A App
+	M      *middleware.Middleware
+	Router http.Handler
+	A      App
 }
 
 type App struct {
@@ -66,7 +67,6 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 }
 
 func NewApplicationHandler(a App) *ApplicationHandler {
-
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		Cache:             a.Cache,
 		Logger:            a.Logger,
@@ -118,117 +118,136 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
-
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(chiMiddleware.AllowContentType("application/json"))
 			r.Use(a.M.JsonResponse)
 			r.Use(a.M.RequireAuth())
 
-			r.Route("/applications", func(appRouter chi.Router) {
-				appRouter.Use(a.M.RequireGroup())
-				appRouter.Use(a.M.RateLimitByGroupID())
-				appRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
+			r.With(a.M.Pagination, a.M.RequireAuthUserMetadata()).Get("/organisations", a.GetOrganisationsPaged)
 
-				appRouter.Route("/", func(appSubRouter chi.Router) {
-					appSubRouter.Post("/", a.CreateApp)
-					appRouter.With(a.M.Pagination).Get("/", a.GetApps)
-				})
+			r.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Use(a.M.RejectAppPortalKey())
+				// projectWithAuthUserRouter routes require a Personal API Key or JWT Token to work
 
-				appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-					appSubRouter.Use(a.M.RequireApp())
+				projectRouter.With(
+					a.M.RequireAuthUserMetadata(),
+					a.M.RequireOrganisation(),
+					a.M.RequireOrganisationMembership(),
+					a.M.RequireOrganisationMemberRole(auth.RoleSuperUser),
+				).Post("/", a.CreateGroup)
 
-					appSubRouter.Get("/", a.GetApp)
-					appSubRouter.Put("/", a.UpdateApp)
-					appSubRouter.Delete("/", a.DeleteApp)
+				projectRouter.With(
+					a.M.RequireAuthUserMetadata(),
+					a.M.RequireOrganisation(),
+					a.M.RequireOrganisationMembership(),
+				).Get("/", a.GetGroups)
 
-					appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-						endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
-						endpointAppSubRouter.Get("/", a.GetAppEndpoints)
+				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
+					projectSubRouter.Use(a.M.RequireGroup())
+					projectSubRouter.Use(a.M.RequireGroupAccess())
 
-						endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-							e.Use(a.M.RequireAppEndpoint())
+					projectSubRouter.With().Get("/", a.GetGroup)
+					projectSubRouter.Put("/", a.UpdateGroup)
+					projectSubRouter.Delete("/", a.DeleteGroup)
 
-							e.Get("/", a.GetAppEndpoint)
-							e.Put("/", a.UpdateAppEndpoint)
-							e.Delete("/", a.DeleteAppEndpoint)
+					projectSubRouter.Route("/applications", func(appRouter chi.Router) {
+						appRouter.Use(a.M.RateLimitByGroupID())
+
+						appRouter.Post("/", a.CreateApp)
+						appRouter.With(a.M.Pagination).Get("/", a.GetApps)
+
+						appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
+							appSubRouter.Use(a.M.RequireApp())
+							appSubRouter.Use(a.M.RequireAppBelongsToGroup())
+
+							appSubRouter.Get("/", a.GetApp)
+							appSubRouter.Put("/", a.UpdateApp)
+							appSubRouter.Delete("/", a.DeleteApp)
+
+							appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
+								endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
+								endpointAppSubRouter.Get("/", a.GetAppEndpoints)
+
+								endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+									e.Use(a.M.RequireAppEndpoint())
+
+									e.Get("/", a.GetAppEndpoint)
+									e.Put("/", a.UpdateAppEndpoint)
+									e.Delete("/", a.DeleteAppEndpoint)
+								})
+							})
 						})
 					})
-				})
-			})
 
-			r.Route("/events", func(eventRouter chi.Router) {
-				eventRouter.Use(a.M.RequireGroup())
-				eventRouter.Use(a.M.RateLimitByGroupID())
-				eventRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
+					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
+						eventRouter.Use(a.M.RateLimitByGroupID())
 
-				eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateAppEvent)
-				eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+						// TODO(all): should the InstrumentPath change?
+						eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateAppEvent)
+						eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
-				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-					eventSubRouter.Use(a.M.RequireEvent())
-					eventSubRouter.Get("/", a.GetAppEvent)
-					eventSubRouter.Put("/replay", a.ReplayAppEvent)
-				})
-			})
+						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+							eventSubRouter.Use(a.M.RequireEvent())
+							eventSubRouter.Get("/", a.GetAppEvent)
+							eventSubRouter.Put("/replay", a.ReplayAppEvent)
+						})
+					})
 
-			r.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-				eventDeliveryRouter.Use(a.M.RequireGroup())
-				eventDeliveryRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
+					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+						eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+						eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
+						eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
+						eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
 
-				eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
-				eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
-				eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
-				eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
+						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+							eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
 
-				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-					eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
+							eventDeliverySubRouter.Get("/", a.GetEventDelivery)
+							eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
-					eventDeliverySubRouter.Get("/", a.GetEventDelivery)
-					eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
+							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+								deliveryRouter.Use(fetchDeliveryAttempts())
 
-					eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-						deliveryRouter.Use(fetchDeliveryAttempts())
+								deliveryRouter.Get("/", a.GetDeliveryAttempts)
+								deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+							})
+						})
+					})
 
-						deliveryRouter.Get("/", a.GetDeliveryAttempts)
-						deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+					//
+					projectSubRouter.Route("/security", func(securityRouter chi.Router) {
+						securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
+							securitySubRouter.Use(a.M.RequireApp())
+							securitySubRouter.Use(a.M.RequireAppBelongsToGroup())
+							securitySubRouter.Use(a.M.RequireBaseUrl())
+							securitySubRouter.Post("/", a.CreateAppAPIKey)
+						})
+					})
+
+					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
+						subscriptionRouter.Use(a.M.RateLimitByGroupID())
+
+						subscriptionRouter.Post("/", a.CreateSubscription)
+						subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+						subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+						subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+						subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
+						subscriptionRouter.Put("/{subscriptionID}/toggle_status", a.ToggleSubscriptionStatus)
+					})
+
+					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
+						sourceRouter.Use(a.M.RequireBaseUrl())
+
+						sourceRouter.Post("/", a.CreateSource)
+						sourceRouter.Get("/{sourceID}", a.GetSourceByID)
+						sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
+						sourceRouter.Put("/{sourceID}", a.UpdateSource)
+						sourceRouter.Delete("/{sourceID}", a.DeleteSource)
 					})
 				})
 			})
 
-			r.Route("/security", func(securityRouter chi.Router) {
-				securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
-					securitySubRouter.Use(a.M.RequireGroup())
-					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
-					securitySubRouter.Use(a.M.RequireApp())
-					securitySubRouter.Use(a.M.RequireBaseUrl())
-					securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
-				})
-			})
-
-			r.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-				subscriptionRouter.Use(a.M.RequireGroup())
-				subscriptionRouter.Use(a.M.RateLimitByGroupID())
-				subscriptionRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
-
-				subscriptionRouter.Post("/", a.CreateSubscription)
-				subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
-				subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
-				subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
-				subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
-				subscriptionRouter.Put("/{subscriptionID}/toggle_status", a.ToggleSubscriptionStatus)
-			})
-
-			r.Route("/sources", func(sourceRouter chi.Router) {
-				sourceRouter.Use(a.M.RequireGroup())
-				sourceRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
-				sourceRouter.Use(a.M.RequireBaseUrl())
-
-				sourceRouter.Post("/", a.CreateSource)
-				sourceRouter.Get("/{sourceID}", a.GetSourceByID)
-				sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
-				sourceRouter.Put("/{sourceID}", a.UpdateSource)
-				sourceRouter.Delete("/{sourceID}", a.DeleteSource)
-			})
+			r.HandleFunc("/*", a.RedirectToProjects)
 		})
 	})
 
@@ -249,6 +268,12 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				userSubRouter.Get("/profile", a.GetUser)
 				userSubRouter.Put("/profile", a.UpdateUser)
 				userSubRouter.Put("/password", a.UpdatePassword)
+
+				userSubRouter.Route("/security/personal_api_keys", func(securityRouter chi.Router) {
+					securityRouter.Post("/", a.CreatePersonalAPIKey)
+					securityRouter.Put("/{keyID}/revoke", a.RevokePersonalAPIKey)
+					securityRouter.With(a.M.Pagination).Get("/", a.GetAPIKeys)
+				})
 			})
 		})
 
@@ -290,31 +315,19 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					orgMemberRouter.With(a.M.Pagination).Get("/", a.GetOrganisationMembers)
 
 					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
-
 						orgMemberSubRouter.Get("/", a.GetOrganisationMember)
 						orgMemberSubRouter.Put("/", a.UpdateOrganisationMember)
 						orgMemberSubRouter.Delete("/", a.DeleteOrganisationMember)
-
 					})
 				})
 
-				orgSubRouter.Route("/security", func(securityRouter chi.Router) {
-					securityRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
-
-					securityRouter.Post("/keys", a.CreateAPIKey)
-					securityRouter.With(a.M.Pagination).Get("/keys", a.GetAPIKeys)
-					securityRouter.Get("/keys/{keyID}", a.GetAPIKeyByID)
-					securityRouter.Put("/keys/{keyID}", a.UpdateAPIKey)
-					securityRouter.Put("/keys/{keyID}/revoke", a.RevokeAPIKey)
-				})
-
-				orgSubRouter.Route("/groups", func(groupRouter chi.Router) {
+				orgSubRouter.Route("/projects", func(groupRouter chi.Router) {
 					groupRouter.Route("/", func(orgSubRouter chi.Router) {
 						groupRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateGroup)
 						groupRouter.Get("/", a.GetGroups)
 					})
 
-					groupRouter.Route("/{groupID}", func(groupSubRouter chi.Router) {
+					groupRouter.Route("/{projectID}", func(groupSubRouter chi.Router) {
 						groupSubRouter.Use(a.M.RequireGroup())
 						groupSubRouter.Use(a.M.RateLimitByGroupID())
 						groupSubRouter.Use(a.M.RequireOrganisationGroupMember())
@@ -425,7 +438,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							dashboardRouter.Get("/config", a.GetAllConfigDetails)
 						})
 					})
-
 				})
 			})
 		})
@@ -436,13 +448,12 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			configRouter.Get("/", a.LoadConfiguration)
 			configRouter.Post("/", a.CreateConfiguration)
 			configRouter.Put("/", a.UpdateConfiguration)
-
 		})
 
 		uiRouter.Post("/flags", flipt.BatchEvaluate)
 	})
 
-	//App Portal API.
+	// App Portal API.
 	router.Route("/portal", func(portalRouter chi.Router) {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
@@ -523,6 +534,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 	metrics.RegisterQueueMetrics(a.A.Queue)
 	prometheus.MustRegister(metrics.RequestDuration())
-
+	a.Router = router
 	return router
 }

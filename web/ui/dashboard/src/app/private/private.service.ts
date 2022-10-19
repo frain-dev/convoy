@@ -26,7 +26,7 @@ export class PrivateService {
 			case 'org':
 				return `/organisations/${orgId}`;
 			case 'org_project':
-				return `/organisations/${orgId}/groups/${this.activeProjectDetails.uid}`;
+				return `/organisations/${orgId}/projects/${this.activeProjectDetails.uid}`;
 			default:
 				return '';
 		}
@@ -126,7 +126,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${this.urlFactory('org')}/groups/${this.activeProjectDetails.uid}`,
+					url: `${this.urlFactory('org')}/projects/${this.activeProjectDetails.uid}`,
 					method: 'get'
 				});
 
@@ -186,7 +186,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const groupsResponse = await this.http.request({
-					url: `${this.urlFactory('org')}/groups`,
+					url: `${this.urlFactory('org')}/projects`,
 					method: 'get'
 				});
 
