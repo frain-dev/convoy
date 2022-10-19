@@ -18,15 +18,12 @@
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"expires_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"hash": {
@@ -51,7 +48,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"user_id": {
@@ -528,7 +524,6 @@
 						"type": "integer"
 					},
 					"next_send_time": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"num_trials": {
@@ -1143,11 +1138,9 @@
 			"models.LoginUserResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"email": {
@@ -1166,7 +1159,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -1310,11 +1302,9 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"group_id": {
@@ -1342,7 +1332,6 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"url": {
