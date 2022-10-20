@@ -105,8 +105,8 @@ func TestProcessEventCreated(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(app, nil)
-				mockCache.EXPECT().Set(gomock.Any(), "applications:endpoint-id-1", app, 10*time.Minute).Times(1).Return(nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
+				mockCache.EXPECT().Set(gomock.Any(), "applications:endpoint-id-1", endpoint, 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{
@@ -125,9 +125,9 @@ func TestProcessEventCreated(t *testing.T) {
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(app, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
 
-				endpoint := &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
+				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(endpoint, nil)
 
@@ -198,10 +198,10 @@ func TestProcessEventCreated(t *testing.T) {
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(app, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
 
-				endpoint := &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", "098").
+				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)

@@ -30,7 +30,7 @@ type SignatureValues struct {
 	Timestamp string
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		Id := string(t.Payload())
 
@@ -41,12 +41,12 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		endpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), ed.AppID, ed.EndpointID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
+		// endpoint, err := endpointRepo.FindApplicationEndpointByID(context.Background(), ed.AppID, ed.EndpointID)
+		// if err != nil {
+		// 	return &EndpointError{Err: err, delay: 10 * time.Second}
+		// }
 
-		app, err := appRepo.FindApplicationByID(context.Background(), ed.AppID)
+		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
@@ -58,7 +58,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
-		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
+		g, err := groupRepo.FetchGroupByID(context.Background(), endpoint.GroupID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -196,7 +196,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 
 			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false)
+			err = notifications.SendEndpointNotification(context.Background(), endpoint, g, subscriptionStatus, notificationQueue, false)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -235,7 +235,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				}
 
 				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true)
+				err = notifications.SendEndpointNotification(context.Background(), endpoint, g, subscriptionStatus, notificationQueue, true)
 				if err != nil {
 					log.WithError(err).Error("failed to send notification")
 				}
