@@ -49,7 +49,7 @@ export class AppService {
 			);
 
 			try {
-				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, token: token });
+				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, token: token, hideNotification: true });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -58,10 +58,14 @@ export class AppService {
 	}
 
 	async getFlag(flagKey: string, token: string): Promise<boolean> {
-		const apiFlagResponse = await this.flipt(token);
+		try {
+			const apiFlagResponse = await this.flipt(token);
 
-		const flags = apiFlagResponse.responses;
-		return !!flags.find(flag => flag.flagKey === flagKey)?.match;
+			const flags = apiFlagResponse.responses;
+			return !!flags.find(flag => flag.flagKey === flagKey)?.match;
+		} catch (error) {
+			return false;
+		}
 	}
 
 	getProjectDetails(token: string): Promise<HTTP_RESPONSE> {

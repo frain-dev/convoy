@@ -24,7 +24,8 @@ export class HttpService {
 		}
 	}
 
-	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string }): Promise<HTTP_RESPONSE> {
+	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string; hideNotification?: boolean }): Promise<HTTP_RESPONSE> {
+		requestDetails.hideNotification = !!requestDetails.hideNotification;
 		return new Promise(async (resolve, reject) => {
 			try {
 				const http = axios.create();
@@ -48,19 +49,23 @@ export class HttpService {
 								return Promise.reject(error);
 							}
 
+							if (!requestDetails.hideNotification) {
+								this.generalService.showNotification({
+									message: errorMessage,
+									style: 'error'
+								});
+							}
+							return Promise.reject(error);
+						}
+
+						if (!requestDetails.hideNotification) {
+							let errorMessage: string;
+							error.error?.message ? (errorMessage = error.error?.message) : (errorMessage = 'An error occured, please try again');
 							this.generalService.showNotification({
 								message: errorMessage,
 								style: 'error'
 							});
-							return Promise.reject(error);
 						}
-
-						let errorMessage: string;
-						error.error?.message ? (errorMessage = error.error?.message) : (errorMessage = 'An error occured, please try again');
-						this.generalService.showNotification({
-							message: errorMessage,
-							style: 'error'
-						});
 						return Promise.reject(error);
 					}
 				);

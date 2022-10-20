@@ -213,7 +213,7 @@ export class PrivateService {
 			);
 
 			try {
-				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests } });
+				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, hideNotification: true });
 				this.apiFlagResponse = response;
 				return resolve(response);
 			} catch (error) {
@@ -223,9 +223,12 @@ export class PrivateService {
 	}
 
 	async getFlag(flagKey: string): Promise<boolean> {
-		if (!this.apiFlagResponse) await this.flipt();
-
-		const flags = this.apiFlagResponse.responses;
-		return !!flags.find(flag => flag.flagKey === flagKey)?.match;
+		try {
+			if (!this.apiFlagResponse) await this.flipt();
+			const flags = this.apiFlagResponse?.responses;
+			return !!flags.find(flag => flag.flagKey === flagKey)?.match;
+		} catch (error) {
+			return true;
+		}
 	}
 }
