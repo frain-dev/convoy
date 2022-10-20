@@ -46,7 +46,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				log.WithError(err).Error("failed to create worker")
 			}
 
-			appRepo := cm.NewApplicationRepo(a.store)
+			endpointRepo := cm.NewEndpointRepo(a.store)
 			eventRepo := cm.NewEventRepository(a.store)
 			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
 			groupRepo := cm.NewGroupRepo(a.store)
@@ -55,7 +55,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			configRepo := cm.NewConfigRepo(a.store)
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-				appRepo,
+				endpointRepo,
 				eventDeliveryRepo,
 				groupRepo,
 				a.limiter,
@@ -63,7 +63,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.queue))
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-				appRepo,
+				endpointRepo,
 				eventRepo,
 				groupRepo,
 				eventDeliveryRepo,

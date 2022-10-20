@@ -19,7 +19,7 @@ func TestWrite(t *testing.T) {
 	tests := []struct {
 		name            string
 		queueName       string
-		appID           string
+		endpointID      string
 		configFile      string
 		eventID         string
 		eventDeliveryID string
@@ -29,7 +29,7 @@ func TestWrite(t *testing.T) {
 		{
 			name:            "write a single event to queue",
 			queueName:       uuid.NewString(),
-			appID:           uuid.NewString(),
+			endpointID:      uuid.NewString(),
 			configFile:      "../testdata/convoy_redis.json",
 			eventID:         uuid.NewString(),
 			eventDeliveryID: uuid.NewString(),
@@ -39,9 +39,9 @@ func TestWrite(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			eventDelivery := &datastore.EventDelivery{
-				UID:     tc.eventDeliveryID,
-				EventID: tc.eventID,
-				AppID:   tc.appID,
+				UID:        tc.eventDeliveryID,
+				EventID:    tc.eventID,
+				EndpointID: tc.endpointID,
 			}
 			job := &queue.Job{
 				Payload: json.RawMessage(eventDelivery.UID),

@@ -182,7 +182,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			log.WithError(err).Error("failed to create worker")
 		}
 
-		appRepo := cm.NewApplicationRepo(a.store)
+		endpointRepo := cm.NewEndpointRepo(a.store)
 		eventRepo := cm.NewEventRepository(a.store)
 		eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
 		groupRepo := cm.NewGroupRepo(a.store)
@@ -191,7 +191,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		configRepo := cm.NewConfigRepo(a.store)
 
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-			appRepo,
+			endpointRepo,
 			eventDeliveryRepo,
 			groupRepo,
 			a.limiter,
@@ -199,7 +199,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-			appRepo,
+			endpointRepo,
 			eventRepo,
 			groupRepo,
 			eventDeliveryRepo,

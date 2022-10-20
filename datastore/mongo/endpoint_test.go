@@ -115,7 +115,7 @@ func Test_FindEndpointByID(t *testing.T) {
 	_, err := endpointRepo.FindEndpointByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
-	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
+	require.True(t, errors.Is(err, datastore.ErrEndpointNotFound))
 
 	groupRepo := NewGroupRepo(getStore(db))
 

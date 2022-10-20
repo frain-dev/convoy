@@ -25,7 +25,7 @@ func addStreamCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
 
-			appRepo := cm.NewApplicationRepo(a.store)
+			endpointRepo := cm.NewEndpointRepo(a.store)
 			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
 			sourceRepo := cm.NewSourceRepo(a.store)
 			subRepo := cm.NewSubscriptionRepo(a.store)
@@ -44,7 +44,7 @@ func addStreamCommand(a *app) *cobra.Command {
 			}
 
 			r := &socket.Repo{
-				AppRepo:           appRepo,
+				EndpointRepo:      endpointRepo,
 				DeviceRepo:        deviceRepo,
 				SubscriptionRepo:  subRepo,
 				SourceRepo:        sourceRepo,
@@ -59,9 +59,9 @@ func addStreamCommand(a *app) *cobra.Command {
 			go h.StartClientStatusWatcher()
 
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
-				AppRepo:   appRepo,
-				GroupRepo: groupRepo,
-				Cache:     a.cache,
+				EndpointRepo: endpointRepo,
+				GroupRepo:    groupRepo,
+				Cache:        a.cache,
 			})
 
 			handler := socket.BuildRoutes(h, r, m)

@@ -22,12 +22,12 @@ func addListAppsCommand() *cobra.Command {
 
 			t := table.NewWriter()
 			t.SetOutputMirror(os.Stdout)
-			t.AppendHeader(table.Row{"Current App", "ID", "Name"})
+			t.AppendHeader(table.Row{"Current Endpoint", "ID", "Name"})
 
-			for _, project := range c.Applications {
+			for _, project := range c.Endpoints {
 				var current string
 
-				if project.Name == c.ActiveApplication {
+				if project.Name == c.ActiveEndpoint {
 					current = "*"
 				}
 
