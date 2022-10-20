@@ -198,6 +198,14 @@ export class PrivateService {
 	}
 
 	flipt(): Promise<FLIPT_API_RESPONSE> {
+		let organisationId: string;
+		if (!this.organisationDetails?.uid) {
+			const orgDetails = localStorage.getItem('CONVOY_ORG');
+			if (orgDetails) organisationId = JSON.parse(orgDetails).uid;
+		} else {
+			organisationId = this.organisationDetails?.uid;
+		}
+
 		return new Promise(async (resolve, reject) => {
 			const flagKeys = ['can_create_cli_api_key'];
 			const requests: { flagKey: string; entityId: string; context: { group_id: string; organisation_id: string } }[] = [];
@@ -207,7 +215,7 @@ export class PrivateService {
 					entityId: key,
 					context: {
 						group_id: this.activeProjectDetails.uid,
-						organisation_id: this.organisationDetails?.uid
+						organisation_id: organisationId
 					}
 				})
 			);
