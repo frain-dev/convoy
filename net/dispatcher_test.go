@@ -239,35 +239,6 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "should_error_for_empty_timestamp_with_replayattacks",
-			args: args{
-				endpoint: "http://localhost:3234",
-				method:   http.MethodPost,
-				jsonData: bytes.NewBufferString("bossman").Bytes(),
-				group: &datastore.Group{
-					UID: "12345",
-					Config: &datastore.GroupConfig{
-						Signature: &datastore.SignatureConfiguration{
-							Header: configSignature,
-						},
-						ReplayAttacks: true,
-					},
-				},
-				hmac: "css",
-			},
-			want: &Response{
-				Status:         "",
-				StatusCode:     0,
-				Method:         "",
-				RequestHeader:  nil,
-				ResponseHeader: nil,
-				Body:           nil,
-				IP:             "",
-				Error:          "timestamp is required",
-			},
-			wantErr: true,
-		},
-		{
 			name: "should_error_for_empty_signature_header",
 			args: args{
 				endpoint: "http://localhost:3234",

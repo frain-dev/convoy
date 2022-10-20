@@ -364,8 +364,6 @@ func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 			app := GetApplicationFromContext(r.Context())
 			endPointId := chi.URLParam(r, "endpointID")
 
-			fmt.Println("LMAOOOOOOOO")
-
 			endpoint, err := m.findEndpoint(&app.Endpoints, endPointId)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
