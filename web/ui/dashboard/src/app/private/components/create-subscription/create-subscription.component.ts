@@ -155,11 +155,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	updateAppId(appId: string) {
-		this.subscriptionForm.patchValue({app_id: appId});
-		this.onUpdateAppSelection();
-	}
-
 	async onUpdateAppSelection() {
 		await this.getApps();
 		const app = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id);
