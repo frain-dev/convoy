@@ -11020,11 +11020,8 @@
                 "rate_limit_duration": {
                     "type": "string"
                 },
-                "secrets": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "secret": {
+                    "type": "string"
                 },
                 "url": {
                     "type": "string"

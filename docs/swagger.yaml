@@ -740,10 +740,8 @@ definitions:
         type: integer
       rate_limit_duration:
         type: string
-      secrets:
-        items:
-          type: string
-        type: array
+      secret:
+        type: string
       url:
         type: string
     type: object

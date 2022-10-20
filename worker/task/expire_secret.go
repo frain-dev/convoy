@@ -18,7 +18,6 @@ type Payload struct {
 
 func ExpireSecret(a datastore.ApplicationRepository) func(ctx context.Context, t *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-
 		var payload Payload
 		err := json.Unmarshal(t.Payload(), &payload)
 		if err != nil {

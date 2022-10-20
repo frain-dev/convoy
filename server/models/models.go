@@ -233,7 +233,7 @@ type Endpoint struct {
 	Description        string   `json:"description" bson:"description"`
 	Events             []string `json:"events" bson:"events"`
 	AdvancedSignatures *bool    `json:"advanced_signatures" bson:"advanced_signatures"`
-	Secrets            []string `json:"secrets" bson:"secrets"`
+	Secret             string   `json:"secret" bson:"secret"`
 
 	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
 	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`

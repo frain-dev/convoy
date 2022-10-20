@@ -217,7 +217,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint fetched successfully",
-		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
+		*m.GetApplicationEndpointFromContext(r.Context()), http.StatusOK))
 }
 
 // GetAppEndpoints

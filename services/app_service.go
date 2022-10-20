@@ -171,7 +171,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
-	if len(e.Secrets) == 0 {
+	if util.IsStringEmpty(e.Secret) {
 		sc, err := util.GenerateSecret()
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
@@ -187,15 +187,13 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 			},
 		}
 	} else {
-		for _, v := range e.Secrets {
-			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-				UID:            uuid.NewString(),
-				Value:          v,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: datastore.ActiveDocumentStatus,
-			})
-		}
+		endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
+			UID:            uuid.NewString(),
+			Value:          e.Secret,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		})
 	}
 
 	auth, err := validateEndpointAuthentication(e)
@@ -209,18 +207,6 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 	if err != nil {
 		log.WithError(err).Error("failed to create application endpoint")
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
-	}
-
-	app, err = a.appRepo.FindApplicationByID(ctx, app.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to find application")
-		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to fetch application to update cache"))
-	}
-
-	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
 
 	return endpoint, nil
@@ -252,6 +238,7 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 }
 
 func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, endPointId string, app *datastore.Application) (*datastore.Application, error) {
+	// Expire current secret.
 	endpoint, err := app.FindEndpoint(endPointId)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -267,6 +254,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 
 	secret := endpoint.Secrets[idx]
 
+	// Enqueue for final deletion.
 	body := struct {
 		AppID      string `json:"app_id"`
 		EndpointID string `json:"endpoint_id"`
@@ -296,6 +284,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
 
+	// Generate new secret.
 	newSecret := s.Secret
 	if len(newSecret) == 0 {
 		newSecret, err = util.GenerateSecret()
@@ -312,13 +301,12 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	fmt.Printf("BEFORE ENDPOINT LENGTH: %d\n", len(endpoint.Secrets))
+	secrets := append(endpoint.Secrets, sc)
+	endpoint.Secrets = secrets
 
-	endpoint.Secrets = append(endpoint.Secrets, sc)
-
-	fmt.Printf("AFTER ENDPOINT LENGTH: %d\n", len(endpoint.Secrets))
-	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
+	err = a.appRepo.ExpireSecret(ctx, app.UID, endpoint.UID, secrets)
 	if err != nil {
+		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
 	}
 

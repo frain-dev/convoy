@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
@@ -609,7 +610,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secrets:     []string{"1234"},
+					Secret:      "1234",
 					URL:         "https://google.com",
 					Description: "test_endpoint",
 					Events:      []string{"payment.created"},
@@ -619,12 +620,6 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Application{UID: "abc"}, nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -659,7 +654,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secrets:           []string{"1234"},
+					Secret:            "1234",
 					RateLimit:         100,
 					RateLimitDuration: "1m",
 					URL:               "https://google.com",
@@ -670,12 +665,6 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Application{UID: "abc"}, nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -710,7 +699,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secrets:           []string{"1234"},
+					Secret:            "1234",
 					RateLimit:         100,
 					RateLimitDuration: "1m",
 					URL:               "https://google.com",
@@ -728,12 +717,6 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Application{UID: "abc"}, nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -775,7 +758,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secrets:           []string{"1234"},
+					Secret:            "1234",
 					RateLimit:         100,
 					RateLimitDuration: "m",
 					URL:               "https://google.com",
@@ -792,7 +775,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secrets:           []string{"1234"},
+					Secret:            "1234",
 					RateLimit:         100,
 					RateLimitDuration: "1m",
 					URL:               "https://google.com",
@@ -1253,45 +1236,17 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 			},
 			dbFn: func(as *AppService) {
 				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
-				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(nil)
 
-				c, _ := as.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				appRepo.EXPECT().ExpireSecret(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				eq, _ := as.queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.ExpireSecretsProcessor, convoy.DefaultQueue, gomock.Any()).
+					Times(1).Return(nil)
 			},
 			wantErr:     false,
 			wantErrCode: 0,
 			wantErrMsg:  "",
-		},
-		{
-			name: "should_expire_endpoint_secret_despite_cache_fail",
-			args: args{
-				ctx:        ctx,
-				endPointId: "1234",
-				secret: &models.ExpireSecret{
-					Secret:    "abce",
-					ExpiresAt: 10,
-				},
-				app: &datastore.Application{
-					UID:     "abc",
-					GroupID: "1234",
-					Endpoints: []datastore.Endpoint{
-						{
-							UID:                "1234",
-							Secrets:            nil,
-							AdvancedSignatures: false,
-							DocumentStatus:     datastore.ActiveDocumentStatus,
-						},
-					},
-				},
-			},
-			dbFn: func(as *AppService) {
-				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
-				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(nil)
-
-				c, _ := as.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
-			},
-			wantErr: false,
 		},
 		{
 			name: "should_fail_to_find_endpoint",
@@ -1312,31 +1267,6 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "endpoint not found",
-		},
-		{
-			name: "should_fail_to_update_application",
-			args: args{
-				ctx:        ctx,
-				endPointId: "1234",
-				secret: &models.ExpireSecret{
-					Secret:    "abce",
-					ExpiresAt: 10,
-				},
-				app: &datastore.Application{
-					UID:     "abc",
-					GroupID: "1234",
-					Endpoints: []datastore.Endpoint{
-						{UID: "1234"},
-					},
-				},
-			},
-			dbFn: func(as *AppService) {
-				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
-				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").Times(1).Return(errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to expire endpoint secret",
 		},
 	}
 	for _, tt := range tests {
