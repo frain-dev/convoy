@@ -220,7 +220,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							securitySubRouter.Use(a.M.RequireApp())
 							securitySubRouter.Use(a.M.RequireAppBelongsToGroup())
 							securitySubRouter.Use(a.M.RequireBaseUrl())
-							securitySubRouter.Post("/", a.CreateAppAPIKey)
+							securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 						})
 					})
 
@@ -478,7 +478,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 			appRouter.Route("/keys", func(keySubRouter chi.Router) {
 				keySubRouter.Use(a.M.RequireBaseUrl())
-				keySubRouter.Post("/", a.CreateAppAPIKey)
+				keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 				keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
 				keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 			})
@@ -526,6 +526,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				})
 			})
 		})
+
+		portalRouter.Get("/project", a.GetGroup)
+		portalRouter.Post("/flags", flipt.BatchEvaluate)
 	})
 
 	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
