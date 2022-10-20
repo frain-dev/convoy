@@ -77,15 +77,67 @@
 		</div>
 	</div>
 
-	<div class="button-container flex justify-end mt-32px mab-40px">
+	<ng-container *ngIf="action === 'update'">
+		<div class="flex items-center justify-between mt-32px mb-20px">
+			<h5 class="mt-24px font-medium flex items-center">
+				Signature Format
+				<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+			</h5>
+			<convoy-button size="sm" type="outline" buttonType="button" (clickItem)="showNewSignatureModal = true">
+				<svg width="18" height="18" class="mr-2 fill-primary-100">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				Create new signature
+			</convoy-button>
+		</div>
+
+		<convoy-card>
+			<convoy-table>
+				<convoy-table-head class="contents">
+					<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</convoy-table-head-cell>
+				</convoy-table-head>
+				<tbody>
+					<ng-container>
+						<convoy-table-row [forDate]="true" class="contents">
+							<convoy-table-cell class="contents" [forDate]="true">17 Jan, 2022</convoy-table-cell>
+							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+						</convoy-table-row>
+						<convoy-table-row class="contents">
+							<convoy-table-cell class="contents" className="pl-16px">
+								<div class="flex items-center">
+									X-Convoy-Signature
+									<convoy-tag type="success">active</convoy-tag>
+								</div>
+							</convoy-table-cell>
+							<convoy-table-cell class="contents">v1</convoy-table-cell>
+							<convoy-table-cell class="contents">SHA256</convoy-table-cell>
+							<convoy-table-cell class="contents">Base 64</convoy-table-cell>
+							<convoy-table-cell class="contents">
+								<convoy-button type="text" color="danger">
+									<svg width="18" height="18" class="mr-2 fill-danger-100">
+										<use xlink:href="#delete-icon"></use>
+									</svg>
+									Delete
+								</convoy-button>
+							</convoy-table-cell>
+						</convoy-table-row>
+					</ng-container>
+				</tbody>
+			</convoy-table>
+		</convoy-card>
+	</ng-container>
+
+	<div class="button-container flex justify-end" [class]="action === 'update' ? 'mt-78px' : 'mt-38px'">
 		<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" (click)="confirmModal = true">Cancel</convoy-button>
-		<convoy-button [disable]="isCreatingProject" *ngIf="action === 'create'">
-			Create Project
+		<convoy-button [disable]="isCreatingProject">
+			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
 		</convoy-button>
-		<convoy-button [disable]="isCreatingProject" *ngIf="action === 'update'">Update Project</convoy-button>
 	</div>
 </form>
 
@@ -103,4 +155,18 @@
 	</div>
 </convoy-modal>
 
+<convoy-modal *ngIf="showNewSignatureModal" title="New Signature" (closeModal)="showNewSignatureModal = false">
+	<div modalBody>
+		<form [formGroup]="newSignatureForm">
+			<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests" [required]="true"></convoy-input>
+			<convoy-select label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true"></convoy-select>
+			<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true"></convoy-select>
+
+			<div class="flex justify-end mt-88px">
+				<convoy-button color="danger" type="outline" className="mr-16px" (clickItem)="showNewSignatureModal = false">Discard</convoy-button>
+				<convoy-button (clickItem)="createNewSignature()">Create</convoy-button>
+			</div>
+		</form>
+	</div>
+</convoy-modal>
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="router.navigateByUrl('/')" (closeModal)="confirmModal = false"></convoy-confirmation-modal>

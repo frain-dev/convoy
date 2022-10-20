@@ -1,5 +1,6 @@
 import { Location } from '@angular/common';
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -25,6 +26,7 @@ export class AppDetailsComponent implements OnInit {
 	shouldRenderSmallSize = false;
 	showDeleteModal = false;
 	isDeletingEndpoint = false;
+	showExpireSecret = false;
 	screenWidth = window.innerWidth;
 	appPortalLink!: string;
 	appPortalIframe!: string;
@@ -35,8 +37,16 @@ export class AppDetailsComponent implements OnInit {
 	selectedEndpoint?: ENDPOINT;
 	tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
 	activeTab: 'cli keys' | 'devices' = 'cli keys';
-
-	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService) {}
+	expireSecretForm: FormGroup = this.formBuilder.group({
+		expiration: ['', Validators.required]
+	});
+	expirationDates = [
+		{ name: '7 days', uid: 7 },
+		{ name: '14 days', uid: 14 },
+		{ name: '30 days', uid: 30 },
+		{ name: '90 days', uid: 90 }
+	];
+	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
 	ngOnInit() {
 		this.isLoadingAppDetails = true;
@@ -103,6 +113,16 @@ export class AppDetailsComponent implements OnInit {
 		} catch {
 			this.isDeletingEndpoint = false;
 		}
+	}
+
+	async expireSecret() {
+		if (this.expireSecretForm.invalid) {
+			this.expireSecretForm.markAllAsTouched();
+			return;
+		}
+
+		this.expireSecretForm.value.expiration = parseInt(this.expireSecretForm.value.expiration);
+		console.log(this.expireSecretForm.value);
 	}
 
 	toggleActiveTab(tab: 'cli keys' | 'devices') {

@@ -26,7 +26,8 @@ export class CreateEndpointComponent implements OnInit {
 				header_name: [''],
 				header_value: ['']
 			})
-		})
+		}),
+        signature: [null, Validators.required]
 	});
 	token: string = this.route.snapshot.params.token;
 

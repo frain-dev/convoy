@@ -12,6 +12,7 @@ import { CreateProjectComponentService } from './create-project-component.servic
 	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
+	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding', ''];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
@@ -36,16 +37,23 @@ export class CreateProjectComponent implements OnInit {
 		}),
 		type: [null, Validators.required]
 	});
+	newSignatureForm: FormGroup = this.formBuilder.group({
+		header: [null],
+		encoding: [null],
+		hash: [null]
+	});
 	isCreatingProject = false;
 	showApiKey = false;
 	enableMoreConfig = false;
 	confirmModal = false;
+	showNewSignatureModal = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
 		{ uid: 'linear', name: 'Linear time retry' },
 		{ uid: 'exponential', name: 'Exponential time backoff' }
 	];
+	encodings = ['base64', 'hex'];
 	@Output('onAction') onAction = new EventEmitter<any>();
 	@Input('action') action: 'create' | 'update' = 'create';
 	projectDetails!: GROUP;
@@ -106,6 +114,13 @@ export class CreateProjectComponent implements OnInit {
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;
+		}
+	}
+
+	async createNewSignature() {
+		if (this.newSignatureForm.invalid) {
+			this.newSignatureForm.markAllAsTouched();
+			return;
 		}
 	}
 
