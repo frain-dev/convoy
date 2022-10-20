@@ -5,7 +5,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -28,7 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ApplicationIntegrationTestSuite struct {
+type EndpointIntegrationTestSuite struct {
 	suite.Suite
 	DB           cm.Client
 	Router       http.Handler
@@ -37,13 +36,13 @@ type ApplicationIntegrationTestSuite struct {
 	APIKey       string
 }
 
-func (s *ApplicationIntegrationTestSuite) SetupSuite() {
+func (s *EndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
 	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
-func (s *ApplicationIntegrationTestSuite) SetupTest() {
+func (s *EndpointIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
@@ -66,17 +65,17 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
-func (s *ApplicationIntegrationTestSuite) TearDownTest() {
+func (s *EndpointIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.DB)
 	metrics.Reset()
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
-	appID := "123"
+func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound() {
+	endpointID := "123"
 	expectedStatusCode := http.StatusNotFound
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s", endpointID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -87,15 +86,15 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
-	appID := "123456789"
+func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
+	endpointID := "123456789"
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", true)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", true)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s", endpointID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -106,23 +105,23 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var app datastore.Application
-	parseResponse(s.T(), w.Result(), &app)
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	dbApp, err := endpointRepo.FindEndpointByID(context.Background(), endpointID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), app.UID, dbApp.UID)
-	require.Equal(s.T(), app.Title, dbApp.Title)
+	require.Equal(s.T(), endpoint.UID, dbApp.UID)
+	require.Equal(s.T(), endpoint.Title, dbApp.Title)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
+func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	rand.Seed(time.Now().UnixNano())
-	totalApps := rand.Intn(5)
+	totalEndpoints := rand.Intn(5)
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleApplications(s.ConvoyApp.A.Store, s.DefaultGroup, totalApps)
+	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultGroup, totalEndpoints)
 
 	// Arrange.
 	url := "/api/v1/applications"
@@ -138,22 +137,22 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalApps), resp.Pagination.Total)
+	require.Equal(s.T(), int64(totalEndpoints), resp.Pagination.Total)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_GetApps_Filters() {
+func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 	s.T().Skip("Depends on #637")
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
-	appTitle := fmt.Sprintf("Test-%s", uuid.New().String())
+func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
+	endpointTitle := fmt.Sprintf("Test-%s", uuid.New().String())
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
 	url := "/api/v1/applications"
 	plainBody := fmt.Sprintf(`{
 		"name": "%s"
-	}`, appTitle)
+	}`, endpointTitle)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -165,24 +164,24 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var app datastore.Application
-	parseResponse(s.T(), w.Result(), &app)
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	dbApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), dbApp.Title, appTitle)
+	require.Equal(s.T(), dbApp.Title, endpointTitle)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NoName() {
-	appTitle := ""
+func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
+	endpointTitle := ""
 	expectedStatusCode := http.StatusBadRequest
 
 	// Arrange Request.
 	url := "/api/v1/applications"
 	plainBody := fmt.Sprintf(`{
 		"name": "%s"
-	}`, appTitle)
+	}`, endpointTitle)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -194,19 +193,19 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NoName() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NameNotUnique() {
-	appTitle := uuid.New().String()
+func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NameNotUnique() {
+	endpointTitle := uuid.New().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, "", appTitle, true)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", endpointTitle, true)
 
 	// Arrange Request.
 	url := "/api/v1/applications"
 	plainBody := fmt.Sprintf(`{
 		"group_id": "%s",
 		"name": "%s"
-	}`, s.DefaultGroup.UID, appTitle)
+	}`, s.DefaultGroup.UID, endpointTitle)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -218,15 +217,15 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NameNotUnique() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
-	appID := uuid.New().String()
+func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
+	endpointID := uuid.New().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", true)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", true)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s", endpointID)
 	plainBody := ""
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
@@ -239,21 +238,21 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_DuplicateNames() {
-	appID := uuid.New().String()
-	appTitle := "appTitle"
+func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_DuplicateNames() {
+	endpointID := uuid.New().String()
+	endpointTitle := "appTitle"
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, "", appTitle, false)
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", endpointTitle, false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s", endpointID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"support_email": "%s"
-	}`, appTitle, "10xengineer@getconvoy.io")
+	}`, endpointTitle, "10xengineer@getconvoy.io")
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -265,18 +264,18 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_DuplicateNames() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
+func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
 	supportEmail := "10xengineer@getconvoy.io"
 	isDisabled := randBool()
-	appID := uuid.New().String()
+	endpointID := uuid.New().String()
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", isDisabled)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", isDisabled)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s", endpointID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"support_email": "%s",
@@ -293,27 +292,27 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var app datastore.Application
-	parseResponse(s.T(), w.Result(), &app)
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), app.UID, dbApp.UID)
-	require.Equal(s.T(), title, dbApp.Title)
-	require.Equal(s.T(), supportEmail, dbApp.SupportEmail)
-	require.Equal(s.T(), !isDisabled, dbApp.IsDisabled)
+	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
+	require.Equal(s.T(), title, dbEndpoint.Title)
+	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
+	require.Equal(s.T(), !isDisabled, dbEndpoint.IsDisabled)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
-	appID := uuid.New().String()
+func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
+	endpointID := uuid.New().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", true)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", true)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s", endpointID)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -324,23 +323,23 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	_, err := appRepo.FindApplicationByID(context.Background(), appID)
-	require.Error(s.T(), err, datastore.ErrApplicationNotFound)
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	_, err := endpointRepo.FindEndpointByID(context.Background(), endpointID)
+	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
-	appID := uuid.New().String()
+func (s *EndpointIntegrationTestSuite) Test_CreateAppEndpoint() {
+	endpointID := uuid.New().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", endpointID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
@@ -360,24 +359,24 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Authentication() {
-	appID := uuid.New().String()
+func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
+	endpointID := uuid.New().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", appID)
+	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", endpointID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
@@ -404,139 +403,139 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 	require.Equal(s.T(), dbEndpoint.Authentication, endpoint.Authentication)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
-	appID := uuid.New().String()
-	f := faker.New()
-	endpointURL := f.Internet().URL()
-	secret := f.Lorem().Text(25)
-	rand.Seed(time.Now().UnixNano())
-	num := rand.Intn(10) + 1
-	eventTypes, _ := json.Marshal(f.Lorem().Words(num))
-	expectedStatusCode := http.StatusAccepted
+// func (s *EndpointIntegrationTestSuite) Test_UpdateAppEndpoint() {
+// 	appID := uuid.New().String()
+// 	f := faker.New()
+// 	endpointURL := f.Internet().URL()
+// 	secret := f.Lorem().Text(25)
+// 	rand.Seed(time.Now().UnixNano())
+// 	num := rand.Intn(10) + 1
+// 	eventTypes, _ := json.Marshal(f.Lorem().Words(num))
+// 	expectedStatusCode := http.StatusAccepted
 
-	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+// 	// Just Before.
+// 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+// 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
 
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
-	plainBody := fmt.Sprintf(`{
-		"url": "%s",
-		"secret": "%s",
-		"events": %s,
-		"description": "default endpoint"
-	}`, endpointURL, secret, eventTypes)
-	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
-	w := httptest.NewRecorder()
+// 	// Arrange Request
+// 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
+// 	plainBody := fmt.Sprintf(`{
+// 		"url": "%s",
+// 		"secret": "%s",
+// 		"events": %s,
+// 		"description": "default endpoint"
+// 	}`, endpointURL, secret, eventTypes)
+// 	body := strings.NewReader(plainBody)
+// 	req := createRequest(http.MethodPut, url, s.APIKey, body)
+// 	w := httptest.NewRecorder()
 
-	// Act.
-	s.Router.ServeHTTP(w, req)
+// 	// Act.
+// 	s.Router.ServeHTTP(w, req)
 
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
+// 	// Assert.
+// 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	// Deep Assert.
-	var dbEndpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &dbEndpoint)
+// 	// Deep Assert.
+// 	var dbEndpoint *datastore.Endpoint
+// 	parseResponse(s.T(), w.Result(), &dbEndpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
-	require.Equal(s.T(), dbEndpoint.Secret, secret)
-}
+// 	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+// 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
+// 	require.NoError(s.T(), err)
+// 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
+// 	require.Equal(s.T(), dbEndpoint.Secret, secret)
+// }
 
-func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
-	appID := uuid.New().String()
-	expectedStatusCode := http.StatusOK
+// func (s *EndpointIntegrationTestSuite) Test_GetAppEndpoint() {
+// 	appID := uuid.New().String()
+// 	expectedStatusCode := http.StatusOK
 
-	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+// 	// Just Before.
+// 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+// 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
 
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
+// 	// Arrange Request
+// 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
+// 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+// 	w := httptest.NewRecorder()
 
-	// Act.
-	s.Router.ServeHTTP(w, req)
+// 	// Act.
+// 	s.Router.ServeHTTP(w, req)
 
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
+// 	// Assert.
+// 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	// Deep Assert.
-	var resp datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &resp)
+// 	// Deep Assert.
+// 	var resp datastore.Endpoint
+// 	parseResponse(s.T(), w.Result(), &resp)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
-	require.Equal(s.T(), dbEndpoint.Secret, resp.Secret)
-}
+// 	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+// 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
+// 	require.NoError(s.T(), err)
+// 	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
+// 	require.Equal(s.T(), dbEndpoint.Secret, resp.Secret)
+// }
 
-func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
-	appID := uuid.New().String()
-	rand.Seed(time.Now().UnixNano())
-	num := rand.Intn(10)
-	expectedStatusCode := http.StatusOK
+// func (s *EndpointIntegrationTestSuite) Test_GetAppEndpoints() {
+// 	appID := uuid.New().String()
+// 	rand.Seed(time.Now().UnixNano())
+// 	num := rand.Intn(10)
+// 	expectedStatusCode := http.StatusOK
 
-	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
-	endpoints, _ := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, []string{"*"}, num)
+// 	// Just Before.
+// 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+// 	endpoints, _ := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, []string{"*"}, num)
 
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", appID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
+// 	// Arrange Request
+// 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints", appID)
+// 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+// 	w := httptest.NewRecorder()
 
-	// Act.
-	s.Router.ServeHTTP(w, req)
+// 	// Act.
+// 	s.Router.ServeHTTP(w, req)
 
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
+// 	// Assert.
+// 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	// Deep Assert.
-	var dbEndpoints []datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &dbEndpoints)
+// 	// Deep Assert.
+// 	var dbEndpoints []datastore.Endpoint
+// 	parseResponse(s.T(), w.Result(), &dbEndpoints)
 
-	require.Len(s.T(), dbEndpoints, len(endpoints))
-}
+// 	require.Len(s.T(), dbEndpoints, len(endpoints))
+// }
 
-func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
-	appID := uuid.New().String()
-	expectedStatusCode := http.StatusOK
+// func (s *EndpointIntegrationTestSuite) Test_DeleteAppEndpoint() {
+// 	appID := uuid.New().String()
+// 	expectedStatusCode := http.StatusOK
 
-	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+// 	// Just Before.
+// 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+// 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
 
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
-	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
+// 	// Arrange Request.
+// 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints/%s", appID, endpoint.UID)
+// 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+// 	w := httptest.NewRecorder()
 
-	// Act.
-	s.Router.ServeHTTP(w, req)
+// 	// Act.
+// 	s.Router.ServeHTTP(w, req)
 
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
+// 	// Assert.
+// 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	// Deep Assert.
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	_, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
-	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
-}
+// 	// Deep Assert.
+// 	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+// 	_, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
+// 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
+// }
 
-func TestApplicationIntegrationTestSuite(t *testing.T) {
-	suite.Run(t, new(ApplicationIntegrationTestSuite))
+func TestEndpointIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(EndpointIntegrationTestSuite))
 }

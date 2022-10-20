@@ -81,9 +81,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
 
@@ -134,9 +134,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 
 	// Arrange.
@@ -176,9 +176,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
 
@@ -214,9 +214,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 
 	// Arrange.

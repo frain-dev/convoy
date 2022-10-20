@@ -64,25 +64,25 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
-	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedEvent(s.ConvoyApp.A.Store, app1, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
+		_, err = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint1, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 		require.NoError(s.T(), err)
 
 	}
 
-	event, err := testdb.SeedEvent(s.ConvoyApp.A.Store, app2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
-		App:   app2.UID,
+		Type:     auth.RoleAdmin,
+		Group:    s.DefaultGroup.UID,
+		Endpoint: endpoint2.UID,
 	}
 
 	// generate an app portal key
@@ -111,29 +111,28 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppSubscriptions() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
-	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
 	source := &datastore.Source{UID: uuid.NewString()}
-	endpoint := &datastore.Endpoint{UID: uuid.NewString()}
 
 	// seed subscriptions
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, app1, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 		require.NoError(s.T(), err)
 
 	}
 
-	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, app2, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	require.NoError(s.T(), err)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
-		App:   app2.UID,
+		Type:     auth.RoleAdmin,
+		Group:    s.DefaultGroup.UID,
+		Endpoint: endpoint2.UID,
 	}
 
 	// generate an app portal key
