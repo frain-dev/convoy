@@ -12,10 +12,19 @@ definitions:
   datastore.APIKey:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       expires_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       hash:
         type: string
@@ -32,6 +41,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       user_id:
         type: string
@@ -793,8 +805,14 @@ definitions:
   models.LoginUserResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       email:
         type: string
@@ -807,6 +825,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
     type: object
   models.Organisation:
@@ -899,8 +920,14 @@ definitions:
   models.SourceResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       group_id:
         type: string
@@ -919,6 +946,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       url:
         type: string

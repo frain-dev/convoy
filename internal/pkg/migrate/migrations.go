@@ -17,6 +17,83 @@ import (
 
 var Migrations = []*Migration{
 	{
+		ID: "20221021100029_migrate_group_signature_config_to_versions",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+
+			var groups []*datastore.Group
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
+			if err != nil {
+				return err
+			}
+
+			for _, group := range groups {
+				if len(group.Config.Signature.Versions) > 0 {
+					continue
+				}
+
+				group.Config.Signature.Versions = []datastore.SignatureVersion{
+					{
+						UID:       uuid.NewString(),
+						Hash:      group.Config.Signature.Hash,
+						Encoding:  datastore.EncodingType(group.Config.Signature.Encoding),
+						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					},
+				}
+
+				update := bson.M{
+					"$set": bson.M{
+						"config": group.Config,
+					},
+				}
+
+				err = store.UpdateByID(ctx, group.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+
+			var groups []*datastore.Group
+			err := store.FindAll(ctx, nil, nil, nil, &groups)
+			if err != nil {
+				return err
+			}
+
+			for _, group := range groups {
+				if len(group.Config.Signature.Versions) == 0 {
+					continue
+				}
+
+				group.Config.Signature.Hash = group.Config.Signature.Versions[0].Hash
+				group.Config.Signature.Encoding = group.Config.Signature.Versions[0].Encoding.String()
+				group.Config.Signature.Versions = nil
+
+				update := bson.M{
+					"$set": bson.M{
+						"config": group.Config,
+					},
+				}
+
+				err = store.UpdateByID(ctx, group.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration")
+					return err
+				}
+			}
+
+			return nil
+		},
+	},
+
+	{
 		ID: "20221019100029_move_secret_fields_to_secrets",
 		Migrate: func(db *mongo.Database) error {
 			store := datastore.New(db)
