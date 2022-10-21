@@ -15,7 +15,7 @@ interface PAGE_DATA extends CHARTDATA {
 export class ChartComponent implements OnInit {
 	@Input('chartData') chartData!: CHARTDATA[];
 	@Input('isLoading') isLoading: boolean = false;
-	paginatedData!: PAGE_DATA[];
+	paginatedData: PAGE_DATA[] = [];
 	pageSize = 31;
 	pageNumber = 1;
 	pages = 1;

@@ -214,11 +214,11 @@ export class EventsComponent implements OnInit {
 	}
 
 	openSource(sourceId: string) {
-		this.router.navigate([`/projects/${this.privateService.activeProjectDetails.uid}/sources`], { queryParams: { id: sourceId } });
+		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/sources`], { queryParams: { id: sourceId } });
 	}
 
 	openApp(appId: string) {
-		this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails.uid}/apps/${appId}`);
+		this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails?.uid}/apps/${appId}`);
 	}
 
 	setUpEvents() {

@@ -22,7 +22,7 @@ export class SendEventComponent implements OnInit {
 	@Input() appId!: string;
 	@Output() onAction = new EventEmitter<any>();
 	isSendingNewEvent = false;
-	apps!: { pagination: PAGINATION; content: APP[] };
+	apps?: { pagination: PAGINATION; content: APP[] };
 	sendEventForm: FormGroup = this.formBuilder.group({
 		app_id: ['', Validators.required],
 		data: ['', Validators.required],

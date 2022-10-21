@@ -25,8 +25,8 @@ export class AppComponent implements OnInit {
 	tabs: ['subscriptions', 'cli keys', 'devices'] = ['subscriptions', 'cli keys', 'devices'];
 	activeEventsTab: EVENT_PAGE_TABS = 'events';
 	activeTab: PAGE_TABS = 'subscriptions';
-	events!: { content: EVENT[]; pagination: PAGINATION };
-	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
+	events?: { content: EVENT[]; pagination: PAGINATION };
+	eventDeliveries?: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
 	activeSubscription?: SUBSCRIPTION;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
@@ -36,7 +36,7 @@ export class AppComponent implements OnInit {
 	subscriptionId = this.route.snapshot.params.id;
 	showCreateSubscription = false;
 	showSubscriptionError = false;
-    showCliError = false;
+	showCliError = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 

@@ -38,8 +38,8 @@ export class ProjectComponent implements OnInit {
 	showHelpDropdown = false;
 
 	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
-		const uid = { uid: this.route.snapshot.params.id };
-		this.privateService.activeProjectDetails = { ...this.privateService.activeProjectDetails, ...uid };
+		const data: any = { uid: this.route.snapshot.params.id, ...this.privateService.activeProjectDetails };
+		this.privateService.activeProjectDetails = data;
 		this.getSubscriptions();
 	}
 
