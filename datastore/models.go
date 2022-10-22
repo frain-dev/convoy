@@ -392,7 +392,7 @@ type AppMetadata struct {
 	SupportEmail string `json:"support_email" bson:"support_email"`
 }
 
-// EventType is used to identify an specific event.
+// EventType is used to identify a specific event.
 // This could be "user.new"
 // This will be used for data indexing
 // Makes it easy to filter by a list of events
@@ -441,7 +441,7 @@ func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 }
 
 const (
-	// ScheduledEventStatus : when  a Event has been scheduled for delivery
+	// ScheduledEventStatus : when an Event has been scheduled for delivery
 	ScheduledEventStatus  EventDeliveryStatus = "Scheduled"
 	ProcessingEventStatus EventDeliveryStatus = "Processing"
 	DiscardedEventStatus  EventDeliveryStatus = "Discarded"
@@ -473,8 +473,10 @@ type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
-
+	// NextSendTime denotes the next time an Event will be published in
+	// case it failed the first time
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
+
 	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
 	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
@@ -526,7 +528,7 @@ type DeliveryAttempt struct {
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
-// Event defines a payload to be sent to an application
+// EventDelivery defines a payload to be sent to an application
 type EventDelivery struct {
 	ID             primitive.ObjectID    `json:"-" bson:"_id"`
 	UID            string                `json:"uid" bson:"uid"`
@@ -656,7 +658,8 @@ type AlertConfiguration struct {
 }
 
 type FilterConfiguration struct {
-	EventTypes []string `json:"event_types" bson:"event_types,omitempty"`
+	EventTypes []string               `json:"event_types" bson:"event_types,omitempty"`
+	Filter     map[string]interface{} `json:"filter" bson:"filter"`
 }
 
 type ProviderConfig struct {

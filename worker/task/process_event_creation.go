@@ -72,12 +72,12 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				}
 			}
 
-			subs, err := subRepo.FindSubscriptionsByAppID(ctx, group.UID, app.UID)
-			if err != nil {
-				return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
-			}
+			// subs, err := subRepo.FindSubscriptionsByAppID(ctx, group.UID, app.UID)
+			// if err != nil {
+			// 	return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
+			// }
 
-			subscriptions = matchSubscriptions(string(event.EventType), subs)
+			// subscriptions = matchSubscriptionsUsingFilter(string(event.Data), subRepo)
 		} else if group.Type == datastore.IncomingGroup {
 			subscriptions, err = subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
 			if err != nil {
@@ -197,7 +197,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 	}
 }
 
-func matchSubscriptions(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {
+func matchSubscriptionsUsingEventType(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {
 	var matched []datastore.Subscription
 	for _, sub := range subscriptions {
 		for _, ev := range sub.FilterConfig.EventTypes {
@@ -206,6 +206,12 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 			}
 		}
 	}
+
+	return matched
+}
+
+func matchSubscriptionsUsingFilter(filter string, subRepo datastore.SubscriptionRepository) []datastore.Subscription {
+	var matched []datastore.Subscription
 
 	return matched
 }

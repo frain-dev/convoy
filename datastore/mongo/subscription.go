@@ -8,6 +8,8 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
+	"github.com/google/uuid"
+	"github.com/jirevwe/eflat"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -343,6 +345,49 @@ func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId
 
 	err := s.store.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, testPayload map[string]interface{}, bodyFilter map[string]interface{}) (bool, error) {
+	ctx = s.setCollectionInContext(ctx)
+
+	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
+		sub := datastore.Subscription{
+			ID:  primitive.NewObjectID(),
+			UID: uuid.NewString(),
+			FilterConfig: &datastore.FilterConfiguration{
+				Filter: testPayload,
+			},
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		}
+
+		// insert the desired request payload
+		err := s.store.Save(sessCtx, sub, nil)
+		if err != nil {
+			return err
+		}
+
+		// compare the filter with the test request payload
+		filter := bson.M{"filter_config.filter": bodyFilter}
+		mongoFilter, err := eflat.Flatten(filter)
+		if err != nil {
+			return err
+		}
+
+		var subscription datastore.Subscription
+		err = s.store.FindOne(sessCtx, mongoFilter, nil, &subscription)
+		if err != nil {
+			return err
+		}
+
+		err = s.store.DeleteByID(sessCtx, sub.UID, true)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return false, err
 }
 
 func (s *subscriptionRepo) setCollectionInContext(ctx context.Context) context.Context {

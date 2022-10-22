@@ -31,6 +31,7 @@ require (
 	github.com/jaswdr/faker v1.10.2
 	github.com/jedib0t/go-pretty/v6 v6.3.2
 	github.com/jeremywohl/flatten v1.0.1
+	github.com/jirevwe/eflat v0.0.0-20221021221006-40872f1c0902
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
