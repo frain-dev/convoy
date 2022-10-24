@@ -73,8 +73,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreatePersonalAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","expires_at":"%s"}`
-	body := serialize(bodyStr, time.Now().Add(time.Hour).Format(time.RFC3339))
+	bodyStr := `{"name":"default_api_key","expiration":1}`
+	body := serialize(bodyStr)
 
 	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys", s.DefaultUser.UID)
 

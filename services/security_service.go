@@ -97,10 +97,6 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 }
 
 func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datastore.User, newApiKey *models.PersonalAPIKey) (*datastore.APIKey, string, error) {
-	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
-		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
-	}
-
 	maskID, key := util.GenerateAPIKey()
 
 	salt, err := util.GenerateSecret()
@@ -112,6 +108,13 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
+	var expiresAt time.Time
+	if newApiKey.Expiration != 0 {
+		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(newApiKey.Expiration))
+	} else {
+		expiresAt = time.Now().Add(time.Hour * 24)
+	}
+
 	apiKey := &datastore.APIKey{
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
@@ -120,13 +123,10 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 		UserID:         user.UID,
 		Hash:           encodedKey,
 		Salt:           salt,
+		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	if newApiKey.ExpiresAt != (time.Time{}) {
-		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(newApiKey.ExpiresAt)
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)

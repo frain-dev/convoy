@@ -10445,7 +10445,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "next_send_time": {
-                    "description": "NextSendTime denotes the next time a Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "num_trials": {
@@ -11157,8 +11156,8 @@ const docTemplate = `{
         "models.PersonalAPIKey": {
             "type": "object",
             "properties": {
-                "expires_at": {
-                    "type": "string"
+                "expiration": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"

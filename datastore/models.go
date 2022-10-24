@@ -527,10 +527,8 @@ type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
-	// NextSendTime denotes the next time a Event will be published in
-	// case it failed the first time
-	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
+	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
 	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
@@ -638,16 +636,16 @@ type Subscription struct {
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
 	Type       SubscriptionType   `json:"type" bson:"type"`
-	Status     SubscriptionStatus `json:"status" bson:"status"`
 	AppID      string             `json:"-" bson:"app_id"`
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
+	Status     SubscriptionStatus `json:"status" bson:"status"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source      `json:"source_metadata" bson:"-"`
-	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"-"`
-	App      *Application `json:"app_metadata" bson:"-"`
+	Source   *Source      `json:"source_metadata" bson:"source_metadata,omitempty"`
+	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"endpoint_metadata,omitempty"`
+	App      *Application `json:"app_metadata" bson:"app_metadata,omitempty"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
