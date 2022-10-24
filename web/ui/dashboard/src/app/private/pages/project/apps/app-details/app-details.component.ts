@@ -35,11 +35,13 @@ export class AppDetailsComponent implements OnInit {
 	selectedEndpoint?: ENDPOINT;
 	tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
 	activeTab: 'cli keys' | 'devices' = 'cli keys';
+	isCliAvailable: boolean = false;
 
 	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		this.isLoadingAppDetails = true;
+		this.isCliAvailable = await this.privateService.getFlag('can_create_cli_api_key');
 		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.loadingAppPotalToken = true;
 		this.checkScreenSize();
 		this.getAppDetails(this.route.snapshot.params.id);
