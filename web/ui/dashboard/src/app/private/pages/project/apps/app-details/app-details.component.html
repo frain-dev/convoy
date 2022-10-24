@@ -173,9 +173,10 @@
 			</ul>
 
 			<convoy-empty-state
+				type="table"
 				imgSrc="/assets/img/empty-state-img.svg"
 				description="No endpoint has been added for selected app yet"
-				className="h-[20vh]"
+				className="h-[25vh]"
 				*ngIf="!isLoadingAppDetails && (!appsDetailsItem?.endpoints || appsDetailsItem?.endpoints?.length === 0)"
 			></convoy-empty-state>
 		</div>
@@ -263,7 +264,7 @@
 <!-- endpoint secret  -->
 <convoy-modal *ngIf="showEndpointSecret" position="center" (closeModal)="showEndpointSecret = false">
 	<div class="p-16px" modalBody>
-        <h5 class="font-semibold mb-26px">Endpoint Secret</h5>
+		<h5 class="font-semibold mb-26px">Endpoint Secret</h5>
 		<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-4px">
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecretKey }}</span>
 			<convoy-copy-button [text]="endpointSecretKey"></convoy-copy-button>
@@ -271,10 +272,10 @@
 		<convoy-button size="xs" type="text" color="danger" *ngIf="!showExpireSecret" (clickItem)="showExpireSecret = true">Expire Secret</convoy-button>
 
 		<ng-container *ngIf="showExpireSecret">
-            <form [formGroup]="expireSecretForm" class="mt-24px">
-                <convoy-select label="Expiry duration" name="expiration" formControlName="expiration" [options]="expirationDates" errorMessage="Please select an expiry duration"></convoy-select>
-            </form>
-        </ng-container>
+			<form [formGroup]="expireSecretForm" class="mt-24px">
+				<convoy-select label="Expiry duration" name="expiration" formControlName="expiration" [options]="expirationDates" errorMessage="Please select an expiry duration"></convoy-select>
+			</form>
+		</ng-container>
 
 		<div class="flex justify-end mt-38px mb-140px">
 			<convoy-button color="danger" type="outline" className="mr-16px" *ngIf="showExpireSecret" (clickItem)="expireSecret()">Expire Secret</convoy-button>

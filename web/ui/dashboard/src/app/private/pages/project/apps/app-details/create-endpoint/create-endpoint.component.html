@@ -20,13 +20,13 @@
 				<convoy-input type="text" autocomplete="header-value" formControlName="header_value" label="API Key Value" placeholder="Value"></convoy-input>
 			</ng-container>
 		</ng-container>
-		<h5 class="mt-24px font-medium flex items-center">
+		<h3 class="mt-24px mb-8px font-medium flex items-center">
 			Signature Format
 			<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
-		</h5>
+		</h3>
 		<div class="grid grid-cols-2 gap-6 mb-50px">
-			<convoy-radio formControlName="signature" label="Simple" _name="signature" value="simple" _id="simple"></convoy-radio>
-			<convoy-radio formControlName="signature" label="Advanced" _name="signature" value="advanced" _id="advanced"></convoy-radio>
+			<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
+			<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
 		</div>
 	</form>
 

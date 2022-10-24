@@ -49,14 +49,14 @@
 			</div>
 		</convoy-card>
 
-		<app-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
+		<app-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
 
 		<app-create-app
-			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails.uid"
+			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails?.uid"
 			(discardApp)="cancel()"
 			(createApp)="projectType == 'incoming' ? toggleActiveStage({ project: 'createSource', prevStage: 'createApplication' }) : toggleActiveStage({ project: 'createSubscription', prevStage: 'createApplication' })"
 		></app-create-app>
 
-		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>
+		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails?.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>
 	</div>
 </convoy-modal>

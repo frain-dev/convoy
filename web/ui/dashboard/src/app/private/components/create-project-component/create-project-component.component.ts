@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormGroup, Validators, FormBuilder } from '@angular/forms';
+import { FormGroup, Validators, FormBuilder, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
-import { GROUP } from 'src/app/models/group.model';
+import { GROUP, VERSIONS } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
@@ -12,7 +12,7 @@ import { CreateProjectComponentService } from './create-project-component.servic
 	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding', ''];
+	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
@@ -23,7 +23,7 @@ export class CreateProjectComponent implements OnInit {
 			}),
 			signature: this.formBuilder.group({
 				header: [null],
-				hash: [null]
+				versions: this.formBuilder.array([])
 			}),
 			ratelimit: this.formBuilder.group({
 				count: [null],
@@ -38,7 +38,6 @@ export class CreateProjectComponent implements OnInit {
 		type: [null, Validators.required]
 	});
 	newSignatureForm: FormGroup = this.formBuilder.group({
-		header: [null],
 		encoding: [null],
 		hash: [null]
 	});
@@ -57,6 +56,7 @@ export class CreateProjectComponent implements OnInit {
 	@Output('onAction') onAction = new EventEmitter<any>();
 	@Input('action') action: 'create' | 'update' = 'create';
 	projectDetails!: GROUP;
+	signatureVersions!: { date: string; content: VERSIONS[] }[];
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
@@ -64,17 +64,42 @@ export class CreateProjectComponent implements OnInit {
 		if (this.action === 'update') this.getProjectDetails();
 	}
 
+	get versions(): FormArray {
+		return this.projectForm.get('config.signature.versions') as FormArray;
+	}
+
+	get versionsLength(): any {
+		const versionsControl = this.projectForm.get('config.signature.versions') as FormArray;
+		return versionsControl.length;
+	}
+	newVersion(): FormGroup {
+		return this.formBuilder.group({
+			encoding: ['', Validators.required],
+			hash: ['', Validators.required]
+		});
+	}
+
+	addVersion() {
+		this.versions.push(this.newVersion());
+	}
+
+	removeVersion(i: number) {
+		this.versions.removeAt(i);
+	}
+
 	async getProjectDetails() {
 		this.enableMoreConfig = true;
 		try {
 			const response = await this.privateService.getProjectDetails();
 			this.projectDetails = response.data;
+			this.signatureVersions = this.generalService.setContentDisplayed(response.data.config.signature.versions);
 			this.projectForm.patchValue(response.data);
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
 			this.projectForm.get('config.ratelimit.duration')?.patchValue(this.getTimeString(response.data.config.ratelimit.duration));
 			this.projectForm.get('config.strategy.duration')?.patchValue(this.getTimeString(response.data.config.strategy.duration));
+			// this.versions?.setValue(response.data.config.signature.versions);
 			console.log(this.projectForm.value);
 		} catch (error) {
 			console.log(error);
@@ -117,11 +142,15 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
-	async createNewSignature() {
+	async createNewSignature(i: number) {
 		if (this.newSignatureForm.invalid) {
 			this.newSignatureForm.markAllAsTouched();
 			return;
 		}
+
+		this.versions.at(i).patchValue(this.newSignatureForm.value);
+		console.log(this.projectForm.value);
+		this.updateProject();
 	}
 
 	checkProjectConfig() {

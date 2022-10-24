@@ -62,6 +62,14 @@
 							</ng-container>
 						</ng-container>
 					</div>
+					<h3 class="mt-24px mb-8px font-medium flex items-center">
+						Signature Format
+						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+					</h3>
+					<div class="grid grid-cols-2 gap-6 mb-50px">
+						<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
+						<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+					</div>
 				</div>
 			</div>
 			<convoy-button (click)="addEndpoint()" type="text" className="px-0 font-medium text-14">
