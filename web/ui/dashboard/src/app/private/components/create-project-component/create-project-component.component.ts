@@ -92,15 +92,22 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.privateService.getProjectDetails();
 			this.projectDetails = response.data;
-			this.signatureVersions = this.generalService.setContentDisplayed(response.data.config.signature.versions);
+
+			const versions = response.data.config.signature.versions;
+			this.signatureVersions = this.generalService.setContentDisplayed(versions);
 			this.projectForm.patchValue(response.data);
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
 			this.projectForm.get('config.ratelimit.duration')?.patchValue(this.getTimeString(response.data.config.ratelimit.duration));
 			this.projectForm.get('config.strategy.duration')?.patchValue(this.getTimeString(response.data.config.strategy.duration));
-			// this.versions?.setValue(response.data.config.signature.versions);
-			console.log(this.projectForm.value);
+			versions.forEach((version: any, index: number) => {
+				this.addVersion();
+				this.versions.at(index)?.patchValue({
+					encoding: version.encoding,
+					hash: version.hash
+				});
+			});
 		} catch (error) {
 			console.log(error);
 		}
@@ -136,6 +143,7 @@ export class CreateProjectComponent implements OnInit {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
 			this.onAction.emit(response.data);
+			this.getProjectDetails();
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;
@@ -149,8 +157,9 @@ export class CreateProjectComponent implements OnInit {
 		}
 
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
-		console.log(this.projectForm.value);
 		this.updateProject();
+		this.newSignatureForm.reset();
+		this.showNewSignatureModal = false;
 	}
 
 	checkProjectConfig() {

@@ -2,7 +2,7 @@ import { Location } from '@angular/common';
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { APP, ENDPOINT } from 'src/app/models/app.model';
+import { APP, ENDPOINT, SECRET } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -28,10 +28,11 @@ export class AppDetailsComponent implements OnInit {
 	isDeletingEndpoint = false;
 	showExpireSecret = false;
 	isCliAvailable = false;
+	isExpiringSecret = false;
 	screenWidth = window.innerWidth;
 	appPortalLink!: string;
 	appPortalIframe!: string;
-	endpointSecretKey!: string;
+	endpointSecretKeys: SECRET[] = [];
 	appId!: string;
 	appsDetailsItem!: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
@@ -61,9 +62,9 @@ export class AppDetailsComponent implements OnInit {
 		this.location.back();
 	}
 
-	viewEndpointSecretKey(secretKey: string) {
+	viewEndpointSecretKey(secretKeys: SECRET[]) {
 		this.showEndpointSecret = !this.showEndpointSecret;
-		this.endpointSecretKey = secretKey;
+		this.endpointSecretKeys = secretKeys;
 	}
 
 	async getAppDetails(appId: string) {
@@ -124,7 +125,15 @@ export class AppDetailsComponent implements OnInit {
 		}
 
 		this.expireSecretForm.value.expiration = parseInt(this.expireSecretForm.value.expiration);
-		console.log(this.expireSecretForm.value);
+		this.isExpiringSecret = true;
+		try {
+			const response = await this.appDetailsService.expireSecret({ appId: this.appsDetailsItem?.uid, endpointId: this.selectedEndpoint?.uid || '', body: this.expireSecretForm.value });
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.isExpiringSecret = false;
+			this.getAppDetails(this.appsDetailsItem?.uid);
+		} catch {
+			this.isExpiringSecret = false;
+		}
 	}
 
 	toggleActiveTab(tab: 'cli keys' | 'devices') {
