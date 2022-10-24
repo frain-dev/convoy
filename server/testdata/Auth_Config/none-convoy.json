@@ -22,5 +22,11 @@
             "header": "X-Company-Event-WebHook-Signature",
             "hash": "SHA256"
         }
+    },
+    "feature_flag": {
+        "type": "flipt",
+        "flipt": {
+            "host": "http://localhost:8080"
+        }
     }
 }
