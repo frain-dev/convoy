@@ -514,82 +514,8 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				},
 			},
 			wantSubscription: []datastore.Subscription{
-				{
-					UID: "123",
-					Source: &datastore.Source{
-						UID:  "123",
-						Name: "some name",
-						Type: datastore.HTTPSource,
-						Verifier: &datastore.VerifierConfig{
-							Type: datastore.APIKeyVerifier,
-							ApiKey: &datastore.ApiKey{
-								HeaderName:  "123",
-								HeaderValue: "header",
-							},
-						},
-						GroupID:    "123",
-						MaskID:     "mask",
-						IsDisabled: false,
-					},
-					App: &datastore.Application{
-						UID:          "abc",
-						Title:        "Title",
-						GroupID:      "123",
-						SupportEmail: "SupportEmail",
-					},
-					Endpoint: &datastore.Endpoint{
-						UID:            "1234",
-						TargetURL:      "http://localhost.com",
-						DocumentStatus: "Active",
-						Secrets: []datastore.Secret{
-							{
-								UID:   "abc",
-								Value: "Secret",
-							},
-						},
-						HttpTimeout:       "30s",
-						RateLimit:         10,
-						RateLimitDuration: "1h",
-					},
-				},
-				{
-					UID: "123456",
-					Source: &datastore.Source{
-						UID:  "123",
-						Name: "some name",
-						Type: datastore.HTTPSource,
-						Verifier: &datastore.VerifierConfig{
-							Type: datastore.APIKeyVerifier,
-							ApiKey: &datastore.ApiKey{
-								HeaderName:  "123",
-								HeaderValue: "header",
-							},
-						},
-						GroupID:    "123",
-						MaskID:     "mask",
-						IsDisabled: false,
-					},
-					App: &datastore.Application{
-						UID:          "abc",
-						Title:        "Title",
-						GroupID:      "123",
-						SupportEmail: "SupportEmail",
-					},
-					Endpoint: &datastore.Endpoint{
-						UID:            "1234",
-						TargetURL:      "http://localhost.com",
-						DocumentStatus: "Active",
-						Secrets: []datastore.Secret{
-							{
-								UID:   "abc",
-								Value: "Secret",
-							},
-						},
-						HttpTimeout:       "30s",
-						RateLimit:         10,
-						RateLimitDuration: "1h",
-					},
-				},
+				{UID: "123"},
+				{UID: "123456"},
 			},
 			wantPaginationData: datastore.PaginationData{
 				Total:     2,
@@ -614,47 +540,6 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 						Next:      2,
 						TotalPage: 3,
 					}, nil)
-
-				ap, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
-					UID:          "abc",
-					Title:        "Title",
-					GroupID:      "123",
-					SupportEmail: "SupportEmail",
-				}, nil).Times(1)
-
-				ev, _ := ss.sourceRepo.(*mocks.MockSourceRepository)
-				ev.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Source{
-					UID:  "123",
-					Name: "some name",
-					Type: datastore.HTTPSource,
-					Verifier: &datastore.VerifierConfig{
-						Type: datastore.APIKeyVerifier,
-						ApiKey: &datastore.ApiKey{
-							HeaderName:  "123",
-							HeaderValue: "header",
-						},
-					},
-					GroupID:    "123",
-					MaskID:     "mask",
-					IsDisabled: false,
-				}, nil).Times(1)
-
-				en, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				en.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
-					UID:            "1234",
-					TargetURL:      "http://localhost.com",
-					DocumentStatus: "Active",
-					Secrets: []datastore.Secret{
-						{
-							UID:   "abc",
-							Value: "Secret",
-						},
-					},
-					HttpTimeout:       "30s",
-					RateLimit:         10,
-					RateLimitDuration: "1h",
-				}, nil).Times(1)
 			},
 		},
 		{

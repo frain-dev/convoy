@@ -28,6 +28,9 @@ export interface GROUP {
 	updated_at: Date;
 	type: 'incoming' | 'outgoing';
 	selected?: boolean;
+	organisation_id: string;
+	rate_limit_duration: string;
+	rate_limit: string;
 }
 
 export interface SOURCE {

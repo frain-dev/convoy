@@ -1,5 +1,5 @@
 <div [class]="class">
-	<convoy-button type="text" size="sm" (click)="copyText()">
+	<convoy-button type="text" buttonType="button" size="sm" (click)="copyText()">
 		<svg width="14" height="14" [attr.height]="size === 'sm' ? '14' : '16'" [attr.width]="size === 'sm' ? '14' : '16'" [class]="size === 'sm' ? 'fill-grey-40' : 'fill-primary-100'">
 			<use xlink:href="#copy-icon"></use>
 		</svg>

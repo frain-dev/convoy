@@ -620,6 +620,12 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -665,6 +671,12 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -717,6 +729,12 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Application{UID: "abc"}, nil)
+
+				c, _ := app.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -1291,7 +1309,6 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 			require.Nil(t, err)
 			_, err = tt.args.app.FindEndpoint(tt.args.endPointId)
 			require.NoError(t, err)
-
 		})
 	}
 }

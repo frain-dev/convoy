@@ -243,12 +243,30 @@
 		</ul>
 	</div>
 </convoy-card>
+<ng-container *ngIf="isCliAvailable">
+	<!-- app api keys and devices list  -->
+	<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
+		<div class="flex items-center justify-center border-b border-grey-10">
+			<ul class="flex flex-row m-auto w-full mt-32px border-b border-b-grey-10">
+				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
+						<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+					</button>
+				</li>
 
-<ng-container *ngIf="activeTab === 'cli keys'">
-	<convoy-cli-keys></convoy-cli-keys>
-</ng-container>
-<ng-container *ngIf="activeTab === 'devices'">
-	<convoy-devices></convoy-devices>
+				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
+					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true">Generate New Key</convoy-button>
+				</div>
+			</ul>
+		</div>
+	</convoy-card>
+
+	<ng-container *ngIf="activeTab === 'cli keys'">
+		<convoy-cli-keys></convoy-cli-keys>
+	</ng-container>
+	<ng-container *ngIf="activeTab === 'devices'">
+		<convoy-devices></convoy-devices>
+	</ng-container>
 </ng-container>
 
 <!-- send event form  -->

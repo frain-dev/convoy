@@ -3,7 +3,13 @@
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
 	<div class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px mt-24px">
 		<convoy-input label="Project name" name="project-name" formControlName="name" placeholder="Enter project name here" [required]="true" errorMessage="Enter new project name"></convoy-input>
-
+		<ng-container *ngIf="action === 'update'">
+			<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between">Project Id</label>
+			<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
+				<span class="text-16 text-grey-60 font-normal">{{ projectDetails.uid }}</span>
+				<convoy-copy-button [text]="projectDetails.uid"></convoy-copy-button>
+			</div>
+		</ng-container>
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
 		<div class="project-types grid grid-cols-2 gap-24px">
 			<convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
@@ -14,11 +20,9 @@
 			<span>Please select a project type</span>
 		</div>
 
-		<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="enableMoreConfig = !enableMoreConfig" [isChecked]="enableMoreConfig"></convoy-toggle>
-
 		<div [hidden]="!enableMoreConfig">
 			<div formGroupName="config">
-				<h3 class="mt-12px mb-16px font-semibold flex items-center">
+				<h3 class="mt-24px mb-16px font-semibold flex items-center">
 					Signature Details
 					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h3>
@@ -75,6 +79,8 @@
 				</ng-container>
 			</div>
 		</div>
+
+		<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="enableMoreConfig = !enableMoreConfig" [isChecked]="enableMoreConfig"></convoy-toggle>
 	</div>
 
 	<div class="button-container flex justify-end" [class]="action === 'update' ? 'mt-78px' : 'mt-38px'">

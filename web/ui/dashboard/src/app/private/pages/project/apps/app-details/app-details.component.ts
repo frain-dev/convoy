@@ -27,6 +27,7 @@ export class AppDetailsComponent implements OnInit {
 	showDeleteModal = false;
 	isDeletingEndpoint = false;
 	showExpireSecret = false;
+	isCliAvailable = false;
 	screenWidth = window.innerWidth;
 	appPortalLink!: string;
 	appPortalIframe!: string;
@@ -48,8 +49,9 @@ export class AppDetailsComponent implements OnInit {
 	];
 	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		this.isLoadingAppDetails = true;
+		this.isCliAvailable = await this.privateService.getFlag('can_create_cli_api_key');
 		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.loadingAppPotalToken = true;
 		this.checkScreenSize();
 		this.getAppDetails(this.route.snapshot.params.id);
