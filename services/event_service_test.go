@@ -1393,10 +1393,15 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 
 				en, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				en.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
-					UID:               "1234",
-					TargetURL:         "http://localhost.com",
-					DocumentStatus:    "Active",
-					Secret:            "Secret",
+					UID:            "1234",
+					TargetURL:      "http://localhost.com",
+					DocumentStatus: "Active",
+					Secrets: []datastore.Secret{
+						{
+							UID:   "abc",
+							Value: "Secret",
+						},
+					},
 					HttpTimeout:       "30s",
 					RateLimit:         10,
 					RateLimitDuration: "1h",
@@ -1416,10 +1421,15 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						EventType: "incoming",
 					},
 					Endpoint: &datastore.Endpoint{
-						UID:               "1234",
-						TargetURL:         "http://localhost.com",
-						DocumentStatus:    "Active",
-						Secret:            "Secret",
+						UID:            "1234",
+						TargetURL:      "http://localhost.com",
+						DocumentStatus: "Active",
+						Secrets: []datastore.Secret{
+							{
+								UID:   "abc",
+								Value: "Secret",
+							},
+						},
 						HttpTimeout:       "30s",
 						RateLimit:         10,
 						RateLimitDuration: "1h",

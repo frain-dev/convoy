@@ -1,4 +1,4 @@
-package main
+package signature
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ var (
 type Scheme struct {
 	// Secret represents a list of active secrets used for
 	// a scheme. It is used to implement rolled secrets.
-	// It's order is irrelevant.
+	// Its order is irrelevant.
 	Secret []string
 
 	Hash     string
@@ -40,12 +40,12 @@ type Scheme struct {
 type Signature struct {
 	Payload json.RawMessage
 
-	// The order of this Schemes is a core part of this API.
+	// The order of these Schemes is a core part of this API.
 	// We use the index as the version number. That is:
 	// Index 0 = v0, Index 1 = v1
 	Schemes []Scheme
 
-	// This flag allows for backward-compatible implemtation
+	// This flag allows for backward-compatible implementation
 	// of this type. You're either generating a simplistic header
 	// or a complex header.
 	Advanced bool
@@ -61,13 +61,15 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	s.Payload = tBuf
 
 	// Generate Simple Signatures
 	if !s.Advanced {
+		// TODO: replay attacks without advanced signatures?
 		sch := s.Schemes[len(s.Schemes)-1]
 		sec := sch.Secret[len(sch.Secret)-1]
 
-		sig, err := s.generateSignature(sch, sec, tBuf)
+		sig, err := s.generateSignature(sch, sec, s.Payload)
 		if err != nil {
 			return "", err
 		}

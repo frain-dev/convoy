@@ -210,7 +210,7 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 					return
 				}
 
-				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
+				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Second*1)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 					return
@@ -618,7 +618,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 					UID:               en.UID,
 					TargetURL:         en.TargetURL,
 					DocumentStatus:    en.DocumentStatus,
-					Secret:            en.Secret,
+					Secrets:           en.Secrets,
 					HttpTimeout:       en.HttpTimeout,
 					RateLimit:         en.RateLimit,
 					RateLimitDuration: en.RateLimitDuration,
@@ -657,6 +657,7 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 
 func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
 	for _, endpoint := range *endpoints {
+		fmt.Printf("ENDPOINT: %+v\n", endpoint)
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			return &endpoint, nil
 		}

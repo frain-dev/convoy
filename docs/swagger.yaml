@@ -12,10 +12,19 @@ definitions:
   datastore.APIKey:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       expires_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       hash:
         type: string
@@ -32,6 +41,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       user_id:
         type: string
@@ -149,6 +161,8 @@ definitions:
     type: object
   datastore.Endpoint:
     properties:
+      advanced_signatures:
+        type: boolean
       authentication:
         $ref: '#/definitions/datastore.EndpointAuthentication'
       created_at:
@@ -163,8 +177,10 @@ definitions:
         type: integer
       rate_limit_duration:
         type: string
-      secret:
-        type: string
+      secrets:
+        items:
+          $ref: '#/definitions/datastore.Secret'
+        type: array
       target_url:
         type: string
       uid:
@@ -477,11 +493,39 @@ definitions:
       secret_key:
         type: string
     type: object
+  datastore.Secret:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      expires_at:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+      value:
+        type: string
+    type: object
   datastore.SignatureConfiguration:
     properties:
+      header:
+        type: string
+      versions:
+        items:
+          $ref: '#/definitions/datastore.SignatureVersion'
+        type: array
+    type: object
+  datastore.SignatureVersion:
+    properties:
+      created_at:
+        type: string
+      encoding:
+        type: string
       hash:
         type: string
-      header:
+      uid:
         type: string
     type: object
   datastore.Source:
@@ -692,6 +736,8 @@ definitions:
     type: object
   models.Endpoint:
     properties:
+      advanced_signatures:
+        type: boolean
       authentication:
         $ref: '#/definitions/datastore.EndpointAuthentication'
       description:
@@ -759,8 +805,14 @@ definitions:
   models.LoginUserResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       email:
         type: string
@@ -773,6 +825,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
     type: object
   models.Organisation:
@@ -865,8 +920,14 @@ definitions:
   models.SourceResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       group_id:
         type: string
@@ -885,6 +946,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time a Event will be published in
+          case it failed the first time
         type: integer
       url:
         type: string
@@ -1995,6 +2059,72 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update an application endpoint
+      tags:
+      - Application Endpoints
+  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint expires the current endpoint secret and generates
+        a new one.
+      parameters:
+      - description: group id
+        in: query
+        name: groupId
+        required: true
+        type: string
+      - description: application id
+        in: path
+        name: appID
+        required: true
+        type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Endpoint'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Expire and generate new application endpoint secret
       tags:
       - Application Endpoints
   /api/v1/projects/{projectID}/eventdeliveries:
