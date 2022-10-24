@@ -365,7 +365,7 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 					UID:               en.UID,
 					TargetURL:         en.TargetURL,
 					DocumentStatus:    en.DocumentStatus,
-					Secret:            en.Secret,
+					Secrets:           en.Secrets,
 					HttpTimeout:       en.HttpTimeout,
 					RateLimit:         en.RateLimit,
 					RateLimitDuration: en.RateLimitDuration,
@@ -402,5 +402,4 @@ func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfigurati
 
 	strategyConfig.Duration = cfg.IntervalSeconds
 	return strategyConfig, nil
-
 }
