@@ -180,7 +180,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
-	
+
 	endpoint.Authentication = auth
 
 	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
@@ -189,6 +189,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
 
+	app.Endpoints = append(app.Endpoints, *endpoint)
 	app, err = a.appRepo.FindApplicationByID(ctx, app.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to find application")
@@ -230,7 +231,6 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 }
 
 func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoint, app *datastore.Application) error {
-
 	for i, endpoint := range app.Endpoints {
 		if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
 			app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
