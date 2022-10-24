@@ -70,7 +70,6 @@ export class PersonalSettingsComponent implements OnInit {
 		try {
 			const response = await this.accountService.fetchPersonalKeys({ userId: this.userId, pageNo: page });
 			this.personalAccessKeys = response.data;
-			console.log(response);
 			this.isFetchingKeys = false;
 		} catch {
 			this.isFetchingKeys = false;

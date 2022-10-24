@@ -8,7 +8,6 @@ import { AppService } from './app.service';
 import { CliKeysComponent } from 'src/app/private/pages/project/apps/app-details/cli-keys/cli-keys.component';
 
 type EVENT_PAGE_TABS = 'events' | 'event deliveries';
-type PAGE_TABS = 'subscriptions' | 'cli keys' | 'devices';
 
 @Component({
 	selector: 'app-app',
@@ -22,11 +21,11 @@ export class AppComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
-	tabs: ['subscriptions', 'cli keys', 'devices'] = ['subscriptions', 'cli keys', 'devices'];
+	tabs: string[] = ['subscriptions'];
 	activeEventsTab: EVENT_PAGE_TABS = 'events';
-	activeTab: PAGE_TABS = 'subscriptions';
-	events?: { content: EVENT[]; pagination: PAGINATION };
-	eventDeliveries?: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
+	activeTab: string = 'subscriptions';
+	events!: { content: EVENT[]; pagination: PAGINATION };
+	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
 	activeSubscription?: SUBSCRIPTION;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
@@ -37,11 +36,13 @@ export class AppComponent implements OnInit {
 	showCreateSubscription = false;
 	showSubscriptionError = false;
 	showCliError = false;
+	isCliAvailable: boolean = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
 		this.getSubscripions();
+		this.checkFlags();
 
 		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
 		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
@@ -60,6 +61,11 @@ export class AppComponent implements OnInit {
 		}
 	}
 
+	async checkFlags() {
+		this.isCliAvailable = await this.appService.getFlag('can_create_cli_api_key', this.token);
+		if (this.isCliAvailable) this.tabs.push('cli keys', 'devices');
+	}
+
 	async getSubscripions() {
 		this.isloadingSubscriptions = true;
 		try {
@@ -74,7 +80,7 @@ export class AppComponent implements OnInit {
 		}
 	}
 
-	toggleActiveTab(tab: PAGE_TABS) {
+	toggleActiveTab(tab: string) {
 		this.activeTab = tab;
 	}
 

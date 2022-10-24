@@ -14,7 +14,7 @@
 	<convoy-table-loader id="sources-loader" [withDate]="false" [tableHead]="sourcesTableHead"></convoy-table-loader>
 </convoy-card>
 
-<ng-container *ngIf="!isLoadingSources && sources.content.length > 0">
+<ng-container *ngIf="!isLoadingSources && sources?.content?.length">
 	<div class="w-full flex justify-end items-center my-24px">
 		<convoy-button size="sm" routerLink="./new">Create a source</convoy-button>
 	</div>
