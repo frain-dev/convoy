@@ -54,6 +54,6 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid) : this.location.back();
+		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.location.back();
 	}
 }

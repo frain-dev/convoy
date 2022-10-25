@@ -79,11 +79,11 @@
 								<convoy-table-cell class="contents" className="pl-16px">
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
-								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openApp.emit(event.app_metadata?.uid)">
-									<span class="underline text-primary-100">{{ event.app_metadata?.name }}</span>
+								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openApp.emit(event.app_metadata.uid)">
+									<span class="underline text-primary-100">{{ event.app_metadata.name }}</span>
 								</convoy-table-cell>
-								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openSource.emit(event.source_metadata?.uid)">
-									<span class="underline text-primary-100">{{ event.source_metadata?.name }}</span>
+								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openSource.emit(event.source_metadata.uid)">
+									<span class="underline text-primary-100">{{ event.source_metadata.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 								<convoy-table-cell class="contents">
@@ -113,12 +113,12 @@
 						<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
 						<ul>
 							<convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['./event-deliveries/' + delivery.uid]" className="cursor-pointer !justify-start">
-                                <div class="flex items-center">
-                                    <svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
-                                        <use xlink:href="#cli-icon"></use>
-                                    </svg>
-                                    <convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
-                                </div>
+								<div class="flex items-center">
+									<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
+										<use xlink:href="#cli-icon"></use>
+									</svg>
+									<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
+								</div>
 								<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
 									{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
 								</div>
@@ -132,22 +132,14 @@
 </convoy-card>
 
 <div class="flex items-center mt-16px mb-24px">
-	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" (clickItem)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disable]="!events || events?.pagination?.prev === 0">
+	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" (clickItem)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disable]="!events || events.pagination.prev === 0">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
 	</convoy-button>
 
-	<convoy-button
-		type="outline"
-		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="{ page: events?.pagination?.next }"
-		(click)="getEvents({ page: events?.pagination?.next })"
-		[disable]="!events || events?.pagination?.next === 0"
-	>
+	<convoy-button type="outline" size="sm" className="pr-4px pl-16px py-4px border-primary-300 ml-16px" routerLink="./" [queryParams]="{ page: events?.pagination?.next }" (click)="getEvents({ page: events?.pagination?.next })" [disable]="!events || events.pagination.next === 0">
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>

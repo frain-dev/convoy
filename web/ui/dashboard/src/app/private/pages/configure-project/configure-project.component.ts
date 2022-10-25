@@ -55,12 +55,12 @@ export class ConfigureProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid) : this.location.back();
+		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.location.back();
 	}
 
 	onProjectOnboardingComplete() {
 		this.generalService.showNotification({ message: `${this.privateService.activeProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid);
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid);
 	}
 
 	toggleActiveStage(stageDetails: { project: STAGES; prevStage?: STAGES }) {

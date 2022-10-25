@@ -22,7 +22,7 @@ export class PrivateComponent implements OnInit {
 	showAddAnalytics = false;
 	apiURL = this.generalService.apiURL();
 	projects!: GROUP[];
-	organisations!: ORGANIZATION_DATA[];
+	organisations?: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
 
 	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
@@ -56,8 +56,8 @@ export class PrivateComponent implements OnInit {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
 			this.checkForSelectedOrganisation();
-			if (this.organisations.length === 0) this.router.navigateByUrl('/get-started');
-			else if (this.organisations.length > 0) this.getProjects();
+			if (this.organisations?.length === 0) this.router.navigateByUrl('/get-started');
+			else if (this.organisations && this.organisations.length > 0) this.getProjects();
 		} catch (error) {
 			return error;
 		}
@@ -67,7 +67,7 @@ export class PrivateComponent implements OnInit {
 		try {
 			const projectsResponse = await this.privateService.getProjects();
 			this.projects = projectsResponse.data;
-			if (this.projects.length === 0 && this.organisations.length === 0) this.router.navigateByUrl('/get-started');
+			if (this.projects.length === 0 && this.organisations && this.organisations.length === 0) this.router.navigateByUrl('/get-started');
 		} catch (error) {
 			return error;
 		}
