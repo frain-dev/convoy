@@ -73,7 +73,7 @@
 		routerLink="./"
 		[queryParams]="{ page: personalAccessKeys?.pagination?.prev }"
 		[disable]="personalAccessKeys?.pagination?.prev === 0"
-		(click)="fetchPersonalKeys({ page: personalAccessKeys.pagination?.prev })"
+		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
@@ -87,7 +87,7 @@
 		routerLink="./"
 		[queryParams]="{ page: personalAccessKeys?.pagination?.next }"
 		[disable]="personalAccessKeys?.pagination?.next === 0"
-		(click)="fetchPersonalKeys({ page: personalAccessKeys.pagination?.next })"
+		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.next })"
 	>
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">

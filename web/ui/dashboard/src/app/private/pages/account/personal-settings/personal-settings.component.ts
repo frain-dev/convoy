@@ -22,7 +22,7 @@ export class PersonalSettingsComponent implements OnInit {
 	userId!: string;
 	accessKey!: string;
 	loaderIndex: number[] = [0, 1, 2];
-	personalAccessKeys!: { content: any; pagination: PAGINATION };
+	personalAccessKeys?: { content: any; pagination: PAGINATION };
 	generateKeyForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		expires_at: [null]
@@ -70,7 +70,6 @@ export class PersonalSettingsComponent implements OnInit {
 		try {
 			const response = await this.accountService.fetchPersonalKeys({ userId: this.userId, pageNo: page });
 			this.personalAccessKeys = response.data;
-			console.log(response);
 			this.isFetchingKeys = false;
 		} catch {
 			this.isFetchingKeys = false;

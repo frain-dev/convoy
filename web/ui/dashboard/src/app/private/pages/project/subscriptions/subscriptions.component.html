@@ -45,6 +45,7 @@
 	<div class="flex justify-end items-center my-6">
 		<convoy-button buttonType="button" size="sm" routerLink="./new">Create a Subscription</convoy-button>
 	</div>
+
 	<div class="min-h-[70vh] w-full min-w-[485px] flex items-start">
 		<div class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100%_-_370px)] desktop:w-0 desktop:hidden': activeSubscription?.uid }">
 			<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
@@ -65,7 +66,7 @@
 					</div>
 				</div>
 
-				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.app_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails.type === 'incoming' }">
+				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.app_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
 					<div class="w-full">
 						<div class="text-grey-40 text-10 mb-3">App</div>
 						<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
@@ -187,6 +188,37 @@
 			</div>
 		</convoy-card>
 	</div>
+
+	<div class="flex items-center mt-16px" *ngIf="(subscriptions?.pagination?.total || 0) > 20">
+		<convoy-button
+			type="outline"
+			size="sm"
+			className="pl-4px pr-16px py-4px border-primary-300"
+			routerLink="./"
+			[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.prev } : { page: subscriptions?.pagination?.prev }"
+			[disable]="subscriptions?.pagination?.prev === 0"
+			(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
+		>
+			<svg width="24" height="24" class="mr-8px fill-primary-100">
+				<use xlink:href="#arrow-left-icon"></use>
+			</svg>
+			Previous
+		</convoy-button>
+		<convoy-button
+			type="outline"
+			size="sm"
+			className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+			routerLink="./"
+			[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.next } : { page: subscriptions?.pagination?.next }"
+			[disable]="subscriptions?.pagination?.next === 0"
+			(click)="getSubscriptions({ page: subscriptions?.pagination?.next })"
+		>
+			Next
+			<svg width="24" height="24" class="ml-8px fill-primary-100">
+				<use xlink:href="#arrow-right-icon"></use>
+			</svg>
+		</convoy-button>
+	</div>
 </div>
 
 <convoy-empty-state
@@ -194,42 +226,11 @@
 	heading="Create your first webhook subscription"
 	description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
 	buttonText="Create Subscription"
-	(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/subscriptions/new')"
+	(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/subscriptions/new')"
 	className="min-h-[65vh] mt-16px"
 	id="subscriptions-empty-state"
 	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
 ></convoy-empty-state>
-
-<div class="flex items-center mt-16px" *ngIf="subscriptions?.pagination?.total">
-	<convoy-button
-		type="outline"
-		size="sm"
-		className="pl-4px pr-16px py-4px border-primary-300"
-		routerLink="./"
-		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.prev } : { page: subscriptions?.pagination?.prev }"
-		[disable]="subscriptions?.pagination?.prev === 0"
-		(click)="getSubscriptions({ page: subscriptions?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</convoy-button>
-	<convoy-button
-		type="outline"
-		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="activeSubscription?.uid ? { id: activeSubscription?.uid, page: subscriptions?.pagination?.next } : { page: subscriptions?.pagination?.next }"
-		[disable]="subscriptions?.pagination?.next === 0"
-		(click)="getSubscriptions({ page: subscriptions?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</convoy-button>
-</div>
 
 <convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
 	<ng-container modalBody>

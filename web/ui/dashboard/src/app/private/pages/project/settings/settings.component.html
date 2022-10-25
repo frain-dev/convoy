@@ -4,7 +4,7 @@
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	{{ privateService.activeProjectDetails.name }}
+	{{ privateService.activeProjectDetails?.name }}
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -20,11 +20,11 @@
 		<strong>Are you sure you want to delete this project?</strong>
 	</p>
 	<convoy-button color="danger" className="mt-28px" (click)="showDeleteProjectModal = true">
-        <svg width="18" height="18" class="mr-2 fill-white-100">
-            <use xlink:href="#delete-icon"></use>
-        </svg>
-        Delete
-    </convoy-button>
+		<svg width="18" height="18" class="mr-2 fill-white-100">
+			<use xlink:href="#delete-icon"></use>
+		</svg>
+		Delete
+	</convoy-button>
 </div>
 
 <app-delete-modal *ngIf="showDeleteProjectModal" [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="showDeleteProjectModal = false" (deleteData)="deleteProject()"></app-delete-modal>

@@ -13,8 +13,8 @@ import { GeneralService } from 'src/app/services/general/general.service';
 export class SubscriptionsComponent implements OnInit {
 	activeSubscription?: SUBSCRIPTION;
 	shouldShowCreateSubscriptionModal = false;
-	projectId!: string;
-	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
+	projectId?: string;
+	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
 	subscriptionsLoaders = [1, 2, 3, 4, 5];
 	isLoadindingSubscriptions = false;
 	isDeletingSubscription = false;
@@ -22,7 +22,7 @@ export class SubscriptionsComponent implements OnInit {
 	showDeleteSubscriptionModal = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {
-		this.projectId = this.privateService.activeProjectDetails.uid;
+		this.projectId = this.privateService.activeProjectDetails?.uid;
 
 		const urlParam = route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSubscriptionModal = true;
@@ -48,11 +48,11 @@ export class SubscriptionsComponent implements OnInit {
 	}
 
 	closeModal() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
 	}
 
 	createSubscription(action: any) {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
 		if (action !== 'cancel') this.generalService.showNotification({ message: `Subscription has been ${action}d successfully`, style: 'success' });
 	}
 
