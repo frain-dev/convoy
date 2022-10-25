@@ -9,14 +9,7 @@ import { PrivateService } from '../../private.service';
 export class CreateProjectComponentService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	createProject(requestDetails: {
-		name: string;
-		strategy: { duration: string; retry_count: string; type: string };
-		signature: { header: string; hash: string };
-		disable_endpoint: boolean;
-		rate_limit: number;
-		rate_limit_duration: string;
-	}): Promise<HTTP_RESPONSE> {
+	createProject(requestDetails: { name: string; strategy: { duration: string; retry_count: string; type: string }; signature: { header: string; hash: string }; disable_endpoint: boolean; rate_limit: number; rate_limit_duration: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -31,18 +24,11 @@ export class CreateProjectComponentService {
 		});
 	}
 
-	updateProject(requestDetails: {
-		name: string;
-		strategy: { duration: string; retry_count: string; type: string };
-		signature: { header: string; hash: string };
-		disable_endpoint: boolean;
-		rate_limit: number;
-		rate_limit_duration: string;
-	}): Promise<HTTP_RESPONSE> {
+	updateProject(requestDetails: { name: string; strategy: { duration: string; retry_count: string; type: string }; signature: { header: string; hash: string }; disable_endpoint: boolean; rate_limit: number; rate_limit_duration: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/groups/${this.privateService.activeProjectDetails.uid}`,
+					url: `${this.privateService.urlFactory('org')}/groups/${this.privateService.activeProjectDetails?.uid}`,
 					body: requestDetails,
 					method: 'put'
 				});

@@ -114,14 +114,14 @@
 		[heading]="appsSearchString && appsSearchString.length > 0 ? 'An app with the name “' + appsSearchString + '” does not exist' : 'Create your first application'"
 		[buttonText]="appsSearchString && appsSearchString.length > 0 ? '' : 'Create Application'"
 		[description]="appsSearchString && appsSearchString.length > 0 ? '' : 'An application is either your backend application or your users application. It can hold multiple endpoints which listen for your webhook events that are sent or received.'"
-		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/apps/new')"
+		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/apps/new')"
 		className="min-h-[65vh]"
 		id="events-empty-state"
 	></convoy-empty-state>
 </convoy-card>
 
-<div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedApps?.length === 0 }">
-	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev }" [disable]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
+<div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedApps.length === 0 }">
+	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev || 0 }" [disable]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>

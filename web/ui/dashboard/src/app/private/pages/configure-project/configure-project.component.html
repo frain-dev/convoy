@@ -5,7 +5,7 @@
 			<p class="text-grey-60 text-14 max-w-[555px] mb-26px">Select your preffered and follow the intstructions below to install your SDK to get started.</p>
 
 			<div class="flex mb-36px">
-				<convoy-button size="sm" className="mr-16px" (click)="router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid)">
+				<convoy-button size="sm" className="mr-16px" (click)="router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid)">
 					I have completed configuration
 					<svg width="14" height="14" class="ml-8px fill-white-100">
 						<use xlink:href="#doc-icon"></use>
@@ -49,14 +49,14 @@
 			</div>
 		</convoy-card>
 
-		<app-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
+		<app-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
 
 		<app-create-app
-			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails.uid"
+			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails?.uid"
 			(discardApp)="cancel()"
 			(createApp)="projectType == 'incoming' ? toggleActiveStage({ project: 'createSource', prevStage: 'createApplication' }) : toggleActiveStage({ project: 'createSubscription', prevStage: 'createApplication' })"
 		></app-create-app>
 
-		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>
+		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails?.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>
 	</div>
 </convoy-modal>
