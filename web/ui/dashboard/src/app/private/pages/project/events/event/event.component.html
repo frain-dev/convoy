@@ -13,7 +13,15 @@
 
 			<app-time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></app-time-filter>
 
-			<convoy-dropdown size="lg" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [active]="!!eventApp" [hidden]="appPortalToken">
+			<convoy-dropdown
+				size="lg"
+				position="left"
+				buttonSize="sm"
+				buttonType="outline"
+				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
+				[active]="!!eventApp"
+				[hidden]="appPortalToken || this.privateService.activeProjectDetails?.type === 'incoming'"
+			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Apps</span>
@@ -34,7 +42,37 @@
 					</ul>
 
 					<div *ngIf="!!eventApp" class="p-10px pb-20px">
-						<convoy-button type="text" size="sm" (clickItem)="clearEventFilters(); showEventsAppsDropdown = false">Clear</convoy-button>
+						<convoy-button size="sm" (clickItem)="clearEventFilters('eventsApp')">Clear</convoy-button>
+					</div>
+				</ng-container>
+			</convoy-dropdown>
+
+			<convoy-dropdown
+				size="lg"
+				position="left"
+				buttonSize="sm"
+				buttonType="outline"
+				buttonClass="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px"
+				[active]="!!eventSource"
+				#sourcesDropdown
+				[hidden]="this.privateService.activeProjectDetails?.type === 'outgoing'"
+			>
+				<ng-container dropdownToggle>
+					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
+					<span class="text-grey-40 w-full">All Sources</span>
+					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				</ng-container>
+
+				<ng-container>
+					<ul class="min-h-[100px] px-10px pb-10px">
+						<li class="py-8px flex items-center justify-between border-b border-grey-10" *ngFor="let source of filterSources">
+							<label class="text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
+							<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid" [checked]="source.uid === eventSource" (change)="updateSourceFilter(source.uid, $event)" />
+						</li>
+					</ul>
+
+					<div *ngIf="!!eventSource" class="p-10px pb-20px">
+						<convoy-button size="sm" (clickItem)="clearEventFilters('eventsSource')">Clear</convoy-button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -50,7 +88,8 @@
 					(eventApp?.length == 0 || eventApp == undefined) &&
 					(eventsSearchString?.length == 0 || eventsSearchString == undefined) &&
 					eventsTimeFilterData.startTime == 'T00:00:00' &&
-					eventsTimeFilterData.endTime == 'T23:59:59'
+					eventsTimeFilterData.endTime == 'T23:59:59' &&
+					(eventSource?.length == 0 || eventSource == undefined)
 				)
 			"
 		>
@@ -79,11 +118,11 @@
 								<convoy-table-cell class="contents" className="pl-16px">
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
-								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openApp.emit(event.app_metadata.uid)">
-									<span class="underline text-primary-100">{{ event.app_metadata.name }}</span>
+								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
+									<span [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + event.app_metadata.uid" class="underline text-primary-100">{{ event.app_metadata.name }}</span>
 								</convoy-table-cell>
-								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis" (click)="openSource.emit(event.source_metadata.uid)">
-									<span class="underline text-primary-100">{{ event.source_metadata.name }}</span>
+								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
+									<span [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/sources'" [queryParams]="{ id: event.source_metadata.uid }" class="underline text-primary-100">{{ event.source_metadata.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 								<convoy-table-cell class="contents">

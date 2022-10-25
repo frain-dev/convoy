@@ -190,7 +190,6 @@ export class EventsComponent implements OnInit {
 		try {
 			const response = await this.eventsService.getEvents({ pageNo: 1, startDate: '', endDate: '', appId: '' });
 			this.eventsFetched = response.data.content;
-
 			return;
 		} catch (error: any) {
 			return;
