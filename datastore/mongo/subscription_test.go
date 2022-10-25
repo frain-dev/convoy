@@ -83,7 +83,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 					TotalPage: 7,
 					Page:      1,
 					PerPage:   3,
-					Prev:      0,
+					Prev:      1,
 					Next:      2,
 				},
 			},
@@ -106,14 +106,14 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 		{
 			name:     "Load Subscriptions Paged - 0 records",
-			pageData: datastore.Pageable{Page: 0, PerPage: 10},
+			pageData: datastore.Pageable{Page: 1, PerPage: 10},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     20,
 					TotalPage: 2,
 					Page:      1,
 					PerPage:   10,
-					Prev:      0,
+					Prev:      1,
 					Next:      2,
 				},
 			},
@@ -129,8 +129,8 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 					TotalPage: 1,
 					Page:      1,
 					PerPage:   3,
-					Prev:      0,
-					Next:      0,
+					Prev:      1,
+					Next:      2,
 				},
 			},
 		},

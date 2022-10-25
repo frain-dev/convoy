@@ -1,16 +1,16 @@
 <convoy-card className="py-26px px-32px mb-20px mt-16px">
 	<div class="flex justify-between items-center pb-18px border-b border-grey-10">
-        <h3 class="font-medium">{{ eventDelsDetails?.app_metadata?.name }}</h3>
-
+		<h3 class="font-medium">{{ eventDelsDetails?.app_metadata?.name }}</h3>
 
 		<convoy-button
-			[disable]="eventDelsDetails?.status !== 'Failure' && eventDelsDetails?.status !== 'Success'"
+			*ngIf="eventDelsDetails"
+			[disable]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
 			texture="light"
 			size="sm"
 			(clickItem)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
 		>
 			<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-			{{ eventDelsDetails?.status === 'Success' ? 'Force Retry' : 'Retry' }}
+			{{ eventDelsDetails.status === 'Success' ? 'Force Retry' : 'Retry' }}
 		</convoy-button>
 	</div>
 
@@ -59,8 +59,6 @@
 			<p class="text-grey-40 text-12 font-light">TIME</p>
 			<p class="text-14 font-medium">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
 		</div>
-
-
 	</div>
 
 	<div class="grid grid-cols-5 mb-32px" *ngIf="isLoadingDeliveryDetails">
@@ -95,17 +93,17 @@
 				{{ eventDelsDetails?.endpoint_metadata?.target_url }}
 			</p>
 		</div>
-        <div *ngIf="eventDelsDetails?.device_id">
+		<div *ngIf="eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">DEVICE</p>
 
 			<div class="flex items-center text-14 font-medium">
-                <div>
-                    <svg width="16" height="14" class="mr-8px">
-                        <use xlink:href="#cli-icon"></use>
-                    </svg>
-                </div>
-                <span class="whitespace-nowrap">{{ eventDelsDetails?.cli_metadata?.host_name || '-' }}</span>
-            </div>
+				<div>
+					<svg width="16" height="14" class="mr-8px">
+						<use xlink:href="#cli-icon"></use>
+					</svg>
+				</div>
+				<span class="whitespace-nowrap">{{ eventDelsDetails?.cli_metadata?.host_name || '-' }}</span>
+			</div>
 		</div>
 		<div></div>
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
@@ -115,7 +113,7 @@
 		<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
 			<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
 			<prism *ngIf="!isloadingDeliveryAttempts" title="Event Payload" language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
-        </div>
+		</div>
 
 		<div class="py-32px" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10 w-full': shouldRenderSmallSize }">
 			<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>

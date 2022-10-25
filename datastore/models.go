@@ -65,19 +65,18 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
-type StrategyProvider string
+type (
+	StrategyProvider string
+	GroupType        string
+	SourceType       string
+	SourceProvider   string
+	VerifierType     string
+	EncodingType     string
+	StorageType      string
+	KeyType          string
+)
 
-type GroupType string
-
-type SourceType string
-
-type SourceProvider string
-
-type VerifierType string
-
-type EncodingType string
-
-type StorageType string
+type EndpointAuthenticationType string
 
 const (
 	HTTPSource     SourceType = "http"
@@ -90,6 +89,10 @@ const (
 	GithubSourceProvider  SourceProvider = "github"
 	TwitterSourceProvider SourceProvider = "twitter"
 	ShopifySourceProvider SourceProvider = "shopify"
+)
+
+const (
+	APIKeyAuthentication EndpointAuthenticationType = "api_key"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -134,6 +137,7 @@ const (
 	ProjectKey   KeyType = "project"
 	AppPortalKey KeyType = "app_portal"
 	CLIKey       KeyType = "cli"
+	PersonalKey  KeyType = "personal_key"
 )
 
 func (k KeyType) IsValidAppKey() bool {
@@ -143,6 +147,14 @@ func (k KeyType) IsValidAppKey() bool {
 	default:
 		return false
 	}
+}
+
+func (k KeyType) IsValid() bool {
+	switch k {
+	case AppPortalKey, CLIKey, ProjectKey, PersonalKey:
+		return true
+	}
+	return false
 }
 
 const (
@@ -223,15 +235,21 @@ type Endpoint struct {
 	Description string `json:"description" bson:"description"`
 	Secret      string `json:"secret" bson:"secret"`
 
-	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	HttpTimeout       string                  `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                     `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+type EndpointAuthentication struct {
+	Type   EndpointAuthenticationType `json:"type,omitempty" bson:"type" valid:"optional,in(api_key)~unsupported authentication type"`
+	ApiKey *ApiKey                    `json:"api_key" bson:"api_key"`
 }
 
 var (
@@ -455,10 +473,8 @@ type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
-	// NextSendTime denotes the next time a Event will be published in
-	// case it failed the first time
-	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
+	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
 	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
@@ -543,8 +559,6 @@ type CLIMetadata struct {
 	HostName  string `json:"host_name,omitempty" bson:"-"`
 }
 
-type KeyType string
-
 type APIKey struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
@@ -554,6 +568,7 @@ type APIKey struct {
 	Hash      string             `json:"hash,omitempty" bson:"hash"`
 	Salt      string             `json:"salt,omitempty" bson:"salt"`
 	Type      KeyType            `json:"key_type" bson:"key_type"`
+	UserID    string             `json:"user_id" bson:"user_id"`
 	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
@@ -567,16 +582,16 @@ type Subscription struct {
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
 	Type       SubscriptionType   `json:"type" bson:"type"`
-	Status     SubscriptionStatus `json:"status" bson:"status"`
 	AppID      string             `json:"-" bson:"app_id"`
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
+	Status     SubscriptionStatus `json:"status" bson:"status"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source      `json:"source_metadata" bson:"-"`
-	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"-"`
-	App      *Application `json:"app_metadata" bson:"-"`
+	Source   *Source      `json:"source_metadata" bson:"source_metadata,omitempty"`
+	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"endpoint_metadata,omitempty"`
+	App      *Application `json:"app_metadata" bson:"app_metadata,omitempty"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -708,11 +723,11 @@ type StoragePolicyConfiguration struct {
 
 type S3Storage struct {
 	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
-	AccessKey    string `json:"-" bson:"access_key" valid:"required~please provide an access key"`
-	SecretKey    string `json:"-" bson:"secret_key" valid:"required~please provide a secret key"`
-	Region       string `json:"region" bson:"region" valid:"required~please provide AWS bucket region"`
+	AccessKey    string `json:"access_key,omitempty" bson:"access_key" valid:"required~please provide an access key"`
+	SecretKey    string `json:"secret_key,omitempty" bson:"secret_key" valid:"required~please provide a secret key"`
+	Region       string `json:"region,omitempty" bson:"region"`
 	SessionToken string `json:"-" bson:"session_token"`
-	Endpoint     string `json:"endpoint" bson:"endpoint"`
+	Endpoint     string `json:"endpoint,omitempty" bson:"endpoint"`
 }
 
 type OnPremStorage struct {

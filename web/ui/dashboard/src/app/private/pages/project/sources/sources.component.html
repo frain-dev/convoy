@@ -14,7 +14,7 @@
 	<convoy-table-loader id="sources-loader" [withDate]="false" [tableHead]="sourcesTableHead"></convoy-table-loader>
 </convoy-card>
 
-<ng-container *ngIf="!isLoadingSources && sources.content.length > 0">
+<ng-container *ngIf="!isLoadingSources && sources?.content?.length">
 	<div class="w-full flex justify-end items-center my-24px">
 		<convoy-button size="sm" routerLink="./new">Create a source</convoy-button>
 	</div>
@@ -120,7 +120,7 @@
 				<div class="flex justify-end mt-40px mr-24px">
 					<convoy-button type="outline" color="danger" size="sm" (click)="showDeleteSourceModal = true">
 						Delete
-						<svg width="18" height="18" class="ml-8px">
+						<svg width="18" height="18" class="ml-8px fill-danger-100">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
 					</convoy-button>
@@ -137,25 +137,25 @@
 </ng-container>
 
 <convoy-empty-state
-	imgSrc="/assets/img/group-empty-img.svg"
+	imgSrc="/assets/img/new-empty-state.png"
 	heading="Create your first source"
 	description="Sources are how your webhook events are routed into the Convoy."
 	buttonText="Create Source"
 	(onAction)="router.navigateByUrl('/projects/' + projectId + '/sources/new')"
-	className="h-[50vh] mt-16px"
+	className="min-h-[65vh] mt-16px"
 	id="sources-empty-state"
 	*ngIf="!isLoadingSources && sources?.content?.length == 0"
 ></convoy-empty-state>
 
-<div class="flex items-center mt-16px" [ngClass]="{ invisible: sources?.content?.length === 0 }">
+<div class="flex items-center mt-16px" [ngClass]="{ invisible: sources.content.length === 0 }">
 	<convoy-button
 		type="outline"
 		size="sm"
 		className="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
-		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources?.pagination?.prev } : { page: sources?.pagination?.prev }"
-		[disable]="sources?.pagination?.prev === 0"
-		(click)="getSources({ page: sources?.pagination?.prev })"
+		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources.pagination?.prev } : { page: sources.pagination?.prev }"
+		[disable]="sources.pagination?.prev === 0"
+		(click)="getSources({ page: sources.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
@@ -167,9 +167,9 @@
 		size="sm"
 		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
-		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources?.pagination?.prev } : { page: sources?.pagination?.prev }"
-		[disable]="sources?.pagination?.prev === 0"
-		(click)="getSources({ page: sources?.pagination?.prev })"
+		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources.pagination?.prev } : { page: sources.pagination?.prev }"
+		[disable]="sources.pagination?.prev === 0"
+		(click)="getSources({ page: sources.pagination?.prev })"
 	>
 		Next
 		<svg width="24" height="24" class="fill-primary-100 mr-8px">

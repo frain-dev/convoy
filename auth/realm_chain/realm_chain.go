@@ -55,7 +55,7 @@ func Init(authConfig *config.AuthConfiguration, apiKeyRepo datastore.APIKeyRepos
 	}
 
 	if authConfig.Native.Enabled {
-		nr := native.NewNativeRealm(apiKeyRepo)
+		nr := native.NewNativeRealm(apiKeyRepo, userRepo)
 		err = rc.RegisterRealm(nr)
 		if err != nil {
 			return errors.New("failed to register native realm in realm chain")

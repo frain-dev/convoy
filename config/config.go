@@ -159,6 +159,15 @@ type TypesenseConfiguration struct {
 	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
 }
 
+type FeatureFlagConfiguration struct {
+	Type  FeatureFlagProvider `json:"type" envconfig:"CONVOY_FEATURE_FLAG_TYPE"`
+	Flipt FliptConfiguration  `json:"flipt"`
+}
+
+type FliptConfiguration struct {
+	Host string `json:"host" envconfig:"CONVOY_FLIPT_HOST"`
+}
+
 const (
 	envPrefix              string = "convoy"
 	DevelopmentEnvironment string = "development"
@@ -188,27 +197,29 @@ type CacheProvider string
 type LimiterProvider string
 type DatabaseProvider string
 type SearchProvider string
+type FeatureFlagProvider string
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
 }
 
 type Configuration struct {
-	Auth            AuthConfiguration       `json:"auth,omitempty"`
-	Database        DatabaseConfiguration   `json:"database"`
-	Queue           QueueConfiguration      `json:"queue"`
-	Prometheus      PrometheusConfiguration `json:"prometheus"`
-	Server          ServerConfiguration     `json:"server"`
-	MaxResponseSize uint64                  `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP            SMTPConfiguration       `json:"smtp"`
-	Environment     string                  `json:"env" envconfig:"CONVOY_ENV"`
-	MultipleTenants bool                    `json:"multiple_tenants"`
-	Logger          LoggerConfiguration     `json:"logger"`
-	Tracer          TracerConfiguration     `json:"tracer"`
-	Cache           CacheConfiguration      `json:"cache"`
-	Limiter         LimiterConfiguration    `json:"limiter"`
-	Host            string                  `json:"host" envconfig:"CONVOY_HOST"`
-	Search          SearchConfiguration     `json:"search"`
+	Auth            AuthConfiguration        `json:"auth,omitempty"`
+	Database        DatabaseConfiguration    `json:"database"`
+	Queue           QueueConfiguration       `json:"queue"`
+	Prometheus      PrometheusConfiguration  `json:"prometheus"`
+	Server          ServerConfiguration      `json:"server"`
+	MaxResponseSize uint64                   `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP            SMTPConfiguration        `json:"smtp"`
+	Environment     string                   `json:"env" envconfig:"CONVOY_ENV"`
+	MultipleTenants bool                     `json:"multiple_tenants"`
+	Logger          LoggerConfiguration      `json:"logger"`
+	Tracer          TracerConfiguration      `json:"tracer"`
+	Cache           CacheConfiguration       `json:"cache"`
+	Limiter         LimiterConfiguration     `json:"limiter"`
+	Host            string                   `json:"host" envconfig:"CONVOY_HOST"`
+	Search          SearchConfiguration      `json:"search"`
+	FeatureFlag     FeatureFlagConfiguration `json:"feature_flag"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

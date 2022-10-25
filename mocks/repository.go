@@ -449,9 +449,9 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventIntervals(arg0, arg1, arg2, 
 }
 
 // LoadEventsPaged mocks base method.
-func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1, arg2 string, arg3 datastore.SearchParams, arg4 datastore.Pageable) ([]datastore.Event, datastore.PaginationData, error) {
+func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1 *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventsPaged", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "LoadEventsPaged", arg0, arg1)
 	ret0, _ := ret[0].([]datastore.Event)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -459,9 +459,9 @@ func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1, arg2 s
 }
 
 // LoadEventsPaged indicates an expected call of LoadEventsPaged.
-func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), arg0, arg1)
 }
 
 // MockGroupRepository is a mock of GroupRepository interface.

@@ -60,6 +60,11 @@ type APIKey struct {
 	ExpiresAt time.Time         `json:"expires_at"`
 }
 
+type PersonalAPIKey struct {
+	Name       string `json:"name"`
+	Expiration int    `json:"expiration"`
+}
+
 type Role struct {
 	Type  auth.RoleType `json:"type"`
 	Group string        `json:"group"`
@@ -80,10 +85,12 @@ type APIKeyByIDResponse struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
+
 type APIKeyResponse struct {
 	APIKey
 	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
+	UserID    string    `json:"user_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -227,9 +234,10 @@ type Endpoint struct {
 	Description string   `json:"description" bson:"description"`
 	Events      []string `json:"events" bson:"events"`
 
-	HttpTimeout       string `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int    `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
 
 type DashboardSummary struct {

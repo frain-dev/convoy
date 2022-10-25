@@ -3,11 +3,16 @@
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
 	<div class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px mt-24px">
 		<convoy-input label="Project name" name="project-name" formControlName="name" placeholder="Enter project name here" [required]="true" errorMessage="Enter new project name"></convoy-input>
-
+		<ng-container *ngIf="action === 'update'">
+			<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between">Project Id</label>
+			<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
+				<span class="text-16 text-grey-60 font-normal">{{ projectDetails.uid }}</span>
+				<convoy-copy-button [text]="projectDetails.uid"></convoy-copy-button>
+			</div>
+		</ng-container>
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
 		<div class="project-types grid grid-cols-2 gap-24px">
 			<convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
-
 			<convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
 		</div>
 		<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
@@ -15,17 +20,15 @@
 			<span>Please select a project type</span>
 		</div>
 
-		<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="enableMoreConfig = !enableMoreConfig" [isChecked]="enableMoreConfig"></convoy-toggle>
-
 		<div [hidden]="!enableMoreConfig">
 			<div formGroupName="config">
-				<h3 class="mt-12px mb-16px font-semibold flex items-center">
+				<h3 class="mt-24px mb-16px font-semibold flex items-center">
 					Signature Details
 					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h3>
 				<div class="grid grid-cols-2 gap-24px" formGroupName="signature">
 					<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests"></convoy-input>
-					<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash"></convoy-select>
+					<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" (selectedOption)="projectForm.get('config.signature')?.patchValue({ hash: $event })"></convoy-select>
 				</div>
 
 				<h3 class="mt-24px mb-16px flex items-center font-semibold">
@@ -35,7 +38,7 @@
 					</convoy-tooltip>
 				</h3>
 				<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
-					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism"></convoy-select>
+					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism" (selectedOption)="projectForm.get('config.strategy')?.patchValue({ type: $event })"></convoy-select>
 					<convoy-input label="Duration" name="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" errorMessage="Please enter your retry logic duration"></convoy-input>
 					<convoy-input type="number" label="Limit" name="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" errorMessage="Please enter a retry limit"></convoy-input>
 				</div>
@@ -76,6 +79,8 @@
 				</ng-container>
 			</div>
 		</div>
+
+		<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="enableMoreConfig = !enableMoreConfig" [isChecked]="enableMoreConfig"></convoy-toggle>
 	</div>
 
 	<div class="button-container flex justify-end mt-32px mab-40px">

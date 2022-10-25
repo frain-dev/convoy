@@ -1,11 +1,16 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ButtonComponent } from 'src/app/components/button/button.component';
+import { InputComponent } from 'src/app/components/input/input.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ResetPasswordService } from './reset-password.service';
 
 @Component({
 	selector: 'app-reset-password',
+	standalone: true,
+	imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent],
 	templateUrl: './reset-password.component.html',
 	styleUrls: ['./reset-password.component.scss']
 })
@@ -20,7 +25,7 @@ export class ResetPasswordComponent implements OnInit {
 	activePage: 'resetPassword' | 'success' = 'resetPassword';
 	token!: string;
 
-	constructor(private formBuilder: FormBuilder, private resetPasswordService: ResetPasswordService, private route: ActivatedRoute, private generalService: GeneralService) {}
+	constructor(private formBuilder: FormBuilder, private resetPasswordService: ResetPasswordService, private route: ActivatedRoute, public router: Router, private generalService: GeneralService) {}
 
 	ngOnInit() {
 		this.token = this.route.snapshot.queryParams?.token;

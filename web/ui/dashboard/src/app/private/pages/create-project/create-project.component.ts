@@ -1,11 +1,11 @@
+import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 
-
-export type STAGES = 'createProject' | 'createSource' | 'createApplication' | 'createSubscription';
+export type STAGES = 'createProject' | 'setupSDK' | 'createSource' | 'createApplication' | 'createSubscription';
 @Component({
 	selector: 'app-create-project',
 	templateUrl: './create-project.component.html',
@@ -24,32 +24,36 @@ export class CreateProjectComponent implements OnInit {
 		{ id: 'exponential', type: 'Exponential time backoff' }
 	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
+	projects!: GROUP[];
 
-	constructor(private router: Router, public privateService: PrivateService, private generalService: GeneralService) {}
+	showInfo = false;
+	isLoadingProjects = false;
 
-	ngOnInit(): void {}
+	constructor(private router: Router, private location: Location, public privateService: PrivateService, private generalService: GeneralService) {}
+
+	ngOnInit() {
+		this.getProjects();
+	}
 
 	async createProject(newProjectData: { action: string; data: GROUP }) {
-		this.projectType = newProjectData.data.type;
-		newProjectData.data.type === 'incoming' ? (this.projectType = 'incoming') : (this.projectType = 'outgoing');
-		if (newProjectData.data.type === 'outgoing') this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
-		this.toggleActiveStage({ project: 'createApplication' });
+		const projectId = newProjectData.data.uid;
+		this.router.navigateByUrl('/projects/' + projectId + '/configure');
+	}
+
+	async getProjects() {
+		this.isLoadingProjects = true;
+		try {
+			const projectsResponse = await this.privateService.getProjects();
+			this.projects = projectsResponse.data;
+			this.isLoadingProjects = false;
+			if (this.projects.length === 0) this.showInfo = true;
+		} catch (error) {
+			this.isLoadingProjects = false;
+			return error;
+		}
 	}
 
 	cancel() {
-		this.router.navigate(['/projects']);
-	}
-
-	onProjectOnboardingComplete() {
-		this.generalService.showNotification({ message: 'Project setup complete', style: 'success' });
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid);
-	}
-
-	toggleActiveStage(stageDetails: { project: STAGES; prevStage?: STAGES }) {
-		this.projectStage = stageDetails.project;
-		this.projectStages.forEach(item => {
-			if (item.id === stageDetails.project) item.currentStage = 'current';
-			if (item.id === stageDetails.prevStage) item.currentStage = 'done';
-		});
+		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.location.back();
 	}
 }
