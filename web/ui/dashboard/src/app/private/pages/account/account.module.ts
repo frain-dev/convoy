@@ -14,15 +14,15 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { DateFormComponent } from 'src/app/components/date-form/date-form.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import { SelectComponent } from 'src/app/components/select/select.component';
 
 const routes: Routes = [{ path: '', component: AccountComponent }];
 
 @NgModule({
 	declarations: [AccountComponent, PersonalSettingsComponent, ProfileSettingsComponent, SecuritySettingsComponent],
-	imports: [CommonModule, ReactiveFormsModule, RouterModule.forChild(routes), PageComponent, InputComponent, ButtonComponent, CardComponent, EmptyStateComponent, DeleteModalComponent, ModalComponent, CopyButtonComponent, DateFormComponent, SkeletonLoaderComponent, TagComponent, StatusColorModule]
+	imports: [CommonModule, ReactiveFormsModule, RouterModule.forChild(routes), PageComponent, InputComponent, ButtonComponent, CardComponent, EmptyStateComponent, DeleteModalComponent, ModalComponent, CopyButtonComponent, SkeletonLoaderComponent, TagComponent, StatusColorModule, SelectComponent]
 })
 export class AccountModule {}
