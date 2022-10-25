@@ -12,6 +12,8 @@ import { TimeFilterComponent } from 'src/app/private/components/time-filter/time
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
+import { PrivateService } from 'src/app/private/private.service';
+import { SOURCE } from 'src/app/models/group.model';
 
 @Component({
 	selector: 'app-event',
@@ -29,9 +31,8 @@ export class EventComponent implements OnInit {
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventApp?: string;
+	eventSource?: string;
 	showEventFilterCalendar: boolean = false;
-	showOverlay: boolean = false;
-	showEventsAppsDropdown: boolean = false;
 	isloadingEvents: boolean = false;
 	selectedEventsDateOption: string = '';
 	eventDetailsTabs = [
@@ -39,27 +40,30 @@ export class EventComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
-	displayedEvents!: {
+	displayedEvents?: {
 		date: string;
 		content: EVENT[];
 	}[];
-	events!: { pagination: PAGINATION; content: EVENT[] };
+	events?: { pagination: PAGINATION; content: EVENT[] };
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('timeFilter', { static: true }) timeFilter!: TimeFilterComponent;
 	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
+	@ViewChild('sourcesDropdown', { static: true }) sourcesDropdown!: DropdownComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
 	@ViewChild(DropdownComponent) appDropdownComponent!: DropdownComponent;
 	eventsAppsFilter$!: Observable<APP[]>;
 	appPortalToken = this.route.snapshot.params?.token;
+	filterSources: SOURCE[] = [];
 
-	constructor(private eventsService: EventsService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private eventsService: EventsService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEvents();
+		this.getSourcesForFilter();
 	}
 
 	ngAfterViewInit() {
@@ -74,10 +78,9 @@ export class EventComponent implements OnInit {
 		}
 	}
 
-	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch') {
+	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch' | 'eventsSource') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.appDropdownComponent.show = false;
 		this.dateFilter.clearDate();
 		this.timeFilter.filterStartHour = 0;
 		this.timeFilter.filterStartMinute = 0;
@@ -87,6 +90,7 @@ export class EventComponent implements OnInit {
 		switch (filterType) {
 			case 'eventsApp':
 				filterItems = ['eventsApp'];
+				this.appDropdownComponent.show = false;
 				break;
 			case 'eventsDate':
 				filterItems = ['eventsStartDate', 'eventsEndDate'];
@@ -94,14 +98,19 @@ export class EventComponent implements OnInit {
 			case 'eventsSearch':
 				filterItems = ['eventsSearch'];
 				break;
+			case 'eventsSource':
+				filterItems = ['eventsSource'];
+				this.sourcesDropdown.show = false;
+				break;
 			default:
-				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp', 'eventsSearch'];
+				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp', 'eventsSearch', 'eventsSource'];
 				break;
 		}
 
 		this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
 		this.eventsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 		this.eventApp = undefined;
+		this.eventSource = undefined;
 		this.eventsSearchString = undefined;
 		this.timeFilter.clearFilter();
 
@@ -115,11 +124,20 @@ export class EventComponent implements OnInit {
 		).data.content;
 	}
 
-	updateAppFilter(appId: string, isChecked: any) {
-		this.showOverlay = false;
-		this.showEventsAppsDropdown = !this.showEventsAppsDropdown;
-		isChecked.target.checked ? (this.eventApp = appId) : (this.eventApp = undefined);
+	async getSourcesForFilter() {
+		try {
+			const sourcesResponse = (await this.privateService.getSources()).data.content;
+			this.filterSources = sourcesResponse;
+		} catch (error) {}
+	}
 
+	updateAppFilter(appId: string, isChecked: any) {
+		isChecked.target.checked ? (this.eventApp = appId) : (this.eventApp = undefined);
+		this.getEvents({ addToURL: true });
+	}
+
+	updateSourceFilter(sourceId: string, isChecked: any) {
+		isChecked.target.checked ? (this.eventSource = sourceId) : (this.eventSource = undefined);
 		this.getEvents({ addToURL: true });
 	}
 
@@ -185,6 +203,7 @@ export class EventComponent implements OnInit {
 		if (startDate) queryParams.eventsStartDate = startDate;
 		if (endDate) queryParams.eventsEndDate = endDate;
 		if (this.eventApp) queryParams.eventsApp = this.eventApp;
+		queryParams.eventsSource = this.eventSource;
 		queryParams.eventsSearch = this.eventsSearchString;
 
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
@@ -211,6 +230,7 @@ export class EventComponent implements OnInit {
 				startDate,
 				endDate,
 				appId: this.eventApp || '',
+				sourceId: this.eventSource || '',
 				query: this.eventsSearchString || '',
 				token: this.appPortalToken
 			});
@@ -218,7 +238,7 @@ export class EventComponent implements OnInit {
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
 			// to show app name or source name on events table header
-			if (this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventsTableHead[1] = 'Source Name';
+			if (this.displayedEvents && this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventsTableHead[1] = 'Source Name';
 
 			this.pushEvents.emit(this.events);
 			this.eventsDetailsItem = this.events?.content[0];

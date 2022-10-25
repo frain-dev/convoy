@@ -28,7 +28,7 @@
 				</h3>
 				<div class="grid grid-cols-2 gap-24px" formGroupName="signature">
 					<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests"></convoy-input>
-					<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash"></convoy-select>
+					<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" (selectedOption)="projectForm.get('config.signature')?.patchValue({ hash: $event })"></convoy-select>
 				</div>
 
 				<h3 class="mt-24px mb-16px flex items-center font-semibold">
@@ -38,7 +38,7 @@
 					</convoy-tooltip>
 				</h3>
 				<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
-					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism"></convoy-select>
+					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism" (selectedOption)="projectForm.get('config.strategy')?.patchValue({ type: $event })"></convoy-select>
 					<convoy-input label="Duration" name="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" errorMessage="Please enter your retry logic duration"></convoy-input>
 					<convoy-input type="number" label="Limit" name="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" errorMessage="Please enter a retry limit"></convoy-input>
 				</div>
