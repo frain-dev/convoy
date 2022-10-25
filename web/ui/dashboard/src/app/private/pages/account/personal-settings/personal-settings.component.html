@@ -33,7 +33,6 @@
 				<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 			</div>
 			<p class="text-grey-40 text-10 mt-8px">
-				<span *ngIf="key.created_at" class="mr-4px">Created on: ({{ key.created_at | date: 'mediumDate' }})</span>
 				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'mediumDate' }})</span>
 			</p>
 		</div>
@@ -56,7 +55,7 @@
 	<h3 class="font-semibold mb-28px">Generate Token</h3>
 	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
 		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
-		<convoy-date-form formType="input" (selectedDate)="getSelectedDate($event)" (clearDates)="getSelectedDate()"></convoy-date-form>
+		<convoy-select label="Expiry Duration" name="expiration" formControlName="expiration" [options]="expirationDates" (selectedOption)="generateKeyForm.patchValue({ expiration: $event })"></convoy-select>
 		<div class="flex justify-end mt-60px">
 			<convoy-button buttonType="button" (click)="showCreateNewTokenForm = false" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
 			<convoy-button>Generate Key</convoy-button>
@@ -73,7 +72,7 @@
 		routerLink="./"
 		[queryParams]="{ page: personalAccessKeys?.pagination?.prev }"
 		[disable]="personalAccessKeys?.pagination?.prev === 0"
-		(click)="fetchPersonalKeys({ page: personalAccessKeys.pagination?.prev })"
+		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
@@ -87,7 +86,7 @@
 		routerLink="./"
 		[queryParams]="{ page: personalAccessKeys?.pagination?.next }"
 		[disable]="personalAccessKeys?.pagination?.next === 0"
-		(click)="fetchPersonalKeys({ page: personalAccessKeys.pagination?.next })"
+		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.next })"
 	>
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">

@@ -34,7 +34,7 @@ export class AppDetailsComponent implements OnInit {
 	appPortalIframe!: string;
 	endpointSecretKeys: SECRET[] = [];
 	appId!: string;
-	appsDetailsItem!: APP;
+	appsDetailsItem?: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint?: ENDPOINT;
 	tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
@@ -83,6 +83,7 @@ export class AppDetailsComponent implements OnInit {
 
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		if (this.privateService.activeProjectDetails?.type === 'incoming') return;
+		if (!this.appsDetailsItem) return;
 
 		this.loadingAppPotalToken = true;
 		const payload = {
@@ -106,7 +107,9 @@ export class AppDetailsComponent implements OnInit {
 	}
 
 	async deleteEndpoint() {
+		if (!this.appsDetailsItem) return;
 		this.isDeletingEndpoint = true;
+
 		try {
 			const response = await this.appDetailsService.deleteEndpoint({ appId: this.appsDetailsItem?.uid, endpointId: this.selectedEndpoint?.uid || '' });
 			this.generalService.showNotification({ style: 'success', message: response.message });
@@ -119,6 +122,7 @@ export class AppDetailsComponent implements OnInit {
 	}
 
 	async expireSecret() {
+		if (!this.appsDetailsItem) return;
 		if (this.expireSecretForm.invalid) {
 			this.expireSecretForm.markAllAsTouched();
 			return;

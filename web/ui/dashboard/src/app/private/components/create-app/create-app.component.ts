@@ -152,6 +152,7 @@ export class CreateAppComponent implements OnInit {
 			const response = await this.createAppService.getApps();
 			const apps = response.data.content;
 			if (apps.length > 0 && this.router.url.includes('/configure')) this.createApp.emit();
+			if (apps.length > 0 && this.router.url.includes('/projects/new')) this.createApp.emit();
 			this.isLoadingAppDetails = false;
 		} catch {
 			this.isLoadingAppDetails = false;
