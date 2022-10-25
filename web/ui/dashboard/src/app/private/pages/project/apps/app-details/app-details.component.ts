@@ -134,6 +134,8 @@ export class AppDetailsComponent implements OnInit {
 			const response = await this.appDetailsService.expireSecret({ appId: this.appsDetailsItem?.uid, endpointId: this.selectedEndpoint?.uid || '', body: this.expireSecretForm.value });
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.isExpiringSecret = false;
+			this.showEndpointSecret = false;
+			this.showExpireSecret = false;
 			this.getAppDetails(this.appsDetailsItem?.uid);
 		} catch {
 			this.isExpiringSecret = false;

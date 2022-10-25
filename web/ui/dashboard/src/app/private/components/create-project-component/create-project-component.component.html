@@ -141,8 +141,8 @@
 <convoy-modal *ngIf="showNewSignatureModal" title="New Signature" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
 	<div modalBody>
 		<form [formGroup]="newSignatureForm">
-			<convoy-select label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true"></convoy-select>
-			<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true"></convoy-select>
+			<convoy-select label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
+			<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 
 			<div class="flex justify-end mt-88px">
 				<convoy-button color="danger" type="outline" className="mr-16px" (clickItem)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">Discard</convoy-button>

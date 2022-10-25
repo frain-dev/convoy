@@ -155,7 +155,8 @@ export class CreateProjectComponent implements OnInit {
 		}
 
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
-		this.updateProject();
+		await this.updateProject();
+		this.getProjectDetails();
 		this.newSignatureForm.reset();
 		this.showNewSignatureModal = false;
 	}
