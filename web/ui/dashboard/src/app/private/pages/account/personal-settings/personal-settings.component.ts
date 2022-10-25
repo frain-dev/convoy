@@ -22,7 +22,7 @@ export class PersonalSettingsComponent implements OnInit {
 	userId!: string;
 	accessKey!: string;
 	loaderIndex: number[] = [0, 1, 2];
-	personalAccessKeys!: { content: any; pagination: PAGINATION };
+	personalAccessKeys?: { content: any; pagination: PAGINATION };
     expirationDates = [
 		{ name: '7 days', uid: 7 },
 		{ name: '14 days', uid: 14 },

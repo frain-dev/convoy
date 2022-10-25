@@ -42,7 +42,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries!: { date: string; content: EVENT_DELIVERY[] }[];
-	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
+	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryFilteredByStatus: string[] = [];
