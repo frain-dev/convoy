@@ -29,7 +29,7 @@ export class AppsComponent implements OnInit {
 	isCreatingNewApp = false;
 	editAppMode = false;
 	currentAppId!: string;
-	apps!: { pagination: PAGINATION; content: APP[] };
+	apps?: { pagination?: PAGINATION; content: APP[] } = { pagination: undefined, content: [] };
 	displayedApps: { date: string; content: APP[] }[] = [];
 	appsDetailsItem?: any;
 	filteredApps!: APP[];
@@ -56,7 +56,7 @@ export class AppsComponent implements OnInit {
 
 	loadEventsFromAppsTable(event: any, appId: string) {
 		event.stopPropagation();
-		const projectId = this.privateService.activeProjectDetails.uid;
+		const projectId = this.privateService.activeProjectDetails?.uid;
 		this.router.navigate(['/projects/' + projectId + '/events'], { queryParams: { eventsApp: appId } });
 	}
 
@@ -80,7 +80,7 @@ export class AppsComponent implements OnInit {
 			const appsResponse = await this.privateService.getApps({ pageNo: page, searchString: requestDetails?.search });
 
 			this.apps = appsResponse.data;
-			this.displayedApps = this.generalService.setContentDisplayed(this.apps.content);
+			this.displayedApps = this.generalService.setContentDisplayed(this.apps?.content || []);
 			this.appsDetailsItem = this.apps?.content[0];
 
 			if (!this.filteredApps) this.filteredApps = appsResponse.data.content;
@@ -100,5 +100,4 @@ export class AppsComponent implements OnInit {
 		this.currentAppId = '';
 		this.showDeleteAppModal = true;
 	}
-
 }

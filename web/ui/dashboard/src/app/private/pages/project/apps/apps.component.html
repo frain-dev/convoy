@@ -10,7 +10,7 @@
 	<span class="text-primary-100 font-medium">Apps</span>
 </div>
 
-<div class="flex items-center justify-between mb-24px mt-18px">
+<div class="flex items-center justify-between mb-24px mt-18px" *ngIf="displayedApps.length > 0">
 	<div class="flex items-center">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" [ngClass]="{ active: appsSearchString != undefined && appsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
@@ -48,6 +48,7 @@
 	</div>
 	<convoy-button size="sm" className="h-36px" id="create-app-modal-button" routerLink="./new">Create An App</convoy-button>
 </div>
+
 <convoy-card *ngIf="isloadingApps">
 	<convoy-table-loader id="events_loader_loader" [tableHead]="appsTableHead"></convoy-table-loader>
 </convoy-card>
@@ -109,18 +110,18 @@
 
 <convoy-card className="mt-16px" *ngIf="!isloadingApps && displayedApps?.length === 0">
 	<convoy-empty-state
-		imgSrc="/assets/img/group-empty-img.svg"
+		imgSrc="/assets/img/new-empty-state.png"
 		[heading]="appsSearchString && appsSearchString.length > 0 ? 'An app with the name “' + appsSearchString + '” does not exist' : 'Create your first application'"
 		[buttonText]="appsSearchString && appsSearchString.length > 0 ? '' : 'Create Application'"
 		[description]="appsSearchString && appsSearchString.length > 0 ? '' : 'An application is either your backend application or your users application. It can hold multiple endpoints which listen for your webhook events that are sent or received.'"
-		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails.uid + '/apps/new')"
-		className="h-[50vh]"
+		(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/apps/new')"
+		className="min-h-[65vh]"
 		id="events-empty-state"
 	></convoy-empty-state>
 </convoy-card>
 
-<div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedApps?.length === 0 }">
-	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev }" [disable]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
+<div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedApps.length === 0 }">
+	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev || 0 }" [disable]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>

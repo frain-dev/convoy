@@ -34,7 +34,7 @@
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				#appsFilterDropdown
 				[active]="!!eventDeliveriesApp"
-				[hidden]="appPortalToken || this.privateService.activeProjectDetails.type === 'incoming'"
+				[hidden]="appPortalToken || this.privateService.activeProjectDetails?.type === 'incoming'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -69,7 +69,7 @@
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				#sourcesFilterDropdown
 				[active]="!!eventDeliveriesSource"
-				[hidden]="this.privateService.activeProjectDetails.type === 'outgoing'"
+				[hidden]="this.privateService.activeProjectDetails?.type === 'outgoing'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -166,8 +166,8 @@
 								<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
 							</div>
 						</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ event.metadata?.num_trials }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ event.metadata?.retry_limit }}</convoy-table-cell>
+						<convoy-table-cell class="contents">{{ event.metadata.num_trials }}</convoy-table-cell>
+						<convoy-table-cell class="contents">{{ event.metadata.retry_limit }}</convoy-table-cell>
 						<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 						<convoy-table-cell class="contents">
 							<convoy-button
@@ -201,7 +201,7 @@
 		className="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
-		[disable]="!eventDeliveries || eventDeliveries?.pagination?.prev === 0"
+		[disable]="!eventDeliveries || eventDeliveries.pagination.prev === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
@@ -216,7 +216,7 @@
 		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
-		[disable]="!eventDeliveries || eventDeliveries?.pagination?.next === 0"
+		[disable]="!eventDeliveries || eventDeliveries.pagination.next === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
 	>
 		Next

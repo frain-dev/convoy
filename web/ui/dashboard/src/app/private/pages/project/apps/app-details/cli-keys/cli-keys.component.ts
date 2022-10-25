@@ -36,7 +36,7 @@ export class CliKeysComponent implements OnInit {
 	showError = false;
 	apiKey!: string;
 	apiKeys!: API_KEY[];
-	selectedApiKey!: API_KEY;
+	selectedApiKey?: API_KEY;
 	loaderIndex: number[] = [0, 1, 2];
 	appId: string = this.route.snapshot.params.id;
 	token: string = this.route.snapshot.params.token;
@@ -113,6 +113,8 @@ export class CliKeysComponent implements OnInit {
 	}
 
 	async revokeApiKey() {
+		if (!this.selectedApiKey) return;
+
 		this.isRevokingApiKey = true;
 		try {
 			const response = await this.cliKeyService.revokeApiKey({ appId: this.selectedApiKey?.role.app, keyId: this.selectedApiKey?.uid, token: this.token });

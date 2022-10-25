@@ -20,7 +20,7 @@
 				buttonType="outline"
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				[active]="!!eventApp"
-				[hidden]="appPortalToken || this.privateService.activeProjectDetails.type === 'incoming'"
+				[hidden]="appPortalToken || this.privateService.activeProjectDetails?.type === 'incoming'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -55,7 +55,7 @@
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px"
 				[active]="!!eventSource"
 				#sourcesDropdown
-				[hidden]="this.privateService.activeProjectDetails.type === 'outgoing'"
+				[hidden]="this.privateService.activeProjectDetails?.type === 'outgoing'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -119,10 +119,10 @@
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
 								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
-									<span [routerLink]="'/projects/' + privateService.activeProjectDetails.uid + '/apps/' + event.app_metadata.uid" class="underline text-primary-100">{{ event.app_metadata.name }}</span>
+									<span [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + event.app_metadata.uid" class="underline text-primary-100">{{ event.app_metadata.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
-									<span [routerLink]="'/projects/' + privateService.activeProjectDetails.uid + '/sources'" [queryParams]="{ id: event.source_metadata.uid }" class="underline text-primary-100">{{ event.source_metadata?.name }}</span>
+									<span [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/sources'" [queryParams]="{ id: event.source_metadata.uid }" class="underline text-primary-100">{{ event.source_metadata.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 								<convoy-table-cell class="contents">
@@ -171,22 +171,14 @@
 </convoy-card>
 
 <div class="flex items-center mt-16px mb-24px">
-	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" (clickItem)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disable]="!events || events?.pagination?.prev === 0">
+	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" (clickItem)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disable]="!events || events.pagination.prev === 0">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
 	</convoy-button>
 
-	<convoy-button
-		type="outline"
-		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="{ page: events?.pagination?.next }"
-		(click)="getEvents({ page: events?.pagination?.next })"
-		[disable]="!events || events?.pagination?.next === 0"
-	>
+	<convoy-button type="outline" size="sm" className="pr-4px pl-16px py-4px border-primary-300 ml-16px" routerLink="./" [queryParams]="{ page: events?.pagination?.next }" (click)="getEvents({ page: events?.pagination?.next })" [disable]="!events || events.pagination.next === 0">
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>

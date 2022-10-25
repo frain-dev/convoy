@@ -11,8 +11,8 @@ import { EventsService } from '../events.service';
 	styleUrls: ['./event-delivery-details.component.scss']
 })
 export class EventDeliveryDetailsComponent implements OnInit {
-	eventDelsDetails!: EVENT_DELIVERY;
-	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
+	eventDelsDetails?: EVENT_DELIVERY;
+	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
 	shouldRenderSmallSize = false;
@@ -47,7 +47,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 		try {
 			await this.eventsService.forceRetryEvent({ body: payload, token: this.appPortalToken });
-			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
+			this.getEventDeliveryDetails(requestDetails.eventDeliveryId);
 			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
 		} catch (error: any) {
 			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });
@@ -58,7 +58,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	async retryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
 		try {
 			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.appPortalToken });
-			this.getEventDeliveryDetails(this.eventDelsDetails.uid);
+			this.getEventDeliveryDetails(requestDetails.eventDeliveryId);
 			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
 		} catch (error: any) {
 			this.generalService.showNotification({ message: `${error?.error?.message ? error?.error?.message : 'An error occured'}`, style: 'error' });

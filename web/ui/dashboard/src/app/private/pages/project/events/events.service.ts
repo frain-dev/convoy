@@ -14,8 +14,8 @@ export class EventsService {
 			try {
 				const response = await this.http.request({
 					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/events?sort=AESC&page=${requestDetails.pageNo}&perPage=20&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${requestDetails.appId}&query=${
-						requestDetails?.query
-					}&sourceId=${requestDetails.sourceId}`,
+						requestDetails?.query || ''
+					}&sourceId=${requestDetails.sourceId || ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});
@@ -33,7 +33,7 @@ export class EventsService {
 				const response = await this.http.request({
 					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
 						requestDetails.appId
-					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId}`,
+					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId || ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});

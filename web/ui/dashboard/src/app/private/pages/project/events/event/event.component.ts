@@ -40,11 +40,11 @@ export class EventComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
-	displayedEvents!: {
+	displayedEvents?: {
 		date: string;
 		content: EVENT[];
 	}[];
-	events!: { pagination: PAGINATION; content: EVENT[] };
+	events?: { pagination: PAGINATION; content: EVENT[] };
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
@@ -238,12 +238,12 @@ export class EventComponent implements OnInit {
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
 			// to show app name or source name on events table header
-			if (this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventsTableHead[1] = 'Source Name';
+			if (this.displayedEvents && this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventsTableHead[1] = 'Source Name';
 
+			this.pushEvents.emit(this.events);
 			this.eventsDetailsItem = this.events?.content[0];
 			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 
-			this.pushEvents.emit(this.events);
 			this.isloadingEvents = false;
 			return eventsResponse;
 		} catch (error: any) {
