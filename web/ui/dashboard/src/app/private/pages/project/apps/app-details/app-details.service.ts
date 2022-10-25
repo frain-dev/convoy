@@ -106,6 +106,21 @@ export class AppDetailsService {
 		});
 	}
 
+	expireSecret(requestDetails: { appId: string; endpointId: string; body: { expiration: number } }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}/expire_secret`,
+					method: 'put',
+                    body: requestDetails.body
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	sendEvent(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
