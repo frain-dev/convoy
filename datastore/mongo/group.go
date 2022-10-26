@@ -6,6 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/cache"
+
+	"github.com/frain-dev/convoy"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -19,6 +23,7 @@ func isDuplicateNameIndex(err error) bool {
 }
 
 type groupRepo struct {
+	cache cache.Cache
 	store datastore.Store
 }
 
@@ -40,7 +45,12 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 		return datastore.ErrDuplicateGroupName
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	groupCacheKey := convoy.GroupsCacheKey.Get(o.UID).String()
+	return db.cache.Set(ctx, groupCacheKey, o, time.Minute*5)
 }
 
 func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
@@ -71,7 +81,8 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	ctx = db.setCollectionInContext(ctx)
 
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{primitive.E{Key: "name", Value: o.Name},
+	update := bson.D{
+		primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
@@ -85,15 +96,31 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 		return datastore.ErrDuplicateGroupName
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	groupCacheKey := convoy.GroupsCacheKey.Get(o.UID).String()
+	return db.cache.Set(ctx, groupCacheKey, o, time.Minute*5)
 }
 
 func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
+	var g *datastore.Group
+	groupCacheKey := convoy.GroupsCacheKey.Get(id).String()
+	err := db.cache.Get(ctx, groupCacheKey, g)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group from cache")
+	}
+
+	if g != nil {
+		return g, nil
+	}
+
 	ctx = db.setCollectionInContext(ctx)
 
 	group := new(datastore.Group)
 
-	err := db.store.FindByID(ctx, id, nil, group)
+	err = db.store.FindByID(ctx, id, nil, group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrGroupNotFound
 	}
@@ -110,7 +137,8 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 	}
 
 	matchStage := bson.D{
-		{Key: "$match",
+		{
+			Key: "$match",
 			Value: bson.D{
 				{Key: "uid", Value: bson.M{"$in": ids}},
 			},
@@ -123,10 +151,12 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
-				bson.D{{
-					Key: "$match", Value: bson.D{
-						{Key: "document_status", Value: "Active"},
-					}},
+				bson.D{
+					{
+						Key: "$match", Value: bson.D{
+							{Key: "document_status", Value: "Active"},
+						},
+					},
 				},
 			}},
 			{Key: "as", Value: "group_apps"},
@@ -139,10 +169,12 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
-				bson.D{{
-					Key: "$project", Value: bson.D{
-						{Key: "_id", Value: "$uid"},
-					}},
+				bson.D{
+					{
+						Key: "$project", Value: bson.D{
+							{Key: "_id", Value: "$uid"},
+						},
+					},
 				},
 			}},
 			{Key: "as", Value: "group_events"},
@@ -156,7 +188,8 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 				{Key: "group_id", Value: "$uid"},
 				{Key: "total_apps", Value: bson.D{{Key: "$size", Value: "$group_apps"}}},
 				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
-			}},
+			},
+		},
 	}
 	var stats []datastore.GroupStatistics
 
@@ -221,8 +254,17 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	groupCacheKey := convoy.GroupsCacheKey.Get(uid).String()
+	err = db.cache.Delete(ctx, groupCacheKey)
+	if err != nil {
+		log.WithError(err).Error("failed to delete group from cache")
+	}
+
+	return nil
 }
 
 func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {

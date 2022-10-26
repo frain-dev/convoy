@@ -20,6 +20,12 @@ type Client struct {
 	db *mongo.Database
 }
 
+var cacheTTL = time.Minute * 5
+
+// Possibly we can implement this so service can inject custom logic that runs and returns custom TTL for the cache item
+// a good application is in the way we cache sources, we only cache twitter sources
+type CacheFn func(interface{}) int
+
 func New(cfg config.Configuration) (*Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -150,7 +156,6 @@ func (c *Client) ensureCompoundIndex(collectionName string) bool {
 	}
 
 	_, err := collection.Indexes().CreateMany(ctx, compoundIndex)
-
 	if err != nil {
 		log.WithError(err).Errorf("failed to create index on collection %s", collectionName)
 		return false

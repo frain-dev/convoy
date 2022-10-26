@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/server/models"
@@ -27,10 +26,10 @@ type GroupService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	limiter           limiter.RateLimiter
-	cache             cache.Cache
+	// cache             cache.Cache
 }
 
-func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
+func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter) *GroupService {
 	return &GroupService{
 		apiKeyRepo:        apiKeyRepo,
 		appRepo:           appRepo,
@@ -38,7 +37,6 @@ func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.Ap
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		limiter:           limiter,
-		cache:             cache,
 	}
 }
 
@@ -161,12 +159,6 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 	err = gs.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
 		log.WithError(err).Error("failed to to update group")
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
-	groupCacheKey := convoy.GroupsCacheKey.Get(group.UID).String()
-	err = gs.cache.Set(ctx, groupCacheKey, &group, time.Minute*5)
-	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 

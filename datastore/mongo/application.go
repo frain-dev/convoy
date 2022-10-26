@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -17,6 +20,7 @@ import (
 )
 
 type appRepo struct {
+	cache cache.Cache
 	store datastore.Store
 }
 
@@ -41,6 +45,13 @@ func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Applica
 	if util.IsStringEmpty(app.UID) {
 		app.UID = uuid.New().String()
 	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = db.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return errors.New("failed to add application to cache")
+	}
+
 	return db.store.Save(ctx, app, nil)
 }
 
@@ -61,7 +72,6 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	var apps []datastore.Application
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &apps)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -92,7 +102,6 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 	var apps []datastore.Application
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &apps)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -167,12 +176,23 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 }
 
 func (db *appRepo) FindApplicationByID(ctx context.Context,
-	id string) (*datastore.Application, error) {
+	id string,
+) (*datastore.Application, error) {
+	var app *datastore.Application
+	appCacheKey := convoy.ApplicationsCacheKey.Get(id).String()
+
+	err := db.cache.Get(ctx, appCacheKey, &app)
+	if err != nil {
+		return nil, err
+	}
+
+	if app != nil {
+		return app, nil
+	}
 
 	ctx = db.setCollectionInContext(ctx)
-	app := &datastore.Application{}
-
-	err := db.store.FindByID(ctx, id, nil, app)
+	app = &datastore.Application{}
+	err = db.store.FindByID(ctx, id, nil, app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrApplicationNotFound
 		return app, err
@@ -191,6 +211,11 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 		return app, err
 	}
 	app.Events = count
+
+	err = db.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return nil, err
+	}
 
 	return app, err
 }
@@ -230,23 +255,13 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 		},
 	}
 
-	return db.store.UpdateByID(ctx, app.UID, update)
-}
-
-func (db *appRepo) CreateApplicationEndpoint(ctx context.Context, groupID string, appID string, endpoint *datastore.Endpoint) error {
-	ctx = db.setCollectionInContext(ctx)
-
-	filter := bson.M{"uid": appID, "document_status": datastore.ActiveDocumentStatus}
-	update := bson.M{
-		"$push": bson.M{
-			"endpoints": endpoint,
-		},
-		"$set": bson.M{
-			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
-		},
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = db.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		return errors.New("failed to update application cache")
 	}
 
-	return db.store.UpdateOne(ctx, filter, update)
+	return db.store.UpdateByID(ctx, app.UID, update)
 }
 
 func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
@@ -290,8 +305,17 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = db.cache.Delete(ctx, appCacheKey)
+	if err != nil {
+		return errors.New("failed to delete application cache")
+	}
+
+	return nil
 }
 
 func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Application, groupID string) error {

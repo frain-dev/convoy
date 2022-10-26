@@ -12,7 +12,7 @@ import (
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
- 
+
 func createGroupService(a *ApplicationHandler) *services.GroupService {
 	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
 	appRepo := mongo.NewApplicationRepo(a.A.Store)
@@ -22,7 +22,7 @@ func createGroupService(a *ApplicationHandler) *services.GroupService {
 
 	return services.NewGroupService(
 		apiKeyRepo, appRepo, groupRepo,
-		eventRepo, eventDeliveryRepo, a.A.Limiter, a.A.Cache,
+		eventRepo, eventDeliveryRepo, a.A.Limiter,
 	)
 }
 

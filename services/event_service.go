@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -30,16 +29,16 @@ type EventService struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	queue             queue.Queuer
 	subRepo           datastore.SubscriptionRepository
-	cache             cache.Cache
-	searcher          searcher.Searcher
-	deviceRepo        datastore.DeviceRepository
+	// cache             cache.Cache
+	searcher   searcher.Searcher
+	deviceRepo datastore.DeviceRepository
 }
 
 func NewEventService(
 	appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, deviceRepo datastore.DeviceRepository,
+	queue queue.Queuer, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, deviceRepo datastore.DeviceRepository,
 ) *EventService {
-	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}
+	return &EventService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}
 }
 
 func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
@@ -52,33 +51,18 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	}
 
 	var app *datastore.Application
-	appCacheKey := convoy.ApplicationsCacheKey.Get(newMessage.AppID).String()
-
-	err := e.cache.Get(ctx, appCacheKey, &app)
+	app, err := e.appRepo.FindApplicationByID(ctx, newMessage.AppID)
 	if err != nil {
-		return nil, err
-	}
+		msg := "an error occurred while retrieving app details"
+		statusCode := http.StatusBadRequest
 
-	if app == nil {
-		app, err = e.appRepo.FindApplicationByID(ctx, newMessage.AppID)
-		if err != nil {
-
-			msg := "an error occurred while retrieving app details"
-			statusCode := http.StatusBadRequest
-
-			if errors.Is(err, datastore.ErrApplicationNotFound) {
-				msg = err.Error()
-				statusCode = http.StatusNotFound
-			}
-
-			log.WithError(err).Error("failed to fetch app")
-			return nil, util.NewServiceError(statusCode, errors.New(msg))
+		if errors.Is(err, datastore.ErrApplicationNotFound) {
+			msg = err.Error()
+			statusCode = http.StatusNotFound
 		}
 
-		err = e.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-		if err != nil {
-			return nil, err
-		}
+		log.WithError(err).Error("failed to fetch app")
+		return nil, util.NewServiceError(statusCode, errors.New(msg))
 	}
 
 	if len(app.Endpoints) == 0 {

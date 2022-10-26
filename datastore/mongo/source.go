@@ -5,6 +5,11 @@ import (
 	"errors"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,6 +18,7 @@ import (
 )
 
 type sourceRepo struct {
+	cache cache.Cache
 	store datastore.Store
 }
 
@@ -27,7 +33,17 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	source.ID = primitive.NewObjectID()
 
 	err := s.store.Save(ctx, source, nil)
-	return err
+	if err != nil {
+		return err
+	}
+
+	sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
+	err = s.cache.Set(ctx, sourceCacheKey, &source, time.Hour*24)
+	if err != nil {
+		log.WithError(err).Error("failed to add source to cache")
+	}
+
+	return nil
 }
 
 func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *datastore.Source) error {
@@ -46,7 +62,17 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *d
 	}
 
 	err := s.store.UpdateOne(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
+	err = s.cache.Set(ctx, sourceCacheKey, &source, time.Hour*24)
+	if err != nil {
+		log.WithError(err).Error("failed to add source to cache")
+	}
+
+	return nil
 }
 
 func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id string) (*datastore.Source, error) {
@@ -64,12 +90,22 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id stri
 }
 
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*datastore.Source, error) {
+	sourceCacheKey := convoy.SourceCacheKey.Get(maskId).String()
+	var source *datastore.Source
+	err := s.cache.Get(ctx, sourceCacheKey, source)
+	if err != nil {
+		log.WithError(err).Error("failed to get source from cache")
+	}
+
+	if source != nil {
+		return source, nil
+	}
+
 	ctx = s.setCollectionInContext(ctx)
-	source := &datastore.Source{}
+	source = &datastore.Source{}
 
 	filter := bson.M{"mask_id": maskId}
-
-	err := s.store.FindOne(ctx, filter, nil, source)
+	err = s.store.FindOne(ctx, filter, nil, source)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return source, datastore.ErrSourceNotFound
 	}
@@ -122,7 +158,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	removeUnusedFields(filter)
 	pagination, err := s.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &sources)
-
 	if err != nil {
 		return sources, datastore.PaginationData{}, err
 	}
@@ -134,7 +169,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	return sources, pagination, nil
 }
 
-func (db *sourceRepo) setCollectionInContext(ctx context.Context) context.Context {
+func (s *sourceRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.SourceCollection)
 }
 
