@@ -82,17 +82,24 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 			return err
 		}
 
-		return fmt.Errorf("failed to check if application name is unique: %v", err)
+		return fmt.Errorf("failed to check if endpoint name is unique: %v", err)
 	}
 
 	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	update := bson.M{
 		"$set": bson.M{
-			"title":         endpoint.Title,
-			"support_email": endpoint.SupportEmail,
-			"is_disabled":   endpoint.IsDisabled,
-			"updated_at":    endpoint.UpdatedAt,
+			"title":             endpoint.Title,
+			"support_email":     endpoint.SupportEmail,
+			"is_disabled":       endpoint.IsDisabled,
+			"target_url":        endpoint.TargetURL,
+			"secret":            endpoint.Secret,
+			"description":       endpoint.Description,
+			"slack_webhook_url": endpoint.SlackWebhookURL,
+			"http_timeout":      endpoint.HttpTimeout,
+			"rate_limit":        endpoint.RateLimit,
+			"authentication":    endpoint.Authentication,
+			"updated_at":        endpoint.UpdatedAt,
 		},
 	}
 

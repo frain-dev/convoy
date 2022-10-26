@@ -210,7 +210,6 @@ type Endpoint struct {
 	GroupID         string             `json:"group_id" bson:"group_id"`
 	TargetURL       string             `json:"target_url" bson:"target_url"`
 	Title           string             `json:"title" bson:"title"`
-	OwnerID         string             `json:"owner_id" bson:"owner_id"`
 	Secret          string             `json:"secret" bson:"secret"`
 	Description     string             `json:"description" bson:"description"`
 	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`

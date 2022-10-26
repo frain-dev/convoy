@@ -67,198 +67,198 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-//func TestEndpointService_LoadApplicationsPaged(t *testing.T) {
-//
-//	ctx := context.Background()
-//
-//	type args struct {
-//		ctx      context.Context
-//		uid      string
-//		q        string
-//		pageable datastore.Pageable
-//	}
-//	tests := []struct {
-//		name               string
-//		args               args
-//		dbFn               func(app *EndpointService)
-//		wantApps           []datastore.Endpoint
-//		wantPaginationData datastore.PaginationData
-//		wantErr            bool
-//		wantErrObj         error
-//	}{
-//		{
-//			name: "should_load_apps",
-//			args: args{
-//				ctx: ctx,
-//				uid: "1234",
-//				q:   "test_app",
-//				pageable: datastore.Pageable{
-//					Page:    1,
-//					PerPage: 10,
-//					Sort:    1,
-//				},
-//			},
-//			wantApps: []datastore.Endpoint{
-//				{UID: "123"},
-//				{UID: "abc"},
-//			},
-//			wantPaginationData: datastore.PaginationData{
-//				Total:     2,
-//				Page:      1,
-//				PerPage:   10,
-//				Prev:      0,
-//				Next:      2,
-//				TotalPage: 3,
-//			},
-//			dbFn: func(app *EndpointService) {
-//				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
-//				a.EXPECT().
-//					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-//					Return([]datastore.Endpoint{
-//						{UID: "123"},
-//						{UID: "abc"},
-//					}, datastore.PaginationData{
-//						Total:     2,
-//						Page:      1,
-//						PerPage:   10,
-//						Prev:      0,
-//						Next:      2,
-//						TotalPage: 3,
-//					}, nil)
-//			},
-//			wantErr: false,
-//		},
-//		{
-//			name: "should_fail_load_apps",
-//			args: args{
-//				ctx: ctx,
-//				uid: "1234",
-//				q:   "test_app",
-//				pageable: datastore.Pageable{
-//					Page:    1,
-//					PerPage: 10,
-//					Sort:    1,
-//				},
-//			},
-//			dbFn: func(app *EndpointService) {
-//				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
-//				a.EXPECT().
-//					LoadApplicationsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-//					Return(nil, datastore.PaginationData{}, errors.New("failed"))
-//			},
-//			wantErr:    true,
-//			wantErrObj: util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps")),
-//		},
-//		{
-//			name: "should_load_apps_trims-whitespaces-from-query",
-//			args: args{
-//				ctx: ctx,
-//				uid: "uid",
-//				q:   " falsetto ",
-//				pageable: datastore.Pageable{
-//					Page:    1,
-//					PerPage: 10,
-//					Sort:    1,
-//				},
-//			},
-//			wantApps: []datastore.Endpoint{
-//				{UID: "123"},
-//				{UID: "abc"},
-//			},
-//			wantPaginationData: datastore.PaginationData{
-//				Total:     2,
-//				Page:      1,
-//				PerPage:   10,
-//				Prev:      0,
-//				Next:      2,
-//				TotalPage: 3,
-//			},
-//			dbFn: func(app *EndpointService) {
-//				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
-//				a.EXPECT().
-//					LoadApplicationsPaged(gomock.Any(), gomock.Any(), "falsetto", gomock.Any()).Times(1).
-//					Return([]datastore.Endpoint{
-//						{UID: "123"},
-//						{UID: "abc"},
-//					}, datastore.PaginationData{
-//						Total:     2,
-//						Page:      1,
-//						PerPage:   10,
-//						Prev:      0,
-//						Next:      2,
-//						TotalPage: 3,
-//					}, nil)
-//			},
-//			wantErr: false,
-//		},
-//		{
-//			name: "should_load_apps_trims-whitespaces-from-query-retains-case",
-//			args: args{
-//				ctx: ctx,
-//				uid: "uid",
-//				q:   "   FalSetto  ",
-//				pageable: datastore.Pageable{
-//					Page:    1,
-//					PerPage: 10,
-//					Sort:    1,
-//				},
-//			},
-//			wantApps: []datastore.Endpoint{
-//				{UID: "123"},
-//				{UID: "abc"},
-//			},
-//			wantPaginationData: datastore.PaginationData{
-//				Total:     2,
-//				Page:      1,
-//				PerPage:   10,
-//				Prev:      0,
-//				Next:      2,
-//				TotalPage: 3,
-//			},
-//			dbFn: func(app *EndpointService) {
-//				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
-//				a.EXPECT().
-//					LoadApplicationsPaged(gomock.Any(), gomock.Any(), "FalSetto", gomock.Any()).Times(1).
-//					Return([]datastore.Endpoint{
-//						{UID: "123"},
-//						{UID: "abc"},
-//					}, datastore.PaginationData{
-//						Total:     2,
-//						Page:      1,
-//						PerPage:   10,
-//						Prev:      0,
-//						Next:      2,
-//						TotalPage: 3,
-//					}, nil)
-//			},
-//			wantErr: false,
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			ctrl := gomock.NewController(t)
-//			defer ctrl.Finish()
-//			as := provideEndpointService(ctrl)
-//
-//			// Arrange Expectations
-//			if tt.dbFn != nil {
-//				tt.dbFn(as)
-//			}
-//
-//			apps, paginationData, err := as.LoadApplicationsPaged(tt.args.ctx, tt.args.uid, tt.args.q, tt.args.pageable)
-//			if tt.wantErr {
-//				require.NotNil(t, err)
-//				require.Equal(t, tt.wantErrObj, err)
-//				return
-//			}
-//
-//			require.Nil(t, err)
-//			require.Equal(t, tt.wantApps, apps)
-//			require.Equal(t, tt.wantPaginationData, paginationData)
-//		})
-//	}
-//}
+func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
+
+	ctx := context.Background()
+
+	type args struct {
+		ctx      context.Context
+		uid      string
+		q        string
+		pageable datastore.Pageable
+	}
+	tests := []struct {
+		name               string
+		args               args
+		dbFn               func(app *EndpointService)
+		wantApps           []datastore.Endpoint
+		wantPaginationData datastore.PaginationData
+		wantErr            bool
+		wantErrObj         error
+	}{
+		{
+			name: "should_load_endpoints",
+			args: args{
+				ctx: ctx,
+				uid: "1234",
+				q:   "test_app",
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    1,
+				},
+			},
+			wantApps: []datastore.Endpoint{
+				{UID: "123"},
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 3,
+			},
+			dbFn: func(app *EndpointService) {
+				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().
+					LoadEndpointsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return([]datastore.Endpoint{
+						{UID: "123"},
+						{UID: "abc"},
+					}, datastore.PaginationData{
+						Total:     2,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      2,
+						TotalPage: 3,
+					}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_load_endpoints",
+			args: args{
+				ctx: ctx,
+				uid: "1234",
+				q:   "test_app",
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    1,
+				},
+			},
+			dbFn: func(app *EndpointService) {
+				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().
+					LoadEndpointsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(nil, datastore.PaginationData{}, errors.New("failed"))
+			},
+			wantErr:    true,
+			wantErrObj: util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching endpoints")),
+		},
+		{
+			name: "should_load_endpoints_trims-whitespaces-from-query",
+			args: args{
+				ctx: ctx,
+				uid: "uid",
+				q:   " falsetto ",
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    1,
+				},
+			},
+			wantApps: []datastore.Endpoint{
+				{UID: "123"},
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 3,
+			},
+			dbFn: func(app *EndpointService) {
+				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().
+					LoadEndpointsPaged(gomock.Any(), gomock.Any(), "falsetto", gomock.Any()).Times(1).
+					Return([]datastore.Endpoint{
+						{UID: "123"},
+						{UID: "abc"},
+					}, datastore.PaginationData{
+						Total:     2,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      2,
+						TotalPage: 3,
+					}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_load_endpoints_trims-whitespaces-from-query-retains-case",
+			args: args{
+				ctx: ctx,
+				uid: "uid",
+				q:   "   FalSetto  ",
+				pageable: datastore.Pageable{
+					Page:    1,
+					PerPage: 10,
+					Sort:    1,
+				},
+			},
+			wantApps: []datastore.Endpoint{
+				{UID: "123"},
+				{UID: "abc"},
+			},
+			wantPaginationData: datastore.PaginationData{
+				Total:     2,
+				Page:      1,
+				PerPage:   10,
+				Prev:      0,
+				Next:      2,
+				TotalPage: 3,
+			},
+			dbFn: func(app *EndpointService) {
+				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().
+					LoadEndpointsPaged(gomock.Any(), gomock.Any(), "FalSetto", gomock.Any()).Times(1).
+					Return([]datastore.Endpoint{
+						{UID: "123"},
+						{UID: "abc"},
+					}, datastore.PaginationData{
+						Total:     2,
+						Page:      1,
+						PerPage:   10,
+						Prev:      0,
+						Next:      2,
+						TotalPage: 3,
+					}, nil)
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			as := provideEndpointService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(as)
+			}
+
+			apps, paginationData, err := as.LoadEndpointsPaged(tt.args.ctx, tt.args.uid, tt.args.q, tt.args.pageable)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrObj, err)
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tt.wantApps, apps)
+			require.Equal(t, tt.wantPaginationData, paginationData)
+		})
+	}
+}
 
 func TestEndpointService_CreateEndpoint(t *testing.T) {
 	groupID := "1234567890"
@@ -284,10 +284,13 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Name:        "endpoint",
-					Secret:      "1234",
-					URL:         "https://google.com",
-					Description: "test_endpoint",
+					Name:            "endpoint",
+					SupportEmail:    "endpoint@test.com",
+					IsDisabled:      false,
+					SlackWebhookURL: "https://google.com",
+					Secret:          "1234",
+					URL:             "https://google.com",
+					Description:     "test_endpoint",
 				},
 				g: group,
 			},
@@ -299,6 +302,10 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
+				Title:             "endpoint",
+				SupportEmail:      "endpoint@test.com",
+				IsDisabled:        false,
+				SlackWebhookURL:   "https://google.com",
 				GroupID:           group.UID,
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
@@ -339,6 +346,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			},
 			wantEndpoint: &datastore.Endpoint{
 				GroupID:           group.UID,
+				Title:             "endpoint",
 				Secret:            "1234",
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
@@ -360,6 +368,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
+					Name:              "test_endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
 					RateLimitDuration: "m",
@@ -377,6 +386,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
+					Name:              "test_endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
 					RateLimitDuration: "1m",
@@ -429,7 +439,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx      context.Context
-		e        models.Endpoint
+		e        models.UpdateEndpoint
 		endpoint *datastore.Endpoint
 	}
 	tests := []struct {
@@ -445,8 +455,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 			name: "should_update_endpoint",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
-					Name:              "Endpoint2",
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("Endpoint2"),
+					Description:       "test_endpoint",
 					Secret:            "newly-generated-secret",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
@@ -456,6 +467,8 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				endpoint: &datastore.Endpoint{UID: "endpoint2"},
 			},
 			wantEndpoint: &datastore.Endpoint{
+				Title:             "Endpoint2",
+				Description:       "test_endpoint",
 				Secret:            "newly-generated-secret",
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
@@ -479,8 +492,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 			name: "should_error_for_invalid_rate_limit_duration",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
-					Name:              "Endpoint 1",
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("Endpoint 1"),
+					Description:       "test_endpoint",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
 					RateLimitDuration: "m",
@@ -502,8 +516,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 			name: "should_fail_to_update_endpoint",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
-					Name:              "Endpoint 1",
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("Endpoint 1"),
+					Description:       "test_endpoint",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
 					RateLimitDuration: "1m",
@@ -527,8 +542,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 			name: "should_error_for_endpoint_not_found",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
-					Name:              "endpoint1",
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("endpoint1"),
+					Description:       "test_endpoint",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
 					RateLimitDuration: "1m",

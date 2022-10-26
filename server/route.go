@@ -122,11 +122,15 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			r.Use(a.M.JsonResponse)
 			r.Use(a.M.RequireAuth())
 
-			r.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-				endpointAppSubRouter.Post("/", a.CreateEndpoint)
-				endpointAppSubRouter.Get("/", a.GetEndpoints)
+			r.Route("/endpoints", func(endpointSubRouter chi.Router) {
+				endpointSubRouter.Use(a.M.RequireGroup())
+				endpointSubRouter.Use(a.M.RateLimitByGroupID())
+				endpointSubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 
-				endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+				endpointSubRouter.Post("/", a.CreateEndpoint)
+				endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
+
+				endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 					e.Use(a.M.RequireEndpoint())
 
 					e.Get("/", a.GetEndpoint)

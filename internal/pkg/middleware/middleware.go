@@ -27,7 +27,6 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 
 	log "github.com/sirupsen/logrus"
@@ -338,25 +337,6 @@ func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint
 	return activeEndpoints
 }
 
-func ParseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
-	var e models.Endpoint
-	err := util.ReadJSON(r, &e)
-	if err != nil {
-		return e, err
-	}
-
-	description := e.Description
-	if util.IsStringEmpty(description) {
-		return e, errors.New("please provide a description")
-	}
-
-	e.URL, err = util.CleanEndpoint(e.URL)
-	if err != nil {
-		return e, err
-	}
-
-	return e, nil
-}
 
 func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

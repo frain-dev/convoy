@@ -43,7 +43,7 @@ type pagedResponse struct {
 // @Router /api/v1/endpoints [post]
 func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
-	e, err := m.ParseEndpointFromBody(r)
+	err := util.ReadJSON(r, &e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -119,8 +119,9 @@ func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /api/v1/endpoints/{endpointID} [put]
 func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
-	var e models.Endpoint
-	e, err := m.ParseEndpointFromBody(r)
+	var e models.UpdateEndpoint
+	
+	err := util.ReadJSON(r, &e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

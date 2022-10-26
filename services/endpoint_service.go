@@ -40,6 +40,16 @@ func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, q 
 }
 
 func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint, groupID string) (*datastore.Endpoint, error) {
+	if err := util.Validate(e); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	url, err := util.CleanEndpoint(e.URL)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	e.URL = url
 	if e.RateLimit == 0 {
 		e.RateLimit = convoy.RATE_LIMIT
 	}
@@ -56,6 +66,10 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	endpoint := &datastore.Endpoint{
 		UID:               uuid.New().String(),
 		GroupID:           groupID,
+		Title:             e.Name,
+		SupportEmail:      e.SupportEmail,
+		SlackWebhookURL:   e.SlackWebhookURL,
+		IsDisabled:        e.IsDisabled,
 		TargetURL:         e.URL,
 		Description:       e.Description,
 		Secret:            e.Secret,
@@ -74,13 +88,12 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		}
 	}
 
-	auth, err := validateEndpointAuthentication(e)
+	auth, err := validateEndpointAuthentication(e.Authentication)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	endpoint.Authentication = auth
-
 	err = a.endpointRepo.CreateEndpoint(ctx, endpoint, groupID)
 	if err != nil {
 		log.WithError(err).Error("failed to create endpoint")
@@ -96,12 +109,19 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	return endpoint, nil
 }
 
-func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.Endpoint, endpoint *datastore.Endpoint) (*datastore.Endpoint, error) {
+func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEndpoint, endpoint *datastore.Endpoint) (*datastore.Endpoint, error) {
 	if err := util.Validate(e); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	endpoint, err := a.endpointRepo.FindEndpointByID(ctx, endpoint.UID)
+	url, err := util.CleanEndpoint(e.URL)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	e.URL = url
+
+	endpoint, err = a.endpointRepo.FindEndpointByID(ctx, endpoint.UID)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -152,9 +172,23 @@ func (a *EndpointService) CountGroupEndpoints(ctx context.Context, groupID strin
 	return endpoints, nil
 }
 
-func updateEndpoint(endpoint *datastore.Endpoint, e models.Endpoint) (*datastore.Endpoint, error) {
+func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*datastore.Endpoint, error) {
 	endpoint.TargetURL = e.URL
 	endpoint.Description = e.Description
+
+	endpoint.Title = *e.Name
+
+	if e.SupportEmail != nil {
+		endpoint.SupportEmail = *e.SupportEmail
+	}
+
+	if e.IsDisabled != nil {
+		endpoint.IsDisabled = *e.IsDisabled
+	}
+
+	if e.SlackWebhookURL != nil {
+		endpoint.SlackWebhookURL = *e.SlackWebhookURL
+	}
 
 	if e.RateLimit != 0 {
 		endpoint.RateLimit = e.RateLimit
@@ -177,29 +211,29 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.Endpoint) (*datastore
 		endpoint.Secret = e.Secret
 	}
 
-	auth, err := validateEndpointAuthentication(e)
+	auth, err := validateEndpointAuthentication(e.Authentication)
 	if err != nil {
 		return nil, err
 	}
 
-	e.Authentication = auth
+	endpoint.Authentication = auth
 
 	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	return endpoint, nil
 }
 
-func validateEndpointAuthentication(e models.Endpoint) (*datastore.EndpointAuthentication, error) {
-	if e.Authentication != nil && !util.IsStringEmpty(string(e.Authentication.Type)) {
-		if err := util.Validate(e); err != nil {
+func validateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*datastore.EndpointAuthentication, error) {
+	if auth != nil && !util.IsStringEmpty(string(auth.Type)) {
+		if err := util.Validate(auth); err != nil {
 			return nil, err
 		}
 
-		if e.Authentication.ApiKey == nil && e.Authentication.Type == datastore.APIKeyAuthentication {
+		if auth == nil && auth.Type == datastore.APIKeyAuthentication {
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key field is required"))
 		}
 
-		return e.Authentication, nil
+		return auth, nil
 	}
 
 	return nil, nil
