@@ -345,15 +345,11 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 }
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
-	// endpointID := uuid.New().String()
 	title := "random-name"
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
-
-	// Just Before.
-	// _, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 
 	// Arrange Request
 	url := "/api/v1/endpoints"
