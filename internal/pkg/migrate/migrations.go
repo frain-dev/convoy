@@ -38,7 +38,7 @@ var Migrations = []*Migration{
 						{
 							UID:       uuid.NewString(),
 							Hash:      group.Config.Signature.Hash,
-							Encoding:  datastore.EncodingType(group.Config.Signature.Encoding),
+							Encoding:  datastore.HexEncoding,
 							CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 						},
 					}
