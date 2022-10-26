@@ -358,8 +358,7 @@ type SignatureConfiguration struct {
 	Header   config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
 	Versions []SignatureVersion             `json:"versions" bson:"versions"`
 
-	Hash     string `json:"-" bson:"hash"`
-	Encoding string `json:"-" bson:"encoding"`
+	Hash string `json:"-" bson:"hash"`
 }
 
 type SignatureVersion struct {

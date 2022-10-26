@@ -89,7 +89,6 @@ var Migrations = []*Migration{
 					}
 
 					group.Config.Signature.Hash = group.Config.Signature.Versions[0].Hash
-					group.Config.Signature.Encoding = group.Config.Signature.Versions[0].Encoding.String()
 					group.Config.Signature.Versions = nil
 
 					update := bson.M{
