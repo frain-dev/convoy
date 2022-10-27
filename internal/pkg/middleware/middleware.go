@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/logger"
@@ -72,10 +71,10 @@ type Middleware struct {
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
 	deviceRepo        datastore.DeviceRepository
-	cache             cache.Cache
-	logger            logger.Logger
-	limiter           limiter.RateLimiter
-	tracer            tracer.Tracer
+	// cache             cache.Cache
+	logger  logger.Logger
+	limiter limiter.RateLimiter
+	tracer  tracer.Tracer
 }
 
 type CreateMiddleware struct {
@@ -92,7 +91,6 @@ type CreateMiddleware struct {
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
 	DeviceRepo        datastore.DeviceRepository
-	Cache             cache.Cache
 	Logger            logger.Logger
 	Limiter           limiter.RateLimiter
 	Tracer            tracer.Tracer
@@ -113,7 +111,6 @@ func NewMiddleware(cs *CreateMiddleware) *Middleware {
 		userRepo:          cs.UserRepo,
 		configRepo:        cs.ConfigRepo,
 		deviceRepo:        cs.DeviceRepo,
-		cache:             cs.Cache,
 		logger:            cs.Logger,
 		limiter:           cs.Limiter,
 		tracer:            cs.Tracer,
@@ -187,34 +184,17 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			appID := chi.URLParam(r, "appID")
 
-			var app *datastore.Application
-			appCacheKey := convoy.ApplicationsCacheKey.Get(appID).String()
-
 			event := "an error occurred while retrieving app details"
 			statusCode := http.StatusBadRequest
 
-			err := m.cache.Get(r.Context(), appCacheKey, &app)
+			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
+				if errors.Is(err, datastore.ErrApplicationNotFound) {
+					event = err.Error()
+					statusCode = http.StatusNotFound
+				}
+				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
 				return
-			}
-
-			if app == nil {
-				app, err = m.appRepo.FindApplicationByID(r.Context(), appID)
-				if err != nil {
-					if errors.Is(err, datastore.ErrApplicationNotFound) {
-						event = err.Error()
-						statusCode = http.StatusNotFound
-					}
-					_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
-					return
-				}
-
-				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
-					return
-				}
 			}
 
 			r = r.WithContext(setApplicationInContext(r.Context(), app))
@@ -246,25 +226,10 @@ func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.
 			groupID := authUser.Role.Group
 			appID := authUser.Role.App
 
-			groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
-			err := m.cache.Get(r.Context(), groupCacheKey, &group)
+			group, err := m.groupRepo.FetchGroupByID(r.Context(), groupID)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
 				return
-			}
-
-			if group == nil {
-				group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
-					return
-				}
-
-				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-					return
-				}
 			}
 
 			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
@@ -706,26 +671,15 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 				}
 			}
 
-			if !util.IsStringEmpty(groupID) {
-				groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
-				err = m.cache.Get(r.Context(), groupCacheKey, &group)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-					return
-				}
+			if util.IsStringEmpty(groupID) {
+				_ = render.Render(w, r, util.NewErrorResponse("group id is required", http.StatusBadRequest))
+				return
+			}
 
-				if group == nil {
-					group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
-					if err != nil {
-						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
-						return
-					}
-					err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
-					if err != nil {
-						_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-						return
-					}
-				}
+			group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+				return
 			}
 
 			r = r.WithContext(setGroupInContext(r.Context(), group))

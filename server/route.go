@@ -68,14 +68,13 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 
 func NewApplicationHandler(a App) *ApplicationHandler {
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
-		Cache:             a.Cache,
 		Logger:            a.Logger,
 		Limiter:           a.Limiter,
 		Tracer:            a.Tracer,
 		EventRepo:         cm.NewEventRepository(a.Store),
 		EventDeliveryRepo: cm.NewEventDeliveryRepository(a.Store),
-		AppRepo:           cm.NewApplicationRepo(a.Store),
-		GroupRepo:         cm.NewGroupRepo(a.Store),
+		AppRepo:           cm.NewApplicationRepo(a.Store, a.Cache),
+		GroupRepo:         cm.NewGroupRepo(a.Store, a.Cache),
 		ApiKeyRepo:        cm.NewApiKeyRepo(a.Store),
 		SubRepo:           cm.NewSubscriptionRepo(a.Store),
 		SourceRepo:        cm.NewSourceRepo(a.Store),

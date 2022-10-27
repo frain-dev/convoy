@@ -17,14 +17,14 @@ import (
 )
 
 type FF struct {
-	cache       cache.Cache
-	groupRepo   datastore.GroupRepository
+	cache     cache.Cache
+	groupRepo datastore.GroupRepository
 }
 
 func provideServices(ctrl *gomock.Controller) *FF {
 	return &FF{
-		cache:       mocks.NewMockCache(ctrl),
-		groupRepo:   mocks.NewMockGroupRepository(ctrl),
+		cache:     mocks.NewMockCache(ctrl),
+		groupRepo: mocks.NewMockGroupRepository(ctrl),
 	}
 }
 
@@ -113,7 +113,7 @@ func TestFeatureFlags_CLI(t *testing.T) {
 			defer ctrl.Finish()
 
 			ss := provideServices(ctrl)
-			m := middleware.NewMiddleware(&middleware.CreateMiddleware{Cache: ss.cache, GroupRepo: ss.groupRepo})
+			m := middleware.NewMiddleware(&middleware.CreateMiddleware{GroupRepo: ss.groupRepo})
 
 			fn := m.RequireGroup()(CanAccessFeature(tc.IsEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
