@@ -1,3 +1,6 @@
+## 0.7.1
+-  [Bugfix] Fix Max response size CLI override #1098
+
 ## 0.7.0
 
 -   [Feature] Add support for feature flags #1054
