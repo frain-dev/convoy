@@ -462,8 +462,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if maxResponseSize != 0 {
 		c.MaxResponseSize = maxResponseSize
-	} else {
-		c.MaxResponseSize = config.MaxResponseSizeKb
 	}
 
 	// CONVOY_NEWRELIC_APP_NAME

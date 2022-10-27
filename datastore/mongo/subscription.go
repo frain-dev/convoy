@@ -347,16 +347,15 @@ func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId
 	return err
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, testPayload map[string]interface{}, bodyFilter map[string]interface{}) (bool, error) {
-	ctx = s.setCollectionInContext(ctx)
+func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.FilterCollection)
+	isValid := false
 
 	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
-		sub := datastore.Subscription{
-			ID:  primitive.NewObjectID(),
-			UID: uuid.NewString(),
-			FilterConfig: &datastore.FilterConfiguration{
-				Filter: testPayload,
-			},
+		sub := datastore.SubscriptionFilter{
+			ID:             primitive.NewObjectID(),
+			UID:            uuid.NewString(),
+			Filter:         payload,
 			DocumentStatus: datastore.ActiveDocumentStatus,
 		}
 
@@ -367,17 +366,26 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, testPaylo
 		}
 
 		// compare the filter with the test request payload
-		filter := bson.M{"filter_config.filter": bodyFilter}
-		mongoFilter, err := eflat.Flatten(filter)
+		var query map[string]interface{}
+		if len(filter) == 0 {
+			filter = nil
+		}
+
+		if filter != nil {
+			query = bson.M{"filter": filter}
+			query, err = eflat.Flatten(query)
+			if err != nil {
+				return err
+			}
+		}
+
+		var subscriptions []datastore.SubscriptionFilter
+		err = s.store.FindAll(sessCtx, query, nil, nil, &subscriptions)
 		if err != nil {
 			return err
 		}
 
-		var subscription datastore.Subscription
-		err = s.store.FindOne(sessCtx, mongoFilter, nil, &subscription)
-		if err != nil {
-			return err
-		}
+		isValid = len(subscriptions) > 0
 
 		err = s.store.DeleteByID(sessCtx, sub.UID, true)
 		if err != nil {
@@ -387,7 +395,7 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, testPaylo
 		return nil
 	})
 
-	return false, err
+	return isValid, err
 }
 
 func (s *subscriptionRepo) setCollectionInContext(ctx context.Context) context.Context {

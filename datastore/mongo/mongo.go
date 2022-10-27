@@ -76,6 +76,7 @@ func (c *Client) Database() *mongo.Database {
 
 func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(datastore.GroupCollection, "uid", true, nil)
+	c.ensureIndex(datastore.FilterCollection, "uid", true, nil)
 
 	c.ensureIndex(datastore.OrganisationCollection, "uid", true, nil)
 

@@ -1250,18 +1250,18 @@ func (mr *MockSubscriptionRepositoryMockRecorder) LoadSubscriptionsPaged(arg0, a
 }
 
 // TestSubscriptionFilter mocks base method.
-func (m *MockSubscriptionRepository) TestSubscriptionFilter(arg0 context.Context, arg1, arg2 map[string]interface{}) (bool, error) {
+func (m *MockSubscriptionRepository) TestSubscriptionFilter(ctx context.Context, payload, filter map[string]interface{}) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TestSubscriptionFilter", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "TestSubscriptionFilter", ctx, payload, filter)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // TestSubscriptionFilter indicates an expected call of TestSubscriptionFilter.
-func (mr *MockSubscriptionRepositoryMockRecorder) TestSubscriptionFilter(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) TestSubscriptionFilter(ctx, payload, filter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestSubscriptionFilter", reflect.TypeOf((*MockSubscriptionRepository)(nil).TestSubscriptionFilter), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestSubscriptionFilter", reflect.TypeOf((*MockSubscriptionRepository)(nil).TestSubscriptionFilter), ctx, payload, filter)
 }
 
 // UpdateSubscription mocks base method.
