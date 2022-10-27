@@ -105,7 +105,7 @@ func TestExpireSecret(t *testing.T) {
 			buf, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			task := asynq.NewTask(string(convoy.EventProcessor), buf, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(time.Nanosecond))
+			task := asynq.NewTask(string(convoy.ExpireSecretsProcessor), buf, asynq.Queue(string(convoy.DefaultQueue)), asynq.ProcessIn(time.Nanosecond))
 			err = fn(context.Background(), task)
 
 			require.Equal(t, err, tt.wantErr)
