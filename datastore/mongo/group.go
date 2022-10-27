@@ -27,9 +27,10 @@ type groupRepo struct {
 	store datastore.Store
 }
 
-func NewGroupRepo(store datastore.Store) datastore.GroupRepository {
+func NewGroupRepo(store datastore.Store, cache cache.Cache) datastore.GroupRepository {
 	return &groupRepo{
 		store: store,
+		cache: cache,
 	}
 }
 

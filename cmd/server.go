@@ -20,7 +20,6 @@ import (
 )
 
 func addServerCommand(a *app) *cobra.Command {
-
 	var env string
 	var host string
 	var sentry string
@@ -182,10 +181,10 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			log.WithError(err).Error("failed to create worker")
 		}
 
-		appRepo := cm.NewApplicationRepo(a.store)
+		appRepo := cm.NewApplicationRepo(a.store, a.cache)
 		eventRepo := cm.NewEventRepository(a.store)
 		eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
-		groupRepo := cm.NewGroupRepo(a.store)
+		groupRepo := cm.NewGroupRepo(a.store, a.cache)
 		subRepo := cm.NewSubscriptionRepo(a.store)
 		deviceRepo := cm.NewDeviceRepository(a.store)
 		configRepo := cm.NewConfigRepo(a.store)
@@ -226,7 +225,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
-		//start worker
+		// start worker
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}

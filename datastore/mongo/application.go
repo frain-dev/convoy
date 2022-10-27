@@ -24,9 +24,10 @@ type appRepo struct {
 	store datastore.Store
 }
 
-func NewApplicationRepo(store datastore.Store) datastore.ApplicationRepository {
+func NewApplicationRepo(store datastore.Store, cache cache.Cache) datastore.ApplicationRepository {
 	return &appRepo{
 		store: store,
+		cache: cache,
 	}
 }
 
