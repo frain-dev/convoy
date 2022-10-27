@@ -122,6 +122,7 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 				s.EXPECT().FindSubscriptionsByAppID(gomock.Any(), "group-id-1", "app-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -196,6 +197,7 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "group-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
