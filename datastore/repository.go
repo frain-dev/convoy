@@ -89,6 +89,7 @@ type ApplicationRepository interface {
 	SearchApplicationsByGroupId(context.Context, string, SearchParams) ([]Application, error)
 	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
 	CreateApplicationEndpoint(context.Context, string, string, *Endpoint) error
+	ExpireSecret(ctx context.Context, appID string, endpointID string, secrets []Secret) error
 }
 
 type SubscriptionRepository interface {
