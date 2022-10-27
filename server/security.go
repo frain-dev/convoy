@@ -82,11 +82,11 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "Organisation id"
-// @Param appID path string true "application ID"
+// @Param endpointID path string true "Endpoint ID"
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys [post]
+// @Router /ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys [post]
 
 // CreateEndpointAPIKey
 // @Summary Create an api key for endpoint portal or the cli (API)

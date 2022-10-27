@@ -93,25 +93,6 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event() {
 	require.Equal(s.T(), event.EndpointID, endpointID)
 }
 
-func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_App_has_no_endpoint() {
-	endpointID := uuid.NewString()
-	expectedStatusCode := http.StatusBadRequest
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
-
-	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, endpointID)
-
-	req := createRequest(http.MethodPost, "/api/v1/events", s.APIKey, body)
-	w := httptest.NewRecorder()
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {
 	endpointID := uuid.NewString()
 	expectedStatusCode := http.StatusCreated
@@ -353,7 +334,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
 
-	url := fmt.Sprintf("/api/v1/events?appId=%s&sourceId=%s", endpoint1.UID, sourceID)
+	url := fmt.Sprintf("/api/v1/events?endpointId=%s&sourceId=%s", endpoint1.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -390,7 +371,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	event2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event2, endpoint2, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
-	url := fmt.Sprintf("/api/v1/eventdeliveries?appId=%s", endpoint1.UID)
+	url := fmt.Sprintf("/api/v1/eventdeliveries?endpointId=%s", endpoint1.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 

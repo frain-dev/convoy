@@ -50,8 +50,17 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
+	endpointID := newMessage.EndpointID
+	if util.IsStringEmpty(endpointID) {
+		endpointID = newMessage.AppID
+	}
+
+	if util.IsStringEmpty(endpointID) {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("please provide an endpoint ID"))
+	}
+
 	var endpoint *datastore.Endpoint
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(newMessage.EndpointID).String()
+	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
 
 	err := e.cache.Get(ctx, endpointCacheKey, &endpoint)
 	if err != nil {
@@ -59,7 +68,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 	}
 
 	if endpoint == nil {
-		endpoint, err = e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID)
+		endpoint, err = e.endpointRepo.FindEndpointByID(ctx, endpointID)
 		if err != nil {
 
 			msg := "an error occurred while retrieving endpoint details"
@@ -70,7 +79,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 				statusCode = http.StatusNotFound
 			}
 
-			log.WithError(err).Error("failed to fetch app")
+			log.WithError(err).Error("failed to fetch endpoint")
 			return nil, util.NewServiceError(statusCode, errors.New(msg))
 		}
 
@@ -78,15 +87,6 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	subscriptions, err := e.subRepo.FindSubscriptionsByEndpointID(ctx, g.UID, endpoint.UID)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(subscriptions) == 0 {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("endpoint has no subscriptions"))
 	}
 
 	event := &datastore.Event{

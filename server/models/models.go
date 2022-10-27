@@ -208,7 +208,8 @@ type UpdateSource struct {
 }
 
 type Event struct {
-	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide an endpoint id"`
+	EndpointID string `json:"endpoint_id" bson:"endpoint_id"`
+	AppID      string `json:"app_id" bson:"app_id"`
 	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
