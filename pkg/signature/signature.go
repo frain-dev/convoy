@@ -61,15 +61,13 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s.Payload = tBuf
 
 	// Generate Simple Signatures
 	if !s.Advanced {
-		// TODO: replay attacks without advanced signatures?
 		sch := s.Schemes[len(s.Schemes)-1]
 		sec := sch.Secret[len(sch.Secret)-1]
 
-		sig, err := s.generateSignature(sch, sec, s.Payload)
+		sig, err := s.generateSignature(sch, sec, tBuf)
 		if err != nil {
 			return "", err
 		}

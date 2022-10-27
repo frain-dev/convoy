@@ -657,7 +657,6 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 
 func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
 	for _, endpoint := range *endpoints {
-		fmt.Printf("ENDPOINT: %+v\n", endpoint)
 		if endpoint.UID == id && endpoint.DeletedAt == 0 {
 			return &endpoint, nil
 		}
