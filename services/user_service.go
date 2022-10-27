@@ -31,8 +31,9 @@ type UserService struct {
 	orgService    *OrganisationService
 }
 
-func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer, configService *ConfigService, orgService *OrganisationService) *UserService {
-	return &UserService{userRepo: userRepo, cache: cache, queue: queue, configService: configService, orgService: orgService}
+func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer, configService *ConfigService, orgService *OrganisationService, jwtCfg *config.JwtRealmOptions) *UserService {
+	us := &UserService{userRepo: userRepo, cache: cache, queue: queue, configService: configService, orgService: orgService, jwt: jwt.NewJwt(jwtCfg, cache)}
+	return us
 }
 
 func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error) {
@@ -51,7 +52,6 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 
 	p := datastore.Password{Plaintext: data.Password, Hash: []byte(user.Password)}
 	match, err := p.Matches()
-
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -59,18 +59,12 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 		return nil, nil, util.NewServiceError(http.StatusUnauthorized, errors.New("invalid username or password"))
 	}
 
-	jwt, err := u.token()
-	if err != nil {
-		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
-	}
-
-	token, err := jwt.GenerateToken(user)
+	token, err := u.jwt.GenerateToken(user)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	return user, &token, nil
-
 }
 
 func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUser) (*datastore.User, *jwt.Token, error) {
@@ -127,12 +121,7 @@ func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUse
 		return nil, nil, err
 	}
 
-	jwt, err := u.token()
-	if err != nil {
-		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
-	}
-
-	token, err := jwt.GenerateToken(user)
+	token, err := u.jwt.GenerateToken(user)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -145,13 +134,8 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	jw, err := u.token()
+	isValid, err := u.jwt.ValidateAccessToken(data.AccessToken)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusInternalServerError, err)
-	}
-	isValid, err := jw.ValidateAccessToken(data.AccessToken)
-	if err != nil {
-
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			expiry := time.Unix(isValid.Expiry, 0)
 			gracePeriod := expiry.Add(time.Minute * 5)
@@ -167,7 +151,7 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		}
 	}
 
-	verified, err := jw.ValidateRefreshToken(data.RefreshToken)
+	verified, err := u.jwt.ValidateRefreshToken(data.RefreshToken)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusUnauthorized, err)
 	}
@@ -181,51 +165,31 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 		return nil, util.NewServiceError(http.StatusUnauthorized, err)
 	}
 
-	token, err := jw.GenerateToken(user)
+	token, err := u.jwt.GenerateToken(user)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	err = jw.BlacklistToken(verified, data.RefreshToken)
+	err = u.jwt.BlacklistToken(verified, data.RefreshToken)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to blacklist token"))
 	}
 
 	return &token, nil
-
 }
 
 func (u *UserService) LogoutUser(token string) error {
-	jw, err := u.token()
-	if err != nil {
-		return util.NewServiceError(http.StatusInternalServerError, err)
-	}
-
-	verified, err := jw.ValidateAccessToken(token)
+	verified, err := u.jwt.ValidateAccessToken(token)
 	if err != nil {
 		return util.NewServiceError(http.StatusUnauthorized, err)
 	}
 
-	err = jw.BlacklistToken(verified, token)
+	err = u.jwt.BlacklistToken(verified, token)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to blacklist token"))
 	}
 
 	return nil
-}
-
-func (u *UserService) token() (*jwt.Jwt, error) {
-	if u.jwt != nil {
-		return u.jwt, nil
-	}
-
-	config, err := config.Get()
-	if err != nil {
-		return &jwt.Jwt{}, err
-	}
-
-	u.jwt = jwt.NewJwt(&config.Auth.Jwt, u.cache)
-	return u.jwt, nil
 }
 
 func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, user *datastore.User) (*datastore.User, error) {
@@ -256,7 +220,6 @@ func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePas
 
 	p := datastore.Password{Plaintext: data.CurrentPassword, Hash: []byte(user.Password)}
 	match, err := p.Matches()
-
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
