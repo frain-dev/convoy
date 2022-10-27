@@ -30,7 +30,7 @@ func NewDispatcher(timeout time.Duration) *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, g *datastore.Group, hmac string, timestamp string, maxResponseSize int64, headers httpheader.HTTPHeader) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, g *datastore.Group, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader) (*Response, error) {
 	r := &Response{}
 	signatureHeader := g.Config.Signature.Header.String()
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
@@ -49,15 +49,6 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())
-	if g.Config.ReplayAttacks {
-		if util.IsStringEmpty(timestamp) {
-			err := errors.New("timestamp is required")
-			log.WithError(err).Error("Dispatcher invalid arguments")
-			r.Error = err.Error()
-			return r, err
-		}
-		req.Header.Set("Convoy-Timestamp", timestamp)
-	}
 
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)

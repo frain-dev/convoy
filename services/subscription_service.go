@@ -339,5 +339,4 @@ func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfigurati
 
 	strategyConfig.Duration = cfg.IntervalSeconds
 	return strategyConfig, nil
-
 }

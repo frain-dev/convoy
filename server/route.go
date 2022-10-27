@@ -173,6 +173,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									e.Get("/", a.GetAppEndpoint)
 									e.Put("/", a.UpdateAppEndpoint)
 									e.Delete("/", a.DeleteAppEndpoint)
+									e.Put("/expire_secret", a.ExpireSecret)
+
 								})
 							})
 						})
@@ -366,6 +368,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Get("/", a.GetAppEndpoint)
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
+										e.Put("/expire_secret", a.ExpireSecret)
+
 									})
 								})
 

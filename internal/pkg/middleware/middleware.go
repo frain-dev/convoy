@@ -583,7 +583,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 					UID:               en.UID,
 					TargetURL:         en.TargetURL,
 					DocumentStatus:    en.DocumentStatus,
-					Secret:            en.Secret,
+					Secrets:           en.Secrets,
 					HttpTimeout:       en.HttpTimeout,
 					RateLimit:         en.RateLimit,
 					RateLimitDuration: en.RateLimitDuration,
