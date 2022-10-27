@@ -180,7 +180,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			})
 
 			r.Route("/security", func(securityRouter chi.Router) {
-				securityRouter.Route("/applications/{endpointID}/keys", func(securitySubRouter chi.Router) {
+				securityRouter.Route("/endpoints/{endpointID}/keys", func(securitySubRouter chi.Router) {
+					securitySubRouter.Use(a.M.RequireEndpoint())
+
 					securitySubRouter.Use(a.M.RequireGroup())
 					securitySubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
 					securitySubRouter.Use(a.M.RequireBaseUrl())
@@ -316,6 +318,13 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 								e.Get("/", a.GetEndpoint)
 								e.Put("/", a.UpdateEndpoint)
 								e.Delete("/", a.DeleteEndpoint)
+
+								e.Route("/keys", func(keySubRouter chi.Router) {
+									keySubRouter.Use(a.M.RequireBaseUrl())
+									keySubRouter.Post("/", a.CreateEndpointAPIKey)
+									keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
+									keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
+								})
 							})
 						})
 

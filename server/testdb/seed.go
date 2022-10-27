@@ -22,7 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// SeedApplication is create random application for integration tests.
+// SeedEndpoint creates a random endpoint for integration tests.
 func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title string, disabled bool) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()

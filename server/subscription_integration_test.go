@@ -189,43 +189,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
 }
 
-func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
-	bodyStr := fmt.Sprintf(`{
-		"name": "sub-1",
-		"type": "incoming",
-		"app_id": "%s",
-		"group_id": "%s",
-		"endpoint_id": "%s",
-		"alert_config": {
-			"threshold": "1h",
-			"count": 10
-		},
-		"retry_config": {
-			"type": "linear",
-			"retry_count": 2,
-			"interval_seconds": 10
-		},
-		"filter_config": {
-			"event_types": [
-				"user.created",
-				"user.updated"
-			]
-		}
-	}`, uuid.NewString(), s.DefaultGroup.UID, endpoint.UID)
 
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
-func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppDoesNotBelongToGroup() {
+func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointDoesNotBelongToGroup() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
@@ -262,7 +227,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppDoesNotBel
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFound() {
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -284,7 +248,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFo
 				"user.updated"
 			]
 		}
-	}`, endpoint.UID, s.DefaultGroup.UID, uuid.NewString())
+	}`, uuid.NewString(), s.DefaultGroup.UID, uuid.NewString())
 
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
