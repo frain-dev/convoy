@@ -187,17 +187,19 @@ const (
 	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
 )
 
-type AuthProvider string
-type QueueProvider string
-type StrategyProvider string
-type SignatureHeaderProvider string
-type LoggerProvider string
-type TracerProvider string
-type CacheProvider string
-type LimiterProvider string
-type DatabaseProvider string
-type SearchProvider string
-type FeatureFlagProvider string
+type (
+	AuthProvider            string
+	QueueProvider           string
+	StrategyProvider        string
+	SignatureHeaderProvider string
+	LoggerProvider          string
+	TracerProvider          string
+	CacheProvider           string
+	LimiterProvider         string
+	DatabaseProvider        string
+	SearchProvider          string
+	FeatureFlagProvider     string
+)
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -336,7 +338,6 @@ func ensureMaxResponseSize(c *Configuration) {
 }
 
 func validate(c *Configuration) error {
-
 	ensureMaxResponseSize(c)
 
 	if err := ensureQueueConfig(c.Queue); err != nil {
