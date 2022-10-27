@@ -3,6 +3,9 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/config"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
@@ -13,14 +16,14 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createUserService(a *ApplicationHandler) *services.UserService {
+func createUserService(a *ApplicationHandler, jwtCfg *config.JwtRealmOptions) *services.UserService {
 	userRepo := mongo.NewUserRepo(a.A.Store)
 	configService := createConfigService(a)
 	orgService := createOrganisationService(a)
 
 	return services.NewUserService(
 		userRepo, a.A.Cache, a.A.Queue,
-		configService, orgService,
+		configService, orgService, jwtCfg,
 	)
 }
 
@@ -41,7 +44,14 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	user, token, err := userService.LoginUser(r.Context(), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -79,7 +89,13 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	user, token, err := userService.RegisterUser(r.Context(), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -117,7 +133,13 @@ func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	token, err := userService.RefreshToken(r.Context(), &refreshToken)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -144,7 +166,13 @@ func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	err = userService.LogoutUser(auth.Token)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -201,7 +229,13 @@ func (a *ApplicationHandler) UpdateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	user, err = userService.UpdateUser(r.Context(), &userUpdate, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -237,7 +271,14 @@ func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	user, err = userService.UpdatePassword(r.Context(), &updatePassword, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -245,7 +286,6 @@ func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Password updated successfully", user, http.StatusOK))
-
 }
 
 // ForgotPassword
@@ -268,7 +308,14 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	err = userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -297,7 +344,14 @@ func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	userService := createUserService(a)
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	userService := createUserService(a, &cfg.Auth.Jwt)
 	user, err := userService.ResetPassword(r.Context(), token, &resetPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -32,7 +32,7 @@ type UserService struct {
 }
 
 func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer, configService *ConfigService, orgService *OrganisationService, jwtCfg *config.JwtRealmOptions) *UserService {
-	us := &UserService{userRepo: userRepo, cache: cache, queue: queue, configService: configService, orgService: orgService, jwt: jwt.NewJwt(jwtCfg, cache)}
+	us := &UserService{userRepo: userRepo, queue: queue, configService: configService, orgService: orgService, jwt: jwt.NewJwt(jwtCfg, cache), cache: cache}
 	return us
 }
 

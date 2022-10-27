@@ -18,7 +18,7 @@ import (
 func createSourceService(a *ApplicationHandler) *services.SourceService {
 	sourceRepo := mongo.NewSourceRepo(a.A.Store)
 
-	return services.NewSourceService(sourceRepo, a.A.Cache)
+	return services.NewSourceService(sourceRepo)
 }
 
 // CreateSource

@@ -20,7 +20,7 @@ type Client struct {
 	db *mongo.Database
 }
 
-var cacheTTL = time.Minute * 5
+// var cacheTTL = time.Minute * 5
 
 // Possibly we can implement this so service can inject custom logic that runs and returns custom TTL for the cache item
 // a good application is in the way we cache sources, we only cache twitter sources

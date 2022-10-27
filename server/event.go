@@ -29,7 +29,7 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 
 	return services.NewEventService(
 		appRepo, eventRepo, eventDeliveryRepo,
-		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
+		a.A.Queue, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
 	)
 }
 

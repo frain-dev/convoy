@@ -18,13 +18,13 @@ func provideAppService(ctrl *gomock.Controller) *AppService {
 	appRepo := mocks.NewMockApplicationRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	cache := mocks.NewMockCache(ctrl)
-	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
+	return NewAppService(appRepo, eventRepo, eventDeliveryRepo)
 }
 
 func boolPtr(b bool) *bool {
 	return &b
 }
+
 func stringPtr(s string) *string {
 	return &s
 }
@@ -83,9 +83,6 @@ func TestAppService_CreateApp(t *testing.T) {
 				a.EXPECT().
 					CreateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantApp: &datastore.Application{
 				GroupID:         groupID,
@@ -177,7 +174,6 @@ func TestAppService_CreateApp(t *testing.T) {
 }
 
 func TestAppService_LoadApplicationsPaged(t *testing.T) {
-
 	ctx := context.Background()
 
 	type args struct {
@@ -412,9 +408,6 @@ func TestAppService_UpdateApplication(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},
@@ -542,9 +535,6 @@ func TestAppService_DeleteApplication(t *testing.T) {
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().DeleteApplication(gomock.Any(), &datastore.Application{UID: "12345"}).Times(1).Return(nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Delete(gomock.Any(), gomock.Any())
 			},
 			wantErr:    false,
 			wantErrObj: nil,
@@ -587,7 +577,6 @@ func TestAppService_DeleteApplication(t *testing.T) {
 }
 
 func TestAppService_CreateAppEndpoint(t *testing.T) {
-
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
@@ -613,13 +602,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Application{UID: "abc"}, nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -660,13 +643,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Application{UID: "abc"}, nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -714,13 +691,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Application{UID: "abc"}, nil)
-
-				c, _ := app.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantApp: &datastore.Application{
 				UID: "abc",
@@ -785,7 +756,7 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *AppService) {
 				a, _ := app.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().CreateApplicationEndpoint(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -941,9 +912,6 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 				a, _ := as.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
-
-				c, _ := as.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},
@@ -1118,9 +1086,6 @@ func TestAppService_DeleteAppEndpoint(t *testing.T) {
 			dbFn: func(as *AppService) {
 				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
 				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := as.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},

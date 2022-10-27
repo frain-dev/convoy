@@ -38,11 +38,11 @@ import (
 
 // TEST HELPERS.
 func getMongoDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
+	return "mongodb://localhost:27017/testdb"
 }
 
 func getRedisDSN() string {
-	return os.Getenv("TEST_REDIS_DSN")
+	return "redis://localhost:6379"
 }
 
 func getConfig() config.Configuration {
@@ -61,7 +61,6 @@ func getConfig() config.Configuration {
 }
 
 func getDB() convoyMongo.Client {
-
 	db, err := convoyMongo.New(getConfig())
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))

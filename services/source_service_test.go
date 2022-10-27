@@ -16,8 +16,7 @@ import (
 
 func provideSourceService(ctrl *gomock.Controller) *SourceService {
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
-	cache := mocks.NewMockCache(ctrl)
-	return NewSourceService(sourceRepo, cache)
+	return NewSourceService(sourceRepo)
 }
 
 func TestSourceService_CreateSource(t *testing.T) {
@@ -536,9 +535,6 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345").Times(1).Return(nil)
-
-				c, _ := so.cache.(*mocks.MockCache)
-				c.EXPECT().Delete(gomock.Any(), gomock.Any())
 			},
 		},
 

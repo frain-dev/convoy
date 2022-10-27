@@ -27,10 +27,13 @@ func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.Nil(t, err)
 
+	cfg, err := config.Get()
+	require.Nil(t, err)
+
 	configService := NewConfigService(configRepo)
 	orgService := NewOrganisationService(orgRepo, orgMemberRepo)
 
-	userService := NewUserService(userRepo, cache, queue, configService, orgService)
+	userService := NewUserService(userRepo, cache, queue, configService, orgService, &cfg.Auth.Jwt)
 	return userService
 }
 
@@ -68,7 +71,6 @@ func TestUserService_LoginUser(t *testing.T) {
 				us, _ := u.userRepo.(*mocks.MockUserRepository)
 				p := &datastore.Password{Plaintext: "123456"}
 				err := p.GenerateHash()
-
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -109,7 +111,6 @@ func TestUserService_LoginUser(t *testing.T) {
 				us, _ := u.userRepo.(*mocks.MockUserRepository)
 				p := &datastore.Password{Plaintext: "123456"}
 				err := p.GenerateHash()
-
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -281,7 +282,6 @@ func TestService_RegisterUser(t *testing.T) {
 			require.Equal(t, user.Email, tc.wantUser.Email)
 		})
 	}
-
 }
 
 func TestUserService_RefreshToken(t *testing.T) {
@@ -371,10 +371,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 			}
 
 			if tc.wantToken.generate {
-				jwt, err := u.token()
-				require.Nil(t, err)
-
-				token, err := jwt.GenerateToken(tc.args.user)
+				token, err := u.jwt.GenerateToken(tc.args.user)
 				require.Nil(t, err)
 
 				if tc.wantToken.accessToken {
@@ -425,7 +422,6 @@ func TestUserService_LogoutUser(t *testing.T) {
 		wantErrCode int
 		wantErrMsg  string
 	}{
-
 		{
 			name: "should_logout_user",
 			args: args{
@@ -469,10 +465,7 @@ func TestUserService_LogoutUser(t *testing.T) {
 			}
 
 			if tc.wantToken.generate {
-				jwt, err := u.token()
-				require.Nil(t, err)
-
-				token, err := jwt.GenerateToken(tc.args.user)
+				token, err := u.jwt.GenerateToken(tc.args.user)
 				require.Nil(t, err)
 
 				if tc.wantToken.accessToken {

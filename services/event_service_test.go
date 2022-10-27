@@ -22,12 +22,11 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
-	cache := mocks.NewMockCache(ctrl)
 	searcher := mocks.NewMockSearcher(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
-	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo, deviceRepo)
+	return NewEventService(appRepo, eventRepo, eventDeliveryRepo, queue, searcher, subRepo, sourceRepo, deviceRepo)
 }
 
 func TestEventService_CreateAppEvent(t *testing.T) {
@@ -49,10 +48,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 		{
 			name: "should_create_event",
 			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
 					Times(1).Return(&datastore.Application{
@@ -108,10 +103,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 		{
 			name: "should_create_event_with_exponential_backoff_strategy",
 			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
 					Times(1).Return(&datastore.Application{
@@ -164,10 +155,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 		{
 			name: "should_create_event_for_disabled_app",
 			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
 					Times(1).Return(&datastore.Application{
@@ -225,10 +212,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 		{
 			name: "should_create_event_with_custom_headers",
 			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
 					Times(1).Return(&datastore.Application{
@@ -287,10 +270,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 		{
 			name: "should_error_for_invalid_strategy_config",
 			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
 					Times(1).Return(&datastore.Application{
@@ -343,9 +322,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 		{
 			name: "should_error_for_application_not_found",
 			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
 					Times(1).Return(nil, datastore.ErrApplicationNotFound)
@@ -366,10 +342,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 		{
 			name: "should_error_for_zero_app_subscriptions",
 			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
 				a, _ := es.appRepo.(*mocks.MockApplicationRepository)
 				a.EXPECT().FindApplicationByID(gomock.Any(), "123").
 					Times(1).Return(&datastore.Application{

@@ -22,8 +22,7 @@ func provideGroupService(ctrl *gomock.Controller) *GroupService {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	cache := mocks.NewMockCache(ctrl)
-	return NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
+	return NewGroupService(apiKeyRepo, appRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter())
 }
 
 func TestGroupService_CreateGroup(t *testing.T) {
@@ -410,7 +409,7 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				return
 			}
 
-			//fmt.Println("eee", err.Error())
+			// fmt.Println("eee", err.Error())
 			require.Nil(t, err)
 			require.NotEmpty(t, group.UID)
 			require.NotEmpty(t, group.ID)
@@ -517,9 +516,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				a.EXPECT().UpdateGroup(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := gs.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -908,7 +904,6 @@ func TestGroupService_DeleteGroup(t *testing.T) {
 			dbFn: func(gs *GroupService) {
 				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
 				g.EXPECT().DeleteGroup(gomock.Any(), "12345").Times(1).Return(nil)
-
 			},
 			wantErr: false,
 		},
