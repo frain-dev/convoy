@@ -707,7 +707,12 @@ func GetGroupID(r *http.Request) string {
 }
 
 func GetAppID(r *http.Request) string {
-	return chi.URLParam(r, "appID")
+	appID := chi.URLParam(r, "appID")
+	if !util.IsStringEmpty(appID) {
+		return appID
+	}
+
+	return GetAuthUserFromContext(r.Context()).Role.App
 }
 
 func GetEndpointID(r *http.Request) string {
