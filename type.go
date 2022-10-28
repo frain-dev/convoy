@@ -67,19 +67,20 @@ func GetVersion() string {
 }
 
 const (
-	EventProcessor        TaskName = "EventProcessor"
-	DeadLetterProcessor   TaskName = "DeadLetterProcessor"
-	CreateEventProcessor  TaskName = "CreateEventProcessor"
-	NotificationProcessor TaskName = "NotificationProcessor"
-	IndexDocument         TaskName = "index document"
-	DailyAnalytics        TaskName = "daily analytics"
-	MonitorTwitterSources TaskName = "monitor twitter sources"
-	RetentionPolicies     TaskName = "retention_policies"
-	EmailProcessor        TaskName = "EmailProcessor"
-	ApplicationsCacheKey  CacheKey = "applications"
-	GroupsCacheKey        CacheKey = "groups"
-	TokenCacheKey         CacheKey = "tokens"
-	SourceCacheKey        CacheKey = "sources"
+	EventProcessor         TaskName = "EventProcessor"
+	DeadLetterProcessor    TaskName = "DeadLetterProcessor"
+	CreateEventProcessor   TaskName = "CreateEventProcessor"
+	NotificationProcessor  TaskName = "NotificationProcessor"
+	IndexDocument          TaskName = "index document"
+	DailyAnalytics         TaskName = "daily analytics"
+	MonitorTwitterSources  TaskName = "monitor twitter sources"
+	RetentionPolicies      TaskName = "retention_policies"
+	EmailProcessor         TaskName = "EmailProcessor"
+	ExpireSecretsProcessor TaskName = "ExpireSecretsProcessor"
+	ApplicationsCacheKey   CacheKey = "applications"
+	GroupsCacheKey         CacheKey = "groups"
+	TokenCacheKey          CacheKey = "tokens"
+	SourceCacheKey         CacheKey = "sources"
 )
 
 // queues

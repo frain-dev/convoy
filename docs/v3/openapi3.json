@@ -228,6 +228,9 @@
 			},
 			"datastore.Endpoint": {
 				"properties": {
+					"advanced_signatures": {
+						"type": "boolean"
+					},
 					"authentication": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
 					},
@@ -249,8 +252,11 @@
 					"rate_limit_duration": {
 						"type": "string"
 					},
-					"secret": {
-						"type": "string"
+					"secrets": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.Secret"
+						},
+						"type": "array"
 					},
 					"target_url": {
 						"type": "string"
@@ -712,12 +718,55 @@
 				},
 				"type": "object"
 			},
+			"datastore.Secret": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"expires_at": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					},
+					"value": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.SignatureConfiguration": {
 				"properties": {
+					"header": {
+						"type": "string"
+					},
+					"versions": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.SignatureVersion"
+						},
+						"type": "array"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.SignatureVersion": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"encoding": {
+						"type": "string"
+					},
 					"hash": {
 						"type": "string"
 					},
-					"header": {
+					"uid": {
 						"type": "string"
 					}
 				},
@@ -1039,6 +1088,9 @@
 			},
 			"models.Endpoint": {
 				"properties": {
+					"advanced_signatures": {
+						"type": "boolean"
+					},
 					"authentication": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
 					},
@@ -3576,6 +3628,139 @@
 					}
 				],
 				"summary": "Update an application endpoint",
+				"tags": [
+					"Application Endpoints"
+				]
+			}
+		},
+		"/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret": {
+			"put": {
+				"description": "This endpoint expires the current endpoint secret and generates a new one.",
+				"parameters": [
+					{
+						"description": "group id",
+						"in": "query",
+						"name": "groupId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "application id",
+						"in": "path",
+						"name": "appID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "endpoint id",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Endpoint"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Expire and generate new application endpoint secret",
 				"tags": [
 					"Application Endpoints"
 				]

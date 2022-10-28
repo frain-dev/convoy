@@ -20,7 +20,6 @@ import (
 )
 
 func addServerCommand(a *app) *cobra.Command {
-
 	var env string
 	var host string
 	var sentry string
@@ -221,12 +220,15 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.store,
 			a.queue))
 
+		consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
+			appRepo))
+
 		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
-		//start worker
+		// start worker
 		log.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}
@@ -462,8 +464,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if maxResponseSize != 0 {
 		c.MaxResponseSize = maxResponseSize
-	} else {
-		c.MaxResponseSize = config.MaxResponseSizeKb
 	}
 
 	// CONVOY_NEWRELIC_APP_NAME
