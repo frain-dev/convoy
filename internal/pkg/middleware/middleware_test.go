@@ -166,7 +166,7 @@ func TestRateLimitByGroup(t *testing.T) {
 		name          string
 		requestsLimit int
 		windowLength  time.Duration
-		dbFn          func(groupRepo *mocks.MockGroupRepository)
+		dbFn          func(groupRepo *mocks.MockGroupRepository, groupIDs []string)
 		groupIDs      []string
 		respCodes     []int
 	}
@@ -175,11 +175,13 @@ func TestRateLimitByGroup(t *testing.T) {
 			name:          "no-block",
 			requestsLimit: 3,
 			windowLength:  2 * time.Second,
-			dbFn: func(groupRepo *mocks.MockGroupRepository) {
-				groupRepo.EXPECT().FetchGroupByID(gomock.Any(), "123").Return(
-					&datastore.Group{UID: "123"},
-					nil,
-				).Times(2)
+			dbFn: func(groupRepo *mocks.MockGroupRepository, groupIDs []string) {
+				for _, id := range groupIDs {
+					groupRepo.EXPECT().FetchGroupByID(gomock.Any(), id).Return(
+						&datastore.Group{UID: id},
+						nil,
+					).Times(1)
+				}
 			},
 			groupIDs:  []string{"a", "a"},
 			respCodes: []int{200, 200},
@@ -188,11 +190,13 @@ func TestRateLimitByGroup(t *testing.T) {
 			name:          "block-same-group",
 			requestsLimit: 2,
 			windowLength:  5 * time.Second,
-			dbFn: func(groupRepo *mocks.MockGroupRepository) {
-				groupRepo.EXPECT().FetchGroupByID(gomock.Any(), "123").Return(
-					&datastore.Group{UID: "123"},
-					nil,
-				).Times(3)
+			dbFn: func(groupRepo *mocks.MockGroupRepository, groupIDs []string) {
+				for _, id := range groupIDs {
+					groupRepo.EXPECT().FetchGroupByID(gomock.Any(), id).Return(
+						&datastore.Group{UID: id},
+						nil,
+					).Times(1)
+				}
 			},
 			groupIDs:  []string{"b", "b", "b"},
 			respCodes: []int{200, 200, 429},
@@ -201,11 +205,13 @@ func TestRateLimitByGroup(t *testing.T) {
 			name:          "no-block-different-group",
 			requestsLimit: 1,
 			windowLength:  1 * time.Second,
-			dbFn: func(groupRepo *mocks.MockGroupRepository) {
-				groupRepo.EXPECT().FetchGroupByID(gomock.Any(), "123").Return(
-					&datastore.Group{UID: "123"},
-					nil,
-				).Times(2)
+			dbFn: func(groupRepo *mocks.MockGroupRepository, groupIDs []string) {
+				for _, id := range groupIDs {
+					groupRepo.EXPECT().FetchGroupByID(gomock.Any(), id).Return(
+						&datastore.Group{UID: id},
+						nil,
+					).Times(1)
+				}
 			},
 			groupIDs:  []string{"c", "d"},
 			respCodes: []int{200, 200},
@@ -223,13 +229,13 @@ func TestRateLimitByGroup(t *testing.T) {
 			m := &Middleware{groupRepo: groupRepo}
 
 			if tt.dbFn != nil {
-				tt.dbFn(groupRepo)
+				tt.dbFn(groupRepo, tt.groupIDs)
 			}
 
 			router := m.RateLimitByGroupWithParams(tt.requestsLimit, tt.windowLength)(h)
 
 			for i, code := range tt.respCodes {
-				req := httptest.NewRequest("POST", "/?groupID=123", nil)
+				req := httptest.NewRequest("POST", "/?groupID="+tt.groupIDs[i], nil)
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				if respCode := recorder.Result().StatusCode; respCode != code {
