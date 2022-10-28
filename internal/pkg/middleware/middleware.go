@@ -675,6 +675,10 @@ func GetGroupID(r *http.Request) string {
 		return groupID
 	}
 
+	if groupID = r.URL.Query().Get("groupID"); !util.IsStringEmpty(groupID) {
+		return groupID
+	}
+
 	if groupID = chi.URLParam(r, "projectID"); !util.IsStringEmpty(groupID) {
 		return groupID
 	}

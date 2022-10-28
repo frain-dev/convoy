@@ -45,7 +45,7 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				repo.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{
 					UID:            "123456",
 					OrganisationID: "1234",
-				}, nil)
+				}, nil).Times(2)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -72,7 +72,7 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				repo.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{
 					UID:            "123456",
 					OrganisationID: "1234",
-				}, nil)
+				}, nil).Times(2)
 			},
 			nFn: func() func() {
 				httpmock.Activate()

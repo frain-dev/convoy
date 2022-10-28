@@ -4,12 +4,13 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/mocks"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/cache"
@@ -88,7 +89,6 @@ func TestRequirePermission_Basic(t *testing.T) {
 			if recorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
 			}
-
 		})
 	}
 }
@@ -157,18 +157,16 @@ func TestRequirePermission_Noop(t *testing.T) {
 			if recorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
 			}
-
 		})
 	}
 }
 
 func TestRateLimitByGroup(t *testing.T) {
-	m := &Middleware{}
-
 	type test struct {
 		name          string
 		requestsLimit int
 		windowLength  time.Duration
+		dbFn          func(groupRepo *mocks.MockGroupRepository)
 		groupIDs      []string
 		respCodes     []int
 	}
@@ -177,33 +175,61 @@ func TestRateLimitByGroup(t *testing.T) {
 			name:          "no-block",
 			requestsLimit: 3,
 			windowLength:  2 * time.Second,
-			groupIDs:      []string{"a", "a"},
-			respCodes:     []int{200, 200},
+			dbFn: func(groupRepo *mocks.MockGroupRepository) {
+				groupRepo.EXPECT().FetchGroupByID(gomock.Any(), "123").Return(
+					&datastore.Group{UID: "123"},
+					nil,
+				).Times(2)
+			},
+			groupIDs:  []string{"a", "a"},
+			respCodes: []int{200, 200},
 		},
 		{
 			name:          "block-same-group",
 			requestsLimit: 2,
 			windowLength:  5 * time.Second,
-			groupIDs:      []string{"b", "b", "b"},
-			respCodes:     []int{200, 200, 429},
+			dbFn: func(groupRepo *mocks.MockGroupRepository) {
+				groupRepo.EXPECT().FetchGroupByID(gomock.Any(), "123").Return(
+					&datastore.Group{UID: "123"},
+					nil,
+				).Times(3)
+			},
+			groupIDs:  []string{"b", "b", "b"},
+			respCodes: []int{200, 200, 429},
 		},
 		{
 			name:          "no-block-different-group",
 			requestsLimit: 1,
 			windowLength:  1 * time.Second,
-			groupIDs:      []string{"c", "d"},
-			respCodes:     []int{200, 200},
+			dbFn: func(groupRepo *mocks.MockGroupRepository) {
+				groupRepo.EXPECT().FetchGroupByID(gomock.Any(), "123").Return(
+					&datastore.Group{UID: "123"},
+					nil,
+				).Times(2)
+			},
+			groupIDs:  []string{"c", "d"},
+			respCodes: []int{200, 200},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			})
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			groupRepo := mocks.NewMockGroupRepository(ctrl)
+			m := &Middleware{groupRepo: groupRepo}
+
+			if tt.dbFn != nil {
+				tt.dbFn(groupRepo)
+			}
+
 			router := m.RateLimitByGroupWithParams(tt.requestsLimit, tt.windowLength)(h)
 
 			for i, code := range tt.respCodes {
-				req := httptest.NewRequest("POST", "/", nil)
-				req = req.Clone(context.WithValue(req.Context(), groupCtx, &datastore.Group{UID: tt.groupIDs[i]}))
+				req := httptest.NewRequest("POST", "/?groupID=123", nil)
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				if respCode := recorder.Result().StatusCode; respCode != code {
