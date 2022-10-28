@@ -91,8 +91,13 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	event := m.GetEventFromContext(r.Context())
 	eventService := createEventService(a)
+
+	event, err := eventService.GetAppEvent(r.Context(), m.GetEventID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	err = eventService.ReplayAppEvent(r.Context(), event, g)
 	if err != nil {
@@ -116,8 +121,15 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/{eventID} [get]
 func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
+	eventService := createEventService(a)
+	event, err := eventService.GetAppEvent(r.Context(), m.GetEventID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("App event fetched successfully",
-		*m.GetEventFromContext(r.Context()), http.StatusOK))
+		event, http.StatusOK))
 }
 
 // GetEventDelivery

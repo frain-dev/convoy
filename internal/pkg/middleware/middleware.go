@@ -349,11 +349,8 @@ func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			eventId := chi.URLParam(r, "eventID")
-
-			event, err := m.eventRepo.FindEventByID(r.Context(), eventId)
+			_, err := m.eventRepo.FindEventByID(r.Context(), GetEventID(r))
 			if err != nil {
-
 				event := "an error occurred while retrieving event details"
 				statusCode := http.StatusInternalServerError
 
@@ -366,7 +363,6 @@ func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 				return
 			}
 
-			r = r.WithContext(setEventInContext(r.Context(), event))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -717,6 +713,10 @@ func GetAppID(r *http.Request) string {
 
 func GetEndpointID(r *http.Request) string {
 	return chi.URLParam(r, "endpointID")
+}
+
+func GetEventID(r *http.Request) string {
+	return chi.URLParam(r, "eventID")
 }
 
 func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
@@ -1183,16 +1183,6 @@ func GetOrganisationMemberFromContext(ctx context.Context) *datastore.Organisati
 	return ctx.Value(orgMemberCtx).(*datastore.OrganisationMember)
 }
 
-func setEventInContext(ctx context.Context,
-	event *datastore.Event,
-) context.Context {
-	return context.WithValue(ctx, eventCtx, event)
-}
-
-func GetEventFromContext(ctx context.Context) *datastore.Event {
-	return ctx.Value(eventCtx).(*datastore.Event)
-}
-
 func setEventDeliveryInContext(ctx context.Context,
 	eventDelivery *datastore.EventDelivery,
 ) context.Context {
@@ -1206,24 +1196,6 @@ func GetEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
 func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
 	return ctx.Value(appCtx).(*[]datastore.Application)
 }
-
-//func setApplicationEndpointInContext(ctx context.Context,
-//	endpoint *datastore.Endpoint,
-//) context.Context {
-//	return context.WithValue(ctx, endpointCtx, endpoint)
-//}
-//
-//func GetApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
-//	return ctx.Value(endpointCtx).(*datastore.Endpoint)
-//}
-
-//func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
-//	return context.WithValue(ctx, groupCtx, group)
-//}
-
-//func GetGroupFromContext(ctx context.Context) *datastore.Group {
-//	return ctx.Value(groupCtx).(*datastore.Group)
-//}
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
 	return context.WithValue(ctx, pageableCtx, pageable)
