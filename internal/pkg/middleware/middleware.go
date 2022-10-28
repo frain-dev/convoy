@@ -329,7 +329,7 @@ func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 			app := GetApplicationFromContext(r.Context())
 			endPointId := chi.URLParam(r, "endpointID")
 
-			endpoint, err := m.findEndpoint(&app.Endpoints, endPointId)
+			endpoint, err := app.FindEndpoint(endPointId)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
@@ -618,15 +618,6 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
-	for _, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			return &endpoint, nil
-		}
-	}
-	return nil, datastore.ErrEndpointNotFound
 }
 
 func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
