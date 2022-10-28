@@ -16,7 +16,7 @@ import (
 )
 
 func createApplicationService(a *ApplicationHandler) *services.AppService {
-	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	appRepo := mongo.NewApplicationRepo(a.A.Store, a.A.Cache)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
 

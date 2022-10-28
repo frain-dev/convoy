@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	ncache "github.com/frain-dev/convoy/cache/noop"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -74,7 +76,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, ncache.NewNoopCache(), uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
@@ -145,7 +147,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, ncache.NewNoopCache(), uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
@@ -211,7 +213,7 @@ func buildApplication() *applicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	store := datastore.New(db.Database())
 
-	groupRepo := convoyMongo.NewGroupRepo(store)
+	groupRepo := convoyMongo.NewGroupRepo(store, ncache.NewNoopCache())
 	eventRepo := convoyMongo.NewEventRepository(store)
 	configRepo := convoyMongo.NewConfigRepo(store)
 	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)

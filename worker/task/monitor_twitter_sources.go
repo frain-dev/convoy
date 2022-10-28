@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 
@@ -16,10 +18,10 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+func MonitorTwitterSources(store datastore.Store, cache cache.Cache, queue queue.Queuer) func(context.Context, *asynq.Task) error {
 	sourceRepo := mongo.NewSourceRepo(store)
 	subRepo := mongo.NewSubscriptionRepo(store)
-	appRepo := mongo.NewApplicationRepo(store)
+	appRepo := mongo.NewApplicationRepo(store, cache)
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{Page: 1, PerPage: 100}
@@ -37,7 +39,7 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 
 			// the source needs to have been created at least one hour ago
 			if now.After(source.CreatedAt.Time().Add(time.Hour)) {
-				//the crc verified at timestamp must not be less than two hours ago
+				// the crc verified at timestamp must not be less than two hours ago
 				if crcExpiry.After(source.ProviderConfig.Twitter.CrcVerifiedAt.Time()) {
 					subscriptions, err := subRepo.FindSubscriptionsBySourceIDs(ctx, source.GroupID, source.UID)
 					if err != nil {

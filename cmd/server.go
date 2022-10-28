@@ -218,12 +218,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 
 		consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
 			a.store,
+			a.cache,
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
 			appRepo))
 
-		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
+		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, a.cache, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))

@@ -23,11 +23,11 @@ type AppService struct {
 	appRepo           datastore.ApplicationRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-  queuer            queue.Queuer
+	queue             queue.Queuer
 }
 
-func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,queuer queue.Queuer) *AppService {
-	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queuer: queuer}
+func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, queuer queue.Queuer) *AppService {
+	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queuer}
 }
 
 func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {

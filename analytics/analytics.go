@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -82,11 +84,11 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	return a, nil
 }
 
-func TrackDailyAnalytics(store datastore.Store, cfg config.Configuration) func(context.Context, *asynq.Task) error {
+func TrackDailyAnalytics(store datastore.Store, cache cache.Cache, cfg config.Configuration) func(context.Context, *asynq.Task) error {
 	repo := &Repo{
 		ConfigRepo: cm.NewConfigRepo(store),
 		EventRepo:  cm.NewEventRepository(store),
-		GroupRepo:  cm.NewGroupRepo(store),
+		GroupRepo:  cm.NewGroupRepo(store, cache),
 		OrgRepo:    cm.NewOrgRepo(store),
 		UserRepo:   cm.NewUserRepo(store),
 	}
@@ -122,7 +124,6 @@ func (a *Analytics) RegisterTrackers() {
 		DailyActiveGroupCount:  newActiveGroupAnalytics(a.Repo.GroupRepo, a.Repo.EventRepo, a.Repo.OrgRepo, a.client, a.instanceID),
 		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client, a.instanceID),
 	}
-
 }
 
 type MixPanelClient struct {
