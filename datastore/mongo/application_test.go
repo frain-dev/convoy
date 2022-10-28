@@ -8,6 +8,8 @@ import (
 	"errors"
 	"testing"
 
+	ncache "github.com/frain-dev/convoy/cache/noop"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -17,8 +19,8 @@ func Test_UpdateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(getStore(db))
-	appRepo := NewApplicationRepo(getStore(db))
+	groupRepo := NewGroupRepo(getStore(db), ncache.NewNoopCache())
+	appRepo := NewApplicationRepo(getStore(db), ncache.NewNoopCache())
 
 	newGroup := &datastore.Group{
 		Name: "Random new group",
@@ -61,8 +63,8 @@ func Test_CreateApplication(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(getStore(db))
-	appRepo := NewApplicationRepo(getStore(db))
+	groupRepo := NewGroupRepo(getStore(db), ncache.NewNoopCache())
+	appRepo := NewApplicationRepo(getStore(db), ncache.NewNoopCache())
 
 	newOrg := &datastore.Group{
 		Name: "Random new group 2",
@@ -95,7 +97,7 @@ func Test_LoadApplicationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(getStore(db))
+	appRepo := NewApplicationRepo(getStore(db), ncache.NewNoopCache())
 
 	apps, _, err := appRepo.LoadApplicationsPaged(context.Background(), "", "", datastore.Pageable{
 		Page:    1,
@@ -110,14 +112,14 @@ func Test_FindApplicationByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	appRepo := NewApplicationRepo(getStore(db))
+	appRepo := NewApplicationRepo(getStore(db), ncache.NewNoopCache())
 
 	_, err := appRepo.FindApplicationByID(context.Background(), uuid.New().String())
 	require.Error(t, err)
 
 	require.True(t, errors.Is(err, datastore.ErrApplicationNotFound))
 
-	groupRepo := NewGroupRepo(getStore(db))
+	groupRepo := NewGroupRepo(getStore(db), ncache.NewNoopCache())
 
 	newGroup := &datastore.Group{
 		Name: "Yet another Random new group",
