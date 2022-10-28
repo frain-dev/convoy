@@ -10,8 +10,17 @@ import { CommonModule } from '@angular/common';
 })
 export class CardComponent implements OnInit {
 	@Input('className') class!: string;
+	@Input('color') color: 'default' | 'danger' = 'default';
 
 	constructor() {}
 
 	ngOnInit(): void {}
+
+	get classes(): string {
+		const colors = {
+			default: 'bg-white-100 border border-grey-10',
+			danger: 'bg-danger-500 border border-danger-200'
+		};
+		return `${colors[this.color]} ${this.class}`;
+	}
 }

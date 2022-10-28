@@ -35,6 +35,7 @@ Convoy binaries can be downloaded with your package manager of choice. You can h
 $ docker run \
 	-p 5005:5005 \
 	--name convoy-server \
+    --network=host \
 	-v `pwd`/convoy.json:/convoy.json \
 	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:latest
 ```

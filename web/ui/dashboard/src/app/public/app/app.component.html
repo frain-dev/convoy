@@ -72,7 +72,7 @@
 								</convoy-list-item>
 								<convoy-list-item className="px-14px" [hover]="true">
 									<convoy-button type="text" color="danger" (click)="subscription.active_menu = false; activeSubscription = subscription; showDeleteSubscriptionModal = true; dropdownComponent.show = false">
-										<svg width="16" height="16" class="mr-8px">
+										<svg width="16" height="16" class="mr-8px fill-danger-100">
 											<use xlink:href="#delete-icon"></use>
 										</svg>
 										Delete Subscription
@@ -115,15 +115,15 @@
 
 				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
 					<span *ngIf="events" [hidden]="activeEventsTab !== 'events'">
-						{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events?.content?.length }}
+						{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events.content.length }}
 						<strong>of</strong>
-						{{ events?.pagination?.total || 0 }}
+						{{ events.pagination.total || 0 }}
 					</span>
 					<span *ngIf="eventDeliveries" [hidden]="activeEventsTab !== 'event deliveries'">
 						{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
-						{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries?.content?.length }}
+						{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries.content.length }}
 						<strong>of</strong>
-						{{ eventDeliveries?.pagination?.total || 0 }}
+						{{ eventDeliveries.pagination.total || 0 }}
 					</span>
 				</div>
 			</ul>

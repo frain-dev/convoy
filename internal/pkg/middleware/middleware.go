@@ -210,7 +210,7 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 					return
 				}
 
-				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Minute*5)
+				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Second*1)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 					return
@@ -407,6 +407,10 @@ func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			orgID := chi.URLParam(r, "orgID")
 
+			if util.IsStringEmpty(orgID) {
+				orgID = r.URL.Query().Get("orgID")
+			}
+
 			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
 			if err != nil {
 				log.WithError(err).Error("failed to fetch organisation")
@@ -432,6 +436,77 @@ func (m *Middleware) RequireAuthUserMetadata() func(next http.Handler) http.Hand
 			}
 
 			r = r.WithContext(setUserInContext(r.Context(), user))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// RequireGroupAccess checks if the given authentication creds can access the group. It handles PATs as well
+func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
+
+			if authUser.Metadata != nil { // this signals that a personal api key was used for authentication
+				user, _ := authUser.Metadata.(*datastore.User)
+				if user != nil {
+					member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
+					if err != nil {
+						log.WithError(err).Error("failed to fetch organisation member")
+						_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+						return
+					}
+
+					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Group == group.UID {
+						r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
+						next.ServeHTTP(w, r)
+						return
+					}
+
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+					return
+				}
+			}
+
+			// it's a project api key at this point
+			if authUser.Role.Type.Is(auth.RoleAdmin) && authUser.Role.Group == group.UID {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		})
+	}
+}
+
+// RejectAppPortalKey ensures that an app portal api key was not used for authentication
+func (m *Middleware) RejectAppPortalKey() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			if authUser.Role.App != "" {
+				// if authUser.Role.App is not empty, an app portal api key was used to authenticate
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			app := GetApplicationFromContext(r.Context())
+			group := GetGroupFromContext(r.Context())
+
+			if app.GroupID != group.UID {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -543,7 +618,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 					UID:               en.UID,
 					TargetURL:         en.TargetURL,
 					DocumentStatus:    en.DocumentStatus,
-					Secret:            en.Secret,
+					Secrets:           en.Secrets,
 					HttpTimeout:       en.HttpTimeout,
 					RateLimit:         en.RateLimit,
 					RateLimitDuration: en.RateLimitDuration,
@@ -613,6 +688,10 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 
 			if util.IsStringEmpty(groupID) {
 				groupID = r.URL.Query().Get("groupID")
+			}
+
+			if util.IsStringEmpty(groupID) {
+				groupID = chi.URLParam(r, "projectID")
 			}
 
 			if util.IsStringEmpty(groupID) {
@@ -975,17 +1054,17 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-func ShouldAuthRoute(r *http.Request) bool {
-	guestRoutes := []string{
-		"/ui/auth/login",
-		"/ui/auth/token/refresh",
-		"/ui/organisations/process_invite",
-		"/ui/users/token",
-		"/ui/users/forgot-password",
-		"/ui/users/reset-password",
-		"/ui/auth/register",
-	}
+var guestRoutes = []string{
+	"/ui/auth/login",
+	"/ui/auth/token/refresh",
+	"/ui/organisations/process_invite",
+	"/ui/users/token",
+	"/ui/users/forgot-password",
+	"/ui/users/reset-password",
+	"/ui/auth/register",
+}
 
+func ShouldAuthRoute(r *http.Request) bool {
 	for _, route := range guestRoutes {
 		if r.URL.Path == route {
 			return false

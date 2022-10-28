@@ -1016,6 +1016,20 @@ func (mr *MockApplicationRepositoryMockRecorder) DeleteGroupApps(arg0, arg1 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupApps", reflect.TypeOf((*MockApplicationRepository)(nil).DeleteGroupApps), arg0, arg1)
 }
 
+// ExpireSecret mocks base method.
+func (m *MockApplicationRepository) ExpireSecret(ctx context.Context, appID, endpointID string, secrets []datastore.Secret) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireSecret", ctx, appID, endpointID, secrets)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExpireSecret indicates an expected call of ExpireSecret.
+func (mr *MockApplicationRepositoryMockRecorder) ExpireSecret(ctx, appID, endpointID, secrets interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireSecret", reflect.TypeOf((*MockApplicationRepository)(nil).ExpireSecret), ctx, appID, endpointID, secrets)
+}
+
 // FindApplicationByID mocks base method.
 func (m *MockApplicationRepository) FindApplicationByID(arg0 context.Context, arg1 string) (*datastore.Application, error) {
 	m.ctrl.T.Helper()

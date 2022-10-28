@@ -1,4 +1,4 @@
-<div class="bg-[#fafafe] min-h-screen overflow-y-auto">
+<div class="bg-[#fafafe] min-h-screen overflow-y-auto pb-100px">
 	<header class="w-full bg-white-100 border-b border-b-grey-10">
 		<div class="flex items-center justify-between w-full max-w-[1376px] m-auto bg-white-100 px-32px py-12px">
 			<div class="flex items-center">
@@ -8,13 +8,16 @@
 
 				<nav class="ml-130px desktop:ml-20px transition-all duration-200">
 					<ul class="flex items-center">
-						<li>
+						<li *ngIf="!organisations?.length || !projects?.length">
+							<a routerLink="/get-started" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Get Started</a>
+						</li>
+						<li *ngIf="organisations?.length && projects?.length">
 							<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
 						</li>
-						<li>
+						<li *ngIf="organisations?.length && projects?.length">
 							<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
 						</li>
-						<li>
+						<li *ngIf="organisations?.length && projects?.length">
 							<a routerLink="/settings" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Settings</a>
 						</li>
 					</ul>
@@ -81,11 +84,16 @@
 			</div>
 		</div>
 	</header>
-    <convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
+	<convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
 
 	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 
 	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 
 	<router-outlet></router-outlet>
+</div>
+
+<div class="absolute left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-50" *ngIf="showHelpCard">
+	<img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
+	<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
 </div>
