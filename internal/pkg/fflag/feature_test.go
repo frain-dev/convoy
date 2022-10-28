@@ -41,16 +41,11 @@ func TestFeatureFlags_CLI(t *testing.T) {
 			name:       "can_create_cli_api_key",
 			statusCode: http.StatusOK,
 			mockFn: func(ff *FF) {
-				cache, _ := ff.cache.(*mocks.MockCache)
-				cache.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-
 				repo, _ := ff.groupRepo.(*mocks.MockGroupRepository)
 				repo.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{
 					UID:            "123456",
 					OrganisationID: "1234",
 				}, nil)
-
-				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -73,16 +68,11 @@ func TestFeatureFlags_CLI(t *testing.T) {
 			name:       "cannot_create_cli_api_key",
 			statusCode: http.StatusForbidden,
 			mockFn: func(ff *FF) {
-				cache, _ := ff.cache.(*mocks.MockCache)
-				cache.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-
 				repo, _ := ff.groupRepo.(*mocks.MockGroupRepository)
 				repo.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{
 					UID:            "123456",
 					OrganisationID: "1234",
 				}, nil)
-
-				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
