@@ -42,8 +42,14 @@ func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	app, err := createApplicationService(a).FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	f := &datastore.ApiKeyFilter{
-		AppID: m.GetAppID(r),
+		AppID: app.UID,
 	}
 
 	deviceService := createDeviceService(a)

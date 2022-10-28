@@ -254,10 +254,15 @@ func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
+	app, err := createApplicationService(a).FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	f := &datastore.ApiKeyFilter{
 		GroupID: group.UID,
-		AppID:   m.GetAppID(r),
+		AppID:   app.UID,
 		KeyType: datastore.CLIKey,
 	}
 
