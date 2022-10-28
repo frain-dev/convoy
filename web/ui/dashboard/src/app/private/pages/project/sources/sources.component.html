@@ -26,14 +26,14 @@
 				</convoy-table-head>
 				<tbody>
 					<convoy-table-row class="contents" *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }" [active]="source.uid === activeSource?.uid">
-						<convoy-table-cell class="contents" className="pl-16px">{{ source.name }}</convoy-table-cell>
+						<convoy-table-cell class="contents" className="min-w-[100px] pl-16px">{{ source.name }}</convoy-table-cell>
 						<convoy-table-cell class="contents" className="min-w-[60px]">{{ source.type | sourceValue: 'sourceType' }}</convoy-table-cell>
 						<convoy-table-cell class="contents capitalize" className="min-w-[80px]">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</convoy-table-cell>
-						<convoy-table-cell class="contents" className="flex flex-row items-center pr-16px">
-							<div class="w-200px overflow-hidden overflow-ellipsis">
+						<convoy-table-cell class="contents" className="flex flex-row items-center pr-16px min-w-0">
+							<div class="max-w-[340px] overflow-hidden overflow-ellipsis">
 								{{ source.url }}
 							</div>
-							<convoy-copy-button [text]="source.url" size="md" className="ml-2px" (copyText)="copyText(source.name)"></convoy-copy-button>
+							<convoy-copy-button [text]="source.url" size="md" className="ml-2px" (copyText)="copyText(source.name + ' URL')"></convoy-copy-button>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">{{ source.created_at | date }}</convoy-table-cell>
 						<convoy-table-cell class="contents">
@@ -84,7 +84,10 @@
 						</convoy-list-item>
 						<convoy-list-item>
 							<div class="w-1/2 text-14 font-medium">Signing secret</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.verifier?.hmac?.secret }}</div>
+							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px flex justify-end">
+								*******
+								<convoy-copy-button [text]="activeSource?.verifier?.hmac?.secret || ''" size="md" className="ml-2px" (copyText)="copyText('Signing secret')"></convoy-copy-button>
+							</div>
 						</convoy-list-item>
 						<ng-container *ngIf="activeSource?.provider === 'twitter' && isDateBefore(activeSource?.provider_config?.twitter?.crc_verified_at, activeSource?.created_at)">
 							<convoy-list-item>
@@ -101,7 +104,10 @@
 						</convoy-list-item>
 						<convoy-list-item>
 							<div class="w-1/2 text-14 font-medium">Password</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.verifier?.basic_auth?.password }}</div>
+							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px flex justify-end">
+								*******
+								<convoy-copy-button [text]="activeSource?.verifier?.basic_auth?.password || ''" size="md" className="ml-2px" (copyText)="copyText('Password')"></convoy-copy-button>
+							</div>
 						</convoy-list-item>
 					</ng-container>
 

@@ -1,12 +1,13 @@
-<convoy-loader *ngIf="isloadingOrganisations"></convoy-loader>
-<div class="max-w-[1300px] m-auto" *ngIf="!isloadingOrganisations">
+<convoy-loader *ngIf="isloading"></convoy-loader>
+
+<div class="max-w-[1300px] m-auto" *ngIf="!isloading && !hasProjects">
 	<h1 class="text-center font-bold text-20 mt-60px">Set up is quick and easy on Convoy!</h1>
 	<p class="text-center text-grey-40 text-16 max-w-[621px] mt-10px mb-110px m-auto">Follow our simple guide and you’ll be sending and recieving webhook events in no time!</p>
 
-	<div class="flex justify-between items-center max-w-[910px] w-full m-auto desktop:flex-wrap">
+	<div class="flex justify-between items-center max-w-[860px] w-full m-auto desktop:flex-wrap">
 		<div class="relative" *ngFor="let step of onboardingSteps; let i = index">
-			<div class="rounded-100px h-84px w-84px absolute -top-42px left-1/2 -translate-x-1/2 z-10 opacity-100" *ngIf="step.currentStage === 'done'">
-				<img src="/assets/img/success.gif" alt="Success gif" class="h-84px border-8 border-white-100 rounded-100px" />
+			<div class="rounded-100px h-64px w-64px absolute -top-30px left-1/2 -translate-x-1/2 z-10 opacity-100" *ngIf="step.currentStage === 'done'">
+				<img src="/assets/img/success.png" alt="Success gif" class="border-8 border-white-100 rounded-100px" />
 			</div>
 			<div
 				class="max-w-[374px] rounded-16px p-32px bg-white-100 border"
