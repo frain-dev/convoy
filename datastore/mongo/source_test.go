@@ -8,6 +8,8 @@ import (
 	"errors"
 	"testing"
 
+	ncache "github.com/frain-dev/convoy/cache/noop"
+
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
@@ -19,7 +21,7 @@ func Test_CreateSource(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db)
-	sourceRepo := NewSourceRepo(store)
+	sourceRepo := NewSourceRepo(store, ncache.NewNoopCache())
 	source := generateSource(t)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -38,7 +40,7 @@ func Test_FindSourceByID(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db)
-	sourceRepo := NewSourceRepo(store)
+	sourceRepo := NewSourceRepo(store, ncache.NewNoopCache())
 	source := generateSource(t)
 
 	_, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
@@ -59,7 +61,7 @@ func Test_FindSourceByMaskID(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db)
-	sourceRepo := NewSourceRepo(store)
+	sourceRepo := NewSourceRepo(store, ncache.NewNoopCache())
 	source := generateSource(t)
 
 	_, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
@@ -80,7 +82,7 @@ func Test_UpdateSource(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db)
-	sourceRepo := NewSourceRepo(store)
+	sourceRepo := NewSourceRepo(store, ncache.NewNoopCache())
 	source := generateSource(t)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -101,7 +103,7 @@ func Test_DeleteSource(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db)
-	sourceRepo := NewSourceRepo(store)
+	sourceRepo := NewSourceRepo(store, ncache.NewNoopCache())
 	source := generateSource(t)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -183,7 +185,7 @@ func Test_LoadSourcesPaged(t *testing.T) {
 			defer closeFn()
 
 			store := getStore(db)
-			sourceRepo := NewSourceRepo(store)
+			sourceRepo := NewSourceRepo(store, ncache.NewNoopCache())
 			groupId := uuid.NewString()
 
 			for i := 0; i < tc.count; i++ {

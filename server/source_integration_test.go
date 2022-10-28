@@ -102,7 +102,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
+	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -295,7 +295,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
+	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -321,7 +321,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
+	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
 	_, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }

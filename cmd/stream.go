@@ -27,7 +27,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			appRepo := cm.NewApplicationRepo(a.store, a.cache)
 			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
-			sourceRepo := cm.NewSourceRepo(a.store)
+			sourceRepo := cm.NewSourceRepo(a.store, a.cache)
 			subRepo := cm.NewSubscriptionRepo(a.store)
 			deviceRepo := cm.NewDeviceRepository(a.store)
 			groupRepo := cm.NewGroupRepo(a.store, a.cache)

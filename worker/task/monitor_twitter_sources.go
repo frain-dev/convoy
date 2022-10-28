@@ -19,7 +19,7 @@ import (
 )
 
 func MonitorTwitterSources(store datastore.Store, cache cache.Cache, queue queue.Queuer) func(context.Context, *asynq.Task) error {
-	sourceRepo := mongo.NewSourceRepo(store)
+	sourceRepo := mongo.NewSourceRepo(store, cache)
 	subRepo := mongo.NewSubscriptionRepo(store)
 	appRepo := mongo.NewApplicationRepo(store, cache)
 

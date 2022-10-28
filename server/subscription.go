@@ -19,7 +19,7 @@ import (
 func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionService {
 	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
 	appRepo := mongo.NewApplicationRepo(a.A.Store, a.A.Cache)
-	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+	sourceRepo := mongo.NewSourceRepo(a.A.Store, a.A.Cache)
 
 	return services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
 }

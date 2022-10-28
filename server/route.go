@@ -77,7 +77,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		GroupRepo:         cm.NewGroupRepo(a.Store, a.Cache),
 		ApiKeyRepo:        cm.NewApiKeyRepo(a.Store),
 		SubRepo:           cm.NewSubscriptionRepo(a.Store),
-		SourceRepo:        cm.NewSourceRepo(a.Store),
+		SourceRepo:        cm.NewSourceRepo(a.Store, a.Cache),
 		OrgRepo:           cm.NewOrgRepo(a.Store),
 		OrgMemberRepo:     cm.NewOrgMemberRepo(a.Store),
 		OrgInviteRepo:     cm.NewOrgInviteRepo(a.Store),
@@ -174,7 +174,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									e.Put("/", a.UpdateAppEndpoint)
 									e.Delete("/", a.DeleteAppEndpoint)
 									e.Put("/expire_secret", a.ExpireSecret)
-
 								})
 							})
 						})
@@ -369,7 +368,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
 										e.Put("/expire_secret", a.ExpireSecret)
-
 									})
 								})
 

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	ncache "github.com/frain-dev/convoy/cache/noop"
+
 	"github.com/frain-dev/convoy/cache"
 
 	"github.com/dchest/uniuri"
@@ -519,7 +521,7 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 	}
 
 	// Seed Data
-	sourceRepo := cm.NewSourceRepo(store)
+	sourceRepo := cm.NewSourceRepo(store, ncache.NewNoopCache())
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
 		return nil, err
