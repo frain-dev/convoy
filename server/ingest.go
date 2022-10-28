@@ -85,9 +85,16 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Error("failed to load config")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
 	// 3.1 On Failure
 	// Return 400 Bad Request.
-	body := io.LimitReader(r.Body, config.MaxRequestSize)
+	body := io.LimitReader(r.Body, int64(cfg.MaxResponseSize))
 	payload, err := io.ReadAll(body)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -136,7 +143,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. Return 200
-	_ = render.Render(w, r, util.NewServerResponse("Event received", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {

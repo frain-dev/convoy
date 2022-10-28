@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormGroup, Validators, FormBuilder } from '@angular/forms';
+import { FormGroup, Validators, FormBuilder, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
-import { GROUP } from 'src/app/models/group.model';
+import { GROUP, VERSIONS } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
@@ -12,6 +12,7 @@ import { CreateProjectComponentService } from './create-project-component.servic
 	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
+	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
@@ -22,7 +23,7 @@ export class CreateProjectComponent implements OnInit {
 			}),
 			signature: this.formBuilder.group({
 				header: [null],
-				hash: [null]
+				versions: this.formBuilder.array([])
 			}),
 			ratelimit: this.formBuilder.group({
 				count: [null],
@@ -36,19 +37,26 @@ export class CreateProjectComponent implements OnInit {
 		}),
 		type: [null, Validators.required]
 	});
+	newSignatureForm: FormGroup = this.formBuilder.group({
+		encoding: [null],
+		hash: [null]
+	});
 	isCreatingProject = false;
 	showApiKey = false;
 	enableMoreConfig = false;
-    confirmModal = false;
+	confirmModal = false;
+	showNewSignatureModal = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
 	retryLogicTypes = [
 		{ uid: 'linear', name: 'Linear time retry' },
 		{ uid: 'exponential', name: 'Exponential time backoff' }
 	];
+	encodings = ['base64', 'hex'];
 	@Output('onAction') onAction = new EventEmitter<any>();
 	@Input('action') action: 'create' | 'update' = 'create';
-	projectDetails!: GROUP;
+	projectDetails?: GROUP;
+	signatureVersions!: { date: string; content: VERSIONS[] }[];
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
@@ -56,18 +64,46 @@ export class CreateProjectComponent implements OnInit {
 		if (this.action === 'update') this.getProjectDetails();
 	}
 
+	get versions(): FormArray {
+		return this.projectForm.get('config.signature.versions') as FormArray;
+	}
+
+	get versionsLength(): any {
+		const versionsControl = this.projectForm.get('config.signature.versions') as FormArray;
+		return versionsControl.length;
+	}
+	newVersion(): FormGroup {
+		return this.formBuilder.group({
+			encoding: ['', Validators.required],
+			hash: ['', Validators.required]
+		});
+	}
+
+	addVersion() {
+		this.versions.push(this.newVersion());
+	}
+
 	async getProjectDetails() {
 		this.enableMoreConfig = true;
 		try {
 			const response = await this.privateService.getProjectDetails();
 			this.projectDetails = response.data;
+
+			const versions = response.data.config.signature.versions;
+			this.signatureVersions = this.generalService.setContentDisplayed(versions);
 			this.projectForm.patchValue(response.data);
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
 			this.projectForm.get('config.ratelimit.duration')?.patchValue(this.getTimeString(response.data.config.ratelimit.duration));
 			this.projectForm.get('config.strategy.duration')?.patchValue(this.getTimeString(response.data.config.strategy.duration));
-			console.log(this.projectForm.value);
+			versions.forEach((version: { encoding: any; hash: any }, index: number) => {
+				this.addVersion();
+				this.versions.at(index)?.patchValue({
+					encoding: version.encoding,
+					hash: version.hash
+				});
+			});
 		} catch (error) {
 			console.log(error);
 		}
@@ -84,8 +120,8 @@ export class CreateProjectComponent implements OnInit {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
 			this.isCreatingProject = false;
 			this.projectForm.reset();
+			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success', type: this.privateService.activeProjectDetails?.uid ? 'modal' : 'alert' });
 			this.privateService.activeProjectDetails = response.data.group;
-			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success' });
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.group;
 			this.showApiKey = true;
@@ -96,9 +132,12 @@ export class CreateProjectComponent implements OnInit {
 
 	async updateProject() {
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-		this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
-		this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
+		if (typeof this.projectForm.value.config.ratelimit.duration === 'string') this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
+		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
+		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
+		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
 		this.isCreatingProject = true;
+
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
@@ -107,6 +146,19 @@ export class CreateProjectComponent implements OnInit {
 		} catch (error) {
 			this.isCreatingProject = false;
 		}
+	}
+
+	async createNewSignature(i: number) {
+		if (this.newSignatureForm.invalid) {
+			this.newSignatureForm.markAllAsTouched();
+			return;
+		}
+
+		this.versions.at(i).patchValue(this.newSignatureForm.value);
+		await this.updateProject();
+		this.getProjectDetails();
+		this.newSignatureForm.reset();
+		this.showNewSignatureModal = false;
 	}
 
 	checkProjectConfig() {

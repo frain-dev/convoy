@@ -5,6 +5,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { CreateEndpointComponent } from './create-endpoint.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
+import { RadioComponent } from 'src/app/components/radio/radio.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 const routes: Routes = [
 	{
@@ -14,7 +16,7 @@ const routes: Routes = [
 ];
 @NgModule({
 	declarations: [CreateEndpointComponent],
-	imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent],
+	imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent, RadioComponent, TooltipComponent],
 	exports: [CreateEndpointComponent]
 })
 export class CreateEndpointModule {}

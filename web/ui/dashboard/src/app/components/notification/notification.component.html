@@ -1,4 +1,4 @@
-<div *ngIf="notification.show" class="flex items-center justify-between text-14 font-medium capitalize p-8px rounded-8px fixed bottom-50px left-1/2 -translate-x-1/2 -translate-y-0 w-full max-w-[500px] z-[100]" [class]="statusTypes[notification.style]">
+<div *ngIf="notification.show && notification.type === 'alert'" class="flex items-center justify-between text-14 font-medium capitalize p-8px rounded-8px fixed bottom-50px left-1/2 -translate-x-1/2 -translate-y-0 w-full max-w-[500px] z-[100]" [class]="statusTypes[notification.style]">
 	<div class="flex items-center">
 		<img [src]="'assets/img/' + notification.style + '-icon.svg'" class="mr-10px" alt="toast icon" />
 		{{ notification.message }}

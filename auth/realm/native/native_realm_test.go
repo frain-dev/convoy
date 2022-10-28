@@ -16,19 +16,13 @@ import (
 )
 
 func TestNativeRealm_Authenticate(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockApiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-
-	nr := NewNativeRealm(mockApiKeyRepo)
-
 	type args struct {
 		cred *auth.Credential
 	}
 	tests := []struct {
 		name       string
 		args       args
-		nFn        func(apiKeyRepo *mocks.MockAPIKeyRepository)
+		nFn        func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository)
 		want       *auth.AuthenticatedUser
 		wantErr    bool
 		wantErrMsg string
@@ -41,7 +35,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
@@ -58,7 +52,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				}, nil)
 			},
 			want: &auth.AuthenticatedUser{
-				AuthenticatedByRealm: nr.GetName(),
+				AuthenticatedByRealm: "native_realm",
 				Credential: auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
@@ -71,6 +65,79 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_authenticate_personal_apiKey_successfully",
+			args: args{
+				cred: &auth.Credential{
+					Type:   auth.CredentialTypeAPIKey,
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
+				},
+			},
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
+				apiKeyRepo.EXPECT().
+					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.APIKey{
+					UID: "abcd",
+					Role: auth.Role{
+						Type:  auth.RoleAdmin,
+						Group: "paystack",
+					},
+					Type:      datastore.PersonalKey,
+					UserID:    "1234",
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: 0,
+					CreatedAt: 0,
+				}, nil)
+
+				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(&datastore.User{UID: "1234"}, nil)
+			},
+			want: &auth.AuthenticatedUser{
+				AuthenticatedByRealm: "native_realm",
+				Credential: auth.Credential{
+					Type:   auth.CredentialTypeAPIKey,
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
+				},
+				Role: auth.Role{
+					Type:  auth.RoleAdmin,
+					Group: "paystack",
+				},
+				Metadata: &datastore.User{UID: "1234"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_error_for_failed_to_fined_user",
+			args: args{
+				cred: &auth.Credential{
+					Type:   auth.CredentialTypeAPIKey,
+					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
+				},
+			},
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
+				apiKeyRepo.EXPECT().
+					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.APIKey{
+					UID: "abcd",
+					Role: auth.Role{
+						Type:  auth.RoleAdmin,
+						Group: "paystack",
+					},
+					Type:      datastore.PersonalKey,
+					UserID:    "1234",
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: 0,
+					CreatedAt: 0,
+				}, nil)
+
+				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch user: failed",
+		},
+		{
 			name: "should_error_for_wrong_cred_type",
 			args: args{
 				cred: &auth.Credential{
@@ -80,7 +147,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			nFn:        nil,
 			want:       nil,
 			wantErr:    true,
-			wantErrMsg: fmt.Sprintf("%s only authenticates credential type BEARER", nr.GetName()),
+			wantErrMsg: fmt.Sprintf("%s only authenticates credential type BEARER", "native_realm"),
 		},
 		{
 			name: "should_error_for_revoked_key",
@@ -90,7 +157,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
@@ -131,7 +198,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
@@ -160,7 +227,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository) {
+			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, errors.New("no documents in result"))
@@ -173,8 +240,14 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockApiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			mockUserRepo := mocks.NewMockUserRepository(ctrl)
+
+			nr := NewNativeRealm(mockApiKeyRepo, mockUserRepo)
 			if tt.nFn != nil {
-				tt.nFn(mockApiKeyRepo)
+				tt.nFn(mockApiKeyRepo, mockUserRepo)
 			}
 
 			got, err := nr.Authenticate(context.Background(), tt.args.cred)

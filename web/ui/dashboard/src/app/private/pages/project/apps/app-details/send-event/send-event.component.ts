@@ -12,7 +12,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';
 
 @Component({
-	selector: 'app-send-event',
+	selector: 'send-event',
 	standalone: true,
 	imports: [CommonModule, ModalComponent, SelectComponent, InputComponent, ButtonComponent, ReactiveFormsModule],
 	templateUrl: './send-event.component.html',
@@ -22,7 +22,7 @@ export class SendEventComponent implements OnInit {
 	@Input() appId!: string;
 	@Output() onAction = new EventEmitter<any>();
 	isSendingNewEvent = false;
-	apps!: { pagination: PAGINATION; content: APP[] };
+	apps?: { pagination: PAGINATION; content: APP[] };
 	sendEventForm: FormGroup = this.formBuilder.group({
 		app_id: ['', Validators.required],
 		data: ['', Validators.required],

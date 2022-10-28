@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
 import { PrivateService } from './private.service';
@@ -20,7 +21,8 @@ export class PrivateComponent implements OnInit {
 	showAddOrganisationModal = false;
 	showAddAnalytics = false;
 	apiURL = this.generalService.apiURL();
-	organisations!: ORGANIZATION_DATA[];
+	projects!: GROUP[];
+	organisations?: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
 
 	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
@@ -36,10 +38,6 @@ export class PrivateComponent implements OnInit {
 		localStorage.removeItem('CONVOY_ORG');
 		this.router.navigateByUrl('/login');
 	}
-
-    get isProjectDetailsPage(){
-        return this.router.url.includes("/projects/")
-    }
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
@@ -58,6 +56,18 @@ export class PrivateComponent implements OnInit {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
 			this.checkForSelectedOrganisation();
+			if (this.organisations?.length === 0) this.router.navigateByUrl('/get-started');
+			else if (this.organisations && this.organisations.length > 0) this.getProjects();
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async getProjects() {
+		try {
+			const projectsResponse = await this.privateService.getProjects();
+			this.projects = projectsResponse.data;
+			if (this.projects.length === 0 && this.organisations && this.organisations.length === 0) this.router.navigateByUrl('/get-started');
 		} catch (error) {
 			return error;
 		}
@@ -89,5 +99,15 @@ export class PrivateComponent implements OnInit {
 		this.showAddOrganisationModal = false;
 		this.getOrganizations();
 		if (event?.action === 'created') this.selectOrganisation(this.userOrganization);
+	}
+
+	get isProjectDetailsPage() {
+		return this.router.url.includes('/projects/');
+	}
+
+	get showHelpCard() {
+		const formUrls = ['apps/new', 'sources/new', 'subscriptions/new'];
+		const checkForCreateForms = formUrls.some(url => this.router.url.includes(url));
+		return this.router.url === '/projects' || this.router.url === '/projects/new' || checkForCreateForms;
 	}
 }

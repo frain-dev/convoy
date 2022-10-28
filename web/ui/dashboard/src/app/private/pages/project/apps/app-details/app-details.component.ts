@@ -1,7 +1,8 @@
 import { Location } from '@angular/common';
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { APP, ENDPOINT } from 'src/app/models/app.model';
+import { APP, ENDPOINT, SECRET } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -14,7 +15,7 @@ import { CliKeysComponent } from './cli-keys/cli-keys.component';
 	styleUrls: ['./app-details.component.scss']
 })
 export class AppDetailsComponent implements OnInit {
-    @ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
+	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
 	showAddEndpointModal = false;
 	showAddEventModal = false;
 	showEndpointSecret = false;
@@ -25,21 +26,33 @@ export class AppDetailsComponent implements OnInit {
 	shouldRenderSmallSize = false;
 	showDeleteModal = false;
 	isDeletingEndpoint = false;
+	showExpireSecret = false;
+	isCliAvailable = false;
+	isExpiringSecret = false;
 	screenWidth = window.innerWidth;
 	appPortalLink!: string;
 	appPortalIframe!: string;
-	endpointSecretKey!: string;
+	endpointSecretKeys: SECRET[] = [];
 	appId!: string;
-	appsDetailsItem!: APP;
+	appsDetailsItem?: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint?: ENDPOINT;
-    tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
+	tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
 	activeTab: 'cli keys' | 'devices' = 'cli keys';
+	expireSecretForm: FormGroup = this.formBuilder.group({
+		expiration: ['', Validators.required]
+	});
+	expirationDates = [
+		{ name: '7 days', uid: 7 },
+		{ name: '14 days', uid: 14 },
+		{ name: '30 days', uid: 30 },
+		{ name: '90 days', uid: 90 }
+	];
+	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
-	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService) {}
-
-	ngOnInit() {
+	async ngOnInit() {
 		this.isLoadingAppDetails = true;
+		this.isCliAvailable = await this.privateService.getFlag('can_create_cli_api_key');
 		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.loadingAppPotalToken = true;
 		this.checkScreenSize();
 		this.getAppDetails(this.route.snapshot.params.id);
@@ -49,9 +62,9 @@ export class AppDetailsComponent implements OnInit {
 		this.location.back();
 	}
 
-	viewEndpointSecretKey(secretKey: string) {
+	viewEndpointSecretKey(secretKeys: SECRET[]) {
 		this.showEndpointSecret = !this.showEndpointSecret;
-		this.endpointSecretKey = secretKey;
+		this.endpointSecretKeys = secretKeys;
 	}
 
 	async getAppDetails(appId: string) {
@@ -70,6 +83,7 @@ export class AppDetailsComponent implements OnInit {
 
 	async getAppPortalToken(requestDetail: { redirect: boolean }) {
 		if (this.privateService.activeProjectDetails?.type === 'incoming') return;
+		if (!this.appsDetailsItem) return;
 
 		this.loadingAppPotalToken = true;
 		const payload = {
@@ -93,7 +107,9 @@ export class AppDetailsComponent implements OnInit {
 	}
 
 	async deleteEndpoint() {
+		if (!this.appsDetailsItem) return;
 		this.isDeletingEndpoint = true;
+
 		try {
 			const response = await this.appDetailsService.deleteEndpoint({ appId: this.appsDetailsItem?.uid, endpointId: this.selectedEndpoint?.uid || '' });
 			this.generalService.showNotification({ style: 'success', message: response.message });
@@ -105,7 +121,28 @@ export class AppDetailsComponent implements OnInit {
 		}
 	}
 
-    toggleActiveTab(tab: 'cli keys' | 'devices') {
+	async expireSecret() {
+		if (!this.appsDetailsItem) return;
+		if (this.expireSecretForm.invalid) {
+			this.expireSecretForm.markAllAsTouched();
+			return;
+		}
+
+		this.expireSecretForm.value.expiration = parseInt(this.expireSecretForm.value.expiration);
+		this.isExpiringSecret = true;
+		try {
+			const response = await this.appDetailsService.expireSecret({ appId: this.appsDetailsItem?.uid, endpointId: this.selectedEndpoint?.uid || '', body: this.expireSecretForm.value });
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.isExpiringSecret = false;
+			this.showEndpointSecret = false;
+			this.showExpireSecret = false;
+			this.getAppDetails(this.appsDetailsItem?.uid);
+		} catch {
+			this.isExpiringSecret = false;
+		}
+	}
+
+	toggleActiveTab(tab: 'cli keys' | 'devices') {
 		this.activeTab = tab;
 	}
 

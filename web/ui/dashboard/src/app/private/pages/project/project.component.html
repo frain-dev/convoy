@@ -1,5 +1,5 @@
 <div class="flex pt-0 pb-0 w-full max-w-[1440px] m-auto">
-	<aside class="w-fit pt-10 border-r border-r-grey-10 relative ml-56px">
+	<aside class="w-fit pt-10 border-r border-r-grey-10 relative ml-56px z-10">
 		<convoy-button type="icon" buttonType="button" className="px-0 py-0 border border-grey-10 bg-white-100 rounded-100px w-32px h-32px absolute top-8px -right-16px" [disable]="screenWidth < 1150" (clickItem)="shouldShowFullSideBar = !shouldShowFullSideBar">
 			<svg width="12" height="12" class="fill-primary-100 transition-all duration-200" [class]="shouldShowFullSideBar ? 'hidden' : 'block'">
 				<use xlink:href="#sidebar-icon"></use>
@@ -30,7 +30,7 @@
 						<span class="font-medium text-14 transition-all duration-200" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">Help</span>
 					</button>
 
-					<div class="absolute top-[110%] w-full bg-white-100 border border-grey-10 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300" *ngIf="showHelpDropdown">
+					<div class="absolute top-[110%] w-200px bg-white-100 border border-grey-10 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300" *ngIf="showHelpDropdown">
 						<ul class="pt-10px pb-12px">
 							<convoy-list-item className="py-6px pl-16px text-14 hover:bg-primary-500 capitalize border-b-0">
 								<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -101,7 +101,8 @@
 		</div>
 	</aside>
 	<div class="w-full">
-		<convoy-github-star class="w-full"></convoy-github-star>
+		<convoy-github-star></convoy-github-star>
+
 		<main class="w-full pl-24px pr-64px mt-24px relative transition-all duration-200">
 			<router-outlet></router-outlet>
 		</main>

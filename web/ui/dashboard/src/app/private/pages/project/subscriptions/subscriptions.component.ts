@@ -4,7 +4,6 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { SubscriptionsService } from './subscriptions.service';
 
 @Component({
 	selector: 'app-subscriptions',
@@ -14,16 +13,16 @@ import { SubscriptionsService } from './subscriptions.service';
 export class SubscriptionsComponent implements OnInit {
 	activeSubscription?: SUBSCRIPTION;
 	shouldShowCreateSubscriptionModal = false;
-	projectId!: string;
-	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
+	projectId?: string;
+	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
 	subscriptionsLoaders = [1, 2, 3, 4, 5];
 	isLoadindingSubscriptions = false;
 	isDeletingSubscription = false;
 	showUpdateSubscriptionModal = false;
 	showDeleteSubscriptionModal = false;
 
-	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private subscriptionsService: SubscriptionsService, private generalService: GeneralService) {
-		this.projectId = this.privateService.activeProjectDetails.uid;
+	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {
+		this.projectId = this.privateService.activeProjectDetails?.uid;
 
 		const urlParam = route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSubscriptionModal = true;
@@ -39,8 +38,9 @@ export class SubscriptionsComponent implements OnInit {
 		this.isLoadindingSubscriptions = true;
 
 		try {
-			const subscriptionsResponse = await this.subscriptionsService.getSubscriptions({ page: requestDetails?.page });
+			const subscriptionsResponse = await this.privateService.getSubscriptions({ page: requestDetails?.page });
 			this.subscriptions = subscriptionsResponse.data;
+			this.subscriptions?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
 			this.isLoadindingSubscriptions = false;
 		} catch (error) {
 			this.isLoadindingSubscriptions = false;
@@ -48,11 +48,11 @@ export class SubscriptionsComponent implements OnInit {
 	}
 
 	closeModal() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
 	}
 
 	createSubscription(action: any) {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
 		if (action !== 'cancel') this.generalService.showNotification({ message: `Subscription has been ${action}d successfully`, style: 'success' });
 	}
 
@@ -64,7 +64,7 @@ export class SubscriptionsComponent implements OnInit {
 		this.isDeletingSubscription = true;
 
 		try {
-			const response = await this.subscriptionsService.deleteSubscription(this.activeSubscription?.uid || '');
+			const response = await this.privateService.deleteSubscription(this.activeSubscription?.uid || '');
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
 			delete this.activeSubscription;
