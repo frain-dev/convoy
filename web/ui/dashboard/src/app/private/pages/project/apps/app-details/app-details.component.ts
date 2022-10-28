@@ -43,10 +43,14 @@ export class AppDetailsComponent implements OnInit {
 		expiration: ['', Validators.required]
 	});
 	expirationDates = [
-		{ name: '7 days', uid: 7 },
-		{ name: '14 days', uid: 14 },
-		{ name: '30 days', uid: 30 },
-		{ name: '90 days', uid: 90 }
+		{ name: '1 hour', uid: 1 },
+		{ name: '2 hour', uid: 2 },
+		{ name: '4 hour', uid: 4 },
+		{ name: '8 hour', uid: 8 },
+		{ name: '12 hour', uid: 12 },
+		{ name: '16 hour', uid: 16 },
+		{ name: '20 hour', uid: 20 },
+		{ name: '24 hour', uid: 24 }
 	];
 	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
