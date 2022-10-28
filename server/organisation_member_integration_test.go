@@ -45,7 +45,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -259,7 +259,6 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOw
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
 }
 
 func TestOrganisationMemberIntegrationTestSuite(t *testing.T) {

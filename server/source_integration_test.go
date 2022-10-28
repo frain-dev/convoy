@@ -42,7 +42,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, "")
 
 	// Seed Auth
 	role := auth.Role{

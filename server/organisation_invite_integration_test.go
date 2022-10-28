@@ -46,7 +46,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -445,7 +445,6 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
 	var response datastore.OrganisationInvite
 	parseResponse(s.T(), w.Result(), &response)
 	require.Equal(s.T(), datastore.InviteStatusCancelled, response.Status)
-
 }
 
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {

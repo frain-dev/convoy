@@ -52,7 +52,7 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Group.
-	s.DefaultGroup, err = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	s.DefaultGroup, err = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultOrg.UID)
 	require.NoError(s.T(), err)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
@@ -74,10 +74,10 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, groupID, "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "test-app", false)
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, group, uuid.NewString(), "test-app", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, group.UID)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, app, group.UID, uuid.NewString(), "*", "", []byte("{}"))
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
@@ -170,7 +170,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "", datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, groupID, "", "", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
@@ -184,7 +184,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
 	_, err = groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
@@ -210,7 +210,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
 	groupID := uuid.NewString()
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -227,7 +227,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
 	_, err = groupRepo.FetchGroupByID(context.Background(), groupID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
@@ -392,7 +392,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "test-group", datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, groupID, "", "test-group", datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
@@ -424,7 +424,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
 	g, err := groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "group_1", g.Name)
@@ -435,7 +435,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey() {
 	groupID := uuid.NewString()
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -488,9 +488,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group3, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group3, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -519,8 +519,8 @@ func (s *GroupIntegrationTestSuite) TestGetGroupsWithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
@@ -550,9 +550,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
-	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
+	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects?name=%s", s.DefaultOrg.UID, group1.Name)
 	req := createRequest(http.MethodGet, url, "", nil)

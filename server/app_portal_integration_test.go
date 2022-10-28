@@ -40,7 +40,7 @@ func (s *AppPortalIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -64,10 +64,10 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
-	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
 	for i := 0; i < 5; i++ {
@@ -85,7 +85,7 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 		App:   app2.UID,
 	}
 
-	// generate an app portal key 
+	// generate an app portal key
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
@@ -111,10 +111,10 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppSubscriptions() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	app1, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
-	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	app2, err := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
 	require.NoError(s.T(), err)
 
 	source := &datastore.Source{UID: uuid.NewString()}

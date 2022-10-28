@@ -43,7 +43,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.DB)
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, "")
 	fmt.Printf("%+v\n", s.DefaultGroup)
 
 	// Seed Auth
@@ -70,8 +70,8 @@ func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -126,7 +126,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup() {
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test_group", "", datastore.IncomingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "test_group", "", datastore.IncomingGroup, nil)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -137,9 +137,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 
 	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, group, uuid.NewString(), "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, group.UID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -193,7 +193,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup_RedirectToProjects() {
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test_group", "", datastore.IncomingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "test_group", "", datastore.IncomingGroup, nil)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -204,9 +204,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 
 	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, group, uuid.NewString(), "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, group.UID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -248,8 +248,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -286,8 +286,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound()
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppDoesNotBelongToGroup() {
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -324,7 +324,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppDoesNotBel
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFound() {
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -414,8 +414,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 	group := s.DefaultGroup
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, group, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, group.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
@@ -444,7 +444,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup_ValidSubscription() {
 	subscriptionId := "123456789"
 
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group", "", datastore.IncomingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, uuid.NewString(), "test-group", "", datastore.IncomingGroup, nil)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -456,8 +456,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, group.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, group, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, group.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, group, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
@@ -490,8 +490,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 
 	for i := 0; i < totalSubs; i++ {
 		// Just Before
-		app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-		endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+		app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+		endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 		source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
 		_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	}
@@ -516,8 +516,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	subscriptionId := "123456789"
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
@@ -542,8 +542,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	subscriptionId := "123456789"
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
@@ -595,8 +595,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveS
 	subscriptionId := "123456789"
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.ActiveSubscriptionStatus)
 
@@ -626,8 +626,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Inactiv
 	subscriptionId := "123456789"
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.InactiveSubscriptionStatus)
 
@@ -657,8 +657,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Pending
 	subscriptionId := "123456789"
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.PendingSubscriptionStatus)
 
@@ -678,8 +678,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Unknown
 	subscriptionId := "123456789"
 
 	// Just Before
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, app, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "random")
 

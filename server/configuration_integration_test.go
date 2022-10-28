@@ -43,7 +43,7 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(c.DB)
 
 	// Setup Default Group
-	c.DefaultGroup, _ = testdb.SeedDefaultGroup(c.ConvoyApp.A.Store, "")
+	c.DefaultGroup, _ = testdb.SeedDefaultGroup(c.ConvoyApp.A.Store, c.ConvoyApp.A.Cache, "")
 
 	user, err := testdb.SeedDefaultUser(c.ConvoyApp.A.Store)
 	require.NoError(c.T(), err)
@@ -162,7 +162,6 @@ func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
 	require.Equal(c.T(), "/tmp", config.StoragePolicy.OnPrem.Path)
 	require.False(c.T(), config.IsAnalyticsEnabled)
 	require.False(c.T(), config.IsSignupEnabled)
-
 }
 
 func TestConfigurationIntegrationTestSuite(t *testing.T) {
