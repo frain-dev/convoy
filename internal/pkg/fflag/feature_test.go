@@ -105,7 +105,7 @@ func TestFeatureFlags_CLI(t *testing.T) {
 			ss := provideServices(ctrl)
 			m := middleware.NewMiddleware(&middleware.CreateMiddleware{GroupRepo: ss.groupRepo})
 
-			fn := m.RequireGroup()(CanAccessFeature(tc.IsEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fn := m.RequireGroup()(CanAccessFeature(tc.IsEnabled, m)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, err := w.Write([]byte(`Hello`))
 

@@ -74,7 +74,12 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 
 	qs := fmt.Sprintf("%v:%v:%v:%v", group.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
@@ -123,14 +128,17 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 }
 
 func (a *ApplicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("Logged in successfully",
 		m.GetAuthLoginFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *ApplicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
-
-	g := m.GetGroupFromContext(r.Context())
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 
 	viewableConfig := ViewableConfiguration{
 		Strategy:  *g.Config.Strategy,

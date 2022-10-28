@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/render"
+
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -63,14 +65,14 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 			m.RequireAppPortalApplication(),
 		)
 
-		streamRouter.Get("/listen", ListenHandler(h, r))
-		streamRouter.Post("/login", LoginHandler(h, r))
+		streamRouter.Get("/listen", ListenHandler(h, r, m))
+		streamRouter.Post("/login", LoginHandler(h, r, m))
 	})
 
 	return router
 }
 
-func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
+func ListenHandler(hub *Hub, repo *Repo, md *m.Middleware) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		listenRequest := &ListenRequest{}
 		err := json.Unmarshal([]byte(r.Header.Get("Body")), &listenRequest)
@@ -80,7 +82,13 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		group := m.GetGroupFromContext(r.Context())
+		group, err := md.GetGroup(r)
+		if err != nil {
+			log.WithError(err).Error("failed to fetch group")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+			return
+		}
+
 		app := m.GetApplicationFromContext(r.Context())
 
 		device, err := listen(r.Context(), group, app, listenRequest, hub, repo)
@@ -100,7 +108,7 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 	})
 }
 
-func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
+func LoginHandler(hub *Hub, repo *Repo, md *m.Middleware) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		loginRequest := &LoginRequest{}
 		err := util.ReadJSON(r, &loginRequest)
@@ -109,7 +117,12 @@ func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		group := m.GetGroupFromContext(r.Context())
+		group, err := md.GetGroup(r)
+		if err != nil {
+			log.WithError(err).Error("failed to fetch group")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+			return
+		}
 		app := m.GetApplicationFromContext(r.Context())
 
 		device, err := login(r.Context(), group, app, loginRequest, hub, repo)

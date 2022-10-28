@@ -53,7 +53,13 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	eventService := createEventService(a)
 
 	event, err := eventService.CreateAppEvent(r.Context(), &newMessage, g)
@@ -78,11 +84,17 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
-	g := m.GetGroupFromContext(r.Context())
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	event := m.GetEventFromContext(r.Context())
 	eventService := createEventService(a)
 
-	err := eventService.ReplayAppEvent(r.Context(), event, g)
+	err = eventService.ReplayAppEvent(r.Context(), event, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -141,7 +153,14 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 	eventService := createEventService(a)
 
-	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
+	err = eventService.ResendEventDelivery(r.Context(), eventDelivery, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -178,8 +197,15 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 		return
 	}
 
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	f := &datastore.Filter{
-		Group:   m.GetGroupFromContext(r.Context()),
+		Group:   g,
 		AppID:   m.GetAppIDFromContext(r),
 		EventID: r.URL.Query().Get("eventId"),
 		Status:  status,
@@ -232,8 +258,15 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		return
 	}
 
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	f := &datastore.Filter{
-		Group:        m.GetGroupFromContext(r.Context()),
+		Group:        g,
 		AppID:        m.GetAppIDFromContext(r),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
@@ -271,8 +304,15 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 		return
 	}
 
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	eventService := createEventService(a)
-	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
+	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, g)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -313,7 +353,12 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 	query := r.URL.Query().Get("query")
 
 	f := &datastore.Filter{
@@ -382,8 +427,15 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		return
 	}
 
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	f := &datastore.Filter{
-		Group:        m.GetGroupFromContext(r.Context()),
+		Group:        g,
 		AppID:        m.GetAppIDFromContext(r),
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,

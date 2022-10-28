@@ -41,7 +41,13 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 // @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	appID := m.GetAppIDFromContext(r)
 
 	filter := &datastore.FilterBy{GroupID: group.UID, AppID: appID}
@@ -72,7 +78,12 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
 func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 
 	subService := createSubscriptionService(a)
 	subscription, err := subService.FindSubscriptionByID(r.Context(), group, subId, false)
@@ -97,10 +108,15 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [post]
 func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 
 	var sub models.Subscription
-	err := util.ReadJSON(r, &sub)
+	err = util.ReadJSON(r, &sub)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -130,7 +146,13 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	subService := createSubscriptionService(a)
 
 	sub, err := subService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
@@ -171,7 +193,12 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	subService := createSubscriptionService(a)
@@ -197,7 +224,12 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	g := m.GetGroupFromContext(r.Context())
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	subService := createSubscriptionService(a)

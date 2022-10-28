@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -33,7 +35,12 @@ func createDeviceService(a *ApplicationHandler) *services.DeviceService {
 // @Router /devices/{appID} [get]
 func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 	app := m.GetApplicationFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{

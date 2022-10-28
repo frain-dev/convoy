@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
@@ -40,7 +42,12 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 
 	sourceService := createSourceService(a)
 	source, err := sourceService.CreateSource(r.Context(), &newSource, group)
@@ -67,7 +74,12 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 
 	sourceService := createSourceService(a)
 	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
@@ -103,7 +115,12 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 	sourceService := createSourceService(a)
 
 	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
@@ -137,7 +154,12 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 	sourceService := createSourceService(a)
 
 	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
@@ -171,7 +193,12 @@ func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // @Router /api/v1/projects/{projectID}/sources [get]
 func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
 
 	f := &datastore.SourceFilter{
 		Type: r.URL.Query().Get("type"),

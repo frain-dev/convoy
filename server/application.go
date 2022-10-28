@@ -64,7 +64,13 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Router /api/v1/projects/{projectID}/applications [get]
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	q := r.URL.Query().Get("q")
 	appService := createApplicationService(a)
 
@@ -99,7 +105,13 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	appService := createApplicationService(a)
 	app, err := appService.CreateApp(r.Context(), &newApp, group)
 	if err != nil {

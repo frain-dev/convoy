@@ -221,12 +221,11 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var group *datastore.Group
 			authUser := GetAuthUserFromContext(r.Context())
 			groupID := authUser.Role.Group
 			appID := authUser.Role.App
 
-			group, err := m.groupRepo.FetchGroupByID(r.Context(), groupID)
+			_, err := m.groupRepo.FetchGroupByID(r.Context(), groupID)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
 				return
@@ -247,7 +246,6 @@ func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.
 				return
 			}
 
-			r = r.WithContext(setGroupInContext(r.Context(), group))
 			r = r.WithContext(setApplicationInContext(r.Context(), app))
 			r = r.WithContext(setAppIDInContext(r.Context(), app.UID))
 			next.ServeHTTP(w, r)
@@ -270,7 +268,12 @@ func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next ht
 				return
 			}
 
-			group := GetGroupFromContext(r.Context())
+			group, err := m.groupRepo.FetchGroupByID(r.Context(), GetGroupID(r))
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+				return
+			}
+
 			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
 				if !util.IsStringEmpty(authUser.Role.App) { // we're dealing with an app portal token at this point
 					app := GetApplicationFromContext(r.Context())
@@ -411,7 +414,11 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
-			group := GetGroupFromContext(r.Context())
+			group, err := m.groupRepo.FetchGroupByID(r.Context(), GetGroupID(r))
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+				return
+			}
 
 			if authUser.Metadata != nil { // this signals that a personal api key was used for authentication
 				user, _ := authUser.Metadata.(*datastore.User)
@@ -465,7 +472,11 @@ func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Han
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			app := GetApplicationFromContext(r.Context())
-			group := GetGroupFromContext(r.Context())
+			group, err := m.groupRepo.FetchGroupByID(r.Context(), GetGroupID(r))
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+				return
+			}
 
 			if app.GroupID != group.UID {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
@@ -506,7 +517,12 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 				return
 			}
 
-			group := GetGroupFromContext(r.Context())
+			group, err := m.groupRepo.FetchGroupByID(r.Context(), GetGroupID(r))
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+				return
+			}
+
 			if member.Role.Group == group.UID {
 				next.ServeHTTP(w, r)
 				return
@@ -636,47 +652,46 @@ func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupR
 func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var group *datastore.Group
-			var err error
-			var groupID string
-
-			groupID = r.URL.Query().Get("groupId")
-
-			if util.IsStringEmpty(groupID) {
-				groupID = r.URL.Query().Get("groupID")
-			}
-
-			if util.IsStringEmpty(groupID) {
-				groupID = chi.URLParam(r, "projectID")
-			}
-
-			if util.IsStringEmpty(groupID) {
-				groupID = chi.URLParam(r, "groupID")
-			}
-
-			if util.IsStringEmpty(groupID) {
-				authUser := GetAuthUserFromContext(r.Context())
-
-				if authUser.Credential.Type == auth.CredentialTypeAPIKey {
-					groupID = authUser.Role.Group
-				}
-			}
-
-			if util.IsStringEmpty(groupID) {
-				_ = render.Render(w, r, util.NewErrorResponse("group id is required", http.StatusBadRequest))
-				return
-			}
-
-			group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
+			groupID := GetGroupID(r)
+			_, err := m.groupRepo.FetchGroupByID(r.Context(), groupID)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
 				return
 			}
 
-			r = r.WithContext(setGroupInContext(r.Context(), group))
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func (m *Middleware) GetGroup(r *http.Request) (*datastore.Group, error) {
+	return m.groupRepo.FetchGroupByID(r.Context(), GetGroupID(r))
+}
+
+func GetGroupID(r *http.Request) string {
+	groupID := r.URL.Query().Get("groupId")
+
+	if !util.IsStringEmpty(groupID) {
+		return groupID
+	}
+
+	if groupID = chi.URLParam(r, "projectID"); !util.IsStringEmpty(groupID) {
+		return groupID
+	}
+
+	if groupID = chi.URLParam(r, "groupID"); !util.IsStringEmpty(groupID) {
+		return groupID
+	}
+
+	if util.IsStringEmpty(groupID) {
+		authUser := GetAuthUserFromContext(r.Context())
+
+		if authUser.Credential.Type == auth.CredentialTypeAPIKey {
+			groupID = authUser.Role.Group
+		}
+	}
+
+	return groupID
 }
 
 func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
@@ -763,9 +778,10 @@ func (m *Middleware) RequirePermission(role auth.RoleType) func(next http.Handle
 				return
 			}
 
-			group := GetGroupFromContext(r.Context())
-			if group == nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
+			groupID := GetGroupID(r)
+			group, err := m.groupRepo.FetchGroupByID(r.Context(), groupID)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
 				return
 			}
 
@@ -1045,17 +1061,25 @@ func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string,
 
 func (m *Middleware) RateLimitByGroupWithParams(requestLimit int, windowLength time.Duration) func(next http.Handler) http.Handler {
 	return httprate.Limit(requestLimit, windowLength, httprate.WithKeyFuncs(func(req *http.Request) (string, error) {
-		return GetGroupFromContext(req.Context()).UID, nil
+		group, err := m.groupRepo.FetchGroupByID(req.Context(), GetGroupID(req))
+		if err != nil {
+			return "", err
+		}
+		return group.UID, nil
 	}))
 }
 
 func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			group := GetGroupFromContext(r.Context())
+			groupID := GetGroupID(r)
+			group, err := m.groupRepo.FetchGroupByID(r.Context(), groupID)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+				return
+			}
 
 			var rateLimitDuration time.Duration
-			var err error
 			if util.IsStringEmpty(group.RateLimitDuration) {
 				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
 				if err != nil {
@@ -1168,13 +1192,13 @@ func GetApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint 
 	return ctx.Value(endpointCtx).(*datastore.Endpoint)
 }
 
-func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
-	return context.WithValue(ctx, groupCtx, group)
-}
+//func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
+//	return context.WithValue(ctx, groupCtx, group)
+//}
 
-func GetGroupFromContext(ctx context.Context) *datastore.Group {
-	return ctx.Value(groupCtx).(*datastore.Group)
-}
+//func GetGroupFromContext(ctx context.Context) *datastore.Group {
+//	return ctx.Value(groupCtx).(*datastore.Group)
+//}
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
 	return context.WithValue(ctx, pageableCtx, pageable)

@@ -7,17 +7,18 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 	log "github.com/sirupsen/logrus"
 )
 
-type IsEnabledFunc func(r *http.Request) error
+type IsEnabledFunc func(r *http.Request, m *middleware.Middleware) error
 
 var (
 	ErrFeatureNotAvailable = errors.New("this feature is not yet available for you")
@@ -38,8 +39,11 @@ func newFliptClient(cfg config.Configuration) *flipt.Flipt {
 }
 
 var Features = map[string]IsEnabledFunc{
-	CanCreateCLIAPIKey: func(r *http.Request) error {
-		group := middleware.GetGroupFromContext(r.Context())
+	CanCreateCLIAPIKey: func(r *http.Request, m *middleware.Middleware) error {
+		group, err := m.GetGroup(r)
+		if err != nil {
+			return err
+		}
 
 		cfg, err := config.Get()
 		if err != nil {
@@ -72,7 +76,6 @@ var Features = map[string]IsEnabledFunc{
 				"group_id":        group.UID,
 				"organisation_id": group.OrganisationID,
 			})
-
 			if err != nil {
 				log.WithError(err).Error("failed to check flag on flipt")
 				return err
@@ -87,11 +90,10 @@ var Features = map[string]IsEnabledFunc{
 	},
 }
 
-func CanAccessFeature(fn IsEnabledFunc) func(next http.Handler) http.Handler {
+func CanAccessFeature(fn IsEnabledFunc, m *middleware.Middleware) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := fn(r)
-
+			err := fn(r, m)
 			if err != nil {
 				statusCode := http.StatusInternalServerError
 

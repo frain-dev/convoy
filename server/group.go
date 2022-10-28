@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
@@ -52,10 +54,16 @@ func _() {}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups/{groupID} [get]
 func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	groupService := createGroupService(a)
 
-	err := groupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
+	err = groupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -91,10 +99,16 @@ func _() {}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups/{groupID} [delete]
 func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	group, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	groupService := createGroupService(a)
 
-	err := groupService.DeleteGroup(r.Context(), group.UID)
+	err = groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -191,7 +205,13 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g, err := a.M.GetGroup(r)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch group")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
 	groupService := createGroupService(a)
 
 	group, err := groupService.UpdateGroup(r.Context(), g, &update)
