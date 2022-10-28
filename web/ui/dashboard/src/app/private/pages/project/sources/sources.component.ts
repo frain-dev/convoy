@@ -68,7 +68,7 @@ export class SourcesComponent implements OnInit {
 	}
 
 	copyText(sourceName: string) {
-		this.generalService.showNotification({ message: `${sourceName} URL has been copied to clipboard`, style: 'info' });
+		this.generalService.showNotification({ message: `${sourceName} has been copied to clipboard`, style: 'info' });
 	}
 
 	isDateBefore(date1?: Date, date2?: Date): boolean {
