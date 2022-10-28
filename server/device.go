@@ -41,10 +41,9 @@ func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.R
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
-	app := m.GetApplicationFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{
-		AppID: app.UID,
+		AppID: m.GetAppID(r),
 	}
 
 	deviceService := createDeviceService(a)

@@ -212,6 +212,26 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 	return endpoint, nil
 }
 
+func (a *AppService) FindAppByID(ctx context.Context, id string) (*datastore.Application, error) {
+	app, err := a.appRepo.FindApplicationByID(ctx, id)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch application by id")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch application by id"))
+	}
+
+	return app, nil
+}
+
+func (a *AppService) FindEndpointByID(ctx context.Context, appID, endpointID string) (*datastore.Endpoint, error) {
+	endpoint, err := a.appRepo.FindApplicationEndpointByID(ctx, appID, endpointID)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch endpoint by id")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch endpoint by id"))
+	}
+
+	return endpoint, nil
+}
+
 func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, endPointId string, app *datastore.Application) (*datastore.Application, error) {
 	// Expire current secret.
 	endpoint, err := app.FindEndpoint(endPointId)

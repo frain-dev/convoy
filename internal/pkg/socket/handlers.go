@@ -89,7 +89,12 @@ func ListenHandler(hub *Hub, repo *Repo, md *m.Middleware) http.HandlerFunc {
 			return
 		}
 
-		app := m.GetApplicationFromContext(r.Context())
+		app, err := repo.AppRepo.FindApplicationByID(r.Context(), m.GetAppID(r))
+		if err != nil {
+			log.WithError(err).Error("failed to fetch app")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch app", http.StatusBadRequest))
+			return
+		}
 
 		device, err := listen(r.Context(), group, app, listenRequest, hub, repo)
 		if err != nil {
@@ -123,7 +128,13 @@ func LoginHandler(hub *Hub, repo *Repo, md *m.Middleware) http.HandlerFunc {
 			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 			return
 		}
-		app := m.GetApplicationFromContext(r.Context())
+
+		app, err := repo.AppRepo.FindApplicationByID(r.Context(), m.GetAppID(r))
+		if err != nil {
+			log.WithError(err).Error("failed to fetch app")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch app", http.StatusBadRequest))
+			return
+		}
 
 		device, err := login(r.Context(), group, app, loginRequest, hub, repo)
 		if err != nil {

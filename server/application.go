@@ -43,8 +43,16 @@ type pagedResponse struct {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID} [get]
 func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
+	appService := createApplicationService(a)
+
+	app, err := appService.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("App fetched successfully",
-		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
+		app, http.StatusOK))
 }
 
 // GetApps
@@ -143,8 +151,13 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
 	appService := createApplicationService(a)
+
+	app, err := appService.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	err = appService.UpdateApplication(r.Context(), &appUpdate, app)
 	if err != nil {
@@ -168,10 +181,15 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID} [delete]
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
 	appService := createApplicationService(a)
 
-	err := appService.DeleteApplication(r.Context(), app)
+	app, err := appService.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = appService.DeleteApplication(r.Context(), app)
 	if err != nil {
 		log.Errorln("failed to delete app - ", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -202,8 +220,13 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
 	appService := createApplicationService(a)
+
+	app, err := appService.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	endpoint, err := appService.CreateAppEndpoint(r.Context(), e, app)
 	if err != nil {
@@ -228,8 +251,16 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
+	appService := createApplicationService(a)
+
+	endpoint, err := appService.FindEndpointByID(r.Context(), m.GetAppID(r), m.GetEndpointID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint fetched successfully",
-		*m.GetApplicationEndpointFromContext(r.Context()), http.StatusOK))
+		endpoint, http.StatusOK))
 }
 
 // GetAppEndpoints
@@ -245,7 +276,12 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints [get]
 func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
+	appService := createApplicationService(a)
+	app, err := appService.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	app.Endpoints = m.FilterDeletedEndpoints(app.Endpoints)
 	_ = render.Render(w, r, util.NewServerResponse("App endpoints fetched successfully", app.Endpoints, http.StatusOK))
@@ -273,11 +309,14 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
-	endPointId := chi.URLParam(r, "endpointID")
 	appService := createApplicationService(a)
+	app, err := appService.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	endpoint, err := appService.UpdateAppEndpoint(r.Context(), e, endPointId, app)
+	endpoint, err := appService.UpdateAppEndpoint(r.Context(), e, m.GetEndpointID(r), app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -300,11 +339,21 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
-	e := m.GetApplicationEndpointFromContext(r.Context())
 	appService := createApplicationService(a)
 
-	err := appService.DeleteAppEndpoint(r.Context(), e, app)
+	app, err := appService.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	e, err := appService.FindEndpointByID(r.Context(), app.UID, m.GetEndpointID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = appService.DeleteAppEndpoint(r.Context(), e, app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -334,9 +383,14 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
-
 	as := createApplicationService(a)
+
+	app, err := as.FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	app, err = as.ExpireSecret(r.Context(), e, chi.URLParam(r, "endpointID"), app)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

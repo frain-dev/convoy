@@ -182,12 +182,10 @@ func (m *Middleware) JsonResponse(next http.Handler) http.Handler {
 func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			appID := chi.URLParam(r, "appID")
-
 			event := "an error occurred while retrieving app details"
 			statusCode := http.StatusBadRequest
 
-			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
+			_, err := m.appRepo.FindApplicationByID(r.Context(), GetAppID(r))
 			if err != nil {
 				if errors.Is(err, datastore.ErrApplicationNotFound) {
 					event = err.Error()
@@ -197,7 +195,6 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 				return
 			}
 
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -246,7 +243,6 @@ func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.
 				return
 			}
 
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
 			r = r.WithContext(setAppIDInContext(r.Context(), app.UID))
 			next.ServeHTTP(w, r)
 		})
@@ -276,7 +272,11 @@ func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next ht
 
 			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
 				if !util.IsStringEmpty(authUser.Role.App) { // we're dealing with an app portal token at this point
-					app := GetApplicationFromContext(r.Context())
+					app, err := m.appRepo.FindApplicationByID(r.Context(), GetAppID(r))
+					if err != nil {
+						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch app by id", http.StatusNotFound))
+						return
+					}
 
 					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
 						next.ServeHTTP(w, r)
@@ -329,16 +329,18 @@ func ParseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
 func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			app := GetApplicationFromContext(r.Context())
-			endPointId := chi.URLParam(r, "endpointID")
+			app, err := m.appRepo.FindApplicationByID(r.Context(), GetAppID(r))
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch app by id", http.StatusNotFound))
+				return
+			}
 
-			endpoint, err := app.FindEndpoint(endPointId)
+			_, err = app.FindEndpoint(GetEndpointID(r))
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
 			}
 
-			r = r.WithContext(setApplicationEndpointInContext(r.Context(), endpoint))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -471,7 +473,13 @@ func (m *Middleware) RejectAppPortalKey() func(next http.Handler) http.Handler {
 func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			app := GetApplicationFromContext(r.Context())
+			app, err := m.appRepo.FindApplicationByID(r.Context(), GetAppID(r))
+			if err != nil {
+				log.WithError(err).Error("failed to fetch app by id")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch app by id", http.StatusNotFound))
+				return
+			}
+
 			group, err := m.groupRepo.FetchGroupByID(r.Context(), GetGroupID(r))
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
@@ -696,6 +704,14 @@ func GetGroupID(r *http.Request) string {
 	}
 
 	return groupID
+}
+
+func GetAppID(r *http.Request) string {
+	return chi.URLParam(r, "appID")
+}
+
+func GetEndpointID(r *http.Request) string {
+	return chi.URLParam(r, "endpointID")
 }
 
 func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
@@ -1132,15 +1148,15 @@ func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 	}
 }
 
-func setApplicationInContext(ctx context.Context,
-	app *datastore.Application,
-) context.Context {
-	return context.WithValue(ctx, appCtx, app)
-}
-
-func GetApplicationFromContext(ctx context.Context) *datastore.Application {
-	return ctx.Value(appCtx).(*datastore.Application)
-}
+//func setApplicationInContext(ctx context.Context,
+//	app *datastore.Application,
+//) context.Context {
+//	return context.WithValue(ctx, appCtx, app)
+//}
+//
+//func GetApplicationFromContext(ctx context.Context) *datastore.Application {
+//	return ctx.Value(appCtx).(*datastore.Application)
+//}
 
 func setOrganisationInContext(ctx context.Context,
 	org *datastore.Organisation,
@@ -1186,15 +1202,15 @@ func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
 	return ctx.Value(appCtx).(*[]datastore.Application)
 }
 
-func setApplicationEndpointInContext(ctx context.Context,
-	endpoint *datastore.Endpoint,
-) context.Context {
-	return context.WithValue(ctx, endpointCtx, endpoint)
-}
-
-func GetApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
-	return ctx.Value(endpointCtx).(*datastore.Endpoint)
-}
+//func setApplicationEndpointInContext(ctx context.Context,
+//	endpoint *datastore.Endpoint,
+//) context.Context {
+//	return context.WithValue(ctx, endpointCtx, endpoint)
+//}
+//
+//func GetApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
+//	return ctx.Value(endpointCtx).(*datastore.Endpoint)
+//}
 
 //func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
 //	return context.WithValue(ctx, groupCtx, group)

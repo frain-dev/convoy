@@ -175,7 +175,6 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
 
 	k := string(newApiKey.KeyType)
@@ -198,6 +197,12 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 
 	if util.IsStringEmpty(newApiKey.Name) {
 		newApiKey.Name = autoname.Generate(" ")
+	}
+
+	app, err := createApplicationService(a).FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
 	}
 
 	newApiKey.Group = group
@@ -248,12 +253,11 @@ func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
 	pageable := m.GetPageableFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{
 		GroupID: group.UID,
-		AppID:   app.UID,
+		AppID:   m.GetAppID(r),
 		KeyType: datastore.CLIKey,
 	}
 
@@ -338,11 +342,16 @@ func (a *ApplicationHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke [put]
 func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
 	group, err := a.M.GetGroup(r)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
+		return
+	}
+
+	app, err := createApplicationService(a).FindAppByID(r.Context(), m.GetAppID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
