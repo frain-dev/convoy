@@ -22,9 +22,10 @@ type sourceRepo struct {
 	store datastore.Store
 }
 
-func NewSourceRepo(store datastore.Store) datastore.SourceRepository {
+func NewSourceRepo(store datastore.Store, cache cache.Cache) datastore.SourceRepository {
 	return &sourceRepo{
 		store: store,
+		cache: cache,
 	}
 }
 
