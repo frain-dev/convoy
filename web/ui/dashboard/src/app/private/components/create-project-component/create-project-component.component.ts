@@ -47,7 +47,7 @@ export class CreateProjectComponent implements OnInit {
 	confirmModal = false;
 	showNewSignatureModal = false;
 	apiKey!: string;
-	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
+	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
 		{ uid: 'linear', name: 'Linear time retry' },
 		{ uid: 'exponential', name: 'Exponential time backoff' }
@@ -83,20 +83,30 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.push(this.newVersion());
 	}
 
+	toggleMoreConfig(event: any) {
+		this.enableMoreConfig = !this.enableMoreConfig;
+
+		if (this.action === 'create') {
+			event.target.checked ? this.addVersion() : this.projectForm.get('config.signature.versions')?.reset();
+		}
+	}
+
 	async getProjectDetails() {
 		this.enableMoreConfig = true;
 		try {
 			const response = await this.privateService.getProjectDetails();
 			this.projectDetails = response.data;
 
-			const versions = response.data.config.signature.versions;
-			this.signatureVersions = this.generalService.setContentDisplayed(versions);
 			this.projectForm.patchValue(response.data);
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
 			this.projectForm.get('config.ratelimit.duration')?.patchValue(this.getTimeString(response.data.config.ratelimit.duration));
 			this.projectForm.get('config.strategy.duration')?.patchValue(this.getTimeString(response.data.config.strategy.duration));
+
+			const versions = response.data.config.signature.versions;
+			if (!versions?.length) return;
+			this.signatureVersions = this.generalService.setContentDisplayed(versions);
 			versions.forEach((version: { encoding: any; hash: any }, index: number) => {
 				this.addVersion();
 				this.versions.at(index)?.patchValue({
@@ -110,9 +120,15 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async createProject() {
-		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
+		if (this.enableMoreConfig) {
+			if (this.newSignatureForm.invalid) return this.newSignatureForm.markAllAsTouched();
+			this.versions.at(0).patchValue(this.newSignatureForm.value);
+			this.checkProjectConfig();
+		}
 
-		this.enableMoreConfig ? this.checkProjectConfig() : delete this.projectForm.value.config;
+		if (this.enableMoreConfig && this.projectForm.invalid) return this.projectForm.markAllAsTouched();
+
+		if (!this.enableMoreConfig) delete this.projectForm.value.config;
 
 		this.isCreatingProject = true;
 
@@ -149,10 +165,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async createNewSignature(i: number) {
-		if (this.newSignatureForm.invalid) {
-			this.newSignatureForm.markAllAsTouched();
-			return;
-		}
+		if (this.newSignatureForm.invalid) return this.newSignatureForm.markAllAsTouched();
 
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
@@ -165,7 +178,7 @@ export class CreateProjectComponent implements OnInit {
 		const configDetails = this.projectForm.value.config;
 		const configKeys = Object.keys(configDetails).slice(0, -1);
 		configKeys.forEach(configKey => {
-			const configKeyValues = Object.values(configDetails[configKey]);
+			const configKeyValues = configDetails[configKey] ? Object.values(configDetails[configKey]) : [];
 			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
 
 			if (configKey === 'strategy' && configDetails?.strategy?.retry_count) {
