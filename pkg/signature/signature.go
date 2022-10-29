@@ -87,15 +87,17 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 		ts = fmt.Sprintf("%d", time.Now().Unix())
 	}
 
-	t := fmt.Sprintf("t=%s,", ts)
+	// Generate Payload
 	signedPayload.WriteString(ts)
 	signedPayload.WriteString(",")
 	signedPayload.WriteString(string(tBuf))
 
-	hStr.WriteString(t)
+	// Generate Header
+	tPrefix := fmt.Sprintf("t=%s", ts)
+	hStr.WriteString(tPrefix)
 
 	for k, sch := range s.Schemes {
-		v := fmt.Sprintf("v%d=", k+1)
+		v := fmt.Sprintf(",v%d=", k+1)
 
 		var hSig string
 		for _, sec := range sch.Secret {
@@ -104,10 +106,9 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 				return "", err
 			}
 
-			hSig = fmt.Sprintf("%s%s,", v, sig)
+			hSig = fmt.Sprintf("%s%s", v, sig)
 			hStr.WriteString(hSig)
 		}
-
 	}
 
 	return hStr.String(), nil
