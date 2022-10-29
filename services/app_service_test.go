@@ -1220,16 +1220,12 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 			},
 			dbFn: func(as *AppService) {
 				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
-
-				appRepo.EXPECT().ExpireSecret(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				appRepo.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "1234").
 					Times(1).Return(nil)
 
 				eq, _ := as.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.ExpireSecretsProcessor, convoy.DefaultQueue, gomock.Any()).
 					Times(1).Return(nil)
-
-				c, _ := as.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr:     false,
 			wantErrCode: 0,

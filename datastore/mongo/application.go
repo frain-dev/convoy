@@ -265,25 +265,6 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 	return db.store.UpdateByID(ctx, app.UID, update)
 }
 
-func (db *appRepo) ExpireSecret(ctx context.Context, appID, endpointID string, secrets []datastore.Secret) error {
-	ctx = db.setCollectionInContext(ctx)
-
-	filter := bson.M{
-		"uid":             appID,
-		"document_status": datastore.ActiveDocumentStatus,
-		"endpoints.uid":   endpointID,
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"endpoints.$.secrets": secrets,
-			"updated_at":          primitive.NewDateTimeFromTime(time.Now()),
-		},
-	}
-
-	return db.store.UpdateOne(ctx, filter, update)
-}
-
 func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
 

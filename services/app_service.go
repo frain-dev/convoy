@@ -247,7 +247,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 	expiresAt := time.Now().Add(time.Hour * time.Duration(s.Expiration))
 	endpoint.Secrets[idx].ExpiresAt = primitive.NewDateTimeFromTime(expiresAt)
 
-	secret := endpoint.Secrets[idx]
+	secret := &endpoint.Secrets[idx]
 
 	// Enqueue for final deletion.
 	body := struct {
@@ -296,19 +296,12 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	secrets := append(endpoint.Secrets, sc)
-	endpoint.Secrets = secrets
+	endpoint.Secrets = append(endpoint.Secrets, sc)
 
-	err = a.appRepo.ExpireSecret(ctx, app.UID, endpoint.UID, secrets)
+	err = a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
-	}
-
-	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-	if err != nil {
-		log.WithError(err).Error("failed to update app cache")
 	}
 
 	return app, nil
