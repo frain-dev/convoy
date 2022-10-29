@@ -71,6 +71,10 @@ export class AppDetailsComponent implements OnInit {
 		this.endpointSecretKeys = secretKeys;
 	}
 
+	get endpointSecret(): SECRET | undefined {
+		return this.endpointSecretKeys.find(secret => !secret.expires_at);
+	}
+
 	async getAppDetails(appId: string) {
 		this.selectedEndpoint = undefined;
 		this.isLoadingAppDetails = true;
