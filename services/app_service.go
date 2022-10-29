@@ -244,7 +244,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	expiresAt := time.Now().Add(time.Hour * time.Duration(s.ExpiresAt))
+	expiresAt := time.Now().Add(time.Hour * time.Duration(s.Expiration))
 	endpoint.Secrets[idx].ExpiresAt = primitive.NewDateTimeFromTime(expiresAt)
 
 	secret := endpoint.Secrets[idx]
@@ -270,7 +270,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 	job := &queue.Job{
 		ID:      secret.UID,
 		Payload: payload,
-		Delay:   time.Hour * time.Duration(s.ExpiresAt),
+		Delay:   time.Hour * time.Duration(s.Expiration),
 	}
 
 	taskName := convoy.ExpireSecretsProcessor
@@ -303,6 +303,12 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
+	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		log.WithError(err).Error("failed to update app cache")
 	}
 
 	return app, nil

@@ -740,7 +740,7 @@ func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	appID := uuid.New().String()
 	f := faker.New()
 	secret := f.Lorem().Text(25)
-	expires_at := 7
+	expiration := 7
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -751,8 +751,8 @@ func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s/expire_secret", s.DefaultGroup.UID, appID, e.UID)
 	plainBody := fmt.Sprintf(`{
-		"expires_at": %d
-	}`, expires_at)
+		"expiration": %d
+	}`, expiration)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()

@@ -266,10 +266,9 @@
 <!-- endpoint secret  -->
 <convoy-modal *ngIf="showEndpointSecret" title="Endpoint Secret" (closeModal)="showEndpointSecret = false">
 	<div modalBody>
-		<!-- <h5 class="font-semibold mb-26px">Endpoint Secret</h5> -->
-		<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px" *ngFor="let secret of endpointSecretKeys">
-			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ secret.value }}</span>
-			<convoy-copy-button [text]="secret.value"></convoy-copy-button>
+		<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
+			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecret?.value || '' }}</span>
+			<convoy-copy-button [text]="endpointSecret?.value || ''"></convoy-copy-button>
 		</div>
 		<convoy-button size="xs" type="text" color="danger" *ngIf="!showExpireSecret" (clickItem)="showExpireSecret = true">Expire Secret</convoy-button>
 
@@ -288,7 +287,7 @@
 		</ng-container>
 
 		<div class="flex justify-end mt-38px mb-140px" *ngIf="showExpireSecret">
-			<convoy-button color="danger" type="outline" className="mr-16px" (clickItem)="showEndpointSecret = false" *ngIf="showExpireSecret">Cancel</convoy-button>
+			<convoy-button type="outline" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (clickItem)="showEndpointSecret = false" *ngIf="showExpireSecret">Cancel</convoy-button>
 			<convoy-button color="danger" className="mr-16px" *ngIf="showExpireSecret" (clickItem)="expireSecret()">Expire Secret</convoy-button>
 			<convoy-button (clickItem)="showExpireSecret = false" *ngIf="!showExpireSecret">Done</convoy-button>
 		</div>
