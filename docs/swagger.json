@@ -945,7 +945,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an application by it's id",
+                "description": "This endpoint fetches an application by its id",
                 "consumes": [
                     "application/json"
                 ],

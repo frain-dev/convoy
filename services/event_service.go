@@ -351,6 +351,23 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 	return deliveries, paginationData, nil
 }
 
+func (e *EventService) GetEventDeliveryByID(ctx context.Context, id string) (*datastore.EventDelivery, error) {
+	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
+	if err != nil {
+		msg := "an error occurred while retrieving event delivery details"
+		statusCode := http.StatusInternalServerError
+
+		if errors.Is(err, datastore.ErrEventDeliveryNotFound) {
+			msg = err.Error()
+			statusCode = http.StatusNotFound
+		}
+
+		return nil, util.NewServiceError(statusCode, errors.New(msg))
+	}
+
+	return eventDelivery, nil
+}
+
 func (e *EventService) ResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Group) error {
 	err := e.RetryEventDelivery(ctx, eventDelivery, g)
 	if err != nil {

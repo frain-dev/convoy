@@ -59,7 +59,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		var wg sync.WaitGroup
 
 		wg.Add(1)
-		eventDeliveryRepo := mongo.NewEventDeliveryRepository(store)
+		eventDeliveryRepo := mongo.NewEventDeliveryRepository(store, cache)
 		groupRepo := mongo.NewGroupRepo(store, cache)
 
 		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, groupRepo, deliveryChan, q, &wg)

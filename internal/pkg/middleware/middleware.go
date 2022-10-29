@@ -562,7 +562,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
 
-			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			_, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
 			if err != nil {
 
 				eventDelivery := "an error occurred while retrieving event delivery details"
@@ -577,46 +577,6 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 				return
 			}
 
-			a, err := m.appRepo.FindApplicationByID(r.Context(), eventDelivery.AppID)
-			if err == nil {
-				app := &datastore.Application{
-					UID:          a.UID,
-					Title:        a.Title,
-					GroupID:      a.GroupID,
-					SupportEmail: a.SupportEmail,
-				}
-				eventDelivery.App = app
-			}
-
-			ev, err := m.eventRepo.FindEventByID(r.Context(), eventDelivery.EventID)
-			if err == nil {
-				event := &datastore.Event{
-					UID:       ev.UID,
-					EventType: ev.EventType,
-				}
-				eventDelivery.Event = event
-			}
-
-			en, err := m.appRepo.FindApplicationEndpointByID(r.Context(), eventDelivery.AppID, eventDelivery.EndpointID)
-			if err == nil {
-				endpoint := &datastore.Endpoint{
-					UID:               en.UID,
-					TargetURL:         en.TargetURL,
-					DocumentStatus:    en.DocumentStatus,
-					Secrets:           en.Secrets,
-					HttpTimeout:       en.HttpTimeout,
-					RateLimit:         en.RateLimit,
-					RateLimitDuration: en.RateLimitDuration,
-				}
-				eventDelivery.Endpoint = endpoint
-			}
-
-			device, err := m.deviceRepo.FetchDeviceByID(r.Context(), eventDelivery.DeviceID, a.UID, a.GroupID)
-			if err == nil {
-				eventDelivery.CLIMetadata.HostName = device.HostName
-			}
-
-			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -717,6 +677,14 @@ func GetEndpointID(r *http.Request) string {
 
 func GetEventID(r *http.Request) string {
 	return chi.URLParam(r, "eventID")
+}
+
+func GetEventDeliveryID(r *http.Request) string {
+	return chi.URLParam(r, "eventDeliveryID")
+}
+
+func GetDeliveryAttemptID(r *http.Request) string {
+	return chi.URLParam(r, "deliveryAttemptID")
 }
 
 func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
@@ -1181,20 +1149,6 @@ func setOrganisationMemberInContext(ctx context.Context,
 
 func GetOrganisationMemberFromContext(ctx context.Context) *datastore.OrganisationMember {
 	return ctx.Value(orgMemberCtx).(*datastore.OrganisationMember)
-}
-
-func setEventDeliveryInContext(ctx context.Context,
-	eventDelivery *datastore.EventDelivery,
-) context.Context {
-	return context.WithValue(ctx, eventDeliveryCtx, eventDelivery)
-}
-
-func GetEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
-	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
-}
-
-func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
-	return ctx.Value(appCtx).(*[]datastore.Application)
 }
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {

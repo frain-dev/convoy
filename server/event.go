@@ -24,7 +24,7 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 	appRepo := mongo.NewApplicationRepo(a.A.Store, a.A.Cache)
 	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store, a.A.Cache)
 	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
 
 	return services.NewEventService(
@@ -145,8 +145,15 @@ func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
 func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
+	eventService := createEventService(a)
+	ed, err := eventService.GetEventDeliveryByID(r.Context(), m.GetEventDeliveryID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
-		*m.GetEventDeliveryFromContext(r.Context()), http.StatusOK))
+		ed, http.StatusOK))
 }
 
 // ResendEventDelivery
@@ -162,8 +169,12 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
-	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 	eventService := createEventService(a)
+	eventDelivery, err := eventService.GetEventDeliveryByID(r.Context(), m.GetEventDeliveryID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
@@ -505,24 +516,4 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 	}
 
 	return searchParams, nil
-}
-
-func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			e := m.GetEventDeliveryFromContext(r.Context())
-
-			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), &e.DeliveryAttempts))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func FindMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
-	for _, a := range *attempts {
-		if a.UID == id {
-			return &a, nil
-		}
-	}
-	return nil, datastore.ErrEventDeliveryAttemptNotFound
 }

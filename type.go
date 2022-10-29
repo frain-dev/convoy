@@ -77,6 +77,7 @@ const (
 	RetentionPolicies      TaskName = "retention_policies"
 	EmailProcessor         TaskName = "EmailProcessor"
 	ExpireSecretsProcessor TaskName = "ExpireSecretsProcessor"
+	EventDeliveryCacheKey  CacheKey = "event_deliveries"
 	ApplicationsCacheKey   CacheKey = "applications"
 	GroupsCacheKey         CacheKey = "groups"
 	TokenCacheKey          CacheKey = "tokens"

@@ -592,8 +592,8 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
-	Event    *Event       `json:"event_metadata,omitempty" bson:"-"`
-	App      *Application `json:"app_metadata,omitempty" bson:"-"`
+	Event    *Event       `json:"event_metadata,omitempty" bson:"event_metadata"`
+	App      *Application `json:"app_metadata,omitempty" bson:"app_metadata"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
@@ -605,6 +605,16 @@ type EventDelivery struct {
 	DeletedAt        primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+func (e *EventDelivery) FindDeliveryAttempt(id string) (*DeliveryAttempt, error) {
+	for i := range e.DeliveryAttempts {
+		a := &e.DeliveryAttempts[i]
+		if a.UID == id {
+			return a, nil
+		}
+	}
+	return nil, ErrEventDeliveryAttemptNotFound
 }
 
 type CLIMetadata struct {

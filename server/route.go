@@ -72,7 +72,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		Limiter:           a.Limiter,
 		Tracer:            a.Tracer,
 		EventRepo:         cm.NewEventRepository(a.Store),
-		EventDeliveryRepo: cm.NewEventDeliveryRepository(a.Store),
+		EventDeliveryRepo: cm.NewEventDeliveryRepository(a.Store, a.Cache),
 		AppRepo:           cm.NewApplicationRepo(a.Store, a.Cache),
 		GroupRepo:         cm.NewGroupRepo(a.Store, a.Cache),
 		ApiKeyRepo:        cm.NewApiKeyRepo(a.Store),
@@ -206,8 +206,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-								deliveryRouter.Use(fetchDeliveryAttempts())
-
 								deliveryRouter.Get("/", a.GetDeliveryAttempts)
 								deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 							})
@@ -405,8 +403,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 								eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 								eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-									deliveryRouter.Use(fetchDeliveryAttempts())
-
 									deliveryRouter.Get("/", a.GetDeliveryAttempts)
 									deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 								})
@@ -520,8 +516,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-					deliveryRouter.Use(fetchDeliveryAttempts())
-
 					deliveryRouter.Get("/", a.GetDeliveryAttempts)
 					deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 				})

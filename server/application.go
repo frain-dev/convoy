@@ -18,7 +18,7 @@ import (
 func createApplicationService(a *ApplicationHandler) *services.AppService {
 	appRepo := mongo.NewApplicationRepo(a.A.Store, a.A.Cache)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store, a.A.Cache)
 
 	return services.NewAppService(
 		appRepo, eventRepo, eventDeliveryRepo, a.A.Queue,
@@ -32,7 +32,7 @@ type pagedResponse struct {
 
 // GetApp
 // @Summary Get an application
-// @Description This endpoint fetches an application by it's id
+// @Description This endpoint fetches an application by its id
 // @Tags Application
 // @Accept  json
 // @Produce  json
@@ -399,12 +399,4 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 
 	_ = render.Render(w, r, util.NewServerResponse("endpoint secret expired successfully",
 		app, http.StatusOK))
-}
-
-func (a *ApplicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Apps fetched successfully",
-		pagedResponse{
-			Content:    *m.GetApplicationsFromContext(r.Context()),
-			Pagination: m.GetPaginationDataFromContext(r.Context()),
-		}, http.StatusOK))
 }

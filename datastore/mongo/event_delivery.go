@@ -5,6 +5,11 @@ import (
 	"errors"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -15,16 +20,19 @@ import (
 
 type eventDeliveryRepo struct {
 	store datastore.Store
+	cache cache.Cache
 }
 
-func NewEventDeliveryRepository(store datastore.Store) datastore.EventDeliveryRepository {
+func NewEventDeliveryRepository(store datastore.Store, cache cache.Cache) datastore.EventDeliveryRepository {
 	return &eventDeliveryRepo{
 		store: store,
+		cache: cache,
 	}
 }
 
 func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
-	eventDelivery *datastore.EventDelivery) error {
+	eventDelivery *datastore.EventDelivery,
+) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	eventDelivery.ID = primitive.NewObjectID()
@@ -35,14 +43,68 @@ func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
 	return db.store.Save(ctx, eventDelivery, nil)
 }
 
-func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
-	uid string) (*datastore.EventDelivery, error) {
+func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid string) (*datastore.EventDelivery, error) {
+	key := convoy.EventDeliveryCacheKey.Get(uid).String()
+	var eventDelivery *datastore.EventDelivery
+	err := db.cache.Get(ctx, key, eventDelivery)
+	if err != nil {
+		log.WithError(err).Error("failed to get event delivery from cache")
+	}
+
+	if eventDelivery != nil {
+		return eventDelivery, nil
+	}
+
 	ctx = db.setCollectionInContext(ctx)
 
-	eventDelivery := &datastore.EventDelivery{}
+	matchStage := bson.D{
+		{
+			Key: "$match",
+			Value: bson.D{
+				{Key: "uid", Value: uid},
+				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+			},
+		},
+	}
 
-	err := db.store.FindByID(ctx, uid, nil, eventDelivery)
+	lookupStage1 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.AppCollection},
+			{Key: "localField", Value: "app_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "app_metadata"},
+		}},
+	}
 
+	lookupStage2 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.EventCollection},
+			{Key: "localField", Value: "event_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "event_metadata"},
+		}},
+	}
+
+	lookupStage3 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.DeviceCollection},
+			{Key: "localField", Value: "device_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "device_metadata"},
+		}},
+	}
+
+	setStage := bson.D{
+		{
+			Key: "$set",
+			Value: bson.D{
+				{Key: "cli_metadata.host_name", Value: "$device_metadata.host_name"},
+			},
+		},
+	}
+
+	eventDelivery = &datastore.EventDelivery{}
+	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, setStage}, []*datastore.EventDelivery{eventDelivery}, false)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = datastore.ErrEventDeliveryNotFound
@@ -50,11 +112,19 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 		return nil, err
 	}
 
+	eventDelivery.Endpoint, _ = eventDelivery.App.FindEndpoint(eventDelivery.EndpointID)
+
+	err = db.cache.Set(ctx, key, eventDelivery, time.Minute*5)
+	if err != nil {
+		log.WithError(err).Error("failed to set event delivery in cache")
+	}
+
 	return eventDelivery, nil
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
-	ids []string) ([]datastore.EventDelivery, error) {
+	ids []string,
+) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -74,7 +144,8 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
-	eventID string) ([]datastore.EventDelivery, error) {
+	eventID string,
+) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"event_id": eventID}
@@ -89,7 +160,8 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
-	status datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	status datastore.EventDeliveryStatus, searchParams datastore.SearchParams,
+) (int64, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -106,7 +178,8 @@ func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
-	e datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
+	e datastore.EventDelivery, status datastore.EventDeliveryStatus,
+) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"uid": e.UID}
@@ -141,7 +214,8 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 }
 
 func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
-	e datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
+	e datastore.EventDelivery, attempt datastore.DeliveryAttempt,
+) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"uid": e.UID}
@@ -167,7 +241,6 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	var eventDeliveries []datastore.EventDelivery
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &eventDeliveries)
-
 	if err != nil {
 		return eventDeliveries, datastore.PaginationData{}, err
 	}
@@ -242,7 +315,6 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 }
 
 func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
-
 	filter := bson.M{
 		"document_status": datastore.ActiveDocumentStatus,
 		"created_at":      getCreatedDateFilter(searchParams),

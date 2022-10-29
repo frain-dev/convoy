@@ -48,7 +48,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 
 			appRepo := cm.NewApplicationRepo(a.store, a.cache)
 			eventRepo := cm.NewEventRepository(a.store)
-			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
+			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store, a.cache)
 			groupRepo := cm.NewGroupRepo(a.store, a.cache)
 			subRepo := cm.NewSubscriptionRepo(a.store)
 			deviceRepo := cm.NewDeviceRepository(a.store)

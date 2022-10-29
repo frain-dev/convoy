@@ -401,7 +401,7 @@ func SeedEvent(store datastore.Store, app *datastore.Application, groupID string
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(store datastore.Store, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(store datastore.Store, cache cache.Cache, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -420,7 +420,7 @@ func SeedEventDelivery(store datastore.Store, app *datastore.Application, event 
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := cm.NewEventDeliveryRepository(store)
+	eventDeliveryRepo := cm.NewEventDeliveryRepository(store, cache)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err

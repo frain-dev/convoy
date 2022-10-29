@@ -23,8 +23,21 @@ import (
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
 func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
+	eventService := createEventService(a)
+	eventDelivery, err := eventService.GetEventDeliveryByID(r.Context(), m.GetEventDeliveryID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	at, err := eventDelivery.FindDeliveryAttempt(m.GetDeliveryAttemptID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempt fetched successfully",
-		*m.GetDeliveryAttemptFromContext(r.Context()), http.StatusOK))
+		at, http.StatusOK))
 }
 
 // GetDeliveryAttempts
@@ -40,6 +53,13 @@ func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
 func (a *ApplicationHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
+	eventService := createEventService(a)
+	eventDelivery, err := eventService.GetEventDeliveryByID(r.Context(), m.GetEventDeliveryID(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempts fetched successfully",
-		*m.GetDeliveryAttemptsFromContext(r.Context()), http.StatusOK))
+		eventDelivery.DeliveryAttempts, http.StatusOK))
 }

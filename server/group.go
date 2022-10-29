@@ -20,7 +20,7 @@ func createGroupService(a *ApplicationHandler) *services.GroupService {
 	appRepo := mongo.NewApplicationRepo(a.A.Store, a.A.Cache)
 	groupRepo := mongo.NewGroupRepo(a.A.Store, a.A.Cache)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store, a.A.Cache)
 
 	return services.NewGroupService(
 		apiKeyRepo, appRepo, groupRepo,

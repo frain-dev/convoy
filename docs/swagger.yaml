@@ -1581,7 +1581,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an application by it's id
+      description: This endpoint fetches an application by its id
       parameters:
       - description: Project id
         in: path

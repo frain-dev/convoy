@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/cache"
+
 	ncache "github.com/frain-dev/convoy/cache/noop"
 
 	"github.com/frain-dev/convoy"
@@ -90,7 +92,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, r.ConvoyApp.cache, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC().Add(-duration),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
@@ -158,7 +160,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	require.NoError(r.T(), err)
 
 	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, r.ConvoyApp.cache, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
@@ -216,7 +218,8 @@ func buildApplication() *applicationHandler {
 	groupRepo := convoyMongo.NewGroupRepo(store, ncache.NewNoopCache())
 	eventRepo := convoyMongo.NewEventRepository(store)
 	configRepo := convoyMongo.NewConfigRepo(store)
-	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
+	cache := ncache.NewNoopCache()
+	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store, cache)
 
 	app := &applicationHandler{
 		groupRepo:         groupRepo,
@@ -225,6 +228,7 @@ func buildApplication() *applicationHandler {
 		eventDeliveryRepo: eventDeliveryRepo,
 		searcher:          searcher,
 		store:             store,
+		cache:             cache,
 	}
 
 	return app
@@ -237,6 +241,7 @@ type applicationHandler struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	searcher          searcher.Searcher
 	store             datastore.Store
+	cache             cache.Cache
 }
 
 func seedEvent(store datastore.Store, appID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
@@ -265,7 +270,7 @@ func seedEvent(store datastore.Store, appID string, groupID string, uid, eventTy
 	return ev, nil
 }
 
-func seedEventDelivery(store datastore.Store, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(store datastore.Store, cache cache.Cache, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -284,7 +289,7 @@ func seedEventDelivery(store datastore.Store, appID string, eventID string, endp
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
+	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store, cache)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
