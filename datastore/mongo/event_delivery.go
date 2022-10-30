@@ -103,14 +103,19 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 		},
 	}
 
-	eventDelivery = &datastore.EventDelivery{}
-	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, setStage}, []*datastore.EventDelivery{eventDelivery}, false)
+	var eventDeliveries []datastore.EventDelivery
+	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, setStage}, &eventDeliveries, false)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = datastore.ErrEventDeliveryNotFound
 		}
 		return nil, err
 	}
+
+	if len(eventDeliveries) == 0 {
+		return nil, datastore.ErrEventDeliveryNotFound
+	}
+	eventDelivery = &eventDeliveries[0]
 
 	eventDelivery.Endpoint, _ = eventDelivery.App.FindEndpoint(eventDelivery.EndpointID)
 
