@@ -329,27 +329,6 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 				"app_metadata": bson.M{
 					"$first": "$app",
 				},
-				"endpoint_metadata": bson.M{
-					"$first": bson.E{
-						Key: "$filter",
-						Value: bson.D{
-							{Key: "input", Value: "$app.endpoints"},
-							{Key: "as", Value: "endpoint"},
-							{
-								Key: "cond",
-								Value: bson.D{
-									{
-										Key: "$eq",
-										Value: bson.A{
-											"$$endpoint.uid",
-											"$endpoint_id",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
 			},
 		},
 	}
