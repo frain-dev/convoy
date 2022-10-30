@@ -401,7 +401,7 @@ func SeedEvent(store datastore.Store, app *datastore.Application, groupID string
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(store datastore.Store, cache cache.Cache, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(store datastore.Store, cache cache.Cache, app *datastore.Application, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, deviceID string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -411,6 +411,7 @@ func SeedEventDelivery(store datastore.Store, cache cache.Cache, app *datastore.
 		EventID:        event.UID,
 		EndpointID:     endpoint.UID,
 		Status:         status,
+		DeviceID:       deviceID,
 		AppID:          app.UID,
 		SubscriptionID: subcription.UID,
 		GroupID:        groupID,
@@ -628,12 +629,12 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 	return config, nil
 }
 
-func SeedDevice(store datastore.Store, g *datastore.Group, appID string) error {
+func SeedDevice(store datastore.Store, g *datastore.Group, appID string, hostname string) (*datastore.Device, error) {
 	device := &datastore.Device{
 		UID:            uuid.NewString(),
 		GroupID:        g.UID,
 		AppID:          appID,
-		HostName:       "",
+		HostName:       hostname,
 		Status:         datastore.DeviceStatusOnline,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
@@ -641,10 +642,10 @@ func SeedDevice(store datastore.Store, g *datastore.Group, appID string) error {
 	deviceRepo := cm.NewDeviceRepository(store)
 	err := deviceRepo.CreateDevice(context.TODO(), device)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return device, nil
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have

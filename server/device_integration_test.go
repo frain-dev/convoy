@@ -78,7 +78,7 @@ func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByAppID() {
 	require.NoError(d.T(), err)
 
 	// Just Before.
-	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultGroup, app.UID)
+	_, _ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultGroup, app.UID, "")
 
 	// Arrange
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/apps/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, app.UID)

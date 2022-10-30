@@ -592,8 +592,8 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
 	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
-	Event    *Event       `json:"event_metadata,omitempty" bson:"event_metadata"`
-	App      *Application `json:"app_metadata,omitempty" bson:"app_metadata"`
+	Event    *Event       `json:"event_metadata,omitempty" bson:"event_metadata,omitempty"`
+	App      *Application `json:"app_metadata,omitempty" bson:"app_metadata,omitempty"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
@@ -619,7 +619,7 @@ func (e *EventDelivery) FindDeliveryAttempt(id string) (*DeliveryAttempt, error)
 
 type CLIMetadata struct {
 	EventType string `json:"event_type" bson:"event_type"`
-	HostName  string `json:"host_name,omitempty" bson:"-"`
+	HostName  string `json:"host_name,omitempty" bson:"host_name"`
 }
 
 type APIKey struct {

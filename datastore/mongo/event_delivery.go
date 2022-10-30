@@ -72,7 +72,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			{Key: "from", Value: datastore.AppCollection},
 			{Key: "localField", Value: "app_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app_metadata"},
+			{Key: "as", Value: "app"},
 		}},
 	}
 
@@ -81,7 +81,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			{Key: "from", Value: datastore.EventCollection},
 			{Key: "localField", Value: "event_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "event_metadata"},
+			{Key: "as", Value: "event"},
 		}},
 	}
 
@@ -90,8 +90,25 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			{Key: "from", Value: datastore.DeviceCollection},
 			{Key: "localField", Value: "device_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "device_metadata"},
+			{Key: "as", Value: "device"},
 		}},
+	}
+
+	projectStage := bson.D{
+		{
+			Key: "$addFields",
+			Value: bson.M{
+				"device_metadata": bson.M{
+					"$first": "$device",
+				},
+				"event_metadata": bson.M{
+					"$first": "$event",
+				},
+				"app_metadata": bson.M{
+					"$first": "$app",
+				},
+			},
+		},
 	}
 
 	setStage := bson.D{
@@ -104,7 +121,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 	}
 
 	var eventDeliveries []datastore.EventDelivery
-	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, setStage}, &eventDeliveries, false)
+	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, projectStage, setStage}, &eventDeliveries, false)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = datastore.ErrEventDeliveryNotFound

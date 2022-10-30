@@ -33,6 +33,7 @@ require (
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mongodb/mongo-tools v0.0.0-20220615145412-ec9893cba7e6
 	github.com/newrelic/go-agent/v3 v3.15.2
