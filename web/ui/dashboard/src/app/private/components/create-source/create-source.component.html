@@ -12,9 +12,9 @@
 				formControlName="type"
 				[tooltipContent]="sourceType.value === 'http' ? sourceType.description : ''"
 				[label]="sourceType.viewValue"
-				[_name]="sourceType.value"
+				[name]="sourceType.value"
 				[value]="sourceType.value"
-				[_id]="sourceType.value"
+				[id]="sourceType.value"
 				[checked]="sourceForm.value.type === sourceType.value"
 				[ngClass]="{ 'pointer-events-none opacity-50': sourceType.value !== 'http' }"
 				className="mb-0"
@@ -31,9 +31,9 @@
 					formControlName="type"
 					tooltipContent="This is a tip to help you accomplish a task."
 					[label]="httpType.viewValue"
-					[_name]="httpType.value"
+					[name]="httpType.value"
 					[value]="httpType.value"
-					[_id]="httpType.value"
+					[id]="httpType.value"
 					[checked]="sourceForm.value.verifier.type === httpType.value"
 				></convoy-radio>
 			</div>
@@ -55,8 +55,28 @@
 			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'shopify'">Shopify Credentials</h2>
 
 			<div class="grid grid-cols-2 gap-6">
-				<convoy-select *ngIf="sourceForm.value.verifier.type === 'hmac'" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"></convoy-select>
-				<convoy-select *ngIf="sourceForm.value.verifier.type === 'hmac'" label="Hash Algorithm" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Select algorithm type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"></convoy-select>
+				<convoy-select
+					*ngIf="sourceForm.value.verifier.type === 'hmac'"
+					label="Encoding"
+					name="encoding"
+					formControlName="encoding"
+					[options]="encodings"
+					errorMessage="Select encoding type"
+					[required]="true"
+					className="mb-0"
+					(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
+				></convoy-select>
+				<convoy-select
+					*ngIf="sourceForm.value.verifier.type === 'hmac'"
+					label="Hash Algorithm"
+					name="hash"
+					formControlName="hash"
+					[options]="hashAlgorithms"
+					errorMessage="Select algorithm type"
+					[required]="true"
+					className="mb-0"
+					(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
+				></convoy-select>
 
 				<convoy-input
 					*ngIf="sourceForm.value.verifier.type === 'hmac'"

@@ -59,7 +59,7 @@
 
 					<h3 class="mt-24px mb-14px font-medium flex items-center">
 						Endpoint Authentication
-						<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
+						<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication if any is required</convoy-tooltip>
 					</h3>
 					<div class="grid grid-cols-2 gap-6">
 						<ng-container formGroupName="authentication">
@@ -75,8 +75,8 @@
 						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 					</h3>
 					<div class="grid grid-cols-2 gap-6 mb-50px">
-						<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
-						<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+						<convoy-radio formControlName="advanced_signatures" label="Simple" [name]="'signature' + i" [value]="false" [id]="'signature_simple' + i"></convoy-radio>
+						<convoy-radio formControlName="advanced_signatures" label="Advanced" [name]="'signature' + i" [value]="true" [id]="'signature_advanced' + i"></convoy-radio>
 					</div>
 				</div>
 			</div>

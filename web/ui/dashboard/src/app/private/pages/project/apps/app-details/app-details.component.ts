@@ -37,8 +37,8 @@ export class AppDetailsComponent implements OnInit {
 	appsDetailsItem?: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint?: ENDPOINT;
-	tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
-	activeTab: 'cli keys' | 'devices' = 'cli keys';
+	tabs: ['CLI Keys', 'devices'] = ['CLI Keys', 'devices'];
+	activeTab: 'CLI Keys' | 'devices' = 'CLI Keys';
 	expireSecretForm: FormGroup = this.formBuilder.group({
 		expiration: ['', Validators.required]
 	});
@@ -150,7 +150,7 @@ export class AppDetailsComponent implements OnInit {
 		}
 	}
 
-	toggleActiveTab(tab: 'cli keys' | 'devices') {
+	toggleActiveTab(tab: 'CLI Keys' | 'devices') {
 		this.activeTab = tab;
 	}
 
