@@ -34,8 +34,15 @@ func createOrganisationService(a *ApplicationHandler) *services.OrganisationServ
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [get]
 func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully",
-		m.GetOrganisationFromContext(r.Context()), http.StatusOK))
+		org, http.StatusOK))
 }
 
 // GetOrganisationsPaged - this is a duplicate annotation for the api/v1 route of this handler
@@ -149,7 +156,14 @@ func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 	}
 	orgService := createOrganisationService(a)
 
-	org, err := orgService.UpdateOrganisation(r.Context(), m.GetOrganisationFromContext(r.Context()), &orgUpdate)
+	org, err := orgService.FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
+	org, err = orgService.UpdateOrganisation(r.Context(), org, &orgUpdate)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -170,9 +184,15 @@ func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID} [delete]
 func (a *ApplicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
 	orgService := createOrganisationService(a)
-	err := orgService.DeleteOrganisation(r.Context(), org.UID)
+	org, err := orgService.FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
+	err = orgService.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

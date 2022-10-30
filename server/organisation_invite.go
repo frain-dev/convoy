@@ -52,7 +52,12 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 
 	baseUrl := m.GetHostFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
 
 	organisationInviteService := CreateOrganisationInviteService(a)
 	_, err = organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
@@ -80,7 +85,12 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/invites/pending [get]
 func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
 	pageable := m.GetPageableFromContext(r.Context())
 	organisationInviteService := CreateOrganisationInviteService(a)
 
@@ -177,10 +187,17 @@ func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
 	baseUrl := m.GetHostFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
 	organisationInviteService := CreateOrganisationInviteService(a)
 
-	_, err := organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
+	_, err = organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
 		log.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -47,7 +47,21 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	member := m.GetOrganisationMemberFromContext(r.Context())
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
+	user := m.GetUserFromContext(r.Context())
+	member, err := createOrganisationMemberService(a).FindOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to find organisation member by user id")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+		return
+	}
+
 	securityService := createSecurityService(a)
 
 	apiKey, keyString, err := securityService.CreateAPIKey(r.Context(), member, &newApiKey)

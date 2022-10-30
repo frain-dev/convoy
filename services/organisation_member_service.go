@@ -75,6 +75,15 @@ func (om *OrganisationMemberService) FindOrganisationMemberByID(ctx context.Cont
 	return member, err
 }
 
+func (om *OrganisationMemberService) FindOrganisationMemberByUserID(ctx context.Context, userID, orgID string) (*datastore.OrganisationMember, error) {
+	member, err := om.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, userID, orgID)
+	if err != nil {
+		log.WithError(err).Error("failed to find organisation member by user id")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by user id"))
+	}
+	return member, err
+}
+
 func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Context, org *datastore.Organisation, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
 	organisationMembers, paginationData, err := om.orgMemberRepo.LoadOrganisationMembersPaged(ctx, org.UID, pageable)
 	if err != nil {
@@ -87,7 +96,6 @@ func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Co
 
 func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Context, memberID string, org *datastore.Organisation) error {
 	member, err := om.orgMemberRepo.FetchOrganisationMemberByID(ctx, memberID, org.UID)
-
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation member by id")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))

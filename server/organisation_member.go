@@ -36,7 +36,12 @@ func createOrganisationMemberService(a *ApplicationHandler) *services.Organisati
 // @Router /ui/organisations/{orgID}/members [get]
 func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
 	orgMemberService := createOrganisationMemberService(a)
 
 	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
@@ -64,7 +69,12 @@ func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 // @Router /ui/organisations/{orgID}/members/{memberID} [get]
 func (a *ApplicationHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
 	orgMemberService := createOrganisationMemberService(a)
 
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
@@ -98,7 +108,12 @@ func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 	}
 
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
 	orgMemberService := createOrganisationMemberService(a)
 
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
@@ -129,11 +144,15 @@ func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/members/{memberID} [delete]
 func (a *ApplicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
-	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
-	orgMemberService := createOrganisationMemberService(a)
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
 
-	err := orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
+	orgMemberService := createOrganisationMemberService(a)
+	err = orgMemberService.DeleteOrganisationMember(r.Context(), m.GetOrgMemberID(r), org)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

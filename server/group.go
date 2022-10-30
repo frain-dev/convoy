@@ -152,10 +152,22 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	org := m.GetOrganisationFromContext(r.Context())
-	member := m.GetOrganisationMemberFromContext(r.Context())
-	groupService := createGroupService(a)
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
 
+	user := m.GetUserFromContext(r.Context())
+	member, err := createOrganisationMemberService(a).FindOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to find organisation member by user id")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+		return
+	}
+
+	groupService := createGroupService(a)
 	group, apiKey, err := groupService.CreateGroup(r.Context(), &newGroup, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -250,7 +262,13 @@ func _() {}
 // @Security ApiKeyAuth
 // @Router /ui/organisations/{orgID}/groups [get]
 func (a *ApplicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
+	if err != nil {
+		log.WithError(err).Error("failed to fetch organisation")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
 	name := r.URL.Query().Get("name")
 
 	filter := &datastore.GroupFilter{OrgID: org.UID}

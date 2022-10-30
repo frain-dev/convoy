@@ -371,20 +371,13 @@ func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			orgID := chi.URLParam(r, "orgID")
-
-			if util.IsStringEmpty(orgID) {
-				orgID = r.URL.Query().Get("orgID")
-			}
-
-			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
+			_, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
 			if err != nil {
 				log.WithError(err).Error("failed to fetch organisation")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 				return
 			}
 
-			r = r.WithContext(setOrganisationInContext(r.Context(), org))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -429,7 +422,6 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 					}
 
 					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Group == group.UID {
-						r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
 						next.ServeHTTP(w, r)
 						return
 					}
@@ -496,16 +488,21 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user := GetUserFromContext(r.Context())
-			org := GetOrganisationFromContext(r.Context())
 
-			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
+			if err != nil {
+				log.WithError(err).Error("failed to fetch organisation")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				return
+			}
+
+			_, err = m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 			if err != nil {
 				log.WithError(err).Error("failed to find organisation member by user id")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
 				return
 			}
 
-			r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -514,7 +511,21 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			member := GetOrganisationMemberFromContext(r.Context())
+			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
+			if err != nil {
+				log.WithError(err).Error("failed to fetch organisation")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				return
+			}
+
+			user := GetUserFromContext(r.Context())
+			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			if err != nil {
+				log.WithError(err).Error("failed to find organisation member by user id")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+				return
+			}
+
 			if member.Role.Type.Is(auth.RoleSuperUser) {
 				// superuser has access to everything
 				next.ServeHTTP(w, r)
@@ -540,7 +551,21 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 func (m *Middleware) RequireOrganisationMemberRole(roleType auth.RoleType) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			member := GetOrganisationMemberFromContext(r.Context())
+			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
+			if err != nil {
+				log.WithError(err).Error("failed to fetch organisation")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				return
+			}
+
+			user := GetUserFromContext(r.Context())
+			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			if err != nil {
+				log.WithError(err).Error("failed to find organisation member by user id")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+				return
+			}
+
 			if member.Role.Type.Is(auth.RoleSuperUser) {
 				// superuser has access to everything
 				next.ServeHTTP(w, r)
@@ -564,7 +589,6 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 
 			_, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
 			if err != nil {
-				fmt.Println("ffdfd", err)
 				eventDelivery := "an error occurred while retrieving event delivery details"
 				statusCode := http.StatusInternalServerError
 
@@ -685,6 +709,19 @@ func GetEventDeliveryID(r *http.Request) string {
 
 func GetDeliveryAttemptID(r *http.Request) string {
 	return chi.URLParam(r, "deliveryAttemptID")
+}
+
+func GetOrgID(r *http.Request) string {
+	appID := chi.URLParam(r, "orgID")
+	if !util.IsStringEmpty(appID) {
+		return appID
+	}
+
+	return r.URL.Query().Get("orgID")
+}
+
+func GetOrgMemberID(r *http.Request) string {
+	return chi.URLParam(r, "memberID")
 }
 
 func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
@@ -1119,36 +1156,6 @@ func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-//func setApplicationInContext(ctx context.Context,
-//	app *datastore.Application,
-//) context.Context {
-//	return context.WithValue(ctx, appCtx, app)
-//}
-//
-//func GetApplicationFromContext(ctx context.Context) *datastore.Application {
-//	return ctx.Value(appCtx).(*datastore.Application)
-//}
-
-func setOrganisationInContext(ctx context.Context,
-	org *datastore.Organisation,
-) context.Context {
-	return context.WithValue(ctx, orgCtx, org)
-}
-
-func GetOrganisationFromContext(ctx context.Context) *datastore.Organisation {
-	return ctx.Value(orgCtx).(*datastore.Organisation)
-}
-
-func setOrganisationMemberInContext(ctx context.Context,
-	organisationMember *datastore.OrganisationMember,
-) context.Context {
-	return context.WithValue(ctx, orgMemberCtx, organisationMember)
-}
-
-func GetOrganisationMemberFromContext(ctx context.Context) *datastore.OrganisationMember {
-	return ctx.Value(orgMemberCtx).(*datastore.OrganisationMember)
 }
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
