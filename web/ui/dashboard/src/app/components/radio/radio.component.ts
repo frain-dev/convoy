@@ -19,13 +19,13 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 })
 export class RadioComponent implements OnInit, ControlValueAccessor {
 	@Input('label') label!: string;
-	@Input('_name') name!: string;
+	@Input('name') name!: string;
 	@Input('value') value!: any;
-	@Input('_id') id!: string;
+	@Input('id') id!: string;
 	@Input('checked') checked = false;
 	@Input('description') description!: string;
-	@Input('tooltipPosition') tooltipPosition: 'left'| 'right' = 'left';
-	@Input('tooltipSize') tooltipSize: 'sm'| 'md' = 'md';
+	@Input('tooltipPosition') tooltipPosition: 'left' | 'right' = 'left';
+	@Input('tooltipSize') tooltipSize: 'sm' | 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
 	@Input('formControlName') formControlName!: string;
 	control!: any;
