@@ -12,9 +12,9 @@
 				formControlName="type"
 				[tooltipContent]="sourceType.value === 'http' ? sourceType.description : ''"
 				[label]="sourceType.viewValue"
-				[name]="sourceType.value"
+				_name]="sourceType.value"
 				[value]="sourceType.value"
-				[id]="sourceType.value"
+				[_id]="sourceType.value"
 				[checked]="sourceForm.value.type === sourceType.value"
 				[ngClass]="{ 'pointer-events-none opacity-50': sourceType.value !== 'http' }"
 				className="mb-0"
@@ -31,9 +31,9 @@
 					formControlName="type"
 					tooltipContent="This is a tip to help you accomplish a task."
 					[label]="httpType.viewValue"
-					[name]="httpType.value"
+					[_name]="httpType.value"
 					[value]="httpType.value"
-					[id]="httpType.value"
+					[_id]="httpType.value"
 					[checked]="sourceForm.value.verifier.type === httpType.value"
 				></convoy-radio>
 			</div>
