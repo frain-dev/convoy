@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -116,12 +117,35 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			Key: "$set",
 			Value: bson.D{
 				{Key: "cli_metadata.host_name", Value: "$device_metadata.host_name"},
+				{
+					Key: "endpoint_metadata", Value: bson.M{
+						"$first": bson.M{
+							"$filter": bson.M{
+								"input": "$app_metadata.endpoints",
+								"as":    "endpoint",
+								"cond": bson.M{
+									"$eq": bson.A{
+										"$$endpoint.uid",
+										"$endpoint_id",
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
 
+	unsetStage := bson.D{
+		{
+			Key:   "$unset",
+			Value: []string{"device", "app", "event"},
+		},
+	}
+
 	var eventDeliveries []datastore.EventDelivery
-	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, projectStage, setStage}, &eventDeliveries, false)
+	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, projectStage, setStage, unsetStage}, &eventDeliveries, false)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = datastore.ErrEventDeliveryNotFound
@@ -133,8 +157,6 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 		return nil, datastore.ErrEventDeliveryNotFound
 	}
 	eventDelivery = &eventDeliveries[0]
-
-	eventDelivery.Endpoint, _ = eventDelivery.App.FindEndpoint(eventDelivery.EndpointID)
 
 	err = db.cache.Set(ctx, key, eventDelivery, time.Minute*5)
 	if err != nil {
@@ -260,15 +282,154 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	filter := getFilter(groupID, appID, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
-	var eventDeliveries []datastore.EventDelivery
-	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
-		int64(pageable.Page), int64(pageable.PerPage), &eventDeliveries)
-	if err != nil {
-		return eventDeliveries, datastore.PaginationData{}, err
+	matchStage := bson.D{
+		{
+			Key:   "$match",
+			Value: filter,
+		},
 	}
 
+	lookupStage1 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.AppCollection},
+			{Key: "localField", Value: "app_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "app"},
+		}},
+	}
+
+	lookupStage2 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.EventCollection},
+			{Key: "localField", Value: "event_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "event"},
+		}},
+	}
+
+	lookupStage3 := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.DeviceCollection},
+			{Key: "localField", Value: "device_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "device"},
+		}},
+	}
+
+	projectStage := bson.D{
+		{
+			Key: "$addFields",
+			Value: bson.M{
+				"device_metadata": bson.M{
+					"$first": "$device",
+				},
+				"event_metadata": bson.M{
+					"$first": "$event",
+				},
+				"app_metadata": bson.M{
+					"$first": "$app",
+				},
+				"endpoint_metadata": bson.M{
+					"$first": bson.E{
+						Key: "$filter",
+						Value: bson.D{
+							{Key: "input", Value: "$app.endpoints"},
+							{Key: "as", Value: "endpoint"},
+							{
+								Key: "cond",
+								Value: bson.D{
+									{
+										Key: "$eq",
+										Value: bson.A{
+											"$$endpoint.uid",
+											"$endpoint_id",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	setStage := bson.D{
+		{
+			Key: "$set",
+			Value: bson.D{
+				{Key: "cli_metadata.host_name", Value: "$device_metadata.host_name"},
+				{
+					Key: "endpoint_metadata", Value: bson.M{
+						"$first": bson.M{
+							"$filter": bson.M{
+								"input": "$app_metadata.endpoints",
+								"as":    "endpoint",
+								"cond": bson.M{
+									"$eq": bson.A{
+										"$$endpoint.uid",
+										"$endpoint_id",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	unsetStage := bson.D{
+		{
+			Key:   "$unset",
+			Value: []string{"device", "app", "event"},
+		},
+	}
+
+	sortAndLimitStages := []bson.D{
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
+		{{Key: "$limit", Value: pageable.PerPage}},
+	}
+
+	pipeline := mongo.Pipeline{
+		matchStage,
+		lookupStage1,
+		lookupStage2,
+		lookupStage3,
+		projectStage,
+		setStage,
+		unsetStage,
+	}
+
+	pipeline = append(pipeline, sortAndLimitStages...)
+
+	var eventDeliveries []datastore.EventDelivery
+	err := db.store.Aggregate(ctx, pipeline, &eventDeliveries, false)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = datastore.ErrEventDeliveryNotFound
+		}
+		return nil, datastore.PaginationData{}, err
+	}
+
+	var count int64
 	if eventDeliveries == nil {
 		eventDeliveries = make([]datastore.EventDelivery, 0)
+	} else {
+		count, err = db.store.Count(ctx, filter)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+	}
+
+	pagination := datastore.PaginationData{
+		Total:     count,
+		Page:      int64(pageable.Page),
+		PerPage:   int64(pageable.PerPage),
+		Prev:      int64(getPrevPage(pageable.Page)),
+		Next:      int64(pageable.Page + 1),
+		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
 	}
 
 	return eventDeliveries, pagination, nil

@@ -591,7 +591,7 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
-	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"-"`
+	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
 	Event    *Event       `json:"event_metadata,omitempty" bson:"event_metadata,omitempty"`
 	App      *Application `json:"app_metadata,omitempty" bson:"app_metadata,omitempty"`
 

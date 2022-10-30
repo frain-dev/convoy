@@ -223,6 +223,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	// Just Before.
 	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "", false)
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, s.DefaultGroup.UID)
+
 	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID, eventID, "*", "", []byte(`{}`))
 	device, _ := testdb.SeedDevice(s.ConvoyApp.A.Store, s.DefaultGroup, app.UID, hostname)
 	eventDelivery, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, app, event, endpoint, s.DefaultGroup.UID, eventDeliveryID, device.UID, datastore.SuccessEventStatus, &datastore.Subscription{})
@@ -239,7 +240,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 
 	// Deep Assert.
 	var respEventDelivery datastore.EventDelivery
-	fmt.Printf("respEventDelivery %+v\n;", respEventDelivery)
 	fmt.Println("gggggggg", w.Body.String())
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)

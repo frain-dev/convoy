@@ -564,7 +564,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 
 			_, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
 			if err != nil {
-
+				fmt.Println("ffdfd", err)
 				eventDelivery := "an error occurred while retrieving event delivery details"
 				statusCode := http.StatusInternalServerError
 
