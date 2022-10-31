@@ -103,7 +103,7 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 	securityService := createSecurityService(a)
 	apiKey, keyString, err := securityService.CreatePersonalAPIKey(r.Context(), user, &newApiKey)
 	if err != nil {
-		log.WithError(err).Error("failed to create personal api key")
+		a.A.Logger.WithError(err).Error("failed to create personal api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

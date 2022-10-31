@@ -451,7 +451,7 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 				if user != nil {
 					member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
 					if err != nil {
-						log.WithError(err).Error("failed to fetch organisation member")
+						m.logger.WithError(err).Error("failed to fetch organisation member")
 						_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 						return
 					}

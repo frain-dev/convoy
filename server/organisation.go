@@ -87,7 +87,7 @@ func (a *ApplicationHandler) GetUserOrganisations(w http.ResponseWriter, r *http
 	orgService := createOrganisationService(a)
 	organisations, _, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, datastore.Pageable{Sort: -1})
 	if err != nil {
-		log.WithError(err).Error("failed to load organisations")
+		a.A.Logger.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

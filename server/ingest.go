@@ -86,7 +86,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.WithError(err).Error("failed to load config")
+		a.A.Logger.WithError(err).Error("failed to load config")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
 		return
 	}
