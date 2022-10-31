@@ -252,3 +252,321 @@ func TestProcessEventCreated(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchSubscriptionsUsingFilter(t *testing.T) {
+	tests := []struct {
+		name       string
+		payload    map[string]interface{}
+		dbFn       func(args *args)
+		inputSubs  []datastore.Subscription
+		wantSubs   []datastore.Subscription
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "Equal Filter",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 10,
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{"person.age": 10},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{"person.age": 5},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "123",
+				},
+			},
+		},
+		{
+			name: "Equal Filter using operator",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 10,
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$eq": 10,
+							},
+						},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{"person.age": 5},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "123",
+				},
+			},
+		},
+		{
+			name: "Not Equal Filter",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 100,
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{"person.age": 10},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$neq": 10,
+							},
+						},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "1234",
+				},
+			},
+		},
+		{
+			name: "Greater than Filter",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 10,
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$gte": 10,
+							},
+						},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$gt": 10,
+							},
+						},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "123",
+				},
+			},
+		},
+		{
+			name: "Less than Filter",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 9,
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$lte": 10,
+							},
+						},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$lt": 10,
+							},
+						},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "123",
+				},
+				{
+					UID: "1234",
+				},
+			},
+		},
+		{
+			name: "In array Filter",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 10,
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$in": []int{10, 1},
+							},
+						},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$in": []int{10, 1},
+							},
+						},
+					},
+				},
+				{
+					UID: "12345",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"person.age": map[string]interface{}{
+								"$gt": 10,
+							},
+						},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "123",
+				},
+			},
+		},
+		{
+			name: "Not in array Filter",
+			payload: map[string]interface{}{
+				"event": map[string]interface{}{
+					"action": "update",
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"event.action": map[string]interface{}{
+								"$nin": []string{"update", "delete"},
+							},
+						},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{
+							"event.action": map[string]interface{}{
+								"$nin": []string{"read", "delete"},
+							},
+						},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "1234",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			args := provideArgs(ctrl)
+
+			if tt.dbFn != nil {
+				tt.dbFn(args)
+			}
+
+			payload, err := json.Marshal(tt.payload)
+			require.NoError(t, err)
+
+			subs, err := matchSubscriptionsUsingFilter(context.Background(), payload, args.subRepo, tt.inputSubs)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, len(tt.wantSubs), len(subs))
+			for i := range tt.wantSubs {
+				require.Equal(t, tt.wantSubs[i].UID, subs[i].UID)
+			}
+		})
+	}
+
+}

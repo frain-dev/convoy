@@ -277,3 +277,35 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.Equal(t, sub.GroupID, "group-id-1")
 	require.Equal(t, sub.SourceID, "source-id-1")
 }
+
+func TestTestSubscriptionFilter_Success(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	store := getStore(db)
+	subRepo := NewSubscriptionRepo(store)
+
+	request := map[string]interface{}{"person": map[string]interface{}{"age": 10}}
+	schema := map[string]interface{}{"person": map[string]interface{}{"age": map[string]interface{}{"$;te": 5}}}
+
+	matched, err := subRepo.TestSubscriptionFilter(context.Background(), request, schema)
+	require.NoError(t, err)
+
+	require.True(t, matched)
+}
+
+func TestTestSubscriptionFilter_Fails(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	store := getStore(db)
+	subRepo := NewSubscriptionRepo(store)
+
+	request := map[string]interface{}{"person": map[string]interface{}{"age": 10}}
+	schema := map[string]interface{}{"person": map[string]interface{}{"age": map[string]interface{}{"$lte": 5}}}
+
+	matched, err := subRepo.TestSubscriptionFilter(context.Background(), request, schema)
+	require.NoError(t, err)
+
+	require.False(t, matched)
+}
