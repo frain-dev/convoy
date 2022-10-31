@@ -41,7 +41,8 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		CardComponent,
 		ModalComponent,
 		CopyButtonComponent,
-		SourceValueModule
+		SourceValueModule,
+		CopyButtonComponent
 	]
 })
 export class SourcesModule {}

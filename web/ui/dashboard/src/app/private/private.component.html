@@ -14,10 +14,10 @@
 						<li *ngIf="organisations?.length && projects?.length">
 							<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
 						</li>
-						<li *ngIf="organisations?.length && projects?.length">
+						<li *ngIf="organisations?.length">
 							<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
 						</li>
-						<li *ngIf="organisations?.length && projects?.length">
+						<li *ngIf="organisations?.length">
 							<a routerLink="/settings" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Settings</a>
 						</li>
 					</ul>
@@ -84,6 +84,7 @@
 			</div>
 		</div>
 	</header>
+
 	<convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
 
 	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
@@ -93,7 +94,7 @@
 	<router-outlet></router-outlet>
 </div>
 
-<div class="absolute left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-50" *ngIf="showHelpCard">
+<div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-50" *ngIf="showHelpCard">
 	<img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
 	<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
 </div>
