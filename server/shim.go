@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 )
@@ -19,7 +21,20 @@ var redirectRoutes = []string{
 }
 
 func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.Request) {
-	groupID := r.URL.Query().Get("groupID")
+	groupID := r.URL.Query().Get("groupId")
+
+	if util.IsStringEmpty(groupID) {
+		groupID = r.URL.Query().Get("groupID")
+	}
+
+	if util.IsStringEmpty(groupID) {
+		authUser := middleware.GetAuthUserFromContext(r.Context())
+
+		if authUser.Credential.Type == auth.CredentialTypeAPIKey {
+			groupID = authUser.Role.Group
+		}
+	}
+
 	if util.IsStringEmpty(groupID) {
 		_ = render.Render(w, r, util.NewErrorResponse("groupID query is missing", http.StatusBadRequest))
 		return

@@ -11,8 +11,8 @@ export type ACCOUNT_SETTINGS = 'profile' | 'security' | 'personal access tokens'
 export class AccountComponent implements OnInit {
 	activePage: ACCOUNT_SETTINGS = 'profile';
 	settingsMenu: { name: ACCOUNT_SETTINGS; icon: string }[] = [
-		{ name: 'profile', icon: 'settings' },
-		{ name: 'security', icon: 'settings' },
+		{ name: 'profile', icon: 'profile' },
+		{ name: 'security', icon: 'security' },
 		{ name: 'personal access tokens', icon: 'key' }
 	];
 

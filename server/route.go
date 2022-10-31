@@ -11,6 +11,8 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	cm "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
@@ -170,6 +172,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									e.Get("/", a.GetAppEndpoint)
 									e.Put("/", a.UpdateAppEndpoint)
 									e.Delete("/", a.DeleteAppEndpoint)
+									e.Put("/expire_secret", a.ExpireSecret)
+
 								})
 							})
 						})
@@ -216,7 +220,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							securitySubRouter.Use(a.M.RequireApp())
 							securitySubRouter.Use(a.M.RequireAppBelongsToGroup())
 							securitySubRouter.Use(a.M.RequireBaseUrl())
-							securitySubRouter.Post("/", a.CreateAppAPIKey)
+							securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 						})
 					})
 
@@ -348,7 +352,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.Post("/", a.CreateAppAPIKey)
+									keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
 									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 								})
@@ -363,6 +367,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Get("/", a.GetAppEndpoint)
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
+										e.Put("/expire_secret", a.ExpireSecret)
+
 									})
 								})
 
@@ -445,6 +451,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			configRouter.Post("/", a.CreateConfiguration)
 			configRouter.Put("/", a.UpdateConfiguration)
 		})
+
+		uiRouter.Post("/flags", flipt.BatchEvaluate)
 	})
 
 	// App Portal API.
@@ -472,7 +480,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 			appRouter.Route("/keys", func(keySubRouter chi.Router) {
 				keySubRouter.Use(a.M.RequireBaseUrl())
-				keySubRouter.Post("/", a.CreateAppAPIKey)
+				keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
 				keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
 				keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
 			})
@@ -520,6 +528,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				})
 			})
 		})
+
+		portalRouter.Get("/project", a.GetGroup)
+		portalRouter.Post("/flags", flipt.BatchEvaluate)
 	})
 
 	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())

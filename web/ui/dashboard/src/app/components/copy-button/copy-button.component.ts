@@ -20,7 +20,8 @@ export class CopyButtonComponent implements OnInit {
 
 	ngOnInit(): void {}
 
-	copyText() {
+	copyText(event: any) {
+		event.stopPropagation();
 		if (!this.textToCopy) return;
 		const text = this.textToCopy;
 		const el = document.createElement('textarea');
@@ -32,7 +33,7 @@ export class CopyButtonComponent implements OnInit {
 		this.copy.emit();
 		setTimeout(() => {
 			this.textCopied = false;
-		}, 3000);
+		}, 2000);
 		document.body.removeChild(el);
 	}
 }

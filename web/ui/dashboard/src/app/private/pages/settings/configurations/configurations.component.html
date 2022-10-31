@@ -1,51 +1,51 @@
 <div class="flex justify-between items-center mb-28px">
-    <h3 class="font-semibold">Configurations</h3>
+	<h3 class="font-semibold">Configurations</h3>
 
-    <convoy-button size="sm" [disable]="isUpdatingConfig" (click)="updateConfigSettings()">Save Changes</convoy-button>
+	<convoy-button size="sm" [disable]="isUpdatingConfig" (click)="updateConfigSettings()">Save Changes</convoy-button>
 </div>
 
 <form [formGroup]="configForm">
-    <div class="flex justify-between items-start">
-        <div class="w-3/4">
-            <h4 class="font-semibold">Analytics</h4>
-            <p class="text-12 text-grey-40">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
-        </div>
-        <convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
-    </div>
+	<div class="flex justify-between items-start">
+		<div class="w-3/4">
+			<h4 class="font-semibold">Analytics</h4>
+			<p class="text-12 text-grey-40">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
+		</div>
+		<convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
+	</div>
 
-    <hr class="border-t border-t-grey-10 my-20px" />
+	<hr class="border-t border-t-grey-10 my-20px" />
 
-    <div class="flex justify-between items-start">
-        <div class="w-3/4">
-            <h4 class="font-semibold">Allow Signup</h4>
-            <p class="text-12 text-grey-40">Allow anyone with your instance URL signup and create an organisation on your Convoy application</p>
-        </div>
-        <convoy-toggle name="is_signup_enabled" formControlName="is_signup_enabled"></convoy-toggle>
-    </div>
+	<div class="flex justify-between items-start">
+		<div class="w-3/4">
+			<h4 class="font-semibold">Allow Signup</h4>
+			<p class="text-12 text-grey-40">Allow anyone with your instance URL signup and create an organisation on your Convoy application</p>
+		</div>
+		<convoy-toggle name="is_signup_enabled" formControlName="is_signup_enabled"></convoy-toggle>
+	</div>
 
-    <hr class="border-t border-t-grey-10 my-20px" />
+	<hr class="border-t border-t-grey-10 my-20px" />
 
-    <h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2>
-    <div formGroupName="storage_policy">
-        <div class="grid grid-cols-2 gap-24px mb-24px">
-            <convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
-            <convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
-        </div>
+	<h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2>
+	<div formGroupName="storage_policy">
+		<div class="grid grid-cols-2 gap-24px mb-24px">
+			<convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
+			<convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
+		</div>
 
-        <ng-container *ngIf="configForm.value.storage_policy.type === 'on_prem'">
-            <div formGroupName="on_prem">
-                <convoy-input label="Storage Path" name="path" formControlName="path" placeholder="e.g ../path/to/storage" errorMessage="Please enter a storage path relative to your current device" [required]="true"></convoy-input>
-            </div>
-        </ng-container>
+		<ng-container *ngIf="configForm.value.storage_policy.type === 'on_prem'">
+			<div formGroupName="on_prem">
+				<convoy-input label="Storage Path" name="path" formControlName="path" placeholder="e.g ../path/to/storage" errorMessage="Please enter a storage path relative to your current device" [required]="true"></convoy-input>
+			</div>
+		</ng-container>
 
-        <ng-container *ngIf="configForm.value.storage_policy.type === 's3'">
-            <div formGroupName="s3" class="grid grid-cols-2 gap-x-6">
-                <convoy-input label="Bucket" name="bucket" formControlName="bucket" placeholder="Bucket name" errorMessage="Please enter bucket name" [required]="true"></convoy-input>
-                <convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true"></convoy-select>
-                <convoy-input label="Access Key" name="access_key" formControlName="access_key" placeholder="Access Key" errorMessage="Please enter access key" [required]="true"></convoy-input>
-                <convoy-input label="Secret Key" name="secret_key" formControlName="secret_key" placeholder="Secret key" errorMessage="Please enter secret key" [required]="true"></convoy-input>
-                <convoy-input label="Session key" name="session_token" formControlName="session_token" placeholder="Session token" errorMessage="Please enter session token"></convoy-input>
-            </div>
-        </ng-container>
-    </div>
+		<ng-container *ngIf="configForm.value.storage_policy.type === 's3'">
+			<div formGroupName="s3" class="grid grid-cols-2 gap-x-6">
+				<convoy-input label="Bucket" name="bucket" formControlName="bucket" placeholder="Bucket name" errorMessage="Please enter bucket name" [required]="true"></convoy-input>
+				<convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true" (selectedOption)="configForm.get('storage_policy.s3')?.patchValue({ region: $event })"></convoy-select>
+				<convoy-input label="Access Key" name="access_key" formControlName="access_key" placeholder="Access Key" errorMessage="Please enter access key" [required]="true"></convoy-input>
+				<convoy-input label="Secret Key" name="secret_key" formControlName="secret_key" placeholder="Secret key" errorMessage="Please enter secret key" [required]="true"></convoy-input>
+				<convoy-input label="Session key" name="session_token" formControlName="session_token" placeholder="Session token" errorMessage="Please enter session token"></convoy-input>
+			</div>
+		</ng-container>
+	</div>
 </form>

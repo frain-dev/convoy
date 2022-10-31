@@ -949,7 +949,7 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			args: args{
 				ctx:       ctx,
 				user:      &datastore.User{UID: "1234"},
-				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", ExpiresAt: expires},
+				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", Expiration: 1},
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -966,21 +966,11 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_invalid_expiry",
-			args: args{
-				ctx:       ctx,
-				newApiKey: &models.PersonalAPIKey{ExpiresAt: expires.Add(-2 * time.Hour)},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "expiry date is invalid",
-		},
-		{
 			name: "should_fail_to_create_personal_apiKey",
 			args: args{
 				ctx:       ctx,
 				user:      &datastore.User{UID: "1234"},
-				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", ExpiresAt: expires},
+				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", Expiration: 1},
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -1022,6 +1012,9 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			require.Empty(t, apiKey.DeletedAt)
 
 			stripVariableFields(t, "apiKey", apiKey)
+			require.InDelta(t, int64(tt.wantAPIKey.ExpiresAt), int64(apiKey.ExpiresAt), float64(time.Second))
+			tt.wantAPIKey.ExpiresAt = 0
+			apiKey.ExpiresAt = 0
 			require.Equal(t, tt.wantAPIKey, apiKey)
 		})
 	}

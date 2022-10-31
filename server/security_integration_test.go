@@ -73,8 +73,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreatePersonalAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","expires_at":"%s"}`
-	body := serialize(bodyStr, time.Now().Add(time.Hour).Format(time.RFC3339))
+	bodyStr := `{"name":"default_api_key","expiration":1}`
+	body := serialize(bodyStr)
 
 	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys", s.DefaultUser.UID)
 
@@ -128,8 +128,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"key_type":"app_portal"}"`
-	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+	bodyStr := `{"key_type":"app_portal"}`
+	body := serialize(bodyStr)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/security/applications/%s/keys", s.DefaultGroup.UID, app.UID)
 
@@ -177,8 +177,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProj
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"key_type":"app_portal"}"`
-	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+	bodyStr := `{"key_type":"cli"}`
+	body := serialize(bodyStr)
 
 	url := fmt.Sprintf("/api/v1/security/applications/%s/keys?groupID=%s", app.UID, s.DefaultGroup.UID)
 

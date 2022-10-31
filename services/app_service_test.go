@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
@@ -19,12 +20,14 @@ func provideAppService(ctrl *gomock.Controller) *AppService {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache)
+	queue := mocks.NewMockQueuer(ctrl)
+	return NewAppService(appRepo, eventRepo, eventDeliveryRepo, cache, queue)
 }
 
 func boolPtr(b bool) *bool {
 	return &b
 }
+
 func stringPtr(s string) *string {
 	return &s
 }
@@ -177,7 +180,6 @@ func TestAppService_CreateApp(t *testing.T) {
 }
 
 func TestAppService_LoadApplicationsPaged(t *testing.T) {
-
 	ctx := context.Background()
 
 	type args struct {
@@ -587,7 +589,6 @@ func TestAppService_DeleteApplication(t *testing.T) {
 }
 
 func TestAppService_CreateAppEndpoint(t *testing.T) {
-
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
@@ -608,7 +609,12 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 			name: "should_create_app_endpoint",
 			args: args{
 				ctx: ctx,
-				e:   models.Endpoint{Secret: "1234", URL: "https://google.com", Description: "test_endpoint", Events: []string{"payment.created"}},
+				e: models.Endpoint{
+					Secret:      "1234",
+					URL:         "https://google.com",
+					Description: "test_endpoint",
+					Events:      []string{"payment.created"},
+				},
 				app: &datastore.Application{UID: "abc"},
 			},
 			dbFn: func(app *AppService) {
@@ -625,7 +631,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				UID: "abc",
 				Endpoints: []datastore.Endpoint{
 					{
-						Secret:            "1234",
+						Secrets: []datastore.Secret{
+							{Value: "1234"},
+						},
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
 						RateLimit:         5000,
@@ -635,7 +643,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "1234",
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         5000,
@@ -672,7 +682,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				UID: "abc",
 				Endpoints: []datastore.Endpoint{
 					{
-						Secret:            "1234",
+						Secrets: []datastore.Secret{
+							{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+						},
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
 						RateLimit:         100,
@@ -682,7 +694,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "1234",
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
@@ -726,7 +740,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				UID: "abc",
 				Endpoints: []datastore.Endpoint{
 					{
-						Secret:            "1234",
+						Secrets: []datastore.Secret{
+							{Value: "1234"},
+						},
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
 						RateLimit:         100,
@@ -736,7 +752,9 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "1234",
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
@@ -831,10 +849,24 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 		a.CreatedAt, a.UpdatedAt, a.DeletedAt = 0, 0, 0
 	case "group":
 		g := v.(*datastore.Group)
+		if g.Config != nil {
+			for i := range g.Config.Signature.Versions {
+				v := &g.Config.Signature.Versions[i]
+				v.UID = ""
+				v.CreatedAt = 0
+			}
+		}
 		g.UID = ""
 		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
 	case "endpoint":
 		e := v.(*datastore.Endpoint)
+
+		for i := range e.Secrets {
+			s := &e.Secrets[i]
+			s.UID = ""
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, 0
+		}
+
 		e.UID = ""
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
 	case "event":
@@ -888,7 +920,6 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e: models.Endpoint{
-					Secret:            "newly-generated-secret",
 					Events:            []string{"payment.created", "payment.success"},
 					URL:               "https://fb.com",
 					RateLimit:         10000,
@@ -906,7 +937,6 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 						{
 							UID:       "endpoint2",
 							TargetURL: "https://netflix.com",
-							Secret:    "old-assigned-secret",
 						},
 					},
 				},
@@ -917,12 +947,10 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 					{
 						UID:       "endpoint1",
 						TargetURL: "https://google.com",
-						Secret:    "",
 					},
 					{
 						UID:               "endpoint2",
 						TargetURL:         "https://fb.com",
-						Secret:            "newly-generated-secret",
 						RateLimit:         10000,
 						RateLimitDuration: "1m0s",
 						HttpTimeout:       "20s",
@@ -930,7 +958,6 @@ func TestAppService_UpdateAppEndpoint(t *testing.T) {
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Secret:            "newly-generated-secret",
 				UID:               "endpoint2",
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
@@ -1177,6 +1204,114 @@ func TestAppService_DeleteAppEndpoint(t *testing.T) {
 
 			require.Nil(t, err)
 			require.Equal(t, tc.wantApp, tc.args.app)
+		})
+	}
+}
+
+func TestAppService_ExpireEndpointSecret(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx        context.Context
+		secret     *models.ExpireSecret
+		endPointId string
+		app        *datastore.Application
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(as *AppService)
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_expire_endpoint_secret",
+			args: args{
+				ctx: ctx,
+				secret: &models.ExpireSecret{
+					Secret:     "abce",
+					Expiration: 10,
+				},
+				endPointId: "abc",
+				app: &datastore.Application{
+					UID:     "abc",
+					GroupID: "1234",
+					Endpoints: []datastore.Endpoint{
+						{
+							UID: "abc",
+							Secrets: []datastore.Secret{
+								{
+									UID:   "1234",
+									Value: "test_secret",
+								},
+							},
+							AdvancedSignatures: false,
+							DocumentStatus:     datastore.ActiveDocumentStatus,
+						},
+					},
+				},
+			},
+			dbFn: func(as *AppService) {
+				appRepo := as.appRepo.(*mocks.MockApplicationRepository)
+
+				appRepo.EXPECT().ExpireSecret(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				eq, _ := as.queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.ExpireSecretsProcessor, convoy.DefaultQueue, gomock.Any()).
+					Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantErr:     false,
+			wantErrCode: 0,
+			wantErrMsg:  "",
+		},
+		{
+			name: "should_fail_to_find_endpoint",
+			args: args{
+				ctx:        ctx,
+				endPointId: "1234",
+				secret: &models.ExpireSecret{
+					Secret:     "abce",
+					Expiration: 10,
+				},
+				app: &datastore.Application{
+					UID:       "abc",
+					GroupID:   "1234",
+					Endpoints: []datastore.Endpoint{},
+				},
+			},
+			dbFn:        func(as *AppService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "endpoint not found",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			as := provideAppService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(as)
+			}
+
+			_, err := as.ExpireSecret(tt.args.ctx, tt.args.secret, tt.args.endPointId, tt.args.app)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			_, err = tt.args.app.FindEndpoint(tt.args.endPointId)
+			require.NoError(t, err)
 		})
 	}
 }

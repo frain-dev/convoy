@@ -16,11 +16,11 @@ export class SourcesComponent implements OnInit {
 	shouldShowCreateSourceModal = false;
 	shouldShowUpdateSourceModal = false;
 	activeSource?: SOURCE;
-	sources!: { content: SOURCE[]; pagination: PAGINATION };
+	sources: { content: SOURCE[]; pagination?: PAGINATION } = { content: [], pagination: undefined };
 	isLoadingSources = false;
 	isDeletingSource = false;
 	showDeleteSourceModal = false;
-	projectId = this.privateService.activeProjectDetails.uid;
+	projectId = this.privateService.activeProjectDetails?.uid;
 
 	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
 		this.route.queryParams.subscribe(params => (this.activeSource = this.sources?.content.find(source => source.uid === params?.id)));
@@ -40,7 +40,7 @@ export class SourcesComponent implements OnInit {
 		try {
 			const sourcesResponse = await this.privateService.getSources({ page });
 			this.sources = sourcesResponse.data;
-			if (this.sources.pagination.total > 0) this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
+			if ((this.sources?.pagination?.total || 0) > 0) this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
 			this.isLoadingSources = false;
 		} catch (error) {
 			this.isLoadingSources = false;
@@ -68,7 +68,7 @@ export class SourcesComponent implements OnInit {
 	}
 
 	copyText(sourceName: string) {
-		this.generalService.showNotification({ message: `${sourceName} URL has been copied to clipboard`, style: 'info' });
+		this.generalService.showNotification({ message: `${sourceName} has been copied to clipboard`, style: 'info' });
 	}
 
 	isDateBefore(date1?: Date, date2?: Date): boolean {
