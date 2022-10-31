@@ -37,16 +37,20 @@ export class AppDetailsComponent implements OnInit {
 	appsDetailsItem?: APP;
 	apps!: { pagination: PAGINATION; content: APP[] };
 	selectedEndpoint?: ENDPOINT;
-	tabs: ['cli keys', 'devices'] = ['cli keys', 'devices'];
-	activeTab: 'cli keys' | 'devices' = 'cli keys';
+	tabs: ['CLI Keys', 'devices'] = ['CLI Keys', 'devices'];
+	activeTab: 'CLI Keys' | 'devices' = 'CLI Keys';
 	expireSecretForm: FormGroup = this.formBuilder.group({
 		expiration: ['', Validators.required]
 	});
 	expirationDates = [
-		{ name: '7 days', uid: 7 },
-		{ name: '14 days', uid: 14 },
-		{ name: '30 days', uid: 30 },
-		{ name: '90 days', uid: 90 }
+		{ name: '1 hour', uid: 1 },
+		{ name: '2 hour', uid: 2 },
+		{ name: '4 hour', uid: 4 },
+		{ name: '8 hour', uid: 8 },
+		{ name: '12 hour', uid: 12 },
+		{ name: '16 hour', uid: 16 },
+		{ name: '20 hour', uid: 20 },
+		{ name: '24 hour', uid: 24 }
 	];
 	constructor(private appDetailsService: AppDetailsService, private generalService: GeneralService, private route: ActivatedRoute, private location: Location, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
@@ -65,6 +69,10 @@ export class AppDetailsComponent implements OnInit {
 	viewEndpointSecretKey(secretKeys: SECRET[]) {
 		this.showEndpointSecret = !this.showEndpointSecret;
 		this.endpointSecretKeys = secretKeys;
+	}
+
+	get endpointSecret(): SECRET | undefined {
+		return this.endpointSecretKeys.find(secret => !secret.expires_at);
 	}
 
 	async getAppDetails(appId: string) {
@@ -142,7 +150,7 @@ export class AppDetailsComponent implements OnInit {
 		}
 	}
 
-	toggleActiveTab(tab: 'cli keys' | 'devices') {
+	toggleActiveTab(tab: 'CLI Keys' | 'devices') {
 		this.activeTab = tab;
 	}
 

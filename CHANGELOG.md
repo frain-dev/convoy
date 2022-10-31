@@ -1,3 +1,22 @@
+## 0.7.1
+
+-   [Bugfix] Fix Max response size CLI override #1098
+
+## 0.7.0
+
+-   [Feature] Add support for feature flags #1054
+-   [Enhancement] Enable source filter on Events dashboard #1058 #1043
+-   [Bugfix] Use configured max request size in ingest handler #1086
+-   [Feature] Use mongo aggregation pipeline to fetch subscriptions #1073
+-   [Feature] Run Convoy in Headless mode #1034
+-   [Enhancement] New UI Onboarding #1048
+-   [Bugfix] Fixed retention policies task handler #1049
+-   [Bugfix] Set default body for ingested events to empty JSON #1062
+-   [Feature] Add support for endpoint authentication #1045
+-   [Bugfix] The change stream should not be killed when an error occurs in the handler #1061
+-   [Enhancement] Fix build warnings #1089
+-   [Bugfix] Several UI fixes #1087
+
 ## 0.7.0-rc.2
 
 -   [Feature] Create cli api keys and manage devices from the app portal #983

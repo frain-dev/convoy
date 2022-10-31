@@ -242,8 +242,8 @@ type Endpoint struct {
 }
 
 type ExpireSecret struct {
-	Secret    string `json:"secret"`
-	ExpiresAt int    `json:"expires_at"`
+	Secret     string `json:"secret"`
+	Expiration int    `json:"expiration"`
 }
 
 type DashboardSummary struct {

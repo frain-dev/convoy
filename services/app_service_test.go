@@ -1230,8 +1230,8 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				secret: &models.ExpireSecret{
-					Secret:    "abce",
-					ExpiresAt: 10,
+					Secret:     "abce",
+					Expiration: 10,
 				},
 				endPointId: "abc",
 				app: &datastore.Application{
@@ -1261,6 +1261,9 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 				eq, _ := as.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.ExpireSecretsProcessor, convoy.DefaultQueue, gomock.Any()).
 					Times(1).Return(nil)
+
+				c, _ := as.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr:     false,
 			wantErrCode: 0,
@@ -1272,8 +1275,8 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 				ctx:        ctx,
 				endPointId: "1234",
 				secret: &models.ExpireSecret{
-					Secret:    "abce",
-					ExpiresAt: 10,
+					Secret:     "abce",
+					Expiration: 10,
 				},
 				app: &datastore.Application{
 					UID:       "abc",

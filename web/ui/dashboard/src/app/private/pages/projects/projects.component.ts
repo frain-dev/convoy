@@ -12,7 +12,6 @@ import { PrivateService } from '../../private.service';
 export class ProjectsComponent implements OnInit {
 	projects: GROUP[] = [];
 	isLoadingProjects = false;
-	noData = false;
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	organisations: ORGANIZATION_DATA[] = [];
 	showOrganisationModal = false;
@@ -32,9 +31,12 @@ export class ProjectsComponent implements OnInit {
 		try {
 			const organisations = await this.privateService.getOrganizations();
 			this.organisations = organisations.data.content;
-			this.privateService.organisationDetails = this.organisations[0];
 			this.isloadingOrganisations = false;
-			if (this.organisations.length > 0) return this.getProjects();
+			if (this.organisations.length > 0) {
+				this.privateService.organisationDetails = this.organisations[0];
+				return this.getProjects();
+			}
+			return this.router.navigateByUrl('/get-started');
 		} catch (error) {
 			this.isloadingOrganisations = true;
 			this.isLoadingProjects = false;
@@ -44,24 +46,12 @@ export class ProjectsComponent implements OnInit {
 	async getProjects() {
 		try {
 			const projectsResponse = await this.privateService.getProjects();
-			projectsResponse.data.length > 0 ? (this.noData = false) : (this.noData = true);
 			this.projects = projectsResponse.data;
 			delete this.privateService.activeProjectDetails;
+			if (!this.projects.length) this.router.navigateByUrl('/get-started');
 			this.isLoadingProjects = false;
 		} catch (error) {
 			this.isLoadingProjects = false;
 		}
-	}
-
-	async setOrganisation() {
-		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
-		this.showOrganisationModal = false;
-
-		// temporary fix for reloading page
-		location.reload();
-	}
-
-	goToCreateProjectPage() {
-		this.router.navigateByUrl('/projects/new');
 	}
 }

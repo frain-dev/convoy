@@ -20,14 +20,23 @@
 			<span>Please select a project type</span>
 		</div>
 
+		<div class="flex">
+			<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="toggleMoreConfig($event)" [isChecked]="enableMoreConfig"></convoy-toggle>
+		</div>
+
 		<div [hidden]="!enableMoreConfig">
 			<div formGroupName="config">
 				<h3 class="mt-24px mb-16px font-semibold flex items-center">
 					Signature Details
 					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h3>
-				<div formGroupName="signature">
+				<div formGroupName="signature" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
 					<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests"></convoy-input>
+
+					<ng-container [formGroup]="newSignatureForm" *ngIf="action === 'create'">
+						<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
+						<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
+					</ng-container>
 				</div>
 
 				<h3 class="mt-24px mb-16px flex items-center font-semibold">
@@ -79,18 +88,14 @@
 			</div>
 		</div>
 
-		<div class="flex justify-between items-center mt-40px">
-			<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="enableMoreConfig = !enableMoreConfig" [isChecked]="enableMoreConfig"></convoy-toggle>
-
-			<div class="flex">
-				<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" (click)="confirmModal = true">Cancel</convoy-button>
-				<convoy-button [disable]="isCreatingProject">
-					{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
-					<svg width="24" height="24" class="ml-8px fill-white-100">
-						<use xlink:href="#arrow-right-icon"></use>
-					</svg>
-				</convoy-button>
-			</div>
+		<div class="flex justify-end">
+			<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" (click)="confirmModal = true">Cancel</convoy-button>
+			<convoy-button [disable]="isCreatingProject">
+				{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
+				<svg width="24" height="24" class="ml-8px fill-white-100">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</convoy-button>
 		</div>
 	</convoy-card>
 
@@ -141,10 +146,11 @@
 <convoy-modal *ngIf="showNewSignatureModal" title="New Signature" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
 	<div modalBody>
 		<form [formGroup]="newSignatureForm">
-			<convoy-select label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
+			<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
+			<div class="spacer mb-24px"></div>
 			<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 
-			<div class="flex justify-end mt-88px">
+			<div class="flex justify-end mt-38px">
 				<convoy-button color="danger" type="outline" className="mr-16px" (clickItem)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">Discard</convoy-button>
 				<convoy-button (clickItem)="createNewSignature(versionsLength - 1)">Create</convoy-button>
 			</div>

@@ -50,6 +50,7 @@ export interface API_KEY {
 
 export interface SECRET {
 	created_at: string;
+	expires_at: string;
 	uid: string;
 	updated_at: string;
 	value: string;
