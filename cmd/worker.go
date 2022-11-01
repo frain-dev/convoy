@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
@@ -33,10 +32,6 @@ func addWorkerCommand(a *app) *cobra.Command {
 			if err != nil {
 				a.logger.Errorf("Failed to retrieve config: %v", err)
 				return err
-			}
-
-			if util.IsStringEmpty(logLevel) {
-				logLevel = cfg.Logger.Level
 			}
 
 			lo := a.logger.(*log.Logger)

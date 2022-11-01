@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,10 +28,6 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			if err != nil {
 				a.logger.Errorf("Failed to retrieve config: %v", err)
 				return err
-			}
-
-			if util.IsStringEmpty(logLevel) {
-				logLevel = cfg.Logger.Level
 			}
 
 			lo := a.logger.(*log.Logger)
