@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
+func provideUserService(ctrl *gomock.Controller, t *testing.T) (*UserService, *mocks.MockCache) {
 	userRepo := mocks.NewMockUserRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
@@ -34,7 +34,7 @@ func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
 	orgService := NewOrganisationService(orgRepo, orgMemberRepo)
 
 	userService := NewUserService(userRepo, cache, queue, configService, orgService, &cfg.Auth.Jwt)
-	return userService
+	return userService, cache
 }
 
 func TestUserService_LoginUser(t *testing.T) {
@@ -134,7 +134,7 @@ func TestUserService_LoginUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			u := provideUserService(ctrl, t)
+			u, _ := provideUserService(ctrl, t)
 
 			if tc.dbFn != nil {
 				tc.dbFn(u)
@@ -251,7 +251,7 @@ func TestService_RegisterUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			u := provideUserService(ctrl, t)
+			u, _ := provideUserService(ctrl, t)
 
 			if tc.dbFn != nil {
 				tc.dbFn(u)
@@ -302,7 +302,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		dbFn        func(u *UserService)
+		dbFn        func(u *UserService, ca *mocks.MockCache)
 		wantConfig  bool
 		wantToken   token
 		wantErr     bool
@@ -316,10 +316,12 @@ func TestUserService_RefreshToken(t *testing.T) {
 				user:  &datastore.User{UID: "123456"},
 				token: &models.Token{},
 			},
-			dbFn: func(u *UserService) {
+			dbFn: func(u *UserService, ca *mocks.MockCache) {
 				us, _ := u.userRepo.(*mocks.MockUserRepository)
 
 				us.EXPECT().FindUserByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.User{UID: "123456"}, nil)
+				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				ca.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantConfig: true,
 			wantToken:  token{generate: true, accessToken: true, refreshToken: true},
@@ -331,7 +333,9 @@ func TestUserService_RefreshToken(t *testing.T) {
 				ctx:   ctx,
 				token: &models.Token{AccessToken: uuid.NewString(), RefreshToken: uuid.NewString()},
 			},
-			dbFn:        func(u *UserService) {},
+			dbFn: func(u *UserService, ca *mocks.MockCache) {
+				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
 		},
@@ -343,7 +347,9 @@ func TestUserService_RefreshToken(t *testing.T) {
 				user:  &datastore.User{UID: "123456"},
 				token: &models.Token{RefreshToken: uuid.NewString()},
 			},
-			dbFn:        func(u *UserService) {},
+			dbFn: func(u *UserService, ca *mocks.MockCache) {
+				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+			},
 			wantToken:   token{generate: true, accessToken: true},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
@@ -355,10 +361,10 @@ func TestUserService_RefreshToken(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			u := provideUserService(ctrl, t)
+			u, ca := provideUserService(ctrl, t)
 
 			if tc.dbFn != nil {
-				tc.dbFn(u)
+				tc.dbFn(u, ca)
 			}
 
 			if tc.wantToken.generate {
@@ -406,7 +412,7 @@ func TestUserService_LogoutUser(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		dbFn        func(u *UserService)
+		dbFn        func(u *UserService, ca *mocks.MockCache)
 		wantConfig  bool
 		wantToken   token
 		wantErr     bool
@@ -420,7 +426,10 @@ func TestUserService_LogoutUser(t *testing.T) {
 				user:  &datastore.User{UID: "12345"},
 				token: &models.Token{},
 			},
-			dbFn:      func(u *UserService) {},
+			dbFn: func(u *UserService, ca *mocks.MockCache) {
+				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ca.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
 			wantToken: token{generate: true, accessToken: true},
 		},
 
@@ -431,7 +440,9 @@ func TestUserService_LogoutUser(t *testing.T) {
 				user:  &datastore.User{UID: "12345"},
 				token: &models.Token{AccessToken: uuid.NewString()},
 			},
-			dbFn:        func(u *UserService) {},
+			dbFn: func(u *UserService, ca *mocks.MockCache) {
+				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
 		},
@@ -442,10 +453,10 @@ func TestUserService_LogoutUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			u := provideUserService(ctrl, t)
+			u, ca := provideUserService(ctrl, t)
 
 			if tc.dbFn != nil {
-				tc.dbFn(u)
+				tc.dbFn(u, ca)
 			}
 
 			if tc.wantToken.generate {
@@ -536,7 +547,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			u := provideUserService(ctrl, t)
+			u, _ := provideUserService(ctrl, t)
 
 			if tc.dbFn != nil {
 				tc.dbFn(u)
@@ -670,7 +681,7 @@ func TestUserService_UpdatePassword(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			u := provideUserService(ctrl, t)
+			u, _ := provideUserService(ctrl, t)
 
 			if tc.dbFn != nil {
 				tc.dbFn(u)
