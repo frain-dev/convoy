@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"github.com/jirevwe/eflat"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -352,7 +352,7 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload m
 	isValid := false
 
 	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
-		sub := datastore.SubscriptionFilter{
+		f := datastore.SubscriptionFilter{
 			ID:             primitive.NewObjectID(),
 			UID:            uuid.NewString(),
 			Filter:         payload,
@@ -360,34 +360,34 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload m
 		}
 
 		// insert the desired request payload
-		err := s.store.Save(sessCtx, sub, nil)
+		err := s.store.Save(sessCtx, f, nil)
 		if err != nil {
 			return err
 		}
 
 		// compare the filter with the test request payload
-		var query map[string]interface{}
+		var q map[string]interface{}
 		if len(filter) == 0 {
 			filter = nil
 		}
 
 		if filter != nil {
-			query = bson.M{"filter": filter}
-			query, err = eflat.Flatten(query)
+			query := map[string]interface{}{"filter": filter}
+			q, err = flatten.Flatten(query)
 			if err != nil {
 				return err
 			}
 		}
 
-		var subscriptions []datastore.SubscriptionFilter
-		err = s.store.FindAll(sessCtx, query, nil, nil, &subscriptions)
+		var filters []datastore.SubscriptionFilter
+		err = s.store.FindAll(sessCtx, q, nil, nil, &filters)
 		if err != nil {
 			return err
 		}
 
-		isValid = len(subscriptions) > 0
+		isValid = len(filters) > 0
 
-		err = s.store.DeleteByID(sessCtx, sub.UID, true)
+		err = s.store.DeleteByID(sessCtx, f.UID, true)
 		if err != nil {
 			return err
 		}

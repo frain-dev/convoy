@@ -278,34 +278,239 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.Equal(t, sub.SourceID, "source-id-1")
 }
 
-func TestTestSubscriptionFilter_Success(t *testing.T) {
+func TestTestSubscriptionFilter(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
 	store := getStore(db)
 	subRepo := NewSubscriptionRepo(store)
 
-	request := map[string]interface{}{"person": map[string]interface{}{"age": 10}}
-	schema := map[string]interface{}{"person": map[string]interface{}{"age": map[string]interface{}{"$;te": 5}}}
+	tests := []struct {
+		name    string
+		request map[string]interface{}
+		schema  map[string]interface{}
+		want    bool
+		wantErr bool
+		Err     error
+	}{
+		{
+			name: "equal",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 5,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 5,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "equal with operator",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 5,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": map[string]interface{}{
+						"$eq": 5,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "equal with operator",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": "tunde",
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": map[string]interface{}{
+						"$eq": "tunde",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "not equal - false",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 5,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": map[string]interface{}{
+						"$neq": 5,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "not equal - true",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 11,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": map[string]interface{}{
+						"$neq": 5,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "less than - true",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 11,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": map[string]interface{}{
+						"$lt": 15,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "less than - false",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 11,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": map[string]interface{}{
+						"$lt": 5,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "greater than - true",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 11,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": map[string]interface{}{
+						"$gt": 5,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "greater than - false",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 11,
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": map[string]interface{}{
+						"$gt": 50,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "in array - false",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": "raymond",
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": map[string]interface{}{
+						"$in": []string{"subomi", "daniel"},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "in array - true",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": "subomi",
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": map[string]interface{}{
+						"$in": []string{"subomi", "daniel"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "not in array - true",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": "raymond",
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": map[string]interface{}{
+						"$nin": []string{"subomi", "daniel"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "not in array - false",
+			request: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": "subomi",
+				},
+			},
+			schema: map[string]interface{}{
+				"person": map[string]interface{}{
+					"name": map[string]interface{}{
+						"$nin": []string{"subomi", "daniel"},
+					},
+				},
+			},
+			want: false,
+		},
+	}
 
-	matched, err := subRepo.TestSubscriptionFilter(context.Background(), request, schema)
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	require.True(t, matched)
-}
+			matched, err := subRepo.TestSubscriptionFilter(context.Background(), tt.request, tt.schema)
+			if tt.wantErr {
+				require.ErrorIs(t, err, tt.Err)
+			}
 
-func TestTestSubscriptionFilter_Fails(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
-
-	store := getStore(db)
-	subRepo := NewSubscriptionRepo(store)
-
-	request := map[string]interface{}{"person": map[string]interface{}{"age": 10}}
-	schema := map[string]interface{}{"person": map[string]interface{}{"age": map[string]interface{}{"$lte": 5}}}
-
-	matched, err := subRepo.TestSubscriptionFilter(context.Background(), request, schema)
-	require.NoError(t, err)
-
-	require.False(t, matched)
+			t.Log(tt.want, matched)
+			require.Equal(t, tt.want, matched)
+		})
+	}
 }

@@ -264,6 +264,40 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
+			name: "Match all Filter",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{
+					"age": 10,
+				},
+			},
+			dbFn: func(args *args) {
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+			},
+			inputSubs: []datastore.Subscription{
+				{
+					UID: "123",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{"person.age": 10},
+					},
+				},
+				{
+					UID: "1234",
+					FilterConfig: &datastore.FilterConfiguration{
+						Filter: map[string]interface{}{},
+					},
+				},
+			},
+			wantSubs: []datastore.Subscription{
+				{
+					UID: "123",
+				},
+				{
+					UID: "1234",
+				},
+			},
+		},
+		{
 			name: "Equal Filter",
 			payload: map[string]interface{}{
 				"person": map[string]interface{}{
