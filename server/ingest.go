@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	ncache "github.com/frain-dev/convoy/cache/noop"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -194,7 +192,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sourceRepo := mongo.NewSourceRepo(a.A.Store, ncache.NewNoopCache())
+	sourceRepo := mongo.NewSourceRepo(a.A.Store)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

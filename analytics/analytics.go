@@ -88,7 +88,7 @@ func TrackDailyAnalytics(store datastore.Store, cache cache.Cache, cfg config.Co
 	repo := &Repo{
 		ConfigRepo: cm.NewConfigRepo(store),
 		EventRepo:  cm.NewEventRepository(store),
-		GroupRepo:  cm.NewGroupRepo(store, cache),
+		GroupRepo:  cm.NewGroupRepo(store),
 		OrgRepo:    cm.NewOrgRepo(store),
 		UserRepo:   cm.NewUserRepo(store),
 	}

@@ -21,7 +21,7 @@ import (
 )
 
 func createSecurityService(a *ApplicationHandler) *services.SecurityService {
-	groupRepo := mongo.NewGroupRepo(a.A.Store, a.A.Cache)
+	groupRepo := mongo.NewGroupRepo(a.A.Store)
 	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
 
 	return services.NewSecurityService(groupRepo, apiKeyRepo)

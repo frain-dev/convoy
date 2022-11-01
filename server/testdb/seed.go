@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	ncache "github.com/frain-dev/convoy/cache/noop"
-
 	"github.com/frain-dev/convoy/cache"
 
 	"github.com/dchest/uniuri"
@@ -46,7 +44,7 @@ func SeedApplication(store datastore.Store, cache cache.Cache, g *datastore.Grou
 	}
 
 	// Seed Data.
-	appRepo := cm.NewApplicationRepo(store, cache)
+	appRepo := cm.NewApplicationRepo(store)
 	err := appRepo.CreateApplication(context.TODO(), app, g.UID)
 	if err != nil {
 		return &datastore.Application{}, err
@@ -67,7 +65,7 @@ func SeedMultipleApplications(store datastore.Store, cache cache.Cache, g *datas
 		}
 
 		// Seed Data.
-		appRepo := cm.NewApplicationRepo(store, cache)
+		appRepo := cm.NewApplicationRepo(store)
 		err := appRepo.CreateApplication(context.TODO(), app, app.GroupID)
 		if err != nil {
 			return err
@@ -83,7 +81,7 @@ func SeedEndpoint(store datastore.Store, cache cache.Cache, app *datastore.Appli
 	})
 
 	// Seed Data.
-	appRepo := cm.NewApplicationRepo(store, cache)
+	appRepo := cm.NewApplicationRepo(store)
 	err := appRepo.UpdateApplication(context.TODO(), app, groupID)
 	if err != nil {
 		return &datastore.Endpoint{}, err
@@ -106,7 +104,7 @@ func SeedEndpointSecret(store datastore.Store, cache cache.Cache, app *datastore
 	app.Endpoints = append(app.Endpoints, *e)
 
 	// Seed Data.
-	appRepo := cm.NewApplicationRepo(store, cache)
+	appRepo := cm.NewApplicationRepo(store)
 	err := appRepo.UpdateApplication(context.TODO(), app, app.GroupID)
 	if err != nil {
 		return nil, err
@@ -126,7 +124,7 @@ func SeedMultipleEndpoints(store datastore.Store, cache cache.Cache, app *datast
 	}
 
 	// Seed Data.
-	appRepo := cm.NewApplicationRepo(store, cache)
+	appRepo := cm.NewApplicationRepo(store)
 	err := appRepo.UpdateApplication(context.TODO(), app, groupID)
 	if err != nil {
 		return nil, err
@@ -174,7 +172,7 @@ func SeedDefaultGroup(store datastore.Store, cache cache.Cache, orgID string) (*
 	}
 
 	// Seed Data.
-	groupRepo := cm.NewGroupRepo(store, cache)
+	groupRepo := cm.NewGroupRepo(store)
 	err := groupRepo.CreateGroup(context.TODO(), defaultGroup)
 	if err != nil {
 		return &datastore.Group{}, err
@@ -363,7 +361,7 @@ func SeedGroup(store datastore.Store, cache cache.Cache, uid, name, orgID string
 	}
 
 	// Seed Data.
-	groupRepo := cm.NewGroupRepo(store, cache)
+	groupRepo := cm.NewGroupRepo(store)
 	err := groupRepo.CreateGroup(context.TODO(), g)
 	if err != nil {
 		return &datastore.Group{}, err
@@ -421,7 +419,7 @@ func SeedEventDelivery(store datastore.Store, cache cache.Cache, app *datastore.
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := cm.NewEventDeliveryRepository(store, cache)
+	eventDeliveryRepo := cm.NewEventDeliveryRepository(store)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
@@ -522,7 +520,7 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 	}
 
 	// Seed Data
-	sourceRepo := cm.NewSourceRepo(store, ncache.NewNoopCache())
+	sourceRepo := cm.NewSourceRepo(store)
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
 		return nil, err

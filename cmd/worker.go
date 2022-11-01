@@ -46,10 +46,10 @@ func addWorkerCommand(a *app) *cobra.Command {
 				log.WithError(err).Error("failed to create worker")
 			}
 
-			appRepo := cm.NewApplicationRepo(a.store, a.cache)
+			appRepo := cm.NewApplicationRepo(a.store)
 			eventRepo := cm.NewEventRepository(a.store)
-			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store, a.cache)
-			groupRepo := cm.NewGroupRepo(a.store, a.cache)
+			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
+			groupRepo := cm.NewGroupRepo(a.store)
 			subRepo := cm.NewSubscriptionRepo(a.store)
 			deviceRepo := cm.NewDeviceRepository(a.store)
 			configRepo := cm.NewConfigRepo(a.store)

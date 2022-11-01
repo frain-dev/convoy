@@ -25,12 +25,12 @@ func addStreamCommand(a *app) *cobra.Command {
 				log.WithError(err).Fatal("failed to initialize realm chain")
 			}
 
-			appRepo := cm.NewApplicationRepo(a.store, a.cache)
-			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store, a.cache)
-			sourceRepo := cm.NewSourceRepo(a.store, a.cache)
+			appRepo := cm.NewApplicationRepo(a.store)
+			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
+			sourceRepo := cm.NewSourceRepo(a.store)
 			subRepo := cm.NewSubscriptionRepo(a.store)
 			deviceRepo := cm.NewDeviceRepository(a.store)
-			groupRepo := cm.NewGroupRepo(a.store, a.cache)
+			groupRepo := cm.NewGroupRepo(a.store)
 			apiKeyRepo := cm.NewApiKeyRepo(a.store)
 
 			// enable only the native auth realm

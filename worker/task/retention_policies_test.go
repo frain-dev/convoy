@@ -215,11 +215,11 @@ func buildApplication() *applicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	store := datastore.New(db.Database())
 
-	groupRepo := convoyMongo.NewGroupRepo(store, ncache.NewNoopCache())
+	groupRepo := convoyMongo.NewGroupRepo(store)
 	eventRepo := convoyMongo.NewEventRepository(store)
 	configRepo := convoyMongo.NewConfigRepo(store)
 	cache := ncache.NewNoopCache()
-	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store, cache)
+	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
 
 	app := &applicationHandler{
 		groupRepo:         groupRepo,
@@ -289,7 +289,7 @@ func seedEventDelivery(store datastore.Store, cache cache.Cache, appID string, e
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store, cache)
+	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err

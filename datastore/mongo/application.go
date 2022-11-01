@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -20,14 +17,12 @@ import (
 )
 
 type appRepo struct {
-	cache cache.Cache
 	store datastore.Store
 }
 
-func NewApplicationRepo(store datastore.Store, cache cache.Cache) datastore.ApplicationRepository {
+func NewApplicationRepo(store datastore.Store) datastore.ApplicationRepository {
 	return &appRepo{
 		store: store,
-		cache: cache,
 	}
 }
 
@@ -45,12 +40,6 @@ func (db *appRepo) CreateApplication(ctx context.Context, app *datastore.Applica
 	app.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(app.UID) {
 		app.UID = uuid.New().String()
-	}
-
-	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = db.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-	if err != nil {
-		return errors.New("failed to add application to cache")
 	}
 
 	return db.store.Save(ctx, app, nil)
@@ -180,20 +169,10 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 	id string,
 ) (*datastore.Application, error) {
 	var app *datastore.Application
-	appCacheKey := convoy.ApplicationsCacheKey.Get(id).String()
-
-	err := db.cache.Get(ctx, appCacheKey, &app)
-	if err != nil {
-		return nil, err
-	}
-
-	if app != nil {
-		return app, nil
-	}
 
 	ctx = db.setCollectionInContext(ctx)
 	app = &datastore.Application{}
-	err = db.store.FindByID(ctx, id, nil, app)
+	err := db.store.FindByID(ctx, id, nil, app)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrApplicationNotFound
 		return app, err
@@ -212,11 +191,6 @@ func (db *appRepo) FindApplicationByID(ctx context.Context,
 		return app, err
 	}
 	app.Events = count
-
-	err = db.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-	if err != nil {
-		return nil, err
-	}
 
 	return app, err
 }
@@ -254,12 +228,6 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 			"support_email": app.SupportEmail,
 			"is_disabled":   app.IsDisabled,
 		},
-	}
-
-	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = db.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
-	if err != nil {
-		return errors.New("failed to update application cache")
 	}
 
 	return db.store.UpdateByID(ctx, app.UID, update)
@@ -309,13 +277,6 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 	if err != nil {
 		return err
 	}
-
-	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
-	err = db.cache.Delete(ctx, appCacheKey)
-	if err != nil {
-		return errors.New("failed to delete application cache")
-	}
-
 	return nil
 }
 

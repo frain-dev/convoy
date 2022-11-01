@@ -6,10 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
-
-	"github.com/frain-dev/convoy"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -23,14 +19,12 @@ func isDuplicateNameIndex(err error) bool {
 }
 
 type groupRepo struct {
-	cache cache.Cache
 	store datastore.Store
 }
 
-func NewGroupRepo(store datastore.Store, cache cache.Cache) datastore.GroupRepository {
+func NewGroupRepo(store datastore.Store) datastore.GroupRepository {
 	return &groupRepo{
 		store: store,
-		cache: cache,
 	}
 }
 
@@ -45,13 +39,7 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
 		return datastore.ErrDuplicateGroupName
 	}
-
-	if err != nil {
-		return err
-	}
-
-	groupCacheKey := convoy.GroupsCacheKey.Get(o.UID).String()
-	return db.cache.Set(ctx, groupCacheKey, o, time.Minute*5)
+	return err
 }
 
 func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
@@ -96,32 +84,15 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	if mongo.IsDuplicateKeyError(err) && isDuplicateNameIndex(err) {
 		return datastore.ErrDuplicateGroupName
 	}
-
-	if err != nil {
-		return err
-	}
-
-	groupCacheKey := convoy.GroupsCacheKey.Get(o.UID).String()
-	return db.cache.Set(ctx, groupCacheKey, o, time.Minute*5)
+	return err
 }
 
 func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
-	var g *datastore.Group
-	groupCacheKey := convoy.GroupsCacheKey.Get(id).String()
-	err := db.cache.Get(ctx, groupCacheKey, g)
-	if err != nil {
-		log.WithError(err).Error("failed to fetch group from cache")
-	}
-
-	if g != nil {
-		return g, nil
-	}
-
 	ctx = db.setCollectionInContext(ctx)
 
 	group := new(datastore.Group)
 
-	err = db.store.FindByID(ctx, id, nil, group)
+	err := db.store.FindByID(ctx, id, nil, group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrGroupNotFound
 	}
@@ -257,12 +228,6 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	})
 	if err != nil {
 		return err
-	}
-
-	groupCacheKey := convoy.GroupsCacheKey.Get(uid).String()
-	err = db.cache.Delete(ctx, groupCacheKey)
-	if err != nil {
-		log.WithError(err).Error("failed to delete group from cache")
 	}
 
 	return nil

@@ -6,11 +6,6 @@ import (
 	"math"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -21,13 +16,11 @@ import (
 
 type eventDeliveryRepo struct {
 	store datastore.Store
-	cache cache.Cache
 }
 
-func NewEventDeliveryRepository(store datastore.Store, cache cache.Cache) datastore.EventDeliveryRepository {
+func NewEventDeliveryRepository(store datastore.Store) datastore.EventDeliveryRepository {
 	return &eventDeliveryRepo{
 		store: store,
-		cache: cache,
 	}
 }
 
@@ -45,16 +38,7 @@ func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid string) (*datastore.EventDelivery, error) {
-	key := convoy.EventDeliveryCacheKey.Get(uid).String()
 	var eventDelivery *datastore.EventDelivery
-	err := db.cache.Get(ctx, key, eventDelivery)
-	if err != nil {
-		log.WithError(err).Error("failed to get event delivery from cache")
-	}
-
-	if eventDelivery != nil {
-		return eventDelivery, nil
-	}
 
 	ctx = db.setCollectionInContext(ctx)
 
@@ -145,7 +129,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 	}
 
 	var eventDeliveries []datastore.EventDelivery
-	err = db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, projectStage, setStage, unsetStage}, &eventDeliveries, false)
+	err := db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, lookupStage3, projectStage, setStage, unsetStage}, &eventDeliveries, false)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = datastore.ErrEventDeliveryNotFound
@@ -157,11 +141,6 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 		return nil, datastore.ErrEventDeliveryNotFound
 	}
 	eventDelivery = &eventDeliveries[0]
-
-	err = db.cache.Set(ctx, key, eventDelivery, time.Minute*5)
-	if err != nil {
-		log.WithError(err).Error("failed to set event delivery in cache")
-	}
 
 	return eventDelivery, nil
 }
