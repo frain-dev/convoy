@@ -53,7 +53,7 @@ func (s *SecurityIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultOrg.UID)
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -116,7 +116,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -165,7 +165,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProj
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -205,7 +205,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -253,7 +253,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelo
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", true)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -364,7 +364,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetAppAPIKeys() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -398,7 +398,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeAppAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,

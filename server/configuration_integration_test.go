@@ -43,7 +43,7 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(c.DB)
 
 	// Setup Default Group
-	c.DefaultGroup, _ = testdb.SeedDefaultGroup(c.ConvoyApp.A.Store, c.ConvoyApp.A.Cache, "")
+	c.DefaultGroup, _ = testdb.SeedDefaultGroup(c.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(c.ConvoyApp.A.Store)
 	require.NoError(c.T(), err)

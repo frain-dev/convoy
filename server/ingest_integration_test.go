@@ -40,7 +40,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	var err error = nil
 
 	// Setup Default Group.
-	i.DefaultGroup, err = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, i.ConvoyApp.A.Cache, "")
+	i.DefaultGroup, err = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
 	require.NoError(i.T(), err)
 
 	// Setup Config.

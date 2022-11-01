@@ -42,7 +42,7 @@ func (d *DeviceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(d.DB)
 
 	// Setup Default Group.
-	d.DefaultGroup, _ = testdb.SeedDefaultGroup(d.ConvoyApp.A.Store, d.ConvoyApp.A.Cache, "")
+	d.DefaultGroup, _ = testdb.SeedDefaultGroup(d.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(d.ConvoyApp.A.Store)
 	require.NoError(d.T(), err)
@@ -74,7 +74,7 @@ func (d *DeviceIntegrationTestSuite) TearDownTest() {
 func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByAppID() {
 	expectedStatusCode := http.StatusOK
 
-	app, err := testdb.SeedApplication(d.ConvoyApp.A.Store, d.ConvoyApp.A.Cache, d.DefaultGroup, "", "", false)
+	app, err := testdb.SeedApplication(d.ConvoyApp.A.Store, d.DefaultGroup, "", "", false)
 	require.NoError(d.T(), err)
 
 	// Just Before.
