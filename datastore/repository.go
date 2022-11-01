@@ -87,8 +87,8 @@ type EndpointRepository interface {
 	LoadEndpointsPaged(ctx context.Context, groupID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
 	LoadEndpointsPagedByGroupId(ctx context.Context, groupID string, pageable Pageable) ([]Endpoint, PaginationData, error)
 	SearchEndpointsByGroupId(ctx context.Context, groupID string, params SearchParams) ([]Endpoint, error)
+	ExpireSecret(ctx context.Context, groupID string, endpointID string, secrets []Secret) error
 }
-
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
 	UpdateSubscription(context.Context, string, *Subscription) error

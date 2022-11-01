@@ -1,92 +1,32 @@
-<convoy-page size="small">
+<convoy-page size="md">
 	<convoy-card className="flex p-0">
-		<div class="border-r border-r-grey-10 w-full max-w-[260px]">
-			<div class="border-b border-b-grey-10 px-24px pt-16px pb-10px">
+		<div class="border-r border-r-grey-10 w-full max-w-[300px]">
+			<div class="border-b border-b-grey-10 px-40px py-20px">
 				<h3 class="font-semibold">Settings</h3>
 			</div>
-			<ul class="sidemenu--items">
-				<li
-					class="my-30px mx-0 pl-22px"
-					[class]="activePage === menu ? 'relative before:absolute before:w-[3px] before:h-16px before:top-1/2 before:rounded-100px before:left-0 before:bg-primary-100 before:translate-x-0 before:-translate-y-1/2 transition-all duration-200' : ''"
-					*ngFor="let menu of settingsMenu"
-				>
-					<convoy-button type="text" [color]="activePage === menu ? 'primary' : 'grey'" [className]="activePage === menu ? 'font-medium text-14 capitalize' : 'capitalize text-14 font-light'" (click)="toggleActivePage(menu)">{{ menu }}</convoy-button>
+			<ul class="pl-40px py-32px">
+				<li *ngFor="let menu of settingsMenu">
+					<convoy-button
+						type="unstyled"
+						[className]="activePage === menu.name ? 'bg-primary-500 text-primary-100 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px !justify-start min-w-[216px]' : 'text-grey-40 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px !justify-start min-w-[216px]'"
+						(click)="toggleActivePage(menu.name)"
+					>
+						<svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="activePage === menu.name ? 'fill-primary-100' : 'fill-grey-40'" [id]="menu.icon">
+							<use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
+						</svg>
+						<span class="font-medium text-14 transition-all duration-200 whitespace-nowrap capitalize">{{ menu.name }}</span>
+					</convoy-button>
 				</li>
 			</ul>
 		</div>
-		<div class="p-32px w-full">
+		<div class="px-32px py-18px min-h-[60vh] w-full">
 			<ng-container *ngIf="activePage === 'organisation settings'">
-				<div class="flex justify-between items-center mb-28px">
-					<h3 class="font-semibold">Organisation Info</h3>
-
-					<convoy-button size="sm" [disable]="isEditingOrganisation" (click)="updateOrganisation()">Save Changes</convoy-button>
-				</div>
-
-				<form [formGroup]="editOrganisationForm">
-					<convoy-input type="text" autocomplete="name" name="name" formControlName="name" errorMessage="Please enter a name for your organisation" label="Organisation name" placeholder="Organisation name" [required]="true"></convoy-input>
-				</form>
-				<hr class="border-t border-t-grey-10 mt-32px mb-20px" />
-				<h2 class="text-danger font-semibold mb-8px">Danger zone</h2>
-				<p class="text-grey-40 text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
-				<convoy-button color="danger" size="sm" className="mt-20px mb-30px" (click)="showDeleteModal = !showDeleteModal">Delete Organisation</convoy-button>
+				<organisation-settings></organisation-settings>
 			</ng-container>
 
-			<!-- Hidden for cloud usecase -->
-			<!-- <ng-container *ngIf="activePage === 'configuration settings'">
-				<div class="flex justify-between items-center mb-28px">
-					<h3 class="font-semibold">Configurations</h3>
-
-					<convoy-button size="sm" [disable]="isUpdatingConfig" (click)="updateConfigSettings()">Save Changes</convoy-button>
-				</div>
-
-				<form [formGroup]="configForm">
-					<div class="flex justify-between items-start">
-						<div class="w-3/4">
-							<h4 class="font-semibold">Analytics</h4>
-							<p class="text-12 text-grey-40">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
-						</div>
-						<convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
-					</div>
-
-					<hr class="border-t border-t-grey-10 my-20px" />
-
-					<div class="flex justify-between items-start">
-						<div class="w-3/4">
-							<h4 class="font-semibold">Allow Signup</h4>
-							<p class="text-12 text-grey-40">Allow anyone with your instance URL signup and create an organisation on your Convoy application</p>
-						</div>
-						<convoy-toggle name="is_signup_enabled" formControlName="is_signup_enabled"></convoy-toggle>
-					</div>
-
-					<hr class="border-t border-t-grey-10 my-20px" />
-
-					<h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2>
-					<div formGroupName="storage_policy">
-						<div class="grid grid-cols-2 gap-24px mb-24px">
-							<convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
-							<convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
-						</div>
-
-						<ng-container *ngIf="configForm.value.storage_policy.type === 'on_prem'">
-							<div formGroupName="on_prem">
-								<convoy-input label="Storage Path" name="path" formControlName="path" placeholder="e.g ../path/to/storage" errorMessage="Please enter a storage path relative to your current device" [required]="true"></convoy-input>
-							</div>
-						</ng-container>
-
-						<ng-container *ngIf="configForm.value.storage_policy.type === 's3'">
-							<div formGroupName="s3" class="grid grid-cols-2 gap-x-6">
-								<convoy-input label="Bucket" name="bucket" formControlName="bucket" placeholder="Bucket name" errorMessage="Please enter bucket name" [required]="true"></convoy-input>
-								<convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true"></convoy-select>
-								<convoy-input label="Access Key" name="access_key" formControlName="access_key" placeholder="Access Key" errorMessage="Please enter access key" [required]="true"></convoy-input>
-								<convoy-input label="Secret Key" name="secret_key" formControlName="secret_key" placeholder="Secret key" errorMessage="Please enter secret key" [required]="true"></convoy-input>
-								<convoy-input label="Session key" name="session_token" formControlName="session_token" placeholder="Session token" errorMessage="Please enter session token"></convoy-input>
-							</div>
-						</ng-container>
-					</div>
-				</form>
-			</ng-container> -->
+			<ng-container *ngIf="activePage === 'configuration settings'">
+				<configurations></configurations>
+			</ng-container>
 		</div>
 	</convoy-card>
 </convoy-page>
-
-<app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="showDeleteModal = false" (deleteData)="deleteOrganisation()"></app-delete-modal>

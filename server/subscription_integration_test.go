@@ -52,7 +52,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 		Group: s.DefaultGroup.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -71,7 +71,7 @@ func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"app_id": "%s",
@@ -100,15 +100,15 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 		"disable_endpoint": true
 	}`, endpoint.UID, s.DefaultGroup.UID, endpoint.UID)
 
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
 	s.Router.ServeHTTP(w, req)
 
 	// Assert
-	//require.Equal(s.T(), http.StatusCreated, w.Code)
+	// require.Equal(s.T(), http.StatusCreated, w.Code)
 
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
@@ -134,7 +134,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		Group: group.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "")
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
@@ -166,8 +166,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 		}
 	}`, endpoint.UID, source.UID, group.UID, endpoint.UID)
 
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", group.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", apiKey, body)
+	req := createRequest(http.MethodPost, url, apiKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -189,6 +190,96 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
 }
 
+func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup_RedirectToProjects() {
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test_group", "", datastore.IncomingGroup, nil)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:  auth.RoleAdmin,
+		Group: group.UID,
+	}
+
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
+	bodyStr := fmt.Sprintf(`{
+		"name": "sub-1",
+		"type": "incoming",
+		"app_id": "%s",
+        "source_id":"%s",
+		"group_id": "%s",
+		"endpoint_id": "%s",
+		"alert_config": {
+			"threshold": "1h",
+			"count": 10
+		},
+		"retry_config": {
+			"type": "linear",
+			"retry_count": 2,
+			"duration": "10s"
+		},
+		"filter_config": {
+			"event_types": [
+				"user.created",
+				"user.updated"
+			]
+		},
+		"rate_limit_config": {
+			"count": 100,
+			"duration": 5
+		}
+	}`, app.UID, source.UID, group.UID, endpoint.UID)
+
+	url := fmt.Sprintf("/api/v1/subscriptions?groupID=%s", group.UID)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, apiKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
+}
+
+// func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
+// 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
+// 	bodyStr := fmt.Sprintf(`{
+// 		"name": "sub-1",
+// 		"type": "incoming",
+// 		"app_id": "%s",
+// 		"group_id": "%s",
+// 		"endpoint_id": "%s",
+// 		"alert_config": {
+// 			"threshold": "1h",
+// 			"count": 10
+// 		},
+// 		"retry_config": {
+// 			"type": "linear",
+// 			"retry_count": 2,
+// 			"interval_seconds": 10
+// 		},
+// 		"filter_config": {
+// 			"event_types": [
+// 				"user.created",
+// 				"user.updated"
+// 			]
+// 		}
+// 	}`, uuid.NewString(), s.DefaultGroup.UID, endpoint.UID)
+
+// 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
+// 	body := serialize(bodyStr)
+// 	req := createRequest(http.MethodPost, url, s.APIKey, body)
+// 	w := httptest.NewRecorder()
+
+// 	// Act
+// 	s.Router.ServeHTTP(w, req)
+
+// 	// Assert
+// 	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+// }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointDoesNotBelongToGroup() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
@@ -215,8 +306,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointDoesN
 		}
 	}`, endpoint.UID, s.DefaultGroup.UID, endpoint.UID)
 
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -250,8 +342,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFo
 		}
 	}`, uuid.NewString(), s.DefaultGroup.UID, uuid.NewString())
 
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -282,8 +375,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody()
 		}
 	}`
 
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/api/v1/subscriptions", s.APIKey, body)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -297,7 +391,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_SubscriptionN
 	subscriptionId := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -319,7 +413,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -352,7 +446,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 		Group: group.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "")
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "", false)
@@ -360,7 +454,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, group, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", group.UID, subscriptionId)
 	req := createRequest(http.MethodGet, url, apiKey, nil)
 	w := httptest.NewRecorder()
 
@@ -393,7 +487,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 		_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	}
 	// Arrange Request
-	url := "/api/v1/subscriptions"
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -418,7 +512,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -443,7 +537,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
 	bodyStr := `{
 		"alert_config": {
 			"threshold": "1h",
@@ -484,7 +578,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
 	require.Equal(s.T(), subscription.RetryConfig.Duration, dbSub.RetryConfig.Duration)
 	require.Equal(s.T(), subscription.DisableEndpoint, dbSub.DisableEndpoint)
-
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveStatus() {
@@ -496,7 +589,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveS
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.ActiveSubscriptionStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -526,7 +619,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Inactiv
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.InactiveSubscriptionStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -556,7 +649,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Pending
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.PendingSubscriptionStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -576,7 +669,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Unknown
 	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "random")
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/subscriptions/%s/toggle_status", subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 

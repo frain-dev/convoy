@@ -282,8 +282,6 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *da
 }
 
 func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
-	var subscriptions []datastore.Subscription
-	var paginatedData datastore.PaginationData
 	subscriptions, paginatedData, err := s.subRepo.LoadSubscriptionsPaged(ctx, filter.GroupID, filter, pageable)
 	if err != nil {
 		log.WithError(err).Error(ErrCannotFetchSubcriptionsError.Error())
@@ -292,50 +290,6 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 
 	if subscriptions == nil {
 		subscriptions = make([]datastore.Subscription, 0)
-	}
-
-	sourceMap := datastore.SourceMap{}
-	endpointMap := datastore.EndpointMap{}
-
-	for i, sub := range subscriptions {
-		if _, ok := sourceMap[sub.SourceID]; !ok {
-			ev, err := s.sourceRepo.FindSourceByID(ctx, sub.GroupID, sub.SourceID)
-			if err == nil {
-				source := &datastore.Source{
-					UID:        ev.UID,
-					Name:       ev.Name,
-					Type:       ev.Type,
-					Verifier:   ev.Verifier,
-					GroupID:    ev.GroupID,
-					MaskID:     ev.MaskID,
-					IsDisabled: ev.IsDisabled,
-				}
-				sourceMap[sub.SourceID] = source
-			} else {
-				log.Errorf("an error occured fetching source for subscription: %v", err)
-			}
-		}
-
-		if _, ok := endpointMap[sub.EndpointID]; !ok {
-			en, err := s.endpointRepo.FindEndpointByID(ctx, sub.EndpointID)
-			if err == nil {
-				endpoint := &datastore.Endpoint{
-					UID:               en.UID,
-					TargetURL:         en.TargetURL,
-					DocumentStatus:    en.DocumentStatus,
-					Secret:            en.Secret,
-					HttpTimeout:       en.HttpTimeout,
-					RateLimit:         en.RateLimit,
-					RateLimitDuration: en.RateLimitDuration,
-				}
-				endpointMap[sub.EndpointID] = endpoint
-			} else {
-				log.Errorf("an error occured fetching endpoint for subscription: %v", err)
-			}
-		}
-
-		subscriptions[i].Source = sourceMap[sub.SourceID]
-		subscriptions[i].Endpoint = endpointMap[sub.EndpointID]
 	}
 
 	return subscriptions, paginatedData, nil
@@ -359,5 +313,4 @@ func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfigurati
 
 	strategyConfig.Duration = cfg.IntervalSeconds
 	return strategyConfig, nil
-
 }

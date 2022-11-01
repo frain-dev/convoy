@@ -85,8 +85,8 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 		Endpoint: endpoint2.UID,
 	}
 
-	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal")
+	// generate an app portal key 
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/events", key, nil)
@@ -136,7 +136,7 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppSubscriptions() {
 	}
 
 	// generate an app portal key
-	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal")
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, "/portal/subscriptions", key, nil)

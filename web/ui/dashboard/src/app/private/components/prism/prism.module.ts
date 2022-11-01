@@ -8,17 +8,9 @@ import 'prismjs/components/prism-json';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 
-
 @NgModule({
-  declarations: [
-    PrismComponent
-  ],
-  imports: [
-    CommonModule,
-    ButtonComponent
-  ],
-  exports: [
-    PrismComponent
-  ]
+	declarations: [PrismComponent],
+	imports: [CommonModule, ButtonComponent],
+	exports: [PrismComponent]
 })
-export class PrismModule { }
+export class PrismModule {}

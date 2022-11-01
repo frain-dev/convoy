@@ -7,6 +7,9 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -65,19 +68,16 @@ const (
 	DeletedDocumentStatus  DocumentStatus = "Deleted"
 )
 
-type StrategyProvider string
-
-type GroupType string
-
-type SourceType string
-
-type SourceProvider string
-
-type VerifierType string
-
-type EncodingType string
-
-type StorageType string
+type (
+	StrategyProvider string
+	GroupType        string
+	SourceType       string
+	SourceProvider   string
+	VerifierType     string
+	EncodingType     string
+	StorageType      string
+	KeyType          string
+)
 
 type EndpointAuthenticationType string
 
@@ -126,6 +126,10 @@ const (
 	HexEncoding    EncodingType = "hex"
 )
 
+func (e EncodingType) String() string {
+	return string(e)
+}
+
 const (
 	OutgoingGroup GroupType = "outgoing"
 	IncomingGroup GroupType = "incoming"
@@ -140,6 +144,7 @@ const (
 	ProjectKey   KeyType = "project"
 	AppPortalKey KeyType = "app_portal"
 	CLIKey       KeyType = "cli"
+	PersonalKey  KeyType = "personal_key"
 )
 
 func (k KeyType) IsValidAppKey() bool {
@@ -149,6 +154,14 @@ func (k KeyType) IsValidAppKey() bool {
 	default:
 		return false
 	}
+}
+
+func (k KeyType) IsValid() bool {
+	switch k {
+	case AppPortalKey, CLIKey, ProjectKey, PersonalKey:
+		return true
+	}
+	return false
 }
 
 const (
@@ -162,11 +175,6 @@ var (
 		Type:       DefaultStrategyProvider,
 		Duration:   100,
 		RetryCount: 10,
-	}
-
-	DefaultSignatureConfig = SignatureConfiguration{
-		Header: "X-Convoy-Signature",
-		Hash:   "SHA256",
 	}
 
 	DefaultRateLimitConfig = RateLimitConfiguration{
@@ -196,6 +204,20 @@ var (
 	}
 )
 
+func GetDefaultSignatureConfig() *SignatureConfiguration {
+	return &SignatureConfiguration{
+		Header: "X-Convoy-Signature",
+		Versions: []SignatureVersion{
+			{
+				UID:       uuid.NewString(),
+				Hash:      "SHA256",
+				Encoding:  HexEncoding,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			},
+		},
+	}
+}
+
 const (
 	ActiveSubscriptionStatus   SubscriptionStatus = "active"
 	InactiveSubscriptionStatus SubscriptionStatus = "inactive"
@@ -205,15 +227,17 @@ const (
 type SubscriptionStatus string
 
 type Endpoint struct {
-	ID              primitive.ObjectID `json:"-" bson:"_id"`
-	UID             string             `json:"uid" bson:"uid"`
-	GroupID         string             `json:"group_id" bson:"group_id"`
-	TargetURL       string             `json:"target_url" bson:"target_url"`
-	Title           string             `json:"title" bson:"title"`
-	Secret          string             `json:"secret" bson:"secret"`
-	Description     string             `json:"description" bson:"description"`
-	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
+	ID                 primitive.ObjectID `json:"-" bson:"_id"`
+	UID                string             `json:"uid" bson:"uid"`
+	GroupID            string             `json:"group_id" bson:"group_id"`
+	TargetURL          string             `json:"target_url" bson:"target_url"`
+	Title              string             `json:"title" bson:"title"`
+	Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
+	Secrets            []Secret           `json:"secrets" bson:"secrets"`
+	AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
+	Description        string             `json:"description" bson:"description"`
+	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
 
 	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
@@ -228,6 +252,26 @@ type Endpoint struct {
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
+}
+
+func (e *Endpoint) GetActiveSecretIndex() (int, error) {
+	for idx, secret := range e.Secrets {
+		if secret.ExpiresAt == 0 {
+			return idx, nil
+		}
+	}
+	return 0, ErrNoActiveSecret
+}
+
+type Secret struct {
+	UID   string `json:"uid" bson:"uid"`
+	Value string `json:"value" bson:"value"`
+
+	ExpiresAt      primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 }
 
 type EndpointAuthentication struct {
@@ -290,13 +334,17 @@ type StrategyConfiguration struct {
 }
 
 type SignatureConfiguration struct {
-	Header config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
-	Hash   string                         `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Header   config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
+	Versions []SignatureVersion             `json:"versions" bson:"versions"`
+
+	Hash string `json:"-" bson:"hash"`
 }
 
-type SignatureValues struct {
-	Header config.SignatureHeaderProvider `json:"header" valid:"required~please provide a valid signature header"`
-	Hash   string                         `json:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+type SignatureVersion struct {
+	UID       string             `json:"uid" bson:"uid"`
+	Hash      string             `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Encoding  EncodingType       `json:"encoding" bson:"encoding" valid:"required~please provide a valid signature header"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -365,6 +413,7 @@ var (
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
 	ErrDuplicateEmail                = errors.New("a user with this email already exists")
+	ErrNoActiveSecret                = errors.New("no active secret found")
 )
 
 type AppMetadata struct {
@@ -455,10 +504,8 @@ type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
-	// NextSendTime denotes the next time a Event will be published in
-	// case it failed the first time
-	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
+	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
 	NumTrials uint64 `json:"num_trials" bson:"num_trials"`
@@ -541,8 +588,6 @@ type CLIMetadata struct {
 	HostName  string `json:"host_name,omitempty" bson:"-"`
 }
 
-type KeyType string
-
 type APIKey struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
@@ -552,6 +597,7 @@ type APIKey struct {
 	Hash      string             `json:"hash,omitempty" bson:"hash"`
 	Salt      string             `json:"salt,omitempty" bson:"salt"`
 	Type      KeyType            `json:"key_type" bson:"key_type"`
+	UserID    string             `json:"user_id" bson:"user_id"`
 	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`

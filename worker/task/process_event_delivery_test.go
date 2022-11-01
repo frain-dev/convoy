@@ -120,6 +120,9 @@ func TestProcessEventDelivery(t *testing.T) {
 						GroupID:           "123",
 						RateLimit:         10,
 						RateLimitDuration: "1m",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
@@ -156,8 +159,15 @@ func TestProcessEventDelivery(t *testing.T) {
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
-								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Header: "X-Convoy-Signature",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -199,6 +209,9 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						GroupID:           "123",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil)
@@ -238,7 +251,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -279,6 +299,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 						GroupID:           "123",
@@ -323,7 +346,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -365,6 +395,9 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						GroupID:           "123",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil)
@@ -404,7 +437,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.StrategyProvider("default"),
@@ -446,6 +486,9 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						GroupID:           "123",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil)
@@ -489,7 +532,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -531,6 +581,9 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						GroupID:           "123",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil)
@@ -570,7 +623,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -612,6 +672,9 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						GroupID:           "123",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -655,7 +718,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -698,6 +768,9 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						GroupID:           "123",
 						SupportEmail:      "test@gmail.com",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 					}, nil).Times(1)
@@ -741,7 +814,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
@@ -788,6 +868,9 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						GroupID:           "123",
 						SupportEmail:      "test@gmail.com",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
 						RateLimit:         10,
 						TargetURL:         "https://google.com",
 						RateLimitDuration: "1m",
@@ -831,8 +914,15 @@ func TestProcessEventDelivery(t *testing.T) {
 						LogoURL: "",
 						Config: &datastore.GroupConfig{
 							Signature: &datastore.SignatureConfiguration{
-								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Hash:   "SHA256",
+								Header: "X-Convoy-Signature",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:       "abc",
+										Hash:      "SHA256",
+										Encoding:  datastore.HexEncoding,
+										CreatedAt: 1234,
+									},
+								},
 							},
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,

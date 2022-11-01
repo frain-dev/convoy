@@ -74,7 +74,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 		UID:            uuid.New().String(),
 		MaskID:         maskID,
 		Name:           newApiKey.Name,
-		Type:           newApiKey.Type,
+		Type:           newApiKey.Type, // TODO: this should be set to datastore.ProjectKey
 		Role:           *role,
 		Hash:           encodedKey,
 		Salt:           salt,
@@ -96,6 +96,72 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	return apiKey, key, nil
 }
 
+func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datastore.User, newApiKey *models.PersonalAPIKey) (*datastore.APIKey, string, error) {
+	maskID, key := util.GenerateAPIKey()
+
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		log.WithError(err).Error("failed to generate salt")
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+	var expiresAt time.Time
+	if newApiKey.Expiration != 0 {
+		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(newApiKey.Expiration))
+	} else {
+		expiresAt = time.Now().Add(time.Hour * 24)
+	}
+
+	apiKey := &datastore.APIKey{
+		UID:            uuid.New().String(),
+		MaskID:         maskID,
+		Name:           newApiKey.Name,
+		Type:           datastore.PersonalKey,
+		UserID:         user.UID,
+		Hash:           encodedKey,
+		Salt:           salt,
+		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
+	if err != nil {
+		log.WithError(err).Error("failed to create api key")
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
+	}
+
+	return apiKey, key, nil
+}
+
+func (ss *SecurityService) RevokePersonalAPIKey(ctx context.Context, uid string, user *datastore.User) error {
+	if util.IsStringEmpty(uid) {
+		return util.NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
+	}
+
+	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
+	if err != nil {
+		log.WithError(err).Error("failed to fetch api key")
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
+	}
+
+	if apiKey.Type != datastore.PersonalKey || apiKey.UserID != user.UID {
+		return util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized"))
+	}
+
+	err = ss.apiKeyRepo.RevokeAPIKeys(ctx, []string{uid})
+	if err != nil {
+		log.WithError(err).Error("failed to revoke api key")
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
+	}
+
+	return nil
+}
+
 func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.CreateEndpointApiKey) (*datastore.APIKey, string, error) {
 	if d.Endpoint.GroupID != d.Group.UID {
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("endpoint does not belong to group"))
@@ -109,7 +175,6 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 
 	maskID, key := util.GenerateAPIKey()
 	salt, err := util.GenerateSecret()
-
 	if err != nil {
 		log.WithError(err).Error("failed to generate salt")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))

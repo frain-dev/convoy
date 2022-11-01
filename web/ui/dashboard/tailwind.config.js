@@ -32,10 +32,10 @@ module.exports = {
 			},
 			fontFamily: {
 				sans: ['Quicksand', ...defaultTheme.fontFamily.sans],
-				menlo: ['Menlo Regular', ...defaultTheme.fontFamily.sans],
+				menlo: ['Menlo Regular', ...defaultTheme.fontFamily.sans]
 			},
 			backgroundImage: {
-				'gradient-radial': 'radial-gradient(400% 400% at 50% 50%, var(--tw-gradient-stops))'
+				'gradient-radial': 'radial-gradient(white 10%, #fafafe78)'
 			}
 		},
 		screens: {
@@ -112,7 +112,7 @@ module.exports = {
 			'dark-green': '#327D63',
 			'light-green': '#47B38D',
 			black: '#16192C',
-            'dark-grey': '#B2B2B2',
+			'dark-grey': '#B2B2B2',
 			transparent: 'transparent'
 		}
 	},

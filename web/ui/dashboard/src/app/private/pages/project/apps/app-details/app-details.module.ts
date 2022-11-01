@@ -15,6 +15,8 @@ import { DeleteModalComponent } from 'src/app/private/components/delete-modal/de
 import { CliKeysComponent } from './cli-keys/cli-keys.component';
 import { DevicesComponent } from './devices/devices.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { SelectComponent } from 'src/app/components/select/select.component';
+import { ReactiveFormsModule } from '@angular/forms';
 
 const routes: Routes = [
 	{
@@ -40,6 +42,8 @@ const routes: Routes = [
         CliKeysComponent,
         DevicesComponent,
         TooltipComponent,
+        SelectComponent,
+        ReactiveFormsModule,
 		RouterModule.forChild(routes)
 	]
 })

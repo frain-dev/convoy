@@ -12,14 +12,16 @@ export interface APP {
 }
 export interface ENDPOINT {
 	uid: string;
-	created_at: Date;
+	advanced_signatures: boolean;
+	authentication: any;
+	created_at: string;
 	description: string;
-	events: any;
-	status: string;
-	secret: string;
+	events?: any;
+	status?: string;
+	secrets?: SECRET[];
 	name?: string;
 	target_url: string;
-	updated_at: Date;
+	updated_at: string;
 	rate_limit?: number;
 	rate_limit_duration?: string;
 	http_timeout?: string;
@@ -44,4 +46,12 @@ export interface API_KEY {
 	role: { type: string; group: string; app: string };
 	uid: string;
 	updated_at: Date;
+}
+
+export interface SECRET {
+	created_at: string;
+	expires_at: string;
+	uid: string;
+	updated_at: string;
+	value: string;
 }

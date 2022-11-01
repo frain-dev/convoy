@@ -20,7 +20,7 @@ export class TeamsComponent implements OnInit {
 	showDeactivateModal = false;
 	showCancelInviteModal = false;
 	cancelingInvite = false;
-	selectedMember!: TEAMS;
+	selectedMember?: TEAMS;
 	isFetchingTeamMembers = false;
 	isFetchingPendingInvites = false;
 	deactivatingUser = false;
@@ -87,6 +87,8 @@ export class TeamsComponent implements OnInit {
 	}
 
 	async deactivateMember() {
+		if (!this.selectedMember) return;
+
 		this.deactivatingUser = true;
 		const requestOptions = {
 			memberId: this.selectedMember?.uid
@@ -131,6 +133,8 @@ export class TeamsComponent implements OnInit {
 	}
 
 	async cancelInvite() {
+		if (!this.selectedMember) return;
+
 		this.cancelingInvite = true;
 		try {
 			const response = await this.teamService.cancelPendingInvite(this.selectedMember.uid);

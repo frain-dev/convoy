@@ -24,6 +24,7 @@ type SourceFilter struct {
 type ApiKeyFilter struct {
 	GroupID    string
 	EndpointID string
+	UserID     string
 	KeyType    KeyType
 }
 

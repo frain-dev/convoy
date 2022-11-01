@@ -42,7 +42,7 @@ const routes: Routes = [
 			},
 			{
 				path: 'settings',
-				loadComponent: () => import('./pages/settings/settings.component').then(mod => mod.SettingsComponent)
+				loadChildren: () => import('./pages/settings/settings.module').then(m => m.SettingsModule)
 			},
 			{
 				path: 'get-started',

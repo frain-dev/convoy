@@ -7,7 +7,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class AppDetailsService {
-	projectId: string = this.privateService.activeProjectDetails?.uid;
+	projectId = this.privateService.activeProjectDetails?.uid;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
@@ -99,6 +99,21 @@ export class AppDetailsService {
 					method: 'delete'
 				});
 
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	expireSecret(requestDetails: { appId: string; endpointId: string; body: { expiration: number } }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/endpoints/${requestDetails.endpointId}/expire_secret`,
+					method: 'put',
+                    body: requestDetails.body
+				});
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

@@ -52,7 +52,7 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 	apiKey, keyString, err := securityService.CreateAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
-		log.WithError(err).Error("fff")
+		log.WithError(err).Error("failed to create api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -75,6 +75,59 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
+// CreatePersonalAPIKey
+// @Summary Create a personal api key
+// @Description This endpoint creates a personal api key that can be used to authenticate to this user's context
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param userID path string true "User id"
+// @Param apiKey body models.PersonalAPIKey true "API Key"
+// @Success 200 {object} util.ServerResponse{data=models.APIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/users/{userID}/security/personal_api_keys [post]
+func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
+	var newApiKey models.PersonalAPIKey
+	err := json.NewDecoder(r.Body).Decode(&newApiKey)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Request is invalid", http.StatusBadRequest))
+		return
+	}
+
+	user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
+	if !ok {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	securityService := createSecurityService(a)
+	apiKey, keyString, err := securityService.CreatePersonalAPIKey(r.Context(), user, &newApiKey)
+	if err != nil {
+		log.WithError(err).Error("failed to create personal api key")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resp := &models.APIKeyResponse{
+		APIKey: models.APIKey{
+			Name: apiKey.Name,
+			Role: models.Role{
+				Type:  apiKey.Role.Type,
+				Group: apiKey.Role.Group,
+			},
+			Type:      apiKey.Type,
+			ExpiresAt: apiKey.ExpiresAt.Time(),
+		},
+		UserID:    apiKey.UserID,
+		UID:       apiKey.UID,
+		CreatedAt: apiKey.CreatedAt.Time(),
+		Key:       keyString,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Personal API Key created successfully", resp, http.StatusCreated))
+}
+
 // CreateAppAPIKey - this serves as a duplicate to generate doc for the ui route of this handler
 // @Summary Create an api key for app portal or the cli (UI)
 // @Description This endpoint creates an api key that will be used by app portal or the cli
@@ -82,11 +135,13 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "Organisation id"
-// @Param endpointID path string true "Endpoint ID"
+// @Param groupID path string true "Group id"
+// @Param endpointID path string true "endpoint ID"
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys [post]
+// @Router /ui/organisations/{orgID}/groups/{groupID}/endpoints/{appID}/keys [post]
+func _() {}
 
 // CreateEndpointAPIKey
 // @Summary Create an api key for endpoint portal or the cli (API)
@@ -94,7 +149,8 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
-// @Param endpointID path string true "Endpoint ID"
+// @Param projectID path string true "Project id"
+// @Param endpointID path string true "endpoint ID"
 // @Param appAPIKey body models.APIKey true "APIKey details"
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -164,7 +220,6 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
-
 }
 
 // LoadEndpointAPIKeysPaged
@@ -201,7 +256,6 @@ func (a *ApplicationHandler) LoadEndpointAPIKeysPaged(w http.ResponseWriter, r *
 	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
 	_ = render.Render(w, r, util.NewServerResponse("api keys fetched successfully",
 		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
-
 }
 
 // RevokeAPIKey
@@ -228,9 +282,38 @@ func (a *ApplicationHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
 }
 
+// RevokePersonalAPIKey
+// @Summary Revoke a Personal API Key
+// @Description This endpoint revokes a personal api key
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param userID path string true "User id"
+// @Param keyID path string true "API Key id"
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/users/{userID}/security/personal_api_keys/{keyID}/revoke [put]
+func (a *ApplicationHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
+	user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
+	if !ok {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	securityService := createSecurityService(a)
+	err := securityService.RevokePersonalAPIKey(r.Context(), chi.URLParam(r, "keyID"), user)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("personal api key revoked successfully", nil, http.StatusOK))
+}
+
 // RevokeEndpointAPIKey
 // @Summary Revoke an Endpoint's API Key
-// @Description This endpoint revokes endpoint's an api key
+// @Description This endpoint revokes an endpoint's api key
 // @Tags APIKey
 // @Accept  json
 // @Produce  json
@@ -265,7 +348,6 @@ func (a *ApplicationHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
-
 }
 
 // GetAPIKeyByID
@@ -344,6 +426,23 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("api key updated successfully", resp, http.StatusOK))
 }
 
+// GetAPIKeys - this is a duplicate annotation for the User security route for this handler
+// @Summary Fetch multiple api keys
+// @Description This endpoint fetches multiple api keys
+// @Tags APIKey
+// @Accept  json
+// @Produce  json
+// @Param userID path string true "User id"
+// @Param keyType query string false "api key type"
+// @Param perPage query string false "results per page"
+// @Param page query string false "page number"
+// @Param sort query string false "sort order"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.APIKey}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /ui/users/{userID}/security/personal_api_keys [get]
+func _() {}
+
 // GetAPIKeys
 // @Summary Fetch multiple api keys
 // @Description This endpoint fetches multiple api keys
@@ -351,6 +450,7 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param orgID path string true "Organisation id"
+// @Param keyType query string false "api key type"
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
@@ -362,6 +462,19 @@ func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) 
 	pageable := m.GetPageableFromContext(r.Context())
 	securityService := createSecurityService(a)
 	f := &datastore.ApiKeyFilter{}
+	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
+	if keyType.IsValid() {
+		f.KeyType = keyType
+
+		if keyType == datastore.PersonalKey {
+			user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
+			if !ok {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+			f.UserID = user.UID
+		}
+	}
 
 	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {
@@ -393,5 +506,4 @@ func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse 
 	}
 
 	return apiKeyByIDResponse
-
 }

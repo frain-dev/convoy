@@ -273,6 +273,25 @@ func (db *endpointRepo) SearchEndpointsByGroupId(ctx context.Context, groupId st
 	return endpoints, nil
 }
 
+func (db *endpointRepo) ExpireSecret(ctx context.Context, groupID, endpointID string, secrets []datastore.Secret) error {
+	ctx = db.setCollectionInContext(ctx)
+
+	filter := bson.M{
+		"uid":             endpointID,
+		"group_id":        groupID,
+		"document_status": datastore.ActiveDocumentStatus,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"secrets":    secrets,
+			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		},
+	}
+
+	return db.store.UpdateOne(ctx, filter, update)
+}
+
 func (db *endpointRepo) assertUniqueEndpointTitle(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
 	f := bson.M{

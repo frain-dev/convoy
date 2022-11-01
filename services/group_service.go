@@ -51,14 +51,16 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 	config := newGroup.Config
 	if newGroup.Config == nil {
 		config = &datastore.GroupConfig{}
-		config.Signature = &datastore.DefaultSignatureConfig
+		config.Signature = datastore.GetDefaultSignatureConfig()
 		config.Strategy = &datastore.DefaultStrategyConfig
 		config.RateLimit = &datastore.DefaultRateLimitConfig
 		config.RetentionPolicy = &datastore.DefaultRetentionPolicy
 	} else {
 		if newGroup.Config.Signature == nil {
-			config.Signature = &datastore.DefaultSignatureConfig
+			config.Signature = datastore.GetDefaultSignatureConfig()
 		}
+
+		checkSignatureVersions(newGroup.Config.Signature.Versions)
 
 		if newGroup.Config.Strategy == nil {
 			config.Strategy = &datastore.DefaultStrategyConfig
@@ -150,6 +152,7 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 
 	if update.Config != nil {
 		group.Config = update.Config
+		checkSignatureVersions(group.Config.Signature.Versions)
 	}
 
 	if !util.IsStringEmpty(update.LogoURL) {
@@ -169,6 +172,19 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 	}
 
 	return group, nil
+}
+
+func checkSignatureVersions(versions []datastore.SignatureVersion) {
+	for i := range versions {
+		v := &versions[i]
+		if v.UID == "" {
+			v.UID = uuid.NewString()
+		}
+
+		if v.CreatedAt == 0 {
+			v.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+		}
+	}
 }
 
 func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {

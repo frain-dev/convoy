@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
@@ -13,6 +12,8 @@ import { TimeFilterComponent } from 'src/app/private/components/time-filter/time
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
+import { PrivateService } from 'src/app/private/private.service';
+import { SOURCE } from 'src/app/models/group.model';
 
 @Component({
 	selector: 'app-event-deliveries',
@@ -25,11 +26,7 @@ export class EventDeliveriesComponent implements OnInit {
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Max Attempts', 'Time Created', '', ''];
-	showEventDelFilterCalendar = false;
-	showEventDeliveriesStatusDropdown = false;
 	eventDeliveriesStatusFilterActive = false;
-	showEventDeliveriesAppsDropdown = false;
-	showOverlay = false;
 	fetchingCount = false;
 	showBatchRetryModal = false;
 	isloadingEventDeliveries = false;
@@ -38,11 +35,12 @@ export class EventDeliveriesComponent implements OnInit {
 	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
 	eventDeliveriesApp?: string;
+	eventDeliveriesSource?: string;
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries!: { date: string; content: EVENT_DELIVERY[] }[];
-	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
+	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryFilteredByStatus: string[] = [];
@@ -51,10 +49,12 @@ export class EventDeliveriesComponent implements OnInit {
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
 	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
-	@ViewChild('appsFilterDropdown') appDropdownComponent!: DropdownComponent;
+	@ViewChild('appsFilterDropdown', { static: true }) appsFilterDropdown!: DropdownComponent;
+	@ViewChild('sourcesFilterDropdown', { static: true }) sourcesFilterDropdown!: DropdownComponent;
 	appPortalToken = this.route.snapshot.params?.token;
+	filterSources: SOURCE[] = [];
 
-	constructor(private generalService: GeneralService, private eventsService: EventsService, private datePipe: DatePipe, private route: ActivatedRoute, private router: Router) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, private route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
 
 	ngAfterViewInit() {
 		if (!this.appPortalToken) {
@@ -71,6 +71,7 @@ export class EventDeliveriesComponent implements OnInit {
 	ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEventDeliveries();
+		this.getSourcesForFilter();
 	}
 
 	ngOnChanges(changes: SimpleChanges) {
@@ -125,7 +126,8 @@ export class EventDeliveriesComponent implements OnInit {
 				endDate: requestDetails.endDate,
 				appId: this.eventDeliveriesApp || '',
 				statusQuery: eventDeliveryStatusFilterQuery || '',
-				token: this.appPortalToken
+				token: this.appPortalToken,
+				sourceId: this.eventDeliveriesSource || ''
 			});
 			return eventDeliveriesResponse;
 		} catch (error: any) {
@@ -140,6 +142,7 @@ export class EventDeliveriesComponent implements OnInit {
 		if (startDate) queryParams.eventDelsStartDate = startDate;
 		if (endDate) queryParams.eventDelsEndDate = endDate;
 		if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
+		queryParams.eventDelsSource = this.eventDeliveriesSource;
 		queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 
 		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
@@ -170,10 +173,9 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ addToURL: true });
 	}
 
-	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status') {
+	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status' | 'source') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.appDropdownComponent.show = false;
 		this.dateFilter.clearDate();
 		this.eventDeliveryTimerFilter.filterStartHour = 0;
 		this.eventDeliveryTimerFilter.filterStartMinute = 0;
@@ -184,6 +186,7 @@ export class EventDeliveriesComponent implements OnInit {
 			case 'app':
 				filterItems = ['eventDelsApp'];
 				this.eventDeliveriesApp = undefined;
+				this.appsFilterDropdown.show = false;
 				break;
 			case 'date':
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
@@ -197,9 +200,15 @@ export class EventDeliveriesComponent implements OnInit {
 				filterItems = ['eventDelsTime'];
 				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 				break;
+			case 'source':
+				this.sourcesFilterDropdown.show = false;
+				filterItems = ['eventDelsSource'];
+				this.eventDeliveriesSource = undefined;
+				break;
 			default:
-				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus'];
+				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus', 'eventDelsSource'];
 				this.eventDeliveriesApp = undefined;
+				this.eventDeliveriesSource = undefined;
 				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				this.eventDeliveryFilteredByEventId = undefined;
 				this.eventDeliveryFilteredByStatus = [];
@@ -245,11 +254,20 @@ export class EventDeliveriesComponent implements OnInit {
 		).data.content;
 	}
 
-	updateAppFilter(appId: string, isChecked: any) {
-		this.showOverlay = false;
-		this.showEventDeliveriesAppsDropdown = !this.showEventDeliveriesAppsDropdown;
-		isChecked.target.checked ? (this.eventDeliveriesApp = appId) : (this.eventDeliveriesApp = undefined);
+	async getSourcesForFilter() {
+		try {
+			const sourcesResponse = (await this.privateService.getSources()).data.content;
+			this.filterSources = sourcesResponse;
+		} catch (error) {}
+	}
 
+	updateAppFilter(appId: string, isChecked: any) {
+		isChecked.target.checked ? (this.eventDeliveriesApp = appId) : (this.eventDeliveriesApp = undefined);
+		this.getEventDeliveries({ addToURL: true, fromFilter: true });
+	}
+
+	updateSourceFilter(sourceId: string, isChecked: any) {
+		isChecked.target.checked ? (this.eventDeliveriesSource = sourceId) : (this.eventDeliveriesSource = undefined);
 		this.getEventDeliveries({ addToURL: true, fromFilter: true });
 	}
 

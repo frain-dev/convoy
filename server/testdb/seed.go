@@ -50,25 +50,25 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title string, 
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(store datastore.Store, g *datastore.Group, count int) error {
-	for i := 0; i < count; i++ {
-		uid := uuid.New().String()
-		app := &datastore.Endpoint{
-			UID:            uid,
-			Title:          fmt.Sprintf("Test-%s", uid),
-			GroupID:        g.UID,
-			IsDisabled:     false,
-			DocumentStatus: datastore.ActiveDocumentStatus,
-		}
-
-		// Seed Data.
-		appRepo := cm.NewEndpointRepo(store)
-		err := appRepo.CreateEndpoint(context.TODO(), app, app.GroupID)
-		if err != nil {
-			return err
-		}
+func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
+	sc := datastore.Secret{
+		UID:            uuid.New().String(),
+		Value:          value,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
-	return nil
+
+	e.Secrets = append(e.Secrets, sc)
+
+	// Seed Data.
+	endpointRepo := cm.NewEndpointRepo(store)
+	err := endpointRepo.UpdateEndpoint(context.TODO(), e, e.GroupID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sc, nil
 }
 
 // seed default group
@@ -90,7 +90,14 @@ func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, er
 			},
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
-				Hash:   "SHA512",
+				Versions: []datastore.SignatureVersion{
+					{
+						UID:       uuid.NewString(),
+						Hash:      "SHA256",
+						Encoding:  datastore.HexEncoding,
+						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					},
+				},
 			},
 			DisableEndpoint: false,
 			ReplayAttacks:   false,
@@ -236,7 +243,7 @@ func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, 
 }
 
 // SeedAPIKey creates random api key for integration tests.
-func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType string) (*datastore.APIKey, string, error) {
+func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -254,6 +261,7 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType string
 		UID:            uid,
 		MaskID:         maskID,
 		Name:           name,
+		UserID:         userID,
 		Type:           datastore.KeyType(keyType),
 		Role:           role,
 		Hash:           encodedKey,

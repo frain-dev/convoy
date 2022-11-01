@@ -595,7 +595,6 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				s.EXPECT().
 					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
-
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusInternalServerError,
@@ -634,7 +633,6 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 							Next:      2,
 							TotalPage: 0,
 						}, nil)
-
 			},
 		},
 	}

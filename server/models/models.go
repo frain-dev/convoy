@@ -60,6 +60,11 @@ type APIKey struct {
 	ExpiresAt time.Time         `json:"expires_at"`
 }
 
+type PersonalAPIKey struct {
+	Name       string `json:"name"`
+	Expiration int    `json:"expiration"`
+}
+
 type Role struct {
 	Type  auth.RoleType `json:"type"`
 	Group string        `json:"group"`
@@ -80,10 +85,12 @@ type APIKeyByIDResponse struct {
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
 }
+
 type APIKeyResponse struct {
 	APIKey
 	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
+	UserID    string    `json:"user_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -236,6 +243,10 @@ type DeliveryAttempt struct {
 type MessageResponse struct {
 	Status int             `json:"status" bson:"status"`
 	Data   json.RawMessage `json:"data" bson:"data"`
+}
+type ExpireSecret struct {
+	Secret     string `json:"secret"`
+	Expiration int    `json:"expiration"`
 }
 
 type DashboardSummary struct {

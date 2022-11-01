@@ -923,3 +923,225 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 		})
 	}
 }
+
+func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
+	ctx := context.Background()
+	expires := time.Now().Add(time.Hour)
+
+	type args struct {
+		ctx       context.Context
+		user      *datastore.User
+		newApiKey *models.PersonalAPIKey
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(ss *SecurityService)
+		wantAPIKey  *datastore.APIKey
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_create_personal_apiKey",
+			args: args{
+				ctx:       ctx,
+				user:      &datastore.User{UID: "1234"},
+				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", Expiration: 1},
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+			},
+			wantAPIKey: &datastore.APIKey{
+				UserID:         "1234",
+				Name:           "test_personal_key",
+				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
+				Type:           datastore.PersonalKey,
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_create_personal_apiKey",
+			args: args{
+				ctx:       ctx,
+				user:      &datastore.User{UID: "1234"},
+				newApiKey: &models.PersonalAPIKey{Name: "test_personal_key", Expiration: 1},
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
+					Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to create api key",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			ss := provideSecurityService(ctrl)
+
+			if tt.dbFn != nil {
+				tt.dbFn(ss)
+			}
+
+			apiKey, keyString, err := ss.CreatePersonalAPIKey(tt.args.ctx, tt.args.user, tt.args.newApiKey)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.NotEmpty(t, apiKey.UID)
+			require.NotEmpty(t, apiKey.MaskID)
+			require.NotEmpty(t, apiKey.Hash)
+			require.NotEmpty(t, apiKey.Salt)
+			require.NotEmpty(t, apiKey.ID)
+			require.NotEmpty(t, apiKey.CreatedAt)
+			require.NotEmpty(t, apiKey.UpdatedAt)
+			require.NotEmpty(t, keyString)
+			require.Empty(t, apiKey.DeletedAt)
+
+			stripVariableFields(t, "apiKey", apiKey)
+			require.InDelta(t, int64(tt.wantAPIKey.ExpiresAt), int64(apiKey.ExpiresAt), float64(time.Second))
+			tt.wantAPIKey.ExpiresAt = 0
+			apiKey.ExpiresAt = 0
+			require.Equal(t, tt.wantAPIKey, apiKey)
+		})
+	}
+}
+
+func TestSecurityService_RevokePersonalAPIKey(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx  context.Context
+		uid  string
+		user *datastore.User
+	}
+	tests := []struct {
+		name        string
+		dbFn        func(ss *SecurityService)
+		args        args
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_revoke_api_key",
+			args: args{
+				ctx:  ctx,
+				uid:  "1234",
+				user: &datastore.User{UID: "abc"},
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{UserID: "abc", Type: datastore.PersonalKey}, nil)
+
+				a.EXPECT().RevokeAPIKeys(gomock.Any(), []string{"1234"}).
+					Times(1).Return(nil)
+			},
+		},
+		{
+			name: "should_error_for_empty_uid",
+			args: args{
+				ctx:  ctx,
+				uid:  "",
+				user: nil,
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "key id is empty",
+		},
+		{
+			name: "should_fail_to_find_api_key",
+			args: args{
+				ctx: ctx,
+				uid: "1234",
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to fetch api key",
+		},
+		{
+			name: "should_error_for_wrong_user_id",
+			args: args{
+				ctx:  ctx,
+				uid:  "1234",
+				user: &datastore.User{UID: "abcd"},
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{UserID: "abc", Type: datastore.PersonalKey}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusUnauthorized,
+			wantErrMsg:  "unauthorized",
+		},
+		{
+			name: "should_error_for_wrong_key_type",
+			args: args{
+				ctx:  ctx,
+				uid:  "1234",
+				user: &datastore.User{UID: "abc"},
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{UserID: "abc", Type: datastore.AppPortalKey}, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusUnauthorized,
+			wantErrMsg:  "unauthorized",
+		},
+		{
+			name: "should_fail_to_revoke_api_key",
+			args: args{
+				ctx:  ctx,
+				uid:  "abc",
+				user: &datastore.User{UID: "abc"},
+			},
+			dbFn: func(ss *SecurityService) {
+				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				a.EXPECT().FindAPIKeyByID(gomock.Any(), "abc").Times(1).Return(&datastore.APIKey{UserID: "abc", Type: datastore.PersonalKey}, nil)
+
+				a.EXPECT().RevokeAPIKeys(gomock.Any(), []string{"abc"}).
+					Times(1).Return(errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to revoke api key",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			ss := provideSecurityService(ctrl)
+
+			if tt.dbFn != nil {
+				tt.dbFn(ss)
+			}
+
+			err := ss.RevokePersonalAPIKey(tt.args.ctx, tt.args.uid, tt.args.user)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+		})
+	}
+}
