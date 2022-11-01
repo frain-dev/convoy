@@ -191,13 +191,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			q = redisqueue.NewQueue(opts)
 		}
 
-		lo := log.NewLogger(os.Stdout, "startup")
-		lvl, err := log.ParseLevel(cfg.Logger.Level)
-		if err != nil {
-			return err
-		}
-
-		lo.SetLevel(lvl)
+		lo := log.NewLogger(os.Stdout)
 
 		if cfg.Tracer.Type == config.NewRelicTracerProvider {
 			tr, err = tracer.NewTracer(cfg, lo.WithLogger())

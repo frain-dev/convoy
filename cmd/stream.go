@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
@@ -63,12 +61,13 @@ func addStreamCommand(a *app) *cobra.Command {
 			go h.StartEventSender()
 			go h.StartClientStatusWatcher()
 
-			lo := log.NewLogger(os.Stdout, "socket server")
-			lvl, err := log.ParseLevel(logLevel)
+			lo := a.logger.(*log.Logger)
+			lo.SetPrefix("socket server")
+
+			lvl, err := log.ParseLevel(c.Logger.Level)
 			if err != nil {
 				return err
 			}
-
 			lo.SetLevel(lvl)
 
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{

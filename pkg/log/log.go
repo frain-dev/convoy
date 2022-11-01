@@ -92,7 +92,7 @@ func (l Level) ToLogrusLevel() (logrus.Level, error) {
 
 // NewLogger creates and returns a new instance of Logger.
 // Log level is set to DebugLevel by default.
-func NewLogger(out io.Writer, source string) *Logger {
+func NewLogger(out io.Writer) *Logger {
 	log := &logrus.Logger{
 		Out: out,
 		Formatter: &logrus.JSONFormatter{
@@ -103,7 +103,10 @@ func NewLogger(out io.Writer, source string) *Logger {
 
 	log.SetReportCaller(false)
 
-	return &Logger{logger: log, entry: log.WithField("source", source)}
+	return &Logger{
+		logger: log,
+		entry:  logrus.NewEntry(log),
+	}
 }
 
 // Logger logs message to io.Writer at various log levels.
@@ -170,6 +173,11 @@ func (l *Logger) SetLevel(v Level) {
 	}
 
 	l.logger.SetLevel(lvl)
+}
+
+// WithField sets logger fields
+func (l *Logger) SetPrefix(value interface{}) {
+	l.entry = l.entry.WithField("source", value)
 }
 
 // ParseLevel takes a string level and returns the Logrus log level constant.

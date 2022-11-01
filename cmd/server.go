@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"os"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -156,12 +155,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	lo := log.NewLogger(os.Stdout, "api server")
+	lo := a.logger.(*log.Logger)
+	lo.SetPrefix("api server")
+
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
 		return err
 	}
-
 	lo.SetLevel(lvl)
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
@@ -184,12 +184,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			return err
 		}
 
-		lo := log.NewLogger(os.Stdout, "worker")
+		lo := a.logger.(*log.Logger)
+		lo.SetPrefix("worker")
+
 		lvl, err := log.ParseLevel(cfg.Logger.Level)
 		if err != nil {
 			return err
 		}
-
 		lo.SetLevel(lvl)
 
 		// register worker.

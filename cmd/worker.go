@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
@@ -40,12 +39,13 @@ func addWorkerCommand(a *app) *cobra.Command {
 				logLevel = cfg.Logger.Level
 			}
 
-			lo := log.NewLogger(os.Stdout, "worker")
-			lvl, err := log.ParseLevel(logLevel)
+			lo := a.logger.(*log.Logger)
+			lo.SetPrefix("worker")
+
+			lvl, err := log.ParseLevel(cfg.Logger.Level)
 			if err != nil {
 				return err
 			}
-
 			lo.SetLevel(lvl)
 
 			sc, err := smtp.NewClient(&cfg.SMTP)
