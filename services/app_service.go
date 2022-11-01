@@ -36,10 +36,11 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 	}
 
 	app := &datastore.Application{
-		UID:             uuid.New().String(),
-		GroupID:         g.UID,
-		Title:           newApp.AppName,
-		SupportEmail:    newApp.SupportEmail,
+		UID:          uuid.New().String(),
+		GroupID:      g.UID,
+		Title:        newApp.AppName,
+		SupportEmail: newApp.SupportEmail,
+
 		SlackWebhookURL: newApp.SlackWebhookURL,
 		IsDisabled:      newApp.IsDisabled,
 		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
