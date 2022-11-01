@@ -606,24 +606,6 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 	}
 }
 
-func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id := chi.URLParam(r, "deliveryAttemptID")
-			attempts := GetDeliveryAttemptsFromContext(r.Context())
-
-			attempt, err := findMessageDeliveryAttempt(attempts, id)
-			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-				return
-			}
-
-			r = r.WithContext(setDeliveryAttemptInContext(r.Context(), attempt))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
 	groups, err := groupRepo.LoadGroups(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
 	if err != nil {
@@ -1166,30 +1148,6 @@ func GetPageableFromContext(ctx context.Context) datastore.Pageable {
 	return ctx.Value(pageableCtx).(datastore.Pageable)
 }
 
-func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {
-	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
-}
-
-func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *datastore.DeliveryAttempt,
-) context.Context {
-	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
-}
-
-func GetDeliveryAttemptFromContext(ctx context.Context) *datastore.DeliveryAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*datastore.DeliveryAttempt)
-}
-
-func SetDeliveryAttemptsInContext(ctx context.Context,
-	attempts *[]datastore.DeliveryAttempt,
-) context.Context {
-	return context.WithValue(ctx, deliveryAttemptsCtx, attempts)
-}
-
-func GetDeliveryAttemptsFromContext(ctx context.Context) *[]datastore.DeliveryAttempt {
-	return ctx.Value(deliveryAttemptsCtx).(*[]datastore.DeliveryAttempt)
-}
-
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
 	return context.WithValue(ctx, authUserCtx, a)
 }
@@ -1232,13 +1190,4 @@ func GetAppIDFromContext(r *http.Request) string {
 
 func GetSourceIDFromContext(r *http.Request) string {
 	return r.URL.Query().Get("sourceId")
-}
-
-func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
-	for _, a := range *attempts {
-		if a.UID == id {
-			return &a, nil
-		}
-	}
-	return nil, datastore.ErrEventDeliveryAttemptNotFound
 }

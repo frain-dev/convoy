@@ -207,7 +207,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 								deliveryRouter.Get("/", a.GetDeliveryAttempts)
-								deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+								deliveryRouter.Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 							})
 						})
 					})
@@ -404,7 +404,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 								eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 									deliveryRouter.Get("/", a.GetDeliveryAttempts)
-									deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+									deliveryRouter.Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 								})
 							})
 						})
@@ -517,7 +517,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 					deliveryRouter.Get("/", a.GetDeliveryAttempts)
-					deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+					deliveryRouter.Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 				})
 			})
 		})
