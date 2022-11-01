@@ -24,8 +24,8 @@ export class RadioComponent implements OnInit, ControlValueAccessor {
 	@Input('_id') id!: string;
 	@Input('checked') checked = false;
 	@Input('description') description!: string;
-	@Input('tooltipPosition') tooltipPosition: 'left'| 'right' = 'left';
-	@Input('tooltipSize') tooltipSize: 'sm'| 'md' = 'md';
+	@Input('tooltipPosition') tooltipPosition: 'left' | 'right' = 'left';
+	@Input('tooltipSize') tooltipSize: 'sm' | 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
 	@Input('formControlName') formControlName!: string;
 	control!: any;
