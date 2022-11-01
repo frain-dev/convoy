@@ -23,7 +23,7 @@ import (
 
 func TestRequirePermission_Basic(t *testing.T) {
 	m := &Middleware{
-		logger: log.NewLogger(os.Stdout, "test"),
+		logger: log.NewLogger(os.Stdout),
 	}
 
 	tt := []struct {
@@ -100,7 +100,7 @@ func TestRequirePermission_Basic(t *testing.T) {
 
 func TestRequirePermission_Noop(t *testing.T) {
 	m := &Middleware{
-		logger: log.NewLogger(os.Stdout, "test"),
+		logger: log.NewLogger(os.Stdout),
 	}
 
 	tt := []struct {
@@ -171,7 +171,7 @@ func TestRequirePermission_Noop(t *testing.T) {
 
 func TestRateLimitByGroup(t *testing.T) {
 	m := &Middleware{
-		logger: log.NewLogger(os.Stdout, "test"),
+		logger: log.NewLogger(os.Stdout),
 	}
 
 	type test struct {

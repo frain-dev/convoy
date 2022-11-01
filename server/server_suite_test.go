@@ -108,7 +108,7 @@ func buildServer() *ApplicationHandler {
 
 	store := datastore.New(db.Database())
 	queue := redisqueue.NewQueue(qOpts)
-	logger = log.NewLogger(os.Stderr, "test")
+	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
 
 	cache := ncache.NewNoopCache()
