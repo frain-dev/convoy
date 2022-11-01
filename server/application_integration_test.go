@@ -122,7 +122,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
@@ -151,7 +151,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
@@ -235,7 +235,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbApp.Title, appTitle)
@@ -261,7 +261,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppWithPersonalAPIKey() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbApp.Title, appTitle)
@@ -388,7 +388,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
@@ -427,7 +427,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbApp, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
@@ -455,7 +455,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	_, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.Error(s.T(), err, datastore.ErrApplicationNotFound)
 }
@@ -479,7 +479,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	_, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.Error(s.T(), err, datastore.ErrApplicationNotFound)
 }
@@ -515,7 +515,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
@@ -559,7 +559,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
@@ -633,7 +633,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPI
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
@@ -673,7 +673,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	var dbEndpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &dbEndpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
@@ -702,7 +702,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	var resp datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &resp)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
@@ -767,7 +767,7 @@ func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	app, err := appRepo.FindApplicationByID(context.Background(), appID)
 	require.NoError(s.T(), err)
 	dbEndpoint, err := app.FindEndpoint(e.UID)
@@ -795,7 +795,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	_, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }

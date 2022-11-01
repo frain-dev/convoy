@@ -184,7 +184,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
 	_, err = groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
@@ -227,7 +227,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
 	_, err = groupRepo.FetchGroupByID(context.Background(), groupID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
@@ -424,7 +424,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
 	g, err := groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "group_1", g.Name)

@@ -93,7 +93,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store, s.ConvoyApp.A.Cache)
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
 	err := appRepo.CreateApplication(ctx, application, application.GroupID)
 	require.NoError(s.T(), err)
 

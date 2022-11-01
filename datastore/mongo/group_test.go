@@ -7,8 +7,6 @@ import (
 	"context"
 	"testing"
 
-	ncache "github.com/frain-dev/convoy/cache/noop"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -20,7 +18,7 @@ func Test_FetchGroupByID(t *testing.T) {
 
 	store := getStore(db)
 
-	groupRepo := NewGroupRepo(store, ncache.NewNoopCache())
+	groupRepo := NewGroupRepo(store)
 
 	newOrg := &datastore.Group{
 		Name:           "Yet another group",
@@ -120,7 +118,7 @@ func Test_CreateGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			groupRepo := NewGroupRepo(store, ncache.NewNoopCache())
+			groupRepo := NewGroupRepo(store)
 
 			for i, group := range tc.groups {
 				newGroup := &datastore.Group{
@@ -152,7 +150,7 @@ func Test_LoadGroups(t *testing.T) {
 	defer closeFn()
 	store := getStore(db)
 
-	orgRepo := NewGroupRepo(store, ncache.NewNoopCache())
+	orgRepo := NewGroupRepo(store)
 
 	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
@@ -166,7 +164,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 
 	store := getStore(db)
 
-	groupRepo := NewGroupRepo(store, ncache.NewNoopCache())
+	groupRepo := NewGroupRepo(store)
 
 	group1 := &datastore.Group{
 		Name:           "group1",
@@ -198,7 +196,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	appRepo := NewApplicationRepo(getStore(db), ncache.NewNoopCache())
+	appRepo := NewApplicationRepo(getStore(db))
 	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
 	err = appRepo.CreateApplication(appCtx, app1, group1.UID)
 	require.NoError(t, err)
