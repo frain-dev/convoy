@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/hibiken/asynq"
 	log "github.com/sirupsen/logrus"
 
@@ -18,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(store datastore.Store, cache cache.Cache, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(context.Context, *asynq.Task) error {
 	sourceRepo := mongo.NewSourceRepo(store)
 	subRepo := mongo.NewSubscriptionRepo(store)
 	appRepo := mongo.NewApplicationRepo(store)

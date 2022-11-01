@@ -78,7 +78,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, ncache.NewNoopCache(), uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
@@ -92,7 +92,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, r.ConvoyApp.cache, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC().Add(-duration),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
@@ -149,7 +149,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, ncache.NewNoopCache(), uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
@@ -160,7 +160,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	require.NoError(r.T(), err)
 
 	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, r.ConvoyApp.cache, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
@@ -270,7 +270,7 @@ func seedEvent(store datastore.Store, appID string, groupID string, uid, eventTy
 	return ev, nil
 }
 
-func seedEventDelivery(store datastore.Store, cache cache.Cache, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(store datastore.Store, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}

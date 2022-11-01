@@ -318,11 +318,8 @@ func TestUserService_RefreshToken(t *testing.T) {
 			},
 			dbFn: func(u *UserService) {
 				us, _ := u.userRepo.(*mocks.MockUserRepository)
-				ca, _ := u.cache.(*mocks.MockCache)
 
 				us.EXPECT().FindUserByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.User{UID: "123456"}, nil)
-				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
-				ca.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantConfig: true,
 			wantToken:  token{generate: true, accessToken: true, refreshToken: true},
@@ -334,10 +331,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 				ctx:   ctx,
 				token: &models.Token{AccessToken: uuid.NewString(), RefreshToken: uuid.NewString()},
 			},
-			dbFn: func(u *UserService) {
-				ca, _ := u.cache.(*mocks.MockCache)
-				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-			},
+			dbFn:        func(u *UserService) {},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
 		},
@@ -349,10 +343,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 				user:  &datastore.User{UID: "123456"},
 				token: &models.Token{RefreshToken: uuid.NewString()},
 			},
-			dbFn: func(u *UserService) {
-				ca, _ := u.cache.(*mocks.MockCache)
-				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
-			},
+			dbFn:        func(u *UserService) {},
 			wantToken:   token{generate: true, accessToken: true},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
@@ -429,11 +420,7 @@ func TestUserService_LogoutUser(t *testing.T) {
 				user:  &datastore.User{UID: "12345"},
 				token: &models.Token{},
 			},
-			dbFn: func(u *UserService) {
-				ca, _ := u.cache.(*mocks.MockCache)
-				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-				ca.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-			},
+			dbFn:      func(u *UserService) {},
 			wantToken: token{generate: true, accessToken: true},
 		},
 
@@ -444,10 +431,7 @@ func TestUserService_LogoutUser(t *testing.T) {
 				user:  &datastore.User{UID: "12345"},
 				token: &models.Token{AccessToken: uuid.NewString()},
 			},
-			dbFn: func(u *UserService) {
-				ca, _ := u.cache.(*mocks.MockCache)
-				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-			},
+			dbFn:        func(u *UserService) {},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
 		},

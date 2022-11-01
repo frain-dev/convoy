@@ -25,7 +25,7 @@ import (
 )
 
 // SeedApplication is create random application for integration tests.
-func SeedApplication(store datastore.Store, cache cache.Cache, g *datastore.Group, uid, title string, disabled bool) (*datastore.Application, error) {
+func SeedApplication(store datastore.Store, g *datastore.Group, uid, title string, disabled bool) (*datastore.Application, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -53,7 +53,7 @@ func SeedApplication(store datastore.Store, cache cache.Cache, g *datastore.Grou
 	return app, nil
 }
 
-func SeedMultipleApplications(store datastore.Store, cache cache.Cache, g *datastore.Group, count int) error {
+func SeedMultipleApplications(store datastore.Store, g *datastore.Group, count int) error {
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Application{
@@ -74,7 +74,7 @@ func SeedMultipleApplications(store datastore.Store, cache cache.Cache, g *datas
 	return nil
 }
 
-func SeedEndpoint(store datastore.Store, cache cache.Cache, app *datastore.Application, groupID string) (*datastore.Endpoint, error) {
+func SeedEndpoint(store datastore.Store, app *datastore.Application, groupID string) (*datastore.Endpoint, error) {
 	app.Endpoints = append(app.Endpoints, datastore.Endpoint{
 		UID:            uuid.New().String(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -90,7 +90,7 @@ func SeedEndpoint(store datastore.Store, cache cache.Cache, app *datastore.Appli
 	return &app.Endpoints[len(app.Endpoints)-1], nil
 }
 
-func SeedEndpointSecret(store datastore.Store, cache cache.Cache, app *datastore.Application, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
+func SeedEndpointSecret(store datastore.Store, app *datastore.Application, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
 	sc := datastore.Secret{
 		UID:            uuid.New().String(),
 		Value:          value,
@@ -113,7 +113,7 @@ func SeedEndpointSecret(store datastore.Store, cache cache.Cache, app *datastore
 	return &sc, nil
 }
 
-func SeedMultipleEndpoints(store datastore.Store, cache cache.Cache, app *datastore.Application, groupID string, events []string, count int) ([]datastore.Endpoint, error) {
+func SeedMultipleEndpoints(store datastore.Store, app *datastore.Application, groupID string, events []string, count int) ([]datastore.Endpoint, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
 			UID:            uuid.New().String(),
@@ -134,7 +134,7 @@ func SeedMultipleEndpoints(store datastore.Store, cache cache.Cache, app *datast
 }
 
 // seed default group
-func SeedDefaultGroup(store datastore.Store, cache cache.Cache, orgID string) (*datastore.Group, error) {
+func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
@@ -343,7 +343,7 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 }
 
 // seed default group
-func SeedGroup(store datastore.Store, cache cache.Cache, uid, name, orgID string, groupType datastore.GroupType, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datastore.GroupType, cfg *datastore.GroupConfig) (*datastore.Group, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}

@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
@@ -17,7 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, store datastore.Store, cache cache.Cache, eventQueue queue.Queuer) {
+func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, store datastore.Store, eventQueue queue.Queuer) {
 	if statuses == nil {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
