@@ -169,10 +169,6 @@ func TestRequirePermission_Noop(t *testing.T) {
 }
 
 func TestRateLimitByGroup(t *testing.T) {
-	m := &Middleware{
-		logger: log.NewLogger(os.Stdout),
-	}
-
 	type test struct {
 		name          string
 		requestsLimit int
@@ -237,7 +233,7 @@ func TestRateLimitByGroup(t *testing.T) {
 			defer ctrl.Finish()
 
 			groupRepo := mocks.NewMockGroupRepository(ctrl)
-			m := &Middleware{groupRepo: groupRepo}
+			m := &Middleware{groupRepo: groupRepo, logger: log.NewLogger(os.Stdout)}
 
 			if tt.dbFn != nil {
 				tt.dbFn(groupRepo, tt.groupIDs)
