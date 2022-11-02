@@ -169,13 +169,14 @@ type User struct {
 }
 
 type Endpoint struct {
-	URL             string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
-	Secret          string `json:"secret" bson:"secret"`
-	Description     string `json:"description" bson:"description" valid:"required~please provide a description for your endpoint"`
-	Name            string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
-	SupportEmail    string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled      bool   `json:"is_disabled"`
-	SlackWebhookURL string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
+	Secret             string `json:"secret" bson:"secret"`
+	Description        string `json:"description" bson:"description" valid:"required~please provide a description for your endpoint"`
+	AdvancedSignatures *bool  `json:"advanced_signatures" bson:"advanced_signatures"`
+	Name               string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
+	SupportEmail       string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled         bool   `json:"is_disabled"`
+	SlackWebhookURL    string `json:"slack_webhook_url" bson:"slack_webhook_url"`
 
 	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
 	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
@@ -184,13 +185,14 @@ type Endpoint struct {
 }
 
 type UpdateEndpoint struct {
-	URL             string  `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
-	Secret          string  `json:"secret" bson:"secret"`
-	Description     string  `json:"description" bson:"description" valid:"required~please provide a description for your endpoint"`
-	Name            *string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
-	SupportEmail    *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled      *bool   `json:"is_disabled"`
-	SlackWebhookURL *string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+	URL                string  `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
+	Secret             string  `json:"secret" bson:"secret"`
+	Description        string  `json:"description" bson:"description" valid:"required~please provide a description for your endpoint"`
+	AdvancedSignatures *bool   `json:"advanced_signatures" bson:"advanced_signatures"`
+	Name               *string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
+	SupportEmail       *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled         *bool   `json:"is_disabled"`
+	SlackWebhookURL    *string `json:"slack_webhook_url" bson:"slack_webhook_url"`
 
 	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
 	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`

@@ -86,7 +86,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.queue))
 
 			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
-				appRepo))
+				endpointRepo))
 
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))

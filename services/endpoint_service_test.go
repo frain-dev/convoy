@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
@@ -57,7 +58,8 @@ func provideEndpointService(ctrl *gomock.Controller) *EndpointService {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewEndpointService(endpointRepo, eventRepo, eventDeliveryRepo, cache)
+	queue := mocks.NewMockQueuer(ctrl)
+	return NewEndpointService(endpointRepo, eventRepo, eventDeliveryRepo, cache, queue)
 }
 
 func boolPtr(b bool) *bool {
@@ -657,6 +659,103 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
 				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+		})
+	}
+}
+
+func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx      context.Context
+		secret   *models.ExpireSecret
+		endpoint *datastore.Endpoint
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(es *EndpointService)
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_expire_endpoint_secret",
+			args: args{
+				ctx: ctx,
+				secret: &models.ExpireSecret{
+					Secret:     "abce",
+					Expiration: 10,
+				},
+				endpoint: &datastore.Endpoint{
+					UID:     "abc",
+					GroupID: "1234",
+					Secrets: []datastore.Secret{
+						{
+							UID:   "1234",
+							Value: "test_secret",
+						},
+					},
+					AdvancedSignatures: false,
+					DocumentStatus:     datastore.ActiveDocumentStatus,
+				},
+			},
+			dbFn: func(es *EndpointService) {
+				endpointRepo := es.endpointRepo.(*mocks.MockEndpointRepository)
+
+				endpointRepo.EXPECT().ExpireSecret(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				eq, _ := es.queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.ExpireSecretsProcessor, convoy.DefaultQueue, gomock.Any()).
+					Times(1).Return(nil)
+
+				c, _ := es.cache.(*mocks.MockCache)
+				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantErr:     false,
+			wantErrCode: 0,
+			wantErrMsg:  "",
+		},
+		{
+			name: "should_fail_to_find_endpoint",
+			args: args{
+				ctx: ctx,
+				secret: &models.ExpireSecret{
+					Secret:     "abce",
+					Expiration: 10,
+				},
+				endpoint: &datastore.Endpoint{
+					UID:     "abc",
+					GroupID: "1234",
+				},
+			},
+			dbFn:        func(es *EndpointService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "endpoint not found",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			as := provideEndpointService(ctrl)
+
+			// Arrange Expectations
+			if tt.dbFn != nil {
+				tt.dbFn(as)
+			}
+
+			_, err := as.ExpireSecret(tt.args.ctx, tt.args.secret, tt.args.endpoint)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
 				return
 			}
 

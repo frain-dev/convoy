@@ -144,10 +144,10 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event_Redirec
 	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 
 	bodyStr := `{"endpoint_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, appID)
+	body := serialize(bodyStr, endpointID)
 
 	url := fmt.Sprintf("/api/v1/events?groupID=%s", s.DefaultGroup.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -222,8 +222,8 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery_Re
 	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
-	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, app, &datastore.Event{}, &datastore.Endpoint{}, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, &datastore.Event{}, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s?groupID=%s", eventDeliveryID, s.DefaultGroup.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
@@ -412,7 +412,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	event2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event2, endpoint2, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
-	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?endpointId=%s", s.DefaultGroup.UID endpoint1.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?endpointId=%s", s.DefaultGroup.UID, endpoint1.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 

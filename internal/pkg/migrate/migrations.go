@@ -127,9 +127,16 @@ var Migrations = []*Migration{
 		ID: "20221019100029_move_secret_fields_to_secrets",
 		Migrate: func(db *mongo.Database) error {
 			store := datastore.New(db)
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
 
-			var apps []*datastore.Application
+			appCollection := "applications"
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, appCollection)
+
+			type Application struct {
+				UID       string               `json:"uid" bson:"uid"`
+				Endpoints []datastore.Endpoint `json:"endpoints" bson:"endpoints"`
+			}
+
+			var apps []*Application
 			err := store.FindAll(ctx, nil, nil, nil, &apps)
 			if err != nil {
 				return err
@@ -170,9 +177,16 @@ var Migrations = []*Migration{
 		},
 		Rollback: func(db *mongo.Database) error {
 			store := datastore.New(db)
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
 
-			var apps []*datastore.Application
+			appCollection := "applications"
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, appCollection)
+
+			type Application struct {
+				UID       string               `json:"uid" bson:"uid"`
+				Endpoints []datastore.Endpoint `json:"endpoints" bson:"endpoints"`
+			}
+
+			var apps []*Application
 			err := store.FindAll(ctx, nil, nil, nil, &apps)
 			if err != nil {
 				return err

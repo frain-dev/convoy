@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -23,10 +25,11 @@ type EndpointService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	cache             cache.Cache
+	queue             queue.Queuer
 }
 
-func NewEndpointService(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) *EndpointService {
-	return &EndpointService{endpointRepo: endpointRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache}
+func NewEndpointService(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, queue queue.Queuer) *EndpointService {
+	return &EndpointService{endpointRepo: endpointRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache, queue: queue}
 }
 
 func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
@@ -72,7 +75,6 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		IsDisabled:        e.IsDisabled,
 		TargetURL:         e.URL,
 		Description:       e.Description,
-		Secret:            e.Secret,
 		RateLimit:         e.RateLimit,
 		HttpTimeout:       e.HttpTimeout,
 		RateLimitDuration: duration.String(),
@@ -82,10 +84,28 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	}
 
 	if util.IsStringEmpty(e.Secret) {
-		endpoint.Secret, err = util.GenerateSecret()
+		sc, err := util.GenerateSecret()
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
 		}
+
+		endpoint.Secrets = []datastore.Secret{
+			{
+				UID:            uuid.NewString(),
+				Value:          sc,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+		}
+	} else {
+		endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
+			UID:            uuid.NewString(),
+			Value:          e.Secret,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		})
 	}
 
 	auth, err := validateEndpointAuthentication(e.Authentication)
@@ -203,6 +223,10 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 		endpoint.RateLimitDuration = duration.String()
 	}
 
+	if e.AdvancedSignatures != nil {
+		endpoint.AdvancedSignatures = *e.AdvancedSignatures
+	}
+
 	if !util.IsStringEmpty(e.HttpTimeout) {
 		endpoint.HttpTimeout = e.HttpTimeout
 	}
@@ -219,6 +243,81 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 	endpoint.Authentication = auth
 
 	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+
+	return endpoint, nil
+}
+
+func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, endpoint *datastore.Endpoint) (*datastore.Endpoint, error) {
+	// Expire current secret.
+	idx, err := endpoint.GetActiveSecretIndex()
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	expiresAt := time.Now().Add(time.Hour * time.Duration(s.Expiration))
+	endpoint.Secrets[idx].ExpiresAt = primitive.NewDateTimeFromTime(expiresAt)
+
+	secret := endpoint.Secrets[idx]
+
+	// Enqueue for final deletion.
+	body := struct {
+		EndpointID string `json:"endpoint_id"`
+		SecretID   string `json:"secret_id"`
+	}{
+		EndpointID: endpoint.UID,
+		SecretID:   secret.UID,
+	}
+
+	jobByte, err := json.Marshal(body)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	payload := json.RawMessage(jobByte)
+
+	job := &queue.Job{
+		ID:      secret.UID,
+		Payload: payload,
+		Delay:   time.Hour * time.Duration(s.Expiration),
+	}
+
+	taskName := convoy.ExpireSecretsProcessor
+	err = a.queue.Write(taskName, convoy.DefaultQueue, job)
+	if err != nil {
+		log.Errorf("Error occurred sending new event to the queue %s", err)
+	}
+
+	// Generate new secret.
+	newSecret := s.Secret
+	if len(newSecret) == 0 {
+		newSecret, err = util.GenerateSecret()
+		if err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
+		}
+	}
+
+	sc := datastore.Secret{
+		UID:            uuid.NewString(),
+		Value:          newSecret,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	secrets := append(endpoint.Secrets, sc)
+	endpoint.Secrets = secrets
+
+	err = a.endpointRepo.ExpireSecret(ctx, endpoint.GroupID, endpoint.UID, secrets)
+	if err != nil {
+		log.Errorf("Error occurred expiring secret %s", err)
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
+	}
+
+	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
+	err = a.cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
+	if err != nil {
+		log.WithError(err).Error("failed to update app cache")
+	}
 
 	return endpoint, nil
 }

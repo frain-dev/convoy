@@ -20,7 +20,7 @@ func createEndpointService(a *ApplicationHandler) *services.EndpointService {
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
 
 	return services.NewEndpointService(
-		endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache,
+		endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
 	)
 }
 
@@ -35,12 +35,12 @@ type pagedResponse struct {
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID query string true "Project id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/endpoints [post]
+// @Router /api/v1/projects/{projectID}/endpoints [post]
 func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	err := util.ReadJSON(r, &e)
@@ -67,12 +67,12 @@ func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID query string true "Project id"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/endpoints/{endpointID} [get]
+// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully",
 		*m.GetEndpointFromContext(r.Context()), http.StatusOK))
@@ -84,11 +84,11 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID query string true "Project id"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/endpoints [get]
+// @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
@@ -111,16 +111,16 @@ func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID query string true "Project id"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/endpoints/{endpointID} [put]
+// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.UpdateEndpoint
-	
+
 	err := util.ReadJSON(r, &e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -145,12 +145,12 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param groupId query string true "group id"
+// @Param projectID query string true "Project id"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/endpoints/{endpointID} [delete]
+// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
@@ -163,6 +163,39 @@ func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reque
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint deleted successfully", nil, http.StatusOK))
+}
+
+// ExpireSecret
+// @Summary Expire and generate new application endpoint secret
+// @Description This endpoint expires the current endpoint secret and generates a new one.
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param projectID query string true "Project id"
+// @Param endpointID path string true "endpoint id"
+// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
+func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
+	var e *models.ExpireSecret
+	err := util.ReadJSON(r, &e)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	endpoint := m.GetEndpointFromContext(r.Context())
+	endpointService := createEndpointService(a)
+
+	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("endpoint secret expired successfully",
+		endpoint, http.StatusOK))
 }
 
 func (a *ApplicationHandler) GetPaginatedEndpoints(w http.ResponseWriter, r *http.Request) {

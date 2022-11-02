@@ -1002,6 +1002,20 @@ func (mr *MockEndpointRepositoryMockRecorder) DeleteGroupEndpoints(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupEndpoints", reflect.TypeOf((*MockEndpointRepository)(nil).DeleteGroupEndpoints), arg0, arg1)
 }
 
+// ExpireSecret mocks base method.
+func (m *MockEndpointRepository) ExpireSecret(ctx context.Context, groupID, endpointID string, secrets []datastore.Secret) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireSecret", ctx, groupID, endpointID, secrets)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExpireSecret indicates an expected call of ExpireSecret.
+func (mr *MockEndpointRepositoryMockRecorder) ExpireSecret(ctx, groupID, endpointID, secrets interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireSecret", reflect.TypeOf((*MockEndpointRepository)(nil).ExpireSecret), ctx, groupID, endpointID, secrets)
+}
+
 // FindEndpointByID mocks base method.
 func (m *MockEndpointRepository) FindEndpointByID(çtx context.Context, id string) (*datastore.Endpoint, error) {
 	m.ctrl.T.Helper()

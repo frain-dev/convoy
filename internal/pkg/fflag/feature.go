@@ -52,7 +52,7 @@ var Features = map[string]IsEnabledFunc{
 			return nil
 		}
 
-		var apiKey models.CreateAppApiKey
+		var apiKey models.CreateEndpointApiKey
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return err

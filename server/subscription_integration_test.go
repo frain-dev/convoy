@@ -230,7 +230,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 			"count": 100,
 			"duration": 5
 		}
-	}`, app.UID, source.UID, group.UID, endpoint.UID)
+	}`, endpoint.UID, source.UID, group.UID, endpoint.UID)
 
 	url := fmt.Sprintf("/api/v1/subscriptions?groupID=%s", group.UID)
 	body := serialize(bodyStr)

@@ -221,7 +221,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
-			appRepo))
+			endpointRepo))
 
 		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))

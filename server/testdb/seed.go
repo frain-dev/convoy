@@ -50,6 +50,27 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title string, 
 	return endpoint, nil
 }
 
+func SeedMultipleEndpoints(store datastore.Store, g *datastore.Group, count int) error {
+	for i := 0; i < count; i++ {
+		uid := uuid.New().String()
+		app := &datastore.Endpoint{
+			UID:            uid,
+			Title:          fmt.Sprintf("Test-%s", uid),
+			GroupID:        g.UID,
+			IsDisabled:     false,
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		}
+
+		// Seed Data.
+		appRepo := cm.NewEndpointRepo(store)
+		err := appRepo.CreateEndpoint(context.TODO(), app, app.GroupID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
 	sc := datastore.Secret{
 		UID:            uuid.New().String(),
