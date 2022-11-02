@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -16,12 +17,16 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRequirePermission_Basic(t *testing.T) {
-	m := &Middleware{}
+	m := &Middleware{
+		logger: log.NewLogger(os.Stdout),
+	}
+
 	tt := []struct {
 		name        string
 		statusCode  int
@@ -94,7 +99,9 @@ func TestRequirePermission_Basic(t *testing.T) {
 }
 
 func TestRequirePermission_Noop(t *testing.T) {
-	m := &Middleware{}
+	m := &Middleware{
+		logger: log.NewLogger(os.Stdout),
+	}
 
 	tt := []struct {
 		name        string
@@ -162,6 +169,10 @@ func TestRequirePermission_Noop(t *testing.T) {
 }
 
 func TestRateLimitByGroup(t *testing.T) {
+	m := &Middleware{
+		logger: log.NewLogger(os.Stdout),
+	}
+
 	type test struct {
 		name          string
 		requestsLimit int

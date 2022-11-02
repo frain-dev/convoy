@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -66,7 +65,7 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 	apiKey, keyString, err := securityService.CreateAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
-		log.WithError(err).Error("failed to create api key")
+		a.A.Logger.WithError(err).Error("failed to create api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -118,7 +117,7 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 	securityService := createSecurityService(a)
 	apiKey, keyString, err := securityService.CreatePersonalAPIKey(r.Context(), user, &newApiKey)
 	if err != nil {
-		log.WithError(err).Error("failed to create personal api key")
+		a.A.Logger.WithError(err).Error("failed to create personal api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -283,7 +282,7 @@ func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.
 	securityService := createSecurityService(a)
 	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load api keys")
+		a.A.Logger.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -523,7 +522,7 @@ func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) 
 
 	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load api keys")
+		a.A.Logger.WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

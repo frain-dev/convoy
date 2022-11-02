@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -80,7 +79,7 @@ func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 
 	organisations, paginationData, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load organisations")
+		a.A.Logger.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -95,7 +94,7 @@ func (a *ApplicationHandler) GetUserOrganisations(w http.ResponseWriter, r *http
 	orgService := createOrganisationService(a)
 	organisations, _, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, datastore.Pageable{Sort: -1})
 	if err != nil {
-		log.WithError(err).Error("failed to load organisations")
+		a.A.Logger.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -194,7 +193,7 @@ func (a *ApplicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.R
 
 	err = orgService.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
-		log.WithError(err).Error("failed to delete organisation")
+		a.A.Logger.WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

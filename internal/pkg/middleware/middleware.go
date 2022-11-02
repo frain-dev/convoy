@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/limiter"
-	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/newrelic/go-agent/v3/newrelic"
 
 	"github.com/frain-dev/convoy/auth"
@@ -28,8 +28,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -71,10 +69,7 @@ type Middleware struct {
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
 	deviceRepo        datastore.DeviceRepository
-	// cache             cache.Cache
-	logger  logger.Logger
-	limiter limiter.RateLimiter
-	tracer  tracer.Tracer
+	logger            log.StdLogger
 }
 
 type CreateMiddleware struct {
@@ -91,7 +86,7 @@ type CreateMiddleware struct {
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
 	DeviceRepo        datastore.DeviceRepository
-	Logger            logger.Logger
+	Logger            log.StdLogger
 	Limiter           limiter.RateLimiter
 	Tracer            tracer.Tracer
 }
@@ -155,7 +150,7 @@ func (m *Middleware) SetupCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cfg, err := config.Get()
 		if err != nil {
-			log.WithError(err).Error("failed to load configuration")
+			m.logger.WithError(err).Error("failed to load configuration")
 			return
 		}
 
@@ -373,7 +368,7 @@ func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
 			if err != nil {
-				log.WithError(err).Error("failed to fetch organisation")
+				m.logger.WithError(err).Error("failed to fetch organisation")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 				return
 			}
@@ -389,7 +384,7 @@ func (m *Middleware) RequireAuthUserMetadata() func(next http.Handler) http.Hand
 			authUser := GetAuthUserFromContext(r.Context())
 			user, ok := authUser.Metadata.(*datastore.User)
 			if !ok {
-				log.Error("metadata missing in auth user object")
+				m.logger.Error("metadata missing in auth user object")
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
@@ -416,7 +411,7 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 				if user != nil {
 					member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
 					if err != nil {
-						log.WithError(err).Error("failed to fetch organisation member")
+						m.logger.WithError(err).Error("failed to fetch organisation member")
 						_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 						return
 					}
@@ -498,7 +493,7 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 
 			_, err = m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 			if err != nil {
-				log.WithError(err).Error("failed to find organisation member by user id")
+				m.logger.WithError(err).Error("failed to find organisation member by user id")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
 				return
 			}
@@ -711,21 +706,21 @@ func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
-				log.WithError(err).Error("failed to get auth from request")
+				m.logger.WithError(err).Error("failed to get auth from request")
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 				return
 			}
 
 			rc, err := realm_chain.Get()
 			if err != nil {
-				log.WithError(err).Error("failed to get realm chain")
+				m.logger.WithError(err).Error("failed to get realm chain")
 				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
 				return
 			}
 
 			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
-				log.WithError(err).Error("failed to authenticate")
+				m.logger.WithError(err).Error("failed to authenticate")
 				_ = render.Render(w, r, util.NewErrorResponse("authorization failed", http.StatusUnauthorized))
 				return
 			}
@@ -743,7 +738,7 @@ func (m *Middleware) RequireAuthorizedUser() func(next http.Handler) http.Handle
 			user, ok := authUser.Metadata.(*datastore.User)
 
 			if !ok {
-				log.Error("metadata missing in auth user object")
+				m.logger.Warn("metadata missing in auth user object")
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
@@ -770,7 +765,7 @@ func (m *Middleware) RequireBaseUrl() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Error("failed to load configuration")
+				m.logger.WithError(err).Error("failed to load configuration")
 				return
 			}
 
@@ -908,23 +903,25 @@ func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			start := time.Now()
 
-			if logger.CanLogHttpRequest(m.logger) {
-				start := time.Now()
+			defer func() {
+				requestFields := requestLogFields(r)
+				responseFields := responseLogFields(ww, start)
 
-				defer func() {
-					requestFields := requestLogFields(r)
-					responseFields := responseLogFields(ww, start)
+				logFields := map[string]interface{}{
+					"httpRequest":  requestFields,
+					"httpResponse": responseFields,
+				}
 
-					logFields := map[string]interface{}{
-						"httpRequest":  requestFields,
-						"httpResponse": responseFields,
-					}
+				lvl, err := m.statusLevel(ww.Status()).ToLogrusLevel()
+				if err != nil {
+					m.logger.WithError(err).Error("Failed to generate status level")
+				}
 
-					m.logger.WithLogger().WithFields(logFields).Log(m.statusLevel(ww.Status()), requestFields["requestURL"])
-				}()
+				m.logger.WithLogger().WithFields(logFields).Log(lvl, requestFields["requestURL"])
+			}()
 
-			}
 			next.ServeHTTP(ww, r)
 		})
 	}
@@ -957,8 +954,8 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	}
 
 	cfg, err := config.Get()
+
 	if err != nil {
-		log.WithError(err).Error("failed to load configuration")
 		return nil
 	}
 
@@ -1060,7 +1057,7 @@ func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string,
 
 	messages, err := m.eventRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
 	if err != nil {
-		log.Errorln("failed to load message intervals - ", err)
+		m.logger.WithError(err).Error("failed to load message intervals - ")
 		return 0, nil, err
 	}
 
@@ -1116,7 +1113,7 @@ func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 			res, err := m.limiter.Allow(r.Context(), group.UID, rateLimit, int(rateLimitDuration))
 			if err != nil {
 				message := "an error occured while getting rate limit"
-				log.WithError(err).Error(message)
+				m.logger.WithError(err).Error(message)
 				_ = render.Render(w, r, util.NewErrorResponse(message, http.StatusBadRequest))
 				return
 			}

@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -62,7 +61,7 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 	organisationInviteService := CreateOrganisationInviteService(a)
 	_, err = organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
 	if err != nil {
-		log.WithError(err).Error("failed to create organisation member invite")
+		a.A.Logger.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -96,7 +95,7 @@ func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter
 
 	invites, paginationData, err := organisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to create organisation member invite")
+		a.A.Logger.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -122,7 +121,7 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	token := r.URL.Query().Get("token")
 	accepted, err := strconv.ParseBool(r.URL.Query().Get("accepted"))
 	if err != nil {
-		log.WithError(err).Error("failed to process accepted url query")
+		a.A.Logger.WithError(err).Error("failed to process accepted url query")
 		_ = render.Render(w, r, util.NewErrorResponse("badly formed 'accepted' query", http.StatusBadRequest))
 		return
 	}
@@ -137,7 +136,7 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 
 	err = organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
 	if err != nil {
-		log.WithError(err).Error("failed to process organisation member invite")
+		a.A.Logger.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -162,7 +161,7 @@ func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 
 	user, iv, err := organisationInviteService.FindUserByInviteToken(r.Context(), token)
 	if err != nil {
-		log.WithError(err).Error("failed to find user by invite token")
+		a.A.Logger.WithError(err).Error("failed to find user by invite token")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -199,7 +198,7 @@ func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 
 	_, err = organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
-		log.WithError(err).Error("failed to resend organisation member invite")
+		a.A.Logger.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -224,7 +223,7 @@ func (a *ApplicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *
 
 	iv, err := organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {
-		log.WithError(err).Error("failed to cancel organisation member invite")
+		a.A.Logger.WithError(err).Error("failed to cancel organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

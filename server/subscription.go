@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -55,7 +54,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load subscriptions")
+		a.A.Logger.WithError(err).Error("failed to load subscriptions")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -125,7 +124,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 	subService := createSubscriptionService(a)
 	subscription, err := subService.CreateSubscription(r.Context(), group, &sub)
 	if err != nil {
-		log.WithError(err).Error("failed to create subscription")
+		a.A.Logger.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -163,7 +162,7 @@ func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 
 	err = subService.DeleteSubscription(r.Context(), group.UID, sub)
 	if err != nil {
-		log.Errorln("failed to delete subscription - ", err)
+		a.A.Logger.WithError(err).Error("failed to delete subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -188,7 +187,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	var update models.UpdateSubscription
 	err := util.ReadJSON(r, &update)
 	if err != nil {
-		log.WithError(err).Error(err.Error())
+		a.A.Logger.WithError(err).Error(err.Error())
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
