@@ -97,6 +97,7 @@ func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request
 
 	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
+		a.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -158,6 +159,7 @@ func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reque
 
 	err := endpointService.DeleteEndpoint(r.Context(), endpoint, group.UID)
 	if err != nil {
+		a.A.Logger.WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

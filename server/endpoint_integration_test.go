@@ -46,7 +46,7 @@ func (s *EndpointIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *EndpointIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -79,7 +79,7 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 }
 
 func (s *EndpointIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -468,7 +468,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", true)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", endpointID)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultGroup.UID, endpointID)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -587,7 +587,6 @@ func (s *EndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	require.NoError(s.T(), err)
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
 }
-
 
 func TestEndpointIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(EndpointIntegrationTestSuite))
