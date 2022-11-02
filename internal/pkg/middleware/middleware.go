@@ -985,7 +985,6 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 
 	cfg, err := config.Get()
 
-	// TODO(subomi): Return error
 	if err != nil {
 		return nil
 	}
