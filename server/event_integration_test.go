@@ -240,7 +240,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 
 	// Deep Assert.
 	var respEventDelivery datastore.EventDelivery
-	fmt.Println("gggggggg", w.Body.String())
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
 	require.Equal(s.T(), app.UID, respEventDelivery.App.UID)
