@@ -54,6 +54,22 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.licenses=MPL-2.0
 
+  - image_templates: 
+    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-slim"
+    goos: linux
+    goarch: amd64
+    dockerfile: slim.Dockerfile
+    ids:
+      - cobin
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.licenses=MPL-2.0
+
 checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"
 
