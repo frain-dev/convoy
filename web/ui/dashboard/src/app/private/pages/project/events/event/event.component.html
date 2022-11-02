@@ -11,7 +11,7 @@
 
 			<convoy-date-picker class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')" #datePicker></convoy-date-picker>
 
-			<time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></time-filter>
+			<convoy-time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></convoy-time-filter>
 
 			<convoy-dropdown
 				size="lg"
