@@ -4,19 +4,20 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 )
 
 type Consumer struct {
 	queue queue.Queuer
 	mux   *asynq.ServeMux
 	srv   *asynq.Server
+	log   log.StdLogger
 }
 
-func NewConsumer(q queue.Queuer) (*Consumer, error) {
+func NewConsumer(q queue.Queuer, l log.StdLogger) (*Consumer, error) {
 	srv := asynq.NewServer(
 		q.Options().RedisClient,
 		asynq.Config{
@@ -29,6 +30,7 @@ func NewConsumer(q queue.Queuer) (*Consumer, error) {
 				return true
 			},
 			RetryDelayFunc: task.GetRetryDelay,
+			Logger:         l,
 		},
 	)
 
@@ -36,6 +38,7 @@ func NewConsumer(q queue.Queuer) (*Consumer, error) {
 
 	return &Consumer{
 		queue: q,
+		log:   l,
 		mux:   mux,
 		srv:   srv,
 	}, nil
@@ -43,7 +46,7 @@ func NewConsumer(q queue.Queuer) (*Consumer, error) {
 
 func (c *Consumer) Start() {
 	if err := c.srv.Start(c.mux); err != nil {
-		log.WithError(err).Fatal("error starting worker")
+		c.log.WithError(err).Fatal("error starting worker")
 	}
 }
 

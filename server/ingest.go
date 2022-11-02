@@ -18,7 +18,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -87,7 +86,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.WithError(err).Error("failed to load config")
+		a.A.Logger.WithError(err).Error("failed to load config")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
 		return
 	}
@@ -139,7 +138,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
-		log.Errorf("Error occurred sending new event to the queue %s", err)
+		a.A.Logger.WithError(err).Error("Error occurred sending new event to the queue")
 	}
 
 	// 4. Return 200
@@ -154,7 +153,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 
 	err := a.A.Cache.Get(r.Context(), sourceCacheKey, &source)
 	if err != nil {
-		log.Error(err)
+		a.A.Logger.WithError(err)
 	}
 
 	if source == nil {
@@ -167,7 +166,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 
 		err = a.A.Cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
 		if err != nil {
-			log.Error(err)
+			a.A.Logger.WithError(err)
 		}
 
 	}

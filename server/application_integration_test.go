@@ -47,7 +47,7 @@ func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -80,7 +80,7 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 }
 
 func (s *ApplicationIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 

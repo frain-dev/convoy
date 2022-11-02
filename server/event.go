@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -416,7 +415,6 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 	} else {
 		startT, err = time.Parse(format, startDate)
 		if err != nil {
-			log.Errorln("error parsing startDate - ", err)
 			return searchParams, errors.New("please specify a startDate in the format " + format)
 		}
 	}

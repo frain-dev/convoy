@@ -41,7 +41,7 @@ func (s *GroupIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *GroupIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -574,7 +574,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 }
 
 func (s *GroupIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 

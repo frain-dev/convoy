@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -16,7 +17,6 @@ import (
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"github.com/xdg-go/pbkdf2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -645,10 +645,10 @@ func SeedDevice(store datastore.Store, g *datastore.Group, appID string) error {
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
-func PurgeDB(db cm.Client) {
+func PurgeDB(t *testing.T, db cm.Client) {
 	client := db.Client().(*mongo.Database)
 	err := client.Drop(context.TODO())
 	if err != nil {
-		log.WithError(err).Fatal("failed to truncate db")
+		t.Fatalf("Could not purge DB: %v", err)
 	}
 }

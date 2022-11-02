@@ -38,7 +38,7 @@ func (u *UserIntegrationTestSuite) SetupSuite() {
 }
 
 func (u *UserIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(u.DB)
+	testdb.PurgeDB(u.T(), u.DB)
 
 	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy.json")
 	require.NoError(u.T(), err)
@@ -54,7 +54,7 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 }
 
 func (u *UserIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(u.DB)
+	testdb.PurgeDB(u.T(), u.DB)
 	metrics.Reset()
 }
 

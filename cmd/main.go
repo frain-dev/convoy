@@ -9,7 +9,9 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
+	"github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
@@ -21,12 +23,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/frain-dev/convoy/logger"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -39,19 +37,12 @@ import (
 )
 
 func main() {
-	log.SetLevel(log.InfoLevel)
-
-	log.SetFormatter(&prefixed.TextFormatter{
-		DisableColors:   false,
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   true,
-		ForceFormatting: true,
-	})
-	log.SetReportCaller(true)
+	slog := logrus.New()
+	slog.Out = os.Stdout
 
 	err := os.Setenv("TZ", "") // Use UTC by default :)
 	if err != nil {
-		log.Fatal("failed to set env - ", err)
+		slog.Fatal("failed to set env - ", err)
 	}
 
 	app := &app{}
@@ -59,7 +50,7 @@ func main() {
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
-		log.Fatal(err)
+		slog.Fatal(err)
 	}
 }
 
@@ -99,7 +90,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 		return fmt.Errorf("failed to create user - %w", err)
 	}
 
-	log.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+	a.logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
 
 	return nil
 }
@@ -107,7 +98,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 type app struct {
 	store    datastore.Store
 	queue    queue.Queuer
-	logger   logger.Logger
+	logger   log.StdLogger
 	tracer   tracer.Tracer
 	cache    cache.Cache
 	limiter  limiter.RateLimiter
@@ -200,10 +191,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			q = redisqueue.NewQueue(opts)
 		}
 
-		lo, err := logger.NewLogger(cfg.Logger)
-		if err != nil {
-			return err
-		}
+		lo := log.NewLogger(os.Stdout)
 
 		if cfg.Tracer.Type == config.NewRelicTracerProvider {
 			tr, err = tracer.NewTracer(cfg, lo.WithLogger())

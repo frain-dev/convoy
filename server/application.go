@@ -12,7 +12,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 )
 
 func createApplicationService(a *ApplicationHandler) *services.AppService {
@@ -70,7 +69,7 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
 	apps, paginationData, err := appService.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load apps")
+		a.A.Logger.WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -161,7 +160,7 @@ func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 
 	err := appService.DeleteApplication(r.Context(), app)
 	if err != nil {
-		log.Errorln("failed to delete app - ", err)
+		a.A.Logger.WithError(err).Error("failed to delete app - ")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
