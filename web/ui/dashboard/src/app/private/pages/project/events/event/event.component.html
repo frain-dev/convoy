@@ -9,9 +9,9 @@
 				</convoy-button>
 			</form>
 
-			<date-filter class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')" #dateFilter></date-filter>
+			<convoy-date-picker class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')" #datePicker></convoy-date-picker>
 
-			<app-time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></app-time-filter>
+			<time-filter class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></time-filter>
 
 			<convoy-dropdown
 				size="lg"

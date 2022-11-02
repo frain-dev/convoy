@@ -1,10 +1,9 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
 import { DropdownComponent } from '../dropdown/dropdown.component';
 import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
-import { filter } from 'rxjs/operators';
+import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
 
 interface CALENDAR_DAY {
 	date: number;
@@ -15,13 +14,13 @@ interface CALENDAR_DAY {
 }
 
 @Component({
-	selector: 'convoy-date-form',
+	selector: 'convoy-date-picker',
 	standalone: true,
 	imports: [CommonModule, DropdownComponent, ButtonComponent, FormsModule],
-	templateUrl: './date-form.component.html',
-	styleUrls: ['./date-form.component.scss']
+	templateUrl: './date-picker.component.html',
+	styleUrls: ['./date-picker.component.scss']
 })
-export class DateFormComponent implements OnInit {
+export class DatePickerComponent implements OnInit {
 	@ViewChild('dropdown') dropdown!: DropdownComponent;
 	@Output() selectedDateRange = new EventEmitter<any>();
 	@Output() selectedDate = new EventEmitter<any>();
@@ -232,6 +231,14 @@ export class DateFormComponent implements OnInit {
 		return timestamp === this.selectedStartDay || timestamp === this.selectedEndDay;
 	}
 
+	isStartDay(timestamp: number) {
+		return timestamp === this.selectedStartDay;
+	}
+
+	isEndDay(timestamp: number) {
+		return timestamp === this.selectedEndDay;
+	}
+
 	isInFuture(timestamp: number) {
 		return isFuture(new Date(timestamp));
 	}
@@ -242,9 +249,11 @@ export class DateFormComponent implements OnInit {
 	}
 
 	getDayClassNames(day: CALENDAR_DAY): string {
-		const classNames = `w-40px h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) ? '!border border-primary-100' : ''} ${day.month !== 0 ? 'hidden' : ''} ${
+		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) ? '!border border-primary-100 rounded-8px' : ''} ${day.month !== 0 ? 'hidden' : ''} ${
 			this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''
-		} ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''} ${this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100  font-medium' : ''}`;
+		} ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''} ${this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''} ${
+			this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''
+		} ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
 		return classNames;
 	}
 

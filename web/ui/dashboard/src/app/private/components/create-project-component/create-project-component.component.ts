@@ -134,6 +134,8 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
+			window.scrollTo(0, 0);
+			this.enableMoreConfig = false;
 			this.isCreatingProject = false;
 			this.projectForm.reset();
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success', type: this.privateService.activeProjectDetails?.uid ? 'modal' : 'alert' });

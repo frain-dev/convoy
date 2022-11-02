@@ -7,13 +7,13 @@ import { APP } from 'src/app/models/app.model';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
-import { DateFilterComponent } from 'src/app/private/components/date-filter/date-filter.component';
 import { TimeFilterComponent } from 'src/app/private/components/time-filter/time-filter.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { SOURCE } from 'src/app/models/group.model';
+import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 
 @Component({
 	selector: 'app-event-deliveries',
@@ -47,7 +47,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	eventsDelAppsFilter$!: Observable<APP[]>;
 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
-	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
+	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
 	@ViewChild('appsFilterDropdown', { static: true }) appsFilterDropdown!: DropdownComponent;
 	@ViewChild('sourcesFilterDropdown', { static: true }) sourcesFilterDropdown!: DropdownComponent;
@@ -176,7 +176,7 @@ export class EventDeliveriesComponent implements OnInit {
 	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status' | 'source') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.dateFilter.clearDate();
+		this.datePicker.clearDate();
 		this.eventDeliveryTimerFilter.filterStartHour = 0;
 		this.eventDeliveryTimerFilter.filterStartMinute = 0;
 		this.eventDeliveryTimerFilter.filterEndHour = 23;
