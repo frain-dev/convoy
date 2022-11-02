@@ -69,6 +69,8 @@ type Middleware struct {
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
 	deviceRepo        datastore.DeviceRepository
+	limiter           limiter.RateLimiter
+	tracer            tracer.Tracer
 	logger            log.StdLogger
 }
 
@@ -458,7 +460,7 @@ func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			app, err := m.appRepo.FindApplicationByID(r.Context(), GetAppID(r))
 			if err != nil {
-				log.WithError(err).Error("failed to fetch app by id")
+				m.logger.WithError(err).Error("failed to fetch app by id")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch app by id", http.StatusNotFound))
 				return
 			}
@@ -486,7 +488,7 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 
 			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
 			if err != nil {
-				log.WithError(err).Error("failed to fetch organisation")
+				m.logger.WithError(err).Error("failed to fetch organisation")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 				return
 			}
@@ -508,7 +510,7 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
 			if err != nil {
-				log.WithError(err).Error("failed to fetch organisation")
+				m.logger.WithError(err).Error("failed to fetch organisation")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 				return
 			}
@@ -516,7 +518,7 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 			user := GetUserFromContext(r.Context())
 			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 			if err != nil {
-				log.WithError(err).Error("failed to find organisation member by user id")
+				m.logger.WithError(err).Error("failed to find organisation member by user id")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
 				return
 			}
@@ -548,7 +550,7 @@ func (m *Middleware) RequireOrganisationMemberRole(roleType auth.RoleType) func(
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), GetOrgID(r))
 			if err != nil {
-				log.WithError(err).Error("failed to fetch organisation")
+				m.logger.WithError(err).Error("failed to fetch organisation")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 				return
 			}
@@ -556,7 +558,7 @@ func (m *Middleware) RequireOrganisationMemberRole(roleType auth.RoleType) func(
 			user := GetUserFromContext(r.Context())
 			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 			if err != nil {
-				log.WithError(err).Error("failed to find organisation member by user id")
+				m.logger.WithError(err).Error("failed to find organisation member by user id")
 				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
 				return
 			}
@@ -954,7 +956,6 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	}
 
 	cfg, err := config.Get()
-
 	if err != nil {
 		return nil
 	}

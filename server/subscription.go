@@ -42,7 +42,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	pageable := m.GetPageableFromContext(r.Context())
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -79,7 +79,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 	subId := chi.URLParam(r, "subscriptionID")
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -109,7 +109,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -147,7 +147,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -194,7 +194,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -225,7 +225,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}

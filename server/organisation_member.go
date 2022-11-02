@@ -37,7 +37,7 @@ func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 	pageable := m.GetPageableFromContext(r.Context())
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}
@@ -70,7 +70,7 @@ func (a *ApplicationHandler) GetOrganisationMember(w http.ResponseWriter, r *htt
 	memberID := chi.URLParam(r, "memberID")
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}
@@ -109,7 +109,7 @@ func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 	memberID := chi.URLParam(r, "memberID")
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}
@@ -145,7 +145,7 @@ func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 func (a *ApplicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}

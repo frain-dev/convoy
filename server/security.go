@@ -48,7 +48,7 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}
@@ -56,7 +56,7 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 	user := m.GetUserFromContext(r.Context())
 	member, err := createOrganisationMemberService(a).FindOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 	if err != nil {
-		log.WithError(err).Error("failed to find organisation member by user id")
+		a.A.Logger.WithError(err).Error("failed to find organisation member by user id")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
 		return
 	}
@@ -183,7 +183,7 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -261,7 +261,7 @@ func (a *ApplicationHandler) CreateAppAPIKey(w http.ResponseWriter, r *http.Requ
 func (a *ApplicationHandler) LoadAppAPIKeysPaged(w http.ResponseWriter, r *http.Request) {
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -362,7 +362,7 @@ func (a *ApplicationHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http
 func (a *ApplicationHandler) RevokeAppAPIKey(w http.ResponseWriter, r *http.Request) {
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}

@@ -54,7 +54,7 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -85,7 +85,7 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -177,7 +177,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -221,7 +221,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -282,7 +282,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -328,7 +328,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -377,7 +377,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	pageable := m.GetPageableFromContext(r.Context())
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -451,7 +451,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 
 	g, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}

@@ -73,7 +73,7 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}
@@ -114,7 +114,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 	group, err := a.M.GetGroup(r)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group")
+		a.A.Logger.WithError(err).Error("failed to fetch group")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group", http.StatusBadRequest))
 		return
 	}

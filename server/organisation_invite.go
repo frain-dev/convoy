@@ -53,7 +53,7 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 	user := m.GetUserFromContext(r.Context())
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}
@@ -86,7 +86,7 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}
@@ -189,7 +189,7 @@ func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 
 	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), m.GetOrgID(r))
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation")
+		a.A.Logger.WithError(err).Error("failed to fetch organisation")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
 		return
 	}
