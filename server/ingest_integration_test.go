@@ -36,15 +36,13 @@ func (i *IngestIntegrationTestSuite) SetupSuite() {
 }
 
 func (i *IngestIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(i.DB)
-	var err error = nil
+	testdb.PurgeDB(i.T(), i.DB)
 
 	// Setup Default Group.
-	i.DefaultGroup, err = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
-	require.NoError(i.T(), err)
+	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
 
 	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(i.ConvoyApp.A.Store)
@@ -53,7 +51,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 }
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(i.DB)
+	testdb.PurgeDB(i.T(), i.DB)
 	metrics.Reset()
 }
 

@@ -42,7 +42,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	s.DB = getDB()
 
 	// Setup Default Group.
@@ -71,7 +71,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
