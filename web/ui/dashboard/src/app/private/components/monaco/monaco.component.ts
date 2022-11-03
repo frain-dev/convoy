@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MonacoService } from './monaco.service';
 import { first } from 'rxjs/operators';
@@ -13,6 +13,7 @@ declare var monaco: typeof import('monaco-editor');
 })
 export class MonacoComponent implements AfterViewInit {
 	public _editor: any;
+	@Input('editorValue') editorValue: any;
 	@ViewChild('editorContainer', { static: true }) _editorContainer!: ElementRef;
 
 	constructor(private monacoService: MonacoService) {}
@@ -31,7 +32,7 @@ export class MonacoComponent implements AfterViewInit {
 		}
 
 		this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
-			value: ['{', '\t"test": "works?"', '}'].join('\n'),
+			value: this.editorValue ? JSON.stringify(this.editorValue) : ['{', '\t"test": "works?"', '}'].join('\n'),
 			language: 'json',
 			formatOnPaste: true,
 			formatOnType: true,

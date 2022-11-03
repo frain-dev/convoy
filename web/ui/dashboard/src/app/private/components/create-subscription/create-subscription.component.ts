@@ -32,7 +32,8 @@ export class CreateSubscriptionComponent implements OnInit {
 			duration: [null]
 		}),
 		filter_config: this.formBuilder.group({
-			event_types: [null]
+			event_types: [null],
+			filter: [null]
 		})
 	});
 	apps!: APP[];
@@ -43,6 +44,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	showCreateSourceModal = false;
 	showCreateEndpointModal = false;
 	enableMoreConfig = false;
+	showFilterForm = false;
 	retryLogicTypes = [
 		{ uid: 'linear', name: 'Linear time retry' },
 		{ uid: 'exponential', name: 'Exponential time backoff' }
@@ -260,5 +262,17 @@ export class CreateSubscriptionComponent implements OnInit {
 	isNewProjectRoute(): boolean {
 		if (this.router.url == '/projects/new') return true;
 		return false;
+	}
+
+	setupFilter() {
+		this.showFilterForm = true;
+		window.scrollTo(0, 0);
+	}
+
+	getFilterSchema(schema: any) {
+		this.subscriptionForm.patchValue({
+			filter_config: { filter: schema }
+		});
+		this.showFilterForm = false;
 	}
 }
