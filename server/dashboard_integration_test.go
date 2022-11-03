@@ -23,7 +23,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -46,7 +45,7 @@ func (s *DashboardIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *DashboardIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 
 	// Setup Default User
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
@@ -76,7 +75,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 }
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -298,7 +297,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			s.Router.ServeHTTP(w, req)
 
 			if w.Code != tc.statusCode {
-				log.Error(tc.name, w.Body)
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
 

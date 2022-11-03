@@ -36,11 +36,11 @@ func (r *RetentionPoliciesIntegrationTestSuite) SetupSuite() {
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(r.DB)
+	testdb.PurgeDB(r.T(), r.DB)
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(r.DB)
+	testdb.PurgeDB(r.T(), r.DB)
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents() {
