@@ -208,3 +208,34 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", sub, http.StatusAccepted))
 }
+
+// TestSubscriptionFilter
+// @Summary Test subscription filter
+// @Description This endpoint tests a subscription's filter
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Param projectID path string true "Project id"
+// @Param subscriptionID path string true "subscription id"
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
+func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
+	var test map[string]interface{}
+	err := util.ReadJSON(r, &test)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	subService := createSubscriptionService(a)
+	isValid, err := subService.TestSubscriptionFilter(r.Context(), test["request"].(map[string]interface{}), test["schema"].(map[string]interface{}))
+	if err != nil {
+		log.WithError(err).Error("an error occured while validating the subscription filter")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter valiadted successfully", isValid, http.StatusCreated))
+}
