@@ -232,7 +232,7 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 	subService := createSubscriptionService(a)
 	isValid, err := subService.TestSubscriptionFilter(r.Context(), test["request"].(map[string]interface{}), test["schema"].(map[string]interface{}))
 	if err != nil {
-		log.WithError(err).Error("an error occured while validating the subscription filter")
+		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
