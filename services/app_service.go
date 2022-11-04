@@ -176,7 +176,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		}
 	}
 
-	auth, err := validateEndpointAuthentication(e)
+	auth, err := validateEndpointAuthentication(e, endpoint)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -285,17 +285,12 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 			if !util.IsStringEmpty(e.HttpTimeout) {
 				endpoint.HttpTimeout = e.HttpTimeout
 			}
-
-			if !util.IsStringEmpty(e.Secret) {
-				endpoint.Secret = e.Secret
-			}
-
-			auth, err := validateEndpointAuthentication(e)
+			auth, err := validateEndpointAuthentication(e, &endpoint)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			e.Authentication = auth
+			endpoint.Authentication = auth
 
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
@@ -305,7 +300,7 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 	return endpoints, nil, datastore.ErrEndpointNotFound
 }
 
-func validateEndpointAuthentication(e models.Endpoint) (*datastore.EndpointAuthentication, error) {
+func validateEndpointAuthentication(e models.Endpoint, endpoint *datastore.Endpoint) (*datastore.EndpointAuthentication, error) {
 	if e.Authentication != nil && !util.IsStringEmpty(string(e.Authentication.Type)) {
 		if err := util.Validate(e); err != nil {
 			return nil, err
@@ -318,5 +313,5 @@ func validateEndpointAuthentication(e models.Endpoint) (*datastore.EndpointAuthe
 		return e.Authentication, nil
 	}
 
-	return nil, nil
+	return endpoint.Authentication, nil
 }
