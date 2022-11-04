@@ -1,14 +1,14 @@
-<convoy-dropdown buttonClass="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" buttonType="outline" buttonSize="sm" position="left" className="p-10px !w-fit" [active]="filterIsActive()" #dropdown>
+<convoy-dropdown buttonClass="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" buttonFill="outline" buttonSize="sm" position="left" className="p-10px !w-fit" [active]="filterIsActive()" #dropdown>
 	<ng-container dropdownToggle>
 		<img src="assets/img/clock.svg" class="mr-10px w-14px" alt="time filter icon" />
 		<span class="text-grey-40 mr-4px">Time</span>
 		<img class="ml-16px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" *ngIf="!filterIsActive()" alt="arrow down icon" />
 
-		<convoy-button type="icon" *ngIf="filterIsActive()" (clickItem)="clearFilter($event)" className="ml-16px">
+		<button convoy-button *ngIf="filterIsActive()" (click)="clearFilter($event)" className="ml-16px">
 			<svg width="10" height="10" class="fill-primary-100">
 				<use xlink:href="#close-icon"></use>
 			</svg>
-		</convoy-button>
+		</button>
 	</ng-container>
 
 	<ng-container>
@@ -64,7 +64,12 @@
 					</ul>
 
 					<ul class="h-200px overflow-y-scroll">
-						<li class="py-10px px-14px text-14hover:bg-primary-500 hover:transition-all hover:duration-300 cursor-pointer" *ngFor="let minute of timeFilterMinutes; let i = index" (click)="filterEndMinute = minute" [ngClass]="{ 'bg-primary-500 transition-all duration-300': filterEndMinute === minute }">
+						<li
+							class="py-10px px-14px text-14hover:bg-primary-500 hover:transition-all hover:duration-300 cursor-pointer"
+							*ngFor="let minute of timeFilterMinutes; let i = index"
+							(click)="filterEndMinute = minute"
+							[ngClass]="{ 'bg-primary-500 transition-all duration-300': filterEndMinute === minute }"
+						>
 							{{ minute < 10 ? '0' + minute : minute }}
 						</li>
 					</ul>
@@ -90,8 +95,8 @@
 		</div>
 
 		<div class="mt-16px flex items-center">
-			<convoy-button size="sm" (clickItem)="onApplyFilter()">Apply</convoy-button>
-			<convoy-button size="sm" type="clear" (clickItem)="clearFilter()">Clear</convoy-button>
+			<button convoy-button size="sm" (click)="onApplyFilter()">Apply</button>
+			<button convoy-button size="sm" fill="clear" (click)="clearFilter()">Clear</button>
 		</div>
 	</ng-container>
 </convoy-dropdown>

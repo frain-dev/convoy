@@ -5,8 +5,9 @@
 		<div class="flex items-center justify-center">
 			<ul class="w-full flex items-center">
 				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
-					<convoy-button
-						type="clear"
+					<button
+						convoy-button
+						fill="clear"
 						color="grey"
 						[className]="
 							activeTab === tab
@@ -15,12 +16,12 @@
 						"
 					>
 						<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
-					</convoy-button>
+					</button>
 				</li>
 
 				<div class="ml-auto pr-14px">
-					<convoy-button size="sm" type="outline" (click)="showCreateSubscriptionModal = true" [disable]="showSubscriptionError" *ngIf="activeTab === 'subscriptions'">Create Subscription</convoy-button>
-					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true" [disable]="showCliError" *ngIf="activeTab === 'cli keys'">Generate Key</convoy-button>
+					<button convoy-button size="sm" fill="outline" (click)="showCreateSubscriptionModal = true" [disabled]="showSubscriptionError" *ngIf="activeTab === 'subscriptions'">Create Subscription</button>
+					<button convoy-button size="sm" fill="outline" (click)="cliKeys.generateKeyModal = true" [disabled]="showCliError" *ngIf="activeTab === 'cli keys'">Generate Key</button>
 				</div>
 			</ul>
 		</div>
@@ -57,26 +58,26 @@
 						<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
 					</convoy-table-cell>
 					<convoy-table-cell class="contents">
-						<convoy-dropdown buttonSize="sm" buttonType="clear">
+						<convoy-dropdown buttonSize="sm" buttonFill="clear">
 							<ng-container dropdownToggle>
 								<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 							</ng-container>
 							<ul>
 								<convoy-list-item class="w-full" className="px-14px" [hover]="true">
-									<convoy-button type="text" (click)="subscription.active_menu = false; dropdownComponent.show = false" [routerLink]="'./subscriptions/' + subscription.uid">
+									<button convoy-button fill="text" (click)="subscription.active_menu = false; dropdownComponent.show = false" [routerLink]="'./subscriptions/' + subscription.uid">
 										<svg width="17" height="16" class="mr-8px fill-primary-100">
 											<use xlink:href="#edit-icon"></use>
 										</svg>
 										Edit Subscription
-									</convoy-button>
+									</button>
 								</convoy-list-item>
 								<convoy-list-item className="px-14px" [hover]="true">
-									<convoy-button type="text" color="danger" (click)="subscription.active_menu = false; activeSubscription = subscription; showDeleteSubscriptionModal = true; dropdownComponent.show = false">
+									<button convoy-button fill="text" color="danger" (click)="subscription.active_menu = false; activeSubscription = subscription; showDeleteSubscriptionModal = true; dropdownComponent.show = false">
 										<svg width="16" height="16" class="mr-8px fill-danger-100">
 											<use xlink:href="#delete-icon"></use>
 										</svg>
 										Delete Subscription
-									</convoy-button>
+									</button>
 								</convoy-list-item>
 							</ul>
 						</convoy-dropdown>
@@ -100,8 +101,9 @@
 		<div class="flex items-center justify-center">
 			<ul class="w-full flex items-center">
 				<li *ngFor="let tab of eventTabs" (click)="toggleEventsTab(tab)">
-					<convoy-button
-						type="clear"
+					<button
+						convoy-button
+						fill="clear"
 						color="grey"
 						[className]="
 							activeEventsTab === tab
@@ -110,7 +112,7 @@
 						"
 					>
 						<span [class]="activeEventsTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
-					</convoy-button>
+					</button>
 				</li>
 
 				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">

@@ -1,13 +1,13 @@
 <div class="sticky mt-32px">
 	<ul class="flex flex-row w-full mb-20px">
 		<li *ngFor="let tab of tabs" class="list-none mr-40px last-of-type:mr-0">
-			<convoy-button
-				type="unstyled"
+			<button
+				convoy-button
 				[className]="activeTab === tab.id ? 'bg-primary-500 rounded-12px h-60px w-60px flex justify-center items-center border border-primary-100' : 'bg-primary-500 rounded-12px h-60px w-60px flex justify-center items-center'"
 				(click)="switchTabs(tab.id)"
 			>
 				<img [src]="'/assets/img/' + tab.id + '.png'" alt="sdk icon" />
-			</convoy-button>
+			</button>
 		</li>
 	</ul>
 
@@ -22,11 +22,11 @@
 	<div class="docs" [innerHTML]="documentation"></div>
 
 	<div class="flex justify-end">
-		<convoy-button size="sm" className="mr-16px" (click)="nextStep()">
+		<button convoy-button size="sm" className="mr-16px" (click)="nextStep()">
 			{{ steps[steps.length - 1] === activeStep ? 'Complete Setup' : 'Next' }}
 			<svg width="12" height="12" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
-		</convoy-button>
+		</button>
 	</div>
 </div>

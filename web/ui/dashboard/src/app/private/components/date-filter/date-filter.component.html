@@ -1,14 +1,14 @@
-<convoy-dropdown buttonClass="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" buttonType="outline" buttonSize="sm" position="left" className="p-10px !w-fit" [active]="!!selectedDates?.startDate && !!selectedDates?.endDate" #dropdown>
+<convoy-dropdown buttonClass="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" buttonFill="outline" buttonSize="sm" position="left" className="p-10px !w-fit" [active]="!!selectedDates?.startDate && !!selectedDates?.endDate" #dropdown>
 	<ng-container dropdownToggle>
 		<img src="/assets/img/calendar-icon.svg" class="mr-10px w-14px" alt="calender icon" />
 		<span class="text-grey-40 mr-4px">Date</span>
 		<img src="/assets/img/angle-arrow-down.svg" class="ml-16px mr-0px w-14px" alt="arrow down icon" *ngIf="!selectedDates?.startDate && !selectedDates?.endDate" />
 
-		<convoy-button type="icon" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (clickItem)="clearDate($event); clearDates.emit()" className="ml-16px">
+		<button convoy-button *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate($event); clearDates.emit()" className="ml-16px">
 			<svg width="10" height="10" class="fill-primary-100">
 				<use xlink:href="#close-icon"></use>
 			</svg>
-		</convoy-button>
+		</button>
 	</ng-container>
 
 	<div class="w-300px">
@@ -34,16 +34,16 @@
 			<div class="calendar bg-primary-500 p-10px">
 				<div class="calendar-nav flex items-center justify-between">
 					<div class="flex items-center">
-						<convoy-button type="icon" (clickItem)="setYear(-1)">
+						<button (click)="setYear(-1)">
 							<svg width="24" height="24" class="fill-grey-40">
 								<use xlink:href="#double-arrow-left-icon"></use>
 							</svg>
-						</convoy-button>
-						<convoy-button type="icon" (clickItem)="setMonth(-1)">
+						</button>
+						<button (click)="setMonth(-1)">
 							<svg width="24" height="24" class="fill-grey-40">
 								<use xlink:href="#arrow-left-icon"></use>
 							</svg>
-						</convoy-button>
+						</button>
 					</div>
 
 					<div>
@@ -52,16 +52,16 @@
 					</div>
 
 					<div class="flex items-center">
-						<convoy-button type="icon" (clickItem)="setMonth(1)">
+						<button (click)="setMonth(1)">
 							<svg width="24" height="24" class="fill-grey-40">
 								<use xlink:href="#arrow-right-icon"></use>
 							</svg>
-						</convoy-button>
-						<convoy-button type="icon" (clickItem)="setYear(1)">
+						</button>
+						<button (click)="setYear(1)">
 							<svg width="24" height="24" class="fill-grey-40">
 								<use xlink:href="#double-arrow-right-icon"></use>
 							</svg>
-						</convoy-button>
+						</button>
 					</div>
 				</div>
 
@@ -76,16 +76,16 @@
 				</div>
 
 				<div class="days grid grid-cols-7 text-center mt-10px">
-					<convoy-button size="sm" type="text" color="grey" [className]="getDayClassNames(date)" *ngFor="let date of calendarDate" (clickItem)="onselectDay(date.timestamp)">
+					<button convoy-button size="sm" fill="text" color="grey" [className]="getDayClassNames(date)" *ngFor="let date of calendarDate" (click)="onselectDay(date.timestamp)">
 						{{ date.date }}
-					</convoy-button>
+					</button>
 				</div>
 			</div>
 		</div>
 
 		<div class="flex items-center bg-primary-500 p-10px">
-			<convoy-button size="sm" (clickItem)="applyDate()">Apply</convoy-button>
-			<convoy-button size="sm" type="clear" (clickItem)="clearDate(); clearDates.emit()">Clear</convoy-button>
+			<button convoy-button size="sm" (click)="applyDate()">Apply</button>
+			<button convoy-button size="sm" fill="clear" (click)="clearDate(); clearDates.emit()">Clear</button>
 		</div>
 	</div>
 </convoy-dropdown>

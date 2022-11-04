@@ -1,8 +1,8 @@
 <div class="fixed h-screen w-screen top-0 right-0 bottom-0 z-[5]" *ngIf="show" (click)="$event.stopPropagation(); show = false"></div>
 <div class="relative">
-	<convoy-button [color]="buttonColor" [texture]="buttonTexture" [type]="buttonType" [size]="buttonSize" buttonType="button" (clickItem)="$event.stopPropagation(); show = !show" [className]="buttonClasses" [buttonText]="buttonText ? buttonText : ''">
+	<button convoy-button [color]="buttonColor" [texture]="buttonTexture" [fill]="buttonFill" [size]="buttonSize" type="button" (click)="$event.stopPropagation(); show = !show" [className]="buttonClasses" [buttonText]="buttonText ? buttonText : ''">
 		<ng-content select="[dropdownToggle]"></ng-content>
-	</convoy-button>
+	</button>
 
 	<div class="empty:hidden" (click)="$event.stopPropagation(); show = !show">
 		<ng-content select="[customDropdownToggle]"></ng-content>

@@ -4,16 +4,16 @@
 		<div class="flex items-center justify-between" *ngIf="position !== 'full'">
 			<h2 class="font-semibold capitalize">{{ title }}</h2>
 
-			<convoy-button texture="light" size="sm" className="px-8px !py-10px" (click)="closeModal.emit()">
+			<button convoy-button texture="light" size="sm" className="px-8px !py-10px" (click)="closeModal.emit()">
 				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-			</convoy-button>
+			</button>
 		</div>
 
 		<div class="flex items-center justify-between m-auto max-w-[834px]" *ngIf="position === 'full'">
 			<div class="flex items-center">
-				<convoy-button size="sm" texture="light" className="px-10px !py-10px" (click)="closeModal.emit()">
+				<button convoy-button size="sm" texture="light" className="px-10px !py-10px" (click)="closeModal.emit()">
 					<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
-				</convoy-button>
+				</button>
 
 				<h2 class="font-semibold capitalize ml-2">{{ title }}</h2>
 			</div>

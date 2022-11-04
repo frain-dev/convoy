@@ -42,21 +42,21 @@
 
 						<ul *ngIf="organisations?.length">
 							<li *ngFor="let organisation of organisations">
-								<convoy-button type="text" className="justify-start px-30px py-12px w-full" (clickItem)="selectOrganisation(organisation); organisationDropdown.show = false" class="w-full">
+								<button convoy-button fill="text" className="justify-start px-30px py-12px w-full" (click)="selectOrganisation(organisation); organisationDropdown.show = false" class="w-full">
 									<div class="flex justify-between items-center w-full">
 										<convoy-badge [text]="organisation.name"></convoy-badge>
 
 										<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
 									</div>
-								</convoy-button>
+								</button>
 							</li>
 						</ul>
 
 						<div class="border-t border-t-grey-10">
-							<convoy-button type="text" className="px-30px py-16px" (clickItem)="showAddOrganisationModal = true; organisationDropdown.show = false">
+							<button convoy-button fill="text" className="px-30px py-16px" (click)="showAddOrganisationModal = true; organisationDropdown.show = false">
 								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 								Add {{ organisations?.length ? 'another' : 'an' }} Organization
-							</convoy-button>
+							</button>
 						</div>
 					</div>
 				</convoy-dropdown>
@@ -77,7 +77,7 @@
 							</li>
 						</ul>
 						<div class="border-t border-t-grey-10">
-							<convoy-button type="text" color="danger" className="font-medium px-24px py-20px text-14" (click)="logout()">Logout</convoy-button>
+							<button convoy-button fill="text" color="danger" className="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
 						</div>
 					</div>
 				</convoy-dropdown>

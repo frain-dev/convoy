@@ -4,7 +4,7 @@
 			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #dateFilter></date-filter>
 			<app-time-filter class="ml-14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
 
-			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #statusDropdown>
+			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonFill="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #statusDropdown>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/status-filter-icon.svg" class="w-14px mr-10px" alt="status filter icon" />
 					<span class="text-grey-40 w-full">Status</span>
@@ -20,8 +20,8 @@
 					</ul>
 
 					<div class="flex items-center mt-10px p-10px">
-						<convoy-button size="sm" (clickItem)="statusDropdown.show = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</convoy-button>
-						<convoy-button size="sm" type="clear" (clickItem)="clearFilters('status')">Clear</convoy-button>
+						<button convoy-button size="sm" (click)="statusDropdown.show = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</button>
+						<button convoy-button size="sm" fill="clear" (click)="clearFilters('status')">Clear</button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -30,7 +30,7 @@
 				size="lg"
 				position="left"
 				buttonSize="sm"
-				buttonType="outline"
+				buttonFill="outline"
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				#appsFilterDropdown
 				[active]="!!eventDeliveriesApp"
@@ -56,7 +56,7 @@
 					</ul>
 
 					<div *ngIf="!!eventDeliveriesApp" class="p-10px pb-10px">
-						<convoy-button size="sm" (clickItem)="clearFilters('app')">Clear</convoy-button>
+						<button convoy-button size="sm" (click)="clearFilters('app')">Clear</button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -65,11 +65,11 @@
 				size="lg"
 				position="left"
 				buttonSize="sm"
-				buttonType="outline"
+				buttonFill="outline"
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				#sourcesFilterDropdown
 				[active]="!!eventDeliveriesSource"
-				[hidden]="this.privateService.activeProjectDetails?.type === 'outgoing'"
+				[hidden]="appPortalToken || this.privateService.activeProjectDetails?.type === 'outgoing'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
@@ -86,23 +86,24 @@
 					</ul>
 
 					<div *ngIf="!!eventDeliveriesSource" class="p-10px pb-10px">
-						<convoy-button size="sm" (clickItem)="clearFilters('source')">Clear</convoy-button>
+						<button convoy-button size="sm" (click)="clearFilters('source')">Clear</button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
 
 			<div class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium" *ngIf="eventDeliveryFilteredByEventId">
 				Event Filtered
-				<convoy-button size="sm" type="icon" className="ml-4px">
+				<button class="ml-4px">
 					<img class="w-14px" src="assets/img/close-icon.svg" alt="close icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()" />
-				</convoy-button>
+				</button>
 			</div>
 
-			<convoy-button
+			<button
+				convoy-button
 				size="sm"
-				type="outline"
+				fill="outline"
 				className="ml-14px px-10px border-primary-400 n h-36px"
-				[disable]="
+				[disabled]="
 					(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
 					(eventDeliveriesApp?.length == 0 || eventDeliveriesApp == undefined) &&
 					(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
@@ -110,16 +111,17 @@
 					eventDelsTimeFilterData.startTime == 'T00:00:00' &&
 					eventDelsTimeFilterData.endTime == 'T23:59:59'
 				"
-				(clickItem)="fetchRetryCount(); showBatchRetryModal = true"
+				(click)="fetchRetryCount(); showBatchRetryModal = true"
 			>
 				Batch Retry
-			</convoy-button>
+			</button>
 		</div>
 
-		<convoy-button
-			type="outline"
+		<button
+			convoy-button
+			fill="outline"
 			size="sm"
-			(clickItem)="clearFilters()"
+			(click)="clearFilters()"
 			*ngIf="
 				!(
 					(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
@@ -133,7 +135,7 @@
 			"
 		>
 			Clear Filters
-		</convoy-button>
+		</button>
 	</div>
 
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
@@ -170,20 +172,21 @@
 						<convoy-table-cell class="contents">{{ event.metadata.retry_limit }}</convoy-table-cell>
 						<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-button
+							<button
+								convoy-button
 								size="xs"
 								texture="light"
-								[disable]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
-								(clickItem)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
+								[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
+								(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 							>
 								<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 								{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
-							</convoy-button>
+							</button>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-button size="xs" type="icon" [routerLink]="'./event-deliveries/' + event.uid">
+							<button size="xs" [routerLink]="'./event-deliveries/' + event.uid">
 								<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
-							</convoy-button>
+							</button>
 						</convoy-table-cell>
 					</convoy-table-row>
 				</ng-container>
@@ -195,35 +198,37 @@
 </convoy-card>
 
 <div class="flex items-center mt-16px mb-24px">
-	<convoy-button
-		type="outline"
+	<button
+		convoy-button
+		fill="outline"
 		size="sm"
 		className="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
-		[disable]="!eventDeliveries || eventDeliveries.pagination.prev === 0"
+		[disabled]="!eventDeliveries || eventDeliveries.pagination.prev === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
-	</convoy-button>
+	</button>
 
-	<convoy-button
-		type="outline"
+	<button
+		convoy-button
+		fill="outline"
 		size="sm"
 		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
-		[disable]="!eventDeliveries || eventDeliveries.pagination.next === 0"
+		[disabled]="!eventDeliveries || eventDeliveries.pagination.next === 0"
 		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
 	>
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-	</convoy-button>
+	</button>
 </div>
 
 <convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
@@ -231,7 +236,7 @@
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
-		<convoy-button [disable]="isRetrying || batchRetryCount == 0" className="m-auto" (clickItem)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</convoy-button>
-		<convoy-button type="clear" className="font-semibold m-auto" (clickItem)="showBatchRetryModal = false">No, Cancel</convoy-button>
+		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" className="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+		<button convoy-button fill="clear" className="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </convoy-modal>

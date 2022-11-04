@@ -29,10 +29,10 @@
 					</div>
 				</ng-container>
 
-				<convoy-button [disable]="loading" size="lg">
+				<button convoy-button [disabled]="loading" size="lg">
 					<span *ngIf="!loading">Join your team</span>
 					<img *ngIf="loading" src="assets/img/button-loader.gif" alt="loader" />
-				</convoy-button>
+				</button>
 			</form>
 		</section>
 	</ng-container>
@@ -43,6 +43,6 @@
 		<h2 class="font-semibold text-20 mb-10px">This invitation has been accepted</h2>
 		<p class="text-grey-40 text-center text-16px max-w-[445px] mb-32px">Login to continue to your workspace</p>
 
-		<convoy-button [disable]="loading" routerLink="/login" class="w-[450px] mb-20px">Go to Login</convoy-button>
+		<button convoy-button [disabled]="loading" routerLink="/login" class="w-[450px] mb-20px">Go to Login</button>
 	</ng-container>
 </div>

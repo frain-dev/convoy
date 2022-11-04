@@ -45,8 +45,8 @@
 			<convoy-input label="Event Type" name="event_type" formControlName="event_type" placeholder="Event type" errorMessage="Event type is required"></convoy-input>
 		</form>
 		<div class="flex justify-end mt-40px">
-			<convoy-button type="outline" className="mr-24px" (clickItem)="cancel()">Discard</convoy-button>
-			<convoy-button [disable]="isSendingNewEvent" (clickItem)="sendNewEvent()">{{ isSendingNewEvent ? 'Sending Event..' : 'Send Event' }}</convoy-button>
+			<button convoy-button fill="outline" className="mr-24px" (click)="cancel()">Discard</button>
+			<button convoy-button [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Sending Event..' : 'Send Event' }}</button>
 		</div>
 	</ng-container>
 </convoy-modal>

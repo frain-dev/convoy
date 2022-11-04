@@ -64,16 +64,16 @@
 		</div>
 
 		<div class="flex items-center justify-end mt-16px" [class]="pages === 1 ? 'hidden' : 'flex'">
-			<convoy-button type="outline" size="sm" className="px-4px py-4px border-primary-300" [disable]="pageNumber === 1" (click)="prevPage()">
+			<button convoy-button fill="outline" size="sm" className="px-4px py-4px border-primary-300" [disabled]="pageNumber === 1" (click)="prevPage()">
 				<svg width="24" height="24" class="fill-primary-100">
 					<use xlink:href="#arrow-left-icon"></use>
 				</svg>
-			</convoy-button>
-			<convoy-button type="outline" size="sm" className="px-4px py-4px border-primary-300 ml-16px" [disable]="pageNumber === pages" (click)="nextPage()">
+			</button>
+			<button convoy-button fill="outline" size="sm" className="px-4px py-4px border-primary-300 ml-16px" [disabled]="pageNumber === pages" (click)="nextPage()">
 				<svg width="24" height="24" class="fill-primary-100">
 					<use xlink:href="#arrow-right-icon"></use>
 				</svg>
-			</convoy-button>
+			</button>
 		</div>
 	</ng-container>
 </div>

@@ -1,6 +1,6 @@
 <div class="flex justify-between items-center mb-28px">
 	<h3 class="font-semibold">Change Password</h3>
-	<convoy-button size="sm" [disable]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</convoy-button>
+	<button convoy-button size="sm" [disabled]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
 </div>
 
 <form [formGroup]="changePasswordForm" (ngSubmit)="changePassword()">

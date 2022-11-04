@@ -10,8 +10,7 @@
 				<convoy-radio formControlName="is_analytics_enabled" label="No" _name="is_analytics_enabled" [value]="false" _id="false"></convoy-radio>
 			</div>
 
-			<convoy-button className="w-full" [disable]="loading || addAnalyticsForm.invalid">Save option</convoy-button>
-
+			<button convoy-button className="w-full" [disabled]="loading || addAnalyticsForm.invalid">Save option</button>
 		</form>
 	</div>
 </convoy-modal>
