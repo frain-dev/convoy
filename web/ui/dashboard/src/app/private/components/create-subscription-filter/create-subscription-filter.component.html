@@ -6,7 +6,7 @@
 				<h4>Provide your filter specifications</h4>
 			</div>
 			<div class="flex items-center">
-				<convoy-button size="sm" buttonType="button" className="mr-16px min-w-[130px] min-h-[34px]" (clickItem)="filterSchema.emit(subscriptionFilterForm.value.schema)">Save</convoy-button>
+				<convoy-button size="sm" buttonType="button" className="mr-16px min-w-[130px] min-h-[34px]" (clickItem)="setSubscriptionFilter()">Save</convoy-button>
 				<convoy-button size="sm" type="outline">
 					Test Filter
 					<svg width="16" height="16" class="ml-8px" class="ml-4px">

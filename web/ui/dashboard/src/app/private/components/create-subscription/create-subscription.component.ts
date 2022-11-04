@@ -273,6 +273,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({
 			filter_config: { filter: schema }
 		});
+		console.log(this.subscriptionForm.value);
 		this.showFilterForm = false;
 	}
 }
