@@ -567,6 +567,52 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	require.Equal(s.T(), dbEndpoint.Authentication, endpoint.Authentication)
 }
 
+func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint_With_Custom_Authentication() {
+	appID := uuid.New().String()
+	f := faker.New()
+	endpointURL := f.Internet().URL()
+	expectedStatusCode := http.StatusAccepted
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, s.DefaultGroup.UID)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultGroup.UID, appID, endpoint.UID)
+	plainBody := fmt.Sprintf(`{
+		"url": "%s",
+		"description": "default endpoint",
+		"authentication": {
+			"type": "api_key",
+			"api_key": {
+				"header_name": "x-api-key",
+				"header_value": "testapikey"
+			}
+		}
+	}`, endpointURL)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpointResponse datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpointResponse)
+
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
+	require.Equal(s.T(), "x-api-key", dbEndpoint.Authentication.ApiKey.HeaderName)
+	require.Equal(s.T(), "testapikey", dbEndpoint.Authentication.ApiKey.HeaderValue)
+
+}
+
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToProjectsAPI() {
 	appID := uuid.New().String()
 	f := faker.New()
