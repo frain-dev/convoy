@@ -171,7 +171,7 @@ type User struct {
 type Endpoint struct {
 	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
 	Secret             string `json:"secret" bson:"secret"`
-	Description        string `json:"description" bson:"description" valid:"required~please provide a description for your endpoint"`
+	Description        string `json:"description" bson:"description"`
 	AdvancedSignatures *bool  `json:"advanced_signatures" bson:"advanced_signatures"`
 	Name               string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
 	SupportEmail       string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
@@ -187,7 +187,7 @@ type Endpoint struct {
 type UpdateEndpoint struct {
 	URL                string  `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
 	Secret             string  `json:"secret" bson:"secret"`
-	Description        string  `json:"description" bson:"description" valid:"required~please provide a description for your endpoint"`
+	Description        string  `json:"description" bson:"description"`
 	AdvancedSignatures *bool   `json:"advanced_signatures" bson:"advanced_signatures"`
 	Name               *string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
 	SupportEmail       *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
@@ -217,9 +217,9 @@ type UpdateSource struct {
 }
 
 type Event struct {
-	EndpointID string `json:"endpoint_id" bson:"endpoint_id"`
-	AppID      string `json:"app_id" bson:"app_id"`
-	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+	Endpoints []string `json:"endpoints" bson:"endpoints"`
+	AppID     string   `json:"app_id" bson:"app_id"`
+	EventType string   `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints

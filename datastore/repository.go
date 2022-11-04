@@ -80,6 +80,8 @@ type OrganisationMemberRepository interface {
 type EndpointRepository interface {
 	CreateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
 	FindEndpointByID(çtx context.Context, id string) (*Endpoint, error)
+	FindEndpointsByID(ctx context.Context, ids []string) ([]Endpoint, error)
+	FindEndpointsByAppID(ctx context.Context, appID string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
 	CountGroupEndpoints(ctx context.Context, groupID string) (int64, error)
