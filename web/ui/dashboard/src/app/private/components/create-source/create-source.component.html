@@ -55,8 +55,28 @@
 			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'shopify'">Shopify Credentials</h2>
 
 			<div class="grid grid-cols-2 gap-6">
-				<convoy-select *ngIf="sourceForm.value.verifier.type === 'hmac'" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"></convoy-select>
-				<convoy-select *ngIf="sourceForm.value.verifier.type === 'hmac'" label="Hash Algorithm" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Select algorithm type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"></convoy-select>
+				<convoy-select
+					*ngIf="sourceForm.value.verifier.type === 'hmac'"
+					label="Encoding"
+					name="encoding"
+					formControlName="encoding"
+					[options]="encodings"
+					errorMessage="Select encoding type"
+					[required]="true"
+					className="mb-0"
+					(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
+				></convoy-select>
+				<convoy-select
+					*ngIf="sourceForm.value.verifier.type === 'hmac'"
+					label="Hash Algorithm"
+					name="hash"
+					formControlName="hash"
+					[options]="hashAlgorithms"
+					errorMessage="Select algorithm type"
+					[required]="true"
+					className="mb-0"
+					(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
+				></convoy-select>
 
 				<convoy-input
 					*ngIf="sourceForm.value.verifier.type === 'hmac'"

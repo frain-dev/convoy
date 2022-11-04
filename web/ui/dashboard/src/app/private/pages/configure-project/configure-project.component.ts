@@ -27,14 +27,7 @@ export class ConfigureProjectComponent implements OnInit {
 		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
 		{ projectStage: 'Create Subscription', currentStage: 'pending', id: 'createSubscription' }
 	];
-	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
-	retryLogicTypes = [
-		{ id: 'linear', type: 'Linear time retry' },
-		{ id: 'exponential', type: 'Exponential time backoff' }
-	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
-	showInfo = false;
-	isLoadingProjects = false;
 
 	constructor(public privateService: PrivateService, private generalService: GeneralService, public router: Router, private location: Location) {}
 

@@ -4,25 +4,27 @@ import (
 	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func addStreamCommand(a *app) *cobra.Command {
 	var socketPort uint32
+	var logLevel string
 
 	cmd := &cobra.Command{
 		Use:   "stream",
 		Short: "Start a websocket server to pipe events to another convoy instance",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := config.Get()
 			if err != nil {
-				log.WithError(err).Fatal("failed to initialize realm chain")
+				a.logger.WithError(err).Fatal("failed to initialize realm chain")
+				return err
 			}
 
 			appRepo := cm.NewApplicationRepo(a.store)
@@ -40,7 +42,8 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			err = realm_chain.Init(authCfg, apiKeyRepo, nil, nil)
 			if err != nil {
-				log.WithError(err).Fatal("failed to initialize realm chain")
+				a.logger.WithError(err).Fatal("failed to initialize realm chain")
+				return err
 			}
 
 			r := &socket.Repo{
@@ -58,7 +61,17 @@ func addStreamCommand(a *app) *cobra.Command {
 			go h.StartEventSender()
 			go h.StartClientStatusWatcher()
 
+			lo := a.logger.(*log.Logger)
+			lo.SetPrefix("socket server")
+
+			lvl, err := log.ParseLevel(c.Logger.Level)
+			if err != nil {
+				return err
+			}
+			lo.SetLevel(lvl)
+
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
+				Logger:    lo,
 				AppRepo:   appRepo,
 				GroupRepo: groupRepo,
 				Cache:     a.cache,
@@ -76,11 +89,14 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			srv.SetHandler(handler)
 
-			log.Infof("Stream server running on port %v", socketPort)
+			a.logger.Infof("Stream server running on port %v", socketPort)
 			srv.Listen()
+
+			return nil
 		},
 	}
 
 	cmd.Flags().Uint32Var(&socketPort, "socket-port", 5008, "Socket port")
+	cmd.Flags().StringVar(&logLevel, "log-level", "error", "stream log level")
 	return cmd
 }

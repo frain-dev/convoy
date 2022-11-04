@@ -72,7 +72,8 @@ export class CreateAppComponent implements OnInit {
 					header_name: [''],
 					header_value: ['']
 				})
-			})
+			}),
+			advanced_signatures: [null]
 		});
 	}
 
@@ -150,7 +151,8 @@ export class CreateAppComponent implements OnInit {
 		try {
 			const response = await this.createAppService.getApps();
 			const apps = response.data.content;
-			if(apps.length > 0 && this.router.url.includes('/projects/new')) this.createApp.emit()
+			if (apps.length > 0 && this.router.url.includes('/configure')) this.createApp.emit();
+			if (apps.length > 0 && this.router.url.includes('/projects/new')) this.createApp.emit();
 			this.isLoadingAppDetails = false;
 		} catch {
 			this.isLoadingAppDetails = false;

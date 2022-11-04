@@ -8,32 +8,41 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/pkg/log"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func addSchedulerCommand(a *app) *cobra.Command {
 	var exportCronSpec string
 	var port uint32
+	var logLevel string
 	cmd := &cobra.Command{
 		Use:   "scheduler",
 		Short: "scheduler runs periodic tasks",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				log.Fatalf("Error getting config: %v", err)
+				a.logger.Errorf("Failed to retrieve config: %v", err)
+				return err
 			}
-			if cfg.Queue.Type != config.RedisQueueProvider {
-				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
+
+			lo := a.logger.(*log.Logger)
+			lo.SetPrefix("scheduler")
+
+			lvl, err := log.ParseLevel(cfg.Logger.Level)
+			if err != nil {
+				return err
 			}
+			lo.SetLevel(lvl)
+
 			ctx := context.Background()
 
 			//initialize scheduler
-			s := worker.NewScheduler(a.queue)
+			s := worker.NewScheduler(a.queue, lo)
 
 			//register tasks
 			s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
@@ -54,13 +63,16 @@ func addSchedulerCommand(a *app) *cobra.Command {
 
 			e := srv.ListenAndServe()
 			if e != nil {
-				log.Fatal(e)
+				a.logger.Fatalf("scheduler crashed: %v", e)
 			}
 			<-ctx.Done()
+
+			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&exportCronSpec, "export-spec", "@every 24h", "export scheduler time interval '@every <duration>'")
 	cmd.Flags().Uint32Var(&port, "port", 5007, "port to serve metrics")
+	cmd.Flags().StringVar(&logLevel, "log-level", "error", "scheduler log level")
 	return cmd
 }

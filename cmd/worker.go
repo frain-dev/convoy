@@ -11,17 +11,18 @@ import (
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func addWorkerCommand(a *app) *cobra.Command {
 	var workerPort uint32
+	var logLevel string
 
 	cmd := &cobra.Command{
 		Use:   "worker",
@@ -29,21 +30,31 @@ func addWorkerCommand(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
+				a.logger.Errorf("Failed to retrieve config: %v", err)
 				return err
 			}
 
+			lo := a.logger.(*log.Logger)
+			lo.SetPrefix("worker")
+
+			lvl, err := log.ParseLevel(cfg.Logger.Level)
+			if err != nil {
+				return err
+			}
+			lo.SetLevel(lvl)
+
 			sc, err := smtp.NewClient(&cfg.SMTP)
 			if err != nil {
-				log.WithError(err).Error("Failed to create smtp client")
+				a.logger.WithError(err).Error("Failed to create smtp client")
 				return err
 			}
 
 			ctx := context.Background()
 
 			// register worker.
-			consumer, err := worker.NewConsumer(a.queue)
+			consumer, err := worker.NewConsumer(a.queue, lo)
 			if err != nil {
-				log.WithError(err).Error("failed to create worker")
+				a.logger.WithError(err).Error("failed to create worker")
 			}
 
 			appRepo := cm.NewApplicationRepo(a.store)
@@ -85,13 +96,16 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.store,
 				a.queue))
 
+			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
+				appRepo))
+
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 			//start worker
-			log.Infof("Starting Convoy workers...")
+			lo.Infof("Starting Convoy workers...")
 			consumer.Start()
 
 			metrics.RegisterQueueMetrics(a.queue)
@@ -107,7 +121,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				Addr:    fmt.Sprintf(":%d", workerPort),
 			}
 
-			log.Infof("Worker running on port %v", workerPort)
+			a.logger.Infof("Worker running on port %v", workerPort)
 
 			e := srv.ListenAndServe()
 			if e != nil {
@@ -120,5 +134,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 	}
 
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
+	cmd.Flags().StringVar(&logLevel, "log-level", "error", "scheduler log level")
+
 	return cmd
 }
