@@ -1,0 +1,29 @@
+<convoy-card className="p-24px mt-40px">
+	<form [formGroup]="subscriptionFilterForm" (ngSubmit)="testFilter()" class="bg-[#FCFCFC] rounded-8px">
+		<div class="flex items-center justify-between mb-30px">
+			<div>
+				<h2 class="font-semibold mb-8px">Setup Filter</h2>
+				<h4>Provide your filter specifications</h4>
+			</div>
+			<div class="flex items-center">
+				<convoy-button size="sm" buttonType="button" className="mr-16px min-w-[130px] min-h-[34px]" (clickItem)="setSubscriptionFilter()">Save</convoy-button>
+				<convoy-button size="sm" type="outline">
+					Test Filter
+					<svg width="16" height="16" class="ml-8px" class="ml-4px">
+						<use xlink:href="#test-icon"></use>
+					</svg>
+				</convoy-button>
+			</div>
+		</div>
+		<div class="grid grid-cols-2">
+			<div class="flex flex-col w-full">
+				<label for="request" class="text-14 border-b border-b-grey-20 pl-38px pt-10px pb-20px font-semibold">Event Data</label>
+				<convoy-monaco #requestEditor></convoy-monaco>
+			</div>
+			<div class="flex flex-col w-full">
+				<label for="request" class="text-14 border-b border-b-grey-20 pl-38px pt-10px pb-20px font-semibold">Filter Schema</label>
+				<convoy-monaco [editorValue]="schema" #schemaEditor></convoy-monaco>
+			</div>
+		</div>
+	</form>
+</convoy-card>

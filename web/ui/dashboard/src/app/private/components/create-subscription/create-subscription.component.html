@@ -76,38 +76,60 @@
 			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
 		</div>
 
-		<div [hidden]="!enableMoreConfig">
-			<h2 class="font-semibold flex items-center mb-20px mt-30px">
-				Retry Logic
-				<convoy-tooltip position="right" size="sm" class="ml-4px">
-					These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the
-					next retry attempt.
-				</convoy-tooltip>
-			</h2>
-
-			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
-				<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism" (selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"></convoy-select>
-
-				<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3s"></convoy-input>
-				<convoy-input type="text" name="retry-logic-count" formControlName="retry_count" label="Limit" placeholder="e.g 5"></convoy-input>
-			</div>
-
-			<h2 class="font-semibold flex items-center mb-20px mt-30px">
-				Alert Rule
-				<convoy-tooltip position="right" size="sm" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
-			</h2>
-			<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
-				<convoy-input type="number" name="alert-config-count" formControlName="count" label="Count" placeholder="e.g 10"></convoy-input>
-				<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
-			</div>
-		</div>
 		<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
 		<div class="grid grid-cols-2 gap-24px">
 			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
 			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
 		</div>
-		<div class="flex justify-end mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
+
+		<div class="border border-grey-20 rounded-4px p-16px mt-20px">
+			<div class="flex justify-between items-center mb-14px">
+				<h4 class="font-semibold">Event filters</h4>
+				<convoy-button type="text" size="sm" className="font-medium" buttonType="button" (clickItem)="setupFilter()">
+					{{ action == 'update' ? 'Edit' : 'Setup' }} Filter
+					<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
+						<use xlink:href="#arrow-right-icon"></use>
+					</svg>
+				</convoy-button>
+			</div>
+
+			<p class="text-12 text-grey-60 max-w-[340px]">You can activate event filters by clicking on the setup filter button and specifying the configurations.</p>
+
+			<convoy-button size="sm" type="text" buttonType="button" className="font-medium mt-18px">
+				Learn more about filters here
+				<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</convoy-button>
+		</div>
+
+		<div class="border border-grey-20 p-16px mt-20px">
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations" className="w-full justify-between !mb-0"></convoy-toggle>
+			<div class="transition-all ease-in-out duration-300" [class]="enableMoreConfig ? 'h-full' : 'max-h-0 overflow-hidden'">
+				<h3 class="font-semibold flex items-center mb-20px mt-20px">
+					Retry Logic
+					<convoy-tooltip position="right" size="sm" class="ml-4px">
+						These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before
+						the next retry attempt.
+					</convoy-tooltip>
+				</h3>
+
+				<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
+					<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism" (selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"></convoy-select>
+
+					<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3s"></convoy-input>
+					<convoy-input type="text" name="retry-logic-count" formControlName="retry_count" label="Limit" placeholder="e.g 5"></convoy-input>
+				</div>
+
+				<h3 class="font-semibold flex items-center mb-20px mt-30px">
+					Alert Rule
+					<convoy-tooltip position="right" size="sm" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
+				</h3>
+				<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
+					<convoy-input type="number" name="alert-config-count" formControlName="count" label="Count" placeholder="e.g 10"></convoy-input>
+					<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
+				</div>
+			</div>
 		</div>
 	</convoy-card>
 
@@ -140,4 +162,9 @@
 	</div>
 </convoy-modal>
 
+<convoy-modal position="full" [title]="action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter'" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
+	<div class="max-w-[1312px] m-auto">
+		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
+	</div>
+</convoy-modal>
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="onAction.emit({ action: 'cancel' })" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
