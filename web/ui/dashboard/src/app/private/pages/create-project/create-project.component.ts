@@ -23,7 +23,6 @@ export class CreateProjectComponent implements OnInit {
 	async createProject(newProjectData: { action: string; data: GROUP }) {
 		const projectId = newProjectData.data.uid;
 		this.router.navigateByUrl('/projects/' + projectId + '/configure');
-		window.scrollTo(0, 0);
 	}
 
 	async getProjects() {
