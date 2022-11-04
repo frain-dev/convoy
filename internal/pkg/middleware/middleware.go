@@ -185,12 +185,12 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 			endpointID := chi.URLParam(r, "endpointID")
 
 			var endpoint *datastore.Endpoint
-			appCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
+			endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
 
-			event := "an error occurred while retrieving app details"
+			event := "an error occurred while retrieving endpoint details"
 			statusCode := http.StatusBadRequest
 
-			err := m.cache.Get(r.Context(), appCacheKey, &endpoint)
+			err := m.cache.Get(r.Context(), endpointCacheKey, &endpoint)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 				return
@@ -207,7 +207,7 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 					return
 				}
 
-				err = m.cache.Set(r.Context(), appCacheKey, &endpoint, time.Second*1)
+				err = m.cache.Set(r.Context(), endpointCacheKey, &endpoint, time.Second*1)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 					return
@@ -235,95 +235,95 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 	}
 }
 
-//func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.Handler {
-//	return func(next http.Handler) http.Handler {
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//			var group *datastore.Group
-//			authUser := GetAuthUserFromContext(r.Context())
-//			groupID := authUser.Role.Group
-//			appID := authUser.Role.App
-//
-//			groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
-//			err := m.cache.Get(r.Context(), groupCacheKey, &group)
-//			if err != nil {
-//				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-//				return
-//			}
-//
-//			if group == nil {
-//				group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
-//				if err != nil {
-//					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
-//					return
-//				}
-//
-//				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
-//				if err != nil {
-//					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-//					return
-//				}
-//			}
-//
-//			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
-//			if err != nil {
-//
-//				event := "an error occurred while retrieving app details"
-//				statusCode := http.StatusBadRequest
-//
-//				if errors.Is(err, datastore.ErrApplicationNotFound) {
-//					event = err.Error()
-//					statusCode = http.StatusBadRequest
-//				}
-//
-//				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
-//				return
-//			}
-//
-//			r = r.WithContext(setGroupInContext(r.Context(), group))
-//			r = r.WithContext(setApplicationInContext(r.Context(), app))
-//			r = r.WithContext(setAppIDInContext(r.Context(), app.UID))
-//			next.ServeHTTP(w, r)
-//		})
-//	}
-//}
+func (m *Middleware) RequireEndpointPortal() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var group *datastore.Group
+			authUser := GetAuthUserFromContext(r.Context())
+			groupID := authUser.Role.Group
+			endpointID := authUser.Role.Endpoint
 
-//func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
-//	return func(next http.Handler) http.Handler {
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//			authUser := GetAuthUserFromContext(r.Context())
-//			if authUser.Role.Type.Is(auth.RoleSuperUser) {
-//				// superuser has access to everything
-//				next.ServeHTTP(w, r)
-//				return
-//			}
-//
-//			if !authUser.Role.Type.Is(role) {
-//				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
-//				return
-//			}
-//
-//			group := GetGroupFromContext(r.Context())
-//			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
-//				if !util.IsStringEmpty(authUser.Role.App) { // we're dealing with an app portal token at this point
-//					app := GetApplicationFromContext(r.Context())
-//
-//					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
-//						next.ServeHTTP(w, r)
-//						return
-//					}
-//
-//					_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
-//					return
-//				}
-//
-//				next.ServeHTTP(w, r)
-//				return
-//			}
-//
-//			_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
-//		})
-//	}
-//}
+			groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
+			err := m.cache.Get(r.Context(), groupCacheKey, &group)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			if group == nil {
+				group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+					return
+				}
+
+				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
+			}
+
+			endpoint, err := m.endpointRepo.FindEndpointByID(r.Context(), endpointID)
+			if err != nil {
+
+				event := "an error occurred while retrieving endpoint details"
+				statusCode := http.StatusBadRequest
+
+				if errors.Is(err, datastore.ErrEndpointNotFound) {
+					event = err.Error()
+					statusCode = http.StatusBadRequest
+				}
+
+				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
+				return
+			}
+
+			r = r.WithContext(setGroupInContext(r.Context(), group))
+			r = r.WithContext(setEndpointInContext(r.Context(), endpoint))
+			r = r.WithContext(setEndpointIDInContext(r.Context(), endpoint.UID))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequirePortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			if authUser.Role.Type.Is(auth.RoleSuperUser) {
+				// superuser has access to everything
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if !authUser.Role.Type.Is(role) {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
+				return
+			}
+
+			group := GetGroupFromContext(r.Context())
+			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
+				if !util.IsStringEmpty(authUser.Role.Endpoint) { // we're dealing with an app portal token at this point
+					endpoint := GetEndpointFromContext(r.Context())
+
+					if endpoint.Title == authUser.Role.Endpoint || endpoint.UID == authUser.Role.Endpoint {
+						next.ServeHTTP(w, r)
+						return
+					}
+
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
+					return
+				}
+
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+		})
+	}
+}
 
 func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
 	activeEndpoints := make([]datastore.Endpoint, 0)
@@ -751,6 +751,8 @@ func (m *Middleware) RequirePermission(role auth.RoleType) func(next http.Handle
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
+
+			fmt.Printf("%+v\n", authUser)
 
 			if !authUser.Role.Type.Is(role) {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))

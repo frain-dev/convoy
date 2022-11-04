@@ -81,7 +81,7 @@ func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByEndpointID() {
 	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultGroup, endpoint.UID)
 
 	// Arrange
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/apps/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, endpoint.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, endpoint.UID)
 	req := createRequest(http.MethodGet, url, d.APIKey, nil)
 	err = d.AuthenticatorFn(req, d.Router)
 	require.NoError(d.T(), err)

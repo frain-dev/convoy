@@ -100,13 +100,13 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
 
-				mockCache.EXPECT().Get(gomock.Any(), "applications:endpoint-id-1", gomock.Any()).Times(1).Return(nil)
+				mockCache.EXPECT().Get(gomock.Any(), "endpoints:endpoint-id-1", gomock.Any()).Times(1).Return(nil)
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
-				mockCache.EXPECT().Set(gomock.Any(), "applications:endpoint-id-1", endpoint, 10*time.Minute).Times(1).Return(nil)
+				mockCache.EXPECT().Set(gomock.Any(), "endpoints:endpoint-id-1", endpoint, 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{

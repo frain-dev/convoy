@@ -146,7 +146,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event_Redirec
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 
-	bodyStr := `{"endpoint_id":"%s", "event_type":"*", "data":{"level":"test"}}`
+	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, endpointID)
 
 	url := fmt.Sprintf("/api/v1/events?groupID=%s", s.DefaultGroup.UID)

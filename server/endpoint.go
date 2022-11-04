@@ -154,10 +154,9 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	err := endpointService.DeleteEndpoint(r.Context(), endpoint, group.UID)
+	err := endpointService.DeleteEndpoint(r.Context(), endpoint)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

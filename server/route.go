@@ -149,54 +149,22 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					projectSubRouter.Delete("/", a.DeleteGroup)
 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
-						endpointSubRouter.Use(a.M.RequireGroup())
 						endpointSubRouter.Use(a.M.RateLimitByGroupID())
-						endpointSubRouter.Use(a.M.RequirePermission(auth.RoleAdmin))
-		
+
 						endpointSubRouter.Post("/", a.CreateEndpoint)
 						endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
-		
+
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Use(a.M.RequireEndpoint())
-		
+							e.Use(a.M.RequireEndpointBelongsToGroup())
+
 							e.Get("/", a.GetEndpoint)
 							e.Put("/", a.UpdateEndpoint)
 							e.Delete("/", a.DeleteEndpoint)
 							e.Put("/expire_secret", a.ExpireSecret)
 						})
-		
+
 					})
-
-					// projectSubRouter.Route("/applications", func(appRouter chi.Router) {
-					// 	appRouter.Use(a.M.RateLimitByGroupID())
-
-					// 	appRouter.Post("/", a.CreateApp)
-					// 	appRouter.With(a.M.Pagination).Get("/", a.GetApps)
-
-					// 	appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-					// 		appSubRouter.Use(a.M.RequireApp())
-					// 		appSubRouter.Use(a.M.RequireAppBelongsToGroup())
-
-					// 		appSubRouter.Get("/", a.GetApp)
-					// 		appSubRouter.Put("/", a.UpdateApp)
-					// 		appSubRouter.Delete("/", a.DeleteApp)
-
-					// 		appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-					// 			endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
-					// 			endpointAppSubRouter.Get("/", a.GetAppEndpoints)
-
-					// 			endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-					// 				e.Use(a.M.RequireAppEndpoint())
-
-					// 				e.Get("/", a.GetAppEndpoint)
-					// 				e.Put("/", a.UpdateAppEndpoint)
-					// 				e.Delete("/", a.DeleteAppEndpoint)
-					// 				e.Put("/expire_secret", a.ExpireSecret)
-
-					// 			})
-					// 		})
-					// 	})
-					// })
 
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 						eventRouter.Use(a.M.RateLimitByGroupID())
@@ -233,9 +201,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						})
 					})
 
-					//
 					projectSubRouter.Route("/security", func(securityRouter chi.Router) {
-						securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
+						securityRouter.Route("/endpoints/{endpointID}/keys", func(securitySubRouter chi.Router) {
 							securitySubRouter.Use(a.M.RequireEndpoint())
 							securitySubRouter.Use(a.M.RequireEndpointBelongsToGroup())
 							securitySubRouter.Use(a.M.RequireBaseUrl())
@@ -355,11 +322,11 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateGroup)
 						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteGroup)
 
-						groupSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-							endpointAppSubRouter.Post("/", a.CreateEndpoint)
-							endpointAppSubRouter.Get("/", a.GetEndpoints)
+						groupSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
+							endpointSubRouter.Post("/", a.CreateEndpoint)
+							endpointSubRouter.Get("/", a.GetEndpoints)
 
-							endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Use(a.M.RequireEndpoint())
 
 								e.Get("/", a.GetEndpoint)
@@ -373,11 +340,12 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
 									keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
 								})
-							})
-						})
 
-						groupSubRouter.Route("/devices", func(deviceRouter chi.Router) {
-							deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+								e.Route("/devices", func(deviceRouter chi.Router) {
+									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+								})
+							})
+
 						})
 
 						groupSubRouter.Route("/events", func(eventRouter chi.Router) {
@@ -462,8 +430,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
 		portalRouter.Use(a.M.RequireAuth())
-		//portalRouter.Use(a.M.RequireAppPortalApplication())
-		//portalRouter.Use(a.M.RequirePortalPermission(auth.RoleAdmin))
+		portalRouter.Use(a.M.RequireEndpointPortal())
+		portalRouter.Use(a.M.RequirePortalPermission(auth.RoleAdmin))
 
 		portalRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
 			endpointAppSubRouter.Get("/", a.GetEndpoints)

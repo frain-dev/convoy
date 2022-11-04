@@ -238,10 +238,10 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	parseResponse(s.T(), w.Result(), &endpoint)
 
 	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointTitle, dbApp.Title)
-	require.Equal(s.T(), endpointURL, dbApp.TargetURL)
+	require.Equal(s.T(), endpointTitle, dbEndpoint.Title)
+	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
 }
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
@@ -354,7 +354,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_DuplicateNames() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, endpointID)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultGroup.UID, endpointID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"description": "test endpoint",
@@ -431,17 +431,21 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() 
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", isDisabled)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, endpointID)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultGroup.UID, endpointID)
 	body := serialize(`{
 		"name": "%s",
+		"description": "test endpoint",
 		"support_email": "%s",
+		"url": "%s",
 		"is_disabled": %t
-	}`, title, supportEmail, !isDisabled)
+	}`, title, supportEmail, endpointURL, !isDisabled)
 	req := createRequest(http.MethodPut, url, s.PersonalAPIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
+
+	fmt.Println(w.Body.String())
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -516,7 +520,7 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentic
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request
-	url := "/api/v1/endpoints"
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultGroup.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"url": "%s",

@@ -241,8 +241,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_AppDoesNotBelongToGroup() {
-	expectedStatusCode := http.StatusBadRequest
+func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_EndpointDoesNotBelongToGroup() {
+	expectedStatusCode := http.StatusUnauthorized
 
 	// Switch to the native realm
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
@@ -279,14 +279,6 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_AppDoesNo
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var apiKeyResponse models.PortalAPIKeyResponse
-	parseResponse(s.T(), w.Result(), &apiKeyResponse)
-	require.NotEmpty(s.T(), apiKeyResponse.Key)
-	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.CLIKey))
-	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
-	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
 func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey() {

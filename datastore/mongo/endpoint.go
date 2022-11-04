@@ -94,6 +94,7 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 			"is_disabled":       endpoint.IsDisabled,
 			"target_url":        endpoint.TargetURL,
 			"secret":            endpoint.Secret,
+			"secrets":           endpoint.Secrets,
 			"description":       endpoint.Description,
 			"slack_webhook_url": endpoint.SlackWebhookURL,
 			"http_timeout":      endpoint.HttpTimeout,

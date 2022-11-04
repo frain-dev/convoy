@@ -65,12 +65,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
-
-				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Subscription{
-					{UID: "abc"},
-				}, nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -122,12 +116,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
-
-				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Subscription{
-					{UID: "abc"},
-				}, nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -177,12 +165,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
-
-				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Subscription{
-					{UID: "abc"},
-				}, nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -234,12 +216,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
-
-				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Subscription{
-					{UID: "abc"},
-				}, nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -289,12 +265,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 					GroupID:      "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
-
-				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Subscription{
-					{UID: "abc"},
-				}, nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -326,7 +296,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "endpoint_id:please provide an endpoint id",
+			wantErrMsg:  "please provide an endpoint ID",
 		},
 		{
 			name: "should_error_for_endpoint_not_found",
@@ -351,39 +321,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			wantErrCode: http.StatusNotFound,
 			wantErrMsg:  "endpoint not found",
 		},
-		{
-			name: "should_error_for_zero_endpoint_subscriptions",
-			dbFn: func(es *EventService) {
-				c, _ := es.cache.(*mocks.MockCache)
-				c.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any())
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-
-				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "123").
-					Times(1).Return(&datastore.Endpoint{
-					Title:        "test_app",
-					UID:          "123",
-					GroupID:      "abc",
-					SupportEmail: "test_app@gmail.com",
-				}, nil)
-
-				s, _ := es.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Subscription{}, nil)
-			},
-			args: args{
-				ctx: ctx,
-				newMessage: &models.Event{
-					EndpointID: "123",
-					EventType:  "payment.created",
-					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				},
-				g: &datastore.Group{},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "endpoint has no subscriptions",
-		},
+		
 		{
 			name: "should_fail_to_create_event",
 			dbFn: func(es *EventService) {},
@@ -1379,9 +1317,12 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 
 				en, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
 				en.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
-					UID:               "1234",
-					TargetURL:         "http://localhost.com",
-					DocumentStatus:    "Active",
+					UID:            "1234",
+					Title:          "Title",
+					GroupID:        "123",
+					SupportEmail:   "SupportEmail",
+					TargetURL:      "http://localhost.com",
+					DocumentStatus: "Active",
 					Secrets: []datastore.Secret{
 						{
 							UID:   "abc",
@@ -1402,15 +1343,21 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						EventType: "incoming",
 					},
 					Endpoint: &datastore.Endpoint{
-						UID:         "1234",
-						TargetURL:   "http://localhost.com",
+						UID:            "1234",
+						Title:          "Title",
+						GroupID:        "123",
+						SupportEmail:   "SupportEmail",
+						TargetURL:      "http://localhost.com",
+						DocumentStatus: "Active",
 						Secrets: []datastore.Secret{
 							{
 								UID:   "abc",
 								Value: "Secret",
 							},
 						},
-						HttpTimeout: "30s",
+						HttpTimeout:       "30s",
+						RateLimit:         10,
+						RateLimitDuration: "1h",
 					},
 				},
 			},

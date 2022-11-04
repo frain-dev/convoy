@@ -308,13 +308,16 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 			a, err := e.endpointRepo.FindEndpointByID(ctx, ed.EndpointID)
 			if err == nil {
 				aa := &datastore.Endpoint{
-					UID:          a.UID,
-					Title:        a.Title,
-					TargetURL:    a.TargetURL,
-					HttpTimeout:  a.HttpTimeout,
-					Secret:       a.Secret,
-					GroupID:      a.GroupID,
-					SupportEmail: a.SupportEmail,
+					UID:               a.UID,
+					Title:             a.Title,
+					TargetURL:         a.TargetURL,
+					HttpTimeout:       a.HttpTimeout,
+					Secrets:           a.Secrets,
+					RateLimit:         a.RateLimit,
+					RateLimitDuration: a.RateLimitDuration,
+					GroupID:           a.GroupID,
+					SupportEmail:      a.SupportEmail,
+					DocumentStatus:    a.DocumentStatus,
 				}
 				endpointMap[ed.EndpointID] = aa
 			}

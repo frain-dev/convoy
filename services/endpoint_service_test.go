@@ -19,10 +19,24 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	switch obj {
 	case "group":
 		g := v.(*datastore.Group)
+		if g.Config != nil {
+			for i := range g.Config.Signature.Versions {
+				v := &g.Config.Signature.Versions[i]
+				v.UID = ""
+				v.CreatedAt = 0
+			}
+		}
 		g.UID = ""
 		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
 	case "endpoint":
 		e := v.(*datastore.Endpoint)
+
+		for i := range e.Secrets {
+			s := &e.Secrets[i]
+			s.UID = ""
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, 0
+		}
+
 		e.UID = ""
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
 	case "event":
@@ -304,12 +318,14 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Title:             "endpoint",
-				SupportEmail:      "endpoint@test.com",
-				IsDisabled:        false,
-				SlackWebhookURL:   "https://google.com",
-				GroupID:           group.UID,
-				Secret:            "1234",
+				Title:           "endpoint",
+				SupportEmail:    "endpoint@test.com",
+				IsDisabled:      false,
+				SlackWebhookURL: "https://google.com",
+				GroupID:         group.UID,
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         5000,
@@ -347,9 +363,11 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
-				GroupID:           group.UID,
-				Title:             "endpoint",
-				Secret:            "1234",
+				GroupID: group.UID,
+				Title:   "endpoint",
+				Secrets: []datastore.Secret{
+					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
@@ -620,10 +638,10 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
-				endpointRepo.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := as.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				c.EXPECT().Delete(gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},
@@ -636,7 +654,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
-				endpointRepo.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -654,7 +672,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 				tc.dbFn(as)
 			}
 
-			err := as.DeleteEndpoint(tc.args.ctx, tc.args.e, tc.args.g.UID)
+			err := as.DeleteEndpoint(tc.args.ctx, tc.args.e)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -720,24 +738,6 @@ func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
 			wantErr:     false,
 			wantErrCode: 0,
 			wantErrMsg:  "",
-		},
-		{
-			name: "should_fail_to_find_endpoint",
-			args: args{
-				ctx: ctx,
-				secret: &models.ExpireSecret{
-					Secret:     "abce",
-					Expiration: 10,
-				},
-				endpoint: &datastore.Endpoint{
-					UID:     "abc",
-					GroupID: "1234",
-				},
-			},
-			dbFn:        func(es *EndpointService) {},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "endpoint not found",
 		},
 	}
 	for _, tt := range tests {

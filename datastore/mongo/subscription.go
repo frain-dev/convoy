@@ -88,7 +88,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 			{Key: "$match",
 				Value: bson.D{
 					{Key: "group_id", Value: groupId},
-					{Key: "app_id", Value: f.EndpointID},
+					{Key: "endpoint_id", Value: f.EndpointID},
 					{Key: "document_status", Value: datastore.ActiveDocumentStatus},
 				},
 			},

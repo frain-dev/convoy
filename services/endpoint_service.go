@@ -165,18 +165,17 @@ func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEnd
 	return endpoint, nil
 }
 
-func (a *EndpointService) DeleteEndpoint(ctx context.Context, e *datastore.Endpoint, groupID string) error {
-
-	err := a.endpointRepo.UpdateEndpoint(ctx, e, groupID)
+func (a *EndpointService) DeleteEndpoint(ctx context.Context, e *datastore.Endpoint) error {
+	err := a.endpointRepo.DeleteEndpoint(ctx, e)
 	if err != nil {
 		log.WithError(err).Error("failed to delete endpoint")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting endpoint"))
 	}
 
 	endpointCacheKey := convoy.EndpointsCacheKey.Get(e.UID).String()
-	err = a.cache.Set(ctx, endpointCacheKey, &e, time.Minute*5)
+	err = a.cache.Delete(ctx, endpointCacheKey)
 	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update endpoint cache"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete endpoint cache"))
 	}
 
 	return nil

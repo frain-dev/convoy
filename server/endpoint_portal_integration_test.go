@@ -60,7 +60,7 @@ func TestAppPortalIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(AppPortalIntegrationTestSuite))
 }
 
-func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
+func (s *AppPortalIntegrationTestSuite) Test_GetEndpointEvents() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -85,7 +85,7 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 		Endpoint: endpoint2.UID,
 	}
 
-	// generate an app portal key 
+	// generate an app portal key
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "app_portal", "")
 	require.NoError(s.T(), err)
 
@@ -107,7 +107,7 @@ func (s *AppPortalIntegrationTestSuite) Test_GetAppEvents() {
 	require.Equal(s.T(), event.UID, respEvents[0].UID)
 }
 
-func (s *AppPortalIntegrationTestSuite) Test_GetAppSubscriptions() {
+func (s *AppPortalIntegrationTestSuite) Test_GetEndpointSubscriptions() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
