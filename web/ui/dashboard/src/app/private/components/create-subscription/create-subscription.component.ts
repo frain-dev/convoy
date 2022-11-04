@@ -266,7 +266,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	setupFilter() {
 		this.showFilterForm = true;
-		window.scrollTo(0, 0);
+		document.getElementById('subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
 	getFilterSchema(schema: any) {

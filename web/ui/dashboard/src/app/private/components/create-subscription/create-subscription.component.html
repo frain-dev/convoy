@@ -81,9 +81,7 @@
 			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
 			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
 		</div>
-		<!-- <div class="flex justify-end mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
-		</div> -->
+
 		<div class="border border-grey-20 rounded-4px p-16px mt-20px">
 			<div class="flex justify-between items-center mb-14px">
 				<h4 class="font-semibold">Event filters</h4>
@@ -97,7 +95,7 @@
 
 			<p class="text-12 text-grey-60 max-w-[340px]">You can activate event filters by clicking on the setup filter button and specifying the configurations.</p>
 
-			<convoy-button size="sm" type="text" className="font-medium mt-18px">
+			<convoy-button size="sm" type="text" buttonType="button" className="font-medium mt-18px">
 				Learn more about filters here
 				<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
 					<use xlink:href="#arrow-right-icon"></use>
@@ -166,7 +164,7 @@
 
 <convoy-modal position="full" title="Create Subscription Filter" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
 	<div class="max-w-[1312px] m-auto">
-		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
+		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
 	</div>
 </convoy-modal>
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="onAction.emit({ action: 'cancel' })" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
