@@ -397,7 +397,7 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				return nil, nil, err
 			}
 
-			e.Authentication = auth
+			endpoint.Authentication = auth
 
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
