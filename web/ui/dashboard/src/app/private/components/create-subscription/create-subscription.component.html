@@ -162,7 +162,7 @@
 	</div>
 </convoy-modal>
 
-<convoy-modal position="full" title="Create Subscription Filter" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
+<convoy-modal position="full" [title]="action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter'" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
 	<div class="max-w-[1312px] m-auto">
 		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
 	</div>

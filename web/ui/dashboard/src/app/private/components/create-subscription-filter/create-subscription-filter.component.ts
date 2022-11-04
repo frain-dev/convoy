@@ -33,7 +33,8 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		this.subscriptionFilterForm.value.schema = this.convertStringToJson(this.schemaEditor.getValue());
 		try {
 			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
-			this.generalService.showNotification({ message: response.message, style: 'success' });
+			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
+			this.generalService.showNotification({ message: testResponse, style: 'info' });
 		} catch (error) {
 			return error;
 		}
