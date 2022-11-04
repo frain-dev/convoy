@@ -15,18 +15,18 @@ import { MonacoComponent } from '../monaco/monaco.component';
 	styleUrls: ['./create-subscription-filter.component.scss']
 })
 export class CreateSubscriptionFilterComponent implements OnInit {
-	@ViewChild(MonacoComponent) requestEditor!: MonacoComponent;
-	@ViewChild(MonacoComponent) schemaEditor!: MonacoComponent;
+	@ViewChild('requestEditor') requestEditor!: MonacoComponent;
+	@ViewChild('schemaEditor') schemaEditor!: MonacoComponent;
 	@Input('action') action: 'update' | 'create' = 'create';
 	@Input('schema') schema: any;
 	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
 	subscriptionFilterForm: FormGroup = this.formBuilder.group({
-		request: [],
-		schema: []
+		request: [null],
+		schema: [null]
 	});
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService) {}
 
-	ngOnInit(): void {}
+	ngOnInit() {}
 
 	async testFilter() {
 		this.subscriptionFilterForm.value.request = this.convertStringToJson(this.requestEditor.getValue());

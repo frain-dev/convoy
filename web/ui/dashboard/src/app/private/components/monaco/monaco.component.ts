@@ -13,7 +13,7 @@ declare var monaco: typeof import('monaco-editor');
 })
 export class MonacoComponent implements AfterViewInit {
 	public _editor: any;
-	@Input('editorValue') editorValue: any;
+	@Input('editorValue') editorValue: any = {};
 	@ViewChild('editorContainer', { static: true }) _editorContainer!: ElementRef;
 
 	constructor(private monacoService: MonacoService) {}
@@ -32,7 +32,7 @@ export class MonacoComponent implements AfterViewInit {
 		}
 
 		this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
-			value: this.editorValue ? JSON.stringify(this.editorValue) : ['{', '\t"test": "works?"', '}'].join('\n'),
+			value: this.editorValue ? JSON.stringify(this.editorValue) : '{}',
 			language: 'json',
 			formatOnPaste: true,
 			formatOnType: true,
