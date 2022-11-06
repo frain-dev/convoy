@@ -1,9 +1,10 @@
-name: Build docker image
+name: Deploy to k8s cluster
 
 on:
   push:
     branches:
       - "dev"
+      - "raymond/feat/add-deployment-scripts"
   workflow_dispatch:
     inputs:
       name:
