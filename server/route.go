@@ -17,7 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/limiter"
-	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
@@ -25,7 +25,6 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 )
 
 type ApplicationHandler struct {
@@ -37,7 +36,7 @@ type ApplicationHandler struct {
 type App struct {
 	Store    datastore.Store
 	Queue    queue.Queuer
-	Logger   logger.Logger
+	Logger   log.StdLogger
 	Tracer   tracer.Tracer
 	Cache    cache.Cache
 	Limiter  limiter.RateLimiter
@@ -57,7 +56,6 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	f := fs.FS(reactFS)
 	static, err := fs.Sub(f, "ui/build")
 	if err != nil {
-		log.WithError(err).Error("an error has occurred with the react app")
 		return
 	}
 	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file not found server index/html from root
@@ -174,6 +172,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									e.Get("/", a.GetAppEndpoint)
 									e.Put("/", a.UpdateAppEndpoint)
 									e.Delete("/", a.DeleteAppEndpoint)
+									e.Put("/expire_secret", a.ExpireSecret)
+
 								})
 							})
 						})
@@ -368,6 +368,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 										e.Get("/", a.GetAppEndpoint)
 										e.Put("/", a.UpdateAppEndpoint)
 										e.Delete("/", a.DeleteAppEndpoint)
+										e.Put("/expire_secret", a.ExpireSecret)
+
 									})
 								})
 
@@ -417,7 +419,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							subscriptionRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
 							subscriptionRouter.Post("/", a.CreateSubscription)
-						    subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
+							subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
 							subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 							subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 							subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)

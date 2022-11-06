@@ -7,7 +7,6 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { InputComponent } from 'src/app/components/input/input.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
-import { ORGANIZATION_DATA } from 'src/app/models/organisation.model';
 import { LoaderModule } from '../../components/loader/loader.module';
 
 export type STAGES = 'organisation' | 'project';
@@ -34,8 +33,8 @@ export class OnboardingComponent implements OnInit {
 	showCreateModal = false;
 	creatingOrganisation = false;
 	isOrgCreated = false;
-	organisations!: ORGANIZATION_DATA[];
-	isloadingOrganisations = false;
+	hasProjects: boolean = true;
+	isloading = false;
 	addOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
@@ -67,27 +66,35 @@ export class OnboardingComponent implements OnInit {
 	}
 
 	async getOrganizations() {
-		this.isloadingOrganisations = true;
+		this.isloading = true;
 		try {
 			const response = await this.privateService.getOrganizations();
-			this.organisations = response.data.content;
-			if (this.organisations?.length) {
+			const organisations = response.data.content;
+			if (organisations?.length) {
 				this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
-				this.getProjects();
+				return this.getProjects();
 			}
-			this.isloadingOrganisations = false;
+			this.isloading = false;
+			return;
 		} catch (error) {
-			this.isloadingOrganisations = false;
+			this.isloading = false;
 			return error;
 		}
 	}
 
 	async getProjects() {
+		this.isloading = true;
 		try {
 			const projectsResponse = await this.privateService.getProjects();
 			const projects = projectsResponse.data;
-			if (projects.length > 0) this.router.navigateByUrl('/projects');
+			this.isloading = false;
+			if (projects.length > 0) {
+				this.hasProjects = true;
+				this.router.navigateByUrl('/projects');
+			}
+			this.hasProjects = false;
 		} catch (error) {
+			this.isloading = false;
 			return error;
 		}
 	}

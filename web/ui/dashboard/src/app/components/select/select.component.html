@@ -1,55 +1,57 @@
 <convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
-    <div class="w-full" customDropdownToggle>
-        <label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
-            <div class="flex items-center">
-                {{ label }}
-                <convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{ tooltipContent }}</convoy-tooltip>
-            </div>
-            <span *ngIf="required" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
-        </label>
-        <input
-            type="text"
-            [formControl]="control"
-            [value]="option"
-            class="
-                transition-all
-                duration-[.3s]
-                w-full
-                font-medium
-                text-14 text-grey-100
-                border border-grey-20
-                valid:border-primary-500
-                disabled:border-primary-500
-                disabled:bg-[#F7F9FC]
-                hover:bg-primary-500
-                hover:border-grey-20
-                focus:border-primary-100
-                focus:bg-white-100
-                outline-none
-                rounded-4px
-                bg-[#F7F9FC]
-                py-12px
-                px-16px
-                appearance-none
-                bg-[url(/assets/img/angle-down.svg)] bg-no-repeat
-                bg-[right_10px_top_15px]
-            "
-            readonly
-        />
-        <div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="control.touched && control.invalid">
-            <img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
-            <span>{{ errorMessage }}</span>
-        </div>
-    </div>
+	<div class="w-full" customDropdownToggle>
+		<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
+			<div class="flex items-center">
+				{{ label }}
+				<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{ tooltipContent }}</convoy-tooltip>
+			</div>
+			<span *ngIf="required" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
+		</label>
 
-    <div class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
-        <ul>
-            <li class="text-14 text-grey-20">Select</li>
-            <li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
-                <convoy-button type="unstyled" buttonType="button" (clickItem)="selectOption(option?.uid || option); dropdownComponent.show = false" className="text-12 w-full !justify-start">
-                    {{ option?.name || option }}
-                </convoy-button>
-            </li>
-        </ul>
-    </div>
+		<input type="text" [formControl]="control" [value]="option" hidden readonly />
+
+		<div
+			class="
+				transition-all
+				duration-[.3s]
+				w-full
+				font-medium
+				text-14 text-grey-100
+				border border-grey-20
+				valid:border-primary-500
+				disabled:border-primary-500
+				disabled:bg-[#F7F9FC]
+				hover:bg-primary-500
+				hover:border-grey-20
+				focus:border-primary-100
+				focus:bg-white-100
+				outline-none
+				rounded-4px
+				bg-[#F7F9FC]
+				py-12px
+				px-16px
+				appearance-none
+				bg-[url(/assets/img/angle-down.svg)] bg-no-repeat
+				bg-[right_10px_top_15px]
+				min-h-[48px]
+				cursor-pointer
+			"
+		>
+			{{ selectedValue?.name || selectedValue }}
+		</div>
+
+		<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="control.touched && control.invalid">
+			<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+			<span>{{ errorMessage }}</span>
+		</div>
+	</div>
+
+	<div class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
+		<ul>
+			<li class="text-14 text-grey-20">Select</li>
+			<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
+				<convoy-button type="unstyled" buttonType="button" (clickItem)="selectOption(option); dropdownComponent.show = false" className="text-12 w-full !justify-start">{{ option?.name || option }}</convoy-button>
+			</li>
+		</ul>
+	</div>
 </convoy-dropdown>

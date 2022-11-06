@@ -56,6 +56,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 			"endpoint_id": subscription.EndpointID,
 
 			"filter_config.event_types": subscription.FilterConfig.EventTypes,
+			"filter_config.filter":      subscription.FilterConfig.Filter,
 			"alert_config":              subscription.AlertConfig,
 			"retry_config":              subscription.RetryConfig,
 			"disable_endpoint":          subscription.DisableEndpoint,

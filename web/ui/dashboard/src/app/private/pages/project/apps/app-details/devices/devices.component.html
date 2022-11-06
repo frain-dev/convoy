@@ -1,7 +1,7 @@
 <convoy-card className="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
 	<!-- empty state for both devices -->
 	<ng-container *ngIf="showError || (!isFetchingDevices && devices?.length === 0)">
-		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No CLI devices yet" type="table" className="h-[30vh]" id="empty-state"></convoy-empty-state>
+		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" description="No CLI device yet" type="table" className="h-[30vh] py-200px" id="empty-state"></convoy-empty-state>
 	</ng-container>
 
 	<!-- loader for both devices  -->

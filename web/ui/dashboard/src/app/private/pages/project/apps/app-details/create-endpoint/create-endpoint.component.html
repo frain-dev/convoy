@@ -14,12 +14,26 @@
 			tooltipSize="sm"
 			tooltipPosition="right"
 		></convoy-input>
+
+		<h3 class="mt-34px mb-14px font-medium text-16 flex items-center">
+			Endpoint Authentication
+			<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
+		</h3>
 		<ng-container formGroupName="authentication">
 			<ng-container formGroupName="api_key">
 				<convoy-input type="text" autocomplete="header-name" formControlName="header_name" label="API Key Name" placeholder="Name"></convoy-input>
 				<convoy-input type="text" autocomplete="header-value" formControlName="header_value" label="API Key Value" placeholder="Value"></convoy-input>
 			</ng-container>
 		</ng-container>
+
+		<h3 class="mt-34px mb-8px font-medium text-16 flex items-center">
+			Signature Format
+			<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+		</h3>
+		<div class="grid grid-cols-2 gap-6 mb-50px">
+			<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
+			<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+		</div>
 	</form>
 
 	<div class="flex justify-end mt-40px">

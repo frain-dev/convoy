@@ -1,3 +1,59 @@
+## 0.7.1
+
+-   [Bugfix] Fix Max response size CLI override #1098
+
+## 0.7.0
+
+-   [Feature] Add support for feature flags #1054
+-   [Enhancement] Enable source filter on Events dashboard #1058 #1043
+-   [Bugfix] Use configured max request size in ingest handler #1086
+-   [Feature] Use mongo aggregation pipeline to fetch subscriptions #1073
+-   [Feature] Run Convoy in Headless mode #1034
+-   [Enhancement] New UI Onboarding #1048
+-   [Bugfix] Fixed retention policies task handler #1049
+-   [Bugfix] Set default body for ingested events to empty JSON #1062
+-   [Feature] Add support for endpoint authentication #1045
+-   [Bugfix] The change stream should not be killed when an error occurs in the handler #1061
+-   [Enhancement] Fix build warnings #1089
+-   [Bugfix] Several UI fixes #1087
+
+## 0.7.0-rc.2
+
+-   [Feature] Create cli api keys and manage devices from the app portal #983
+-   [Bugfix] Fix Subscription Config Inheritance For Event Deliveries #995
+-   [Enhancement] Implement cascading delete for groups, apps and sources #1037
+-   [Enhancement] Add help to project sidebar #1032
+
+## 0.7.0-rc.1
+
+-   [Feature] Add a command to run convoy migrations #989 #996 #993
+-   [Feature] Storybook setup #927
+-   [Feature] Add load test scripts #997
+-   [Feature] Add convoy websocket cli event streaming server and client #931
+-   [Feature] Add support for custom headers for outgoing events #1012
+-   [Bugfix] Use typesense multi search #994
+-   [Bugfix] Fix retention policy export #998
+-   [Bugfix] Allow discarded events to be retried #1016
+-   [Bugfix] Validate source providers separately #1024
+-   [Enhancement] Fixed API spec annotations #1005
+-   [Enhancement] Refactor Store Dependency #1006
+
+## 0.6.8
+
+-   [Bugfix] Fix subscriptions page error #1026
+-   [Bugfix] Add deleted_at to MongoDB indexes #1027
+-   [Bugfix] Dismiss modal when a source is deleted #1026
+
+## 0.6.7
+
+-   [Bugfix] Fix analytics query #1001
+-   [Bugfix] Fix middleware layer for app portal #988
+-   [Bugfix] Fix endpoint notification email bug #981
+
+## 0.6.6
+
+-   [Bugfix] Fix project statistics lookup query #978 #979
+
 ## v0.6.5
 
 -   [Feature] Add support for user registration. #959

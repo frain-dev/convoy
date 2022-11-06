@@ -8,14 +8,14 @@ export interface GROUP {
 			duration: string;
 		};
 		disable_endpoint: boolean;
-		Strategy: {
+		strategy: {
 			type: string;
 			retry_count: number;
 			duration: number;
 		};
-		Signature: {
+		signature: {
 			header: string;
-			hash: string;
+			versions: VERSIONS[];
 		};
 		DisableEndpoint: boolean;
 		replay_attacks: boolean;
@@ -63,4 +63,11 @@ export interface SOURCE {
 		};
 		type: string;
 	};
+}
+
+export interface VERSIONS {
+	created_at: Date;
+	encoding: string;
+	hash: string;
+	uid: string;
 }

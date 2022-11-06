@@ -1859,6 +1859,123 @@
                 }
             }
         },
+        "/api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint expires the current endpoint secret and generates a new one.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application Endpoints"
+                ],
+                "summary": "Expire and generate new application endpoint secret",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "application id",
+                        "name": "appID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "endpoint id",
+                        "name": "endpointID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.Endpoint"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects/{projectID}/eventdeliveries": {
             "get": {
                 "security": [
@@ -10017,6 +10134,9 @@
         "datastore.Endpoint": {
             "type": "object",
             "properties": {
+                "advanced_signatures": {
+                    "type": "boolean"
+                },
                 "authentication": {
                     "$ref": "#/definitions/datastore.EndpointAuthentication"
                 },
@@ -10038,8 +10158,11 @@
                 "rate_limit_duration": {
                     "type": "string"
                 },
-                "secret": {
-                    "type": "string"
+                "secrets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastore.Secret"
+                    }
                 },
                 "target_url": {
                     "type": "string"
@@ -10500,13 +10623,56 @@
                 }
             }
         },
+        "datastore.Secret": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.SignatureConfiguration": {
             "type": "object",
             "properties": {
+                "header": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastore.SignatureVersion"
+                    }
+                }
+            }
+        },
+        "datastore.SignatureVersion": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "encoding": {
+                    "type": "string"
+                },
                 "hash": {
                     "type": "string"
                 },
-                "header": {
+                "uid": {
                     "type": "string"
                 }
             }
@@ -10829,6 +10995,9 @@
         "models.Endpoint": {
             "type": "object",
             "properties": {
+                "advanced_signatures": {
+                    "type": "boolean"
+                },
                 "authentication": {
                     "$ref": "#/definitions/datastore.EndpointAuthentication"
                 },

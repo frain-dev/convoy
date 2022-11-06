@@ -17,7 +17,7 @@
 <convoy-card className="p-32px mb-20px">
 	<div class="flex justify-between items-center mb-24px">
 		<h3 class="font-medium">Overview</h3>
-		<convoy-button *ngIf="appsDetailsItem" size="sm" type="outline" [disable]="appsDetailsItem.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">View Events</convoy-button>
+		<convoy-button *ngIf="appsDetailsItem" size="sm" type="outline" [disable]="appsDetailsItem.events === 0" (click)="loadEventsFromAppsTable(appsDetailsItem.uid)">Events</convoy-button>
 	</div>
 
 	<!-- app details overview  -->
@@ -129,11 +129,11 @@
 
 			<ul class="mt-20px" *ngIf="!isLoadingAppDetails && appsDetailsItem">
 				<ng-container *ngIf="appsDetailsItem?.endpoints">
-					<li class="relative bg-[#f9f9fb] p-16px rounded-8px mb-24px" *ngFor="let endpoint of appsDetailsItem.endpoints">
+					<li class="relative bg-[#f9f9fb] p-16px rounded-8px mb-24px last-of-type:mb-0" *ngFor="let endpoint of appsDetailsItem?.endpoints">
 						<div>
 							<div class="flex items-center">
 								<h5 class="text-black text-14 font-medium">{{ endpoint.description }}</h5>
-								<convoy-button type="text" size="sm" className="ml-16px" (clickItem)="viewEndpointSecretKey(endpoint.secret)">
+								<convoy-button *ngIf="endpoint.secrets" type="text" size="sm" className="ml-16px" (clickItem)="selectedEndpoint = endpoint; viewEndpointSecretKey(endpoint.secrets)">
 									View Secret
 									<img src="/assets/img/arrow-up-right.svg" alt="link out" class="h-14px ml-6px" />
 								</convoy-button>
@@ -173,9 +173,10 @@
 			</ul>
 
 			<convoy-empty-state
+				type="table"
 				imgSrc="/assets/img/empty-state-img.svg"
 				description="No endpoint has been added for selected app yet"
-				className="h-[20vh]"
+				className="h-[25vh]"
 				*ngIf="!isLoadingAppDetails && (!appsDetailsItem?.endpoints || appsDetailsItem?.endpoints?.length === 0)"
 			></convoy-empty-state>
 		</div>
@@ -229,8 +230,8 @@
 <ng-container *ngIf="isCliAvailable">
 	<!-- app api keys and devices list  -->
 	<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
-		<div class="flex items-center justify-center border-b border-grey-10">
-			<ul class="flex flex-row m-auto w-full mt-32px border-b border-b-grey-10">
+		<div class="flex items-center justify-center">
+			<ul class="flex flex-row m-auto w-full mt-12px">
 				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
 					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
 						<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
@@ -238,13 +239,17 @@
 				</li>
 
 				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
-					<convoy-button size="sm" type="outline" (click)="cliKeys.generateKeyModal = true">Generate New Key</convoy-button>
+					<convoy-button size="sm" (click)="cliKeys.generateKeyModal = true" className="mt-6px">
+						<svg width="18" height="18" class="fill-white-100">
+							<use xlink:href="#plus-icon"></use>
+						</svg>
+					</convoy-button>
 				</div>
 			</ul>
 		</div>
 	</convoy-card>
 
-	<ng-container *ngIf="activeTab === 'cli keys'">
+	<ng-container *ngIf="activeTab === 'CLI Keys'">
 		<convoy-cli-keys></convoy-cli-keys>
 	</ng-container>
 	<ng-container *ngIf="activeTab === 'devices'">
@@ -264,12 +269,33 @@
 
 <!-- endpoint secret  -->
 <convoy-modal *ngIf="showEndpointSecret" title="Endpoint Secret" (closeModal)="showEndpointSecret = false">
-	<ng-container modalBody>
-		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px">
-			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecretKey }}</span>
-			<convoy-copy-button [text]="endpointSecretKey"></convoy-copy-button>
+	<div modalBody>
+		<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
+			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecret?.value || '' }}</span>
+			<convoy-copy-button [text]="endpointSecret?.value || ''"></convoy-copy-button>
 		</div>
-	</ng-container>
+		<convoy-button size="xs" type="text" color="danger" *ngIf="!showExpireSecret" (clickItem)="showExpireSecret = true">Expire Secret</convoy-button>
+
+		<ng-container *ngIf="showExpireSecret">
+			<form [formGroup]="expireSecretForm" class="mt-24px">
+				<convoy-select
+					label="Expiry duration"
+					name="expiration"
+					formControlName="expiration"
+					[options]="expirationDates"
+					errorMessage="Please select an expiry duration"
+					[required]="true"
+					(selectedOption)="expireSecretForm.patchValue({ expiration: $event })"
+				></convoy-select>
+			</form>
+		</ng-container>
+
+		<div class="flex justify-end mt-38px mb-140px" *ngIf="showExpireSecret">
+			<convoy-button type="outline" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (clickItem)="showEndpointSecret = false" *ngIf="showExpireSecret">Cancel</convoy-button>
+			<convoy-button color="danger" className="mr-16px" *ngIf="showExpireSecret" (clickItem)="expireSecret()">Expire Secret</convoy-button>
+			<convoy-button (clickItem)="showExpireSecret = false" *ngIf="!showExpireSecret">Done</convoy-button>
+		</div>
+	</div>
 </convoy-modal>
 
 <!-- delete modal  -->

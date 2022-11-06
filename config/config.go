@@ -44,6 +44,9 @@ var DefaultConfiguration = Configuration{
 			Dsn: "redis://localhost:6378",
 		},
 	},
+	Logger: LoggerConfiguration{
+		Level: "error",
+	},
 }
 
 type DatabaseConfiguration struct {
@@ -110,13 +113,8 @@ type SMTPConfiguration struct {
 	ReplyTo  string `json:"reply-to" envconfig:"CONVOY_SMTP_REPLY_TO"`
 }
 
-type ServerLogger struct {
-	Level string `json:"level" envconfig:"CONVOY_LOGGER_LEVEL"`
-}
-
 type LoggerConfiguration struct {
-	Type      LoggerProvider `json:"type" envconfig:"CONVOY_LOGGER_PROVIDER"`
-	ServerLog ServerLogger   `json:"server_log"`
+	Level string `json:"level" envconfig:"CONVOY_LOGGER_LEVEL"`
 }
 
 type TracerConfiguration struct {
@@ -187,17 +185,19 @@ const (
 	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
 )
 
-type AuthProvider string
-type QueueProvider string
-type StrategyProvider string
-type SignatureHeaderProvider string
-type LoggerProvider string
-type TracerProvider string
-type CacheProvider string
-type LimiterProvider string
-type DatabaseProvider string
-type SearchProvider string
-type FeatureFlagProvider string
+type (
+	AuthProvider            string
+	QueueProvider           string
+	StrategyProvider        string
+	SignatureHeaderProvider string
+	LoggerProvider          string
+	TracerProvider          string
+	CacheProvider           string
+	LimiterProvider         string
+	DatabaseProvider        string
+	SearchProvider          string
+	FeatureFlagProvider     string
+)
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
@@ -283,7 +283,7 @@ func LoadConfig(p string) error {
 			return err
 		}
 	} else if errors.Is(err, os.ErrNotExist) {
-		log.Info("convoy config.json not detected, will look for env vars or cli args")
+		log.Info("convoy.json not detected, will look for env vars or cli args")
 	}
 
 	// override config from environment variables
@@ -336,7 +336,6 @@ func ensureMaxResponseSize(c *Configuration) {
 }
 
 func validate(c *Configuration) error {
-
 	ensureMaxResponseSize(c)
 
 	if err := ensureQueueConfig(c.Queue); err != nil {

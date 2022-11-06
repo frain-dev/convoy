@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -36,7 +35,7 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 
 	startT, err := time.Parse(format, startDate)
 	if err != nil {
-		log.Errorln("error parsing startDate - ", err)
+		a.A.Logger.WithError(err).Error("error parsing startDate")
 		_ = render.Render(w, r, util.NewErrorResponse("please specify a startDate in the format "+format, http.StatusBadRequest))
 		return
 	}
@@ -83,7 +82,7 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 	err = a.A.Cache.Get(r.Context(), qs, &data)
 
 	if err != nil {
-		log.Error(err)
+		a.A.Logger.WithError(err)
 	}
 
 	if data != nil {
@@ -115,7 +114,7 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 	err = a.A.Cache.Set(r.Context(), qs, dashboard, time.Minute)
 
 	if err != nil {
-		log.Error(err)
+		a.A.Logger.WithError(err)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",

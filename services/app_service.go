@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -23,10 +25,11 @@ type AppService struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	cache             cache.Cache
+	queue             queue.Queuer
 }
 
-func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) *AppService {
-	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache}
+func NewAppService(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, queue queue.Queuer) *AppService {
+	return &AppService{appRepo: appRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache, queue: queue}
 }
 
 func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, g *datastore.Group) (*datastore.Application, error) {
@@ -160,7 +163,6 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		UID:               uuid.New().String(),
 		TargetURL:         e.URL,
 		Description:       e.Description,
-		Secret:            e.Secret,
 		RateLimit:         e.RateLimit,
 		HttpTimeout:       e.HttpTimeout,
 		RateLimitDuration: duration.String(),
@@ -170,17 +172,35 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 	}
 
 	if util.IsStringEmpty(e.Secret) {
-		endpoint.Secret, err = util.GenerateSecret()
+		sc, err := util.GenerateSecret()
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
 		}
+
+		endpoint.Secrets = []datastore.Secret{
+			{
+				UID:            uuid.NewString(),
+				Value:          sc,
+				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				DocumentStatus: datastore.ActiveDocumentStatus,
+			},
+		}
+	} else {
+		endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
+			UID:            uuid.NewString(),
+			Value:          e.Secret,
+			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			DocumentStatus: datastore.ActiveDocumentStatus,
+		})
 	}
 
-	auth, err := validateEndpointAuthentication(e)
+	auth, err := validateEndpointAuthentication(e, endpoint)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
-	
+
 	endpoint.Authentication = auth
 
 	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
@@ -189,6 +209,7 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
 
+	app.Endpoints = append(app.Endpoints, *endpoint)
 	app, err = a.appRepo.FindApplicationByID(ctx, app.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to find application")
@@ -229,8 +250,89 @@ func (a *AppService) UpdateAppEndpoint(ctx context.Context, e models.Endpoint, e
 	return endpoint, nil
 }
 
-func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoint, app *datastore.Application) error {
+func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, endPointId string, app *datastore.Application) (*datastore.Application, error) {
+	// Expire current secret.
+	endpoint, err := app.FindEndpoint(endPointId)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
 
+	idx, err := endpoint.GetActiveSecretIndex()
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	expiresAt := time.Now().Add(time.Hour * time.Duration(s.Expiration))
+	endpoint.Secrets[idx].ExpiresAt = primitive.NewDateTimeFromTime(expiresAt)
+
+	secret := endpoint.Secrets[idx]
+
+	// Enqueue for final deletion.
+	body := struct {
+		AppID      string `json:"app_id"`
+		EndpointID string `json:"endpoint_id"`
+		SecretID   string `json:"secret_id"`
+	}{
+		AppID:      app.UID,
+		EndpointID: endpoint.UID,
+		SecretID:   secret.UID,
+	}
+
+	jobByte, err := json.Marshal(body)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	payload := json.RawMessage(jobByte)
+
+	job := &queue.Job{
+		ID:      secret.UID,
+		Payload: payload,
+		Delay:   time.Hour * time.Duration(s.Expiration),
+	}
+
+	taskName := convoy.ExpireSecretsProcessor
+	err = a.queue.Write(taskName, convoy.DefaultQueue, job)
+	if err != nil {
+		log.Errorf("Error occurred sending new event to the queue %s", err)
+	}
+
+	// Generate new secret.
+	newSecret := s.Secret
+	if len(newSecret) == 0 {
+		newSecret, err = util.GenerateSecret()
+		if err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
+		}
+	}
+
+	sc := datastore.Secret{
+		UID:            uuid.NewString(),
+		Value:          newSecret,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	secrets := append(endpoint.Secrets, sc)
+	endpoint.Secrets = secrets
+
+	err = a.appRepo.ExpireSecret(ctx, app.UID, endpoint.UID, secrets)
+	if err != nil {
+		log.Errorf("Error occurred expiring secret %s", err)
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
+	}
+
+	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
+	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
+	if err != nil {
+		log.WithError(err).Error("failed to update app cache")
+	}
+
+	return app, nil
+}
+
+func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoint, app *datastore.Application) error {
 	for i, endpoint := range app.Endpoints {
 		if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
 			app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
@@ -282,20 +384,19 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 				endpoint.RateLimitDuration = duration.String()
 			}
 
+			if e.AdvancedSignatures != nil {
+				endpoint.AdvancedSignatures = *e.AdvancedSignatures
+			}
+
 			if !util.IsStringEmpty(e.HttpTimeout) {
 				endpoint.HttpTimeout = e.HttpTimeout
 			}
-
-			if !util.IsStringEmpty(e.Secret) {
-				endpoint.Secret = e.Secret
-			}
-
-			auth, err := validateEndpointAuthentication(e)
+			auth, err := validateEndpointAuthentication(e, &endpoint)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			e.Authentication = auth
+			endpoint.Authentication = auth
 
 			endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 			(*endpoints)[i] = endpoint
@@ -305,7 +406,7 @@ func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.
 	return endpoints, nil, datastore.ErrEndpointNotFound
 }
 
-func validateEndpointAuthentication(e models.Endpoint) (*datastore.EndpointAuthentication, error) {
+func validateEndpointAuthentication(e models.Endpoint, endpoint *datastore.Endpoint) (*datastore.EndpointAuthentication, error) {
 	if e.Authentication != nil && !util.IsStringEmpty(string(e.Authentication.Type)) {
 		if err := util.Validate(e); err != nil {
 			return nil, err
@@ -318,5 +419,5 @@ func validateEndpointAuthentication(e models.Endpoint) (*datastore.EndpointAuthe
 		return e.Authentication, nil
 	}
 
-	return nil, nil
+	return endpoint.Authentication, nil
 }
