@@ -18,19 +18,40 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	@ViewChild('requestEditor') requestEditor!: MonacoComponent;
 	@ViewChild('schemaEditor') schemaEditor!: MonacoComponent;
 	@Input('action') action: 'update' | 'create' = 'create';
-	@Input('schema') schema: any;
+	@Input('schema') schema!: string;
+	@Input('payload') payload!: string;
 	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
 	subscriptionFilterForm: FormGroup = this.formBuilder.group({
 		request: [null],
 		schema: [null]
 	});
+
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService) {}
 
-	ngOnInit() {}
+	ngOnInit() {
+		// trying to preserve the code sample indentation
+		if (!this.schema) {
+			this.schema = `{
+    "tconclusion": "success"
+}`;
+		}
+		if (!this.payload) {
+			this.payload = ` {
+    "tconclusion": "success",
+    "started_at": "2022-11-04T13:58:20Z",
+    "completed_at": "2022-11-04T14:06:13Z",
+    "name": "test (1.17.x, ubuntu-latest, 5.0, 6.2.6)",
+    "status": "completed",
+    "conclusion": "success",
+    "number": 1
+}`;
+		}
+	}
 
 	async testFilter() {
 		this.subscriptionFilterForm.value.request = this.convertStringToJson(this.requestEditor.getValue());
 		this.subscriptionFilterForm.value.schema = this.convertStringToJson(this.schemaEditor.getValue());
+
 		try {
 			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;

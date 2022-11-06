@@ -13,7 +13,7 @@ declare var monaco: typeof import('monaco-editor');
 })
 export class MonacoComponent implements AfterViewInit {
 	public _editor: any;
-	@Input('editorValue') editorValue: any = {};
+	@Input('editorValue') editorValue: any;
 	@ViewChild('editorContainer', { static: true }) _editorContainer!: ElementRef;
 
 	constructor(private monacoService: MonacoService) {}
@@ -31,12 +31,28 @@ export class MonacoComponent implements AfterViewInit {
 			return;
 		}
 
+		// to get color schema
+		// const colors = _amdLoaderGlobal.require('vs/platform/registry/common/platform').Registry.data.get('base.contributions.colors').colorSchema.properties;
+		monaco.editor.defineTheme('custom-theme', {
+			base: 'vs',
+			inherit: true,
+			rules: [],
+			colors: {
+				'editor.background': '#FCFCFC',
+				'editor.lineHighlightBorder': '#F4F4F4',
+				'scrollbarSlider.background': '#ebebeb66',
+				'scrollbarSlider.hoverBackground': '#e8e8e866'
+			}
+		});
+		console.log(this.editorValue);
+
 		this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
-			value: this.editorValue ? JSON.stringify(this.editorValue) : '{}',
+			value: this.editorValue || '{}',
 			language: 'json',
 			formatOnPaste: true,
 			formatOnType: true,
-			minimap: { enabled: false }
+			minimap: { enabled: false },
+			theme: 'custom-theme'
 		});
 	}
 
