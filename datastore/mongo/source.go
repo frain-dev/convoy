@@ -32,7 +32,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 
 func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *datastore.Source) error {
 	ctx = s.setCollectionInContext(ctx)
-	filter := bson.M{"uid": source.UID, "group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"uid": source.UID, "group_id": groupId, "deleted_at": 0}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -81,8 +81,7 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 	ctx = s.setCollectionInContext(ctx)
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -117,12 +116,11 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	ctx = s.setCollectionInContext(ctx)
 	var sources []datastore.Source
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID, "type": f.Type, "provider": f.Provider}
+	filter := bson.M{"deleted_at": 0, "group_id": groupID, "type": f.Type, "provider": f.Provider}
 
 	removeUnusedFields(filter)
 	pagination, err := s.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &sources)
-
 	if err != nil {
 		return sources, datastore.PaginationData{}, err
 	}

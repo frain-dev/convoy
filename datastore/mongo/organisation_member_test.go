@@ -29,14 +29,13 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 
 	for i := 1; i < 6; i++ {
 		user := &datastore.User{
-			UID:            uuid.NewString(),
-			FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
-			LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
-			Email:          fmt.Sprintf("test-%s", uuid.NewString()),
-			Password:       fmt.Sprintf("test-%s", uuid.NewString()),
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID:       uuid.NewString(),
+			FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
+			LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
+			Email:     fmt.Sprintf("test-%s", uuid.NewString()),
+			Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		}
 
 		userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
@@ -47,7 +46,6 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 			OrganisationID: orgID,
 			UserID:         user.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
-			DocumentStatus: datastore.ActiveDocumentStatus,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -87,11 +85,11 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 
 	userID := uuid.NewString()
 	for i := 0; i < 7; i++ {
-		status := datastore.ActiveDocumentStatus
+		var deletedAt primitive.DateTime
 		if i == 6 {
-			status = datastore.DeletedDocumentStatus
+			deletedAt = primitive.NewDateTimeFromTime(time.Now())
 		}
-		org := &datastore.Organisation{UID: uuid.NewString(), DocumentStatus: status}
+		org := &datastore.Organisation{UID: uuid.NewString(), DeletedAt: deletedAt}
 
 		err := NewOrgRepo(store).CreateOrganisation(context.Background(), org)
 		require.NoError(t, err)
@@ -101,7 +99,6 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 			OrganisationID: org.UID,
 			UserID:         userID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
-			DocumentStatus: datastore.ActiveDocumentStatus,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -126,14 +123,13 @@ func TestCreateOrganisationMember(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:          fmt.Sprintf("test-%s", uuid.NewString()),
-		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:     fmt.Sprintf("test-%s", uuid.NewString()),
+		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
@@ -146,7 +142,6 @@ func TestCreateOrganisationMember(t *testing.T) {
 		OrganisationID: uuid.NewString(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -174,14 +169,13 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:          fmt.Sprintf("test-%s", uuid.NewString()),
-		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:     fmt.Sprintf("test-%s", uuid.NewString()),
+		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
 	require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
@@ -192,7 +186,6 @@ func TestUpdateOrganisationMember(t *testing.T) {
 		OrganisationID: uuid.NewString(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -235,7 +228,6 @@ func TestDeleteOrganisationMember(t *testing.T) {
 		OrganisationID: uuid.NewString(),
 		UserID:         uuid.NewString(),
 		Role:           auth.Role{Type: auth.RoleAdmin},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -256,14 +248,13 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:          fmt.Sprintf("test-%s", uuid.NewString()),
-		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:     fmt.Sprintf("test-%s", uuid.NewString()),
+		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
@@ -276,7 +267,6 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 		OrganisationID: uuid.NewString(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -304,14 +294,13 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:       fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:          uuid.NewString(),
-		Password:       fmt.Sprintf("test-%s", uuid.NewString()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
+		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
+		Email:     uuid.NewString(),
+		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	userCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.UserCollection)
@@ -323,7 +312,6 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 		OrganisationID: uuid.NewString(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}

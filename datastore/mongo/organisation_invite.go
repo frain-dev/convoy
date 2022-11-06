@@ -32,7 +32,7 @@ func (db *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datas
 func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"deleted_at": 0}
 
 	if !util.IsStringEmpty(orgID) {
 		filter["organisation_id"] = orgID
@@ -58,11 +58,10 @@ func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datas
 	iv.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 	update := bson.M{
 		"$set": bson.M{
-			"role":            iv.Role,
-			"status":          iv.Status,
-			"updated_at":      iv.UpdatedAt,
-			"expires_at":      iv.ExpiresAt,
-			"document_status": iv.DocumentStatus,
+			"role":       iv.Role,
+			"status":     iv.Status,
+			"updated_at": iv.UpdatedAt,
+			"expires_at": iv.ExpiresAt,
 		},
 	}
 
@@ -74,8 +73,7 @@ func (db *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, uid strin
 
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -101,8 +99,8 @@ func (db *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, tok
 	org := &datastore.OrganisationInvite{}
 
 	filter := bson.M{
-		"token":           token,
-		"document_status": datastore.ActiveDocumentStatus,
+		"token":      token,
+		"deleted_at": 0,
 	}
 
 	err := db.store.FindOne(ctx, filter, nil, org)

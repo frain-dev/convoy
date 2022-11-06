@@ -16,7 +16,6 @@ import (
 )
 
 var Migrations = []*Migration{
-
 	{
 		ID: "20220901162904_change_group_rate_limit_configuration",
 		Migrate: func(db *mongo.Database) error {
@@ -29,9 +28,8 @@ var Migrations = []*Migration{
 			}
 
 			type Group struct {
-				UID            string                   `json:"uid" bson:"uid"`
-				Config         Config                   `json:"config" bson:"config"`
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+				UID    string `json:"uid" bson:"uid"`
+				Config Config `json:"config" bson:"config"`
 			}
 
 			store := datastore.New(db)
@@ -109,9 +107,8 @@ var Migrations = []*Migration{
 			}
 
 			type Subscription struct {
-				UID            string                   `json:"uid" bson:"uid"`
-				RetryConfig    RetryConfig              `json:"retry_config" bson:"retry_config"`
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+				UID         string      `json:"uid" bson:"uid"`
+				RetryConfig RetryConfig `json:"retry_config" bson:"retry_config"`
 			}
 
 			store := datastore.New(db)
@@ -273,11 +270,10 @@ var Migrations = []*Migration{
 					}
 
 					endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-						UID:            uuid.NewString(),
-						Value:          endpoint.Secret,
-						CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-						UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-						DocumentStatus: datastore.ActiveDocumentStatus,
+						UID:       uuid.NewString(),
+						Value:     endpoint.Secret,
+						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+						UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 					})
 					// endpoint.Secret = ""
 					endpoint.AdvancedSignatures = false // explicitly set default

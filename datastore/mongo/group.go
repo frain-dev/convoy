@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/util"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -46,21 +48,20 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
 	ctx = db.setCollectionInContext(ctx)
 	groups := make([]*datastore.Group, 0)
-	var filter primitive.M
-	if f.OrgID == "" {
-		filter = bson.M{
-			"document_status": datastore.ActiveDocumentStatus,
-		}
-	} else {
-		filter = bson.M{
-			"document_status": datastore.ActiveDocumentStatus,
-			"organisation_id": f.OrgID,
-		}
+
+	filter := bson.M{
+		"deleted_at": 0,
 	}
+
+	if !util.IsStringEmpty(f.OrgID) {
+		filter["organisation_id"] = f.OrgID
+	}
+
 	f = f.WithNamesTrimmed()
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
 	}
+
 	sort := bson.M{"created_at": 1}
 	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 
@@ -71,7 +72,8 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	ctx = db.setCollectionInContext(ctx)
 
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{primitive.E{Key: "name", Value: o.Name},
+	update := bson.D{
+		primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
@@ -110,7 +112,8 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 	}
 
 	matchStage := bson.D{
-		{Key: "$match",
+		{
+			Key: "$match",
 			Value: bson.D{
 				{Key: "uid", Value: bson.M{"$in": ids}},
 			},
@@ -123,10 +126,12 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
-				bson.D{{
-					Key: "$match", Value: bson.D{
-						{Key: "document_status", Value: "Active"},
-					}},
+				bson.D{
+					{
+						Key: "$match", Value: bson.D{
+							{Key: "deleted_at", Value: 0},
+						},
+					},
 				},
 			}},
 			{Key: "as", Value: "group_apps"},
@@ -139,10 +144,12 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
-				bson.D{{
-					Key: "$project", Value: bson.D{
-						{Key: "_id", Value: "$uid"},
-					}},
+				bson.D{
+					{
+						Key: "$project", Value: bson.D{
+							{Key: "_id", Value: "$uid"},
+						},
+					},
 				},
 			}},
 			{Key: "as", Value: "group_events"},
@@ -156,7 +163,8 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 				{Key: "group_id", Value: "$uid"},
 				{Key: "total_apps", Value: bson.D{{Key: "$size", Value: "$group_apps"}}},
 				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
-			}},
+			},
+		},
 	}
 	var stats []datastore.GroupStatistics
 
@@ -182,8 +190,7 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	ctx = db.setCollectionInContext(ctx)
 	updateAsDeleted := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -232,7 +239,7 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": datastore.ActiveDocumentStatus,
+		"deleted_at": 0,
 	}
 
 	groups := make([]datastore.Group, 0)

@@ -102,7 +102,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				AppID:            "123",
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 		{
@@ -158,7 +157,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				AppID:            "123",
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 		{
@@ -218,7 +216,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				AppID:            "123",
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 
@@ -279,7 +276,6 @@ func TestEventService_CreateAppEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				AppID:            "123",
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 				Headers:          httpheader.HTTPHeader{"X-Test-Signature": []string{"Test"}},
 			},
 		},
@@ -1381,9 +1377,8 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 							EventType: "incoming",
 						},
 						Endpoint: &datastore.Endpoint{
-							UID:            "1234",
-							TargetURL:      "http://localhost.com",
-							DocumentStatus: "Active",
+							UID:       "1234",
+							TargetURL: "http://localhost.com",
 							Secrets: []datastore.Secret{
 								{
 									UID:   "abc",
@@ -1417,9 +1412,8 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						EventType: "incoming",
 					},
 					Endpoint: &datastore.Endpoint{
-						UID:            "1234",
-						TargetURL:      "http://localhost.com",
-						DocumentStatus: "Active",
+						UID:       "1234",
+						TargetURL: "http://localhost.com",
 						Secrets: []datastore.Secret{
 							{
 								UID:   "abc",

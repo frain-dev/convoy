@@ -260,7 +260,7 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": datastore.ActiveDocumentStatus,
+		"deleted_at": 0,
 	}
 
 	update := bson.M{
@@ -463,13 +463,12 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	f := bson.M{
-		"group_id":        filter.GroupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"group_id":   filter.GroupID,
+		"deleted_at": 0,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -487,11 +486,11 @@ func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, a
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"app_id":          appId,
-		"device_id":       deviceId,
-		"status":          datastore.DiscardedEventStatus,
-		"created_at":      getCreatedDateFilter(searchParams),
-		"document_status": datastore.ActiveDocumentStatus,
+		"app_id":     appId,
+		"device_id":  deviceId,
+		"status":     datastore.DiscardedEventStatus,
+		"created_at": getCreatedDateFilter(searchParams),
+		"deleted_at": 0,
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0)
@@ -509,10 +508,9 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 }
 
 func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
-
 	filter := bson.M{
-		"document_status": datastore.ActiveDocumentStatus,
-		"created_at":      getCreatedDateFilter(searchParams),
+		"deleted_at": 0,
+		"created_at": getCreatedDateFilter(searchParams),
 	}
 
 	hasAppFilter := !util.IsStringEmpty(appID)

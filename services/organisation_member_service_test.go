@@ -63,7 +63,6 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 					Group: "123",
 					App:   "abc",
 				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},

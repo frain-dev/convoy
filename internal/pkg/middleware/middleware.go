@@ -945,7 +945,6 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	}
 
 	cfg, err := config.Get()
-
 	if err != nil {
 		return nil
 	}
