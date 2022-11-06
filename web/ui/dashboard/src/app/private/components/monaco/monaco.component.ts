@@ -44,7 +44,6 @@ export class MonacoComponent implements AfterViewInit {
 				'scrollbarSlider.hoverBackground': '#e8e8e866'
 			}
 		});
-		console.log(this.editorValue);
 
 		this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
 			value: this.editorValue || '{}',
