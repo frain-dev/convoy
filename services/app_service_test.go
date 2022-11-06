@@ -98,7 +98,6 @@ func TestAppService_CreateApp(t *testing.T) {
 				IsDisabled:      false,
 				Endpoints:       []datastore.Endpoint{},
 				Events:          0,
-				DocumentStatus:  datastore.ActiveDocumentStatus,
 			},
 		},
 		{
@@ -638,19 +637,17 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Description:       "test_endpoint",
 						RateLimit:         5000,
 						RateLimitDuration: "1m0s",
-						DocumentStatus:    datastore.ActiveDocumentStatus,
 					},
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Secrets: []datastore.Secret{
-					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+					{Value: "1234"},
 				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         5000,
 				RateLimitDuration: "1m0s",
-				DocumentStatus:    datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -683,25 +680,23 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 				Endpoints: []datastore.Endpoint{
 					{
 						Secrets: []datastore.Secret{
-							{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+							{Value: "1234"},
 						},
 						TargetURL:         "https://google.com",
 						Description:       "test_endpoint",
 						RateLimit:         100,
 						RateLimitDuration: "1m0s",
-						DocumentStatus:    datastore.ActiveDocumentStatus,
 					},
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Secrets: []datastore.Secret{
-					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+					{Value: "1234"},
 				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
 				RateLimitDuration: "1m0s",
-				DocumentStatus:    datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -747,19 +742,17 @@ func TestAppService_CreateAppEndpoint(t *testing.T) {
 						Description:       "test_endpoint",
 						RateLimit:         100,
 						RateLimitDuration: "1m0s",
-						DocumentStatus:    datastore.ActiveDocumentStatus,
 					},
 				},
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Secrets: []datastore.Secret{
-					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+					{Value: "1234"},
 				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
 				RateLimitDuration: "1m0s",
-				DocumentStatus:    datastore.ActiveDocumentStatus,
 				Authentication: &datastore.EndpointAuthentication{
 					Type: datastore.APIKeyAuthentication,
 					ApiKey: &datastore.ApiKey{
@@ -1247,7 +1240,6 @@ func TestAppService_ExpireEndpointSecret(t *testing.T) {
 								},
 							},
 							AdvancedSignatures: false,
-							DocumentStatus:     datastore.ActiveDocumentStatus,
 						},
 					},
 				},

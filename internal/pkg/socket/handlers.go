@@ -181,15 +181,14 @@ func login(ctx context.Context, group *datastore.Group, app *datastore.Applicati
 
 		} else {
 			device = &datastore.Device{
-				AppID:          appID,
-				GroupID:        group.UID,
-				UID:            uuid.NewString(),
-				HostName:       loginRequest.HostName,
-				Status:         datastore.DeviceStatusOffline,
-				DocumentStatus: datastore.ActiveDocumentStatus,
-				LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+				AppID:      appID,
+				GroupID:    group.UID,
+				UID:        uuid.NewString(),
+				HostName:   loginRequest.HostName,
+				Status:     datastore.DeviceStatusOffline,
+				LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 			}
 
 			err = repo.DeviceRepo.CreateDevice(ctx, device)
@@ -246,18 +245,17 @@ func listen(ctx context.Context, group *datastore.Group, app *datastore.Applicat
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			s := &datastore.Subscription{
-				UID:            uuid.NewString(),
-				Name:           fmt.Sprintf("%s-subscription", device.HostName),
-				Type:           datastore.SubscriptionTypeCLI,
-				AppID:          appID,
-				GroupID:        group.UID,
-				SourceID:       listenRequest.SourceID,
-				DeviceID:       device.UID,
-				FilterConfig:   &datastore.FilterConfiguration{EventTypes: []string{"*"}},
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				Status:         datastore.ActiveSubscriptionStatus,
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				UID:          uuid.NewString(),
+				Name:         fmt.Sprintf("%s-subscription", device.HostName),
+				Type:         datastore.SubscriptionTypeCLI,
+				AppID:        appID,
+				GroupID:      group.UID,
+				SourceID:     listenRequest.SourceID,
+				DeviceID:     device.UID,
+				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
+				CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+				Status:       datastore.ActiveSubscriptionStatus,
 			}
 
 			err = r.SubscriptionRepo.CreateSubscription(ctx, group.UID, s)

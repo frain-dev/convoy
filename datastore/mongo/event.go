@@ -48,26 +48,19 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 
 func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (int64, error) {
 	ctx = db.setCollectionInContext(ctx)
-
-	filter := bson.M{
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
-	}
-
-	return db.store.Count(ctx, filter)
+	return db.store.Count(ctx, bson.M{"group_id": groupID})
 }
 
 func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	f := bson.M{
-		"group_id":        filter.GroupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"group_id":   filter.GroupID,
+		"deleted_at": 0,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -92,7 +85,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "group_id", Value: groupID},
-		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+		{Key: "deleted_at", Value: 0},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
@@ -186,7 +179,7 @@ func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datas
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(f.SearchParams)}
+	filter := bson.M{"deleted_at": 0, "created_at": getCreatedDateFilter(f.SearchParams)}
 
 	if !util.IsStringEmpty(f.AppID) {
 		filter["app_id"] = f.AppID

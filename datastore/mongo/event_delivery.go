@@ -24,7 +24,8 @@ func NewEventDeliveryRepository(store datastore.Store) datastore.EventDeliveryRe
 }
 
 func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
-	eventDelivery *datastore.EventDelivery) error {
+	eventDelivery *datastore.EventDelivery,
+) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	eventDelivery.ID = primitive.NewObjectID()
@@ -36,13 +37,13 @@ func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
-	uid string) (*datastore.EventDelivery, error) {
+	uid string,
+) (*datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	eventDelivery := &datastore.EventDelivery{}
 
 	err := db.store.FindByID(ctx, uid, nil, eventDelivery)
-
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = datastore.ErrEventDeliveryNotFound
@@ -54,7 +55,8 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
-	ids []string) ([]datastore.EventDelivery, error) {
+	ids []string,
+) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -74,7 +76,8 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
-	eventID string) ([]datastore.EventDelivery, error) {
+	eventID string,
+) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"event_id": eventID}
@@ -89,7 +92,8 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
-	status datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	status datastore.EventDeliveryStatus, searchParams datastore.SearchParams,
+) (int64, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -106,7 +110,8 @@ func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
 }
 
 func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
-	e datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
+	e datastore.EventDelivery, status datastore.EventDeliveryStatus,
+) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"uid": e.UID}
@@ -127,7 +132,7 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": datastore.ActiveDocumentStatus,
+		"deleted_at": 0,
 	}
 
 	update := bson.M{
@@ -141,7 +146,8 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 }
 
 func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
-	e datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
+	e datastore.EventDelivery, attempt datastore.DeliveryAttempt,
+) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"uid": e.UID}
@@ -167,7 +173,6 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	var eventDeliveries []datastore.EventDelivery
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &eventDeliveries)
-
 	if err != nil {
 		return eventDeliveries, datastore.PaginationData{}, err
 	}
@@ -196,13 +201,12 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	f := bson.M{
-		"group_id":        filter.GroupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"group_id":   filter.GroupID,
+		"deleted_at": 0,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -220,11 +224,11 @@ func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, a
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"app_id":          appId,
-		"device_id":       deviceId,
-		"status":          datastore.DiscardedEventStatus,
-		"created_at":      getCreatedDateFilter(searchParams),
-		"document_status": datastore.ActiveDocumentStatus,
+		"app_id":     appId,
+		"device_id":  deviceId,
+		"status":     datastore.DiscardedEventStatus,
+		"created_at": getCreatedDateFilter(searchParams),
+		"deleted_at": 0,
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0)
@@ -242,10 +246,9 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 }
 
 func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
-
 	filter := bson.M{
-		"document_status": datastore.ActiveDocumentStatus,
-		"created_at":      getCreatedDateFilter(searchParams),
+		"deleted_at": 0,
+		"created_at": getCreatedDateFilter(searchParams),
 	}
 
 	hasAppFilter := !util.IsStringEmpty(appID)

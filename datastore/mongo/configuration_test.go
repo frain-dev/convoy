@@ -75,6 +75,5 @@ func generateConfig() *datastore.Configuration {
 	return &datastore.Configuration{
 		UID:                uuid.NewString(),
 		IsAnalyticsEnabled: true,
-		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 }

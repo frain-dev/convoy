@@ -28,9 +28,8 @@ func Test_UpdateApplication(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	app := &datastore.Application{
-		Title:          "Next application name",
-		GroupID:        newGroup.UID,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Title:   "Next application name",
+		GroupID: newGroup.UID,
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
@@ -47,10 +46,9 @@ func Test_UpdateApplication(t *testing.T) {
 	require.Equal(t, newTitle, newApp.Title)
 
 	app2 := &datastore.Application{
-		Title:          newTitle,
-		GroupID:        newGroup.UID,
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Title:   newTitle,
+		GroupID: newGroup.UID,
+		UID:     uuid.NewString(),
 	}
 
 	err = appRepo.CreateApplication(context.Background(), app2, app2.GroupID)
@@ -72,19 +70,17 @@ func Test_CreateApplication(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	app := &datastore.Application{
-		Title:          "Next application name",
-		GroupID:        newOrg.UID,
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Title:   "Next application name",
+		GroupID: newOrg.UID,
+		UID:     uuid.NewString(),
 	}
 
 	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
 
 	app2 := &datastore.Application{
-		Title:          "Next application name",
-		GroupID:        newOrg.UID,
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Title:   "Next application name",
+		GroupID: newOrg.UID,
+		UID:     uuid.NewString(),
 	}
 
 	err := appRepo.CreateApplication(context.Background(), app2, app2.GroupID)

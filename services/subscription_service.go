@@ -86,8 +86,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 
-		Status:         datastore.ActiveSubscriptionStatus,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Status: datastore.ActiveSubscriptionStatus,
 	}
 
 	if newSubscription.DisableEndpoint != nil {

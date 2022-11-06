@@ -21,13 +21,11 @@ import (
 
 func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, search searcher.Searcher, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-
 		var event datastore.Event
 		err := json.Unmarshal(t.Payload(), &event)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
-		event.DocumentStatus = datastore.ActiveDocumentStatus
 
 		var group *datastore.Group
 		var subscriptions []datastore.Subscription
@@ -122,7 +120,6 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 			rc, err := ec.retryConfig()
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
-
 			}
 
 			metadata := &datastore.Metadata{
@@ -134,7 +131,8 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			}
 
-			eventDelivery := &datastore.EventDelivery{UID: uuid.New().String(),
+			eventDelivery := &datastore.EventDelivery{
+				UID:            uuid.New().String(),
 				SubscriptionID: s.UID,
 				AppID:          app.UID,
 				Metadata:       metadata,
@@ -146,7 +144,6 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 
 				Status:           getEventDeliveryStatus(ctx, &s, app, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 			}

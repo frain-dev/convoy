@@ -615,7 +615,6 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 				endpoint := &datastore.Endpoint{
 					UID:               en.UID,
 					TargetURL:         en.TargetURL,
-					DocumentStatus:    en.DocumentStatus,
 					Secrets:           en.Secrets,
 					HttpTimeout:       en.HttpTimeout,
 					RateLimit:         en.RateLimit,
@@ -984,7 +983,6 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	}
 
 	cfg, err := config.Get()
-
 	if err != nil {
 		return nil
 	}

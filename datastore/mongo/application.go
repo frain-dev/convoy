@@ -61,7 +61,6 @@ func (db *appRepo) LoadApplicationsPaged(ctx context.Context, groupID, q string,
 	var apps []datastore.Application
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &apps)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -92,7 +91,6 @@ func (db *appRepo) LoadApplicationsPagedByGroupId(ctx context.Context, groupID s
 	var apps []datastore.Application
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &apps)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -167,8 +165,8 @@ func (db *appRepo) SearchApplicationsByGroupId(ctx context.Context, groupId stri
 }
 
 func (db *appRepo) FindApplicationByID(ctx context.Context,
-	id string) (*datastore.Application, error) {
-
+	id string,
+) (*datastore.Application, error) {
 	ctx = db.setCollectionInContext(ctx)
 	app := &datastore.Application{}
 
@@ -236,7 +234,8 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 func (db *appRepo) CreateApplicationEndpoint(ctx context.Context, groupID string, appID string, endpoint *datastore.Endpoint) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"uid": appID, "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"uid": appID, "deleted_at": 0}
+
 	update := bson.M{
 		"$push": bson.M{
 			"endpoints": endpoint,
@@ -253,9 +252,9 @@ func (db *appRepo) ExpireSecret(ctx context.Context, appID, endpointID string, s
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             appID,
-		"document_status": datastore.ActiveDocumentStatus,
-		"endpoints.uid":   endpointID,
+		"uid":           appID,
+		"deleted_at":    0,
+		"endpoints.uid": endpointID,
 	}
 
 	update := bson.M{
@@ -273,8 +272,7 @@ func (db *appRepo) DeleteGroupApps(ctx context.Context, groupID string) error {
 
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -286,8 +284,7 @@ func (db *appRepo) DeleteApplication(ctx context.Context, app *datastore.Applica
 
 	updateAsDeleted := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 

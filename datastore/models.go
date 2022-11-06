@@ -55,18 +55,10 @@ func IsValidPeriod(period string) bool {
 	return ok
 }
 
-type DocumentStatus string
-
 type SearchParams struct {
 	CreatedAtStart int64 `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64 `json:"created_at_end" bson:"created_at_end"`
 }
-
-const (
-	ActiveDocumentStatus   DocumentStatus = "Active"
-	InactiveDocumentStatus DocumentStatus = "Inactive"
-	DeletedDocumentStatus  DocumentStatus = "Deleted"
-)
 
 type (
 	StrategyProvider string
@@ -239,8 +231,6 @@ type Application struct {
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 
 	Events int64 `json:"events,omitempty" bson:"-"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 func (app *Application) FindEndpoint(id string) (*Endpoint, error) {
@@ -271,8 +261,6 @@ type Endpoint struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 func (e *Endpoint) GetActiveSecretIndex() (int, error) {
@@ -288,11 +276,10 @@ type Secret struct {
 	UID   string `json:"uid" bson:"uid"`
 	Value string `json:"value" bson:"value"`
 
-	ExpiresAt      primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
-	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
+	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type EndpointAuthentication struct {
@@ -325,8 +312,6 @@ type Group struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type GroupMetadata struct {
@@ -384,10 +369,9 @@ type GroupFilter struct {
 }
 
 type EventFilter struct {
-	GroupID        string         `json:"group_id" bson:"group_id"`
-	DocumentStatus DocumentStatus `json:"document_status" bson:"document_status"`
-	CreatedAtStart int64          `json:"created_at_start" bson:"created_at_start"`
-	CreatedAtEnd   int64          `json:"created_at_end" bson:"created_at_end"`
+	GroupID        string `json:"group_id" bson:"group_id"`
+	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
 type EventDeliveryFilter struct {
@@ -477,8 +461,6 @@ type Event struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type (
@@ -603,8 +585,6 @@ type EventDelivery struct {
 	CreatedAt        primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type CLIMetadata struct {
@@ -626,8 +606,6 @@ type APIKey struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type Subscription struct {
@@ -656,8 +634,6 @@ type Subscription struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type Source struct {
@@ -676,8 +652,6 @@ type Source struct {
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
 	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type User struct {
@@ -693,8 +667,6 @@ type User struct {
 	UpdatedAt              primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt              primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 	ResetPasswordExpiresAt primitive.DateTime `json:"reset_password_expires_at,omitempty" bson:"reset_password_expires_at,omitempty" swaggertype:"string"`
-
-	DocumentStatus DocumentStatus `json:"-" bson:"document_status"`
 }
 
 type RetryConfiguration struct {
@@ -745,14 +717,13 @@ type ApiKey struct {
 }
 
 type Organisation struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	OwnerID        string             `json:"-" bson:"owner_id"`
-	Name           string             `json:"name" bson:"name"`
-	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
-	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	ID        primitive.ObjectID `json:"-" bson:"_id"`
+	UID       string             `json:"uid" bson:"uid"`
+	OwnerID   string             `json:"-" bson:"owner_id"`
+	Name      string             `json:"name" bson:"name"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type Configuration struct {
@@ -761,7 +732,6 @@ type Configuration struct {
 	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
 	IsSignupEnabled    bool                        `json:"is_signup_enabled" bson:"is_signup_enabled"`
 	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" bson:"storage_policy"`
-	DocumentStatus     DocumentStatus              `json:"-" bson:"document_status"`
 
 	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -794,24 +764,22 @@ type OrganisationMember struct {
 	UserID         string             `json:"user_id" bson:"user_id"`
 	Role           auth.Role          `json:"role" bson:"role"`
 	UserMetadata   *UserMetadata      `json:"user_metadata" bson:"-"`
-	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type Device struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	GroupID        string             `json:"group_id,omitempty" bson:"group_id"`
-	AppID          string             `json:"app_id,omitempty" bson:"app_id"`
-	HostName       string             `json:"host_name,omitempty" bson:"host_name"`
-	Status         DeviceStatus       `json:"status,omitempty" bson:"status"`
-	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
-	LastSeenAt     primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
-	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	GroupID    string             `json:"group_id,omitempty" bson:"group_id"`
+	AppID      string             `json:"app_id,omitempty" bson:"app_id"`
+	HostName   string             `json:"host_name,omitempty" bson:"host_name"`
+	Status     DeviceStatus       `json:"status,omitempty" bson:"status"`
+	LastSeenAt primitive.DateTime `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
+	CreatedAt  primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt  primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt  primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type DeviceStatus string
@@ -850,7 +818,6 @@ type OrganisationInvite struct {
 	Token          string             `json:"token" bson:"token"`
 	Role           auth.Role          `json:"role" bson:"role"`
 	Status         InviteStatus       `json:"status" bson:"status"`
-	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	ExpiresAt      primitive.DateTime `json:"-" bson:"expires_at"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`

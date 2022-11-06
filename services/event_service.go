@@ -91,15 +91,14 @@ func (e *EventService) CreateAppEvent(ctx context.Context, newMessage *models.Ev
 	// }
 
 	event := &datastore.Event{
-		UID:            uuid.New().String(),
-		EventType:      datastore.EventType(newMessage.EventType),
-		Data:           newMessage.Data,
-		Headers:        e.getCustomHeaders(newMessage),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		AppID:          app.UID,
-		GroupID:        app.GroupID,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		EventType: datastore.EventType(newMessage.EventType),
+		Data:      newMessage.Data,
+		Headers:   e.getCustomHeaders(newMessage),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		AppID:     app.UID,
+		GroupID:   app.GroupID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||
@@ -349,7 +348,6 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 				endpoint := &datastore.Endpoint{
 					UID:               en.UID,
 					TargetURL:         en.TargetURL,
-					DocumentStatus:    en.DocumentStatus,
 					Secrets:           en.Secrets,
 					HttpTimeout:       en.HttpTimeout,
 					RateLimit:         en.RateLimit,

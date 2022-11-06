@@ -76,8 +76,7 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 					Type:  auth.RoleAdmin,
 					Group: "abc",
 				},
-				Status:         datastore.InviteStatusPending,
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				Status: datastore.InviteStatusPending,
 			},
 			wantErr: false,
 		},
@@ -508,7 +507,6 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 				u, _ := ois.userRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
 					Times(1).Return(nil, datastore.ErrUserNotFound)
-
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -1147,7 +1145,6 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 					Group: "ref",
 					App:   "",
 				},
-				DocumentStatus: datastore.DeletedDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -1172,6 +1169,7 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 			}
 
 			require.Nil(t, err)
+			require.NotEmpty(t, iv.DeletedAt)
 			stripVariableFields(t, "organisation_invite", iv)
 			require.Equal(t, tt.want, iv)
 		})
