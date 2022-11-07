@@ -2,7 +2,12 @@
 
 <form [formGroup]="addNewAppForm" id="create-app-form">
 	<convoy-card className="px-24px py-24px mt-40px">
-		<convoy-input type="text" autocomplete="app-name" name="app-name" formControlName="name" errorMessage="App name is required" label="Enter App Name" placeholder="App name" [required]="true"></convoy-input>
+		<div convoy-input-field>
+			<label for="app-name" required="true" convoy-label>Enter App Name</label>
+			<input type="text" id="app-name" convoy-input autocomplete="app-name" formControlName="name" placeholder="App name" />
+			<convoy-input-error *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">App name is required</convoy-input-error>
+		</div>
+
 		<div class="grid grid-cols-2 gap-6">
 			<convoy-input
 				type="email"
