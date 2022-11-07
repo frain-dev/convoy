@@ -266,6 +266,7 @@ type WebhookRequest struct {
 type Subscription struct {
 	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
 	SourceID   string `json:"source_id" bson:"source_id"`
+	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
 	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`

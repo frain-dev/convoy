@@ -125,8 +125,6 @@ func TestProcessEventCreated(t *testing.T) {
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
-
 				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(endpoint, nil)
@@ -197,8 +195,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
 
 				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com"}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").

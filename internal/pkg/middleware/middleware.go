@@ -1227,8 +1227,8 @@ func GetHostFromContext(ctx context.Context) string {
 }
 
 func GetEndpointIDFromContext(r *http.Request) string {
-	if appID, ok := r.Context().Value(endpointIdCtx).(string); ok {
-		return appID
+	if endpointID, ok := r.Context().Value(endpointIdCtx).(string); ok {
+		return endpointID
 	}
 
 	return r.URL.Query().Get("endpointId")

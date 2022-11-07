@@ -331,7 +331,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
-		_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint events fetched successfully",
 			pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
 
 		return
