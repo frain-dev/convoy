@@ -71,7 +71,7 @@ export class EventDeliveriesComponent implements OnInit {
 	ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEventDeliveries();
-		this.getSourcesForFilter();
+		if (!this.appPortalToken) this.getSourcesForFilter();
 	}
 
 	ngOnChanges(changes: SimpleChanges) {

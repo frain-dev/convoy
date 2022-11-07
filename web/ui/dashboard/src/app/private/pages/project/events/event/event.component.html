@@ -55,7 +55,7 @@
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px"
 				[active]="!!eventSource"
 				#sourcesDropdown
-				[hidden]="this.privateService.activeProjectDetails?.type === 'outgoing'"
+				[hidden]="appPortalToken || this.privateService.activeProjectDetails?.type === 'outgoing'"
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
