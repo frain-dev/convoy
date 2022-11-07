@@ -63,7 +63,7 @@ export class EventComponent implements OnInit {
 	async ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEvents();
-		this.getSourcesForFilter();
+		if (!this.appPortalToken) this.getSourcesForFilter();
 	}
 
 	ngAfterViewInit() {
