@@ -1,3 +1,11 @@
+## 0.7.2
+
+-   [Bugfix] Fix Max response size CLI override #1098
+-   [Feature] Advanced Signatures Core Implementation #1053 #1100 #1103 #1104
+-   [Feature] Refactored Logging Implementation #1051
+-   [Bugfix] Update endpoint with custom authentication #1119 #1106 #1107 #1105
+-   [Enhancement] Add support for building alpine image #1108
+
 ## 0.7.1
 
 -   [Bugfix] Fix Max response size CLI override #1098
