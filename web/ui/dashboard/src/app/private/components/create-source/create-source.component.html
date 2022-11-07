@@ -106,7 +106,7 @@
 	</div>
 
 	<div class="flex justify-end mt-32px">
-		<convoy-button type="outline" buttonType="button" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (clickItem)="confirmModal = true">Cancel</convoy-button>
+		<convoy-button type="outline" buttonType="button" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (clickItem)="cancel()">Cancel</convoy-button>
 		<convoy-button [disable]="isloading">
 			{{ isNewProjectRoute() ? 'Save and Proceed' : action === 'update' ? 'Update Source' : 'Create Source' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">

@@ -1,8 +1,8 @@
 <convoy-card className="rounded-tl-[0] rounded-tr-[0]">
 	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
 		<div class="flex">
-			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #dateFilter></date-filter>
-			<app-time-filter class="ml-14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></app-time-filter>
+			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #datePicker></convoy-date-picker>
+			<convoy-time-picker class="ml-14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></convoy-time-picker>
 
 			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #statusDropdown>
 				<ng-container dropdownToggle>
