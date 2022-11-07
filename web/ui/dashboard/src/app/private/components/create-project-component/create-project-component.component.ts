@@ -214,4 +214,9 @@ export class CreateProjectComponent implements OnInit {
 		else if (word === 'm') return parseInt(digits) * 60;
 		return parseInt(digits);
 	}
+
+	cancel() {
+		this.confirmModal = true;
+		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
+	}
 }

@@ -87,7 +87,7 @@
 		</div>
 	</convoy-card>
 	<div class="flex justify-end mt-6 mb-16">
-		<convoy-button buttonType="button" (click)="confirmModal = true" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
+		<convoy-button buttonType="button" (click)="cancel()" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
 		<convoy-button [disable]="isSavingApp" (click)="saveApp()">
 			{{ isNewProjectRoute() ? 'Save and Proceed' : editAppMode ? 'Edit App' : 'Create App' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">

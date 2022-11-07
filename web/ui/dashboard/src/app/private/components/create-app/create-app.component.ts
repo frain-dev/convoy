@@ -159,6 +159,11 @@ export class CreateAppComponent implements OnInit {
 		}
 	}
 
+	cancel() {
+		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'appForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.confirmModal = true;
+	}
+
 	isNewProjectRoute(): boolean {
 		if (this.router.url == '/projects/new') return true;
 		return false;

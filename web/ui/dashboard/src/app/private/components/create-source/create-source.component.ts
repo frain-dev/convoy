@@ -135,6 +135,11 @@ export class CreateSourceComponent implements OnInit {
 		return false;
 	}
 
+	cancel() {
+		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.confirmModal = true;
+	}
+
 	isNewProjectRoute(): boolean {
 		if (this.router.url == '/projects/new') return true;
 		return false;
