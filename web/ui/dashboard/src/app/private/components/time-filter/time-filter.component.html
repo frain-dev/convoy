@@ -19,8 +19,8 @@
                 <span class="mx-6px">:</span>
                 <input type="number" [(ngModel)]="filterStartMinute" pattern="[0-9]*" maxlength="2" id="startTimeMinute" (input)="validateTime('startTimeMinute')" class="border border-[#EEEEEE] bg-[#EEEEEE] rounded-4px text-16 text-[#424242] text-center focus:border-[#EEEEEE] outline-none w-80px">
                 <ul class="flex border border-grey-10 rounded-4px ml-10px">
-                    <li class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px" (click)="filterStartHour = filterStartHour - 12 < 0 ? filterStartHour : filterStartHour - 12" [ngClass]="{ 'bg-primary-100 transition-all duration-300': filterStartHour < 12 }">AM</li>
-                    <li class="py-4px px-10px text-10 rounded-br-4px rounded-tr-4px" (click)="filterStartHour = filterStartHour + 12 > 24 ? filterStartHour : filterStartHour + 12" [ngClass]="{ 'bg-primary-100 transition-all duration-300': filterStartHour >= 12 }">PM</li>
+                    <li class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px" (click)="filterStartHour = filterStartHour - 12 < 0 ? filterStartHour : filterStartHour - 12" [ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterStartHour < 12 }">AM</li>
+                    <li class="py-4px px-10px text-10 rounded-br-4px rounded-tr-4px" (click)="filterStartHour = filterStartHour + 12 > 24 ? filterStartHour : filterStartHour + 12" [ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterStartHour >= 12 }">PM</li>
                 </ul>
             </div>
 
@@ -30,8 +30,8 @@
                 <span class="mx-6px">:</span>
                 <input type="number" [(ngModel)]="filterEndMinute" pattern="[0-9]*" maxlength="2" id="endTimeMinute" (input)="validateTime('endTimeMinute')" class="border border-[#EEEEEE] bg-[#EEEEEE] rounded-4px text-16 text-[#424242] text-center focus:border-[#EEEEEE] outline-none w-80px">
                 <ul class="flex border border-grey-10 rounded-4px ml-10px">
-                    <li class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px" (click)="filterEndHour = filterEndHour - 12 < 0 ? filterEndHour : filterEndHour - 12" [ngClass]="{ 'bg-primary-100 transition-all duration-300': filterEndHour < 12 }">AM</li>
-                    <li class="py-4px px-10px text-10 rounded-br-4px rounded-tr-4px" (click)="filterEndHour = filterEndHour + 12 > 24 ? filterEndHour : filterEndHour + 12" [ngClass]="{ 'bg-primary-100 transition-all duration-300': filterEndHour >= 12 }">PM</li>
+                    <li class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px" (click)="filterEndHour = filterEndHour - 12 < 0 ? filterEndHour : filterEndHour - 12" [ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterEndHour < 12 }">AM</li>
+                    <li class="py-4px px-10px text-10 rounded-br-4px rounded-tr-4px" (click)="filterEndHour = filterEndHour + 12 > 24 ? filterEndHour : filterEndHour + 12" [ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterEndHour >= 12 }">PM</li>
                 </ul>
             </div>
             <div class="mb-20px flex items-center justify-end">
