@@ -56,8 +56,6 @@ export class TimeFilterComponent implements OnInit {
 		const timeInputId = document.getElementById(inputId);
 		const timeInputIdValue = document.getElementById(inputId) as HTMLInputElement;
 		timeInputId?.addEventListener('keydown', e => {
-			console.log(timeInputIdValue.value);
-			console.log(timeInputIdValue.value.length);
 			if (timeInputIdValue.value.length > 2) {
 				if (!(e.key == 'Backspace' || e.key == 'Delete')) e.preventDefault();
 			}

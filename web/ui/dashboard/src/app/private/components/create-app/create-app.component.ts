@@ -107,7 +107,6 @@ export class CreateAppComponent implements OnInit {
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.addNewAppForm.reset();
 			this.createApp.emit(response.data);
-            console.log(document.getElementById('configureProjectForm'))
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 			this.addNewAppForm.patchValue({
 				is_disabled: false
@@ -154,7 +153,6 @@ export class CreateAppComponent implements OnInit {
 			const response = await this.createAppService.getApps();
 			const apps = response.data.content;
 			if (apps.length > 0 && this.router.url.includes('/configure')) this.createApp.emit();
-			// if (apps.length > 0 && this.router.url.includes('/projects/new')) this.createApp.emit();
 			this.isLoadingAppDetails = false;
 		} catch {
 			this.isLoadingAppDetails = false;
