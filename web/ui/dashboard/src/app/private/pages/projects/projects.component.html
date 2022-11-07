@@ -1,9 +1,16 @@
-<convoy-loader *ngIf="isloadingOrganisations"></convoy-loader>
+<convoy-loader *ngIf="isloadingOrganisations" position="fixed"></convoy-loader>
 
-<ng-container *ngIf="!isloadingOrganisations && organisations.length > 0 && !noData">
+<ng-container *ngIf="!isloadingOrganisations && organisations.length">
 	<convoy-page>
-		<h3 class="mb-2 font-semibold">Projects</h3>
-		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
+		<ng-container *ngIf="!isLoadingProjects && projects.length">
+			<h3 class="mb-2 font-semibold">Projects</h3>
+			<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
+		</ng-container>
+
+		<ng-container *ngIf="isLoadingProjects">
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-20 mb-20px"></div>
+			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60 mb-24px"></div>
+		</ng-container>
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="isLoadingProjects">
 			<div *ngFor="let index of projectsLoaderIndex" class="rounded-8px bg-white-100 block border border-grey-10">
@@ -33,6 +40,13 @@
 		</div>
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="!isLoadingProjects">
+			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
+				<svg width="22" height="22" class="mr-2" fill="#477db3">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				<span class="text-primary-100 font-medium text-16">Create new project</span>
+			</a>
+
 			<ng-container *ngFor="let project of projects">
 				<a [routerLink]="'/projects/' + project.uid" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
 					<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
@@ -65,37 +79,6 @@
 					</div>
 				</a>
 			</ng-container>
-
-			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
-				<svg width="22" height="22" class="mr-2" fill="#477db3">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				<span class="text-primary-100 font-medium text-16">Create new project</span>
-			</a>
 		</div>
 	</convoy-page>
 </ng-container>
-
-<convoy-page *ngIf="organisations.length == 0">
-	<convoy-empty-state
-		className="h-[50vh]"
-		imgSrc="/assets/img/org-empty-img.svg"
-		heading="You have no organisation yet"
-		description="Create an organisation to get started with sending/receiving webhooks"
-		buttonText="Create Organisation"
-		(onAction)="showOrganisationModal = true"
-	></convoy-empty-state>
-</convoy-page>
-<convoy-page *ngIf="noData && !isLoadingProjects">
-	<convoy-empty-state
-		type="table"
-		className="h-[50vh]"
-		imgSrc="/assets/img/new-empty-state.png"
-		heading="You currently do not have any projects"
-		description="Create a project to start sending/receiving webhooks"
-		buttonText="Create Project"
-		(onAction)="goToCreateProjectPage()"
-	></convoy-empty-state>
-</convoy-page>
-
-<app-create-organisation *ngIf="showOrganisationModal" (closeModal)="setOrganisation()"></app-create-organisation>

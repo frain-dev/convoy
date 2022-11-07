@@ -47,7 +47,7 @@ func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *ApplicationIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -80,7 +80,7 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 }
 
 func (s *ApplicationIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -563,6 +563,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
+	require.Equal(s.T(), secret, dbEndpoint.Secrets[0].Value)
 	require.Equal(s.T(), dbEndpoint.Authentication, endpoint.Authentication)
 }
 
@@ -688,7 +689,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	appID := uuid.New().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
-	secret := f.Lorem().Text(25)
 	rand.Seed(time.Now().UnixNano())
 	num := rand.Intn(10) + 1
 	eventTypes, _ := json.Marshal(f.Lorem().Words(num))
@@ -702,10 +702,9 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultGroup.UID, appID, endpoint.UID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
-		"secret": "%s",
 		"events": %s,
 		"description": "default endpoint"
-	}`, endpointURL, secret, eventTypes)
+	}`, endpointURL, eventTypes)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -724,7 +723,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
-	require.Equal(s.T(), dbEndpoint.Secret, secret)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
@@ -754,7 +752,6 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	dbEndpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), appID, endpoint.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
-	require.Equal(s.T(), dbEndpoint.Secret, resp.Secret)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
@@ -783,6 +780,45 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 	parseResponse(s.T(), w.Result(), &dbEndpoints)
 
 	require.Len(s.T(), dbEndpoints, len(endpoints))
+}
+
+func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
+	appID := uuid.New().String()
+	f := faker.New()
+	secret := f.Lorem().Text(25)
+	expiration := 7
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", false)
+	e, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, app, app.GroupID)
+	_, _ = testdb.SeedEndpointSecret(s.ConvoyApp.A.Store, app, e, secret)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s/expire_secret", s.DefaultGroup.UID, appID, e.UID)
+	plainBody := fmt.Sprintf(`{
+		"expiration": %d
+	}`, expiration)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
+	app, err := appRepo.FindApplicationByID(context.Background(), appID)
+	require.NoError(s.T(), err)
+	dbEndpoint, err := app.FindEndpoint(e.UID)
+	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), dbEndpoint.Secrets[0].ExpiresAt)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {

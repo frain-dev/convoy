@@ -1,13 +1,13 @@
 <p class="text-14 text-grey-60 mb-24px">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
 
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
-	<div class="px-24px py-24px w-full bg-white-100 border-[#EDEFF5] shadow-default rounded-8px mt-24px">
+	<convoy-card className="p-24px mt-24px">
 		<convoy-input label="Project name" name="project-name" formControlName="name" placeholder="Enter project name here" [required]="true" errorMessage="Enter new project name"></convoy-input>
 		<ng-container *ngIf="action === 'update'">
 			<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between">Project Id</label>
 			<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
-				<span class="text-16 text-grey-60 font-normal">{{ projectDetails.uid }}</span>
-				<convoy-copy-button [text]="projectDetails.uid"></convoy-copy-button>
+				<span class="text-16 text-grey-60 font-normal">{{ projectDetails?.uid }}</span>
+				<convoy-copy-button [text]="projectDetails?.uid || ''"></convoy-copy-button>
 			</div>
 		</ng-container>
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
@@ -20,15 +20,23 @@
 			<span>Please select a project type</span>
 		</div>
 
+		<div class="flex">
+			<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="toggleMoreConfig($event)" [isChecked]="enableMoreConfig"></convoy-toggle>
+		</div>
+
 		<div [hidden]="!enableMoreConfig">
 			<div formGroupName="config">
 				<h3 class="mt-24px mb-16px font-semibold flex items-center">
 					Signature Details
 					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h3>
-				<div class="grid grid-cols-2 gap-24px" formGroupName="signature">
+				<div formGroupName="signature" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
 					<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests"></convoy-input>
-					<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" (selectedOption)="projectForm.get('config.signature')?.patchValue({ hash: $event })"></convoy-select>
+
+					<ng-container [formGroup]="newSignatureForm" *ngIf="action === 'create'">
+						<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
+						<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
+					</ng-container>
 				</div>
 
 				<h3 class="mt-24px mb-16px flex items-center font-semibold">
@@ -80,20 +88,75 @@
 			</div>
 		</div>
 
-		<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="enableMoreConfig = !enableMoreConfig" [isChecked]="enableMoreConfig"></convoy-toggle>
-	</div>
+		<div class="flex justify-end">
+			<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" (click)="confirmModal = true">Cancel</convoy-button>
+			<convoy-button [disable]="isCreatingProject">
+				{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
+				<svg width="24" height="24" class="ml-8px fill-white-100">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</convoy-button>
+		</div>
+	</convoy-card>
 
-	<div class="button-container flex justify-end mt-32px mab-40px">
-		<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" (click)="confirmModal = true">Cancel</convoy-button>
-		<convoy-button [disable]="isCreatingProject" *ngIf="action === 'create'">
-			Create Project
-			<svg width="24" height="24" class="ml-8px fill-white-100">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</convoy-button>
-		<convoy-button [disable]="isCreatingProject" *ngIf="action === 'update'">Update Project</convoy-button>
-	</div>
+	<ng-container *ngIf="action === 'update'">
+		<div class="flex items-center justify-between mt-32px mb-20px">
+			<h5 class="mt-24px font-medium flex items-center">
+				Signature Format
+				<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+			</h5>
+			<convoy-button size="sm" type="outline" buttonType="button" (clickItem)="versions.push(newVersion()); showNewSignatureModal = true">
+				<svg width="18" height="18" class="mr-2 fill-primary-100">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				Create new signature
+			</convoy-button>
+		</div>
+
+		<convoy-card>
+			<convoy-table>
+				<convoy-table-head class="contents">
+					<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</convoy-table-head-cell>
+				</convoy-table-head>
+				<tbody>
+					<ng-container *ngFor="let version of signatureVersions; let i = index">
+						<convoy-table-row [forDate]="true" class="contents">
+							<convoy-table-cell class="contents" [forDate]="true">{{ version.date }}</convoy-table-cell>
+							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+						</convoy-table-row>
+						<convoy-table-row class="contents" *ngFor="let signatureVersion of version.content; let index = index" [id]="'app' + i">
+							<convoy-table-cell class="contents" className="pl-16px">
+								<div class="flex items-center">
+									{{ projectDetails?.config?.signature?.header }}
+								</div>
+							</convoy-table-cell>
+							<convoy-table-cell class="contents">v{{ index + 1 }}</convoy-table-cell>
+							<convoy-table-cell class="contents">{{ signatureVersion.hash }}</convoy-table-cell>
+							<convoy-table-cell class="contents">{{ signatureVersion.encoding }}</convoy-table-cell>
+						</convoy-table-row>
+					</ng-container>
+				</tbody>
+			</convoy-table>
+		</convoy-card>
+	</ng-container>
 </form>
+
+<convoy-modal *ngIf="showNewSignatureModal" title="New Signature" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
+	<div modalBody>
+		<form [formGroup]="newSignatureForm">
+			<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
+			<div class="spacer mb-24px"></div>
+			<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
+
+			<div class="flex justify-end mt-38px">
+				<convoy-button color="danger" type="outline" className="mr-16px" (clickItem)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">Discard</convoy-button>
+				<convoy-button (clickItem)="createNewSignature(versionsLength - 1)">Create</convoy-button>
+			</div>
+		</form>
+	</div>
+</convoy-modal>
 
 <convoy-modal *ngIf="showApiKey">
 	<div class="flex flex-col items-center justify-center min-h-[80vh] px-30px" modalBody>

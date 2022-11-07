@@ -350,7 +350,7 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 					UID:               en.UID,
 					TargetURL:         en.TargetURL,
 					DocumentStatus:    en.DocumentStatus,
-					Secret:            en.Secret,
+					Secrets:           en.Secrets,
 					HttpTimeout:       en.HttpTimeout,
 					RateLimit:         en.RateLimit,
 					RateLimitDuration: en.RateLimitDuration,
