@@ -112,7 +112,7 @@
 	</convoy-card>
 
 	<div class="flex justify-end mt-32px">
-		<button convoy-button className="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" (click)="confirmModal = true">Cancel</button>
+		<button convoy-button className="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" (click)="cancel()">Cancel</button>
 		<button convoy-button className="text-14">
 			{{ isNewProjectRoute() ? 'Save and Proceed' : action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100">

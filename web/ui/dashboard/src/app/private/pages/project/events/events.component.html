@@ -34,7 +34,7 @@
 
 	<ng-container *ngIf="eventsFetched?.length">
 		<div class="py-24px flex items-center">
-			<date-filter (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></date-filter>
+			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-picker>
 			<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonFill="outline" buttonClass="px-10px !border-primary-400 ml-16px">
 				<ng-container dropdownToggle>
 					<span class="text-grey-60 mr-4px">Filter By:</span>

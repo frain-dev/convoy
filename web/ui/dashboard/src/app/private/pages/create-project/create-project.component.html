@@ -1,4 +1,4 @@
-<convoy-modal position="full" title="Create Project" (closeModal)="cancel()">
+<convoy-modal position="full" [id]="'projectForm'" title="Create Project" (closeModal)="cancel()">
 	<div class="pt-40px pb-60px" modalBody>
 		<convoy-loader *ngIf="isLoadingProjects"></convoy-loader>
 		<ng-container *ngIf="!isLoadingProjects">

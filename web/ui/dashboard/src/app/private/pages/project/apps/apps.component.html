@@ -137,7 +137,7 @@
 
 <app-delete-modal *ngIf="showDeleteAppModal" [isLoading]="isDeletingApp" [deleteText]="'delete “' + appsDetailsItem?.name + '”'" (closeModal)="showDeleteAppModal = false" (deleteData)="deleteApp()"></app-delete-modal>
 
-<convoy-modal *ngIf="showCreateAppModal || showEditAppModal" position="full" [title]="showEditAppModal ? 'Edit App' : 'Create App'" (closeModal)="goBack()">
+<convoy-modal *ngIf="showCreateAppModal || showEditAppModal" position="full" [id]="'appForm'" [title]="showEditAppModal ? 'Edit App' : 'Create App'" (closeModal)="goBack()">
 	<ng-container modalBody>
 		<app-create-app [editAppMode]="showEditAppModal" (discardApp)="goBack()" (createApp)="goBack(); getApps()"></app-create-app>
 	</ng-container>

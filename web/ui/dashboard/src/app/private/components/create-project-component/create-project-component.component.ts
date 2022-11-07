@@ -134,6 +134,7 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
+			document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success', type: this.privateService.activeProjectDetails?.uid ? 'modal' : 'alert' });
@@ -212,5 +213,10 @@ export class CreateProjectComponent implements OnInit {
 		if (word === 's') return parseInt(digits);
 		else if (word === 'm') return parseInt(digits) * 60;
 		return parseInt(digits);
+	}
+
+	cancel() {
+		this.confirmModal = true;
+		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 }

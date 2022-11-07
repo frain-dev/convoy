@@ -1,0 +1,100 @@
+<convoy-dropdown
+	[buttonClass]="formType === 'filter' ? 'px-10px !border-primary-400 justify-between h-36px min-w-[117px] text-12' : '!border-primary-500 !rounded-4px !bg-[#F7F9FC] !py-12px !px-16px text-12 w-full !justify-start'"
+	buttonType="outline"
+	position="left"
+	className="p-10px max-h-fit"
+	size="xl"
+	[active]="!!selectedDates?.startDate && !!selectedDates?.endDate"
+	#dropdown
+>
+	<ng-container dropdownToggle>
+		<img src="/assets/img/calendar-icon.svg" class="w-14px mr-10px" *ngIf="formType === 'filter'" />
+		<span class="text-grey-40 mr-4px">{{ formType === 'input' && selectedDates?.startDate ? formatDate(selectedStartDay) : 'Date' }}</span>
+
+		<span class="flex ml-auto items-center order-3" [class]="formType === 'input' ? 'order-2 ml-auto' : 'order-1'">
+			<img src="/assets/img/calendar-icon.svg" class="w-14px" *ngIf="!selectedDates?.startDate && formType === 'input'" />
+			<img src="/assets/img/angle-arrow-down.svg" class="ml-16px mr-0px w-14px" alt="arrow down icon" *ngIf="!selectedDates?.startDate && !selectedDates?.endDate && formType === 'filter'" />
+			<convoy-button type="icon" buttonType="button" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (clickItem)="clearDate($event); clearDates.emit()" className="">
+				<svg width="10" height="10" class="fill-primary-100">
+					<use xlink:href="#close-icon"></use>
+				</svg>
+			</convoy-button>
+		</span>
+	</ng-container>
+
+	<div class="w-full">
+		<div class="date-picker">
+			<div class="inputs flex items-center w-full justify-between bg-white-100 py-10px mb-10px">
+				<div class="start-date flex items-center py-4px px-10px bg-white-100 border border-primary-400 focus-within:border-primary-200 transition-all duration-300 ease-in-out rounded-8px" [ngClass]="{ 'w-full': formType === 'input' }">
+					<span *ngIf="formType === 'filter'" class="text-14 text-grey-40 font-medium">Start:</span>
+					<input placeholder="dd" pattern="[0-9]*" maxlength="2" max="31" class="w-24px outline-none rounded-tl-8px rounded-bl-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="startDate.day" (change)="onInputStartDate()" />
+					<span class="text-10 text-grey-40">/</span>
+					<input placeholder="mm" pattern="[0-9]*" maxlength="2" max="12" class="w-32px outline-none text-center text-14 text-grey-40 font-medium" [(ngModel)]="startDate.month" (change)="onInputStartDate()" />
+					<span class="text-10 text-grey-40">/</span>
+					<input placeholder="yyyy" pattern="[0-9]*" maxlength="4" class="w-44px outline-none rounded-tr-8px rounded-br-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="startDate.year" (change)="onInputStartDate()" />
+				</div>
+				<div *ngIf="formType === 'filter'" class="start-date flex items-center py-4px px-10px bg-white-100 border border-primary-400 focus-within:border-primary-200 transition-all duration-300 ease-in-out rounded-8px">
+					<span class="text-14 text-grey-40 font-medium">End:</span>
+					<input placeholder="dd" pattern="[0-9]*" maxlength="2" max="31" class="w-24px outline-none rounded-tl-8px rounded-bl-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="endDate.day" (change)="onInputEndDate()" />
+					<span class="text-10 text-grey-40">/</span>
+					<input placeholder="mm" pattern="[0-9]*" maxlength="2" max="12" class="w-32px outline-none text-center text-14 text-grey-40 font-medium" [(ngModel)]="endDate.month" (change)="onInputEndDate()" />
+					<span class="text-10 text-grey-40">/</span>
+					<input placeholder="yyyy" pattern="[0-9]*" maxlength="4" class="w-36px outline-none rounded-tr-8px rounded-br-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="endDate.year" (change)="onInputEndDate()" />
+				</div>
+			</div>
+
+			<div class="calendar">
+				<div class="calendar-nav flex items-center justify-between">
+					<div class="flex items-center">
+						<convoy-button type="icon" buttonType="button" (clickItem)="setYear(-1)">
+							<svg width="24" height="24" class="fill-grey-40">
+								<use xlink:href="#double-arrow-left-icon"></use>
+							</svg>
+						</convoy-button>
+						<convoy-button type="icon" buttonType="button" (clickItem)="setMonth(-1)">
+							<svg width="24" height="24" class="fill-grey-40">
+								<use xlink:href="#arrow-left-icon"></use>
+							</svg>
+						</convoy-button>
+					</div>
+
+					<div class="text-center py-4px px-10px text-14 font-semibold bg-primary-500 text-[#494E50] rounded-4px">{{ monthMap[month] }} {{ year }}</div>
+
+					<div class="flex items-center">
+						<convoy-button type="icon" buttonType="button" (clickItem)="setMonth(1)">
+							<svg width="24" height="24" class="fill-grey-40">
+								<use xlink:href="#arrow-right-icon"></use>
+							</svg>
+						</convoy-button>
+						<convoy-button type="icon" buttonType="button" (clickItem)="setYear(1)">
+							<svg width="24" height="24" class="fill-grey-40">
+								<use xlink:href="#double-arrow-right-icon"></use>
+							</svg>
+						</convoy-button>
+					</div>
+				</div>
+
+				<div class="week bg-[#F5F7FA] grid grid-cols-7 py-8px capitalize items-center text-center mt-20px">
+					<div class="text-14">S</div>
+					<div class="text-14">M</div>
+					<div class="text-14">T</div>
+					<div class="text-14">W</div>
+					<div class="text-14">T</div>
+					<div class="text-14">F</div>
+					<div class="text-14">S</div>
+				</div>
+
+				<div class="days grid grid-cols-7 text-center mt-10px">
+					<convoy-button size="sm" type="text" buttonType="button" color="grey" buttonType="button" className="!text-14" [className]="getDayClassNames(date)" *ngFor="let date of calendarDate" (clickItem)="onselectDay(date.timestamp)">
+						{{ date.date }}
+					</convoy-button>
+				</div>
+			</div>
+		</div>
+
+		<div class="flex items-center justify-end p-10px">
+			<convoy-button size="sm" buttonType="button" type="outline" color="danger" className="mr-14px" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (clickItem)="clearDate(); clearDates.emit()">Clear</convoy-button>
+			<convoy-button size="sm" buttonType="button" (clickItem)="applyDate()">Apply</convoy-button>
+		</div>
+	</div>
+</convoy-dropdown>
