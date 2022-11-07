@@ -40,7 +40,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 
 	// Setup Default Group.
 	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
@@ -65,7 +65,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 }
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.DB)
+	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 

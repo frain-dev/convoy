@@ -19,7 +19,7 @@ export class ButtonComponent implements OnInit {
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'grey' = 'primary';
 	@Input('texture') texture: 'deep' | 'light' = 'deep';
 	@Input('index') tabIndex = 0;
-	buttonSizes = { xs: 'py-[1px] px-8px  text-12', sm: `py-6px px-16px text-12`, md: `py-12px px-40px`, lg: `py-12px px-40px w-full` };
+	buttonSizes = { xs: 'py-[1px] px-8px  text-12', sm: `py-6px px-16px text-12`, md: `py-10px px-36px text-14`, lg: `py-10px px-36px w-full text-14` };
 	buttonTypes: any = {};
 	@Output('clickItem') click = new EventEmitter();
 

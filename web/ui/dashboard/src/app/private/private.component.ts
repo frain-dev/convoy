@@ -21,7 +21,7 @@ export class PrivateComponent implements OnInit {
 	showAddOrganisationModal = false;
 	showAddAnalytics = false;
 	apiURL = this.generalService.apiURL();
-	projects!: GROUP[];
+	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
 	userOrganization!: ORGANIZATION_DATA;
 
@@ -56,8 +56,8 @@ export class PrivateComponent implements OnInit {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
 			this.checkForSelectedOrganisation();
-			if (this.organisations?.length === 0) this.router.navigateByUrl('/get-started');
-			else if (this.organisations && this.organisations.length > 0) this.getProjects();
+			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
+			return this.getProjects();
 		} catch (error) {
 			return error;
 		}
@@ -67,7 +67,8 @@ export class PrivateComponent implements OnInit {
 		try {
 			const projectsResponse = await this.privateService.getProjects();
 			this.projects = projectsResponse.data;
-			if (this.projects.length === 0 && this.organisations && this.organisations.length === 0) this.router.navigateByUrl('/get-started');
+			if (this.projects?.length === 0) return this.router.navigateByUrl('/get-started');
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -78,7 +79,7 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		this.router.url.includes('/projects/') ? this.router.navigateByUrl('/projects') : location.reload();
+		this.router.url.includes('/get-started') ? location.replace('./projects') : location.reload();
 	}
 
 	checkForSelectedOrganisation() {

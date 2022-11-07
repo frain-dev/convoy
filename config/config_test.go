@@ -117,6 +117,9 @@ func TestLoadConfig(t *testing.T) {
 						WorkerPort: 5006,
 					},
 				},
+				Logger: LoggerConfiguration{
+					Level: "error",
+				},
 				MaxResponseSize: 40 * 1024,
 				Environment:     OSSEnvironment,
 				MultipleTenants: false,
@@ -146,6 +149,9 @@ func TestLoadConfig(t *testing.T) {
 						Port:       80,
 						WorkerPort: 5006,
 					},
+				},
+				Logger: LoggerConfiguration{
+					Level: "error",
 				},
 				Search:          DefaultConfiguration.Search,
 				MaxResponseSize: MaxResponseSize,
@@ -178,6 +184,9 @@ func TestLoadConfig(t *testing.T) {
 						Port:       80,
 						WorkerPort: 5006,
 					},
+				},
+				Logger: LoggerConfiguration{
+					Level: "error",
 				},
 				MaxResponseSize: MaxResponseSize,
 				Environment:     OSSEnvironment,

@@ -36,23 +36,30 @@ func (r *RetentionPoliciesIntegrationTestSuite) SetupSuite() {
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(r.DB)
+	testdb.PurgeDB(r.T(), r.DB)
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(r.DB)
+	testdb.PurgeDB(r.T(), r.DB)
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents() {
-	//seed instance configuration
+	// seed instance configuration
 	_, err := seedConfiguration(r.ConvoyApp.store)
 	require.NoError(r.T(), err)
 
-	//seed group
+	// seed group
 	groupConfig := &datastore.GroupConfig{
 		Signature: &datastore.SignatureConfiguration{
 			Header: "X-Convoy-Signature",
-			Hash:   "SHA256",
+			Versions: []datastore.SignatureVersion{
+				{
+					UID:       uuid.NewString(),
+					Hash:      "SHA256",
+					Encoding:  datastore.HexEncoding,
+					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				},
+			},
 		},
 		Strategy: &datastore.StrategyConfiguration{
 			Type:       "linear",
@@ -70,7 +77,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
-	//seed event
+	// seed event
 	duration, err := time.ParseDuration("80h")
 	require.NoError(r.T(), err)
 
@@ -80,44 +87,50 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	})
 	require.NoError(r.T(), err)
 
-	//seed eventdelivery
+	// seed eventdelivery
 	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC().Add(-duration),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
 	require.NoError(r.T(), err)
 
-	//call handler
+	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
 	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.groupRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
-	//check that event and eventdelivery repos are empty
+	// check that event and eventdelivery repos are empty
 	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventNotFound)
 
 	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
 
-	//check the number of retained events on groups
+	// check the number of retained events on groups
 	g, err := r.ConvoyApp.groupRepo.FetchGroupByID(context.Background(), group.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), g.Metadata.RetainedEvents, 1)
-
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Documents() {
-	//seed instance configuration
+	// seed instance configuration
 	_, err := seedConfiguration(r.ConvoyApp.store)
 	require.NoError(r.T(), err)
 
-	//seed group
+	// seed group
 	groupConfig := &datastore.GroupConfig{
 		Signature: &datastore.SignatureConfiguration{
 			Header: "X-Convoy-Signature",
-			Hash:   "SHA256",
+			Versions: []datastore.SignatureVersion{
+				{
+					UID:       uuid.NewString(),
+					Hash:      "SHA256",
+					Encoding:  datastore.HexEncoding,
+					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				},
+			},
 		},
 		Strategy: &datastore.StrategyConfiguration{
 			Type:       "linear",
@@ -135,28 +148,28 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
 
 	require.NoError(r.T(), err)
-	//seed event
+	// seed event
 	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt:      time.Now().UTC(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
 	require.NoError(r.T(), err)
 
-	//seed eventdelivery
+	// seed eventdelivery
 	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt:      time.Now().UTC(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	})
 	require.NoError(r.T(), err)
 
-	//call handler
+	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
 	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.groupRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
-	//check that event and eventdelivery is not empty
+	// check that event and eventdelivery is not empty
 	e, err := r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), e.UID, event.UID)
@@ -184,7 +197,6 @@ func getConfig() config.Configuration {
 }
 
 func getDB() convoyMongo.Client {
-
 	db, err := convoyMongo.New(getConfig())
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
@@ -195,7 +207,6 @@ func getDB() convoyMongo.Client {
 }
 
 func buildApplication() *applicationHandler {
-
 	db := getDB()
 	searcher := noopsearcher.NewNoopSearcher()
 	store := datastore.New(db.Database())
@@ -291,7 +302,7 @@ func seedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 
-	//Seed Data
+	// Seed Data
 	configRepo := convoyMongo.NewConfigRepo(store)
 	err := configRepo.CreateConfiguration(context.TODO(), config)
 	if err != nil {

@@ -30,7 +30,7 @@ import (
 	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
-	"github.com/frain-dev/convoy/logger"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
@@ -100,6 +100,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 
 func buildServer() *ApplicationHandler {
 	var tracer tracer.Tracer
+	var logger *log.Logger
 	var qOpts queue.QueueOptions
 
 	db := getDB()
@@ -107,7 +108,9 @@ func buildServer() *ApplicationHandler {
 
 	store := datastore.New(db.Database())
 	queue := redisqueue.NewQueue(qOpts)
-	logger := logger.NewNoopLogger()
+	logger = log.NewLogger(os.Stderr)
+	logger.SetLevel(log.FatalLevel)
+
 	cache := ncache.NewNoopCache()
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()

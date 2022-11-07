@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -16,7 +17,6 @@ import (
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"github.com/xdg-go/pbkdf2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -73,12 +73,10 @@ func SeedMultipleApplications(store datastore.Store, g *datastore.Group, count i
 }
 
 func SeedEndpoint(store datastore.Store, app *datastore.Application, groupID string) (*datastore.Endpoint, error) {
-	endpoint := &datastore.Endpoint{
+	app.Endpoints = append(app.Endpoints, datastore.Endpoint{
 		UID:            uuid.New().String(),
 		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	app.Endpoints = append(app.Endpoints, *endpoint)
+	})
 
 	// Seed Data.
 	appRepo := cm.NewApplicationRepo(store)
@@ -87,7 +85,30 @@ func SeedEndpoint(store datastore.Store, app *datastore.Application, groupID str
 		return &datastore.Endpoint{}, err
 	}
 
-	return endpoint, nil
+	return &app.Endpoints[len(app.Endpoints)-1], nil
+}
+
+func SeedEndpointSecret(store datastore.Store, app *datastore.Application, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
+	sc := datastore.Secret{
+		UID:            uuid.New().String(),
+		Value:          value,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	e.Secrets = append(e.Secrets, sc)
+
+	app.Endpoints = append(app.Endpoints, *e)
+
+	// Seed Data.
+	appRepo := cm.NewApplicationRepo(store)
+	err := appRepo.UpdateApplication(context.TODO(), app, app.GroupID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sc, nil
 }
 
 func SeedMultipleEndpoints(store datastore.Store, app *datastore.Application, groupID string, events []string, count int) ([]datastore.Endpoint, error) {
@@ -129,7 +150,14 @@ func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, er
 			},
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
-				Hash:   "SHA512",
+				Versions: []datastore.SignatureVersion{
+					{
+						UID:       uuid.NewString(),
+						Hash:      "SHA256",
+						Encoding:  datastore.HexEncoding,
+						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					},
+				},
 			},
 			DisableEndpoint: false,
 			ReplayAttacks:   false,
@@ -617,10 +645,10 @@ func SeedDevice(store datastore.Store, g *datastore.Group, appID string) error {
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
-func PurgeDB(db cm.Client) {
+func PurgeDB(t *testing.T, db cm.Client) {
 	client := db.Client().(*mongo.Database)
 	err := client.Drop(context.TODO())
 	if err != nil {
-		log.WithError(err).Fatal("failed to truncate db")
+		t.Fatalf("Could not purge DB: %v", err)
 	}
 }

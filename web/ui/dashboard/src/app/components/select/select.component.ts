@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, forwardRef, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { ControlContainer, ControlValueAccessor, FormControlDirective, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { DropdownComponent } from '../dropdown/dropdown.component';
 import { TooltipComponent } from '../tooltip/tooltip.component';
@@ -21,7 +21,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 })
 export class SelectComponent implements OnInit, ControlValueAccessor {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
-	@Input('options') options?: Array<any>;
+	@Input('options') options?: Array<any> = [];
 	@Input('name') name!: string;
 	@Input('errorMessage') errorMessage!: string;
 	@Input('label') label!: string;
@@ -35,7 +35,9 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('tooltipContent') tooltipContent!: string;
 	@Output('onChange') onChange = new EventEmitter<any>();
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
-	control!: any;
+	selectedValue: any;
+
+	control: any;
 
 	constructor(private controlContainer: ControlContainer) {}
 
@@ -43,9 +45,8 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 		if (this.controlContainer.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
 	}
 
-	selectOption(option: string) {
-		this.value = option;
-		this.selectedOption.emit(option);
+	selectOption(option?: any) {
+		this.selectedOption.emit(option?.uid || option);
 	}
 
 	get option(): string {
@@ -56,7 +57,12 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 
 	registerOnTouched() {}
 
-	writeValue() {}
+	writeValue(value: string) {
+		if (value) {
+			if (this.options?.length && typeof this.options[0] !== 'string') return (this.selectedValue = this.options?.find(option => option.uid === value));
+			return (this.selectedValue = value);
+		}
+	}
 
 	setDisabledState() {}
 }

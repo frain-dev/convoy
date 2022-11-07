@@ -1,5 +1,6 @@
 ## 0.7.1
--  [Bugfix] Fix Max response size CLI override #1098
+
+-   [Bugfix] Fix Max response size CLI override #1098
 
 ## 0.7.0
 

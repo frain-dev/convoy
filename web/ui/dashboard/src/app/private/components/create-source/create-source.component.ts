@@ -49,7 +49,7 @@ export class CreateSourceComponent implements OnInit {
 		{ value: 'shopify', viewValue: 'Shopify' }
 	];
 	encodings = ['base64', 'hex'];
-	hashAlgorithms = ['SHA256', 'SHA512', 'MD5', 'SHA1', 'SHA224', 'SHA384', 'SHA3_224', 'SHA3_256', 'SHA3_384', 'SHA3_512', 'SHA512_256', 'SHA512_224'];
+	hashAlgorithms = ['SHA256', 'SHA512'];
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
 	confirmModal = false;
