@@ -89,7 +89,7 @@
 		</div>
 
 		<div class="flex justify-end">
-			<button convoy-button fill="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
+			<button convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
 			<button convoy-button [disabled]="isCreatingProject">
 				{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
 				<svg width="24" height="24" class="ml-8px fill-white-100">
@@ -151,7 +151,7 @@
 			<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 
 			<div class="flex justify-end mt-38px">
-				<button convoy-button color="danger" fill="outline" className="mr-16px" (click)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">Discard</button>
+				<button convoy-button color="danger" fill="outline" class="mr-16px" (click)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">Discard</button>
 				<button convoy-button (click)="createNewSignature(versionsLength - 1)">Create</button>
 			</div>
 		</form>

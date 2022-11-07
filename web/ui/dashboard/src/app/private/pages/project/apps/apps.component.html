@@ -15,7 +15,7 @@
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" [ngClass]="{ active: appsSearchString != undefined && appsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 			<input type="search" placeholder="Search apps" [(ngModel)]="appsSearchString" (keyup)="searchApps({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
-			<button convoy-button *ngIf="appsSearchString && appsSearchString.length > 0" className="transition-all duration-200">
+			<button convoy-button *ngIf="appsSearchString && appsSearchString.length > 0" class="transition-all duration-200">
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
 		</form>
@@ -46,7 +46,7 @@
 			</div>
 		</div> -->
 	</div>
-	<button convoy-button size="sm" className="h-36px" id="create-app-modal-button" routerLink="./new">Create An App</button>
+	<button convoy-button size="sm" class="h-36px" id="create-app-modal-button" routerLink="./new">Create An App</button>
 </div>
 
 <convoy-card *ngIf="isloadingApps">
@@ -96,7 +96,7 @@
 										<a class="w-full text-12" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">Update</a>
 									</convoy-list-item>
 									<convoy-list-item className="px-14px" [hover]="true">
-										<button convoy-button class="w-full" className="w-full !justify-start" fill="text" color="danger" (click)="promptDeleteModal($event, app)">Delete</button>
+										<button convoy-button class="w-full" class="w-full !justify-start" fill="text" color="danger" (click)="promptDeleteModal($event, app)">Delete</button>
 									</convoy-list-item>
 								</ul>
 							</convoy-dropdown>
@@ -121,13 +121,13 @@
 </convoy-card>
 
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedApps.length === 0 }">
-	<button convoy-button fill="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev || 0 }" [disabled]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
+	<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: apps?.pagination?.prev || 0 }" [disabled]="apps?.pagination?.prev === 0" (click)="getApps({ page: apps?.pagination?.prev })">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
 	</button>
-	<button convoy-button fill="outline" size="sm" className="pr-4px pl-16px py-4px border-primary-300 ml-16px" routerLink="./" [queryParams]="{ page: apps?.pagination?.next }" [disabled]="apps?.pagination?.next === 0" (click)="getApps({ page: apps?.pagination?.next })">
+	<button convoy-button fill="outline" size="sm" class="pr-4px pl-16px py-4px border-primary-300 ml-16px" routerLink="./" [queryParams]="{ page: apps?.pagination?.next }" [disabled]="apps?.pagination?.next === 0" (click)="getApps({ page: apps?.pagination?.next })">
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>

@@ -22,7 +22,7 @@
 	<div class="docs" [innerHTML]="documentation"></div>
 
 	<div class="flex justify-end">
-		<button convoy-button size="sm" className="mr-16px" (click)="nextStep()">
+		<button convoy-button size="sm" class="mr-16px" (click)="nextStep()">
 			{{ steps[steps.length - 1] === activeStep ? 'Complete Setup' : 'Next' }}
 			<svg width="12" height="12" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>

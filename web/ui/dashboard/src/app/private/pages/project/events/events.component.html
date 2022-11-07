@@ -18,7 +18,7 @@
 	<ng-container *ngIf="eventsFetched?.length === 0">
 		<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
 			<div emptyStateCTA>
-				<button convoy-button className="mt-22px" *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
+				<button convoy-button class="mt-22px" *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
 					<svg width="16" height="16" class="mr-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 						<use xlink:href="#add-icon"></use>
 					</svg>
@@ -27,7 +27,7 @@
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
 				</button>
-				<button convoy-button *ngIf="!isProjectConfigurationComplete" className="mt-22px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</button>
+				<button convoy-button *ngIf="!isProjectConfigurationComplete" class="mt-22px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</button>
 			</div>
 		</convoy-empty-state>
 	</ng-container>

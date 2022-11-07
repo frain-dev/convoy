@@ -130,7 +130,7 @@
 							<use xlink:href="#delete-icon"></use>
 						</svg>
 					</button>
-					<button convoy-button size="sm" className="ml-24px" [routerLink]="'/projects/' + projectId + '/sources/' + activeSource?.uid">
+					<button convoy-button size="sm" class="ml-24px" [routerLink]="'/projects/' + projectId + '/sources/' + activeSource?.uid">
 						Edit
 						<svg width="18" height="18" class="ml-8px fill-white-100">
 							<use xlink:href="#edit-icon"></use>
@@ -158,7 +158,7 @@
 		convoy-button
 		fill="outline"
 		size="sm"
-		className="pl-4px pr-16px py-4px border-primary-300"
+		class="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources.pagination?.prev } : { page: sources.pagination?.prev }"
 		[disabled]="sources.pagination?.prev === 0"
@@ -173,7 +173,7 @@
 		convoy-button
 		fill="outline"
 		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources.pagination?.prev } : { page: sources.pagination?.prev }"
 		[disabled]="sources.pagination?.prev === 0"

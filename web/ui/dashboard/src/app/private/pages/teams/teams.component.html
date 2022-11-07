@@ -9,7 +9,7 @@
 			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 				<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
-				<button convoy-button *ngIf="searchString && searchString.length > 0" className="transition-all duration-200" (click)="searchTeam({ searchInput: $event })">
+				<button convoy-button *ngIf="searchString && searchString.length > 0" class="transition-all duration-200" (click)="searchTeam({ searchInput: $event })">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</button>
 			</form>
@@ -23,13 +23,13 @@
 				<div>
 					<ul>
 						<convoy-list-item *ngFor="let filterOption of filterOptions" [hover]="true" [active]="selectedFilterOption == filterOption">
-							<button convoy-button fill="text" class="w-full" className="pl-16px text-12 text-black justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
+							<button convoy-button fill="text" class="w-full" class="pl-16px text-12 text-black justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
 						</convoy-list-item>
 					</ul>
 				</div>
 			</convoy-dropdown>
 
-			<button convoy-button size="sm" className="min-w-[150px] h-36px" (click)="openCreateTeamModal(); currentId = ''">Add team member</button>
+			<button convoy-button size="sm" class="min-w-[150px] h-36px" (click)="openCreateTeamModal(); currentId = ''">Add team member</button>
 		</div>
 	</div>
 
@@ -66,7 +66,7 @@
 									<div>
 										<ul>
 											<li>
-												<button convoy-button fill="clear" color="danger" className="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">Deactivate team member</button>
+												<button convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">Deactivate team member</button>
 											</li>
 										</ul>
 									</div>
@@ -79,7 +79,7 @@
 		</convoy-card>
 
 		<div class="flex items-center mt-16px">
-			<button convoy-button fill="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: teams.pagination.prev }" [disabled]="teams.pagination.prev === 0" (click)="fetchTeamMembers({ page: teams.pagination.prev })">
+			<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: teams.pagination.prev }" [disabled]="teams.pagination.prev === 0" (click)="fetchTeamMembers({ page: teams.pagination.prev })">
 				<svg width="24" height="24" class="mr-8px fill-primary-100">
 					<use xlink:href="#arrow-left-icon"></use>
 				</svg>
@@ -89,7 +89,7 @@
 				convoy-button
 				fill="outline"
 				size="sm"
-				className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+				class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 				routerLink="./"
 				[queryParams]="{ page: teams.pagination.next }"
 				[disabled]="teams.pagination.next === 0"
@@ -105,7 +105,7 @@
 	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
 		<convoy-card>
 			<div class="min-h-[70vh]">
-				<convoy-table class="contents" className="w-full border border-primary-500">
+				<convoy-table class="contents" class="w-full border border-primary-500">
 					<convoy-table-head class="contents" className="border border-primary-500">
 						<convoy-table-head-cell class="contents" className="uppercase" [className]="i === 0 ? 'pl-20px uppercase' : 'uppercase'" *ngFor="let head of tableHead; let i = index">
 							{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}
@@ -127,10 +127,10 @@
 									<div>
 										<ul>
 											<li class="border-b border-b-grey-10">
-												<button convoy-button fill="clear" color="grey" className="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
+												<button convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
 											</li>
 											<li>
-												<button convoy-button fill="clear" color="danger" className="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+												<button convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
 											</li>
 										</ul>
 									</div>
@@ -146,7 +146,7 @@
 				convoy-button
 				fill="outline"
 				size="sm"
-				className="pl-4px pr-16px py-4px border-primary-300"
+				class="pl-4px pr-16px py-4px border-primary-300"
 				routerLink="./"
 				[queryParams]="{ pendingInvitePage: pendingInvites.pagination.prev }"
 				[disabled]="pendingInvites.pagination.prev === 0"
@@ -161,7 +161,7 @@
 				convoy-button
 				fill="outline"
 				size="sm"
-				className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+				class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 				routerLink="./"
 				[queryParams]="{ pendingInvitePage: pendingInvites.pagination.next }"
 				[disabled]="pendingInvites.pagination.next === 0"
@@ -198,7 +198,7 @@
 			</convoy-card>
 			<div class="flex justify-end pt-24px pb-40px">
 				<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
-				<button convoy-button className="ml-16px" [disabled]="invitingUser">
+				<button convoy-button class="ml-16px" [disabled]="invitingUser">
 					{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}
 				</button>
 			</div>

@@ -102,7 +102,7 @@
 				convoy-button
 				size="sm"
 				fill="outline"
-				className="ml-14px px-10px border-primary-400 n h-36px"
+				class="ml-14px px-10px border-primary-400 n h-36px"
 				[disabled]="
 					(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
 					(eventDeliveriesApp?.length == 0 || eventDeliveriesApp == undefined) &&
@@ -202,7 +202,7 @@
 		convoy-button
 		fill="outline"
 		size="sm"
-		className="pl-4px pr-16px py-4px border-primary-300"
+		class="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
 		[disabled]="!eventDeliveries || eventDeliveries.pagination.prev === 0"
@@ -218,7 +218,7 @@
 		convoy-button
 		fill="outline"
 		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
 		[disabled]="!eventDeliveries || eventDeliveries.pagination.next === 0"
@@ -236,7 +236,7 @@
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
-		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" className="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button convoy-button fill="clear" className="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
+		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </convoy-modal>

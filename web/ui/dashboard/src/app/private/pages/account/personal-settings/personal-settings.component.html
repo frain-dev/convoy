@@ -57,7 +57,7 @@
 		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
 		<convoy-select label="Expiry Duration" name="expiration" formControlName="expiration" [options]="expirationDates" (selectedOption)="generateKeyForm.patchValue({ expiration: $event })"></convoy-select>
 		<div class="flex justify-end mt-60px">
-			<button convoy-button type="button" (click)="showCreateNewTokenForm = false" fill="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</button>
+			<button convoy-button type="button" (click)="showCreateNewTokenForm = false" fill="outline" class="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</button>
 			<button convoy-button>Generate Key</button>
 		</div>
 	</form>
@@ -69,7 +69,7 @@
 		convoy-button
 		fill="outline"
 		size="sm"
-		className="pl-4px pr-16px py-4px border-primary-300"
+		class="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		disabled
 		[queryParams]="{ page: personalAccessKeys?.pagination?.prev }"
@@ -85,7 +85,7 @@
 		convoy-button
 		fill="outline"
 		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: personalAccessKeys?.pagination?.next }"
 		[disabled]="personalAccessKeys?.pagination?.next === 0"
@@ -108,7 +108,7 @@
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ accessKey }}</span>
 			<convoy-copy-button [text]="accessKey"></convoy-copy-button>
 		</div>
-		<button convoy-button size="sm" className="px-40px" (click)="showAccessKey = false; fetchPersonalKeys()" type="button">Done</button>
+		<button convoy-button size="sm" class="px-40px" (click)="showAccessKey = false; fetchPersonalKeys()" type="button">Done</button>
 	</div>
 </convoy-modal>
 

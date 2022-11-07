@@ -20,7 +20,6 @@ export class ButtonComponent implements OnInit {
 	@Input('index') tabIndex = 0;
 	buttonSizes = { xs: 'py-[1px] px-8px  text-12', sm: `py-6px px-16px text-12`, md: `py-10px px-36px text-14`, lg: `py-10px px-36px w-full text-14` };
 	buttonTypes: any = {};
-	@Output('clickItem') click = new EventEmitter();
 
 	constructor() {}
 

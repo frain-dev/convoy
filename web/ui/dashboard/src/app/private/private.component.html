@@ -42,7 +42,7 @@
 
 						<ul *ngIf="organisations?.length">
 							<li *ngFor="let organisation of organisations">
-								<button convoy-button fill="text" className="justify-start px-30px py-12px w-full" (click)="selectOrganisation(organisation); organisationDropdown.show = false" class="w-full">
+								<button convoy-button fill="text" class="justify-start px-30px py-12px w-full" (click)="selectOrganisation(organisation); organisationDropdown.show = false">
 									<div class="flex justify-between items-center w-full">
 										<convoy-badge [text]="organisation.name"></convoy-badge>
 
@@ -53,7 +53,7 @@
 						</ul>
 
 						<div class="border-t border-t-grey-10">
-							<button convoy-button fill="text" className="px-30px py-16px" (click)="showAddOrganisationModal = true; organisationDropdown.show = false">
+							<button convoy-button fill="text" class="px-30px py-16px" (click)="showAddOrganisationModal = true; organisationDropdown.show = false">
 								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 								Add {{ organisations?.length ? 'another' : 'an' }} Organization
 							</button>
@@ -77,7 +77,7 @@
 							</li>
 						</ul>
 						<div class="border-t border-t-grey-10">
-							<button convoy-button fill="text" color="danger" className="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
+							<button convoy-button fill="text" color="danger" class="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
 						</div>
 					</div>
 				</convoy-dropdown>

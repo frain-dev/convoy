@@ -16,7 +16,7 @@
 				[required]="true"
 				(selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
 			></convoy-select>
-			<button convoy-button fill="text" type="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateSourceModal = true">
+			<button convoy-button fill="text" type="button" class="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateSourceModal = true">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
@@ -36,7 +36,7 @@
 				[required]="true"
 				(selectedOption)="subscriptionForm.patchValue({ app_id: $event }); onUpdateAppSelection()"
 			></convoy-select>
-			<button convoy-button fill="text" type="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateAppModal = true">
+			<button convoy-button fill="text" type="button" class="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateAppModal = true">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
@@ -56,7 +56,7 @@
 				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
 				[required]="true"
 			></convoy-select>
-			<button convoy-button fill="text" type="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true" *ngIf="!token">
+			<button convoy-button fill="text" type="button" class="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true" *ngIf="!token">
 				<svg width="14" height="14" class="mr-4px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
@@ -69,7 +69,7 @@
 			<div (click)="focusInput()" class="w-full font-medium text-14 text-grey-100 border border-primary-500 outline-none rounded-4px bg-[#F7F9FC] pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
 				<div *ngFor="let tag of eventTags" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
 					{{ tag }}
-					<button convoy-button (click)="removeEventTag(tag)" fill="text" type="button" className="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></button>
+					<button convoy-button (click)="removeEventTag(tag)" fill="text" type="button" class="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></button>
 				</div>
 				<input type="text" id="tagInput" (input)="addTag()" required class="text-12 bg-[#F7F9FC] focus:outline-none focus:border-none" autocomplete="off" />
 			</div>
@@ -112,8 +112,8 @@
 	</convoy-card>
 
 	<div class="flex justify-end mt-32px">
-		<button convoy-button className="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" (click)="cancel()">Cancel</button>
-		<button convoy-button className="text-14">
+		<button convoy-button class="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" (click)="cancel()">Cancel</button>
+		<button convoy-button class="text-14">
 			{{ isNewProjectRoute() ? 'Save and Proceed' : action == 'update' ? 'Update Subscription' : 'Create Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
@@ -124,7 +124,7 @@
 
 <div class="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] text-white-100 flex-col" *ngIf="showError">
 	<p>An error occured while fetching app details</p>
-	<button convoy-button size="sm" className="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</button>
+	<button convoy-button size="sm" class="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</button>
 </div>
 
 <convoy-modal

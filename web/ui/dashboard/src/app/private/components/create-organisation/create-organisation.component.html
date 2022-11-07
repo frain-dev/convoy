@@ -2,7 +2,7 @@
 	<form modalBody [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
 		<convoy-input type="text" name="organisation" formControlName="name" errorMessage="Organisation name is required" label="Organisation name" placeholder="e.g Kuda"></convoy-input>
 		<div class="flex justify-end mt-32px">
-			<button convoy-button className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" fill="outline" (click)="close()">Discard</button>
+			<button convoy-button class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" fill="outline" (click)="close()">Discard</button>
 			<button convoy-button [disabled]="loading">{{ loading ? 'Adding Organisation' : 'Create Organisation' }}</button>
 		</div>
 	</form>

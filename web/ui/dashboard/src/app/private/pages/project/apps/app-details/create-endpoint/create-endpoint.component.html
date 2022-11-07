@@ -37,7 +37,7 @@
 	</form>
 
 	<div class="flex justify-end mt-40px">
-		<button convoy-button fill="outline" className="mr-24px" (click)="cancel()">Discard</button>
+		<button convoy-button fill="outline" class="mr-24px" (click)="cancel()">Discard</button>
 		<button convoy-button *ngIf="!selectedEndpoint" [disabled]="savingEndpoint" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}
 		</button>
