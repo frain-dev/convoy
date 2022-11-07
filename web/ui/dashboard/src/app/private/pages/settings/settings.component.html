@@ -6,16 +6,20 @@
 			</div>
 			<ul class="pl-40px py-32px">
 				<li *ngFor="let menu of settingsMenu">
-					<convoy-button
-						type="unstyled"
-						[className]="activePage === menu.name ? 'bg-primary-500 text-primary-100 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px !justify-start min-w-[216px]' : 'text-grey-40 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px !justify-start min-w-[216px]'"
+					<button
+						class="flex items-center"
+						[class]="
+							activePage === menu.name
+								? 'bg-primary-500 text-primary-100 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px !justify-start min-w-[216px]'
+								: 'text-grey-40 rounded-8px transition-all duration-200 py-12px !px-16px mb-20px !justify-start min-w-[216px]'
+						"
 						(click)="toggleActivePage(menu.name)"
 					>
 						<svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="activePage === menu.name ? 'fill-primary-100' : 'fill-grey-40'" [id]="menu.icon">
 							<use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
 						</svg>
 						<span class="font-medium text-14 transition-all duration-200 whitespace-nowrap capitalize">{{ menu.name }}</span>
-					</convoy-button>
+					</button>
 				</li>
 			</ul>
 		</div>

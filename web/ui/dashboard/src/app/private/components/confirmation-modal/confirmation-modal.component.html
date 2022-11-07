@@ -1,8 +1,8 @@
 <convoy-modal position="center" size="sm" (closeModal)="closeModal.emit()">
 	<div class="flex flex-col justify-center items-center px-20px py-30px" modalBody>
 		<p class="text-16 font-semibold text-black mb-8px text-center">Confirm Action</p>
-		<p class="text-14 font-medium text-grey-40 mb-20px text-center">You are about to discard this process, please confirm this action. </p>
-		<convoy-button color="danger" className="mb-24px" (click)="confirmAction.emit()">Confirm</convoy-button>
-		<convoy-button type="text" className="font-semibold" (click)="closeModal.emit()">Close</convoy-button>
+		<p class="text-14 font-medium text-grey-40 mb-20px text-center">You are about to discard this process, please confirm this action.</p>
+		<button convoy-button color="danger" class="mb-24px" (click)="confirmAction.emit()">Confirm</button>
+		<button convoy-button fill="text" class="font-semibold" (click)="closeModal.emit()">Close</button>
 	</div>
 </convoy-modal>

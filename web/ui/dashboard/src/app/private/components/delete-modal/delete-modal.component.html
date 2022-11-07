@@ -3,7 +3,7 @@
 		<img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
 		<p class="text-16 font-semibold text-black mb-8px text-center">Are you sure you want to {{ deleteText }}?</p>
 		<p class="text-14 font-medium text-grey-40 mb-20px">This action is irrevesible.</p>
-		<convoy-button color="danger" className="mb-24px" [disable]="isLoading" (click)="deleteData.emit()">{{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}</convoy-button>
-		<convoy-button type="text" className="font-semibold" (click)="closeModal.emit()">No, Cancel</convoy-button>
+		<button convoy-button color="danger" class="mb-24px" [disabled]="isLoading" (click)="deleteData.emit()">{{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}</button>
+		<button convoy-button fill="text" class="font-semibold" (click)="closeModal.emit()">No, Cancel</button>
 	</div>
 </convoy-modal>

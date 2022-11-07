@@ -4,11 +4,11 @@
 		<span class="text-grey-40 mr-4px">Time</span>
 		<img class="ml-16px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" *ngIf="!filterIsActive()" alt="arrow down icon" />
 
-		<convoy-button type="icon" *ngIf="filterIsActive()" (clickItem)="clearFilter($event)" className="ml-16px">
+		<button type="button" *ngIf="filterIsActive()" (click)="clearFilter($event)" class="ml-16px">
 			<svg width="10" height="10" class="fill-primary-100">
 				<use xlink:href="#close-icon"></use>
 			</svg>
-		</convoy-button>
+		</button>
 	</ng-container>
 
 	<ng-container>
@@ -35,22 +35,20 @@
 					class="border border-[#EEEEEE] bg-[#EEEEEE] rounded-4px text-16 text-[#424242] text-center focus:border-[#EEEEEE] outline-none w-80px"
 				/>
 				<div class="flex border border-grey-10 rounded-4px ml-10px">
-					<convoy-button
-						type="unstyled"
+					<button
 						class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px"
 						(click)="filterStartHour = filterStartHour - 12 < 0 ? filterStartHour : filterStartHour - 12"
 						[ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterStartHour < 12 }"
 					>
 						AM
-					</convoy-button>
-					<convoy-button
-						type="unstyled"
+					</button>
+					<button
 						class="py-4px px-10px text-10 rounded-br-4px rounded-tr-4px"
 						(click)="filterStartHour = filterStartHour + 12 > 24 ? filterStartHour : filterStartHour + 12"
 						[ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterStartHour >= 12 }"
 					>
 						PM
-					</convoy-button>
+					</button>
 				</div>
 			</div>
 
@@ -76,27 +74,17 @@
 					class="border border-[#EEEEEE] bg-[#EEEEEE] rounded-4px text-16 text-[#424242] text-center focus:border-[#EEEEEE] outline-none w-80px"
 				/>
 				<div class="flex border border-grey-10 rounded-4px ml-10px">
-					<convoy-button
-						type="unstyled"
-						class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px"
-						(click)="filterEndHour = filterEndHour - 12 < 0 ? filterEndHour : filterEndHour - 12"
-						[ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterEndHour < 12 }"
-					>
+					<button class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px" (click)="filterEndHour = filterEndHour - 12 < 0 ? filterEndHour : filterEndHour - 12" [ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterEndHour < 12 }">
 						AM
-					</convoy-button>
-					<convoy-button
-						type="unstyled"
-						class="py-4px px-10px text-10 rounded-br-4px rounded-tr-4px"
-						(click)="filterEndHour = filterEndHour + 12 > 24 ? filterEndHour : filterEndHour + 12"
-						[ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterEndHour >= 12 }"
-					>
+					</button>
+					<button class="py-4px px-10px text-10 rounded-br-4px rounded-tr-4px" (click)="filterEndHour = filterEndHour + 12 > 24 ? filterEndHour : filterEndHour + 12" [ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterEndHour >= 12 }">
 						PM
-					</convoy-button>
+					</button>
 				</div>
 			</div>
 			<div class="mb-20px flex items-center justify-end">
-				<convoy-button size="sm" type="outline" color="danger" className="mr-10px" *ngIf="filterIsActive()" (clickItem)="clearFilter()">Clear</convoy-button>
-				<convoy-button size="sm" (clickItem)="onApplyFilter()">Apply</convoy-button>
+				<button size="sm" fill="outline" color="danger" class="mr-10px" *ngIf="filterIsActive()" (click)="clearFilter()">Clear</button>
+				<button size="sm" (click)="onApplyFilter()">Apply</button>
 			</div>
 		</div>
 	</ng-container>

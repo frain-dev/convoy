@@ -4,9 +4,9 @@
 			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" [ngClass]="{ active: eventsSearchString != undefined && eventsSearchString != '' }">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 				<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="getEvents({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
-				<convoy-button type="icon">
+				<button>
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
-				</convoy-button>
+				</button>
 			</form>
 
 			<convoy-date-picker class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')" #datePicker></convoy-date-picker>
@@ -17,7 +17,7 @@
 				size="lg"
 				position="left"
 				buttonSize="sm"
-				buttonType="outline"
+				buttonFill="outline"
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
 				[active]="!!eventApp"
 				[hidden]="appPortalToken || this.privateService.activeProjectDetails?.type === 'incoming'"
@@ -42,7 +42,7 @@
 					</ul>
 
 					<div *ngIf="!!eventApp" class="p-10px pb-20px">
-						<convoy-button size="sm" (clickItem)="clearEventFilters('eventsApp')">Clear</convoy-button>
+						<button convoy-button size="sm" (click)="clearEventFilters('eventsApp')">Clear</button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
@@ -51,7 +51,7 @@
 				size="lg"
 				position="left"
 				buttonSize="sm"
-				buttonType="outline"
+				buttonFill="outline"
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px"
 				[active]="!!eventSource"
 				#sourcesDropdown
@@ -72,16 +72,17 @@
 					</ul>
 
 					<div *ngIf="!!eventSource" class="p-10px pb-20px">
-						<convoy-button size="sm" (clickItem)="clearEventFilters('eventsSource')">Clear</convoy-button>
+						<button convoy-button size="sm" (click)="clearEventFilters('eventsSource')">Clear</button>
 					</div>
 				</ng-container>
 			</convoy-dropdown>
 		</div>
 
-		<convoy-button
-			type="outline"
+		<button
+			convoy-button
+			fill="outline"
 			size="sm"
-			(clickItem)="clearEventFilters(); selectedEventsDateOption = ''"
+			(click)="clearEventFilters(); selectedEventsDateOption = ''"
 			*ngIf="
 				!(
 					(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') &&
@@ -94,7 +95,7 @@
 			"
 		>
 			Clear Filters
-		</convoy-button>
+		</button>
 	</div>
 
 	<div class="flex">
@@ -119,17 +120,19 @@
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</convoy-table-cell>
 								<convoy-table-cell *ngIf="event.app_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
-									<span [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + event.app_metadata.uid" class="underline text-primary-100">{{ event.app_metadata.name }}</span>
+									<span *ngIf="!appPortalToken" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + event.app_metadata.uid" class="underline text-primary-100">{{ event.app_metadata.name }}</span>
+									<span *ngIf="appPortalToken">{{ event.app_metadata.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell *ngIf="event.source_metadata?.name" class="contents" className="w-150px overflow-ellipsis">
-									<span [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/sources'" [queryParams]="{ id: event.source_metadata.uid }" class="underline text-primary-100">{{ event.source_metadata.name }}</span>
+									<span *ngIf="!appPortalToken" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/sources'" [queryParams]="{ id: event.source_metadata.uid }" class="underline text-primary-100">{{ event.source_metadata.name }}</span>
+									<span *ngIf="appPortalToken">{{ event.source_metadata.name }}</span>
 								</convoy-table-cell>
 								<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
 								<convoy-table-cell class="contents">
-									<convoy-button type="clear" className="!p-0" size="sm" (clickItem)="openDeliveriesTab(event.uid)">
+									<button convoy-button fill="clear" class="!p-0" size="sm" (click)="openDeliveriesTab(event.uid)">
 										Deliveries
 										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
-									</convoy-button>
+									</button>
 								</convoy-table-cell>
 							</convoy-table-row>
 						</ng-container>
@@ -171,17 +174,26 @@
 </convoy-card>
 
 <div class="flex items-center mt-16px mb-24px">
-	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" (clickItem)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disable]="!events || events.pagination.prev === 0">
+	<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" (click)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disabled]="!events || events.pagination.prev === 0">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
-	</convoy-button>
+	</button>
 
-	<convoy-button type="outline" size="sm" className="pr-4px pl-16px py-4px border-primary-300 ml-16px" routerLink="./" [queryParams]="{ page: events?.pagination?.next }" (click)="getEvents({ page: events?.pagination?.next })" [disable]="!events || events.pagination.next === 0">
+	<button
+		convoy-button
+		fill="outline"
+		size="sm"
+		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		routerLink="./"
+		[queryParams]="{ page: events?.pagination?.next }"
+		(click)="getEvents({ page: events?.pagination?.next })"
+		[disabled]="!events || events.pagination.next === 0"
+	>
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-	</convoy-button>
+	</button>
 </div>
