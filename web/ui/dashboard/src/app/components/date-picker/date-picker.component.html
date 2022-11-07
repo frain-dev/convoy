@@ -33,7 +33,6 @@
 					<span class="text-10 text-grey-40">/</span>
 					<input placeholder="yyyy" pattern="[0-9]*" maxlength="4" class="w-44px outline-none rounded-tr-8px rounded-br-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="startDate.year" (change)="onInputStartDate()" />
 				</div>
-				<!-- <div *ngIf="formType === 'filter'">-</div> -->
 				<div *ngIf="formType === 'filter'" class="start-date flex items-center py-4px px-10px bg-white-100 border border-primary-400 focus-within:border-primary-200 transition-all duration-300 ease-in-out rounded-8px">
 					<span class="text-14 text-grey-40 font-medium">End:</span>
 					<input placeholder="dd" pattern="[0-9]*" maxlength="2" max="31" class="w-20px outline-none rounded-tl-8px rounded-bl-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="endDate.day" (change)="onInputEndDate()" />

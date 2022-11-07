@@ -27,14 +27,8 @@ export class TimeFilterComponent implements OnInit {
 		const startMinute = this.filterStartMinute < 10 ? `0${this.filterStartMinute}` : `${this.filterStartMinute}`;
 		const endHour = this.filterEndHour < 10 ? `0${this.filterEndHour}` : `${this.filterEndHour}`;
 		const endMinute = this.filterEndMinute < 10 ? `0${this.filterEndMinute}` : `${this.filterEndMinute}`;
-		console.log(this.filterStartHour);
-		console.log(this.filterStartMinute);
-		console.log(this.filterEndHour);
-		console.log(this.filterEndMinute);
 		const startTime = `T${startHour}:${startMinute}:00`;
 		const endTime = `T${endHour}:${endMinute}:59`;
-		console.log(startTime);
-		console.log(endTime);
 
 		this.applyFilter.emit({
 			startTime,
@@ -61,13 +55,7 @@ export class TimeFilterComponent implements OnInit {
 	validateTime(inputId: string) {
 		const timeInputId = document.getElementById(inputId);
 		const timeInputIdValue = document.getElementById(inputId) as HTMLInputElement;
-		// const startTimeHourValue = document.getElementById('startTimeHour') as HTMLInputElement;
-		// const startTimeMinuteValue = document.getElementById('startTimeMinute') as HTMLInputElement;
-		// const endTimeHourValue = document.getElementById('endTimeHour') as HTMLInputElement;
-		// const endTimeMinuteValue = document.getElementById('endTimeMinute') as HTMLInputElement;
-
 		timeInputId?.addEventListener('keydown', e => {
-			// console.log(e);
 			console.log(timeInputIdValue.value);
 			console.log(timeInputIdValue.value.length);
 			if (timeInputIdValue.value.length > 2) {
