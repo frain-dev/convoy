@@ -141,7 +141,7 @@
 
 <convoy-modal size="lg" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
 	<ng-container modalBody>
-		<app-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : getSubscripions()"></app-create-subscription>
+		<app-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : onCreateSubscription()"></app-create-subscription>
 	</ng-container>
 </convoy-modal>
 
