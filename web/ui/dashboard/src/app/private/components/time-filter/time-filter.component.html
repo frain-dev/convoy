@@ -95,7 +95,7 @@
 				</div>
 			</div>
 			<div class="mb-20px flex items-center justify-end">
-				<convoy-button size="sm" type="outline" color="danger" className="mr-10px" (clickItem)="clearFilter()">Clear</convoy-button>
+				<convoy-button size="sm" type="outline" color="danger" className="mr-10px" *ngIf="filterIsActive()" (clickItem)="clearFilter()">Clear</convoy-button>
 				<convoy-button size="sm" (clickItem)="onApplyFilter()">Apply</convoy-button>
 			</div>
 		</div>

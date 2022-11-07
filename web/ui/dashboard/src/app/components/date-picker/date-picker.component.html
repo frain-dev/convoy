@@ -93,7 +93,7 @@
 		</div>
 
 		<div class="flex items-center justify-end p-10px">
-			<convoy-button size="sm" buttonType="button" type="outline" color="danger" className="mr-14px" (clickItem)="clearDate(); clearDates.emit()">Clear</convoy-button>
+			<convoy-button size="sm" buttonType="button" type="outline" color="danger" className="mr-14px" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (clickItem)="clearDate(); clearDates.emit()">Clear</convoy-button>
 			<convoy-button size="sm" buttonType="button" (clickItem)="applyDate()">Apply</convoy-button>
 		</div>
 	</div>
