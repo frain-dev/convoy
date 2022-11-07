@@ -89,7 +89,7 @@
 		</div>
 
 		<div class="flex justify-end">
-			<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" (click)="confirmModal = true">Cancel</convoy-button>
+			<convoy-button type="outline" *ngIf="action !== 'update'" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" (click)="cancel()">Cancel</convoy-button>
 			<convoy-button [disable]="isCreatingProject">
 				{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
 				<svg width="24" height="24" class="ml-8px fill-white-100">
