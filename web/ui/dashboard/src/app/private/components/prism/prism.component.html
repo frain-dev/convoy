@@ -6,6 +6,6 @@
 </pre>
 	</div>
 	<div class="flex justify-end" *ngIf="code && code.length > 300">
-		<convoy-button size="sm" type="text" (click)="showPayload = !showPayload">{{ showPayload ? 'Hide' : 'Show more' }} lines</convoy-button>
+		<button convoy-button size="sm" fill="text" (click)="showPayload = !showPayload">{{ showPayload ? 'Hide' : 'Show more' }} lines</button>
 	</div>
 </div>

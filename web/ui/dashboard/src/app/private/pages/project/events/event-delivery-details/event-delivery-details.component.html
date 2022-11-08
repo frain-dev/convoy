@@ -2,16 +2,17 @@
 	<div class="flex justify-between items-center pb-18px border-b border-grey-10">
 		<h3 class="font-medium">{{ eventDelsDetails?.app_metadata?.name }}</h3>
 
-		<convoy-button
+		<button
+			convoy-button
 			*ngIf="eventDelsDetails"
-			[disable]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
+			[disabled]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
 			texture="light"
 			size="sm"
-			(clickItem)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
+			(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
 		>
 			<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 			{{ eventDelsDetails.status === 'Success' ? 'Force Retry' : 'Retry' }}
-		</convoy-button>
+		</button>
 	</div>
 
 	<div class="grid grid-cols-5 mb-24px pt-16px" *ngIf="isLoadingDeliveryDetails">

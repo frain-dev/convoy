@@ -8,15 +8,15 @@
 
 			<div class="flex items-center text-12 mb-20px -mt-18px">
 				Forgot password?
-				<convoy-button type="link" buttonType="button" className="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</convoy-button>
+				<button convoy-button fill="link" type="button" class="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</button>
 			</div>
 
-			<convoy-button [disable]="disableLoginBtn" size="lg">
+			<button convoy-button [disabled]="disableLoginBtn" size="lg">
 				<span class="text-14" *ngIf="!disableLoginBtn">Login</span>
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
-			</convoy-button>
+			</button>
 		</form>
 
-		<convoy-button type="link" className="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</convoy-button>
+		<button convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
 	</section>
 </div>
