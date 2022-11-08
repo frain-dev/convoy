@@ -30,8 +30,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService) {}
 
 	ngOnInit() {
-		const eventData = localStorage.getItem('EVENT_DATA');
-		if (eventData && eventData !== 'undefined') this.payload = JSON.parse(eventData);
+		this.checkForExistingData();
 	}
 
 	async testFilter() {
@@ -67,5 +66,10 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 			this.generalService.showNotification({ message: 'Data is not entered in correct JSON format', style: 'error' });
 			return false;
 		}
+	}
+
+	checkForExistingData() {
+		const eventData = localStorage.getItem('EVENT_DATA');
+		if (eventData && eventData !== 'undefined') this.payload = JSON.parse(eventData);
 	}
 }
