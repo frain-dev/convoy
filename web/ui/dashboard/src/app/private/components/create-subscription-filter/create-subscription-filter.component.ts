@@ -42,7 +42,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
-			this.isFilterTestPassed = response.data;
+			this.isFilterTestPassed = !!response.data;
 		} catch (error) {
 			this.isFilterTestPassed = false;
 			return error;
@@ -67,9 +67,5 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 			this.generalService.showNotification({ message: 'Data is not entered in correct JSON format', style: 'error' });
 			return false;
 		}
-	}
-
-	storeEventData() {
-		localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
 	}
 }
