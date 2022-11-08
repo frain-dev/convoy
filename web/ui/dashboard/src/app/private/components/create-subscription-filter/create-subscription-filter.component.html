@@ -5,16 +5,16 @@
 			<h4>Provide your filter specifications</h4>
 		</div>
 		<div class="flex items-center">
-			<convoy-button size="sm" type="outline" className="mr-16px">
+			<convoy-button size="sm" type="outline" className="mr-16px" (clickItem)="testFilter()">
 				Test Filter
 				<svg width="16" height="16" class="ml-8px" class="ml-4px">
 					<use xlink:href="#test-icon"></use>
 				</svg>
 			</convoy-button>
-			<convoy-button size="sm" buttonType="button" className="min-w-[130px] min-h-[34px]" [disable]="!testResponse" (clickItem)="setSubscriptionFilter()">Save</convoy-button>
+			<convoy-button size="sm" buttonType="button" className="min-w-[130px] min-h-[34px]" [disable]="!isFilterTestPassed" (clickItem)="setSubscriptionFilter()">Save</convoy-button>
 		</div>
 	</div>
-	<form [formGroup]="subscriptionFilterForm" (ngSubmit)="testFilter()" class="bg-[#FCFCFC] rounded-8px">
+	<div class="bg-[#FCFCFC] rounded-8px">
 		<div class="flex">
 			<div class="flex flex-col w-full">
 				<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold bg-[#FCFCFC] rounded-tl-8px">Event Payload</div>
@@ -25,5 +25,5 @@
 				<convoy-monaco [editorValue]="schema" #schemaEditor></convoy-monaco>
 			</div>
 		</div>
-	</form>
+	</div>
 </convoy-card>

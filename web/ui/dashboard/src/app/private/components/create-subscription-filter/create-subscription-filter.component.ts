@@ -24,23 +24,23 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		request: [null],
 		schema: [null]
 	});
-	testResponse = false;
+	isFilterTestPassed = false;
 
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService) {}
 
 	ngOnInit() {}
 
 	async testFilter() {
-		this.testResponse = false;
+		this.isFilterTestPassed = false;
 		this.subscriptionFilterForm.value.request = this.convertStringToJson(this.requestEditor.getValue());
 		this.subscriptionFilterForm.value.schema = this.convertStringToJson(this.schemaEditor.getValue());
 		try {
 			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
-			this.testResponse = response.data;
+			this.isFilterTestPassed = response.data;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
 		} catch (error) {
-			this.testResponse = false;
+			this.isFilterTestPassed = false;
 			return error;
 		}
 	}
