@@ -72,10 +72,10 @@ export class InputDirective implements OnInit {
 
 /* ================== Input field directive ================== */
 @Directive({
-	selector: '[convoy-input-field]',
+	selector: 'convoy-input-field, [convoy-input-field]',
 	standalone: true,
 	host: {
-		class: 'w-full relative mb-24px'
+		class: 'w-full relative mb-24px block'
 	}
 })
 export class InputFieldDirective {}

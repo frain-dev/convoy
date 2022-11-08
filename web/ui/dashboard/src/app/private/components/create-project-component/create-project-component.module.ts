@@ -4,7 +4,7 @@ import { CreateProjectComponent } from './create-project-component.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
@@ -20,7 +20,31 @@ import { CardComponent } from 'src/app/components/card/card.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
-	imports: [CommonModule, ReactiveFormsModule, TooltipComponent, RadioComponent, ToggleComponent, InputComponent, SelectComponent, ButtonComponent, ModalComponent, CopyButtonComponent, ConfirmationModalComponent, CardComponent, ButtonComponent, TooltipComponent, TableCellComponent, TableComponent, TableHeadCellComponent, TableHeadComponent, TableRowComponent],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		TooltipComponent,
+		RadioComponent,
+		ToggleComponent,
+		InputComponent,
+		SelectComponent,
+		ButtonComponent,
+		ModalComponent,
+		CopyButtonComponent,
+		ConfirmationModalComponent,
+		CardComponent,
+		ButtonComponent,
+		TooltipComponent,
+		TableCellComponent,
+		TableComponent,
+		TableHeadCellComponent,
+		TableHeadComponent,
+		TableRowComponent,
+		InputFieldDirective,
+		InputErrorComponent,
+		InputDirective,
+		LabelComponent
+	],
 	exports: [CreateProjectComponent]
 })
 export class CreateProjectComponentModule {}
