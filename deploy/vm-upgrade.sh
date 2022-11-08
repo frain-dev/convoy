@@ -50,6 +50,13 @@ docker-compose pull
 echo "Stopping the system!"
 docker-compose stop
 
+# Fix compose start command
+cat > $COMPOSECONFDIR/start <<EOF
+#!/bin/bash
+./cmd migrate up
+./cmd server --config convoy.json -w false
+EOF
+
 echo "Restarting the system!"
 sudo -E docker-compose up -d
 
