@@ -201,7 +201,7 @@ func (db *appRepo) FindApplicationEndpointByID(ctx context.Context, appID string
 		return nil, err
 	}
 
-	return findEndpoint(&app.Endpoints, endpointID)
+	return app.FindEndpoint(endpointID)
 }
 
 func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Application, groupID string) error {
@@ -234,7 +234,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 func (db *appRepo) CreateApplicationEndpoint(ctx context.Context, groupID string, appID string, endpoint *datastore.Endpoint) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"uid": appID, "deleted_at": 0}
+	filter := bson.M{"uid": appID, "deleted_at": nil}
 
 	update := bson.M{
 		"$push": bson.M{
@@ -253,7 +253,7 @@ func (db *appRepo) ExpireSecret(ctx context.Context, appID, endpointID string, s
 
 	filter := bson.M{
 		"uid":           appID,
-		"deleted_at":    0,
+		"deleted_at":    nil,
 		"endpoints.uid": endpointID,
 	}
 
@@ -315,7 +315,7 @@ func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Appl
 	f := bson.M{
 		"uid":      bson.M{"$ne": app.UID},
 		"title":    app.Title,
-		"group_id": groupID,
+		"group_id": groupID, // TODO: filter out deleted_at
 	}
 
 	count, err := db.store.Count(ctx, f)
@@ -352,15 +352,6 @@ func (db *appRepo) deleteApp(ctx context.Context, app *datastore.Application, up
 
 func (db *appRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.AppCollection)
-}
-
-func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
-	for _, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			return &endpoint, nil
-		}
-	}
-	return nil, datastore.ErrEndpointNotFound
 }
 
 func (db *appRepo) deleteSubscription(ctx context.Context, app *datastore.Application, update bson.M) error {

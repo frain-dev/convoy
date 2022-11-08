@@ -5,7 +5,6 @@ package mongo
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -15,11 +14,10 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
+	return "mongodb://localhost:27017/testdb"
 }
 
 func getConfig() config.Configuration {
-
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
 			Type: config.MongodbDatabaseProvider,
@@ -29,7 +27,6 @@ func getConfig() config.Configuration {
 }
 
 func getDB(t *testing.T) (*mongo.Database, func()) {
-
 	db, err := New(getConfig())
 	require.NoError(t, err)
 

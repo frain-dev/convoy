@@ -29,7 +29,7 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organi
 
 func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
-	filter := bson.M{"deleted_at": 0}
+	filter := bson.M{"deleted_at": nil}
 
 	var organisations []datastore.Organisation
 

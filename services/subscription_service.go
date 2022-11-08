@@ -110,7 +110,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 
 func findAppEndpoint(endpoints []datastore.Endpoint, id string) (*datastore.Endpoint, error) {
 	for _, endpoint := range endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+		if endpoint.UID == id && endpoint.DeletedAt == nil {
 			return &endpoint, nil
 		}
 	}

@@ -2,15 +2,15 @@ package datastore
 
 import (
 	"testing"
-	"time"
 
+	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestGroup_IsDeleted(t *testing.T) {
-
+	d := primitive.DateTime(39487)
 	tt := []struct {
 		name      string
 		group     *Group
@@ -18,7 +18,7 @@ func TestGroup_IsDeleted(t *testing.T) {
 	}{
 		{
 			name:  "set deleted_at to zero",
-			group: &Group{UID: "123456", DeletedAt: 0},
+			group: &Group{UID: "123456", DeletedAt: nil},
 		},
 		{
 			name:  "skip deleted_at field",
@@ -26,12 +26,12 @@ func TestGroup_IsDeleted(t *testing.T) {
 		},
 		{
 			name:      "set deleted_at to random integer",
-			group:     &Group{UID: "123456", DeletedAt: 39487},
+			group:     &Group{UID: "123456", DeletedAt: &d},
 			isDeleted: true,
 		},
 		{
 			name:      "set deleted_at to current timestamp",
-			group:     &Group{UID: "123456", DeletedAt: primitive.NewDateTimeFromTime(time.Now())},
+			group:     &Group{UID: "123456", DeletedAt: util.NewDateTime()},
 			isDeleted: true,
 		},
 	}
@@ -44,7 +44,6 @@ func TestGroup_IsDeleted(t *testing.T) {
 }
 
 func TestGroup_IsOwner(t *testing.T) {
-
 	tt := []struct {
 		name    string
 		group   *Group
@@ -53,13 +52,13 @@ func TestGroup_IsOwner(t *testing.T) {
 	}{
 		{
 			name:    "right owner",
-			group:   &Group{UID: "123456", DeletedAt: 0},
+			group:   &Group{UID: "123456", DeletedAt: nil},
 			app:     &Application{GroupID: "123456"},
 			isOwner: true,
 		},
 		{
 			name:  "wrong owner",
-			group: &Group{UID: "123456", DeletedAt: 0},
+			group: &Group{UID: "123456", DeletedAt: nil},
 			app:   &Application{GroupID: "1234567"},
 		},
 	}

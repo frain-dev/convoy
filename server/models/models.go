@@ -43,9 +43,9 @@ type ConfigurationResponse struct {
 	ApiVersion         string                                `json:"api_version"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
 }
 
 type OrganisationInvite struct {

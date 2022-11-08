@@ -839,7 +839,7 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	case "application":
 		a := v.(*datastore.Application)
 		a.UID = ""
-		a.CreatedAt, a.UpdatedAt, a.DeletedAt = 0, 0, 0
+		a.CreatedAt, a.UpdatedAt, a.DeletedAt = 0, 0, nil
 	case "group":
 		g := v.(*datastore.Group)
 		if g.Config != nil {
@@ -850,18 +850,18 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 			}
 		}
 		g.UID = ""
-		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, nil
 	case "endpoint":
 		e := v.(*datastore.Endpoint)
 
 		for i := range e.Secrets {
 			s := &e.Secrets[i]
 			s.UID = ""
-			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, 0
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, nil
 		}
 
 		e.UID = ""
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, nil
 	case "event":
 		e := v.(*datastore.Event)
 		e.UID = ""

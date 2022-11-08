@@ -68,7 +68,7 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 	ctx = u.setCollectionInContext(ctx)
 	var users []datastore.User
 
-	filter := bson.M{"deleted_at": 0}
+	filter := bson.M{"deleted_at": nil}
 
 	pagination, err := u.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &users)
