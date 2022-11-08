@@ -3,13 +3,12 @@ version: "3"
 services:
     web:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
-        command: ./compose/start
-        entrypoint:
-            ["./cmd", "server", "--config", "convoy.json", "-w", "false"]
+        command: /compose/start
         hostname: web
         container_name: web
         volumes:
             - ./convoy.json:/convoy.json
+            - ./compose:/compose
         restart: on-failure
         depends_on:
             - mongo1
