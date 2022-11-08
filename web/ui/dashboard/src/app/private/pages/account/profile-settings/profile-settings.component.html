@@ -1,13 +1,13 @@
 <div class="flex justify-between items-center mb-28px">
-    <h3 class="font-semibold">Basic Info</h3>
+	<h3 class="font-semibold">Basic Info</h3>
 
-    <convoy-button size="sm" [disable]="isSavingUserDetails" (clickItem)="editBasicUserInfo()">{{ isSavingUserDetails ? 'Saving changes...' : 'Save Changes' }}</convoy-button>
+	<button convoy-button size="sm" [disabled]="isSavingUserDetails" (click)="editBasicUserInfo()">{{ isSavingUserDetails ? 'Saving changes...' : 'Save Changes' }}</button>
 </div>
 
 <form [formGroup]="editBasicInfoForm">
-    <div class="grid grid-cols-2 gap-4">
-        <convoy-input type="text" autocomplete="first_name" name="first_name" formControlName="first_name" errorMessage="Please enter your first name" label="Firstname" placeholder="Firstname" [required]="true"></convoy-input>
-        <convoy-input type="text" autocomplete="last_name" name="last_name" formControlName="last_name" errorMessage="Please enter your last name" label="Lastname" placeholder="Lastname" [required]="true"></convoy-input>
-    </div>
-    <convoy-input type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Please enter a valid email" label="Email Description" placeholder="Email" [required]="true"></convoy-input>
+	<div class="grid grid-cols-2 gap-4">
+		<convoy-input type="text" autocomplete="first_name" name="first_name" formControlName="first_name" errorMessage="Please enter your first name" label="Firstname" placeholder="Firstname" [required]="true"></convoy-input>
+		<convoy-input type="text" autocomplete="last_name" name="last_name" formControlName="last_name" errorMessage="Please enter your last name" label="Lastname" placeholder="Lastname" [required]="true"></convoy-input>
+	</div>
+	<convoy-input type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Please enter a valid email" label="Email Description" placeholder="Email" [required]="true"></convoy-input>
 </form>

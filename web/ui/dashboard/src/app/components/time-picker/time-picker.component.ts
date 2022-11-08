@@ -1,12 +1,17 @@
 import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { CommonModule } from '@angular/common';
+import { DropdownComponent } from '../dropdown/dropdown.component';
+import { ButtonComponent } from '../button/button.component';
+import { FormsModule } from '@angular/forms';
 
 @Component({
-	selector: 'app-time-filter',
-	templateUrl: './time-filter.component.html',
-	styleUrls: ['./time-filter.component.scss']
+	selector: 'convoy-time-picker',
+	standalone: true,
+	imports: [CommonModule, DropdownComponent, ButtonComponent, FormsModule],
+	templateUrl: './time-picker.component.html',
+	styleUrls: ['./time-picker.component.scss']
 })
-export class TimeFilterComponent implements OnInit {
+export class TimePickerComponent implements OnInit {
 	filterStartHour: number = 0;
 	filterEndHour: number = 23;
 	filterStartMinute: number = 0;
@@ -27,7 +32,6 @@ export class TimeFilterComponent implements OnInit {
 		const startMinute = this.filterStartMinute < 10 ? `0${this.filterStartMinute}` : `${this.filterStartMinute}`;
 		const endHour = this.filterEndHour < 10 ? `0${this.filterEndHour}` : `${this.filterEndHour}`;
 		const endMinute = this.filterEndMinute < 10 ? `0${this.filterEndMinute}` : `${this.filterEndMinute}`;
-
 		const startTime = `T${startHour}:${startMinute}:00`;
 		const endTime = `T${endHour}:${endMinute}:59`;
 
@@ -51,5 +55,15 @@ export class TimeFilterComponent implements OnInit {
 		this.filterEndMinute = 59;
 		this.onApplyFilter();
 		this.isFilterUpdated = false;
+	}
+
+	validateTime(inputId: string) {
+		const timeInputId = document.getElementById(inputId);
+		const timeInputIdValue = document.getElementById(inputId) as HTMLInputElement;
+		timeInputId?.addEventListener('keydown', e => {
+			if (timeInputIdValue.value.length > 2) {
+				if (!(e.key == 'Backspace' || e.key == 'Delete')) e.preventDefault();
+			}
+		});
 	}
 }

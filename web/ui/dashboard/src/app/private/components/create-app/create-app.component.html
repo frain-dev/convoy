@@ -39,10 +39,10 @@
 				<div class="flex justify-between items-center mb-16px">
 					<h2 class="font-semibold">Endpoint {{ i > 0 ? i + 1 : '' }}</h2>
 
-					<convoy-button (click)="removeEndpoint(i)" type="text" color="danger" className="px-0 font-medium text-12" *ngIf="endpoints.controls.length > 1 && i > 0">
+					<button convoy-button (click)="removeEndpoint(i)" type="text" color="danger" class="px-0 font-medium text-12" *ngIf="endpoints.controls.length > 1 && i > 0">
 						<img src="/assets/img/trash-icon.svg" alt="close icon" class="mr-2" />
 						Remove Endpoint
-					</convoy-button>
+					</button>
 				</div>
 				<div [formGroupName]="i">
 					<div class="grid grid-cols-2 gap-6">
@@ -85,20 +85,20 @@
 					</div>
 				</div>
 			</div>
-			<convoy-button (click)="addEndpoint()" type="text" className="px-0 font-medium text-14">
+			<button convoy-button (click)="addEndpoint()" fill="text" class="px-0 font-medium text-14">
 				<img src="/assets/img/add-icon.svg" alt="close icon" class="mr-2 h-16px" />
 				Add Endpoint
-			</convoy-button>
+			</button>
 		</div>
 	</convoy-card>
 	<div class="flex justify-end mt-6 mb-16">
-		<convoy-button buttonType="button" (click)="confirmModal = true" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
-		<convoy-button [disable]="isSavingApp" (click)="saveApp()">
+		<button convoy-button type="button" (click)="cancel()" fill="outline" class="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</button>
+		<button convoy-button [disabled]="isSavingApp" (click)="saveApp()">
 			{{ isNewProjectRoute() ? 'Save and Proceed' : editAppMode ? 'Edit App' : 'Create App' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
-		</convoy-button>
+		</button>
 	</div>
 </form>
 

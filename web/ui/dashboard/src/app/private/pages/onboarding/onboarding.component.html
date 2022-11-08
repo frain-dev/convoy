@@ -23,12 +23,12 @@
 				<p class="my-16px text-16 text-grey-80 max-w-[95%]">
 					{{ step.description }}
 				</p>
-				<convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : (showCreateModal = true)">
+				<button convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : (showCreateModal = true)">
 					Get Started
 					<svg width="16" height="16" class="ml-8px fill-white-100">
 						<use xlink:href="#white-arrow-icon"></use>
 					</svg>
-				</convoy-button>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -42,8 +42,8 @@
 			<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
 				<convoy-input label="What's your bussiness name?" name="name" formControlName="name" placeholder="e.g. Kuda" errorMessage="Organisation name is required"></convoy-input>
 				<div class="flex items-center w-full">
-					<convoy-button buttonType="button" type="outline" className="hover:text-danger-100 hover:border-danger-100 transition-all duration-300 mr-24px" (click)="showCreateModal = false">Cancel</convoy-button>
-					<convoy-button [disable]="creatingOrganisation" className="self-stretch px-66px">Submit</convoy-button>
+					<button convoy-button type="button" fill="outline" class="hover:text-danger-100 hover:border-danger-100 transition-all duration-300 mr-24px" (click)="showCreateModal = false">Cancel</button>
+					<button convoy-button [disabled]="creatingOrganisation" class="self-stretch px-66px">Submit</button>
 				</div>
 			</form>
 		</ng-container>

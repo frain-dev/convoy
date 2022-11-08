@@ -6,8 +6,8 @@
 			<convoy-input-error *ngIf="addOrganisationForm.controls.name.touched && addOrganisationForm.controls.name.invalid">Organisation name is required</convoy-input-error>
 		</convoy-input-field>
 		<div class="flex justify-end mt-32px">
-			<convoy-button className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" buttonType="button" type="outline" (click)="close()">Discard</convoy-button>
-			<convoy-button [disable]="loading">{{ loading ? 'Adding Organisation' : 'Create Organisation' }}</convoy-button>
+			<button convoy-button class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" fill="outline" (click)="close()">Discard</button>
+			<button convoy-button [disabled]="loading">{{ loading ? 'Adding Organisation' : 'Create Organisation' }}</button>
 		</div>
 	</form>
 </convoy-modal>

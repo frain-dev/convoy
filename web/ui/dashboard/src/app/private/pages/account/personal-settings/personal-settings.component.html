@@ -16,12 +16,12 @@
 <div class="flex justify-between items-center mb-28px" *ngIf="!showCreateNewTokenForm && personalAccessKeys?.content?.length > 0">
 	<h3 class="font-semibold">Personal Access Tokens</h3>
 
-	<convoy-button size="sm" (click)="showCreateNewTokenForm = true">
+	<button convoy-button size="sm" (click)="showCreateNewTokenForm = true">
 		<svg width="16" height="16" class="mr-8px fill-white-100">
 			<use xlink:href="#plus-icon"></use>
 		</svg>
 		Create New Token
-	</convoy-button>
+	</button>
 </div>
 
 <!-- personal access token  -->
@@ -36,12 +36,12 @@
 				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'mediumDate' }})</span>
 			</p>
 		</div>
-		<convoy-button size="sm" type="text" color="danger" (click)="selectedKey = key; showRevokeKeyModal = true">
+		<button convoy-button size="sm" fill="text" color="danger" (click)="selectedKey = key; showRevokeKeyModal = true">
 			<svg width="16" height="16" class="mr-8px fill-danger-100">
 				<use xlink:href="#delete-icon"></use>
 			</svg>
 			Revoke
-		</convoy-button>
+		</button>
 	</div>
 </ng-container>
 
@@ -57,42 +57,45 @@
 		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
 		<convoy-select label="Expiry Duration" name="expiration" formControlName="expiration" [options]="expirationDates" (selectedOption)="generateKeyForm.patchValue({ expiration: $event })"></convoy-select>
 		<div class="flex justify-end mt-60px">
-			<convoy-button buttonType="button" (click)="showCreateNewTokenForm = false" type="outline" className="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</convoy-button>
-			<convoy-button>Generate Key</convoy-button>
+			<button convoy-button type="button" (click)="showCreateNewTokenForm = false" fill="outline" class="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</button>
+			<button convoy-button>Generate Key</button>
 		</div>
 	</form>
 </ng-container>
 
 <!-- pagination button  -->
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys?.content?.length === 0 || personalAccessKeys?.content?.length < 10 || showCreateNewTokenForm }">
-	<convoy-button
-		type="outline"
+	<button
+		convoy-button
+		fill="outline"
 		size="sm"
-		className="pl-4px pr-16px py-4px border-primary-300"
+		class="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
+		disabled
 		[queryParams]="{ page: personalAccessKeys?.pagination?.prev }"
-		[disable]="personalAccessKeys?.pagination?.prev === 0"
+		[disabled]="personalAccessKeys?.pagination?.prev === 0"
 		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
-	</convoy-button>
-	<convoy-button
-		type="outline"
+	</button>
+	<button
+		convoy-button
+		fill="outline"
 		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: personalAccessKeys?.pagination?.next }"
-		[disable]="personalAccessKeys?.pagination?.next === 0"
+		[disabled]="personalAccessKeys?.pagination?.next === 0"
 		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.next })"
 	>
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-	</convoy-button>
+	</button>
 </div>
 
 <!-- token generated  -->
@@ -105,7 +108,7 @@
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ accessKey }}</span>
 			<convoy-copy-button [text]="accessKey"></convoy-copy-button>
 		</div>
-		<convoy-button size="sm" className="px-40px" (click)="showAccessKey = false; fetchPersonalKeys()" buttonType="button">Done</convoy-button>
+		<button convoy-button size="sm" class="px-40px" (click)="showAccessKey = false; fetchPersonalKeys()" type="button">Done</button>
 	</div>
 </convoy-modal>
 

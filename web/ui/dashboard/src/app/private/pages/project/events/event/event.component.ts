@@ -7,13 +7,13 @@ import { APP } from 'src/app/models/app.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
-import { DateFilterComponent } from 'src/app/private/components/date-filter/date-filter.component';
-import { TimeFilterComponent } from 'src/app/private/components/time-filter/time-filter.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { SOURCE } from 'src/app/models/group.model';
+import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
+import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 
 @Component({
 	selector: 'app-event',
@@ -49,8 +49,8 @@ export class EventComponent implements OnInit {
 	eventsDetailsItem: any;
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-	@ViewChild('timeFilter', { static: true }) timeFilter!: TimeFilterComponent;
-	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
+	@ViewChild('timeFilter', { static: true }) timeFilter!: TimePickerComponent;
+	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	@ViewChild('sourcesDropdown', { static: true }) sourcesDropdown!: DropdownComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
 	@ViewChild(DropdownComponent) appDropdownComponent!: DropdownComponent;
@@ -63,7 +63,7 @@ export class EventComponent implements OnInit {
 	async ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEvents();
-		this.getSourcesForFilter();
+		if (!this.appPortalToken) this.getSourcesForFilter();
 	}
 
 	ngAfterViewInit() {
@@ -81,7 +81,7 @@ export class EventComponent implements OnInit {
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsApp' | 'eventsSearch' | 'eventsSource') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
-		this.dateFilter.clearDate();
+		this.datePicker.clearDate();
 		this.timeFilter.filterStartHour = 0;
 		this.timeFilter.filterStartMinute = 0;
 		this.timeFilter.filterEndHour = 23;
