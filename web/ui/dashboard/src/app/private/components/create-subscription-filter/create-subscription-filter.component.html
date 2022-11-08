@@ -5,20 +5,20 @@
 			<h4>Provide your filter specifications</h4>
 		</div>
 		<div class="flex items-center">
-			<convoy-button size="sm" type="outline" className="mr-16px" (clickItem)="testFilter()">
+			<button convoy-button size="sm" fill="outline" className="mr-16px min-w-[130px]" (click)="testFilter()">
 				Test Filter
-				<svg width="16" height="16" class="ml-8px" class="ml-4px">
+				<svg width="16" height="16" class="ml-8px" class="ml-6px">
 					<use xlink:href="#test-icon"></use>
 				</svg>
-			</convoy-button>
-			<convoy-button size="sm" buttonType="button" className="min-w-[130px] min-h-[34px]" [disable]="!isFilterTestPassed" (clickItem)="setSubscriptionFilter()">Save</convoy-button>
+			</button>
+			<button convoy-button size="sm" type="button" className="min-w-[130px] min-h-[34px]" [disabled]="!isFilterTestPassed" (click)="setSubscriptionFilter()">Save</button>
 		</div>
 	</div>
 	<div class="bg-[#FCFCFC] rounded-8px">
 		<div class="flex">
 			<div class="flex flex-col w-full">
 				<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold bg-[#FCFCFC] rounded-tl-8px">Event Payload</div>
-				<convoy-monaco #requestEditor></convoy-monaco>
+				<convoy-monaco [editorValue]="payload" #requestEditor></convoy-monaco>
 			</div>
 			<div class="flex flex-col w-full">
 				<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold bg-[#FCFCFC] rounded-tr-8px">Filter Schema</div>

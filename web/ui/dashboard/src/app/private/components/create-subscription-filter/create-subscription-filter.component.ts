@@ -25,10 +25,14 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		schema: [null]
 	});
 	isFilterTestPassed = false;
+	payload: any;
 
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService) {}
 
-	ngOnInit() {}
+	ngOnInit() {
+		const eventData = localStorage.getItem('EVENT_DATA');
+		if (eventData && eventData !== 'undefined') this.payload = JSON.parse(eventData);
+	}
 
 	async testFilter() {
 		this.isFilterTestPassed = false;
@@ -37,17 +41,22 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		try {
 			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
-			this.isFilterTestPassed = response.data;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
+			this.isFilterTestPassed = response.data;
 		} catch (error) {
 			this.isFilterTestPassed = false;
 			return error;
 		}
 	}
 
-	setSubscriptionFilter() {
-		const filter = this.convertStringToJson(this.schemaEditor.getValue());
-		this.filterSchema.emit(filter);
+	async setSubscriptionFilter() {
+		await this.testFilter();
+
+		if (this.isFilterTestPassed) {
+			localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
+			const filter = this.convertStringToJson(this.schemaEditor.getValue());
+			this.filterSchema.emit(filter);
+		}
 	}
 
 	convertStringToJson(str: string) {
@@ -58,5 +67,9 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 			this.generalService.showNotification({ message: 'Data is not entered in correct JSON format', style: 'error' });
 			return false;
 		}
+	}
+
+	storeEventData() {
+		localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
 	}
 }
