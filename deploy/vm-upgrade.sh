@@ -3,6 +3,7 @@
 set -e 
 
 CONFDIR="/etc/convoy"
+COMPOSECONFDIR="$CONFDIR/compose"
 
 # re-install convoy, again for backward compatibility
 install_convoy() {
