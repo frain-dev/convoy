@@ -2,8 +2,8 @@ package datastore
 
 import (
 	"testing"
+	"time"
 
-	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/stretchr/testify/require"
@@ -11,6 +11,8 @@ import (
 
 func TestGroup_IsDeleted(t *testing.T) {
 	d := primitive.DateTime(39487)
+	deletedAt := primitive.NewDateTimeFromTime(time.Now())
+
 	tt := []struct {
 		name      string
 		group     *Group
@@ -31,7 +33,7 @@ func TestGroup_IsDeleted(t *testing.T) {
 		},
 		{
 			name:      "set deleted_at to current timestamp",
-			group:     &Group{UID: "123456", DeletedAt: util.NewDateTime()},
+			group:     &Group{UID: "123456", DeletedAt: &deletedAt},
 			isDeleted: true,
 		},
 	}
