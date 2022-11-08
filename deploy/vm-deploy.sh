@@ -5,6 +5,7 @@ set -e
 VERSION="latest"
 DOMAIN="localhost"
 CONFDIR="/etc/convoy"
+COMPOSECONFDIR="$CONFDIR/compose"
 DATADIR="/var/convoy/data"
 
 # Read Convoy version
@@ -100,6 +101,7 @@ prepare_directories() {
 
 	mkdir -p $CONFDIR
 	mkdir -p $DATADIR
+	mkdir -p $COMPOSECONFDIR
 
 }
 
@@ -134,6 +136,12 @@ EOF
 	# rewrite docker compose
 	envsubst < docker-compose.templ.yml > docker-compose.yml
 	rm docker-compose.templ.yml
+
+	# Fix compose start command
+	cat > $COMPOSECONFDIR/start <<EOF
+./cmd migrate up
+./cmd server --config convoy.json -w false
+EOF
 }
 
 # setup replica set on mongo db clusters
