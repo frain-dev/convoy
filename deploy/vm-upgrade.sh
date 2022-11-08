@@ -24,7 +24,6 @@ else
 	exit
 fi
 
-[[ -f "convoy.json" ]] || ( echo "No convoy.json file found. Please ensure you're in the right directory" && exit 1)
 export VERSION="${VERSION:-latest}"
 
 cd $CONFDIR
