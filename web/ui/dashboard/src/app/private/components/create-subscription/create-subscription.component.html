@@ -85,22 +85,22 @@
 		<div class="border border-grey-20 rounded-4px p-16px mt-20px">
 			<div class="flex justify-between items-center mb-14px">
 				<h4 class="font-semibold">Event filters</h4>
-				<convoy-button type="text" size="sm" className="font-medium" buttonType="button" (clickItem)="setupFilter()">
-					{{ action == 'update' ? 'Edit' : 'Setup' }} Filter
+				<button convoy-button fill="text" size="sm" className="font-medium" type="button" (click)="setupFilter()">
+					{{ action == 'update' && subscriptionForm.get('filter_config.filter')?.value ? 'Edit' : 'Setup' }} Filter
 					<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
-				</convoy-button>
+				</button>
 			</div>
 
 			<p class="text-12 text-grey-60 max-w-[340px]">You can activate event filters by clicking on the setup filter button and specifying the configurations.</p>
 
-			<convoy-button size="sm" type="text" buttonType="button" className="font-medium mt-18px">
+			<button convoy-button size="sm" fill="text" type="button" className="font-medium mt-18px">
 				Learn more about filters here
 				<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
 					<use xlink:href="#arrow-right-icon"></use>
 				</svg>
-			</convoy-button>
+			</button>
 		</div>
 
 		<div class="border border-grey-20 p-16px mt-20px">
