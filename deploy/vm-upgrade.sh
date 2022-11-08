@@ -56,6 +56,7 @@ cat > $COMPOSECONFDIR/start <<EOF
 ./cmd migrate up
 ./cmd server --config convoy.json -w false
 EOF
+chmod +x $COMPOSECONFDIR/start
 
 echo "Restarting the system!"
 sudo -E docker-compose up -d
