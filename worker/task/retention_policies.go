@@ -100,14 +100,14 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 func GetArgsByCollection(collection string, uri string, exportDir string, expDate time.Time, group *datastore.Group) ([]string, string, error) {
 	switch collection {
 	case "events":
-		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": 0, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": nil, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
 		// orgs/<org-id>/projects/<project-id>/events/<today-as-ISODateTime>
 		out := fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 
 	case "eventdeliveries":
-		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": 0, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": nil, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
 		// orgs/<org-id>/projects/<project-id>/eventdeliveries/<today-as-ISODateTime>
 		out := fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)

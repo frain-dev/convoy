@@ -161,7 +161,7 @@ func (d *MongoStore) FindByID(ctx context.Context, id string, projection bson.M,
 		ops.Projection = projection
 	}
 
-	return collection.FindOne(ctx, bson.M{"uid": id, "deleted_at": 0}, ops).Decode(result)
+	return collection.FindOne(ctx, bson.M{"uid": id, "deleted_at": nil}, ops).Decode(result)
 }
 
 /**

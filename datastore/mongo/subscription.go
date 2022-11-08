@@ -46,7 +46,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 	filter := bson.M{
 		"uid":        subscription.UID,
 		"group_id":   groupId,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	update := bson.M{
@@ -72,7 +72,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	ctx = s.setCollectionInContext(ctx)
 	var subscriptions []datastore.Subscription
 
-	filter := bson.M{"group_id": groupId, "deleted_at": 0}
+	filter := bson.M{"group_id": groupId, "deleted_at": nil}
 	if !util.IsStringEmpty(f.AppID) {
 		filter["app_id"] = f.AppID
 	}
@@ -268,7 +268,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 	ctx = s.setCollectionInContext(ctx)
 	subscription := &datastore.Subscription{}
 
-	filter := bson.M{"uid": uid, "group_id": groupId, "deleted_at": 0}
+	filter := bson.M{"uid": uid, "group_id": groupId, "deleted_at": nil}
 	err := s.store.FindOne(ctx, filter, nil, subscription)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrSubscriptionNotFound
@@ -280,7 +280,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
-	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType), "deleted_at": 0}
+	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType), "deleted_at": nil}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
@@ -297,7 +297,7 @@ func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId
 	filter := bson.M{
 		"app_id":     appID,
 		"group_id":   groupId,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	subscriptions := make([]datastore.Subscription, 0)
@@ -328,7 +328,7 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, group
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
-	filter := bson.M{"group_id": groupId, "source_id": sourceId, "deleted_at": 0}
+	filter := bson.M{"group_id": groupId, "source_id": sourceId, "deleted_at": nil}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
@@ -345,7 +345,7 @@ func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId
 	filter := bson.M{
 		"uid":        subscriptionId,
 		"group_id":   groupId,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	update := bson.M{

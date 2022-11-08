@@ -329,7 +329,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 
 func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoint, app *datastore.Application) error {
 	for i, endpoint := range app.Endpoints {
-		if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
+		if endpoint.UID == e.UID && endpoint.DeletedAt == nil {
 			app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
 			break
 		}
@@ -362,7 +362,7 @@ func (a *AppService) CountGroupApplications(ctx context.Context, groupID string)
 
 func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.Endpoint) (*[]datastore.Endpoint, *datastore.Endpoint, error) {
 	for i, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+		if endpoint.UID == id && endpoint.DeletedAt == nil {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
 

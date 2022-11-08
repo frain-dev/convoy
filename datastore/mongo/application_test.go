@@ -6,7 +6,10 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
@@ -28,21 +31,23 @@ func Test_UpdateApplication(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	app := &datastore.Application{
-		Title:   "Next application name",
-		GroupID: newGroup.UID,
+		Title:     "Next application name",
+		UID:       "app_id",
+		DeletedAt: nil,
+		GroupID:   newGroup.UID,
 	}
 
-	require.NoError(t, appRepo.CreateApplication(context.Background(), app, app.GroupID))
-
+	err := appRepo.CreateApplication(context.Background(), app, app.GroupID)
+	require.NoError(t, err)
+	log.Fatal("dd")
 	newTitle := "Newer name"
-
 	app.Title = newTitle
 
 	require.NoError(t, appRepo.UpdateApplication(context.Background(), app, app.GroupID))
 
 	newApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(t, err)
-
+	fmt.Printf("tt %+v", newApp)
 	require.Equal(t, newTitle, newApp.Title)
 
 	app2 := &datastore.Application{

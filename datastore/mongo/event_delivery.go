@@ -260,7 +260,7 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	update := bson.M{
@@ -468,7 +468,7 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 
 	f := bson.M{
 		"group_id":   filter.GroupID,
-		"deleted_at": 0,
+		"deleted_at": nil,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -490,7 +490,7 @@ func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, a
 		"device_id":  deviceId,
 		"status":     datastore.DiscardedEventStatus,
 		"created_at": getCreatedDateFilter(searchParams),
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0)
@@ -509,7 +509,7 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 
 func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
 	filter := bson.M{
-		"deleted_at": 0,
+		"deleted_at": nil,
 		"created_at": getCreatedDateFilter(searchParams),
 	}
 

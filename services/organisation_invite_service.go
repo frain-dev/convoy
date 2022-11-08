@@ -269,7 +269,7 @@ func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context
 	}
 
 	iv.Status = datastore.InviteStatusCancelled
-	iv.DeletedAt = primitive.NewDateTimeFromTime(time.Now())
+	iv.DeletedAt = util.NewDateTime()
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {

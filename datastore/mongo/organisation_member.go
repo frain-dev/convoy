@@ -32,7 +32,7 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
 	ctx = o.setCollectionInContext(ctx)
 
-	filter := bson.M{"deleted_at": 0}
+	filter := bson.M{"deleted_at": nil}
 
 	if !util.IsStringEmpty(organisationID) {
 		filter["organisation_id"] = organisationID
@@ -171,7 +171,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, or
 	filter := bson.M{
 		"uid":             uid,
 		"organisation_id": orgID,
-		"deleted_at":      0,
+		"deleted_at":      nil,
 	}
 
 	err := o.store.FindOne(ctx, filter, nil, member)
@@ -188,7 +188,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 	filter := bson.M{
 		"user_id":         userID,
 		"organisation_id": orgID,
-		"deleted_at":      0,
+		"deleted_at":      nil,
 	}
 
 	member := new(datastore.OrganisationMember)

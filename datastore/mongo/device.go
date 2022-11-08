@@ -36,7 +36,7 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	filter := bson.M{
 		"uid":        device.UID,
 		"group_id":   groupID,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -63,7 +63,7 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	filter := bson.M{
 		"uid":        device.UID,
 		"group_id":   groupID,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -87,7 +87,7 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, appID, groupI
 	filter := bson.M{
 		"uid":        uid,
 		"group_id":   groupID,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -103,7 +103,7 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 	filter := bson.M{
 		"uid":        uid,
 		"group_id":   groupID,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -128,7 +128,7 @@ func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string,
 	filter := bson.M{
 		"group_id":   groupID,
 		"host_name":  hostName,
-		"deleted_at": 0,
+		"deleted_at": nil,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -152,7 +152,7 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *da
 
 	var devices []datastore.Device
 
-	filter := bson.M{"deleted_at": 0, "group_id": groupID}
+	filter := bson.M{"deleted_at": nil, "group_id": groupID}
 
 	if !util.IsStringEmpty(f.AppID) {
 		filter["app_id"] = f.AppID

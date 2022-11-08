@@ -61,7 +61,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.Ev
 
 	f := bson.M{
 		"group_id":   filter.GroupID,
-		"deleted_at": 0,
+		"deleted_at": nil,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
