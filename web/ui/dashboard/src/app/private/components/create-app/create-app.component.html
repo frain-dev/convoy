@@ -9,31 +9,10 @@
 		</div>
 
 		<div class="grid grid-cols-2 gap-6">
-			<!-- <convoy-input
-				type="email"
-				autocomplete="app-slack-url"
-				name="app-slack-url"
-				formControlName="support_email"
-				label="Support Email"
-				placeholder="Support email"
-				tooltipPosition="right"
-				tooltipSize="sm"
-				tooltipContent="We use this to send an email notifcation for when a failure happens"
-			></convoy-input> -->
 			<div convoy-input-field>
 				<label for="app-support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
 				<input type="email" id="app-support-email" convoy-input autocomplete="app-support-email" formControlName="support_email" placeholder="support@getconvoy.io" />
 			</div>
-			<!-- <convoy-input
-				type="url"
-				autocomplete="app-email"
-				name="app-email"
-				formControlName="slack_webhook_url"
-				label="Slack webhook url"
-				placeholder="Slack webhook url"
-				tooltipSize="sm"
-				tooltipContent="We use this to send notifications to your slack channel when a failure happens"
-			></convoy-input> -->
 			<div convoy-input-field>
 				<label for="slack_webhook_url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
 				<input type="url" id="slack_webhook_url" convoy-input autocomplete="slack_webhook_url" formControlName="slack_webhook_url" placeholder="https://slack.com" />

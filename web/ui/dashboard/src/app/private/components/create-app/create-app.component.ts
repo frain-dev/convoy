@@ -50,8 +50,6 @@ export class CreateAppComponent implements OnInit {
 			this.getApps();
 		}
 		if (this.editAppMode) await this.getAppDetails();
-
-		console.log(this.addNewAppForm.get('endpoints.0.url'));
 	}
 
 	get endpoints(): FormArray {
