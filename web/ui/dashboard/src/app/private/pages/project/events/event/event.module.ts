@@ -6,7 +6,6 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { EventComponent } from './event.component';
 import { RouterModule } from '@angular/router';
-import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -32,7 +31,7 @@ import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.
 		TableLoaderModule,
 		PrismModule,
 		RouterModule,
-		InputComponent,
+
 		ButtonComponent,
 		DropdownComponent,
 		EmptyStateComponent,
@@ -45,8 +44,8 @@ import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.
 		TableRowComponent,
 		TableCellComponent,
 		TableComponent,
-        TimePickerComponent,
-        DatePickerComponent
+		TimePickerComponent,
+		DatePickerComponent
 	],
 	exports: [EventComponent]
 })

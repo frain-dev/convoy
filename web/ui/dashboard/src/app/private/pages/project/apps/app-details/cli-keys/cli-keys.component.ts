@@ -11,7 +11,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
-import { InputComponent, InputDirective, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
@@ -30,7 +30,7 @@ import { CliKeysService } from './cli-keys.service';
 		EmptyStateComponent,
 		TagComponent,
 		StatusColorModule,
-		InputComponent,
+
 		CopyButtonComponent,
 		SelectComponent,
 		DeleteModalComponent,

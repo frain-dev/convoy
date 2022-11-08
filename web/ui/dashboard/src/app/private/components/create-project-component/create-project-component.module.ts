@@ -4,7 +4,7 @@ import { CreateProjectComponent } from './create-project-component.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
-import { InputComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
@@ -26,7 +26,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 		TooltipComponent,
 		RadioComponent,
 		ToggleComponent,
-		InputComponent,
+
 		SelectComponent,
 		ButtonComponent,
 		ModalComponent,

@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AcceptInviteService } from './accept-invite.service';
@@ -11,7 +11,7 @@ import { AcceptInviteService } from './accept-invite.service';
 @Component({
 	selector: 'app-accept-invite',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent, LoaderModule, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, LoaderModule, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
 	templateUrl: './accept-invite.component.html',
 	styleUrls: ['./accept-invite.component.scss']
 })

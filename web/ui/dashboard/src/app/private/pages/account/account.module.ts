@@ -4,7 +4,7 @@ import { AccountComponent } from './account.component';
 import { RouterModule, Routes } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PageComponent } from 'src/app/components/page/page.component';
-import { InputComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { PersonalSettingsComponent } from './personal-settings/personal-settings.component';
@@ -28,7 +28,7 @@ const routes: Routes = [{ path: '', component: AccountComponent }];
 		ReactiveFormsModule,
 		RouterModule.forChild(routes),
 		PageComponent,
-		InputComponent,
+
 		ButtonComponent,
 		CardComponent,
 		EmptyStateComponent,
