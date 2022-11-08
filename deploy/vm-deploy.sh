@@ -139,6 +139,7 @@ EOF
 
 	# Fix compose start command
 	cat > $COMPOSECONFDIR/start <<EOF
+#!/bin/bash
 ./cmd migrate up
 ./cmd server --config convoy.json -w false
 EOF
