@@ -143,6 +143,7 @@ EOF
 ./cmd migrate up
 ./cmd server --config convoy.json -w false
 EOF
+chmod +x $COMPOSECONFDIR/start
 }
 
 # setup replica set on mongo db clusters
