@@ -253,6 +253,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
+	cancel() {
+		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.confirmModal = true;
+	}
+
 	goToSubsriptionsPage() {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
 	}

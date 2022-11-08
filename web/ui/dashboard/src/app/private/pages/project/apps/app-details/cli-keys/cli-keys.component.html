@@ -29,7 +29,7 @@
 				</div>
 				<p class="text-grey-40 text-10 mt-8px">Expires At: {{ key.expires_at | date: 'medium' }}</p>
 			</div>
-			<convoy-button size="xs" type="outline" color="danger" (click)="selectedApiKey = key; showRevokeApiModal = true">Revoke</convoy-button>
+			<button convoy-button size="xs" fill="outline" color="danger" (click)="selectedApiKey = key; showRevokeApiModal = true">Revoke</button>
 		</div>
 	</ng-container>
 </convoy-card>
@@ -44,7 +44,7 @@
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ apiKey }}</span>
 			<convoy-copy-button [text]="apiKey"></convoy-copy-button>
 		</div>
-		<convoy-button (click)="showApiKey = false; getApiKeys()" buttonType="button">Done</convoy-button>
+		<button convoy-button (click)="showApiKey = false; getApiKeys()" type="button">Done</button>
 	</div>
 </convoy-modal>
 
@@ -53,7 +53,7 @@
 		<convoy-input autocomplete="name" name="name" formControlName="name" label="Name" placeholder="CLI key name"></convoy-input>
 		<convoy-select label="Expiration" name="expiration" formControlName="expiration" [options]="expirationDates" (selectedOption)="generateKeyForm.patchValue({ expiration: $event })"></convoy-select>
 		<div class="flex justify-end mt-24px">
-			<convoy-button>Generate Key</convoy-button>
+			<button convoy-button>Generate Key</button>
 		</div>
 	</form>
 </convoy-modal>
