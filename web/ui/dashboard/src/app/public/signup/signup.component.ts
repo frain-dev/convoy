@@ -3,13 +3,13 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SignupService } from './signup.service';
 
 @Component({
 	selector: 'convoy-signup',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent],
+	imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
 	templateUrl: './signup.component.html',
 	styleUrls: ['./signup.component.scss']
 })

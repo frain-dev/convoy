@@ -5,7 +5,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { PageComponent } from 'src/app/components/page/page.component';
 import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
@@ -25,6 +25,29 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 
 @NgModule({
 	declarations: [SettingsComponent, OrganisationSettingsComponent, ConfigurationsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), ReactiveFormsModule, CardComponent, PageComponent, DeleteModalComponent, InputComponent, SelectComponent, RadioComponent, ToggleComponent, ButtonComponent, SkeletonLoaderComponent, TagComponent, ModalComponent, CopyButtonComponent, DatePickerComponent, StatusColorModule, EmptyStateComponent]
+	imports: [
+		CommonModule,
+		RouterModule.forChild(routes),
+		ReactiveFormsModule,
+		CardComponent,
+		PageComponent,
+		DeleteModalComponent,
+		InputComponent,
+		SelectComponent,
+		RadioComponent,
+		ToggleComponent,
+		ButtonComponent,
+		SkeletonLoaderComponent,
+		TagComponent,
+		ModalComponent,
+		CopyButtonComponent,
+		DatePickerComponent,
+		StatusColorModule,
+		EmptyStateComponent,
+		InputFieldDirective,
+		InputErrorComponent,
+		InputDirective,
+		LabelComponent
+	]
 })
 export class SettingsModule {}

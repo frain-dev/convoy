@@ -124,7 +124,7 @@ export class InputErrorComponent implements OnInit {
 	template: `
 		<div class="flex items-center">
 			<ng-content></ng-content>
-			<convoy-tooltip *ngIf="tooltip" class="ml-4px">{{ tooltip }}</convoy-tooltip>
+			<convoy-tooltip *ngIf="tooltip" class="ml-4px" size="sm">{{ tooltip }}</convoy-tooltip>
 		</div>
 		<span *ngIf="required === 'true'" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
 	`,

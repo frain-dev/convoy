@@ -1,19 +1,24 @@
 <div>
 	<form [formGroup]="addNewEndpointForm">
-		<convoy-input type="text" autocomplete="description" name="description" formControlName="description" errorMessage="Please provide a description" label="Description" placeholder="Description" className="mb-24px" [required]="true"></convoy-input>
-		<convoy-input type="url" autocomplete="url" name="url" formControlName="url" errorMessage="Endpoint URL is required" label="Enter Url" placeholder="Enter url" className="mb-24px" [required]="true"></convoy-input>
-		<convoy-input type="text" autocomplete="secret" name="secret" formControlName="secret" label="Secret" placeholder="********"></convoy-input>
-		<convoy-input
-			type="text"
-			autocomplete="http_timeout"
-			name="http_timeout"
-			formControlName="http_timeout"
-			label="Http Timeout"
-			placeholder="e.g 10s"
-			tooltipContent="This specifies how long the socket stays open in the absense of a response."
-			tooltipSize="sm"
-			tooltipPosition="right"
-		></convoy-input>
+		<convoy-input-field>
+			<label for="description" convoy-label required="true">Description</label>
+			<input id="description" convoy-input autocomplete="description" formControlName="description" placeholder="Description" />
+			<convoy-input-error *ngIf="addNewEndpointForm.get('description')?.touched && addNewEndpointForm.get('description')?.invalid">Please provide a description</convoy-input-error>
+		</convoy-input-field>
+		<convoy-input-field>
+			<label for="url" convoy-label required="true">Enter URL</label>
+			<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
+			<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
+		</convoy-input-field>
+		<convoy-input-field>
+			<label for="secret" convoy-label required="true">Secret</label>
+			<input id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="********" />
+			<convoy-input-error *ngIf="addNewEndpointForm.get('secret')?.touched && addNewEndpointForm.get('secret')?.invalid">Endpoint URL is required</convoy-input-error>
+		</convoy-input-field>
+		<convoy-input-field>
+			<label for="http_timeout" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Http Timeout</label>
+			<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 10s" />
+		</convoy-input-field>
 
 		<h3 class="mt-34px mb-14px font-medium text-16 flex items-center">
 			Endpoint Authentication
@@ -21,8 +26,14 @@
 		</h3>
 		<ng-container formGroupName="authentication">
 			<ng-container formGroupName="api_key">
-				<convoy-input type="text" autocomplete="header-name" formControlName="header_name" label="API Key Name" placeholder="Name"></convoy-input>
-				<convoy-input type="text" autocomplete="header-value" formControlName="header_value" label="API Key Value" placeholder="Value"></convoy-input>
+				<convoy-input-field>
+					<label for="header_name" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">API Key Name</label>
+					<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
+				</convoy-input-field>
+				<convoy-input-field>
+					<label for="header_value" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">API Key Value</label>
+					<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
+				</convoy-input-field>
 			</ng-container>
 		</ng-container>
 

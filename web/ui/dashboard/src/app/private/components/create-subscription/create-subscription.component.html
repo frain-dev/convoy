@@ -2,7 +2,11 @@
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
 	<convoy-card className="px-24px py-24px">
-		<convoy-input type="text" name="subscription-name" formControlName="name" errorMessage="Enter new subscription name" label="Subscription name" placeholder="e.g paystack-prod"></convoy-input>
+		<convoy-input-field>
+			<label for="subscription-name" required="true" convoy-label>Subscription name</label>
+			<input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
+			<convoy-input-error *ngIf="subscriptionForm.get('name')?.touched && subscriptionForm.get('name')?.invalid">Enter new subscription name</convoy-input-error>
+		</convoy-input-field>
 
 		<ng-container *ngIf="projectType === 'incoming' && !token">
 			<convoy-select
@@ -76,7 +80,17 @@
 			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
 		</div>
 
-		<div [hidden]="!enableMoreConfig">
+		<h3 class="mt-48px mb-16px font-semibold">Disable Failing Endpoints</h3>
+		<div class="grid grid-cols-2 gap-24px">
+			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
+			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
+		</div>
+
+		<div class="flex justify-end mt-30px">
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
+		</div>
+
+		<div [hidden]="!enableMoreConfig" class="mt-48px">
 			<h2 class="font-semibold flex items-center mb-20px mt-30px">
 				Retry Logic
 				<convoy-tooltip position="right" size="sm" class="ml-4px">
@@ -87,9 +101,16 @@
 
 			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
 				<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism" (selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"></convoy-select>
-
-				<convoy-input type="text" name="retry-logic-duration" formControlName="duration" label="Duration" placeholder="e.g 3s"></convoy-input>
-				<convoy-input type="text" name="retry-logic-count" formControlName="retry_count" label="Limit" placeholder="e.g 5"></convoy-input>
+				<convoy-input-field>
+					<label for="retry-logic-duration" convoy-label>Duration</label>
+					<input type="text" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" />
+					<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter new subscription name</convoy-input-error>
+				</convoy-input-field>
+				<convoy-input-field>
+					<label for="retry-logic-count" convoy-label>Limit</label>
+					<input type="text" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
+					<convoy-input-error *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">Enter new subscription name</convoy-input-error>
+				</convoy-input-field>
 			</div>
 
 			<h2 class="font-semibold flex items-center mb-20px mt-30px">
@@ -97,17 +118,17 @@
 				<convoy-tooltip position="right" size="sm" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
 			</h2>
 			<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
-				<convoy-input type="number" name="alert-config-count" formControlName="count" label="Count" placeholder="e.g 10"></convoy-input>
-				<convoy-input type="text" name="alert-config-time" formControlName="threshold" label="Time" placeholder="e.g 1h"></convoy-input>
+				<convoy-input-field>
+					<label for="alert-config-time" convoy-label>Time</label>
+					<input type="text" id="alert-config-time" convoy-input autocomplete="alert-config-time" formControlName="threshold" placeholder="e.g 1h" />
+					<convoy-input-error *ngIf="subscriptionForm.get('alert_config.threshold')?.touched && subscriptionForm.get('alert_config.threshold')?.invalid">Enter new subscription error alert threshold</convoy-input-error>
+				</convoy-input-field>
+				<convoy-input-field>
+					<label for="alert-config-count" convoy-label>Limit</label>
+					<input type="number" id="alert-config-count" convoy-input autocomplete="alert-config-count" formControlName="count" placeholder="e.g 5" />
+					<convoy-input-error *ngIf="subscriptionForm.get('alert_config.count')?.touched && subscriptionForm.get('alert_config.count')?.invalid">Enter new subscription error alert limit</convoy-input-error>
+				</convoy-input-field>
 			</div>
-		</div>
-		<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
-		<div class="grid grid-cols-2 gap-24px">
-			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
-			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
-		</div>
-		<div class="flex justify-end mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations"></convoy-toggle>
 		</div>
 	</convoy-card>
 

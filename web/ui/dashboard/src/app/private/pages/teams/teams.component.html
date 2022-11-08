@@ -194,7 +194,11 @@
 				<h3 class="font-semibold">Basic info</h3>
 				<div class="text-grey-40 text-14 font-normal mb-16px">Invite other members of your team to your organisation.</div>
 
-				<convoy-input type="email" autocomplete="email" name="email" formControlName="invitee_email" errorMessage="Please enter a valid email" label="Email" placeholder="Enter member email" [required]="true"></convoy-input>
+				<convoy-input-field>
+					<label for="email" convoy-label required="true">Email</label>
+					<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
+					<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
+				</convoy-input-field>
 			</convoy-card>
 			<div class="flex justify-end pt-24px pb-40px">
 				<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
