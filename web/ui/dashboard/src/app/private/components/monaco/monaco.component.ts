@@ -46,7 +46,7 @@ export class MonacoComponent implements AfterViewInit {
 		});
 
 		this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
-			value: this.editorValue || '{}',
+			value: JSON.stringify(this.editorValue, null, '\t') || '{}',
 			language: 'json',
 			formatOnPaste: true,
 			formatOnType: true,

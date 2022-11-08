@@ -86,7 +86,7 @@
 			<div class="flex justify-between items-center mb-14px">
 				<h4 class="font-semibold">Event filters</h4>
 				<convoy-button type="text" size="sm" className="font-medium" buttonType="button" (clickItem)="setupFilter()">
-					{{ action == 'update' ? 'Edit' : 'Setup' }} Filter
+					{{ action == 'update' && subscriptionForm.get('filter_config.filter')?.value ? 'Edit' : 'Setup' }} Filter
 					<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
