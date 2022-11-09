@@ -79,7 +79,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 			Key: "$match",
 			Value: bson.D{
 				{Key: "group_id", Value: groupId},
-				{Key: "deleted_at", Value: 0},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
@@ -91,7 +91,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 				Value: bson.D{
 					{Key: "group_id", Value: groupId},
 					{Key: "app_id", Value: f.AppID},
-					{Key: "deleted_at", Value: 0},
+					{Key: "deleted_at", Value: nil},
 				},
 			},
 		}

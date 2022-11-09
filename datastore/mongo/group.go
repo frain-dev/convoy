@@ -129,7 +129,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 				bson.D{
 					{
 						Key: "$match", Value: bson.D{
-							{Key: "deleted_at", Value: 0},
+							{Key: "deleted_at", Value: nil},
 						},
 					},
 				},

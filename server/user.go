@@ -56,6 +56,7 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
+		DeletedAt: user.DeletedAt,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
@@ -93,6 +94,7 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
+		DeletedAt: user.DeletedAt,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Registration successful", u, http.StatusCreated))
