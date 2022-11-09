@@ -181,7 +181,7 @@ func (d *MongoStore) FindOne(ctx context.Context, filter, projection bson.M, res
 	ops := options.FindOne()
 	ops.Projection = projection
 
-	filter["deleted_at"] = 0
+	filter["deleted_at"] = nil
 
 	return collection.FindOne(ctx, filter, ops).Decode(result)
 }
@@ -198,7 +198,7 @@ func (d *MongoStore) FindMany(ctx context.Context, filter, projection bson.M, so
 	}
 	collection := d.Database.Collection(col)
 
-	filter["deleted_at"] = 0
+	filter["deleted_at"] = nil
 
 	paginatedData, err := pager.
 		New(collection).
@@ -275,7 +275,7 @@ func (d *MongoStore) FindAll(ctx context.Context, filter bson.M, sort interface{
 		filter = bson.M{}
 	}
 
-	filter["deleted_at"] = 0
+	filter["deleted_at"] = nil
 
 	cursor, err := collection.Find(ctx, filter, ops)
 	if err != nil {
@@ -456,7 +456,7 @@ func (d *MongoStore) Count(ctx context.Context, filter map[string]interface{}) (
 	}
 	collection := d.Database.Collection(col)
 
-	filter["deleted_at"] = 0
+	filter["deleted_at"] = nil
 	return collection.CountDocuments(ctx, filter)
 }
 
