@@ -62,7 +62,7 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 			Key: "$match",
 			Value: bson.D{
 				{Key: "user_id", Value: userID},
-				{Key: "deleted_at", Value: 0},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
@@ -114,7 +114,7 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		{
 			Key: "$match",
 			Value: bson.D{
-				{Key: "deleted_at", Value: 0},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
