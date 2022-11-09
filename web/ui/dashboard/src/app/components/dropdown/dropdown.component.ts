@@ -13,7 +13,6 @@ import { DropdownContainerComponent } from '../dropdown-container/dropdown-conta
 export class DropdownComponent implements OnInit {
 	@Input('position') position: 'right' | 'left' | 'center' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
-	@Input('active') active: boolean = false;
 
 	show = false;
 

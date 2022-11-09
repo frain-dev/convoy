@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { DropdownComponent } from '../dropdown/dropdown.component';
 import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
+import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
 
 @Component({
 	selector: 'convoy-time-picker',
 	standalone: true,
-	imports: [CommonModule, DropdownComponent, ButtonComponent, FormsModule],
+	imports: [CommonModule, DropdownComponent, ButtonComponent, FormsModule, DropdownContainerComponent],
 	templateUrl: './time-picker.component.html',
 	styleUrls: ['./time-picker.component.scss']
 })
@@ -19,6 +20,7 @@ export class TimePickerComponent implements OnInit {
 	timeFilterHours: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 	timeFilterMinutes: number[] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 59];
 	isFilterUpdated = false;
+    showPicker = false;
 	@Output('applyFilter') applyFilter: EventEmitter<any> = new EventEmitter();
 	@ViewChild('dropdown') dropdown!: DropdownComponent;
 
