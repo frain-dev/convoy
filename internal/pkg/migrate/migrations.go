@@ -442,4 +442,106 @@ var Migrations = []*Migration{
 			return store.WithTransaction(ctx, fn)
 		},
 	},
+
+	{
+		ID: "20221109100029_migrate_deprecate_document_status_field",
+		Migrate: func(db *mongo.Database) error {
+			collectionList := []datastore.CollectionKey{
+				datastore.ConfigCollection,
+				datastore.GroupCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.AppCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				fn := func(sessCtx mongo.SessionContext) error {
+					filter := bson.M{
+						"deleted_at": bson.M{
+							"$or": bson.M{
+								"$exists": false,
+								"$lte":    primitive.NewDateTimeFromTime(time.Date(1971, 0, 0, 0, 0, 0, 0, time.UTC)),
+							},
+						},
+					}
+
+					set := bson.M{
+						"$set": bson.M{
+							"deleted_at": nil,
+						},
+					}
+
+					err := store.UpdateMany(sessCtx, filter, set, true)
+					if err != nil {
+						log.WithError(err).Fatalf("Failed migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
+						return err
+					}
+
+					return nil
+				}
+
+				err := store.WithTransaction(ctx, fn)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			collectionList := []datastore.CollectionKey{
+				datastore.ConfigCollection,
+				datastore.GroupCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.AppCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				fn := func(sessCtx mongo.SessionContext) error {
+					filter := bson.M{"deleted_at": nil}
+
+					update := bson.M{"deleted_at": 0}
+
+					err := store.UpdateMany(sessCtx, filter, update, true)
+					if err != nil {
+						log.WithError(err).Fatalf("Failed rollback migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
+						return err
+					}
+
+					return nil
+				}
+
+				err := store.WithTransaction(ctx, fn)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	},
 }
