@@ -209,6 +209,5 @@ func sourceResponse(s *datastore.Source, baseUrl string) *models.SourceResponse 
 		Verifier:       s.Verifier,
 		CreatedAt:      s.CreatedAt,
 		UpdatedAt:      s.UpdatedAt,
-		DeletedAt:      s.DeletedAt,
 	}
 }
