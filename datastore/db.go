@@ -64,6 +64,7 @@ type Store interface {
 	DeleteMany(ctx context.Context, filter, payload bson.M, hardDelete bool) error
 
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
+	CountWithDeleted(ctx context.Context, filter map[string]interface{}) (int64, error)
 
 	Aggregate(ctx context.Context, pipeline mongo.Pipeline, result interface{}, allowDiskUse bool) error
 	WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) error) error
@@ -460,6 +461,16 @@ func (d *MongoStore) Count(ctx context.Context, filter map[string]interface{}) (
 	return collection.CountDocuments(ctx, filter)
 }
 
+func (d *MongoStore) CountWithDeleted(ctx context.Context, filter map[string]interface{}) (int64, error) {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return 0, err
+	}
+	collection := d.Database.Collection(col)
+
+	return collection.CountDocuments(ctx, filter)
+}
+
 func (d *MongoStore) Aggregate(ctx context.Context, pipeline mongo.Pipeline, output interface{}, allowDiskUse bool) error {
 	if !IsValidPointer(output) {
 		return ErrInvalidPtr
@@ -490,12 +501,7 @@ func (d *MongoStore) WithTransaction(ctx context.Context, fn func(sessCtx mongo.
 	}
 
 	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		err := fn(sessCtx)
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, nil
+		return nil, fn(sessCtx)
 	})
 
 	return err
