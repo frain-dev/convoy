@@ -133,14 +133,14 @@ func (p *PortalLinkService) GetPortalLinkEndpoints(ctx context.Context, group *d
 }
 
 func (p *PortalLinkService) findEndpoints(ctx context.Context, endpoints []string, group *datastore.Group) error {
-	for _, endpoint := range endpoints {
-		endpoint, err := p.endpointRepo.FindEndpointByID(ctx, endpoint)
+	for _, e := range endpoints {
+		endpoint, err := p.endpointRepo.FindEndpointByID(ctx, e)
 		if errors.Is(err, datastore.ErrEndpointNotFound) {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("endpoint with ID :%v not found", endpoint))
+			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("endpoint with ID :%s not found", e))
 		}
 
 		if endpoint.GroupID != group.UID {
-			return util.NewServiceError(http.StatusForbidden, fmt.Errorf("unauthorized access to endpoint with ID: %v", endpoint))
+			return util.NewServiceError(http.StatusForbidden, fmt.Errorf("unauthorized access to endpoint with ID: %s", e))
 		}
 	}
 
