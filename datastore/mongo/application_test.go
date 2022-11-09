@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -39,7 +37,7 @@ func Test_UpdateApplication(t *testing.T) {
 
 	err := appRepo.CreateApplication(context.Background(), app, app.GroupID)
 	require.NoError(t, err)
-	log.Fatal("dd")
+
 	newTitle := "Newer name"
 	app.Title = newTitle
 
