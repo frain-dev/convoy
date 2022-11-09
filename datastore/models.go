@@ -400,7 +400,7 @@ func (g *GroupFilter) ToGenericMap() map[string]interface{} {
 	return m
 }
 
-func (o *Group) IsDeleted() bool { return o.DeletedAt == nil }
+func (o *Group) IsDeleted() bool { return o.DeletedAt != nil }
 
 func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }
 

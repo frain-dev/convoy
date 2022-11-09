@@ -43,6 +43,8 @@ func Test_CreateGroup(t *testing.T) {
 
 	store := getStore(db)
 
+	d := primitive.NewDateTimeFromTime(time.Now())
+
 	tt := []struct {
 		name        string
 		groups      []datastore.Group
@@ -83,7 +85,7 @@ func Test_CreateGroup(t *testing.T) {
 					Name:           "group 3",
 					OrganisationID: "abc",
 					UID:            uuid.NewString(),
-					DeletedAt:      primitive.NewDateTimeFromTime(time.Now()),
+					DeletedAt:      &d,
 				},
 
 				{

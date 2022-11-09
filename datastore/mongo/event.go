@@ -86,7 +86,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "group_id", Value: groupID},
-		{Key: "deleted_at", Value: 0},
+		{Key: "deleted_at", Value: nil},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
