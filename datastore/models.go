@@ -458,9 +458,9 @@ type Event struct {
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data,omitempty" bson:"data"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
 type (
@@ -556,9 +556,9 @@ type DeliveryAttempt struct {
 	Error            string     `json:"error,omitempty" bson:"error,omitempty"`
 	Status           bool       `json:"status,omitempty" bson:"status,omitempty"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
 // Event defines a payload to be sent to an application
@@ -584,7 +584,7 @@ type EventDelivery struct {
 	Description      string              `json:"description,omitempty" bson:"description"`
 	CreatedAt        primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt        primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	DeletedAt        *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
 type CLIMetadata struct {
@@ -593,19 +593,19 @@ type CLIMetadata struct {
 }
 
 type APIKey struct {
-	ID        primitive.ObjectID `json:"-" bson:"_id"`
-	UID       string             `json:"uid" bson:"uid"`
-	MaskID    string             `json:"mask_id,omitempty" bson:"mask_id"`
-	Name      string             `json:"name" bson:"name"`
-	Role      auth.Role          `json:"role" bson:"role"`
-	Hash      string             `json:"hash,omitempty" bson:"hash"`
-	Salt      string             `json:"salt,omitempty" bson:"salt"`
-	Type      KeyType            `json:"key_type" bson:"key_type"`
-	UserID    string             `json:"user_id" bson:"user_id"`
-	ExpiresAt primitive.DateTime `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	ID        primitive.ObjectID  `json:"-" bson:"_id"`
+	UID       string              `json:"uid" bson:"uid"`
+	MaskID    string              `json:"mask_id,omitempty" bson:"mask_id"`
+	Name      string              `json:"name" bson:"name"`
+	Role      auth.Role           `json:"role" bson:"role"`
+	Hash      string              `json:"hash,omitempty" bson:"hash"`
+	Salt      string              `json:"salt,omitempty" bson:"salt"`
+	Type      KeyType             `json:"key_type" bson:"key_type"`
+	UserID    string              `json:"user_id" bson:"user_id"`
+	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
 }
 
 type Subscription struct {
@@ -631,9 +631,9 @@ type Subscription struct {
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
 	DisableEndpoint *bool                   `json:"disable_endpoint,omitempty" bson:"disable_endpoint"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
 type Source struct {
@@ -649,9 +649,9 @@ type Source struct {
 	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
 	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
 type User struct {
