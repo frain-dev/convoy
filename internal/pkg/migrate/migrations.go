@@ -626,7 +626,7 @@ var Migrations = []*Migration{
 	{
 		ID: "20221109100029_migrate_deprecate_document_status_field",
 		Migrate: func(db *mongo.Database) error {
-			collectionList := []datastore.CollectionKey{
+			collectionList := []string{
 				datastore.ConfigCollection,
 				datastore.GroupCollection,
 				datastore.OrganisationCollection,
@@ -648,11 +648,9 @@ var Migrations = []*Migration{
 
 				fn := func(sessCtx mongo.SessionContext) error {
 					filter := bson.M{
-						"deleted_at": bson.M{
-							"$or": bson.M{
-								"$exists": false,
-								"$lte":    primitive.NewDateTimeFromTime(time.Date(1971, 0, 0, 0, 0, 0, 0, time.UTC)),
-							},
+						"$or": []interface{}{
+							bson.D{{Key: "deleted_at", Value: bson.M{"$exists": false}}},
+							bson.D{{Key: "deleted_at", Value: bson.M{"$lte": primitive.NewDateTimeFromTime(time.Date(1971, 0, 0, 0, 0, 0, 0, time.UTC))}}},
 						},
 					}
 
@@ -680,7 +678,7 @@ var Migrations = []*Migration{
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
-			collectionList := []datastore.CollectionKey{
+			collectionList := []string{
 				datastore.ConfigCollection,
 				datastore.GroupCollection,
 				datastore.OrganisationCollection,
