@@ -53,6 +53,7 @@ const (
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 	hostCtx             contextKey = "host"
 	endpointIdCtx       contextKey = "endpointId"
+	portalLinkCtx       contextKey = "portal_link"
 )
 
 type Middleware struct {
@@ -69,6 +70,7 @@ type Middleware struct {
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
 	deviceRepo        datastore.DeviceRepository
+	portalLinkRepo    datastore.PortalLinkRepository
 	cache             cache.Cache
 	logger            log.StdLogger
 	limiter           limiter.RateLimiter
@@ -89,6 +91,7 @@ type CreateMiddleware struct {
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
 	DeviceRepo        datastore.DeviceRepository
+	PortalLinkRepo    datastore.PortalLinkRepository
 	Cache             cache.Cache
 	Logger            log.StdLogger
 	Limiter           limiter.RateLimiter
@@ -110,6 +113,7 @@ func NewMiddleware(cs *CreateMiddleware) *Middleware {
 		userRepo:          cs.UserRepo,
 		configRepo:        cs.ConfigRepo,
 		deviceRepo:        cs.DeviceRepo,
+		portalLinkRepo:    cs.PortalLinkRepo,
 		cache:             cs.Cache,
 		logger:            cs.Logger,
 		limiter:           cs.Limiter,
@@ -235,16 +239,30 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequireEndpointPortal() func(next http.Handler) http.Handler {
+func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := chi.URLParam(r, "portalLinkToken")
+
+			pLink, err := m.portalLinkRepo.FindPortalLinkByToken(r.Context(), token)
+			if err != nil {
+				message := "an error occurred while retrieving portal link"
+				statusCode := http.StatusBadRequest
+
+				if errors.Is(err, datastore.ErrPortalLinkNotFound) {
+					message = "invalid token"
+					statusCode = http.StatusUnauthorized
+				}
+
+				_ = render.Render(w, r, util.NewErrorResponse(message, statusCode))
+				return
+			}
+
 			var group *datastore.Group
-			authUser := GetAuthUserFromContext(r.Context())
-			groupID := authUser.Role.Group
-			endpointID := authUser.Role.Endpoint
+			groupID := pLink.GroupID
 
 			groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
-			err := m.cache.Get(r.Context(), groupCacheKey, &group)
+			err = m.cache.Get(r.Context(), groupCacheKey, &group)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
@@ -264,63 +282,28 @@ func (m *Middleware) RequireEndpointPortal() func(next http.Handler) http.Handle
 				}
 			}
 
-			endpoint, err := m.endpointRepo.FindEndpointByID(r.Context(), endpointID)
-			if err != nil {
-
-				event := "an error occurred while retrieving endpoint details"
-				statusCode := http.StatusBadRequest
-
-				if errors.Is(err, datastore.ErrEndpointNotFound) {
-					event = err.Error()
-					statusCode = http.StatusBadRequest
-				}
-
-				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
-				return
-			}
-
+			r = r.WithContext(setPortalLinkInContext(r.Context(), pLink))
 			r = r.WithContext(setGroupInContext(r.Context(), group))
-			r = r.WithContext(setEndpointInContext(r.Context(), endpoint))
-			r = r.WithContext(setEndpointIDInContext(r.Context(), endpoint.UID))
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func (m *Middleware) RequirePortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
+func (m *Middleware) RequirePortalLinkEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := GetAuthUserFromContext(r.Context())
-			if authUser.Role.Type.Is(auth.RoleSuperUser) {
-				// superuser has access to everything
-				next.ServeHTTP(w, r)
-				return
-			}
+			portalLink := GetPortalLinkFromContext(r.Context())
+			endpoint := GetEndpointFromContext(r.Context())
 
-			if !authUser.Role.Type.Is(role) {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
-				return
-			}
-
-			group := GetGroupFromContext(r.Context())
-			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
-				if !util.IsStringEmpty(authUser.Role.Endpoint) { // we're dealing with an app portal token at this point
-					endpoint := GetEndpointFromContext(r.Context())
-
-					if endpoint.Title == authUser.Role.Endpoint || endpoint.UID == authUser.Role.Endpoint {
-						next.ServeHTTP(w, r)
-						return
-					}
-
-					_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
+			for _, e := range portalLink.Endpoints {
+				if endpoint.UID == e {
+					r = r.WithContext(setEndpointIDInContext(r.Context(), endpoint.UID))
+					next.ServeHTTP(w, r)
 					return
 				}
-
-				next.ServeHTTP(w, r)
-				return
 			}
 
-			_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		})
 	}
 }
@@ -751,8 +734,6 @@ func (m *Middleware) RequirePermission(role auth.RoleType) func(next http.Handle
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
-
-			fmt.Printf("%+v\n", authUser)
 
 			if !authUser.Role.Type.Is(role) {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
@@ -1236,6 +1217,14 @@ func GetEndpointIDFromContext(r *http.Request) string {
 
 func GetSourceIDFromContext(r *http.Request) string {
 	return r.URL.Query().Get("sourceId")
+}
+
+func setPortalLinkInContext(ctx context.Context, pl *datastore.PortalLink) context.Context {
+	return context.WithValue(ctx, portalLinkCtx, pl)
+}
+
+func GetPortalLinkFromContext(ctx context.Context) *datastore.PortalLink {
+	return ctx.Value(portalLinkCtx).(*datastore.PortalLink)
 }
 
 func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {

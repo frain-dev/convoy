@@ -16,8 +16,8 @@ import (
 
 func providePortalLinkService(ctrl *gomock.Controller) *PortalLinkService {
 	portalRepo := mocks.NewMockPortalLinkRepository(ctrl)
-	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
-	return NewPortalLinkService(portalRepo, endpointRepo)
+	endpointSerivce := provideEndpointService(ctrl)
+	return NewPortalLinkService(portalRepo, endpointSerivce)
 }
 
 func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
@@ -205,7 +205,6 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().UpdatePortalLink(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
-
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
@@ -506,6 +505,100 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, tc.wantPortalLinks, portalLinks)
 			require.Equal(t, tc.wantPaginationData, paginationData)
+		})
+	}
+}
+
+func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx        context.Context
+		portalLink *datastore.PortalLink
+		group      *datastore.Group
+	}
+
+	tests := []struct {
+		name          string
+		args          args
+		wantEndpoints []datastore.Endpoint
+		dbFn          func(pl *PortalLinkService)
+		wantErr       bool
+		wantErrCode   int
+		wantErrMsg    string
+	}{
+		{
+			name: "should_get_portal_link_endpoints",
+			args: args{
+				ctx: ctx,
+				portalLink: &datastore.PortalLink{
+					UID:       "123",
+					Endpoints: []string{"123", "1234"},
+				},
+				group: &datastore.Group{
+					UID: "12345",
+				},
+			},
+			dbFn: func(pl *PortalLinkService) {
+				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
+
+				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return([]datastore.Endpoint{
+						{UID: "123"},
+						{UID: "1234"},
+					}, nil)
+			},
+			wantEndpoints: []datastore.Endpoint{
+				{UID: "123"},
+				{UID: "1234"},
+			},
+		},
+
+		{
+			name: "should_fail_to_get_portal_link_endpoints",
+			args: args{
+				ctx: ctx,
+				portalLink: &datastore.PortalLink{
+					UID:       "123",
+					Endpoints: []string{"123", "1234"},
+				},
+				group: &datastore.Group{
+					UID: "12345",
+				},
+			},
+			dbFn: func(pl *PortalLinkService) {
+				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
+
+				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return([]datastore.Endpoint{}, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusInternalServerError,
+			wantErrMsg:  "an error occurred while fetching endpoints",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			pl := providePortalLinkService(ctrl)
+
+			if tc.dbFn != nil {
+				tc.dbFn(pl)
+			}
+
+			endpoints, err := pl.GetPortalLinkEndpoints(tc.args.ctx, tc.args.group, tc.args.portalLink)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, tc.wantEndpoints, endpoints)
 		})
 	}
 }

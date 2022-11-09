@@ -73,6 +73,26 @@ func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datas
 	return endpoint, err
 }
 
+func (db *endpointRepo) FindEndpointsByID(ctx context.Context, groupID string, ids []string) ([]datastore.Endpoint, error) {
+	ctx = db.setCollectionInContext(ctx)
+
+	endpoints := make([]datastore.Endpoint, 0)
+
+	filter := bson.M{
+		"uid": bson.M{
+			"$in": ids,
+		},
+		"group_id": groupID,
+	}
+
+	err := db.store.FindAll(ctx, filter, nil, nil, &endpoints)
+	if err != nil {
+		return endpoints, err
+	}
+
+	return endpoints, nil
+}
+
 func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
 

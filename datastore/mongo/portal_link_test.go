@@ -8,6 +8,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -49,6 +50,27 @@ func Test_FindPortalLinkByID(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, portalLink.UID, newPortalLink.UID)
+}
+
+func Test_FindPortalLinkByToken(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	store := getStore(db)
+	portalLinkRepo := NewPortalLinkRepo(store)
+	portalLink := generatePortalLink(t)
+
+	_, err := portalLinkRepo.FindPortalLinkByToken(context.Background(), portalLink.Token)
+	require.Error(t, err)
+	require.True(t, errors.Is(err, datastore.ErrPortalLinkNotFound))
+
+	require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
+
+	newPortalLink, err := portalLinkRepo.FindPortalLinkByToken(context.Background(), portalLink.Token)
+	require.NoError(t, err)
+
+	require.Equal(t, portalLink.UID, newPortalLink.UID)
+	require.Equal(t, portalLink.Token, newPortalLink.Token)
 }
 
 func Test_UpdatePortalLink(t *testing.T) {
@@ -192,6 +214,7 @@ func generatePortalLink(t *testing.T) *datastore.PortalLink {
 	return &datastore.PortalLink{
 		UID:            uuid.NewString(),
 		GroupID:        uuid.NewString(),
+		Token:          uniuri.NewLen(5),
 		Endpoints:      []string{uuid.NewString(), uuid.NewString()},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}

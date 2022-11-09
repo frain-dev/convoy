@@ -80,6 +80,7 @@ type OrganisationMemberRepository interface {
 type EndpointRepository interface {
 	CreateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
 	FindEndpointByID(çtx context.Context, id string) (*Endpoint, error)
+	FindEndpointsByID(ctx context.Context, groupID string, ids []string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
 	CountGroupEndpoints(ctx context.Context, groupID string) (int64, error)
@@ -140,6 +141,7 @@ type PortalLinkRepository interface {
 	CreatePortalLink(context.Context, *PortalLink) error
 	UpdatePortalLink(ctx context.Context, groupID string, portal *PortalLink) error
 	FindPortalLinkByID(ctx context.Context, groupID string, id string) (*PortalLink, error)
+	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
 	LoadPortalLinksPaged(ctx context.Context, groupID string, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, groupID string, id string) error
 }

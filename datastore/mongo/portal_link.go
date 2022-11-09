@@ -57,6 +57,20 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, groupID string,
 	return portalLink, err
 }
 
+func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string) (*datastore.PortalLink, error) {
+	ctx = p.setCollectionInContext(ctx)
+	portalLink := &datastore.PortalLink{}
+
+	filter := bson.M{"token": token}
+
+	err := p.store.FindOne(ctx, filter, nil, portalLink)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return portalLink, datastore.ErrPortalLinkNotFound
+	}
+
+	return portalLink, err
+}
+
 func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	ctx = p.setCollectionInContext(ctx)
 	portalLinks := make([]datastore.PortalLink, 0)

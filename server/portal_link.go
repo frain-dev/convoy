@@ -17,9 +17,9 @@ import (
 
 func createPortalLinkService(a *ApplicationHandler) *services.PortalLinkService {
 	portalRepo := mongo.NewPortalLinkRepo(a.A.Store)
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointService := createEndpointService(a)
 
-	return services.NewPortalLinkService(portalRepo, endpointRepo)
+	return services.NewPortalLinkService(portalRepo, endpointService)
 }
 
 // CreatePortalLink
@@ -177,7 +177,7 @@ func (a *ApplicationHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http
 	portalLinkService := createPortalLinkService(a)
 	portalLinks, paginationData, err := portalLinkService.LoadPortalLinksPaged(r.Context(), group, pageable)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching portal links", http.StatusInternalServerError))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -190,6 +190,62 @@ func (a *ApplicationHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", pagedResponse{Content: plResponse, Pagination: &paginationData}, http.StatusOK))
+}
+
+// CreatePortalLinkEndpoint
+// @Summary Create an endpoint
+// @Description This endpoint creates an endpoint
+// @Tags PortalLink Endpoints
+// @Accept  json
+// @Produce  json
+// @Param endpoint body models.Endpoint true "Endpoint Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /portal/endpoints [post]
+func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *http.Request) {
+	var e models.Endpoint
+	err := util.ReadJSON(r, &e)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	group := m.GetGroupFromContext(r.Context())
+	portalLink := m.GetPortalLinkFromContext(r.Context())
+	portalLinkService := createPortalLinkService(a)
+
+	endpoint, err := portalLinkService.CreateEndpoint(r.Context(), group, e, portalLink)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint created successfully", endpoint, http.StatusCreated))
+}
+
+// GetPortalLinkEndpoints
+// @Summary Get endpoints
+// @Description This endpoint fetches all portal link endpoints
+// @Tags PortalLink Endpoints
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /portal/endpoints [get]
+func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
+	group := m.GetGroupFromContext(r.Context())
+	portalLink := m.GetPortalLinkFromContext(r.Context())
+
+	portalLinkService := createPortalLinkService(a)
+	endpoints, err := portalLinkService.GetPortalLinkEndpoints(r.Context(), group, portalLink)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully", endpoints, http.StatusOK))
 }
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {

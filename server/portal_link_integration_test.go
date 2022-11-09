@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -231,6 +232,162 @@ func (s *PortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	plRepo := cm.NewPortalLinkRepo(s.ConvoyApp.A.Store)
 	_, err := plRepo.FindPortalLinkByID(context.Background(), s.DefaultGroup.UID, portalLink.UID)
 	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound)
+}
+
+func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
+	// Just Before
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", uuid.NewString(), false)
+	require.NoError(s.T(), err)
+
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	require.NoError(s.T(), err)
+
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{endpoint1.UID, endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/portal/%s/endpoints", portalLink.Token)
+	req := createRequest(http.MethodGet, url, "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Deep Assert
+	var resp []datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), 2, len(resp))
+}
+
+func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLinkEndpoint() {
+	endpointTitle := fmt.Sprintf("Test-%s", uuid.New().String())
+	endpointURL := faker.New().Internet().URL()
+	expectedStatusCode := http.StatusCreated
+
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", uuid.NewString(), false)
+	require.NoError(s.T(), err)
+
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{endpoint1.UID})
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/portal/%s/endpoints", portalLink.Token)
+	plainBody := fmt.Sprintf(`{
+		"name": "%s",
+		"description": "test endpoint",
+		"url": "%s"
+	}`, endpointTitle, endpointURL)
+
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, "", body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpointTitle, dbEndpoint.Title)
+	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+
+	portalLinkRepo := cm.NewPortalLinkRepo(s.ConvoyApp.A.Store)
+	dbPLink, err := portalLinkRepo.FindPortalLinkByID(context.Background(), s.DefaultGroup.UID, portalLink.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 2, len(dbPLink.Endpoints))
+}
+
+func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointEvents() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	require.NoError(s.T(), err)
+
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{endpoint1.UID, endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	for i := 0; i < 5; i++ {
+		_, err = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint1, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
+		require.NoError(s.T(), err)
+
+	}
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	req := createRequest(http.MethodGet, fmt.Sprintf("/portal/%s/endpoints/%s/events", portalLink.Token, endpoint2.UID), "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respEvents []datastore.Event
+	resp := &pagedResponse{Content: &respEvents}
+
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), int64(1), resp.Pagination.Total)
+	require.Equal(s.T(), 1, len(respEvents))
+	require.Equal(s.T(), event.UID, respEvents[0].UID)
+}
+
+func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	require.NoError(s.T(), err)
+
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{endpoint1.UID, endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	source := &datastore.Source{UID: uuid.NewString()}
+
+	// seed subscriptions
+	for i := 0; i < 5; i++ {
+		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+		require.NoError(s.T(), err)
+
+	}
+
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	require.NoError(s.T(), err)
+
+	req := createRequest(http.MethodGet, fmt.Sprintf("/portal/%s/endpoints/%s/subscriptions", portalLink.Token, endpoint2.UID), "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respSubs []datastore.Subscription
+	resp := &pagedResponse{Content: &respSubs}
+
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), int64(1), resp.Pagination.Total)
+	require.Equal(s.T(), 1, len(respSubs))
+	require.Equal(s.T(), sub.UID, respSubs[0].UID)
 }
 
 func TestPortalLinkIntegrationTestSuite(t *testing.T) {

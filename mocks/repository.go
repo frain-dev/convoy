@@ -1031,6 +1031,21 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(çtx, id interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), çtx, id)
 }
 
+// FindEndpointsByID mocks base method.
+func (m *MockEndpointRepository) FindEndpointsByID(ctx context.Context, groupID string, ids []string) ([]datastore.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointsByID", ctx, groupID, ids)
+	ret0, _ := ret[0].([]datastore.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointsByID indicates an expected call of FindEndpointsByID.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByID(ctx, groupID, ids interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByID), ctx, groupID, ids)
+}
+
 // LoadEndpointsPaged mocks base method.
 func (m *MockEndpointRepository) LoadEndpointsPaged(ctx context.Context, groupID, query string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
@@ -1726,6 +1741,21 @@ func (m *MockPortalLinkRepository) FindPortalLinkByID(ctx context.Context, group
 func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByID(ctx, groupID, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkByID", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkByID), ctx, groupID, id)
+}
+
+// FindPortalLinkByToken mocks base method.
+func (m *MockPortalLinkRepository) FindPortalLinkByToken(ctx context.Context, token string) (*datastore.PortalLink, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindPortalLinkByToken", ctx, token)
+	ret0, _ := ret[0].(*datastore.PortalLink)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindPortalLinkByToken indicates an expected call of FindPortalLinkByToken.
+func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkByToken", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkByToken), ctx, token)
 }
 
 // LoadPortalLinksPaged mocks base method.

@@ -18,12 +18,17 @@ import (
 var ErrInvalidEndpoints = errors.New("endpoints cannot be empty")
 
 type PortalLinkService struct {
-	portalLinkRepo datastore.PortalLinkRepository
-	endpointRepo   datastore.EndpointRepository
+	portalLinkRepo  datastore.PortalLinkRepository
+	endpointService *EndpointService
+	endpointRepo    datastore.EndpointRepository
 }
 
-func NewPortalLinkService(portalLinkRepo datastore.PortalLinkRepository, endpointRepo datastore.EndpointRepository) *PortalLinkService {
-	return &PortalLinkService{portalLinkRepo: portalLinkRepo, endpointRepo: endpointRepo}
+func NewPortalLinkService(portalLinkRepo datastore.PortalLinkRepository, endpointService *EndpointService) *PortalLinkService {
+	return &PortalLinkService{
+		portalLinkRepo:  portalLinkRepo,
+		endpointService: endpointService,
+		endpointRepo:    endpointService.endpointRepo,
+	}
 }
 
 func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models.PortalLink, group *datastore.Group) (*datastore.PortalLink, error) {
@@ -100,6 +105,31 @@ func (p *PortalLinkService) RevokePortalLink(ctx context.Context, group *datasto
 	}
 
 	return nil
+}
+
+func (p *PortalLinkService) CreateEndpoint(ctx context.Context, group *datastore.Group, data models.Endpoint, portalLink *datastore.PortalLink) (*datastore.Endpoint, error) {
+	endpoint, err := p.endpointService.CreateEndpoint(ctx, data, group.UID)
+	if err != nil {
+		return nil, err
+	}
+
+	portalLink.Endpoints = append(portalLink.Endpoints, endpoint.UID)
+	err = p.portalLinkRepo.UpdatePortalLink(ctx, group.UID, portalLink)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating portal link"))
+	}
+
+	return endpoint, nil
+
+}
+
+func (p *PortalLinkService) GetPortalLinkEndpoints(ctx context.Context, group *datastore.Group, portal *datastore.PortalLink) ([]datastore.Endpoint, error) {
+	endpoints, err := p.endpointRepo.FindEndpointsByID(ctx, group.UID, portal.Endpoints)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching endpoints"))
+	}
+
+	return endpoints, err
 }
 
 func (p *PortalLinkService) findEndpoints(ctx context.Context, endpoints []string, group *datastore.Group) error {
