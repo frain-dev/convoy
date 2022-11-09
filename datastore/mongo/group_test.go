@@ -91,6 +91,7 @@ func Test_CreateGroup(t *testing.T) {
 				{
 					Name:           "group 3",
 					OrganisationID: "abc",
+					DeletedAt:      nil,
 					UID:            uuid.NewString(),
 				},
 			},
@@ -120,8 +121,9 @@ func Test_CreateGroup(t *testing.T) {
 
 			for i, group := range tc.groups {
 				newGroup := &datastore.Group{
-					Name: group.Name,
-					UID:  group.UID,
+					Name:      group.Name,
+					UID:       group.UID,
+					DeletedAt: group.DeletedAt,
 				}
 
 				if i == 0 {
