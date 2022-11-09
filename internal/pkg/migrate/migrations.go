@@ -524,7 +524,11 @@ var Migrations = []*Migration{
 				fn := func(sessCtx mongo.SessionContext) error {
 					filter := bson.M{"deleted_at": nil}
 
-					update := bson.M{"deleted_at": 0}
+					update := bson.M{
+						"$unset": bson.M{
+							"deleted_at": 1,
+						},
+					}
 
 					err := store.UpdateMany(sessCtx, filter, update, true)
 					if err != nil {
