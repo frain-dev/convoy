@@ -4,7 +4,7 @@
 			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #datePicker></convoy-date-picker>
 			<convoy-time-picker class="ml-14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></convoy-time-picker>
 
-			<convoy-dropdown size="md" position="left" buttonSize="sm" buttonFill="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #statusDropdown>
+			<div convoy-dropdown size="md" position="left" buttonSize="sm" buttonFill="outline" buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" #statusDropdown>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/status-filter-icon.svg" class="w-14px mr-10px" alt="status filter icon" />
 					<span class="text-grey-40 w-full">Status</span>
@@ -24,9 +24,10 @@
 						<button convoy-button size="sm" fill="clear" (click)="clearFilters('status')">Clear</button>
 					</div>
 				</ng-container>
-			</convoy-dropdown>
+			</div>
 
-			<convoy-dropdown
+			<div
+                convoy-dropdown
 				size="lg"
 				position="left"
 				buttonSize="sm"
@@ -59,9 +60,10 @@
 						<button convoy-button size="sm" (click)="clearFilters('app')">Clear</button>
 					</div>
 				</ng-container>
-			</convoy-dropdown>
+			</div>
 
-			<convoy-dropdown
+			<div
+                convoy-dropdown
 				size="lg"
 				position="left"
 				buttonSize="sm"
@@ -89,7 +91,7 @@
 						<button convoy-button size="sm" (click)="clearFilters('source')">Clear</button>
 					</div>
 				</ng-container>
-			</convoy-dropdown>
+			</div>
 
 			<div class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium" *ngIf="eventDeliveryFilteredByEventId">
 				Event Filtered

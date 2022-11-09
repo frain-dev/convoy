@@ -30,7 +30,7 @@
 					<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
 				</a>
 
-				<convoy-dropdown size="xl" buttonColor="grey" buttonTexture="light" buttonSize="sm" buttonClass="bg-grey-10 py-10px px-20px rounded-8px mr-12px" #organisationDropdown>
+				<div convoy-dropdown size="xl" buttonColor="grey" buttonTexture="light" buttonSize="sm" buttonClass="bg-grey-10 py-10px px-20px rounded-8px mr-12px" #organisationDropdown>
 					<ng-container dropdownToggle>
 						<convoy-badge *ngIf="organisations?.length" className="mr-8px" [text]="userOrganization.name"></convoy-badge>
 
@@ -59,9 +59,9 @@
 							</button>
 						</div>
 					</div>
-				</convoy-dropdown>
+				</div>
 
-				<convoy-dropdown size="lg" buttonColor="grey" buttonTexture="light" buttonSize="sm" buttonClass="bg-grey-10 py-12px px-20px rounded-8px h-36px" #accountDropdown>
+				<div convoy-dropdown size="lg" buttonColor="grey" buttonTexture="light" buttonSize="sm" buttonClass="bg-grey-10 py-12px px-20px rounded-8px h-36px" #accountDropdown>
 					<ng-container dropdownToggle>
 						<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 					</ng-container>
@@ -80,7 +80,7 @@
 							<button convoy-button fill="text" color="danger" class="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
 						</div>
 					</div>
-				</convoy-dropdown>
+				</div>
 			</div>
 		</div>
 	</header>

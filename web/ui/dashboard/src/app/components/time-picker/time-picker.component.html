@@ -1,10 +1,10 @@
-<convoy-dropdown buttonClass="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" buttonType="outline" buttonSize="sm" position="left" className="p-10px !w-fit" [active]="filterIsActive()" #dropdown>
+<div convoy-dropdown buttonClass="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" buttonFill="outline" buttonSize="sm" position="left" className="p-10px !w-fit" [active]="filterIsActive()" #dropdown>
 	<ng-container dropdownToggle>
 		<img src="assets/img/clock.svg" class="mr-10px w-14px" alt="time filter icon" />
 		<span class="text-grey-40 mr-4px">Time</span>
 		<img class="ml-16px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" *ngIf="!filterIsActive()" alt="arrow down icon" />
 
-		<button type="button" *ngIf="filterIsActive()" (click)="clearFilter($event)" class="ml-16px">
+		<button convoy-button type="button" *ngIf="filterIsActive()" (click)="clearFilter($event)" class="ml-16px">
 			<svg width="10" height="10" class="fill-primary-100">
 				<use xlink:href="#close-icon"></use>
 			</svg>
@@ -83,9 +83,9 @@
 				</div>
 			</div>
 			<div class="mb-20px flex items-center justify-end">
-				<button size="sm" fill="outline" color="danger" class="mr-10px" *ngIf="filterIsActive()" (click)="clearFilter()">Clear</button>
-				<button size="sm" (click)="onApplyFilter()">Apply</button>
+				<button convoy-button size="sm" fill="outline" color="danger" class="mr-10px" *ngIf="filterIsActive()" (click)="clearFilter()">Clear</button>
+				<button convoy-button size="sm" (click)="onApplyFilter()">Apply</button>
 			</div>
 		</div>
 	</ng-container>
-</convoy-dropdown>
+</div>

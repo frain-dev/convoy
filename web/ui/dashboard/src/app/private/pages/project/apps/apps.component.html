@@ -87,7 +87,7 @@
 							</button>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-dropdown size="sm" buttonSize="sm" buttonFill="clear" #appTableDropdown>
+							<div convoy-dropdown size="sm" buttonSize="sm" buttonFill="clear" #appTableDropdown>
 								<ng-container dropdownToggle>
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 								</ng-container>
@@ -99,7 +99,7 @@
 										<button convoy-button class="w-full" class="w-full !justify-start" fill="text" color="danger" (click)="promptDeleteModal($event, app)">Delete</button>
 									</convoy-list-item>
 								</ul>
-							</convoy-dropdown>
+							</div>
 						</convoy-table-cell>
 					</convoy-table-row>
 				</ng-container>

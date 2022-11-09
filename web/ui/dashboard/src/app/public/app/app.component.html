@@ -57,7 +57,7 @@
 							<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
 						</convoy-table-cell>
 						<convoy-table-cell class="contents">
-							<convoy-dropdown buttonSize="sm" buttonFill="clear">
+							<div convoy-dropdown buttonSize="sm" buttonFill="clear">
 								<ng-container dropdownToggle>
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 								</ng-container>
@@ -79,7 +79,7 @@
 										</button>
 									</convoy-list-item>
 								</ul>
-							</convoy-dropdown>
+							</div>
 						</convoy-table-cell>
 					</convoy-table-row>
 				</tbody>

@@ -13,7 +13,8 @@
 
 			<convoy-time-picker class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></convoy-time-picker>
 
-			<convoy-dropdown
+			<div
+                convoy-dropdown
 				size="lg"
 				position="left"
 				buttonSize="sm"
@@ -45,9 +46,10 @@
 						<button convoy-button size="sm" (click)="clearEventFilters('eventsApp')">Clear</button>
 					</div>
 				</ng-container>
-			</convoy-dropdown>
+			</div>
 
-			<convoy-dropdown
+			<div
+                convoy-dropdown
 				size="lg"
 				position="left"
 				buttonSize="sm"
@@ -75,7 +77,7 @@
 						<button convoy-button size="sm" (click)="clearEventFilters('eventsSource')">Clear</button>
 					</div>
 				</ng-container>
-			</convoy-dropdown>
+			</div>
 		</div>
 
 		<button
