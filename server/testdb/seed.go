@@ -205,12 +205,6 @@ func SeedDefaultUser(store datastore.Store) (*datastore.User, error) {
 
 // seed default organisation
 func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*datastore.Organisation, error) {
-	p := datastore.Password{Plaintext: DefaultUserPassword}
-	err := p.GenerateHash()
-	if err != nil {
-		return nil, err
-	}
-
 	defaultOrg := &datastore.Organisation{
 		UID:       uuid.NewString(),
 		OwnerID:   user.UID,
@@ -221,7 +215,7 @@ func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*data
 
 	// Seed Data.
 	organisationRepo := cm.NewOrgRepo(store)
-	err = organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
+	err := organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
 	if err != nil {
 		return &datastore.Organisation{}, err
 	}
