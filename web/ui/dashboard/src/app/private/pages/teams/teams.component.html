@@ -42,22 +42,20 @@
 	<ng-container *ngIf="selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData">
 		<convoy-card>
 			<div class="min-h-[70vh]">
-				<convoy-table class="contents" className="w-full border border-primary-500">
-					<convoy-table-head class="contents" className="border border-primary-500">
-						<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px uppercase' : 'uppercase'" *ngFor="let head of tableHead; let i = index">
-							{{ head }}
-						</convoy-table-head-cell>
-					</convoy-table-head>
+				<table convoy-table>
+					<thead convoy-table-head>
+						<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ head }}</th>
+					</thead>
 					<tbody>
-						<convoy-table-row class="contents" className="border border-primary-500" *ngFor="let team of teams?.content; let i = index" [id]="'team' + i">
-							<convoy-table-cell class="contents" className="pl-20px">
+						<tr convoy-table-row class="border border-primary-500" *ngFor="let team of teams?.content; let i = index" [id]="'team' + i">
+							<td convoy-table-cell class="pl-20px">
 								<convoy-badge texture="dark" [text]="team?.user_metadata?.first_name + ' ' + team?.user_metadata?.last_name"></convoy-badge>
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">
+							</td>
+							<td convoy-table-cell>
 								{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">All projects</convoy-table-cell>
-							<convoy-table-cell class="contents">
+							</td>
+							<td convoy-table-cell>All projects</td>
+							<td convoy-table-cell>
 								<convoy-dropdown size="lg" buttonSize="sm" buttonFill="clear">
 									<ng-container dropdownToggle>
 										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
@@ -71,10 +69,10 @@
 										</ul>
 									</div>
 								</convoy-dropdown>
-							</convoy-table-cell>
-						</convoy-table-row>
+							</td>
+						</tr>
 					</tbody>
-				</convoy-table>
+				</table>
 			</div>
 		</convoy-card>
 
@@ -102,24 +100,23 @@
 			</button>
 		</div>
 	</ng-container>
+
+	<!-- Invites -->
 	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
 		<convoy-card>
 			<div class="min-h-[70vh]">
-				<convoy-table class="contents" class="w-full border border-primary-500">
-					<convoy-table-head class="contents" className="border border-primary-500">
-						<convoy-table-head-cell class="contents" className="uppercase" [className]="i === 0 ? 'pl-20px uppercase' : 'uppercase'" *ngFor="let head of tableHead; let i = index">
-							{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}
-						</convoy-table-head-cell>
-					</convoy-table-head>
-
+				<table convoy-table>
+					<thead convoy-table-head>
+						<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
+					</thead>
 					<tbody>
-						<convoy-table-row class="contents" className="border border-primary-500" *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
-							<convoy-table-cell class="contents" className="pl-20px">
+						<tr convoy-table-row *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
+							<td convoy-table-cell class="pl-20px">
 								{{ team.invitee_email }}
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</convoy-table-cell>
-							<convoy-table-cell class="contents">All projects</convoy-table-cell>
-							<convoy-table-cell class="contents">
+							</td>
+							<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
+							<td convoy-table-cell>All projects</td>
+							<td convoy-table-cell>
 								<convoy-dropdown buttonSize="sm" buttonFill="clear">
 									<ng-container dropdownToggle>
 										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
@@ -135,12 +132,13 @@
 										</ul>
 									</div>
 								</convoy-dropdown>
-							</convoy-table-cell>
-						</convoy-table-row>
+							</td>
+						</tr>
 					</tbody>
-				</convoy-table>
+				</table>
 			</div>
 		</convoy-card>
+
 		<div class="flex items-center mt-16px">
 			<button
 				convoy-button

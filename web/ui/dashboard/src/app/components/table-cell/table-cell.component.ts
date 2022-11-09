@@ -2,14 +2,17 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-	selector: 'convoy-table-cell',
+	selector: 'convoy-table-cell, [convoy-table-cell]',
 	standalone: true,
 	imports: [CommonModule],
-	templateUrl: './table-cell.component.html',
-	styleUrls: ['./table-cell.component.scss']
+	host: { class: 'p-0 ' },
+	template: `
+		<div [class]="forDate ? 'pt-16px pl-16px pb-8px !text-12 text-grey-40' : 'pt-12px pb-12px whitespace-nowrap text-14'" class="flex flex-row items-center">
+			<ng-content></ng-content>
+		</div>
+	`
 })
 export class TableCellComponent implements OnInit {
-	@Input('className') class!: string;
 	@Input('forDate') forDate: boolean = false;
 
 	constructor() {}

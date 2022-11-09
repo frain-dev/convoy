@@ -1,16 +1,12 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Directive, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-@Component({
-	selector: 'convoy-table',
+@Directive({
+	selector: 'convoy-table, [convoy-table]',
 	standalone: true,
-	imports: [CommonModule],
-	templateUrl: './table.component.html',
-	styleUrls: ['./table.component.scss']
+	host: { class: 'w-full h-fit', id: 'table' }
 })
 export class TableComponent implements OnInit {
-	@Input('className') class!: string;
-
 	constructor() {}
 
 	ngOnInit(): void {}
