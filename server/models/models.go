@@ -328,3 +328,17 @@ type CreateEndpointApiKey struct {
 	KeyType    datastore.KeyType `json:"key_type"`
 	Expiration int               `json:"expiration"`
 }
+
+type PortalLink struct {
+	Endpoints []string `json:"endpoints"`
+}
+
+type PortalLinkResponse struct {
+	UID       string             `json:"uid"`
+	GroupID   string             `json:"group_id"`
+	Endpoints []string           `json:"endpoints"`
+	URL       string             `json:"url"`
+	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
+	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+}

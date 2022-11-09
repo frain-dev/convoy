@@ -230,6 +230,17 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						sourceRouter.Put("/{sourceID}", a.UpdateSource)
 						sourceRouter.Delete("/{sourceID}", a.DeleteSource)
 					})
+
+					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
+						portalLinkRouter.Use(a.M.RequireBaseUrl())
+
+						portalLinkRouter.Post("/", a.CreatePortalLink)
+						portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
+						portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
+						portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
+						portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
+
+					})
 				})
 			})
 
@@ -408,6 +419,16 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						groupSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 							dashboardRouter.Get("/summary", a.GetDashboardSummary)
 							dashboardRouter.Get("/config", a.GetAllConfigDetails)
+						})
+
+						groupSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
+							portalLinkRouter.Use(a.M.RequireBaseUrl())
+
+							portalLinkRouter.Post("/", a.CreatePortalLink)
+							portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
+							portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
+							portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
+							portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
 						})
 					})
 				})
