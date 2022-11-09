@@ -182,8 +182,8 @@ func (m *Migrator) RollbackTo(ctx context.Context, migrationID string) error {
 
 	for i := len(m.migrations) - 1; i >= 0; i-- {
 		migration := m.migrations[i]
-		if migration.ID != migrationID {
-			continue
+		if migration.ID == migrationID {
+			break
 		}
 
 		migrationRan, err := m.migrationRan(migration)
