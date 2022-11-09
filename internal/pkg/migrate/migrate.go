@@ -182,8 +182,8 @@ func (m *Migrator) RollbackTo(ctx context.Context, migrationID string) error {
 
 	for i := len(m.migrations) - 1; i >= 0; i-- {
 		migration := m.migrations[i]
-		if migration.ID == migrationID {
-			break
+		if migration.ID != migrationID {
+			continue
 		}
 
 		migrationRan, err := m.migrationRan(migration)
@@ -324,7 +324,7 @@ func (m *Migrator) migrationRan(migration *Migration) (bool, error) {
 		"id": migration.ID,
 	}
 
-	count, err := store.Count(ctx, filter)
+	count, err := store.CountWithDeleted(ctx, filter)
 
 	return count > 0, err
 }

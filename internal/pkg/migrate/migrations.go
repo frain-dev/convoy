@@ -515,7 +515,6 @@ var Migrations = []*Migration{
 			}
 
 			for _, collectionKey := range collectionList {
-
 				store := datastore.New(db)
 				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
 
