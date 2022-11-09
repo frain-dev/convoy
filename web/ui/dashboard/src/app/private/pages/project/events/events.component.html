@@ -35,12 +35,12 @@
 	<ng-container *ngIf="eventsFetched?.length">
 		<div class="py-24px flex items-center">
 			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-picker>
-			<div convoy-dropdown size="sm" position="left" buttonSize="sm" buttonFill="outline" buttonClass="px-10px !border-primary-400 ml-16px">
-				<ng-container dropdownToggle>
+			<div convoy-dropdown size="sm" position="left">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" className="px-10px !border-primary-400 ml-16px">
 					<span class="text-grey-60 mr-4px">Filter By:</span>
 					<span class="text-primary-100 capitalize">{{ dashboardFrequency }}</span>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px" />
-				</ng-container>
+				</button>
 
 				<ul>
 					<convoy-list-item *ngFor="let filterOption of filterOptions" [className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'">

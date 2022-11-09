@@ -8,7 +8,7 @@
 	[active]="!!selectedDates?.startDate && !!selectedDates?.endDate"
 	#dropdown
 >
-	<ng-container dropdownToggle>
+	<ng-container dropdownTrigger>
 		<img src="/assets/img/calendar-icon.svg" class="w-14px mr-10px" *ngIf="formType === 'filter'" />
 		<span class="text-grey-40 mr-4px">{{ formType === 'input' && selectedDates?.startDate ? formatDate(selectedStartDay) : 'Date' }}</span>
 
