@@ -85,9 +85,10 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 
 	userID := uuid.NewString()
 	for i := 0; i < 7; i++ {
-		var deletedAt primitive.DateTime
+		var deletedAt *primitive.DateTime
 		if i == 6 {
-			deletedAt = primitive.NewDateTimeFromTime(time.Now())
+			d := primitive.NewDateTimeFromTime(time.Now())
+			deletedAt = &d
 		}
 		org := &datastore.Organisation{UID: uuid.NewString(), DeletedAt: deletedAt}
 
