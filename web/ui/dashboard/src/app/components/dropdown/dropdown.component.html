@@ -1,10 +1,10 @@
 <div convoyScreen *ngIf="show" (onClick)="show = false"></div>
-<div class="relative" (click)="$event.stopPropagation(); show = !show">
-	<div class="empty:hidden">
+<div class="relative">
+	<div class="empty:hidden" #dropdownTriggerContainer>
 		<ng-content select="[dropdownTrigger]"></ng-content>
 	</div>
 
-	<div convoy-dropdown-container [position]="position" [show]="show" [size]="size">
-		<ng-content></ng-content>
+	<div convoy-dropdown-container #dropdownContainer [position]="position" [show]="show" [size]="size">
+		<ng-content select="[dropdownOptions]"></ng-content>
 	</div>
 </div>

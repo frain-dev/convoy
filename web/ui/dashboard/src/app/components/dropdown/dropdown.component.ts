@@ -1,24 +1,50 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Directive, ElementRef, EventEmitter, Host, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
 import { ScreenDirective } from '../screen/screen.directive';
 
+@Directive({
+	selector: '[convoy-dropdown-option], [convoy-dropdown-close]',
+	standalone: true,
+	host: { '(click)': 'onSelectOption()' }
+})
+export class DropdownOptionDirective {
+    @Output() readonly onSelect = new EventEmitter<any>;
+    @Input('value') value: any = undefined;
+    parent: DropdownComponent;
+
+    constructor(@Host() parent: DropdownComponent) {
+        this.parent = parent;
+
+    }
+
+    onSelectOption() {
+        this.onSelect.emit();
+        this.parent.show = false;
+        this.parent.onSelect.emit(this.value);
+    }
+}
+
 @Component({
 	selector: 'convoy-dropdown, [convoy-dropdown]',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, DropdownContainerComponent, ScreenDirective],
+	imports: [CommonModule, ButtonComponent, DropdownContainerComponent, ScreenDirective, DropdownOptionDirective],
 	templateUrl: './dropdown.component.html',
-	styleUrls: ['./dropdown.component.scss']
+    styleUrls: ['./dropdown.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Default
 })
 export class DropdownComponent implements OnInit {
 	@Input('position') position: 'right' | 'left' | 'center' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
-
+	@ViewChild('dropdownTriggerContainer', { static: true }) dropdownTriggerContainer!: ElementRef;
+	@ViewChild('dropdownContainer', { static: true }) dropdownOptions!: ElementRef;
+    @Output() readonly onSelect = new EventEmitter<any>;
 	show = false;
 
-	constructor() {}
+    constructor() {}
 
-	ngOnInit(): void {}
-
+    ngOnInit(): void {
+		this.dropdownTriggerContainer.nativeElement.children[0].addEventListener('click', () => (this.show = !this.show));
+    }
 }

@@ -37,11 +37,11 @@
 						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>
 
-					<div>
-						<div class="font-semibold text-14 text-grey-40 px-32px pt-24px pb-16px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</div>
+					<ul dropdownOptions>
+						<li convoy-dropdown-option class="font-semibold text-14 text-grey-40 px-32px pt-24px pb-16px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</li>
 
-						<ul *ngIf="organisations?.length">
-							<li *ngFor="let organisation of organisations">
+						<ul [hidden]="!organisations?.length">
+							<li convoy-dropdown-option *ngFor="let organisation of organisations">
 								<button convoy-button fill="text" class="justify-start px-30px py-12px w-full" (click)="selectOrganisation(organisation)">
 									<div class="flex justify-between items-center w-full">
 										<convoy-badge [text]="organisation.name"></convoy-badge>
@@ -52,13 +52,13 @@
 							</li>
 						</ul>
 
-						<div class="border-t border-t-grey-10">
-							<button convoy-button fill="text" class="px-30px py-16px" (click)="showAddOrganisationModal = true">
+						<li class="border-t border-t-grey-10">
+							<button convoy-dropdown-option convoy-button fill="text" class="px-30px py-16px" (click)="showAddOrganisationModal = true">
 								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 								Add {{ organisations?.length ? 'another' : 'an' }} Organization
 							</button>
-						</div>
-					</div>
+						</li>
+					</ul>
 				</div>
 
 				<div convoy-dropdown size="lg" #accountDropdown>
@@ -66,20 +66,22 @@
 						<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 					</button>
 
-					<div>
-						<div class="border-b border-b-grey-10 px-24px py-16px">
+					<ul dropdownOptions>
+						<li class="border-b border-b-grey-10 px-24px py-16px">
 							<h3 class="capitalize font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
 							<p class="text-12 text-grey-40">{{ authDetails()?.email }}</p>
-						</div>
-						<ul>
-							<li class="py-8px">
-								<a routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
-							</li>
-						</ul>
-						<div class="border-t border-t-grey-10">
-							<button convoy-button fill="text" color="danger" class="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
-						</div>
-					</div>
+						</li>
+						<li>
+							<ul>
+								<li class="py-8px">
+									<a convoy-dropdown-option routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
+								</li>
+							</ul>
+						</li>
+						<li class="border-t border-t-grey-10">
+							<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
+						</li>
+					</ul>
 				</div>
 			</div>
 		</div>

@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 @Component({
 	selector: 'convoy-button, [convoy-button]',
 	standalone: true,
-	host: { class: 'flex items-center justify-center disabled:opacity-50', '[class]': 'classes' },
+	host: { class: 'flex items-center justify-center disabled:opacity-50 cursor-pointer', '[class]': 'classes' },
 	imports: [CommonModule],
 	templateUrl: './button.component.html',
 	styleUrls: ['./button.component.scss'],

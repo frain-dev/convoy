@@ -1,13 +1,9 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Directive, Input, OnInit } from '@angular/core';
 
-@Component({
-	selector: 'convoy-dropdown-container, [convoy-dropdown-container]',
+@Directive({
+	selector: '[convoy-dropdown-container]',
 	standalone: true,
-	host: { class: 'absolute top-[110%] w-full bg-white-100 border border-grey-10 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300 h-fit', '[class]': 'classes' },
-	imports: [CommonModule],
-	templateUrl: './dropdown-container.component.html',
-	styleUrls: ['./dropdown-container.component.scss']
+	host: { class: 'absolute top-[110%] w-full bg-white-100 border border-grey-10 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300 h-fit', '[class]': 'classes' }
 })
 export class DropdownContainerComponent implements OnInit {
 	@Input('position') position: 'right' | 'left' | 'center' = 'right';

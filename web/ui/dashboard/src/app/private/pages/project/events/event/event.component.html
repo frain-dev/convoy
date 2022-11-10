@@ -20,7 +20,7 @@
 					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 				</button>
 
-				<ng-container>
+				<ng-container dropdownOptions>
 					<div class="m-10px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
 						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
 						<input type="search" placeholder="Search apps here" #eventsAppsFilter class="w-full outline-none text-12" />
@@ -46,7 +46,7 @@
 					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 				</button>
 
-				<ng-container>
+				<ng-container dropdownOptions>
 					<ul class="min-h-[100px] px-10px pb-10px">
 						<li class="py-8px flex items-center justify-between border-b border-grey-10" *ngFor="let source of filterSources">
 							<label class="text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
