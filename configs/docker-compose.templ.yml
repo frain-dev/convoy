@@ -3,6 +3,7 @@ version: "3"
 services:
     web:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
+        entrypoint: [ "/bin/sh" ]
         command: /compose/start
         hostname: web
         container_name: web
