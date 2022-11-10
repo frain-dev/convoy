@@ -39,6 +39,7 @@ func (j *JwtRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*au
 		Credential:           *cred,
 		Role:                 user.Role,
 		Metadata:             user,
+		User:                 user,
 	}
 
 	return authUser, nil

@@ -94,6 +94,15 @@ func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 	group := m.GetGroupFromContext(r.Context())
 	groupService := createGroupService(a)
 
+	gp := GroupPolicy{}
+	if err := gp.Delete(r.Context(), group); err != nil {
+		return Unauthorised.
+	}
+
+	if err := authz.Authorize(r.Context(), GroupPolicy, "Delete", group); err != nil {
+	}
+
+
 	err := groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
