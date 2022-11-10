@@ -13,10 +13,10 @@
 
 				<ng-container>
 					<ul class="pt-10px px-10px">
-						<convoy-list-item *ngFor="let status of eventDeliveryStatuses" className="pt-4px pb-4px">
+						<li convoy-list-item *ngFor="let status of eventDeliveryStatuses" class="pt-4px pb-4px">
 							<label class="text-12 block w-full" [for]="status">{{ status || 'None' }}</label>
 							<input type="checkbox" name="status" [value]="status" [id]="status" [checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)" (change)="updateEventDevliveryStatusFilter(status, $event)" />
-						</convoy-list-item>
+                        </li>
 					</ul>
 
 					<div class="flex items-center mt-10px p-10px">
@@ -49,10 +49,10 @@
 					</div>
 
 					<ul class="min-h-[100px] px-10px pb-10px">
-						<convoy-list-item *ngFor="let app of eventsDelAppsFilter$ | async" className="pt-4px pb-4px">
+						<li convoy-list-item *ngFor="let app of eventsDelAppsFilter$ | async" class="pt-4px pb-4px">
 							<label [for]="app.uid + 'eventDel'" class="text-12 block w-full">{{ app.name }}</label>
 							<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid + 'eventDel'" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event)" />
-						</convoy-list-item>
+                        </li>
 					</ul>
 
 					<div *ngIf="!!eventDeliveriesApp" class="p-10px pb-10px">
@@ -79,10 +79,10 @@
 
 				<ng-container>
 					<ul class="min-h-[100px] pt-10px px-10px pb-10px">
-						<convoy-list-item *ngFor="let source of filterSources" className="pt-4px pb-4px">
+						<li convoy-list-item *ngFor="let source of filterSources" class="pt-4px pb-4px">
 							<label [for]="source.uid + 'eventDel'" class="text-12 block w-full">{{ source.name }}</label>
 							<input type="checkbox" name="app" [value]="source.uid" [id]="source.uid + 'eventDel'" [checked]="source.uid === eventDeliveriesSource" (change)="updateSourceFilter(source.uid, $event)" />
-						</convoy-list-item>
+                        </li>
 					</ul>
 
 					<div *ngIf="!!eventDeliveriesSource" class="p-10px pb-10px">
