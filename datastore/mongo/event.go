@@ -59,8 +59,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.Ev
 	}
 
 	f := bson.M{
-		"group_id":   filter.GroupID,
-		"deleted_at": nil,
+		"group_id": filter.GroupID,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -179,7 +178,7 @@ func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datas
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"deleted_at": nil, "created_at": getCreatedDateFilter(f.SearchParams)}
+	filter := bson.M{"created_at": getCreatedDateFilter(f.SearchParams)}
 
 	if !util.IsStringEmpty(f.AppID) {
 		filter["app_id"] = f.AppID

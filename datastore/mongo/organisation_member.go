@@ -171,7 +171,6 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, or
 	filter := bson.M{
 		"uid":             uid,
 		"organisation_id": orgID,
-		"deleted_at":      nil,
 	}
 
 	err := o.store.FindOne(ctx, filter, nil, member)
@@ -188,7 +187,6 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 	filter := bson.M{
 		"user_id":         userID,
 		"organisation_id": orgID,
-		"deleted_at":      nil,
 	}
 
 	member := new(datastore.OrganisationMember)

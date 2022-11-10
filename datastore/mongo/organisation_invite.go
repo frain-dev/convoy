@@ -32,7 +32,7 @@ func (db *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datas
 func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"deleted_at": nil}
+	filter := bson.M{}
 
 	if !util.IsStringEmpty(orgID) {
 		filter["organisation_id"] = orgID
@@ -99,8 +99,7 @@ func (db *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, tok
 	org := &datastore.OrganisationInvite{}
 
 	filter := bson.M{
-		"token":      token,
-		"deleted_at": nil,
+		"token": token,
 	}
 
 	err := db.store.FindOne(ctx, filter, nil, org)

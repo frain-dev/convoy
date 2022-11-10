@@ -65,8 +65,7 @@ func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*d
 	apiKey := new(datastore.APIKey)
 
 	filter := bson.M{
-		"mask_id":    maskID,
-		"deleted_at": nil,
+		"mask_id": maskID,
 	}
 
 	err := db.store.FindOne(ctx, filter, nil, apiKey)
@@ -98,7 +97,7 @@ func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datas
 	ctx = db.setCollectionInContext(ctx)
 	apiKey := &datastore.APIKey{}
 
-	filter := bson.M{"hash": hash, "deleted_at": nil}
+	filter := bson.M{"hash": hash}
 
 	err := db.store.FindOne(ctx, filter, nil, apiKey)
 	if err != nil {
@@ -116,7 +115,7 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 
 	var apiKeys []datastore.APIKey
 
-	filter := bson.M{"deleted_at": nil}
+	filter := bson.M{}
 
 	if !util.IsStringEmpty(f.GroupID) {
 		filter["role.group"] = f.GroupID

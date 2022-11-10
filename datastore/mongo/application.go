@@ -234,7 +234,7 @@ func (db *appRepo) UpdateApplication(ctx context.Context, app *datastore.Applica
 func (db *appRepo) CreateApplicationEndpoint(ctx context.Context, groupID string, appID string, endpoint *datastore.Endpoint) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"uid": appID, "deleted_at": nil}
+	filter := bson.M{"uid": appID}
 
 	update := bson.M{
 		"$push": bson.M{
@@ -253,7 +253,6 @@ func (db *appRepo) ExpireSecret(ctx context.Context, appID, endpointID string, s
 
 	filter := bson.M{
 		"uid":           appID,
-		"deleted_at":    nil,
 		"endpoints.uid": endpointID,
 	}
 
