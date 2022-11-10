@@ -190,6 +190,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 					UID:            uuid.NewString(),
 					GroupID:        groupID,
 					Endpoints:      []string{uuid.NewString()},
+					Token:          uniuri.NewLen(5),
 					DocumentStatus: datastore.ActiveDocumentStatus,
 				}
 
