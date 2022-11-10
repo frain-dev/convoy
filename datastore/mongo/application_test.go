@@ -6,7 +6,6 @@ package mongo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -45,7 +44,7 @@ func Test_UpdateApplication(t *testing.T) {
 
 	newApp, err := appRepo.FindApplicationByID(context.Background(), app.UID)
 	require.NoError(t, err)
-	fmt.Printf("tt %+v", newApp)
+
 	require.Equal(t, newTitle, newApp.Title)
 
 	app2 := &datastore.Application{
