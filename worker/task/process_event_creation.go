@@ -97,11 +97,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		for _, s := range subscriptions {
 			ec.subscription = &s
 			headers := event.Headers
-			app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
-			if err != nil {
-				log.Errorf("Error fetching applcation %s", err)
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
 				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
@@ -143,7 +138,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				DeviceID:       s.DeviceID,
 				Headers:        headers,
 
-				Status:           getEventDeliveryStatus(ctx, &s, app, deviceRepo),
+				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
@@ -210,7 +205,7 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 }
 
 func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
-	if endpoint.IsDisabled {
+	if endpoint != nil && endpoint.IsDisabled {
 		return datastore.DiscardedEventStatus
 	}
 

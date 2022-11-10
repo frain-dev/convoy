@@ -22,6 +22,8 @@ import (
 )
 
 var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be force resent")
+var ErrNoValidEndpointFound = errors.New("no valid endpoint found")
+var ErrInvalidEndpointID = errors.New("please provide an app ID or a list of endpoints ID")
 
 type EventService struct {
 	endpointRepo      datastore.EndpointRepository
@@ -51,81 +53,31 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	endpointID := newMessage.EndpointID
-	if util.IsStringEmpty(endpointID) {
-		endpointID = newMessage.AppID
+	if util.IsStringEmpty(newMessage.AppID) && len(newMessage.Endpoints) == 0 {
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpointID)
 	}
 
-	if util.IsStringEmpty(endpointID) {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("please provide an endpoint ID"))
-	}
-
-	var endpoint *datastore.Endpoint
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
-
-	err := e.cache.Get(ctx, endpointCacheKey, &endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	if endpoint == nil {
-		endpoint, err = e.endpointRepo.FindEndpointByID(ctx, endpointID)
-		if err != nil {
-
-			msg := "an error occurred while retrieving endpoint details"
-			statusCode := http.StatusBadRequest
-
-			if errors.Is(err, datastore.ErrEndpointNotFound) {
-				msg = err.Error()
-				statusCode = http.StatusNotFound
-			}
-
-			log.WithError(err).Error("failed to fetch endpoint")
-			return nil, util.NewServiceError(statusCode, errors.New(msg))
-		}
-
-		err = e.cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	event := &datastore.Event{
-		UID:            uuid.New().String(),
-		EventType:      datastore.EventType(newMessage.EventType),
-		Data:           newMessage.Data,
-		Headers:        e.getCustomHeaders(newMessage),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		EndpointID:     endpoint.UID,
-		GroupID:        endpoint.GroupID,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	if (g.Config == nil || g.Config.Strategy == nil) ||
-		(g.Config.Strategy != nil && g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
-	}
-
-	taskName := convoy.CreateEventProcessor
-	eventByte, err := json.Marshal(event)
+	endpoints, err := e.FindEndpoints(ctx, newMessage)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	payload := json.RawMessage(eventByte)
-
-	job := &queue.Job{
-		ID:      event.UID,
-		Payload: payload,
-		Delay:   0,
-	}
-	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
-	if err != nil {
-		log.Errorf("Error occurred sending new event to the queue %s", err)
+	if len(endpoints) == 0 {
+		return nil, util.NewServiceError(http.StatusNotFound, errors.New("no valid endpoint found"))
 	}
 
-	return event, nil
+	var events []*datastore.Event
+
+	for _, endpoint := range endpoints {
+		event, err := e.createEvent(ctx, &endpoint, newMessage, g)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, event)
+	}
+
+	return events[0], nil
 }
 
 func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
@@ -270,6 +222,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 				Title:        a.Title,
 				GroupID:      a.GroupID,
 				SupportEmail: a.SupportEmail,
+				TargetURL:    a.TargetURL,
 			}
 			endpointMap[event.EndpointID] = aa
 		}
@@ -450,4 +403,68 @@ func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHead
 	}
 
 	return headers
+}
+
+func (e *EventService) createEvent(ctx context.Context, endpoint *datastore.Endpoint, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
+	event := &datastore.Event{
+		UID:            uuid.New().String(),
+		EventType:      datastore.EventType(newMessage.EventType),
+		Data:           newMessage.Data,
+		Headers:        e.getCustomHeaders(newMessage),
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		EndpointID:     endpoint.UID,
+		GroupID:        endpoint.GroupID,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	if (g.Config == nil || g.Config.Strategy == nil) ||
+		(g.Config.Strategy != nil && g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("retry strategy not defined in configuration"))
+	}
+
+	taskName := convoy.CreateEventProcessor
+	eventByte, err := json.Marshal(event)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	payload := json.RawMessage(eventByte)
+
+	job := &queue.Job{
+		ID:      event.UID,
+		Payload: payload,
+		Delay:   0,
+	}
+	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
+	if err != nil {
+		log.Errorf("Error occurred sending new event to the queue %s", err)
+	}
+
+	return event, nil
+}
+
+func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event) ([]datastore.Endpoint, error) {
+	var endpoints []datastore.Endpoint
+
+	if !util.IsStringEmpty(newMessage.AppID) {
+		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID)
+		if err != nil {
+			return endpoints, err
+		}
+
+		return endpoints, nil
+	}
+
+	if len(newMessage.Endpoints) > 0 {
+		endpoints, err := e.endpointRepo.FindEndpointsByID(ctx, newMessage.Endpoints)
+		if err != nil {
+			return endpoints, err
+		}
+
+		return endpoints, nil
+	}
+
+	return endpoints, nil
+
 }

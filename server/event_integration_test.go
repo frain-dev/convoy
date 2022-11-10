@@ -4,6 +4,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -74,8 +75,47 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
 	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultGroup, 2)
 
-	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
+	bodyStr := `{"endpoints":["%s"], "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, endpointID)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultGroup.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var event datastore.Event
+	parseResponse(s.T(), w.Result(), &event)
+
+	require.NotEmpty(s.T(), event.UID)
+	require.Equal(s.T(), event.EndpointID, endpointID)
+}
+
+func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
+	endpointID := uuid.NewString()
+	appID := uuid.NewString()
+	expectedStatusCode := http.StatusCreated
+
+	// Just Before.
+	// Create an Endpoint with an app ID
+	endpoint := &datastore.Endpoint{
+		UID:            endpointID,
+		Title:          fmt.Sprintf("TestEndpoint-%s", endpointID),
+		GroupID:        s.DefaultGroup.UID,
+		AppID:          appID,
+		IsDisabled:     false,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	err := cm.NewEndpointRepo(s.ConvoyApp.A.Store).CreateEndpoint(context.TODO(), endpoint, s.DefaultGroup.UID)
+	require.NoError(s.T(), err)
+
+	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
+	body := serialize(bodyStr, appID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultGroup.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -100,9 +140,8 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disable
 
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", true)
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultGroup, 2)
 
-	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
+	bodyStr := `{"endpoints":["%s"], "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, endpointID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultGroup.UID)
