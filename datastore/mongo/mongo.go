@@ -416,7 +416,6 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "token", Value: 1},
-					{Key: "group_id", Value: 1},
 					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
