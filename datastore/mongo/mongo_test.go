@@ -5,6 +5,7 @@ package mongo
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -14,7 +15,7 @@ import (
 )
 
 func getDSN() string {
-	return "mongodb://localhost:27017/testdb"
+	return os.Getenv("TEST_MONGO_DSN")
 }
 
 func getConfig() config.Configuration {
