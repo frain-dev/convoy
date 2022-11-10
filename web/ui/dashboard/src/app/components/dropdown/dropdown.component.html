@@ -1,4 +1,4 @@
-<div class="fixed h-screen w-screen top-0 right-0 bottom-0 z-[5]" *ngIf="show" (click)="$event.stopPropagation(); show = false"></div>
+<div convoyScreen *ngIf="show" (onClick)="show = false"></div>
 <div class="relative" (click)="$event.stopPropagation(); show = !show">
 	<div class="empty:hidden">
 		<ng-content select="[dropdownTrigger]"></ng-content>

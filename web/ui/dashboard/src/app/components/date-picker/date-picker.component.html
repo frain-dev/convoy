@@ -1,4 +1,5 @@
-<div class="relative" #dropdown>
+<div convoyScreen *ngIf="showPicker" (onClick)="showPicker = false"></div>
+<div class="relative">
 	<button
 		convoy-button
 		fill="outline"

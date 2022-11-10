@@ -50,7 +50,7 @@
 		<ul>
 			<li class="text-14 text-grey-20">Select</li>
 			<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
-				<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option); dropdownComponent.show = false" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+				<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 			</li>
 		</ul>
 	</div>
