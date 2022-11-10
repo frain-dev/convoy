@@ -109,6 +109,7 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureCompoundIndex(datastore.EventDeliveryCollection)
 	c.ensureCompoundIndex(datastore.OrganisationInvitesCollection)
 	c.ensureCompoundIndex(datastore.OrganisationMembersCollection)
+	c.ensureCompoundIndex(datastore.PortalLinkCollection)
 }
 
 // ensureIndex - ensures an index is created for a specific field in a collection
@@ -404,6 +405,18 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "source_id", Value: 1},
 					{Key: "device_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
+		datastore.PortalLinkCollection: {
+			{
+				Keys: bson.D{
+					{Key: "token", Value: 1},
+					{Key: "group_id", Value: 1},
 					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
