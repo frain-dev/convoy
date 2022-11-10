@@ -54,7 +54,11 @@
 <ng-container *ngIf="showCreateNewTokenForm">
 	<h3 class="font-semibold mb-28px">Generate Token</h3>
 	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
-		<convoy-input autocomplete="name" name="name" formControlName="name" label="Token Name" placeholder="Token name" errorMessage="Please enter a name for your token" [required]="true"></convoy-input>
+		<convoy-input-field>
+			<label for="name" required="true" convoy-label>Token Name</label>
+			<input type="text" id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Token name" />
+			<convoy-input-error *ngIf="generateKeyForm.get('name')?.touched && generateKeyForm.get('name')?.invalid">Please enter a name for your token</convoy-input-error>
+		</convoy-input-field>
 		<convoy-select label="Expiry Duration" name="expiration" formControlName="expiration" [options]="expirationDates" (selectedOption)="generateKeyForm.patchValue({ expiration: $event })"></convoy-select>
 		<div class="flex justify-end mt-60px">
 			<button convoy-button type="button" (click)="showCreateNewTokenForm = false" fill="outline" class="mr-3 transition-all duration-300 hover:text-danger-100 hover:border-danger-100">Discard</button>

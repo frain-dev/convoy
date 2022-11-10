@@ -7,7 +7,7 @@ import { TableLoaderModule } from '../../components/table-loader/table-loader.mo
 import { PageComponent } from 'src/app/components/page/page.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TableComponent } from 'src/app/components/table/table.component';
 import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
@@ -39,7 +39,7 @@ const routes: Routes = [
 		ButtonComponent,
 		BadgeComponent,
 		EmptyStateComponent,
-		InputComponent,
+
 		CardComponent,
 		TableComponent,
 		TableHeadComponent,
@@ -47,7 +47,11 @@ const routes: Routes = [
 		TableCellComponent,
 		TableRowComponent,
 		RouterModule.forChild(routes),
-		ListItemComponent
+		ListItemComponent,
+		InputFieldDirective,
+		InputErrorComponent,
+		InputDirective,
+		LabelComponent
 	]
 })
 export class TeamsModule {}

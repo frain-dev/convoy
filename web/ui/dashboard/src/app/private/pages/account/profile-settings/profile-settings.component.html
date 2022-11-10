@@ -6,8 +6,20 @@
 
 <form [formGroup]="editBasicInfoForm">
 	<div class="grid grid-cols-2 gap-4">
-		<convoy-input type="text" autocomplete="first_name" name="first_name" formControlName="first_name" errorMessage="Please enter your first name" label="Firstname" placeholder="Firstname" [required]="true"></convoy-input>
-		<convoy-input type="text" autocomplete="last_name" name="last_name" formControlName="last_name" errorMessage="Please enter your last name" label="Lastname" placeholder="Lastname" [required]="true"></convoy-input>
+		<convoy-input-field>
+			<label for="first_name" required="true" convoy-label>First name</label>
+			<input type="text" id="first_name" convoy-input autocomplete="first_name" formControlName="first_name" placeholder="First name" />
+			<convoy-input-error *ngIf="editBasicInfoForm.get('first_name')?.touched && editBasicInfoForm.get('first_name')?.invalid">Please enter your first name</convoy-input-error>
+		</convoy-input-field>
+		<convoy-input-field>
+			<label for="last_name" required="true" convoy-label>Last name</label>
+			<input type="text" id="last_name" convoy-input autocomplete="last_name" formControlName="last_name" placeholder="Last name" />
+			<convoy-input-error *ngIf="editBasicInfoForm.get('last_name')?.touched && editBasicInfoForm.get('last_name')?.invalid">Please enter your last name</convoy-input-error>
+		</convoy-input-field>
 	</div>
-	<convoy-input type="email" autocomplete="email" name="email" formControlName="email" errorMessage="Please enter a valid email" label="Email Description" placeholder="Email" [required]="true"></convoy-input>
+	<convoy-input-field>
+		<label for="email" required="true" convoy-label>Email</label>
+		<input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Last name" />
+		<convoy-input-error *ngIf="editBasicInfoForm.get('email')?.touched && editBasicInfoForm.get('email')?.invalid">Please enter a valid email</convoy-input-error>
+	</convoy-input-field>
 </form>
