@@ -314,7 +314,7 @@ func (db *appRepo) assertUniqueAppTitle(ctx context.Context, app *datastore.Appl
 	f := bson.M{
 		"uid":      bson.M{"$ne": app.UID},
 		"title":    app.Title,
-		"group_id": groupID, // TODO: filter out deleted_at
+		"group_id": groupID,
 	}
 
 	count, err := db.store.Count(ctx, f)
