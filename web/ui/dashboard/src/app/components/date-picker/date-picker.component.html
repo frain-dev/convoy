@@ -1,6 +1,6 @@
 <convoy-dropdown
 	[buttonClass]="formType === 'filter' ? 'px-10px !border-primary-400 justify-between h-36px min-w-[117px] text-12' : '!border-primary-500 !rounded-4px !bg-[#F7F9FC] !py-12px !px-16px text-12 w-full !justify-start'"
-	buttonType="outline"
+	buttonFill="outline"
 	position="left"
 	className="p-10px max-h-fit"
 	size="xl"
@@ -93,8 +93,8 @@
 		</div>
 
 		<div class="flex items-center justify-end p-10px">
-			<button size="sm" type="button" fill="outline" color="danger" class="mr-14px" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate(); clearDates.emit()">Clear</button>
-			<button size="sm" type="button" (click)="applyDate()">Apply</button>
+			<button convoy-button size="sm" type="button" fill="outline" color="danger" class="mr-14px" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate(); clearDates.emit()">Clear</button>
+			<button convoy-button size="sm" type="button" (click)="applyDate()">Apply</button>
 		</div>
 	</div>
 </convoy-dropdown>
