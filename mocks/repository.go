@@ -1031,19 +1031,34 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(çtx, id interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), çtx, id)
 }
 
-// FindEndpointsByID mocks base method.
-func (m *MockEndpointRepository) FindEndpointsByID(ctx context.Context, groupID string, ids []string) ([]datastore.Endpoint, error) {
+// FindEndpointsByAppID mocks base method.
+func (m *MockEndpointRepository) FindEndpointsByAppID(ctx context.Context, appID string) ([]datastore.Endpoint, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEndpointsByID", ctx, groupID, ids)
+	ret := m.ctrl.Call(m, "FindEndpointsByAppID", ctx, appID)
+	ret0, _ := ret[0].([]datastore.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointsByAppID indicates an expected call of FindEndpointsByAppID.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByAppID(ctx, appID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByAppID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByAppID), ctx, appID)
+}
+
+// FindEndpointsByID mocks base method.
+func (m *MockEndpointRepository) FindEndpointsByID(ctx context.Context, ids []string) ([]datastore.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointsByID", ctx, ids)
 	ret0, _ := ret[0].([]datastore.Endpoint)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindEndpointsByID indicates an expected call of FindEndpointsByID.
-func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByID(ctx, groupID, ids interface{}) *gomock.Call {
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByID(ctx, ids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByID), ctx, groupID, ids)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByID), ctx, ids)
 }
 
 // LoadEndpointsPaged mocks base method.
