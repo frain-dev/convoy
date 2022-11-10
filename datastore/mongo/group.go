@@ -49,9 +49,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 	ctx = db.setCollectionInContext(ctx)
 	groups := make([]*datastore.Group, 0)
 
-	filter := bson.M{
-		"deleted_at": nil,
-	}
+	filter := bson.M{}
 
 	if !util.IsStringEmpty(f.OrgID) {
 		filter["organisation_id"] = f.OrgID
@@ -239,7 +237,6 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"deleted_at": nil,
 	}
 
 	groups := make([]datastore.Group, 0)

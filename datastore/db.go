@@ -301,7 +301,7 @@ func (d *MongoStore) UpdateByID(ctx context.Context, id string, payload interfac
 	}
 	collection := d.Database.Collection(col)
 
-	_, err = collection.UpdateOne(ctx, bson.M{"uid": id}, payload, nil)
+	_, err = collection.UpdateOne(ctx, bson.M{"uid": id, "deleted_at": nil}, payload, nil)
 	return err
 }
 
@@ -311,6 +311,8 @@ func (d *MongoStore) UpdateOne(ctx context.Context, filter bson.M, payload inter
 		return err
 	}
 	collection := d.Database.Collection(col)
+
+	filter["deleted_at"] = nil
 
 	_, err = collection.UpdateOne(ctx, filter, payload)
 	return err
@@ -342,6 +344,7 @@ func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M, bul
 	if err != nil {
 		return err
 	}
+	filter["deleted_at"] = nil
 
 	collection := d.Database.Collection(col)
 
@@ -387,12 +390,11 @@ func (d *MongoStore) DeleteByID(ctx context.Context, id string, hardDelete bool)
 	if hardDelete {
 		_, err := collection.DeleteOne(ctx, bson.M{"uid": id}, nil)
 		return err
-
-	} else {
-		payload := bson.M{"deleted_at": primitive.NewDateTimeFromTime(time.Now())}
-		_, err := collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
-		return err
 	}
+
+	payload := bson.M{"deleted_at": primitive.NewDateTimeFromTime(time.Now())}
+	_, err = collection.UpdateOne(ctx, bson.M{"uid": id, "deleted_at": nil}, bson.M{"$set": payload}, nil)
+	return err
 }
 
 /**
@@ -412,15 +414,16 @@ func (d *MongoStore) DeleteOne(ctx context.Context, filter bson.M, hardDelete bo
 	}
 	collection := d.Database.Collection(col)
 
+	filter["deleted_at"] = nil
+
 	if hardDelete {
 		_, err := collection.DeleteOne(ctx, filter, nil)
 		return err
-
-	} else {
-		payload := bson.M{"deleted_at": primitive.NewDateTimeFromTime(time.Now())}
-		_, err := collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
-		return err
 	}
+
+	payload := bson.M{"deleted_at": primitive.NewDateTimeFromTime(time.Now())}
+	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+	return err
 }
 
 /**
@@ -441,13 +444,15 @@ func (d *MongoStore) DeleteMany(ctx context.Context, filter, payload bson.M, har
 	}
 	collection := d.Database.Collection(col)
 
+	filter["deleted_at"] = nil
+
 	if hardDelete {
 		_, err := collection.DeleteMany(ctx, filter)
 		return err
-	} else {
-		_, err := collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
-		return err
 	}
+
+	_, err = collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
+	return err
 }
 
 func (d *MongoStore) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {

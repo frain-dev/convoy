@@ -32,7 +32,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 
 func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *datastore.Source) error {
 	ctx = s.setCollectionInContext(ctx)
-	filter := bson.M{"uid": source.UID, "group_id": groupId, "deleted_at": nil}
+	filter := bson.M{"uid": source.UID, "group_id": groupId}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -116,7 +116,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *da
 	ctx = s.setCollectionInContext(ctx)
 	var sources []datastore.Source
 
-	filter := bson.M{"deleted_at": nil, "group_id": groupID, "type": f.Type, "provider": f.Provider}
+	filter := bson.M{"group_id": groupID, "type": f.Type, "provider": f.Provider}
 
 	removeUnusedFields(filter)
 	pagination, err := s.store.FindMany(ctx, filter, nil, nil,
