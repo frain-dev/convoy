@@ -123,8 +123,8 @@ func (p *PortalLinkService) CreateEndpoint(ctx context.Context, group *datastore
 
 }
 
-func (p *PortalLinkService) GetPortalLinkEndpoints(ctx context.Context, group *datastore.Group, portal *datastore.PortalLink) ([]datastore.Endpoint, error) {
-	endpoints, err := p.endpointRepo.FindEndpointsByID(ctx, group.UID, portal.Endpoints)
+func (p *PortalLinkService) GetPortalLinkEndpoints(ctx context.Context, portal *datastore.PortalLink) ([]datastore.Endpoint, error) {
+	endpoints, err := p.endpointRepo.FindEndpointsByID(ctx, portal.Endpoints)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching endpoints"))
 	}

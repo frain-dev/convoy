@@ -235,11 +235,10 @@ func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *
 // @Security ApiKeyAuth
 // @Router /portal/endpoints [get]
 func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
 	portalLink := m.GetPortalLinkFromContext(r.Context())
 
 	portalLinkService := createPortalLinkService(a)
-	endpoints, err := portalLinkService.GetPortalLinkEndpoints(r.Context(), group, portalLink)
+	endpoints, err := portalLinkService.GetPortalLinkEndpoints(r.Context(), portalLink)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

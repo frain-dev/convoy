@@ -542,7 +542,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 			dbFn: func(pl *PortalLinkService) {
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 
-				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Endpoint{
 						{UID: "123"},
 						{UID: "1234"},
@@ -569,7 +569,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 			dbFn: func(pl *PortalLinkService) {
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 
-				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Endpoint{}, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -589,7 +589,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			endpoints, err := pl.GetPortalLinkEndpoints(tc.args.ctx, tc.args.group, tc.args.portalLink)
+			endpoints, err := pl.GetPortalLinkEndpoints(tc.args.ctx, tc.args.portalLink)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
