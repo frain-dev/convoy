@@ -7,10 +7,9 @@ import (
 // Role represents the permission a user is given, if the Type is RoleSuperUser,
 // Then the user will have access to everything regardless of the value of Group.
 type Role struct {
-	Type         RoleType `json:"type"`
-	Organisation string   `json:"orgnisation"`
-	Group        string   `json:"group"`
-	App          string   `json:"app,omitempty"`
+	Type  RoleType `json:"type"`
+	Group string   `json:"group"`
+	App   string   `json:"app,omitempty"`
 }
 
 type RoleType string

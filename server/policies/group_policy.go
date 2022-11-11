@@ -21,9 +21,14 @@ func (gp *GroupPolicy) Get(ctx context.Context, group datastore.Group) error {
 		return ErrNotAllowed
 	}
 
+	apiKey, ok := authCtx.APIKey.(datastore.APIKey)
+	if !ok {
+		return ErrNotAllowed
+	}
+
 	// Personal Access Tokens.
 	if authCtx.User != nil {
-		_, err := gp.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, authCtx.APIKey.UserID, org.UID)
+		_, err := gp.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
 		if err != nil {
 			return ErrNotAllowed
 		}
@@ -39,9 +44,14 @@ func (gp *GroupPolicy) Get(ctx context.Context, group datastore.Group) error {
 func (gp *GroupPolicy) Create(ctx context.Context, org *datastore.Organisation) error {
 	authCtx := ctx.Value(AuthCtxKey).(auth.AuthenticatedUser)
 
+	apiKey, ok := authCtx.APIKey.(datastore.APIKey)
+	if !ok {
+		return ErrNotAllowed
+	}
+
 	// Personal Access Tokens.
 	if authCtx.User != nil {
-		_, err := gp.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, authCtx.APIKey.UserID, org.UID)
+		_, err := gp.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
 		if err != nil {
 			return ErrNotAllowed
 		}

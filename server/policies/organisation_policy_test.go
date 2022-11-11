@@ -15,7 +15,7 @@ func Test_OrganisationPolicy_Update(t *testing.T) {
 func Test_OrganisationPolicy_Delete(t *testing.T) {
 	tests := map[string]struct {
 		authCtx       auth.AuthenticatedUser
-		organization  datastore.Organisation
+		organization  *datastore.Organisation
 		wantErr       bool
 		expectedError error
 	}{}
