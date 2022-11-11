@@ -3,30 +3,18 @@ version: "3"
 services:
     web:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
-        entrypoint:
-            ["./cmd", "server", "--config", "convoy.json", "-w", "false"]
+        entrypoint: [ "/bin/sh" ]
+        command: /compose/start
         hostname: web
         container_name: web
         volumes:
             - ./convoy.json:/convoy.json
+            - ./compose:/compose
         restart: on-failure
         depends_on:
             - mongo1
             - mongo2
             - mongo3
-            - redis_server
-            - typesense
-        networks:
-            - backendCluster
-
-    indexer:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
-        entrypoint: ["./cmd", "index", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
-        depends_on:
-            - mongo1
             - redis_server
             - typesense
         networks:

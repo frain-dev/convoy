@@ -2,9 +2,22 @@
 	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
 	<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
 		<form [formGroup]="loginForm" (ngSubmit)="login()">
-			<convoy-input type="text" autocomplete="username" name="username" formControlName="username" errorMessage="Please enter your username" label="Username" placeholder="super@default.com"></convoy-input>
+			<div convoy-input-field>
+				<label for="username" convoy-label>Username</label>
+				<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="super@default.com" />
+				<convoy-input-error *ngIf="loginForm.controls.username.touched && loginForm.controls.username.invalid">Please enter your username</convoy-input-error>
+			</div>
 
-			<convoy-input type="password" formControlName="password" name="password" errorMessage="Please enter your password" label="Password"></convoy-input>
+			<div convoy-input-field>
+				<label convoy-label for="password">Password</label>
+				<convoy-password-field>
+					<input [type]="showLoginPassword ? 'text' : 'password'" convoy-input autocomplete="username" formControlName="password" placeholder="super@default.com" id="password" />
+					<button class="bg-transparent w-18px h-18px absolute top-[55%] right-16px border-none translate-x-0 translate-y-[-50%]" type="button" (click)="showLoginPassword = !showLoginPassword">
+						<img class="w-full" [src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showLoginPassword ? 'hide password icon' : 'view password icon'" />
+					</button>
+				</convoy-password-field>
+				<convoy-input-error *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">Please enter your password</convoy-input-error>
+			</div>
 
 			<div class="flex items-center text-12 mb-20px -mt-18px">
 				Forgot password?
