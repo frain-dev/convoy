@@ -22,9 +22,9 @@
 				</ng-container>
 				<div>
 					<ul>
-						<convoy-list-item *ngFor="let filterOption of filterOptions" [hover]="true" [active]="selectedFilterOption == filterOption">
+						<li convoy-list-item *ngFor="let filterOption of filterOptions" class="hover:bg-primary-500" [ngClass]="{ 'bg-primary-500': selectedFilterOption == filterOption }">
 							<button convoy-button fill="text" class="w-full" class="pl-16px text-12 text-black justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
-						</convoy-list-item>
+						</li>
 					</ul>
 				</div>
 			</convoy-dropdown>

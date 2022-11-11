@@ -43,11 +43,11 @@
 				</ng-container>
 
 				<ul>
-					<convoy-list-item *ngFor="let filterOption of filterOptions" [className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'">
+					<li convoy-list-item *ngFor="let filterOption of filterOptions" class="py-10px px-14px text-14 hover:bg-primary-500 capitalize transition-all duration-300" [class]="dashboardFrequency == filterOption ? ' bg-primary-500' : ''">
 						<button convoy-button color="grey" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData(); closeFilterOptions()" className="capitalize text-left w-full !justify-start">
 							{{ filterOption }}
 						</button>
-					</convoy-list-item>
+					</li>
 				</ul>
 			</convoy-dropdown>
 		</div>
