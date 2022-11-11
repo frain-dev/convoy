@@ -14,7 +14,7 @@
 				</button>
 			</form>
 
-			<div convoy-dropdown>
+			<div convoy-dropdown size="sm">
 				<button dropdownTrigger convoy-button size="sm" fill="outline" color="grey" class="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
 					<span class="text-grey-40 text-12 mr-4px">Filter By:</span>
 					<span class="text-primary-100 text-12 capitalize">{{ selectedFilterOption }} Invites</span>
@@ -62,7 +62,7 @@
 
 									<ul dropdownOptions>
 										<li>
-											<button convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">Deactivate team member</button>
+											<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">Deactivate team member</button>
 										</li>
 									</ul>
 								</div>
@@ -121,10 +121,10 @@
 
 									<ul dropdownOptions>
 										<li class="border-b border-b-grey-10">
-											<button convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
+											<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
 										</li>
 										<li>
-											<button convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+											<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
 										</li>
 									</ul>
 								</div>
@@ -146,7 +146,7 @@
 				[disabled]="pendingInvites.pagination.prev === 0"
 				(click)="fetchPendingTeamMembers({ page: pendingInvites.pagination.prev })"
 			>
-				<svg width="24" height="24" class="mr-8px">
+				<svg width="24" height="24" class="mr-8px fill-primary-100">
 					<use xlink:href="#arrow-left-icon"></use>
 				</svg>
 				Previous

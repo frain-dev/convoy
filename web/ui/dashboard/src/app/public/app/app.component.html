@@ -56,9 +56,9 @@
 						<td convoy-table-cell>
 							<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
 						</td>
-						<td convoy-table-cell>
+						<td convoy-table-cell class="contents">
 							<div convoy-dropdown>
-								<button dropdownTrigger convoy-button size="sm" fill="clear" (click)="$event.preventDefault()">
+								<button dropdownTrigger convoy-button size="sm" fill="clear">
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
 								</button>
 								<ul dropdownOptions>
