@@ -19,7 +19,7 @@ export class DropdownComponent implements OnInit {
 	@Input('buttonClass') buttonClass = '';
 	@Input('buttonColor') buttonColor!: 'primary' | 'success' | 'warning' | 'danger' | 'grey';
 	@Input('buttonSize') buttonSize: 'sm' | 'md' | 'lg' = 'md';
-	@Input('buttonType') buttonType: 'default' | 'outline' | 'clear' | 'text' | 'link' | 'unstyled' = 'default';
+	@Input('buttonFill') buttonFill: 'default' | 'outline' | 'clear' | 'text' | 'link' = 'default';
 	@Input('buttonTexture') buttonTexture: 'deep' | 'light' = 'deep';
 	sizes = { sm: 'w-[140px]', md: 'w-[200px]', lg: 'w-[249px]', xl: 'w-[350px]', full: 'w-full' };
 	show = false;

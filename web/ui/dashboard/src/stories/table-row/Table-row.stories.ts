@@ -18,9 +18,9 @@ export default {
 
 const Template: Story<TableRowComponent> = (args: TableRowComponent) => ({
 	props: args,
-	template: `<convoy-table-row class="contents" [forDate]="forDate" [active]="active">
+	template: `<tr convoy-table-row [forDate]="forDate" [active]="active">
                 {{ngContent}}
-               </convoy-table-row>`
+               </tr>`
 });
 
 export const Base = Template.bind({});

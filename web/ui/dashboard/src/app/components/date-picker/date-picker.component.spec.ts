@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TableHeadCellComponent } from './table-head-cell.component';
+import { DatePickerComponent } from './date-picker.component';
 
-describe('TableHeadCellComponent', () => {
-  let component: TableHeadCellComponent;
-  let fixture: ComponentFixture<TableHeadCellComponent>;
+describe('DatePickerComponent', () => {
+  let component: DatePickerComponent;
+  let fixture: ComponentFixture<DatePickerComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ TableHeadCellComponent ]
+      imports: [ DatePickerComponent ]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(TableHeadCellComponent);
+    fixture = TestBed.createComponent(DatePickerComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

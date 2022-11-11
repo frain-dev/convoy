@@ -18,7 +18,7 @@
 	<ng-container *ngIf="eventsFetched?.length === 0">
 		<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
 			<div emptyStateCTA>
-				<convoy-button className="mt-22px" *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
+				<button convoy-button class="mt-22px" *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
 					<svg width="16" height="16" class="mr-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 						<use xlink:href="#add-icon"></use>
 					</svg>
@@ -26,16 +26,16 @@
 					<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
-				</convoy-button>
-				<convoy-button *ngIf="!isProjectConfigurationComplete" className="mt-22px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</convoy-button>
+				</button>
+				<button convoy-button *ngIf="!isProjectConfigurationComplete" class="mt-22px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</button>
 			</div>
 		</convoy-empty-state>
 	</ng-container>
 
 	<ng-container *ngIf="eventsFetched?.length">
 		<div class="py-24px flex items-center">
-			<date-filter (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></date-filter>
-			<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonType="outline" buttonClass="px-10px !border-primary-400 ml-16px">
+			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-picker>
+			<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonFill="outline" buttonClass="px-10px !border-primary-400 ml-16px">
 				<ng-container dropdownToggle>
 					<span class="text-grey-60 mr-4px">Filter By:</span>
 					<span class="text-primary-100 capitalize">{{ dashboardFrequency }}</span>
@@ -44,9 +44,9 @@
 
 				<ul>
 					<convoy-list-item *ngFor="let filterOption of filterOptions" [className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'">
-						<convoy-button color="grey" type="text" (clickItem)="dashboardFrequency = filterOption; fetchDashboardData(); closeFilterOptions()" className="capitalize text-left w-full !justify-start">
+						<button convoy-button color="grey" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData(); closeFilterOptions()" className="capitalize text-left w-full !justify-start">
 							{{ filterOption }}
-						</convoy-button>
+						</button>
 					</convoy-list-item>
 				</ul>
 			</convoy-dropdown>

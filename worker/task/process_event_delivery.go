@@ -201,7 +201,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 
 			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false)
+			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false, resp.Error)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -240,7 +240,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				}
 
 				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true)
+				err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true, resp.Error)
 				if err != nil {
 					log.WithError(err).Error("failed to send notification")
 				}

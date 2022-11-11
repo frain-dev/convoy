@@ -16,34 +16,34 @@
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
 	<div class="w-full flex justify-end items-center my-24px">
-		<convoy-button size="sm" routerLink="./new">Create a source</convoy-button>
+		<button convoy-button size="sm" routerLink="./new">Create a source</button>
 	</div>
 	<convoy-card>
 		<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] flex" id="event-deliveries-table-container">
-			<convoy-table class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100% - 382px)] desktop:w-0 desktop:hidden': activeSource?.uid }">
-				<convoy-table-head class="contents">
-					<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of sourcesTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-				</convoy-table-head>
+			<table convoy-table [ngClass]="{ 'w-[calc(100% - 382px)] desktop:w-0 desktop:hidden': activeSource?.uid }">
+				<thead convoy-table-head>
+					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of sourcesTableHead; let i = index">{{ head }}</th>
+				</thead>
 				<tbody>
-					<convoy-table-row class="contents" *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }" [active]="source.uid === activeSource?.uid">
-						<convoy-table-cell class="contents" className="min-w-[100px] pl-16px">{{ source.name }}</convoy-table-cell>
-						<convoy-table-cell class="contents" className="min-w-[60px]">{{ source.type | sourceValue: 'sourceType' }}</convoy-table-cell>
-						<convoy-table-cell class="contents capitalize" className="min-w-[80px]">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</convoy-table-cell>
-						<convoy-table-cell class="contents" className="flex flex-row items-center pr-16px min-w-0">
-							<div class="max-w-[340px] overflow-hidden overflow-ellipsis">
+					<tr convoy-table-row *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }" [active]="source.uid === activeSource?.uid">
+						<td convoy-table-cell class="min-w-[100px] pl-16px">{{ source.name }}</td>
+						<td convoy-table-cell class="min-w-[60px]">{{ source.type | sourceValue: 'sourceType' }}</td>
+						<td convoy-table-cell class="capitalize min-w-[80px]">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</td>
+						<td convoy-table-cell class="pr-16px min-w-0">
+							<div class="max-w-[400px] overflow-hidden overflow-ellipsis">
 								{{ source.url }}
 							</div>
 							<convoy-copy-button [text]="source.url" size="md" className="ml-2px" (copyText)="copyText(source.name + ' URL')"></convoy-copy-button>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ source.created_at | date }}</convoy-table-cell>
-						<convoy-table-cell class="contents">
-							<convoy-button type="icon" size="sm" className="pt-0 pb-0">
+						</td>
+						<td convoy-table-cell>{{ source.created_at | date }}</td>
+						<td convoy-table-cell>
+							<button class="pt-0 pb-0">
 								<img src="/assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
-							</convoy-button>
-						</convoy-table-cell>
-					</convoy-table-row>
+							</button>
+						</td>
+					</tr>
 				</tbody>
-			</convoy-table>
+			</table>
 
 			<div class="h-full min-h-[70vh] w-full max-w-[382px] min-w-[310px] pl-16px border-l border-l-grey-10 transition-all duration-200 desktop:max-w-none desktop:border-none" *ngIf="activeSource?.uid">
 				<div class="flex items-center justify-between pr-24px">
@@ -124,18 +124,18 @@
 				</ul>
 
 				<div class="flex justify-end mt-40px mr-24px">
-					<convoy-button type="outline" color="danger" size="sm" (click)="showDeleteSourceModal = true">
+					<button convoy-button fill="outline" color="danger" size="sm" (click)="showDeleteSourceModal = true">
 						Delete
 						<svg width="18" height="18" class="ml-8px fill-danger-100">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
-					</convoy-button>
-					<convoy-button size="sm" className="ml-24px" [routerLink]="'/projects/' + projectId + '/sources/' + activeSource?.uid">
+					</button>
+					<button convoy-button size="sm" class="ml-24px" [routerLink]="'/projects/' + projectId + '/sources/' + activeSource?.uid">
 						Edit
 						<svg width="18" height="18" class="ml-8px fill-white-100">
 							<use xlink:href="#edit-icon"></use>
 						</svg>
-					</convoy-button>
+					</button>
 				</div>
 			</div>
 		</div>
@@ -154,37 +154,39 @@
 ></convoy-empty-state>
 
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: sources.content.length === 0 }">
-	<convoy-button
-		type="outline"
+	<button
+		convoy-button
+		fill="outline"
 		size="sm"
-		className="pl-4px pr-16px py-4px border-primary-300"
+		class="pl-4px pr-16px py-4px border-primary-300"
 		routerLink="./"
 		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources.pagination?.prev } : { page: sources.pagination?.prev }"
-		[disable]="sources.pagination?.prev === 0"
+		[disabled]="sources.pagination?.prev === 0"
 		(click)="getSources({ page: sources.pagination?.prev })"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
-	</convoy-button>
-	<convoy-button
-		type="outline"
+	</button>
+	<button
+		convoy-button
+		fill="outline"
 		size="sm"
-		className="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
 		[queryParams]="activeSource?.uid ? { id: activeSource?.uid, page: sources.pagination?.prev } : { page: sources.pagination?.prev }"
-		[disable]="sources.pagination?.prev === 0"
+		[disabled]="sources.pagination?.prev === 0"
 		(click)="getSources({ page: sources.pagination?.prev })"
 	>
 		Next
 		<svg width="24" height="24" class="fill-primary-100 mr-8px">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-	</convoy-button>
+	</button>
 </div>
 
-<convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [title]="shouldShowUpdateSourceModal ? 'Update Source' : 'Create source'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
+<convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [id]="'sourceForm'" [title]="shouldShowUpdateSourceModal ? 'Update Source' : 'Create source'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
 	<ng-container modalBody>
 		<app-create-source (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></app-create-source>
 	</ng-container>
