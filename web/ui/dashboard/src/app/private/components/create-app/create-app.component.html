@@ -2,29 +2,21 @@
 
 <form [formGroup]="addNewAppForm" id="create-app-form">
 	<convoy-card className="px-24px py-24px mt-40px">
-		<convoy-input type="text" autocomplete="app-name" name="app-name" formControlName="name" errorMessage="App name is required" label="Enter App Name" placeholder="App name" [required]="true"></convoy-input>
+		<div convoy-input-field>
+			<label for="app-name" required="true" convoy-label>Enter App Name</label>
+			<input type="text" id="app-name" convoy-input autocomplete="app-name" formControlName="name" placeholder="App name" />
+			<convoy-input-error *ngIf="addNewAppForm.controls.name.touched && addNewAppForm.controls.name.invalid">App name is required</convoy-input-error>
+		</div>
+
 		<div class="grid grid-cols-2 gap-6">
-			<convoy-input
-				type="email"
-				autocomplete="app-slack-url"
-				name="app-slack-url"
-				formControlName="support_email"
-				label="Support Email"
-				placeholder="Support email"
-				tooltipPosition="right"
-				tooltipSize="sm"
-				tooltipContent="We use this to send an email notifcation for when a failure happens"
-			></convoy-input>
-			<convoy-input
-				type="url"
-				autocomplete="app-email"
-				name="app-email"
-				formControlName="slack_webhook_url"
-				label="Slack webhook url"
-				placeholder="Slack webhook url"
-				tooltipSize="sm"
-				tooltipContent="We use this to send notifications to your slack channel when a failure happens"
-			></convoy-input>
+			<div convoy-input-field>
+				<label for="app-support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
+				<input type="email" id="app-support-email" convoy-input autocomplete="app-support-email" formControlName="support_email" placeholder="support@getconvoy.io" />
+			</div>
+			<div convoy-input-field>
+				<label for="slack_webhook_url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
+				<input type="url" id="slack_webhook_url" convoy-input autocomplete="slack_webhook_url" formControlName="slack_webhook_url" placeholder="https://slack.com" />
+			</div>
 		</div>
 	</convoy-card>
 
@@ -41,20 +33,24 @@
 				</div>
 				<div [formGroupName]="i">
 					<div class="grid grid-cols-2 gap-6">
-						<convoy-input type="text" autocomplete="description" [name]="'description' + i" formControlName="description" errorMessage="Please provide a description" label="Description" placeholder="Description" [required]="true"></convoy-input>
-						<convoy-input type="url" autocomplete="endpoint-url" [name]="'endpoint-url' + i" formControlName="url" label="Enter Endpoint URL" placeholder="Endpoint url" errorMessage="Please enter endpoint url" [required]="true"></convoy-input>
-						<convoy-input type="text" autocomplete="secret" [name]="'secret' + i" formControlName="secret" label="Secret" placeholder="********"></convoy-input>
-						<convoy-input
-							type="text"
-							autocomplete="http-timeout"
-							[name]="'http-timeout' + i"
-							formControlName="http_timeout"
-							label="HTTP Timeout"
-							placeholder="e.g. 10s"
-							tooltipSize="sm"
-							tooltipPosition="right"
-							tooltipContent="This specifies how long the socket stays open in the absense of a response."
-						></convoy-input>
+						<div convoy-input-field>
+							<label for="description" convoy-label required="true">Description</label>
+							<input id="description" convoy-input autocomplete="description" formControlName="description" placeholder="eg. payment endpoint" />
+							<convoy-input-error *ngIf="addNewAppForm.get('endpoints.' + i + '.description')?.touched && addNewAppForm.get('endpoints.' + i + '.description')?.invalid">Please provide an endpoint description</convoy-input-error>
+						</div>
+						<div convoy-input-field>
+							<label for="endpoint-url" convoy-label required="true">Enter Endpoint URL</label>
+							<input type="url" id="endpoint-url" convoy-input autocomplete="endpoint-url" formControlName="url" placeholder="https://webhook.getconvoy.io" />
+							<convoy-input-error *ngIf="addNewAppForm.get('endpoints.' + i + '.url')?.touched && addNewAppForm.get('endpoints.' + i + '.url')?.invalid">Please enter endpoint url</convoy-input-error>
+						</div>
+						<div convoy-input-field>
+							<label for="secret" convoy-label>Secret</label>
+							<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="********" />
+						</div>
+						<div convoy-input-field>
+							<label for="http_timeout" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">HTTP Timeout</label>
+							<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g. 10s" />
+						</div>
 					</div>
 
 					<h3 class="mt-24px mb-14px font-medium flex items-center">
@@ -64,8 +60,14 @@
 					<div class="grid grid-cols-2 gap-6">
 						<ng-container formGroupName="authentication">
 							<ng-container formGroupName="api_key">
-								<convoy-input type="text" autocomplete="header-name" [name]="'header-name' + i" formControlName="header_name" label="API Key Name" placeholder="Name"></convoy-input>
-								<convoy-input type="text" autocomplete="header-value" [name]="'header-value' + i" formControlName="header_value" label="API Key Value" placeholder="Value"></convoy-input>
+								<div convoy-input-field>
+									<label for="header_name" convoy-label>API Key Name</label>
+									<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
+								</div>
+								<div convoy-input-field>
+									<label for="header_value" convoy-label>API Key Value</label>
+									<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
+								</div>
 							</ng-container>
 						</ng-container>
 					</div>

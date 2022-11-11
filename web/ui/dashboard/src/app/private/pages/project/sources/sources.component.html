@@ -20,30 +20,30 @@
 	</div>
 	<convoy-card>
 		<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] flex" id="event-deliveries-table-container">
-			<convoy-table class="w-full transition-all duration-200" [ngClass]="{ 'w-[calc(100% - 382px)] desktop:w-0 desktop:hidden': activeSource?.uid }">
-				<convoy-table-head class="contents">
-					<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of sourcesTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-				</convoy-table-head>
+			<table convoy-table [ngClass]="{ 'w-[calc(100% - 382px)] desktop:w-0 desktop:hidden': activeSource?.uid }">
+				<thead convoy-table-head>
+					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of sourcesTableHead; let i = index">{{ head }}</th>
+				</thead>
 				<tbody>
-					<convoy-table-row class="contents" *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }" [active]="source.uid === activeSource?.uid">
-						<convoy-table-cell class="contents" className="min-w-[100px] pl-16px">{{ source.name }}</convoy-table-cell>
-						<convoy-table-cell class="contents" className="min-w-[60px]">{{ source.type | sourceValue: 'sourceType' }}</convoy-table-cell>
-						<convoy-table-cell class="contents capitalize" className="min-w-[80px]">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</convoy-table-cell>
-						<convoy-table-cell class="contents" className="flex flex-row items-center pr-16px min-w-0">
-							<div class="max-w-[340px] overflow-hidden overflow-ellipsis">
+					<tr convoy-table-row *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }" [active]="source.uid === activeSource?.uid">
+						<td convoy-table-cell class="min-w-[100px] pl-16px">{{ source.name }}</td>
+						<td convoy-table-cell class="min-w-[60px]">{{ source.type | sourceValue: 'sourceType' }}</td>
+						<td convoy-table-cell class="capitalize min-w-[80px]">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</td>
+						<td convoy-table-cell class="pr-16px min-w-0">
+							<div class="max-w-[400px] overflow-hidden overflow-ellipsis">
 								{{ source.url }}
 							</div>
 							<convoy-copy-button [text]="source.url" size="md" className="ml-2px" (copyText)="copyText(source.name + ' URL')"></convoy-copy-button>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ source.created_at | date }}</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>{{ source.created_at | date }}</td>
+						<td convoy-table-cell>
 							<button class="pt-0 pb-0">
 								<img src="/assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
 							</button>
-						</convoy-table-cell>
-					</convoy-table-row>
+						</td>
+					</tr>
 				</tbody>
-			</convoy-table>
+			</table>
 
 			<div class="h-full min-h-[70vh] w-full max-w-[382px] min-w-[310px] pl-16px border-l border-l-grey-10 transition-all duration-200 desktop:max-w-none desktop:border-none" *ngIf="activeSource?.uid">
 				<div class="flex items-center justify-between pr-24px">

@@ -2,9 +2,14 @@
 
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
 	<convoy-card className="p-24px mt-24px">
-		<convoy-input label="Project name" name="project-name" formControlName="name" placeholder="Enter project name here" [required]="true" errorMessage="Enter new project name"></convoy-input>
+		<convoy-input-field>
+			<label for="project-name" required="true" convoy-label>Project name</label>
+			<input type="text" id="project-name" convoy-input autocomplete="project-name" formControlName="name" placeholder="Enter project name here" />
+			<convoy-input-error *ngIf="projectForm.controls.name.touched && projectForm.controls.name.invalid">Enter new project name</convoy-input-error>
+		</convoy-input-field>
+
 		<ng-container *ngIf="action === 'update'">
-			<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between">Project Id</label>
+			<label for="project-name" convoy-label>Project Id</label>
 			<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
 				<span class="text-16 text-grey-60 font-normal">{{ projectDetails?.uid }}</span>
 				<convoy-copy-button [text]="projectDetails?.uid || ''"></convoy-copy-button>
@@ -31,7 +36,11 @@
 					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h3>
 				<div formGroupName="signature" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
-					<convoy-input label="Header" name="header" formControlName="header" placeholder="X-Convoy-Signature" errorMessage="Enter header for project requests"></convoy-input>
+					<convoy-input-field>
+						<label for="header" required="true" convoy-label>Header</label>
+						<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="X-Convoy-Signature" />
+						<convoy-input-error *ngIf="projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid">Enter header for project requests</convoy-input-error>
+					</convoy-input-field>
 
 					<ng-container [formGroup]="newSignatureForm" *ngIf="action === 'create'">
 						<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
@@ -39,7 +48,7 @@
 					</ng-container>
 				</div>
 
-				<h3 class="mt-24px mb-16px flex items-center font-semibold">
+				<h3 class="mt-48px mb-16px flex items-center font-semibold">
 					Retry Logic
 					<convoy-tooltip size="sm" position="right" class="ml-4px">
 						These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry attempt.
@@ -47,8 +56,16 @@
 				</h3>
 				<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
 					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism" (selectedOption)="projectForm.get('config.strategy')?.patchValue({ type: $event })"></convoy-select>
-					<convoy-input label="Duration" name="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" errorMessage="Please enter your retry logic duration"></convoy-input>
-					<convoy-input type="number" label="Limit" name="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" errorMessage="Please enter a retry limit"></convoy-input>
+					<convoy-input-field>
+						<label for="retry-logic-duration" convoy-label>Duration</label>
+						<input type="text" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" />
+						<convoy-input-error *ngIf="projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid">Please enter your retry logic duration</convoy-input-error>
+					</convoy-input-field>
+					<convoy-input-field>
+						<label for="retry-logic-count" convoy-label>Limit</label>
+						<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
+						<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
+					</convoy-input-field>
 				</div>
 
 				<h3 class="mt-24px mb-16px flex items-center font-semibold">
@@ -56,8 +73,16 @@
 					<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 				</h3>
 				<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
-					<convoy-input label="Duration" name="rate-limit-duration" formControlName="duration" placeholder="e.g 5m" errorMessage="Please enter a rate limit duration"></convoy-input>
-					<convoy-input type="number" label="Limit" name="rate-limit-count" formControlName="count" placeholder="e.g 5000" errorMessage="Please enter a rate limit"></convoy-input>
+					<convoy-input-field>
+						<label for="rate-limit-duration" convoy-label>Duration</label>
+						<input type="number" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="duration" placeholder="e.g 5m" />
+						<convoy-input-error *ngIf="projectForm.get('config.ratelimit.duration')?.touched && projectForm.get('config.ratelimit.duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
+					</convoy-input-field>
+					<convoy-input-field>
+						<label for="rate-limit-count" convoy-label>Limit</label>
+						<input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="count" placeholder="e.g 5000" />
+						<convoy-input-error *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">Please enter a rate limit</convoy-input-error>
+					</convoy-input-field>
 				</div>
 
 				<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
@@ -74,21 +99,17 @@
 
 				<ng-container *ngIf="enableMoreConfig && projectForm.value.config.is_retention_policy_enabled">
 					<div formGroupName="retention_policy">
-						<convoy-input
-							label="Retention Period"
-							name="policy"
-							formControlName="policy"
-							placeholder="e.g. 72h"
-							errorMessage="Enter retention policy value"
-							tooltipContent="This is the interval at which events would be reviewed and retained for this project."
-							tooltipSize="sm"
-						></convoy-input>
+						<convoy-input-field>
+							<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
+							<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
+							<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
+						</convoy-input-field>
 					</div>
 				</ng-container>
 			</div>
 		</div>
 
-		<div class="flex justify-end">
+		<div class="flex justify-end mt-48px">
 			<button convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
 			<button convoy-button [disabled]="isCreatingProject">
 				{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
@@ -114,31 +135,31 @@
 		</div>
 
 		<convoy-card>
-			<convoy-table>
-				<convoy-table-head class="contents">
-					<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-				</convoy-table-head>
+			<table convoy-table>
+				<thead convoy-table-head>
+					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</th>
+				</thead>
 				<tbody>
 					<ng-container *ngFor="let version of signatureVersions; let i = index">
-						<convoy-table-row [forDate]="true" class="contents">
-							<convoy-table-cell class="contents" [forDate]="true">{{ version.date }}</convoy-table-cell>
-							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						</convoy-table-row>
-						<convoy-table-row class="contents" *ngFor="let signatureVersion of version.content; let index = index" [id]="'app' + i">
-							<convoy-table-cell class="contents" className="pl-16px">
+						<tr convoy-table-row [forDate]="true">
+							<td convoy-table-cell [forDate]="true">{{ version.date }}</td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+						</tr>
+						<tr convoy-table-row *ngFor="let signatureVersion of version.content; let index = index" [id]="'app' + i">
+							<td convoy-table-cell class="pl-16px">
 								<div class="flex items-center">
 									{{ projectDetails?.config?.signature?.header }}
 								</div>
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">v{{ index + 1 }}</convoy-table-cell>
-							<convoy-table-cell class="contents">{{ signatureVersion.hash }}</convoy-table-cell>
-							<convoy-table-cell class="contents">{{ signatureVersion.encoding }}</convoy-table-cell>
-						</convoy-table-row>
+							</td>
+							<td convoy-table-cell>v{{ index + 1 }}</td>
+							<td convoy-table-cell>{{ signatureVersion.hash }}</td>
+							<td convoy-table-cell>{{ signatureVersion.encoding }}</td>
+						</tr>
 					</ng-container>
 				</tbody>
-			</convoy-table>
+			</table>
 		</convoy-card>
 	</ng-container>
 </form>

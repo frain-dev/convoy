@@ -123,37 +123,37 @@
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0">
-		<convoy-table>
-			<convoy-table-head class="contents">
-				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventDelTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-			</convoy-table-head>
+		<table convoy-table>
+			<thead convoy-table-head>
+				<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventDelTableHead; let i = index">{{ head }}</th>
+			</thead>
 			<tbody>
 				<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
-					<convoy-table-row [forDate]="true" class="contents">
-						<convoy-table-cell class="contents" [forDate]="true">{{ eventDeliveriesGroup.date }}</convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-					</convoy-table-row>
-					<convoy-table-row class="contents" *ngFor="let event of eventDeliveriesGroup.content; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]">
-						<convoy-table-cell class="contents" className="pl-16px relative">
+					<tr convoy-table-row [forDate]="true">
+						<td convoy-table-cell [forDate]="true">{{ eventDeliveriesGroup.date }}</td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+					</tr>
+					<tr convoy-table-row *ngFor="let event of eventDeliveriesGroup.content; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]">
+						<td convoy-table-cell class="pl-16px relative">
 							<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
 							<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							<div class="flex items-center">
 								<svg width="16" height="14" class="mr-10px" *ngIf="event.device_id">
 									<use xlink:href="#cli-icon"></use>
 								</svg>
 								<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
 							</div>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ event.metadata.num_trials }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ event.metadata.retry_limit }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ event.created_at | date: 'mediumTime' }}</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>{{ event.metadata.num_trials }}</td>
+						<td convoy-table-cell>{{ event.metadata.retry_limit }}</td>
+						<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
+						<td convoy-table-cell>
 							<button
 								convoy-button
 								size="xs"
@@ -164,16 +164,16 @@
 								<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 								{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
 							</button>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							<button size="xs" [routerLink]="'./event-deliveries/' + event.uid">
 								<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
 							</button>
-						</convoy-table-cell>
-					</convoy-table-row>
+						</td>
+					</tr>
 				</ng-container>
 			</tbody>
-		</convoy-table>
+		</table>
 	</div>
 
 	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)"></convoy-empty-state>
