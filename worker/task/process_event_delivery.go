@@ -124,9 +124,12 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 		}
 
-		dispatch := net.NewDispatcher(httpDuration)
-
 		done := true
+		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
+		if err != nil {
+			log.Errorf("error occurred while creating the http client - %+v\n", err)
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
 
 		e := endpoint
 		if ed.Status == datastore.SuccessEventStatus {
