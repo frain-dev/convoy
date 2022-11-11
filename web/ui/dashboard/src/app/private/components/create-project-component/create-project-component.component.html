@@ -135,31 +135,31 @@
 		</div>
 
 		<convoy-card>
-			<convoy-table>
-				<convoy-table-head class="contents">
-					<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-				</convoy-table-head>
+			<table convoy-table>
+				<thead convoy-table-head>
+					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</th>
+				</thead>
 				<tbody>
 					<ng-container *ngFor="let version of signatureVersions; let i = index">
-						<convoy-table-row [forDate]="true" class="contents">
-							<convoy-table-cell class="contents" [forDate]="true">{{ version.date }}</convoy-table-cell>
-							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-							<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						</convoy-table-row>
-						<convoy-table-row class="contents" *ngFor="let signatureVersion of version.content; let index = index" [id]="'app' + i">
-							<convoy-table-cell class="contents" className="pl-16px">
+						<tr convoy-table-row [forDate]="true">
+							<td convoy-table-cell [forDate]="true">{{ version.date }}</td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+						</tr>
+						<tr convoy-table-row *ngFor="let signatureVersion of version.content; let index = index" [id]="'app' + i">
+							<td convoy-table-cell class="pl-16px">
 								<div class="flex items-center">
 									{{ projectDetails?.config?.signature?.header }}
 								</div>
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">v{{ index + 1 }}</convoy-table-cell>
-							<convoy-table-cell class="contents">{{ signatureVersion.hash }}</convoy-table-cell>
-							<convoy-table-cell class="contents">{{ signatureVersion.encoding }}</convoy-table-cell>
-						</convoy-table-row>
+							</td>
+							<td convoy-table-cell>v{{ index + 1 }}</td>
+							<td convoy-table-cell>{{ signatureVersion.hash }}</td>
+							<td convoy-table-cell>{{ signatureVersion.encoding }}</td>
+						</tr>
 					</ng-container>
 				</tbody>
-			</convoy-table>
+			</table>
 		</convoy-card>
 	</ng-container>
 </form>
