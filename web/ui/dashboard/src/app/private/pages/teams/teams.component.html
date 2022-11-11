@@ -15,18 +15,17 @@
 			</form>
 
 			<div convoy-dropdown size="sm">
-				<button dropdownTrigger convoy-button size="sm" fill="outline" color="grey" className="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" color="grey" class="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
 					<span class="text-grey-40 text-12 mr-4px">Filter By:</span>
 					<span class="text-primary-100 text-12 capitalize">{{ selectedFilterOption }} Invites</span>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-[16px] ml-8px" />
 				</button>
-				<div>
-					<ul>
-						<convoy-list-item *ngFor="let filterOption of filterOptions" [hover]="true" [active]="selectedFilterOption == filterOption">
-							<button convoy-button fill="text" class="w-full" class="pl-16px text-12 text-black justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
-						</convoy-list-item>
-					</ul>
-				</div>
+
+				<ul dropdownOptions>
+					<convoy-list-item *ngFor="let filterOption of filterOptions" [hover]="true" [active]="selectedFilterOption == filterOption">
+						<button convoy-button fill="text" class="w-full" class="pl-16px text-12 text-black justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
+					</convoy-list-item>
+				</ul>
 			</div>
 
 			<button convoy-button size="sm" class="min-w-[150px] h-36px" (click)="openCreateTeamModal(); currentId = ''">Add team member</button>
@@ -42,39 +41,35 @@
 	<ng-container *ngIf="selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData">
 		<convoy-card>
 			<div class="min-h-[70vh]">
-				<convoy-table class="contents" className="w-full border border-primary-500">
-					<convoy-table-head class="contents" className="border border-primary-500">
-						<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px uppercase' : 'uppercase'" *ngFor="let head of tableHead; let i = index">
-							{{ head }}
-						</convoy-table-head-cell>
-					</convoy-table-head>
+				<table convoy-table>
+					<thead convoy-table-head>
+						<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ head }}</th>
+					</thead>
 					<tbody>
-						<convoy-table-row class="contents" className="border border-primary-500" *ngFor="let team of teams?.content; let i = index" [id]="'team' + i">
-							<convoy-table-cell class="contents" className="pl-20px">
+						<tr convoy-table-row class="border border-primary-500" *ngFor="let team of teams?.content; let i = index" [id]="'team' + i">
+							<td convoy-table-cell class="pl-20px">
 								<convoy-badge texture="dark" [text]="team?.user_metadata?.first_name + ' ' + team?.user_metadata?.last_name"></convoy-badge>
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">
+							</td>
+							<td convoy-table-cell>
 								{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">All projects</convoy-table-cell>
-							<convoy-table-cell class="contents">
+							</td>
+							<td convoy-table-cell>All projects</td>
+							<td convoy-table-cell>
 								<div convoy-dropdown size="lg">
 									<button dropdownTrigger convoy-button size="sm" fill="clear">
 										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 									</button>
 
-									<div>
-										<ul>
-											<li>
-												<button convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">Deactivate team member</button>
-											</li>
-										</ul>
-									</div>
+									<ul dropdownOptions>
+                                        <li>
+                                            <button convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">Deactivate team member</button>
+                                        </li>
+                                    </ul>
 								</div>
-							</convoy-table-cell>
-						</convoy-table-row>
+							</td>
+						</tr>
 					</tbody>
-				</convoy-table>
+				</table>
 			</div>
 		</convoy-card>
 
@@ -102,45 +97,44 @@
 			</button>
 		</div>
 	</ng-container>
+
+	<!-- Invites -->
 	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
 		<convoy-card>
 			<div class="min-h-[70vh]">
-				<convoy-table class="contents" class="w-full border border-primary-500">
-					<convoy-table-head class="contents" className="border border-primary-500">
-						<convoy-table-head-cell class="contents" className="uppercase" [className]="i === 0 ? 'pl-20px uppercase' : 'uppercase'" *ngFor="let head of tableHead; let i = index">
-							{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}
-						</convoy-table-head-cell>
-					</convoy-table-head>
-
+				<table convoy-table>
+					<thead convoy-table-head>
+						<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
+					</thead>
 					<tbody>
-						<convoy-table-row class="contents" className="border border-primary-500" *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
-							<convoy-table-cell class="contents" className="pl-20px">
+						<tr convoy-table-row *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
+							<td convoy-table-cell class="pl-20px">
 								{{ team.invitee_email }}
-							</convoy-table-cell>
-							<convoy-table-cell class="contents">{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</convoy-table-cell>
-							<convoy-table-cell class="contents">All projects</convoy-table-cell>
-							<convoy-table-cell class="contents">
+							</td>
+							<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
+							<td convoy-table-cell>All projects</td>
+							<td convoy-table-cell>
 								<div convoy-dropdown>
 									<button dropdownTrigger convoy-button size="sm" fill="clear">
 										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 									</button>
-									<div>
-										<ul>
-											<li class="border-b border-b-grey-10">
-												<button convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
-											</li>
-											<li>
-												<button convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
-											</li>
-										</ul>
-									</div>
+
+									<ul dropdownOptions>
+                                        <li class="border-b border-b-grey-10">
+                                            <button convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
+                                        </li>
+                                        <li>
+                                            <button convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+                                        </li>
+                                    </ul>
 								</div>
-							</convoy-table-cell>
-						</convoy-table-row>
+							</td>
+						</tr>
 					</tbody>
-				</convoy-table>
+				</table>
 			</div>
 		</convoy-card>
+
 		<div class="flex items-center mt-16px">
 			<button
 				convoy-button
@@ -152,7 +146,7 @@
 				[disabled]="pendingInvites.pagination.prev === 0"
 				(click)="fetchPendingTeamMembers({ page: pendingInvites.pagination.prev })"
 			>
-				<svg width="24" height="24" class="mr-8px">
+				<svg width="24" height="24" class="mr-8px fill-primary-100">
 					<use xlink:href="#arrow-left-icon"></use>
 				</svg>
 				Previous
@@ -194,7 +188,11 @@
 				<h3 class="font-semibold">Basic info</h3>
 				<div class="text-grey-40 text-14 font-normal mb-16px">Invite other members of your team to your organisation.</div>
 
-				<convoy-input type="email" autocomplete="email" name="email" formControlName="invitee_email" errorMessage="Please enter a valid email" label="Email" placeholder="Enter member email" [required]="true"></convoy-input>
+				<convoy-input-field>
+					<label for="email" convoy-label required="true">Email</label>
+					<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
+					<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
+				</convoy-input-field>
 			</convoy-card>
 			<div class="flex justify-end pt-24px pb-40px">
 				<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>

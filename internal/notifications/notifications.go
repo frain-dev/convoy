@@ -43,6 +43,7 @@ func SendEndpointNotification(ctx context.Context,
 	status datastore.SubscriptionStatus,
 	q queue.Queuer,
 	failure bool,
+	failureMsg string,
 ) error {
 	var ns []*Notification
 
@@ -64,6 +65,7 @@ func SendEndpointNotification(ctx context.Context,
 				Params: map[string]string{
 					"logo_url":        group.LogoURL,
 					"target_url":      endpoint.TargetURL,
+					"failure_msg":     failureMsg,
 					"endpoint_status": string(status),
 				},
 			}
@@ -74,7 +76,7 @@ func SendEndpointNotification(ctx context.Context,
 
 			var text string
 			if failure {
-				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, endpoint status is now %s", endpoint.TargetURL, status)
+				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, reason for failure is \"%s\", endpoint status is now %s", endpoint.TargetURL, failureMsg, status)
 			} else {
 				text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.TargetURL, status)
 			}

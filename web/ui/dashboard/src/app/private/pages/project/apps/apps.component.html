@@ -55,38 +55,38 @@
 
 <convoy-card *ngIf="!isloadingApps && displayedApps && displayedApps.length > 0">
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
-		<convoy-table>
-			<convoy-table-head class="contents">
-				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of appsTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-			</convoy-table-head>
+		<table convoy-table>
+			<thead convoy-table-head>
+				<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of appsTableHead; let i = index">{{ head }}</th>
+			</thead>
 			<tbody>
 				<ng-container *ngFor="let apps of displayedApps; let i = index">
-					<convoy-table-row [forDate]="true" class="contents">
-						<convoy-table-cell class="contents" [forDate]="true">{{ apps.date }}</convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-					</convoy-table-row>
-					<convoy-table-row class="contents" *ngFor="let app of apps.content; let index = index" [id]="'app' + i" [routerLink]="['./' + app.uid]">
-						<convoy-table-cell class="contents" className="pl-16px">
+					<tr convoy-table-row [forDate]="true">
+						<td convoy-table-cell [forDate]="true">{{ apps.date }}</td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+					</tr>
+					<tr convoy-table-row *ngFor="let app of apps.content; let index = index" [id]="'app' + i" [routerLink]="['./' + app.uid]">
+						<td convoy-table-cell class="pl-16px">
 							<convoy-tag [type]="!app.is_disabled ? 'success' : 'grey'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</convoy-tag>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ app.name }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ app.created_at | date: 'hh:mm:ss a' }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ app.updated_at | date }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ app.events || 0 }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ app?.endpoints?.length || 0 }}</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>{{ app.name }}</td>
+						<td convoy-table-cell>{{ app.created_at | date: 'hh:mm:ss a' }}</td>
+						<td convoy-table-cell>{{ app.updated_at | date }}</td>
+						<td convoy-table-cell>{{ app.events || 0 }}</td>
+						<td convoy-table-cell>{{ app?.endpoints?.length || 0 }}</td>
+						<td convoy-table-cell>
 							<button convoy-button title="view events" size="xs" texture="light" (click)="loadEventsFromAppsTable($event, app.uid)" [disabled]="app.events <= 0">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 								View Events
 							</button>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							<div convoy-dropdown size="sm" #appTableDropdown>
 								<button dropdownTrigger convoy-button size="sm" fill="clear">
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
@@ -100,11 +100,11 @@
 									</convoy-list-item>
 								</ul>
 							</div>
-						</convoy-table-cell>
-					</convoy-table-row>
+						</td>
+					</tr>
 				</ng-container>
 			</tbody>
-		</convoy-table>
+		</table>
 	</div>
 </convoy-card>
 
