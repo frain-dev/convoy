@@ -11,11 +11,7 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
-import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
-import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
-import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
-import { TableComponent } from 'src/app/components/table/table.component';
+import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';

@@ -12,11 +12,7 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
-import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
-import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
-import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
-import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
-import { TableComponent } from 'src/app/components/table/table.component';
+import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
@@ -45,8 +41,8 @@ import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.
 		TableRowComponent,
 		TableCellComponent,
 		TableComponent,
-        TimePickerComponent,
-        DatePickerComponent
+		TimePickerComponent,
+		DatePickerComponent
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]
