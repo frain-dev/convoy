@@ -836,6 +836,7 @@ type OrganisationInvite struct {
 type PortalLink struct {
 	ID        primitive.ObjectID `json:"-" bson:"_id"`
 	UID       string             `json:"uid" bson:"uid"`
+	Name      string             `json:"name" bson:"name"`
 	GroupID   string             `json:"group_id" bson:"group_id"`
 	Token     string             `json:"-" bson:"token"`
 	Endpoints []string           `json:"endpoints" bson:"endpoints"`

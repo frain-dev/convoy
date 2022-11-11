@@ -81,6 +81,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultGroup.UID)
 	plainBody := fmt.Sprintf(`{
+		"name": "test_portal_link",
 		"endpoints": ["%s", "%s"]
 	}`, endpoint1.UID, endpoint2.UID)
 	body := strings.NewReader(plainBody)
@@ -103,6 +104,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 
 	require.Equal(s.T(), resp.UID, pl.UID)
 	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
+	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
 }
 
@@ -148,6 +150,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink(
 
 	require.Equal(s.T(), resp.UID, pl.UID)
 	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
+	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
 }
 
@@ -185,6 +188,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 
 	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultGroup.UID, portalLink.UID)
 	bodyStr := fmt.Sprintf(`{
+		    "name": "test_portal_link",
 			"endpoints": ["%s"]
 		}`, endpoint2.UID)
 
@@ -209,6 +213,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 
 	require.Equal(s.T(), resp.UID, pl.UID)
 	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
+	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
 }
 

@@ -35,6 +35,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, groupID string, p
 
 	update := bson.M{
 		"$set": bson.M{
+			"name":       portal.Name,
 			"endpoints":  portal.Endpoints,
 			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
 		},

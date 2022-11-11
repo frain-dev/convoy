@@ -251,6 +251,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 	return &models.PortalLinkResponse{
 		UID:       pl.UID,
 		GroupID:   pl.GroupID,
+		Name:      pl.Name,
 		URL:       fmt.Sprintf("%s/portal/%s", baseUrl, pl.Token),
 		Endpoints: pl.Endpoints,
 		CreatedAt: pl.CreatedAt,

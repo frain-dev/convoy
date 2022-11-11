@@ -6,6 +6,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/dchest/uniuri"
@@ -28,6 +29,7 @@ func Test_CreatePortalLink(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, portalLink.UID, newPortalLink.UID)
+	require.Equal(t, portalLink.Name, newPortalLink.Name)
 	require.Equal(t, portalLink.GroupID, newPortalLink.GroupID)
 	require.Equal(t, portalLink.Endpoints[0], newPortalLink.Endpoints[0])
 }
@@ -50,6 +52,7 @@ func Test_FindPortalLinkByID(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, portalLink.UID, newPortalLink.UID)
+	require.Equal(t, portalLink.Name, newPortalLink.Name)
 }
 
 func Test_FindPortalLinkByToken(t *testing.T) {
@@ -71,6 +74,7 @@ func Test_FindPortalLinkByToken(t *testing.T) {
 
 	require.Equal(t, portalLink.UID, newPortalLink.UID)
 	require.Equal(t, portalLink.Token, newPortalLink.Token)
+	require.Equal(t, portalLink.Name, newPortalLink.Name)
 }
 
 func Test_UpdatePortalLink(t *testing.T) {
@@ -215,6 +219,7 @@ func generatePortalLink(t *testing.T) *datastore.PortalLink {
 	return &datastore.PortalLink{
 		UID:            uuid.NewString(),
 		GroupID:        uuid.NewString(),
+		Name:           fmt.Sprintf("Test-%s", uuid.NewString()),
 		Token:          uniuri.NewLen(5),
 		Endpoints:      []string{uuid.NewString(), uuid.NewString()},
 		DocumentStatus: datastore.ActiveDocumentStatus,

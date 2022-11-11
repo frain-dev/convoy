@@ -43,6 +43,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newPortalLink: &models.PortalLink{
+					Name:      "test_portal_link",
 					Endpoints: []string{"123", "1234"},
 				},
 				group: &datastore.Group{UID: "12345"},
@@ -74,6 +75,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newPortalLink: &models.PortalLink{
+					Name:      "test_portal_link",
 					Endpoints: []string{},
 				},
 				group: &datastore.Group{UID: "12345"},
@@ -88,6 +90,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newPortalLink: &models.PortalLink{
+					Name:      "test_portal_link",
 					Endpoints: []string{"123"},
 				},
 				group: &datastore.Group{UID: "12345"},
@@ -164,12 +167,14 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 					Endpoints: []string{"123"},
 				},
 				update: &models.PortalLink{
+					Name:      "test_portal_link",
 					Endpoints: []string{"123", "1234"},
 				},
 				group: &datastore.Group{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
 				UID:       "12345",
+				Name:      "test_portal_link",
 				Endpoints: []string{"123", "1234"},
 			},
 			dbFn: func(pl *PortalLinkService) {
@@ -198,6 +203,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 					Endpoints: []string{"123"},
 				},
 				update: &models.PortalLink{
+					Name:      "test_portal_link",
 					Endpoints: []string{"1234"},
 				},
 				group: &datastore.Group{UID: "12345"},
@@ -239,6 +245,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 
 			require.Nil(t, err)
 			require.Equal(t, portalLink.UID, tc.wantPortalLink.UID)
+			require.Equal(t, portalLink.Name, tc.wantPortalLink.Name)
 			require.Equal(t, portalLink.Endpoints, tc.wantPortalLink.Endpoints)
 		})
 	}
@@ -271,6 +278,7 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 			},
 			wantPortalLink: &datastore.PortalLink{
 				UID:       "1234",
+				Name:      "test_portal_link",
 				Endpoints: []string{"123"},
 			},
 			dbFn: func(pl *PortalLinkService) {
@@ -278,6 +286,7 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 				p.EXPECT().FindPortalLinkByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.PortalLink{
 					UID:       "1234",
+					Name:      "test_portal_link",
 					Endpoints: []string{"123"},
 				}, nil)
 			},
@@ -322,6 +331,7 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, portalLink.UID, tc.wantPortalLink.UID)
 			require.Equal(t, portalLink.Endpoints, tc.wantPortalLink.Endpoints)
+			require.Equal(t, portalLink.Name, tc.wantPortalLink.Name)
 		})
 	}
 }

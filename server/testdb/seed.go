@@ -605,6 +605,7 @@ func SeedPortalLink(store datastore.Store, g *datastore.Group, endpoints []strin
 	portalLink := &datastore.PortalLink{
 		UID:            uuid.NewString(),
 		GroupID:        g.UID,
+		Name:           fmt.Sprintf("TestPortalLink-%s", uuid.NewString()),
 		Token:          uuid.NewString(),
 		Endpoints:      endpoints,
 		DocumentStatus: datastore.ActiveDocumentStatus,

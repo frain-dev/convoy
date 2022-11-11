@@ -32,6 +32,10 @@ func NewPortalLinkService(portalLinkRepo datastore.PortalLinkRepository, endpoin
 }
 
 func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models.PortalLink, group *datastore.Group) (*datastore.PortalLink, error) {
+	if err := util.Validate(portal); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	if len(portal.Endpoints) == 0 {
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpoints)
 	}
@@ -59,6 +63,10 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 }
 
 func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, group *datastore.Group, update *models.PortalLink, portalLink *datastore.PortalLink) (*datastore.PortalLink, error) {
+	if err := util.Validate(update); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
 	if len(update.Endpoints) == 0 {
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpoints)
 	}
@@ -67,6 +75,7 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, group *datasto
 		return nil, err
 	}
 
+	portalLink.Name = update.Name
 	portalLink.Endpoints = update.Endpoints
 	err := p.portalLinkRepo.UpdatePortalLink(ctx, group.UID, portalLink)
 	if err != nil {
