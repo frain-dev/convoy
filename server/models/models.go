@@ -336,12 +336,14 @@ type PortalLink struct {
 }
 
 type PortalLinkResponse struct {
-	UID       string             `json:"uid"`
-	Name      string             `json:"name"`
-	GroupID   string             `json:"group_id"`
-	Endpoints []string           `json:"endpoints"`
-	URL       string             `json:"url"`
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	UID               string               `json:"uid"`
+	Name              string               `json:"name"`
+	GroupID           string               `json:"group_id"`
+	Endpoints         []string             `json:"endpoints"`
+	EndpointCount     int                  `json:"endpoint_count"`
+	EndpointsMetadata []datastore.Endpoint `json:"endpoints_metadata"`
+	URL               string               `json:"url"`
+	CreatedAt         primitive.DateTime   `json:"created_at,omitempty"`
+	UpdatedAt         primitive.DateTime   `json:"updated_at,omitempty"`
+	DeletedAt         primitive.DateTime   `json:"deleted_at,omitempty"`
 }

@@ -106,6 +106,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
+	require.Equal(s.T(), 2, resp.EndpointCount)
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLinkNotFound() {
@@ -152,6 +153,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink(
 	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
+	require.Equal(s.T(), 1, resp.EndpointCount)
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks() {

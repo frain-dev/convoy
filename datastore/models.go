@@ -834,12 +834,13 @@ type OrganisationInvite struct {
 }
 
 type PortalLink struct {
-	ID        primitive.ObjectID `json:"-" bson:"_id"`
-	UID       string             `json:"uid" bson:"uid"`
-	Name      string             `json:"name" bson:"name"`
-	GroupID   string             `json:"group_id" bson:"group_id"`
-	Token     string             `json:"-" bson:"token"`
-	Endpoints []string           `json:"endpoints" bson:"endpoints"`
+	ID                primitive.ObjectID `json:"-" bson:"_id"`
+	UID               string             `json:"uid" bson:"uid"`
+	Name              string             `json:"name" bson:"name"`
+	GroupID           string             `json:"group_id" bson:"group_id"`
+	Token             string             `json:"-" bson:"token"`
+	Endpoints         []string           `json:"endpoints" bson:"endpoints"`
+	EndpointsMetadata []Endpoint         `json:"endpoints_metadata" bson:"endpoints_metadata"`
 
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`

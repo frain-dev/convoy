@@ -249,13 +249,15 @@ func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *ht
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {
 	return &models.PortalLinkResponse{
-		UID:       pl.UID,
-		GroupID:   pl.GroupID,
-		Name:      pl.Name,
-		URL:       fmt.Sprintf("%s/portal/%s", baseUrl, pl.Token),
-		Endpoints: pl.Endpoints,
-		CreatedAt: pl.CreatedAt,
-		UpdatedAt: pl.UpdatedAt,
-		DeletedAt: pl.DeletedAt,
+		UID:               pl.UID,
+		GroupID:           pl.GroupID,
+		Name:              pl.Name,
+		URL:               fmt.Sprintf("%s/portal/%s", baseUrl, pl.Token),
+		Endpoints:         pl.Endpoints,
+		EndpointCount:     len(pl.Endpoints),
+		EndpointsMetadata: pl.EndpointsMetadata,
+		CreatedAt:         pl.CreatedAt,
+		UpdatedAt:         pl.UpdatedAt,
+		DeletedAt:         pl.DeletedAt,
 	}
 }

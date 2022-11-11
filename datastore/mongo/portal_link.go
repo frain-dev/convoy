@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -77,10 +78,57 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 	portalLinks := make([]datastore.PortalLink, 0)
 
 	filter := bson.M{"group_id": groupID}
-	pagination, err := p.store.FindMany(ctx, filter, nil, nil, int64(pageable.Page), int64(pageable.PerPage), &portalLinks)
 
+	matchStage := bson.D{
+		{Key: "$match",
+			Value: bson.D{
+				{Key: "group_id", Value: groupID},
+				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+			},
+		},
+	}
+
+	endpointStage := bson.D{
+		{Key: "$lookup",
+			Value: bson.D{
+				{Key: "from", Value: "endpoints"},
+				{Key: "localField", Value: "endpoints"},
+				{Key: "foreignField", Value: "uid"},
+				{Key: "as", Value: "endpoints_metadata"},
+			},
+		},
+	}
+
+	sortAndLimitStages := []bson.D{
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: pageable.Sort}}}},
+		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
+		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
+		{{Key: "$limit", Value: pageable.PerPage}},
+	}
+
+	pipeline := mongo.Pipeline{
+		matchStage,
+		endpointStage,
+	}
+
+	pipeline = append(pipeline, sortAndLimitStages...)
+	err := p.store.Aggregate(ctx, pipeline, &portalLinks, true)
 	if err != nil {
-		return portalLinks, datastore.PaginationData{}, err
+		return nil, datastore.PaginationData{}, err
+	}
+
+	count, err := p.store.Count(ctx, filter)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	pagination := datastore.PaginationData{
+		Total:     count,
+		Page:      int64(pageable.Page),
+		PerPage:   int64(pageable.PerPage),
+		Prev:      int64(getPrevPage(pageable.Page)),
+		Next:      int64(pageable.Page + 1),
+		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
 	}
 
 	return portalLinks, pagination, nil
