@@ -133,7 +133,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 	}{
 		{
 			name:     "Load Portal Links Paged - 10 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    10,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
@@ -141,7 +141,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 					TotalPage: 4,
 					Page:      1,
 					PerPage:   3,
-					Prev:      0,
+					Prev:      1,
 					Next:      2,
 				},
 			},
@@ -149,7 +149,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 		{
 			name:     "Load Portal Links Paged - 12 records",
-			pageData: datastore.Pageable{Page: 2, PerPage: 4},
+			pageData: datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
 			count:    12,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
@@ -165,7 +165,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 		{
 			name:     "Load Portal Links Paged - 5 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    5,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
@@ -173,7 +173,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 					TotalPage: 2,
 					Page:      1,
 					PerPage:   3,
-					Prev:      0,
+					Prev:      1,
 					Next:      2,
 				},
 			},
