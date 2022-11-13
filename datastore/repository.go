@@ -143,6 +143,6 @@ type PortalLinkRepository interface {
 	UpdatePortalLink(ctx context.Context, groupID string, portal *PortalLink) error
 	FindPortalLinkByID(ctx context.Context, groupID string, id string) (*PortalLink, error)
 	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
-	LoadPortalLinksPaged(ctx context.Context, groupID string, pageable Pageable) ([]PortalLink, PaginationData, error)
+	LoadPortalLinksPaged(ctx context.Context, groupID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, groupID string, id string) error
 }

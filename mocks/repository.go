@@ -1774,9 +1774,9 @@ func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByToken(ctx, token
 }
 
 // LoadPortalLinksPaged mocks base method.
-func (m *MockPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+func (m *MockPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, groupID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadPortalLinksPaged", ctx, groupID, pageable)
+	ret := m.ctrl.Call(m, "LoadPortalLinksPaged", ctx, groupID, f, pageable)
 	ret0, _ := ret[0].([]datastore.PortalLink)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -1784,9 +1784,9 @@ func (m *MockPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, gro
 }
 
 // LoadPortalLinksPaged indicates an expected call of LoadPortalLinksPaged.
-func (mr *MockPortalLinkRepositoryMockRecorder) LoadPortalLinksPaged(ctx, groupID, pageable interface{}) *gomock.Call {
+func (mr *MockPortalLinkRepositoryMockRecorder) LoadPortalLinksPaged(ctx, groupID, f, pageable interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPortalLinksPaged", reflect.TypeOf((*MockPortalLinkRepository)(nil).LoadPortalLinksPaged), ctx, groupID, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPortalLinksPaged", reflect.TypeOf((*MockPortalLinkRepository)(nil).LoadPortalLinksPaged), ctx, groupID, f, pageable)
 }
 
 // RevokePortalLink mocks base method.

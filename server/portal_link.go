@@ -173,9 +173,12 @@ func (a *ApplicationHandler) RevokePortalLink(w http.ResponseWriter, r *http.Req
 func (a *ApplicationHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
+	endpointID := m.GetEndpointIDFromContext(r)
+
+	filter := &datastore.FilterBy{EndpointID: endpointID}
 
 	portalLinkService := createPortalLinkService(a)
-	portalLinks, paginationData, err := portalLinkService.LoadPortalLinksPaged(r.Context(), group, pageable)
+	portalLinks, paginationData, err := portalLinkService.LoadPortalLinksPaged(r.Context(), group, filter, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

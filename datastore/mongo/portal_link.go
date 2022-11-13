@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -73,7 +74,7 @@ func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string
 	return portalLink, err
 }
 
-func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	ctx = p.setCollectionInContext(ctx)
 	portalLinks := make([]datastore.PortalLink, 0)
 
@@ -86,6 +87,20 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
 			},
 		},
+	}
+
+	if !util.IsStringEmpty(f.EndpointID) {
+		filter["endpoints"] = f.EndpointID
+
+		matchStage = bson.D{
+			{Key: "$match",
+				Value: bson.D{
+					{Key: "group_id", Value: groupID},
+					{Key: "endpoints", Value: f.EndpointID},
+					{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+				},
+			},
+		}
 	}
 
 	endpointStage := bson.D{

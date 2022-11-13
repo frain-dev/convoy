@@ -182,6 +182,35 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks() 
 	require.Equal(s.T(), int64(totalLinks), resp.Pagination.Total)
 }
 
+func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks_FilterByEndpointID() {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	totalLinks := r.Intn(5)
+
+	// Just Before
+	for i := 0; i < totalLinks; i++ {
+		_, _ = testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{uuid.NewString()})
+	}
+
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", uuid.NewString(), false)
+	_, _ = testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{endpoint.UID})
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links?endpointId=%s", s.DefaultGroup.UID, endpoint.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Deep Assert
+	var resp pagedResponse
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), int64(1), resp.Pagination.Total)
+}
+
 func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	// Just Before
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", uuid.NewString(), false)

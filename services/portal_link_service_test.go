@@ -419,6 +419,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 	type args struct {
 		ctx      context.Context
 		group    *datastore.Group
+		filter   *datastore.FilterBy
 		pageable datastore.Pageable
 	}
 
@@ -435,8 +436,9 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 		{
 			name: "should_load_portal_links",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				ctx:    ctx,
+				group:  &datastore.Group{UID: "12345"},
+				filter: &datastore.FilterBy{},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -457,7 +459,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
-				p.EXPECT().LoadPortalLinksPaged(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+				p.EXPECT().LoadPortalLinksPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.PortalLink{
 						{UID: "12345"},
 						{UID: "123456"},
@@ -485,7 +487,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
-				p.EXPECT().LoadPortalLinksPaged(gomock.Any(), gomock.Any(), gomock.Any()).
+				p.EXPECT().LoadPortalLinksPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -505,7 +507,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			portalLinks, paginationData, err := pl.LoadPortalLinksPaged(tc.args.ctx, tc.args.group, tc.args.pageable)
+			portalLinks, paginationData, err := pl.LoadPortalLinksPaged(tc.args.ctx, tc.args.group, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

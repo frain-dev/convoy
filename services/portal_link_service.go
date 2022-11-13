@@ -98,8 +98,8 @@ func (p *PortalLinkService) FindPortalLinkByID(ctx context.Context, group *datas
 	return portalLink, nil
 }
 
-func (p *PortalLinkService) LoadPortalLinksPaged(ctx context.Context, group *datastore.Group, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
-	portalLinks, paginationData, err := p.portalLinkRepo.LoadPortalLinksPaged(ctx, group.UID, pageable)
+func (p *PortalLinkService) LoadPortalLinksPaged(ctx context.Context, group *datastore.Group, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+	portalLinks, paginationData, err := p.portalLinkRepo.LoadPortalLinksPaged(ctx, group.UID, f, pageable)
 	if err != nil {
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching portal links"))
 	}
