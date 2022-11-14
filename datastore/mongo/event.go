@@ -37,7 +37,7 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 	message.ID = primitive.NewObjectID()
 
 	if util.IsStringEmpty(message.ProviderID) {
-		message.ProviderID = message.Endpoints[0]
+		message.ProviderID = uuid.NewString()
 	}
 	if util.IsStringEmpty(message.UID) {
 		message.UID = uuid.New().String()
@@ -189,7 +189,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(f.SearchParams)}
 
 	if !util.IsStringEmpty(f.EndpointID) {
-		filter["endpoint_id"] = f.EndpointID
+		filter["endpoints"] = f.EndpointID
 	}
 
 	if !util.IsStringEmpty(f.Group.UID) {

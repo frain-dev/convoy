@@ -92,7 +92,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event() {
 	parseResponse(s.T(), w.Result(), &event)
 
 	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.EndpointID, endpointID)
+	require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
@@ -131,7 +131,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 	parseResponse(s.T(), w.Result(), &event)
 
 	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.EndpointID, endpointID)
+	require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {
