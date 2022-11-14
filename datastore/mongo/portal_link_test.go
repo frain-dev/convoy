@@ -127,12 +127,14 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 	tests := []struct {
 		name     string
+		filter   *datastore.FilterBy
 		pageData datastore.Pageable
 		count    int
 		expected Expected
 	}{
 		{
 			name:     "Load Portal Links Paged - 10 records",
+			filter:   &datastore.FilterBy{},
 			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    10,
 			expected: Expected{
@@ -149,6 +151,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 		{
 			name:     "Load Portal Links Paged - 12 records",
+			filter:   &datastore.FilterBy{},
 			pageData: datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
 			count:    12,
 			expected: Expected{
@@ -165,6 +168,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 		{
 			name:     "Load Portal Links Paged - 5 records",
+			filter:   &datastore.FilterBy{},
 			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:    5,
 			expected: Expected{
@@ -201,7 +205,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 				require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
 			}
 
-			_, pageable, err := portalLinkRepo.LoadPortalLinksPaged(context.Background(), groupID, tc.pageData)
+			_, pageable, err := portalLinkRepo.LoadPortalLinksPaged(context.Background(), groupID, tc.filter, tc.pageData)
 
 			require.NoError(t, err)
 
