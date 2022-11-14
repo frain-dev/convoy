@@ -5,8 +5,12 @@
 </div>
 
 <form [formGroup]="editOrganisationForm">
-	<convoy-input type="text" autocomplete="name" name="name" formControlName="name" errorMessage="Please enter a name for your organisation" label="Organisation name" placeholder="Organisation name" [required]="true"></convoy-input>
-	<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between">Organisation Id</label>
+	<convoy-input-field>
+		<label for="name" convoy-label required="true">Organisation name</label>
+		<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Organisation name" />
+		<convoy-input-error *ngIf="editOrganisationForm.get('name')?.touched && editOrganisationForm.get('name')?.invalid">Please enter a name for your organisation</convoy-input-error>
+	</convoy-input-field>
+	<label convoy-label>Organisation Id</label>
 	<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
 		<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
 		<convoy-copy-button [text]="organisationId"></convoy-copy-button>

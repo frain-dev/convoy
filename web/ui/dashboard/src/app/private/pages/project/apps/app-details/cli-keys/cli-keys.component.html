@@ -50,7 +50,10 @@
 
 <convoy-modal title="Generate CLI key" (closeModal)="generateKeyModal = false; generateKeyForm.reset()" *ngIf="generateKeyModal">
 	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()" modalBody>
-		<convoy-input autocomplete="name" name="name" formControlName="name" label="Name" placeholder="CLI key name"></convoy-input>
+		<convoy-input-field>
+			<label for="name" convoy-label>CLI key name</label>
+			<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="CLI key name" />
+		</convoy-input-field>
 		<convoy-select label="Expiration" name="expiration" formControlName="expiration" [options]="expirationDates" (selectedOption)="generateKeyForm.patchValue({ expiration: $event })"></convoy-select>
 		<div class="flex justify-end mt-24px">
 			<button convoy-button>Generate Key</button>

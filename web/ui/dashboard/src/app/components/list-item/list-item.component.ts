@@ -2,17 +2,16 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-	selector: 'convoy-list-item',
+	selector: 'convoy-list-item, [convoy-list-item]',
 	standalone: true,
+	host: { class: 'flex items-center justify-between py-10px transition-all duration-300', '[class]': "hasBorder?'border-b border-grey-10':''" },
 	imports: [CommonModule],
-	templateUrl: './list-item.component.html',
-	styleUrls: ['./list-item.component.scss']
+	template: `
+		<ng-content></ng-content>
+	`
 })
 export class ListItemComponent implements OnInit {
-	@Input('className') class!: string;
-	@Input('hover') hover: boolean = false;
-	@Input('active') active: boolean = false;
-
+	@Input('hasBorder') hasBorder = true;
 	constructor() {}
 
 	ngOnInit(): void {}

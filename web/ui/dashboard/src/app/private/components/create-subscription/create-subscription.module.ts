@@ -6,7 +6,7 @@ import { CreateAppModule } from '../create-app/create-app.module';
 import { CreateSourceModule } from '../create-source/create-source.module';
 import { LoaderModule } from '../loader/loader.module';
 import { CreateEndpointModule } from '../../pages/project/apps/app-details/create-endpoint/create-endpoint.module';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
@@ -27,7 +27,6 @@ import { CreateSubscriptionFilterComponent } from '../create-subscription-filter
 		CreateSourceModule,
 		LoaderModule,
 		CreateEndpointModule,
-		InputComponent,
 		SelectComponent,
 		ButtonComponent,
 		TooltipComponent,
@@ -36,8 +35,12 @@ import { CreateSubscriptionFilterComponent } from '../create-subscription-filter
 		CardComponent,
 		RadioComponent,
 		ConfirmationModalComponent,
-        FormatSecondsPipe,
-        CreateSubscriptionFilterComponent
+		FormatSecondsPipe,
+        CreateSubscriptionFilterComponent,
+		InputFieldDirective,
+		InputErrorComponent,
+		InputDirective,
+		LabelComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

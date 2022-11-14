@@ -34,7 +34,6 @@ require (
 	github.com/jirevwe/eflat v0.0.0-20221021221006-40872f1c0902
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
-	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mongodb/mongo-tools v0.0.0-20220615145412-ec9893cba7e6
 	github.com/newrelic/go-agent/v3 v3.15.2
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.1
@@ -52,7 +51,6 @@ require (
 	github.com/swaggo/swag v1.8.2
 	github.com/typesense/typesense-go v0.4.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
-	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/xdg-go/pbkdf2 v1.0.0
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.9.1

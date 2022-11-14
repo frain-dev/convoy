@@ -186,34 +186,34 @@
 			<h3 class="font-medium">App Portal</h3>
 			<div *ngIf="loadingAppPotalToken">
 				<ul class="mt-10px">
-					<convoy-list-item className="border-none">
+					<li convoy-list-item class="border-none">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
 						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
-					</convoy-list-item>
-					<convoy-list-item className="border-none">
+					</li>
+					<li convoy-list-item class="border-none">
 						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
 						<convoy-skeleton-loader className="w-80px h-20px"></convoy-skeleton-loader>
-					</convoy-list-item>
+					</li>
 					<div class="bg-grey-10 animate-pulse rounded-8px w-full h-100px mt-16px"></div>
 				</ul>
 			</div>
 
 			<div *ngIf="!loadingAppPotalToken">
 				<ul class="mt-10px">
-					<convoy-list-item className="border-none !py-8px">
+					<li convoy-list-item class="border-none !py-8px">
 						<div class="text-14 text-grey-40 font-light">App Page</div>
 						<a class="text-14 text-primary-100 flex items-center" [href]="appPortalLink" target="_blank">
 							Open Link
 							<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 						</a>
-					</convoy-list-item>
-					<convoy-list-item className="border-none !py-8px">
+					</li>
+					<li convoy-list-item class="border-none !py-8px">
 						<div class="text-14 text-grey-40 font-light">Embed into your platform</div>
 						<a class="text-14 text-primary-100 flex items-center" href="https://getconvoy.io/docs/app-portal" target="_blank">
 							See Documentation
 							<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 						</a>
-					</convoy-list-item>
+					</li>
 
 					<div class="bg-white-100 border-2 border-primary-500 rounded-[10px] p-16px mt-16px">
 						<div class="text-14 text-grey-40 overflow-x-scroll">{{ appPortalIframe }}</div>
