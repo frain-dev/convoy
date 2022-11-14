@@ -44,15 +44,11 @@
 				</button>
 
 				<ul dropdownOptions>
-					<convoy-list-item
-						convoy-dropdown-option
-						*ngFor="let filterOption of filterOptions"
-						[className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'"
-					>
+					<li convoy-dropdown-option convoy-list-item *ngFor="let filterOption of filterOptions" class="text-14" [active]="dashboardFrequency == filterOption ? 'true' : 'false'" [hasBorder]="true">
 						<button convoy-button color="grey" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData()" class="capitalize text-left w-full !justify-start">
 							{{ filterOption }}
 						</button>
-					</convoy-list-item>
+					</li>
 				</ul>
 			</div>
 		</div>

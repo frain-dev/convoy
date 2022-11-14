@@ -126,37 +126,37 @@
 			</div>
 
 			<ul>
-				<convoy-list-item className="text-14 font-normal py-16px px-24px">
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px">
 					<div class="w-[50%] text-grey-40">Subscription type</div>
 					<div class="w-[50%] text-right capitalize">{{ activeSubscription?.type }}</div>
-				</convoy-list-item>
-				<convoy-list-item className="text-14 font-normal py-16px px-24px">
+				</li>
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px">
 					<div class="w-[50%] text-grey-40 font-medium">Status</div>
 					<div class="w-[50%] text-right">
 						<span [class]="'ml-4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
 					</div>
-				</convoy-list-item>
-				<convoy-list-item className="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.endpoint_metadata">
+				</li>
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.endpoint_metadata">
 					<div class="w-[50%] text-grey-40">Endpoint</div>
 					<div class="w-[50%] text-right text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
-				</convoy-list-item>
-				<convoy-list-item className="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.app_metadata">
+				</li>
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.app_metadata">
 					<div class="w-[50%] text-grey-40">App Name</div>
 					<a [routerLink]="'/projects/' + projectId + '/apps/' + activeSubscription?.app_metadata?.uid" class="w-[50%] font-medium text-primary-100 text-right underline">
 						{{ activeSubscription?.app_metadata?.name }}
 					</a>
-				</convoy-list-item>
-				<convoy-list-item className="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.type === 'incoming'">
+				</li>
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.type === 'incoming'">
 					<div class="w-[50%] text-grey-40">Source</div>
 					<a [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: activeSubscription?.uid }" class="w-[50%] font-medium text-primary-100 text-right underline">
 						{{ activeSubscription?.source_metadata?.name }}
 					</a>
-				</convoy-list-item>
-				<convoy-list-item className="text-14 font-normal py-16px px-24px">
+				</li>
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px">
 					<div class="w-[50%] text-grey-40">Created At</div>
 					<div class="w-[50%] text-right">{{ activeSubscription?.created_at | date }}</div>
-				</convoy-list-item>
-				<convoy-list-item className="text-14 font-normal py-16px px-24px items-start">
+				</li>
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px items-start">
 					<div class="w-[40%] flex items-center text-primary-100 text-12 whitespace-nowrap">
 						<a rou></a>
 						Events Watched
@@ -169,7 +169,7 @@
 							<convoy-tag type="grey" className="ml-4px mb-1 first-of-type:mr-0" *ngFor="let event of activeSubscription?.filter_config?.event_types">{{ event === '*' ? 'all events' : event }}</convoy-tag>
 						</div>
 					</div>
-				</convoy-list-item>
+				</li>
 			</ul>
 
 			<div class="flex items-center justify-end mt-40px mr-24px">

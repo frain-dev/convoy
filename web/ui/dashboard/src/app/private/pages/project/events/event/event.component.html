@@ -137,7 +137,7 @@
 					<ng-container *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
 						<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
 						<ul>
-							<convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['./event-deliveries/' + delivery.uid]" className="cursor-pointer !justify-start">
+							<li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['./event-deliveries/' + delivery.uid]" class="cursor-pointer !justify-start">
 								<div class="flex items-center">
 									<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
 										<use xlink:href="#cli-icon"></use>
@@ -147,7 +147,7 @@
 								<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
 									{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
 								</div>
-							</convoy-list-item>
+							</li>
 						</ul>
 					</ng-container>
 				</ng-container>

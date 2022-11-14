@@ -214,7 +214,12 @@ func receiveHandler(connection *websocket.Conn, url string) {
 		}
 
 		// send request to the recepient
-		d := convoyNet.NewDispatcher(time.Second * 10)
+		d, err := convoyNet.NewDispatcher(time.Second*10, "")
+		if err != nil {
+			log.Error("an error occured while forwading the event", err)
+			continue
+		}
+
 		res, err := d.ForwardCliEvent(url, convoy.HttpPost, event.Data, event.Headers)
 		if err != nil {
 			log.Error("an error occured while forwading the event", err)
