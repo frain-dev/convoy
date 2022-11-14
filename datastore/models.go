@@ -441,13 +441,14 @@ type Event struct {
 	// with your internal systems.
 	// This is optional
 	// If not provided, we will generate one for you
-	ProviderID string                `json:"provider_id,omitempty" bson:"provider_id"`
-	SourceID   string                `json:"source_id,omitempty" bson:"source_id"`
-	GroupID    string                `json:"group_id,omitempty" bson:"group_id"`
-	EndpointID string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	Endpoint   *Endpoint             `json:"endpoint_metadata,omitempty" bson:"-"`
-	Source     *Source               `json:"source_metadata,omitempty" bson:"-"`
+	ProviderID string `json:"provider_id,omitempty" bson:"provider_id"`
+	SourceID   string `json:"source_id,omitempty" bson:"source_id"`
+	GroupID    string `json:"group_id,omitempty" bson:"group_id"`
+	// EndpointID string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
+	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
+	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"-"`
+	Source           *Source               `json:"source_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints

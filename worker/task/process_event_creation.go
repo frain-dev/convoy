@@ -50,40 +50,9 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 		}
 
-		if group.Type == datastore.OutgoingGroup {
-			var endpoint *datastore.Endpoint
-
-			endpointCacheKey := convoy.EndpointsCacheKey.Get(event.EndpointID).String()
-			err = cache.Get(ctx, endpointCacheKey, &endpoint)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
-
-			// cache miss, load from db
-			if endpoint == nil {
-				endpoint, err = endpointRepo.FindEndpointByID(ctx, event.EndpointID)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
-
-				err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
-			}
-
-			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, group.UID, endpoint.UID)
-			if err != nil {
-				return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
-			}
-
-			subscriptions = matchSubscriptions(string(event.EventType), subs)
-		} else if group.Type == datastore.IncomingGroup {
-			subscriptions, err = subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
-			if err != nil {
-				log.Errorf("error fetching subscriptions for this source %s", err)
-				return &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
-			}
+		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, group, &event)
+		if err != nil {
+			return err
 		}
 
 		event.MatchedEndpoints = len(subscriptions)
@@ -189,6 +158,53 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 		return nil
 	}
+}
+
+func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache, subRepo datastore.SubscriptionRepository, group *datastore.Group, event *datastore.Event) ([]datastore.Subscription, error) {
+	var subscriptions []datastore.Subscription
+	var err error
+
+	if group.Type == datastore.OutgoingGroup {
+		for _, endpointID := range event.Endpoints {
+			var endpoint *datastore.Endpoint
+
+			endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
+			err = cache.Get(ctx, endpointCacheKey, &endpoint)
+			if err != nil {
+				return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			// cache miss, load from db
+			if endpoint == nil {
+				endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID)
+				if err != nil {
+					return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
+				if err != nil {
+					return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+			}
+
+			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, group.UID, endpoint.UID)
+			if err != nil {
+				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
+			}
+
+			subs = matchSubscriptions(string(event.EventType), subs)
+			subscriptions = append(subscriptions, subs...)
+
+		}
+	} else if group.Type == datastore.IncomingGroup {
+		subscriptions, err = subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
+		if err != nil {
+			log.Errorf("error fetching subscriptions for this source %s", err)
+			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+		}
+	}
+
+	return subscriptions, nil
 }
 
 func matchSubscriptions(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {

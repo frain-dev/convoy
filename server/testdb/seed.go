@@ -339,7 +339,7 @@ func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, groupID stri
 		UID:            uid,
 		EventType:      datastore.EventType(eventType),
 		Data:           data,
-		EndpointID:     endpoint.UID,
+		Endpoints:      []string{endpoint.UID},
 		GroupID:        groupID,
 		SourceID:       sourceID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),

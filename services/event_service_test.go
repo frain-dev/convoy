@@ -89,7 +89,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				EndpointID:       "123",
+				Endpoints:        []string{"123"},
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
@@ -118,7 +118,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				}, nil)
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
-					Times(2).Return(nil)
+					Times(1).Return(nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -146,7 +146,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				EndpointID:       "123",
+				Endpoints:        []string{"123", "12345"},
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
@@ -193,7 +193,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				EndpointID:       "123",
+				Endpoints:        []string{"123"},
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
@@ -242,7 +242,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				EndpointID:       "123",
+				Endpoints:        []string{"123"},
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
@@ -292,7 +292,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				EndpointID:       "123",
+				Endpoints:        []string{"123"},
 				GroupID:          "abc",
 				DocumentStatus:   datastore.ActiveDocumentStatus,
 				Headers:          httpheader.HTTPHeader{"X-Test-Signature": []string{"Test"}},
@@ -408,10 +408,10 @@ func TestEventService_CreateEvent(t *testing.T) {
 
 			stripVariableFields(t, "event", event)
 
-			m1 := tc.wantEvent.EndpointID
-			m2 := event.EndpointID
+			m1 := tc.wantEvent.Endpoints[0]
+			m2 := event.Endpoints[0]
 
-			tc.wantEvent.EndpointID, event.EndpointID = "", ""
+			tc.wantEvent.Endpoints[0], event.Endpoints[0] = "", ""
 			require.Equal(t, tc.wantEvent, event)
 			require.Equal(t, m1, m2)
 		})
@@ -1083,7 +1083,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 				}
 				ed.EXPECT().LoadEventsPaged(gomock.Any(), f).
 					Times(1).
-					Return([]datastore.Event{{UID: "1234"}}, datastore.PaginationData{
+					Return([]datastore.Event{{UID: "1234", Endpoints: []string{"abc"}}}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,
 						PerPage:   2,
@@ -1102,13 +1102,14 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			},
 			wantEvents: []datastore.Event{
 				{
-					UID: "1234",
-					Endpoint: &datastore.Endpoint{
+					UID:       "1234",
+					Endpoints: []string{"abc"},
+					EndpointMetadata: []*datastore.Endpoint{{
 						UID:          "abc",
 						Title:        "Title",
 						GroupID:      "123",
 						SupportEmail: "SupportEmail",
-					},
+					}},
 				},
 			},
 			wantPaginationData: datastore.PaginationData{

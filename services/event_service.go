@@ -66,18 +66,12 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusNotFound, errors.New("no valid endpoint found"))
 	}
 
-	var events []*datastore.Event
-
-	for _, endpoint := range endpoints {
-		event, err := e.createEvent(ctx, &endpoint, newMessage, g)
-		if err != nil {
-			return nil, err
-		}
-
-		events = append(events, event)
+	event, err := e.createEvent(ctx, endpoints, newMessage, g)
+	if err != nil {
+		return nil, err
 	}
 
-	return events[0], nil
+	return event, nil
 }
 
 func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
@@ -211,12 +205,12 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
-	endpointMap := datastore.EndpointMap{}
+	var endpointMetaData []*datastore.Endpoint
 	sourceMap := datastore.SourceMap{}
 
 	for i, event := range events {
-		if _, ok := endpointMap[event.EndpointID]; !ok {
-			a, _ := e.endpointRepo.FindEndpointByID(ctx, event.EndpointID)
+		for _, endpointID := range event.Endpoints {
+			a, _ := e.endpointRepo.FindEndpointByID(ctx, endpointID)
 			aa := &datastore.Endpoint{
 				UID:          a.UID,
 				Title:        a.Title,
@@ -224,7 +218,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 				SupportEmail: a.SupportEmail,
 				TargetURL:    a.TargetURL,
 			}
-			endpointMap[event.EndpointID] = aa
+			endpointMetaData = append(endpointMetaData, aa)
 		}
 
 		if _, ok := sourceMap[event.SourceID]; !ok && !util.IsStringEmpty(event.SourceID) {
@@ -238,7 +232,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 			}
 		}
 
-		events[i].Endpoint = endpointMap[event.EndpointID]
+		events[i].EndpointMetadata = endpointMetaData
 		events[i].Source = sourceMap[event.SourceID]
 	}
 
@@ -405,7 +399,13 @@ func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHead
 	return headers
 }
 
-func (e *EventService) createEvent(ctx context.Context, endpoint *datastore.Endpoint, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
+func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
+	var endpointIDs []string
+
+	for _, endpoint := range endpoints {
+		endpointIDs = append(endpointIDs, endpoint.UID)
+	}
+
 	event := &datastore.Event{
 		UID:            uuid.New().String(),
 		EventType:      datastore.EventType(newMessage.EventType),
@@ -413,8 +413,8 @@ func (e *EventService) createEvent(ctx context.Context, endpoint *datastore.Endp
 		Headers:        e.getCustomHeaders(newMessage),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		EndpointID:     endpoint.UID,
-		GroupID:        endpoint.GroupID,
+		Endpoints:      endpointIDs,
+		GroupID:        g.UID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

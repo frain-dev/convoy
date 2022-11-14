@@ -37,7 +37,7 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 	message.ID = primitive.NewObjectID()
 
 	if util.IsStringEmpty(message.ProviderID) {
-		message.ProviderID = message.EndpointID
+		message.ProviderID = message.Endpoints[0]
 	}
 	if util.IsStringEmpty(message.UID) {
 		message.UID = uuid.New().String()

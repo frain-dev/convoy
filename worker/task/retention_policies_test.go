@@ -246,7 +246,7 @@ func seedEvent(store datastore.Store, endpointID string, groupID string, uid, ev
 		UID:            uid,
 		EventType:      datastore.EventType(eventType),
 		Data:           data,
-		EndpointID:     endpointID,
+		Endpoints:      []string{endpointID},
 		GroupID:        groupID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
