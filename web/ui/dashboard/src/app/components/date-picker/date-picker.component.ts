@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DropdownComponent } from '../dropdown/dropdown.component';
 import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
 import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
+import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
+import { ScreenDirective } from '../screen/screen.directive';
 
 interface CALENDAR_DAY {
 	date: number;
@@ -16,12 +17,11 @@ interface CALENDAR_DAY {
 @Component({
 	selector: 'convoy-date-picker',
 	standalone: true,
-	imports: [CommonModule, DropdownComponent, ButtonComponent, FormsModule],
+	imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, ScreenDirective],
 	templateUrl: './date-picker.component.html',
 	styleUrls: ['./date-picker.component.scss']
 })
 export class DatePickerComponent implements OnInit {
-	@ViewChild('dropdown') dropdown!: DropdownComponent;
 	@Output() selectedDateRange = new EventEmitter<any>();
 	@Output() selectedDate = new EventEmitter<any>();
 	@Output() clearDates = new EventEmitter<any>();
@@ -46,6 +46,7 @@ export class DatePickerComponent implements OnInit {
 		startDate: string | Date;
 		endDate: string | Date;
 	};
+    showPicker = false;
 
 	constructor() {}
 
@@ -79,13 +80,13 @@ export class DatePickerComponent implements OnInit {
 		this.selectedStartDay = this.todayTimestamp;
 		this.selectedEndDay = this.todayTimestamp;
 		this.initDatePicker();
-		this.dropdown.show = false;
+		this.showPicker = false;
 	}
 
 	applyDate() {
 		this.selectedDates = { startDate: new Date(this.selectedStartDay!), endDate: new Date(this.selectedEndDay!) };
 		this.formType === 'filter' ? this.selectedDateRange.emit(this.selectedDates) : this.selectedDate.emit(this.selectedDates.startDate);
-		this.dropdown.show = false;
+		this.showPicker = false;
 	}
 
 	get getCalculatedClass() {

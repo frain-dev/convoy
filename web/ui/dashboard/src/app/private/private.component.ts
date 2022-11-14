@@ -1,6 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
@@ -12,8 +11,6 @@ import { PrivateService } from './private.service';
 	styleUrls: ['./private.component.scss']
 })
 export class PrivateComponent implements OnInit {
-	@ViewChild('accountDropdown') dropdownComponent!: DropdownComponent;
-	@ViewChild('organisationDropdown') organisationDropdown!: DropdownComponent;
 	showDropdown = false;
 	showOrgDropdown = false;
 	showMoreDropdown = false;
