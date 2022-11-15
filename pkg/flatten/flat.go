@@ -10,6 +10,25 @@ var ErrTopLevelElementOr = errors.New("only one top level element is allowed whe
 var ErrTopLevelElementAnd = errors.New("only one top level element is allowed when using the $and operator")
 var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array")
 
+// Flatten flattens extended JSON which is used to build and store mongodb queries.
+//
+// Payloads that look like this
+//
+//	{
+//		"person": {
+//			"age": {
+//				"$gte": 5
+//			}
+//		}
+//	}
+//
+// would become
+//
+//	{
+//		"person.age": {
+//		  "$gte": 5
+//		}
+//	}
 func Flatten(input map[string]interface{}) (map[string]interface{}, error) {
 	return flatten("", input)
 }

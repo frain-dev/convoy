@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/flatten"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"

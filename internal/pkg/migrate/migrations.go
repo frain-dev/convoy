@@ -476,11 +476,7 @@ var Migrations = []*Migration{
 						filter = map[string]interface{}{"event_types": s.FilterConfig.EventTypes[0]}
 					}
 				} else {
-					events := make([]map[string]interface{}, len(s.FilterConfig.EventTypes))
-					for i := range s.FilterConfig.EventTypes {
-						events[i] = map[string]interface{}{"event_types": s.FilterConfig.EventTypes[i]}
-					}
-					filter = map[string]interface{}{"$or": events}
+					filter = map[string]interface{}{"event_types": map[string]interface{}{"$in": s.FilterConfig.EventTypes}}
 				}
 
 				update := bson.M{
