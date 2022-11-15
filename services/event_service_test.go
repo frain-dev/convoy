@@ -50,14 +50,12 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_create_event",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{
-					{
-						Title:        "test_app",
-						UID:          "123",
-						GroupID:      "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
+					SupportEmail: "test_app@gmail.com",
 				}, nil)
 				eq, _ := es.queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
@@ -66,7 +64,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints: []string{"123"},
+					Endpoint:  "123",
 					EventType: "payment.created",
 					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},

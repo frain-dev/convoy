@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,7 +24,7 @@ import (
 
 var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be force resent")
 var ErrNoValidEndpointFound = errors.New("no valid endpoint found")
-var ErrInvalidEndpointID = errors.New("please provide an app ID or a list of endpoints ID")
+var ErrInvalidEndpointID = errors.New("please provide an endpoint ID")
 
 type EventService struct {
 	endpointRepo      datastore.EndpointRepository
@@ -53,7 +54,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	if util.IsStringEmpty(newMessage.AppID) && len(newMessage.Endpoints) == 0 {
+	if util.IsStringEmpty(newMessage.AppID) && len(newMessage.Endpoints) == 0 && util.IsStringEmpty(newMessage.Endpoint) {
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpointID)
 	}
 
@@ -76,7 +77,12 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 
 func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
 	taskName := convoy.CreateEventProcessor
-	eventByte, err := json.Marshal(event)
+
+	createEvent := task.CreateEvent{
+		Event: *event,
+	}
+
+	eventByte, err := json.Marshal(createEvent)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -424,7 +430,13 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	}
 
 	taskName := convoy.CreateEventProcessor
-	eventByte, err := json.Marshal(event)
+
+	createEvent := task.CreateEvent{
+		Event:              *event,
+		CreateSubscription: !util.IsStringEmpty(newMessage.Endpoint),
+	}
+
+	eventByte, err := json.Marshal(createEvent)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -446,6 +458,16 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 
 func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
+
+	if !util.IsStringEmpty(newMessage.Endpoint) {
+		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.Endpoint)
+		if err != nil {
+			return endpoints, err
+		}
+
+		endpoints = append(endpoints, *endpoint)
+		return endpoints, nil
+	}
 
 	if !util.IsStringEmpty(newMessage.AppID) {
 		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID)

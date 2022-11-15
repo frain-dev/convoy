@@ -217,6 +217,7 @@ type UpdateSource struct {
 }
 
 type Event struct {
+	Endpoint  string   `json:"endpoint"`
 	Endpoints []string `json:"endpoints" bson:"endpoints"`
 	AppID     string   `json:"app_id" bson:"app_id"`
 	EventType string   `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`

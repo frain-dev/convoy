@@ -288,11 +288,8 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, gr
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, datastore.ErrSubscriptionNotFound
-	}
 
-	return subscriptions, nil
+	return subscriptions, err
 }
 
 func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {

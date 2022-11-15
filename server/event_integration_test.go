@@ -67,15 +67,14 @@ func (s *EventIntegrationTestSuite) TearDownTest() {
 	metrics.Reset()
 }
 
-func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event() {
+func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	endpointID := uuid.NewString()
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultGroup, 2)
 
-	bodyStr := `{"endpoints":["%s"], "event_type":"*", "data":{"level":"test"}}`
+	bodyStr := `{"endpoint": "%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, endpointID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultGroup.UID)
@@ -93,6 +92,35 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event() {
 
 	require.NotEmpty(s.T(), event.UID)
 	require.Equal(s.T(), event.Endpoints[0], endpointID)
+}
+
+func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_MultipleEndpoints() {
+	endpointID := uuid.NewString()
+	expectedStatusCode := http.StatusCreated
+
+	// Just Before.
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
+	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+
+	bodyStr := `{"endpoints":["%s", "%s"], "event_type":"*", "data":{"level":"test"}}`
+	body := serialize(bodyStr, endpointID, endpoint2.UID)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultGroup.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var event datastore.Event
+	parseResponse(s.T(), w.Result(), &event)
+
+	require.NotEmpty(s.T(), event.UID)
+	require.Equal(s.T(), event.Endpoints[0], endpointID)
+	require.Equal(s.T(), 2, len(event.Endpoints))
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
