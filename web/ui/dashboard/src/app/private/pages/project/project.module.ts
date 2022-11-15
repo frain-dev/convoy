@@ -5,6 +5,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { GithubStarComponent } from 'src/app/components/github-star/github-star.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
+import { PortalLinksComponent } from './portal-links/portal-links.component';
 
 const routes: Routes = [
 	{
@@ -47,6 +48,14 @@ const routes: Routes = [
 			{
 				path: 'subscriptions/:id',
 				loadChildren: () => import('./subscriptions/subscriptions.module').then(m => m.SubscriptionsModule)
+			},
+			{
+				path: 'endpoints',
+				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
+			},
+			{
+				path: 'endpoints/new',
+				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
 			}
 		]
 	}
