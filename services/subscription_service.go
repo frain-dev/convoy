@@ -295,7 +295,7 @@ func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testReq
 	passed, err := s.subRepo.TestSubscriptionFilter(ctx, testRequest, bodyFilter)
 	if err != nil {
 		log.WithError(err).Error(ErrValidateSubscriptionFilterError.Error())
-		return false, util.NewServiceError(http.StatusBadRequest, ErrValidateSubscriptionFilterError)
+		return false, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	return passed, nil

@@ -373,8 +373,7 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload m
 		}
 
 		if filter != nil {
-			query := map[string]interface{}{"filter": filter}
-			q, err = flatten.Flatten(query)
+			q, err = flattenFilter(filter)
 			if err != nil {
 				return err
 			}
@@ -401,6 +400,58 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload m
 
 func (s *subscriptionRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
+}
+
+func flattenFilter(f map[string]interface{}) (map[string]interface{}, error) {
+	isAndOr := false
+	var operator string
+
+	for k := range f {
+		if k == "$or" {
+			if len(f) > 1 {
+				return nil, flatten.ErrTopLevelElementOr
+			}
+			operator = k
+			isAndOr = true
+			break
+		}
+
+		if k == "$and" {
+			if len(f) > 1 {
+				return nil, flatten.ErrTopLevelElementAnd
+			}
+			isAndOr = true
+			break
+		}
+	}
+
+	if isAndOr {
+		if a, ok := f[operator].([]interface{}); ok {
+			if !ok {
+				return nil, flatten.ErrOrAndMustBeArray
+			}
+
+			for i := range a {
+				t, err := flatten.FlattenWithPrefix("filter", a[i].(map[string]interface{}))
+				if err != nil {
+					return nil, err
+				}
+
+				a[i] = t
+			}
+
+			f[operator] = a
+			return f, nil
+		}
+	}
+
+	query := map[string]interface{}{"filter": f}
+	q, err := flatten.Flatten(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return q, nil
 }
 
 // getSkip returns calculated skip value for the query

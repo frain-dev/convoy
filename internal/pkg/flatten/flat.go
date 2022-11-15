@@ -1,12 +1,21 @@
 package flatten
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
 
+var ErrTopLevelElementOr = errors.New("only one top level element is allowed when using the $or operator")
+var ErrTopLevelElementAnd = errors.New("only one top level element is allowed when using the $and operator")
+var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array")
+
 func Flatten(input map[string]interface{}) (map[string]interface{}, error) {
 	return flatten("", input)
+}
+
+func FlattenWithPrefix(prefix string, input map[string]interface{}) (map[string]interface{}, error) {
+	return flatten(prefix, input)
 }
 
 func flatten(prefix string, nested interface{}) (map[string]interface{}, error) {

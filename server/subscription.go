@@ -222,7 +222,7 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
 func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
-	var test map[string]interface{}
+	var test models.TestFilter
 	err := util.ReadJSON(r, &test)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -230,7 +230,7 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 	}
 
 	subService := createSubscriptionService(a)
-	isValid, err := subService.TestSubscriptionFilter(r.Context(), test["request"].(map[string]interface{}), test["schema"].(map[string]interface{}))
+	isValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request, test.Schema)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
