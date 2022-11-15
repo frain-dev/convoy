@@ -27,9 +27,19 @@ export class ProjectComponent implements OnInit {
 			route: '/subscriptions'
 		},
 		{
-			name: 'Apps',
-			icon: 'apps',
-			route: '/apps'
+			name: 'Endpoints',
+			icon: 'endpoint',
+			route: '/endpoints'
+		},
+		{
+			name: 'Portal Link',
+			icon: 'portal',
+			route: '/portal-links'
+		},
+		{
+			name: 'Event Logs',
+			icon: 'logs',
+			route: '/event-logs'
 		}
 	];
 	shouldShowFullSideBar = true;
@@ -83,5 +93,12 @@ export class ProjectComponent implements OnInit {
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
 		this.checkScreenSize();
+	}
+
+	isStrokeIcon(icon: string): boolean {
+		const menuIcons = ['subscriptions', 'portal', 'logs'];
+		const checkForStrokeIcon = menuIcons.some(menuIcon => icon.includes(menuIcon));
+
+		return checkForStrokeIcon;
 	}
 }
