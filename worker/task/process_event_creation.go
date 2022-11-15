@@ -205,18 +205,6 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 	}
 }
 
-// func matchSubscriptionsUsingEventType(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {
-// 	var matched []datastore.Subscription
-// 	for _, sub := range subscriptions {
-// 		for _, ev := range sub.FilterConfig.EventTypes {
-// 			if ev == eventType || ev == "*" { // if this event type matches, or is *, add the subscription to matched
-// 				matched = append(matched, sub)
-// 			}
-// 		}
-// 	}
-// 	return matched
-// }
-
 func matchSubscriptionsUsingFilter(ctx context.Context, filter []byte, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
 	var payload map[string]interface{}
