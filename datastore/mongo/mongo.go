@@ -88,6 +88,7 @@ func (c *Client) ensureMongoIndices() {
 
 	c.ensureIndex(datastore.EndpointCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EndpointCollection, "group_id", false, nil)
+	c.ensureIndex(datastore.EndpointCollection, "owner_id", false, nil)
 
 	c.ensureIndex(datastore.EventCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EventCollection, "app_id", false, nil)
