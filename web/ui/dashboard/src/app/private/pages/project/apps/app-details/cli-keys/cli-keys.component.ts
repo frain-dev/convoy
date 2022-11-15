@@ -16,6 +16,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CliKeysService } from './cli-keys.service';
+import { TokenModalComponent } from 'src/app/private/components/token-modal/token-modal.component';
 
 @Component({
 	selector: 'convoy-cli-keys',
@@ -36,7 +37,8 @@ import { CliKeysService } from './cli-keys.service';
 		DeleteModalComponent,
 		InputFieldDirective,
 		InputDirective,
-		LabelComponent
+		LabelComponent,
+        TokenModalComponent
 	],
 	templateUrl: './cli-keys.component.html',
 	styleUrls: ['./cli-keys.component.scss']

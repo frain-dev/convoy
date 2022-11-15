@@ -12,12 +12,12 @@ import { ProfileSettingsComponent } from './profile-settings/profile-settings.co
 import { SecuritySettingsComponent } from './security-settings/security-settings.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { SelectComponent } from 'src/app/components/select/select.component';
+import { TokenModalComponent } from '../../components/token-modal/token-modal.component';
 
 const routes: Routes = [{ path: '', component: AccountComponent }];
 
@@ -33,7 +33,7 @@ const routes: Routes = [{ path: '', component: AccountComponent }];
 		CardComponent,
 		EmptyStateComponent,
 		DeleteModalComponent,
-		ModalComponent,
+        TokenModalComponent,
 		CopyButtonComponent,
 		SkeletonLoaderComponent,
 		TagComponent,

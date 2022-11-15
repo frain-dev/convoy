@@ -179,18 +179,6 @@
 	</div>
 </convoy-modal>
 
-<convoy-modal *ngIf="showApiKey">
-	<div class="flex flex-col items-center justify-center min-h-[80vh] px-30px" modalBody>
-		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
-		<h2 class="font-semibold mt-16px">Project Created Successfully</h2>
-		<p class="text-14 text-grey-60 font-normal text-center mb-16px mt-8px">Your API Key has also been created. Please copy this key and save it somewhere safe.</p>
-		<p class="text-14 text-danger-100 mb-40px text-center">For security reasons, we cannot show it to you again</p>
-		<div class="flex items-center justify-between w-full h-50px border border-grey-10 rounded-[6px] px-16px mb-32px">
-			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ apiKey }}</span>
-			<convoy-copy-button [text]="apiKey"></convoy-copy-button>
-		</div>
-		<button convoy-button (click)="onAction.emit({ action: 'createProject', data: projectDetails })" type="button">Done</button>
-	</div>
-</convoy-modal>
+<convoy-token-modal *ngIf="showApiKey" title="Project Created Successfully" description="Your API Key has also been created. Please copy this key and save it somewhere safe." [token]="apiKey" (closeModal)="onAction.emit({ action: 'createProject', data: projectDetails })"></convoy-token-modal>
 
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="router.navigateByUrl('/')" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
