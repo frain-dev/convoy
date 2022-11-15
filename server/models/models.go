@@ -171,6 +171,7 @@ type User struct {
 type Endpoint struct {
 	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
 	Secret             string `json:"secret" bson:"secret"`
+	OwnerID            string `json:"owner_id" bson:"owner_id"`
 	Description        string `json:"description" bson:"description"`
 	AdvancedSignatures *bool  `json:"advanced_signatures" bson:"advanced_signatures"`
 	Name               string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
@@ -217,10 +218,19 @@ type UpdateSource struct {
 }
 
 type Event struct {
-	Endpoint  string   `json:"endpoint"`
-	Endpoints []string `json:"endpoints" bson:"endpoints"`
-	AppID     string   `json:"app_id" bson:"app_id"`
-	EventType string   `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+	EndpointID string `json:"endpoint_id"`
+	AppID      string `json:"app_id" bson:"app_id"`
+	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+
+	// Data is an arbitrary JSON value that gets sent as the body of the
+	// webhook to the endpoints
+	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
+	CustomHeaders map[string]string `json:"custom_headers"`
+}
+
+type FanoutEvent struct {
+	OwnerID   string `json:"owner_id" valid:"required~please provide an owner id"`
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints

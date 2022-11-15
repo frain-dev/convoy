@@ -211,7 +211,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				}
 
 				subscriptions = append(subscriptions, *subs)
-				continue
+				return subscriptions, nil
 			}
 
 			subs = matchSubscriptions(string(event.EventType), subs)

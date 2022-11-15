@@ -170,13 +170,14 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						eventRouter.Use(a.M.RateLimitByGroupID())
 
 						// TODO(all): should the InstrumentPath change?
-						eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateAppEvent)
+						eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateEndpointEvent)
+						eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
 						eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 							eventSubRouter.Use(a.M.RequireEvent())
-							eventSubRouter.Get("/", a.GetAppEvent)
-							eventSubRouter.Put("/replay", a.ReplayAppEvent)
+							eventSubRouter.Get("/", a.GetEndpointEvent)
+							eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 						})
 					})
 
@@ -351,13 +352,14 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						groupSubRouter.Route("/events", func(eventRouter chi.Router) {
 							eventRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
-							eventRouter.Post("/", a.CreateAppEvent)
+							eventRouter.Post("/", a.CreateEndpointEvent)
+							eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
 							eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 								eventSubRouter.Use(a.M.RequireEvent())
-								eventSubRouter.Get("/", a.GetAppEvent)
-								eventSubRouter.Put("/replay", a.ReplayAppEvent)
+								eventSubRouter.Get("/", a.GetEndpointEvent)
+								eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 							})
 						})
 
@@ -461,8 +463,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(a.M.RequireEvent())
-				eventSubRouter.Get("/", a.GetAppEvent)
-				eventSubRouter.Put("/replay", a.ReplayAppEvent)
+				eventSubRouter.Get("/", a.GetEndpointEvent)
+				eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 			})
 		})
 

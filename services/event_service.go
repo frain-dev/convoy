@@ -24,6 +24,7 @@ import (
 
 var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be force resent")
 var ErrNoValidEndpointFound = errors.New("no valid endpoint found")
+var ErrNoValidOwnerIDEndpointFound = errors.New("owner ID has no configured endpoints")
 var ErrInvalidEndpointID = errors.New("please provide an endpoint ID")
 
 type EventService struct {
@@ -36,6 +37,13 @@ type EventService struct {
 	cache             cache.Cache
 	searcher          searcher.Searcher
 	deviceRepo        datastore.DeviceRepository
+}
+
+type createEvent struct {
+	Data          json.RawMessage
+	EventType     string
+	EndpointID    string
+	CustomHeaders map[string]string
 }
 
 func NewEventService(
@@ -54,7 +62,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	if util.IsStringEmpty(newMessage.AppID) && len(newMessage.Endpoints) == 0 && util.IsStringEmpty(newMessage.Endpoint) {
+	if util.IsStringEmpty(newMessage.AppID) && util.IsStringEmpty(newMessage.EndpointID) {
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpointID)
 	}
 
@@ -64,10 +72,49 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 	}
 
 	if len(endpoints) == 0 {
-		return nil, util.NewServiceError(http.StatusNotFound, errors.New("no valid endpoint found"))
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrNoValidEndpointFound)
 	}
 
-	event, err := e.createEvent(ctx, endpoints, newMessage, g)
+	createEvent := &createEvent{
+		Data:          newMessage.Data,
+		EventType:     newMessage.EventType,
+		EndpointID:    newMessage.EndpointID,
+		CustomHeaders: newMessage.CustomHeaders,
+	}
+
+	event, err := e.createEvent(ctx, endpoints, createEvent, g)
+	if err != nil {
+		return nil, err
+	}
+
+	return event, nil
+}
+
+func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models.FanoutEvent, g *datastore.Group) (*datastore.Event, error) {
+	if g == nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
+	}
+
+	if err := util.Validate(newMessage); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	endpoints, err := e.endpointRepo.FindEndpointsByOwnerID(ctx, g.UID, newMessage.OwnerID)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	if len(endpoints) == 0 {
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrNoValidOwnerIDEndpointFound)
+	}
+
+	createEvent := &createEvent{
+		Data:          newMessage.Data,
+		EventType:     newMessage.EventType,
+		CustomHeaders: newMessage.CustomHeaders,
+	}
+
+	event, err := e.createEvent(ctx, endpoints, createEvent, g)
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +268,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 				UID:          a.UID,
 				Title:        a.Title,
 				GroupID:      a.GroupID,
+				OwnerID:      a.OwnerID,
 				SupportEmail: a.SupportEmail,
 				TargetURL:    a.TargetURL,
 			}
@@ -391,13 +439,13 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	return nil
 }
 
-func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHeader {
+func (e *EventService) getCustomHeaders(customHeaders map[string]string) httpheader.HTTPHeader {
 	var headers map[string][]string
 
-	if event.CustomHeaders != nil {
+	if customHeaders != nil {
 		headers = make(map[string][]string)
 
-		for key, value := range event.CustomHeaders {
+		for key, value := range customHeaders {
 			headers[key] = []string{value}
 		}
 	}
@@ -405,7 +453,7 @@ func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHead
 	return headers
 }
 
-func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
+func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *createEvent, g *datastore.Group) (*datastore.Event, error) {
 	var endpointIDs []string
 
 	for _, endpoint := range endpoints {
@@ -416,7 +464,7 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 		UID:            uuid.New().String(),
 		EventType:      datastore.EventType(newMessage.EventType),
 		Data:           newMessage.Data,
-		Headers:        e.getCustomHeaders(newMessage),
+		Headers:        e.getCustomHeaders(newMessage.CustomHeaders),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		Endpoints:      endpointIDs,
@@ -433,7 +481,7 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 
 	createEvent := task.CreateEvent{
 		Event:              *event,
-		CreateSubscription: !util.IsStringEmpty(newMessage.Endpoint),
+		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
 	eventByte, err := json.Marshal(createEvent)
@@ -459,8 +507,8 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
-	if !util.IsStringEmpty(newMessage.Endpoint) {
-		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.Endpoint)
+	if !util.IsStringEmpty(newMessage.EndpointID) {
+		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID)
 		if err != nil {
 			return endpoints, err
 		}
@@ -471,15 +519,6 @@ func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Eve
 
 	if !util.IsStringEmpty(newMessage.AppID) {
 		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID)
-		if err != nil {
-			return endpoints, err
-		}
-
-		return endpoints, nil
-	}
-
-	if len(newMessage.Endpoints) > 0 {
-		endpoints, err := e.endpointRepo.FindEndpointsByID(ctx, newMessage.Endpoints)
 		if err != nil {
 			return endpoints, err
 		}

@@ -230,6 +230,7 @@ type Endpoint struct {
 	ID                 primitive.ObjectID `json:"-" bson:"_id"`
 	UID                string             `json:"uid" bson:"uid"`
 	GroupID            string             `json:"group_id" bson:"group_id"`
+	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
 	TargetURL          string             `json:"target_url" bson:"target_url"`
 	Title              string             `json:"title" bson:"title"`
 	Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run

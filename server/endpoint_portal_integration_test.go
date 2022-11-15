@@ -64,10 +64,10 @@ func (s *AppPortalIntegrationTestSuite) Test_GetEndpointEvents() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	require.NoError(s.T(), err)
 
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	require.NoError(s.T(), err)
 
 	for i := 0; i < 5; i++ {
@@ -111,10 +111,10 @@ func (s *AppPortalIntegrationTestSuite) Test_GetEndpointSubscriptions() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	require.NoError(s.T(), err)
 
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", false)
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	require.NoError(s.T(), err)
 
 	source := &datastore.Source{UID: uuid.NewString()}

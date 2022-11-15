@@ -64,9 +64,9 @@ func TestEventService_CreateEvent(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoint:  "123",
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:  "abc",
@@ -94,74 +94,15 @@ func TestEventService_CreateEvent(t *testing.T) {
 		},
 
 		{
-			name: "should_create_event_for_multiple_endpoints",
-			dbFn: func(es *EventService) {
-
-				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{
-					{
-						Title:        "test_app",
-						UID:          "123",
-						GroupID:      "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
-
-					{
-						Title:        "test_app",
-						UID:          "12345",
-						GroupID:      "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
-				}, nil)
-				eq, _ := es.queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
-					Times(1).Return(nil)
-			},
-			args: args{
-				ctx: ctx,
-				newMessage: &models.Event{
-					Endpoints: []string{"123", "12345"},
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				},
-				g: &datastore.Group{
-					UID:  "abc",
-					Name: "test_group",
-					Config: &datastore.GroupConfig{
-						Strategy: &datastore.StrategyConfiguration{
-							Type:       "linear",
-							Duration:   1000,
-							RetryCount: 10,
-						},
-						Signature:       &datastore.SignatureConfiguration{},
-						DisableEndpoint: false,
-						ReplayAttacks:   false,
-					},
-				},
-			},
-			wantEvent: &datastore.Event{
-				EventType:        datastore.EventType("payment.created"),
-				MatchedEndpoints: 0,
-				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				Endpoints:        []string{"123", "12345"},
-				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
-			},
-		},
-
-		{
 			name: "should_create_event_with_exponential_backoff_strategy",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{
-					{
-						Title:        "test_app",
-						UID:          "123",
-						GroupID:      "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
+					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -171,9 +112,9 @@ func TestEventService_CreateEvent(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints: []string{"123"},
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:  "abc",
@@ -200,14 +141,12 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_create_event_for_disabled_endpoint",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{
-					{
-						Title:        "test_app",
-						UID:          "123",
-						GroupID:      "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
+					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -217,9 +156,9 @@ func TestEventService_CreateEvent(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints: []string{"123"},
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:  "abc",
@@ -249,14 +188,12 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_create_event_with_custom_headers",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{
-					{
-						Title:        "test_app",
-						UID:          "123",
-						GroupID:      "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
+					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -266,7 +203,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints:     []string{"123"},
+					EndpointID:    "123",
 					EventType:     "payment.created",
 					Data:          bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 					CustomHeaders: map[string]string{"X-Test-Signature": "Test"},
@@ -300,22 +237,20 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_error_for_invalid_strategy_config",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{
-					{
-						Title:        "test_app",
-						UID:          "123",
-						GroupID:      "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.Endpoint{
+					Title:        "test_app",
+					UID:          "123",
+					GroupID:      "abc",
+					SupportEmail: "test_app@gmail.com",
 				}, nil)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints: []string{"123"},
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{
 					UID:    "abc",
@@ -332,9 +267,9 @@ func TestEventService_CreateEvent(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints: []string{},
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{},
 			},
@@ -346,21 +281,21 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_error_for_endpoint_not_found",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{}, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 			},
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints: []string{"123"},
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 				g: &datastore.Group{},
 			},
 			wantErr:     true,
-			wantErrCode: http.StatusNotFound,
-			wantErrMsg:  ErrNoValidEndpointFound.Error(),
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  datastore.ErrEndpointNotFound.Error(),
 		},
 
 		{
@@ -369,9 +304,9 @@ func TestEventService_CreateEvent(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newMessage: &models.Event{
-					Endpoints: []string{"123"},
-					EventType: "payment.created",
-					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+					EndpointID: "123",
+					EventType:  "payment.created",
+					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 			},
 			wantErr:     true,
@@ -414,6 +349,141 @@ func TestEventService_CreateEvent(t *testing.T) {
 			require.Equal(t, m1, m2)
 		})
 	}
+}
+
+func TestEventService_CreateFanoutEvent(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx        context.Context
+		newMessage *models.FanoutEvent
+		g          *datastore.Group
+	}
+
+	tests := []struct {
+		name        string
+		dbFn        func(es *EventService)
+		args        args
+		wantEvent   *datastore.Event
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_create_fanout_event_for_multiple_endpoints",
+			dbFn: func(es *EventService) {
+
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Endpoint{
+					{
+						Title:        "test_app",
+						UID:          "123",
+						GroupID:      "abc",
+						SupportEmail: "test_app@gmail.com",
+					},
+
+					{
+						Title:        "test_app",
+						UID:          "12345",
+						GroupID:      "abc",
+						SupportEmail: "test_app@gmail.com",
+					},
+				}, nil)
+				eq, _ := es.queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+					Times(1).Return(nil)
+			},
+			args: args{
+				ctx: ctx,
+				newMessage: &models.FanoutEvent{
+					OwnerID:   "12345",
+					EventType: "payment.created",
+					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				},
+				g: &datastore.Group{
+					UID:  "abc",
+					Name: "test_group",
+					Config: &datastore.GroupConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   1000,
+							RetryCount: 10,
+						},
+						Signature:       &datastore.SignatureConfiguration{},
+						DisableEndpoint: false,
+						ReplayAttacks:   false,
+					},
+				},
+			},
+			wantEvent: &datastore.Event{
+				EventType:        datastore.EventType("payment.created"),
+				MatchedEndpoints: 0,
+				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				Endpoints:        []string{"123", "12345"},
+				GroupID:          "abc",
+				DocumentStatus:   datastore.ActiveDocumentStatus,
+			},
+		},
+
+		{
+			name: "should_error_for_empty_endpoints",
+			dbFn: func(es *EventService) {
+				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Endpoint{}, nil)
+			},
+			args: args{
+				ctx: ctx,
+				newMessage: &models.FanoutEvent{
+					OwnerID:   "12345",
+					EventType: "payment.created",
+					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				},
+				g: &datastore.Group{},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  ErrNoValidOwnerIDEndpointFound.Error(),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			es := provideEventService(ctrl)
+
+			// Arrange Expectations
+			if tc.dbFn != nil {
+				tc.dbFn(es)
+			}
+
+			event, err := es.CreateFanoutEvent(tc.args.ctx, tc.args.newMessage, tc.args.g)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+			require.NotEmpty(t, event.UID)
+			require.NotEmpty(t, event.CreatedAt)
+			require.NotEmpty(t, event.UpdatedAt)
+			require.Empty(t, event.DeletedAt)
+
+			stripVariableFields(t, "event", event)
+
+			m1 := tc.wantEvent.Endpoints[0]
+			m2 := event.Endpoints[0]
+
+			tc.wantEvent.Endpoints[0], event.Endpoints[0] = "", ""
+			require.Equal(t, tc.wantEvent, event)
+			require.Equal(t, m1, m2)
+		})
+	}
+
 }
 
 func TestEventService_GetEvent(t *testing.T) {
