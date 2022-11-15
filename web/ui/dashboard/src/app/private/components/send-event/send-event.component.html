@@ -1,0 +1,51 @@
+<!-- send event modal  -->
+<convoy-modal title="Send Event" (closeModal)="cancel()">
+	<ng-container modalBody>
+		<form [formGroup]="sendEventForm">
+			<div class="my-24px">
+				<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" for="data">
+					Data
+					<span class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
+				</label>
+				<textarea
+					id="data"
+					formControlName="data"
+					required
+					cols="5"
+					class="
+						transition-all
+						duration-[.3s]
+						w-full
+						font-medium
+						text-14
+						placeholder:text-grey-40
+						text-grey-100
+						border border-primary-500
+						valid:border-primary-500
+						disabled:border-primary-500
+						disabled:bg-[#F7F9FC]
+						hover:bg-primary-500
+						hover:border-grey-20
+						focus:border-primary-100
+						focus:bg-white-100
+						outline-none
+						rounded-4px
+						placeholder:opacity-[.48]
+						bg-[#F7F9FC]
+						py-12px
+						px-16px
+					"
+				></textarea>
+				<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="sendEventForm.controls.data.touched && sendEventForm.controls.data.invalid">
+					<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+					<span>Data is required</span>
+				</div>
+			</div>
+			<convoy-input label="Event Type" name="event_type" formControlName="event_type" placeholder="Event type" errorMessage="Event type is required"></convoy-input>
+		</form>
+		<div class="flex justify-end mt-40px">
+			<convoy-button type="outline" className="mr-24px" (clickItem)="cancel()">Discard</convoy-button>
+			<convoy-button [disable]="isSendingNewEvent" (clickItem)="sendNewEvent()">{{ isSendingNewEvent ? 'Sending Event..' : 'Send Event' }}</convoy-button>
+		</div>
+	</ng-container>
+</convoy-modal>
