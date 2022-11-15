@@ -166,6 +166,37 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 					})
 
+					projectSubRouter.Route("/applications", func(appRouter chi.Router) {
+						appRouter.Use(a.M.RateLimitByGroupID())
+
+						appRouter.Post("/", a.CreateApp)
+						appRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
+
+						appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
+							// appSubRouter.Use(a.M.RequireApp())
+							// appSubRouter.Use(a.M.RequireAppBelongsToGroup())
+
+							appSubRouter.Get("/", a.GetApp)
+							appSubRouter.Put("/", a.UpdateApp)
+							appSubRouter.Delete("/", a.DeleteApp)
+
+							appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
+								endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
+								endpointAppSubRouter.Get("/", a.GetAppEndpoints)
+
+								endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
+									e.Use(a.M.RequireAppEndpoint())
+
+									e.Get("/", a.GetAppEndpoint)
+									e.Put("/", a.UpdateAppEndpoint)
+									e.Delete("/", a.DeleteAppEndpoint)
+									e.Put("/expire_secret", a.ExpireSecret)
+
+								})
+							})
+						})
+					})
+
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 						eventRouter.Use(a.M.RateLimitByGroupID())
 
