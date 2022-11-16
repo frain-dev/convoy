@@ -348,8 +348,7 @@ func checkPendingMigrations(dbDsn string, db *cm.Client) error {
 	}
 
 	if pm {
-		return nil
-		// return migrate.ErrPendingMigrationsFound
+		return migrate.ErrPendingMigrationsFound
 	}
 
 	return nil

@@ -244,42 +244,41 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
 }
 
-// func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
-// 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
-// 	bodyStr := fmt.Sprintf(`{
-// 		"name": "sub-1",
-// 		"type": "incoming",
-// 		"app_id": "%s",
-// 		"group_id": "%s",
-// 		"endpoint_id": "%s",
-// 		"alert_config": {
-// 			"threshold": "1h",
-// 			"count": 10
-// 		},
-// 		"retry_config": {
-// 			"type": "linear",
-// 			"retry_count": 2,
-// 			"interval_seconds": 10
-// 		},
-// 		"filter_config": {
-// 			"event_types": [
-// 				"user.created",
-// 				"user.updated"
-// 			]
-// 		}
-// 	}`, uuid.NewString(), s.DefaultGroup.UID, endpoint.UID)
+func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
+	bodyStr := fmt.Sprintf(`{
+		"name": "sub-1",
+		"type": "incoming",
+		"app_id": "%s",
+		"endpoint_id": "%s",
+		"alert_config": {
+			"threshold": "1h",
+			"count": 10
+		},
+		"retry_config": {
+			"type": "linear",
+			"retry_count": 2,
+			"interval_seconds": 10
+		},
+		"filter_config": {
+			"event_types": [
+				"user.created",
+				"user.updated"
+			]
+		}
+	}`, uuid.NewString(), endpoint.UID)
 
-// 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
-// 	body := serialize(bodyStr)
-// 	req := createRequest(http.MethodPost, url, s.APIKey, body)
-// 	w := httptest.NewRecorder()
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
 
-// 	// Act
-// 	s.Router.ServeHTTP(w, req)
+	// Act
+	s.Router.ServeHTTP(w, req)
 
-// 	// Assert
-// 	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-// }
+	// Assert
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+}
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointDoesNotBelongToGroup() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
