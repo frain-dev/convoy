@@ -418,6 +418,7 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 
 	sortAndLimitStages := []bson.D{
 		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
 		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
 		{{Key: "$limit", Value: pageable.PerPage}},
 	}

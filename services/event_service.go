@@ -259,36 +259,6 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
-	appMap := datastore.AppMap{}
-	sourceMap := datastore.SourceMap{}
-
-	for i, event := range events {
-		if _, ok := appMap[event.AppID]; !ok {
-			a, _ := e.appRepo.FindApplicationByID(ctx, event.AppID)
-			aa := &datastore.Application{
-				UID:          a.UID,
-				Title:        a.Title,
-				GroupID:      a.GroupID,
-				SupportEmail: a.SupportEmail,
-			}
-			appMap[event.AppID] = aa
-		}
-
-		if _, ok := sourceMap[event.SourceID]; !ok && !util.IsStringEmpty(event.SourceID) {
-			ev, err := e.sourceRepo.FindSourceByID(ctx, event.GroupID, event.SourceID)
-			if err == nil {
-				source := &datastore.Source{
-					UID:  ev.UID,
-					Name: ev.Name,
-				}
-				sourceMap[event.SourceID] = source
-			}
-		}
-
-		events[i].App = appMap[event.AppID]
-		events[i].Source = sourceMap[event.SourceID]
-	}
-
 	return events, paginationData, nil
 }
 
