@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, PasswordInputFieldComponent } from 'src/app/components/input/input.component';
 import { LoginService } from './login.service';
+declare var analytics: any;
 
 @Component({
 	selector: 'app-login',
@@ -32,6 +33,11 @@ export class LoginComponent implements OnInit {
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+			analytics.identify(response.data.uid, {
+				first_name: response.data.first_name,
+				last_name: response.data.last_name,
+				email: response.data.email
+			});
 			this.router.navigateByUrl('/');
 			this.disableLoginBtn = false;
 		} catch {
