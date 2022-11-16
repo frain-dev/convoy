@@ -43,7 +43,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 	endpoint, err := s.findEndpoint(ctx, newSubscription.AppID, newSubscription.EndpointID)
 	if err != nil {
 		log.WithError(err).Error("failed to find endpoint by id")
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find endpoint by id"))
 	}
 
 	if endpoint.GroupID != group.UID {
