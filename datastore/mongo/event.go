@@ -188,30 +188,20 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(f.SearchParams)}
-	matchStage := bson.D{
-		{
-			Key: "$match",
-			Value: bson.D{
-				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
-				{Key: "created_at", Value: getCreatedDateFilter(f.SearchParams)},
-				{Key: "group_id", Value: f.Group.UID},
-			},
-		},
-	}
+	matchStage := bson.D{{Key: "$match", Value: bson.D{
+		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+		{Key: "created_at", Value: getCreatedDateFilter(f.SearchParams)},
+		{Key: "group_id", Value: f.Group.UID},
+	}}}
 
 	if !util.IsStringEmpty(f.AppID) {
 		filter["app_id"] = f.AppID
-		matchStage = append(matchStage, primitive.E{Key: "app_id", Value: f.AppID})
-	}
-
-	if !util.IsStringEmpty(f.Group.UID) {
-		filter["group_id"] = f.Group.UID
-		matchStage = append(matchStage, primitive.E{Key: "group_id", Value: f.Group.UID})
+		matchStage[0].Value = append(matchStage[0].Value.(bson.D), primitive.E{Key: "app_id", Value: f.AppID})
 	}
 
 	if !util.IsStringEmpty(f.SourceID) {
 		filter["source_id"] = f.SourceID
-		matchStage = append(matchStage, primitive.E{Key: "source_id", Value: f.SourceID})
+		matchStage[0].Value = append(matchStage[0].Value.(bson.D), primitive.E{Key: "source_id", Value: f.SourceID})
 	}
 
 	appLookupStage := bson.D{
@@ -265,12 +255,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		}},
 	}
 
-	unsetStage := bson.D{
-		{
-			Key:   "$unset",
-			Value: []string{"app", "source"},
-		},
-	}
+	unsetStage := bson.D{{Key: "$unset", Value: []string{"app", "source"}}}
 
 	pipeline := mongo.Pipeline{
 		matchStage,
@@ -283,7 +268,6 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		{{Key: "$skip", Value: getSkip(f.Pageable.Page, f.Pageable.PerPage)}},
 		{{Key: "$limit", Value: f.Pageable.PerPage}},
 	}
-	// db.stire.agg(ctx, json, false)
 
 	var events []datastore.Event
 	err := db.store.Aggregate(ctx, pipeline, &events, false)
