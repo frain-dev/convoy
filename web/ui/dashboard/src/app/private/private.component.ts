@@ -1,6 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
@@ -12,8 +11,6 @@ import { PrivateService } from './private.service';
 	styleUrls: ['./private.component.scss']
 })
 export class PrivateComponent implements OnInit {
-	@ViewChild('accountDropdown') dropdownComponent!: DropdownComponent;
-	@ViewChild('organisationDropdown') organisationDropdown!: DropdownComponent;
 	showDropdown = false;
 	showOrgDropdown = false;
 	showMoreDropdown = false;
@@ -55,8 +52,8 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
-			this.checkForSelectedOrganisation();
 			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
+			this.checkForSelectedOrganisation();
 			return this.getProjects();
 		} catch (error) {
 			return error;
@@ -79,7 +76,7 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		this.router.url.includes('/get-started') ? location.replace('./projects') : location.reload();
+        location.replace('./projects');
 	}
 
 	checkForSelectedOrganisation() {

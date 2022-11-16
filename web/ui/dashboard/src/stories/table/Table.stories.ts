@@ -27,34 +27,34 @@ export default {
 
 const Template: Story<TableComponent> = (args: TableComponent) => ({
 	props: args,
-	template: `<convoy-table>
-                <convoy-table-head class="contents">
-                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
-                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
-                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
-                    <convoy-table-head-cell class="contents">Table head</convoy-table-head-cell>
-                </convoy-table-head>
+	template: `<table convoy-table>
+                <thead convoy-table-head>
+                    <th convoy-table-head-cell>Table head</th>
+                    <th convoy-table-head-cell>Table head</th>
+                    <th convoy-table-head-cell>Table head</th>
+                    <th convoy-table-head-cell>Table head</th>
+                </thead>
                 <tbody>
-                    <convoy-table-row [forDate]="forDate" class="contents" *ngIf="forDate">
-                        <convoy-table-cell class="contents" [forDate]="true">22nd Jan</convoy-table-cell>
-                        <convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-                        <convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-                        <convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-                    </convoy-table-row>
-                    <convoy-table-row class="contents" [active]="active">
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-					</convoy-table-row>
-                    <convoy-table-row class="contents">
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-						<convoy-table-cell class="contents">Table data</convoy-table-cell>
-					</convoy-table-row>
+                    <tr convoy-table-row [forDate]="forDate" *ngIf="forDate">
+                        <td convoy-table-cell [forDate]="true">22nd Jan</td>
+                        <td convoy-table-cell [forDate]="true"></td>
+                        <td convoy-table-cell [forDate]="true"></td>
+                        <td convoy-table-cell [forDate]="true"></td>
+                    </tr>
+                    <tr convoy-table-row [active]="active">
+						<td convoy-table-cell>Table data</td>
+						<td convoy-table-cell>Table data</td>
+						<td convoy-table-cell>Table data</td>
+						<td convoy-table-cell>Table data</td>
+					</tr>
+                    <tr convoy-table-row>
+						<td convoy-table-cell>Table data</td>
+						<td convoy-table-cell>Table data</td>
+						<td convoy-table-cell>Table data</td>
+						<td convoy-table-cell>Table data</td>
+					</tr>
                 </tbody>
-            </convoy-table>`
+            </table>`
 });
 
 export const Base = Template.bind({});

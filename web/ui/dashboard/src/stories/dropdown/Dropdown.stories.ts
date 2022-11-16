@@ -26,7 +26,7 @@ export default {
 			control: { type: 'select' },
 			defaultValue: 'md'
 		},
-		buttonType: {
+		buttonFill: {
 			options: ['default', 'outline', 'clear', 'text', 'link', 'icon'],
 			control: { type: 'select' },
 			defaultValue: 'default'
@@ -53,9 +53,9 @@ export default {
 const Template: Story<DropdownComponent> = (args: DropdownComponent) => ({
 	props: args,
 	template: ` <div class="flex justify-center h-300px">
-                    <convoy-dropdown [buttonText]="buttonText" [position]="position" [size]="size" [buttonColor]="buttonColor" [buttonSize]="buttonSize" [buttonType]="buttonType" [buttonTexture]="buttonTexture">
+                    <div convoy-dropdown [buttonText]="buttonText" [position]="position" [size]="size" [buttonColor]="buttonColor" [buttonSize]="buttonSize" [buttonFill]="buttonFill" [buttonTexture]="buttonTexture">
                         {{ngContent}}
-                    </convoy-dropdown>
+                    </div>
                 </div>
               `
 });
@@ -69,6 +69,6 @@ Base.args = {
 	buttonText: ButtonStories.Base.args?.buttonText,
 	buttonColor: ButtonStories.Base.args?.color,
 	buttonSize: ButtonStories.Base.args?.size,
-	buttonType: ButtonStories.Base.args?.type,
+	buttonFill: ButtonStories.Base.args?.fill,
 	buttonTexture: ButtonStories.Base.args?.texture
 } as Partial<DropdownComponent>;

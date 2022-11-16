@@ -3,13 +3,13 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, PasswordInputFieldComponent } from 'src/app/components/input/input.component';
 import { LoginService } from './login.service';
 
 @Component({
 	selector: 'app-login',
-    standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent],
+	standalone: true,
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputDirective, LabelComponent, InputErrorComponent, PasswordInputFieldComponent],
 	templateUrl: './login.component.html',
 	styleUrls: ['./login.component.scss']
 })

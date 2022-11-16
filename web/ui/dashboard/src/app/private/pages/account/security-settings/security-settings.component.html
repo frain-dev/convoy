@@ -1,16 +1,29 @@
 <div class="flex justify-between items-center mb-28px">
 	<h3 class="font-semibold">Change Password</h3>
-	<convoy-button size="sm" [disable]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</convoy-button>
+	<button convoy-button size="sm" [disabled]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
 </div>
 
 <form [formGroup]="changePasswordForm" (ngSubmit)="changePassword()">
-	<convoy-input className="mb-0" type="password" autocomplete="current_password" name="current_password" formControlName="current_password" errorMessage="Enter current password" label="Current Password" placeholder="********" [required]="true"></convoy-input>
-	<div class="text-12 mt-8px mb-24px">
+	<convoy-input-field>
+		<label for="current_password" required="true" convoy-label>Current Password</label>
+		<input type="password" id="current_password" convoy-input autocomplete="current_password" formControlName="current_password" placeholder="********" />
+		<convoy-input-error *ngIf="changePasswordForm.get('current_password')?.touched && changePasswordForm.get('current_password')?.invalid">Enter current password</convoy-input-error>
+	</convoy-input-field>
+	<div class="text-12 -mt-18px mb-24px">
 		<span>Forgot password?</span>
 		<a class="text-primary-100 text-12 ml-8px" routerLink="/forgot-password">Reset it here</a>
 	</div>
-	<convoy-input type="password" autocomplete="password" name="password" formControlName="password" errorMessage="Enter new password" label="New Password" placeholder="********" [required]="true"></convoy-input>
-	<convoy-input className="mb-0" type="password" autocomplete="password_confirmation" name="password_confirmation" formControlName="password_confirmation" errorMessage="Please confirm password" label="Confirm Password" placeholder="********" [required]="true"></convoy-input>
+
+	<convoy-input-field>
+		<label for="password" required="true" convoy-label>New Password</label>
+		<input type="password" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="********" />
+		<convoy-input-error *ngIf="changePasswordForm.get('password')?.touched && changePasswordForm.get('password')?.invalid">Enter new password</convoy-input-error>
+	</convoy-input-field>
+	<convoy-input-field>
+		<label for="password_confirmation" required="true" convoy-label>Confirm Password</label>
+		<input type="password" id="password_confirmation" convoy-input autocomplete="password_confirmation" formControlName="password_confirmation" placeholder="********" />
+		<convoy-input-error *ngIf="changePasswordForm.controls.password.valid && changePasswordForm.controls.password_confirmation.valid && changePasswordForm.controls.password_confirmation.touched && !checkPassword()">Enter new password</convoy-input-error>
+	</convoy-input-field>
 	<div class="flex items-center text-12 text-danger-100 mt-8px mb-24px" *ngIf="changePasswordForm.controls.password.valid && changePasswordForm.controls.password_confirmation.valid && changePasswordForm.controls.password_confirmation.touched && !checkPassword()">
 		<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
 		<span>Password should have at least one special character</span>

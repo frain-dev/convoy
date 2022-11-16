@@ -64,5 +64,6 @@ export class ConfigureProjectComponent implements OnInit {
 				if (item.id === stageDetails.prevStage) item.currentStage = 'done';
 			});
 		}
+		window.scrollTo(0, 0);
 	}
 }
