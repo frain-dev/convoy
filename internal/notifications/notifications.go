@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -44,6 +45,8 @@ func SendEndpointNotification(ctx context.Context,
 	q queue.Queuer,
 	failure bool,
 	failureMsg string,
+	responseBody string,
+	statusCode int,
 ) error {
 	var ns []*Notification
 
@@ -66,9 +69,12 @@ func SendEndpointNotification(ctx context.Context,
 					"logo_url":        group.LogoURL,
 					"target_url":      endpoint.TargetURL,
 					"failure_msg":     failureMsg,
+					"response_body":   responseBody,
+					"status_code":     strconv.Itoa(statusCode),
 					"endpoint_status": string(status),
 				},
 			}
+
 		case SlackNotificationType:
 			payload := SlackNotification{
 				WebhookURL: app.SlackWebhookURL,
@@ -76,7 +82,7 @@ func SendEndpointNotification(ctx context.Context,
 
 			var text string
 			if failure {
-				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, reason for failure is \"%s\", endpoint status is now %s", endpoint.TargetURL, failureMsg, status)
+				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, endpoint response body (%s) and status code was %d, reason for failure is \"%s\", endpoint status is now %s", endpoint.TargetURL, responseBody, statusCode, failureMsg, status)
 			} else {
 				text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.TargetURL, status)
 			}
