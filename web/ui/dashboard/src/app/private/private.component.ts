@@ -52,8 +52,8 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
-			this.checkForSelectedOrganisation();
 			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
+			this.checkForSelectedOrganisation();
 			return this.getProjects();
 		} catch (error) {
 			return error;
@@ -76,7 +76,7 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		this.router.url.includes('/get-started') ? location.replace('./projects') : location.reload();
+        location.replace('./projects');
 	}
 
 	checkForSelectedOrganisation() {
