@@ -198,10 +198,3 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("endpoint secret expired successfully",
 		endpoint, http.StatusOK))
 }
-
-func (a *ApplicationHandler) GetPaginatedEndpoints(w http.ResponseWriter, r *http.Request) {
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully",
-		pagedResponse{Content: *m.GetEndpointsFromContext(r.Context()),
-			Pagination: m.GetPaginationDataFromContext(r.Context())}, http.StatusOK))
-}

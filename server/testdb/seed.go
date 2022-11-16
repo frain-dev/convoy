@@ -37,6 +37,7 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title string, 
 		Title:          title,
 		GroupID:        g.UID,
 		IsDisabled:     disabled,
+		AppID:          uid,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

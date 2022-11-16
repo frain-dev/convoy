@@ -37,7 +37,7 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, 0
 		}
 
-		e.UID = ""
+		e.UID, e.AppID = "", ""
 		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
 	case "event":
 		e := v.(*datastore.Event)

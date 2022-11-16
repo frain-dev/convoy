@@ -182,6 +182,7 @@ type Endpoint struct {
 	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
 	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
+	AppID             string                            //Deprecated but necessary for backward compatibility
 }
 
 type UpdateEndpoint struct {

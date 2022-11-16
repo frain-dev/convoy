@@ -170,11 +170,11 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						appRouter.Use(a.M.RateLimitByGroupID())
 
 						appRouter.Post("/", a.CreateApp)
-						appRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
+						appRouter.With(a.M.Pagination).Get("/", a.GetApps)
 
 						appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-							// appSubRouter.Use(a.M.RequireApp())
-							// appSubRouter.Use(a.M.RequireAppBelongsToGroup())
+							appSubRouter.Use(a.M.RequireApp())
+							appSubRouter.Use(a.M.RequireAppBelongsToGroup())
 
 							appSubRouter.Get("/", a.GetApp)
 							appSubRouter.Put("/", a.UpdateApp)
