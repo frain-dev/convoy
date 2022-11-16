@@ -438,11 +438,6 @@ type Event struct {
 	EventType        EventType          `json:"event_type" bson:"event_type"`
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
-	// ProviderID is a custom ID that can be used to reconcile this Event
-	// with your internal systems.
-	// This is optional
-	// If not provided, we will generate one for you
-	ProviderID       string                `json:"provider_id,omitempty" bson:"provider_id"`
 	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`

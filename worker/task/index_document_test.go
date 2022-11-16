@@ -30,15 +30,14 @@ func TestIndexDocument(t *testing.T) {
 		{
 			name: "should_index_ducment",
 			event: &datastore.Event{
-				UID:        uuid.NewString(),
-				EventType:  "*",
-				ProviderID: uuid.NewString(),
-				SourceID:   "source-id-1",
-				GroupID:    "group-id-1",
-				Endpoints:  []string{"endpoint-id-1"},
-				Data:       []byte(`{}`),
-				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+				UID:       uuid.NewString(),
+				EventType: "*",
+				SourceID:  "source-id-1",
+				GroupID:   "group-id-1",
+				Endpoints: []string{"endpoint-id-1"},
+				Data:      []byte(`{}`),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			},
 			dbFn: func(args *args) {
 				s, _ := args.search.(*mocks.MockSearcher)
@@ -49,15 +48,14 @@ func TestIndexDocument(t *testing.T) {
 		{
 			name: "should_not_index_ducment",
 			event: &datastore.Event{
-				UID:        uuid.NewString(),
-				EventType:  "*",
-				ProviderID: uuid.NewString(),
-				SourceID:   "source-id-1",
-				GroupID:    "group-id-1",
-				Endpoints:  []string{"endpoint-id-1"},
-				Data:       []byte(`{}`),
-				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+				UID:       uuid.NewString(),
+				EventType: "*",
+				SourceID:  "source-id-1",
+				GroupID:   "group-id-1",
+				Endpoints: []string{"endpoint-id-1"},
+				Data:      []byte(`{}`),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			},
 			dbFn: func(args *args) {
 				srh, _ := args.search.(*mocks.MockSearcher)
@@ -71,15 +69,14 @@ func TestIndexDocument(t *testing.T) {
 		{
 			name: "should_not_index_ducment_missing_group_id",
 			event: &datastore.Event{
-				UID:        uuid.NewString(),
-				EventType:  "*",
-				ProviderID: uuid.NewString(),
-				SourceID:   "source-id-1",
-				GroupID:    "group-id-1",
-				Endpoints:  []string{"endpoint-id-1"},
-				Data:       []byte(`{}`),
-				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+				UID:       uuid.NewString(),
+				EventType: "*",
+				SourceID:  "source-id-1",
+				GroupID:   "group-id-1",
+				Endpoints: []string{"endpoint-id-1"},
+				Data:      []byte(`{}`),
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			},
 			dbFn: func(args *args) {
 				srh, _ := args.search.(*mocks.MockSearcher)
