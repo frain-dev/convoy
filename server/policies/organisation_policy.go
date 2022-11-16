@@ -12,15 +12,19 @@ type OrganisationPolicy struct {
 }
 
 func (op *OrganisationPolicy) Get(ctx context.Context, org *datastore.Organisation) error {
-	authCtx := ctx.Value(AuthCtxKey).(auth.AuthenticatedUser)
+	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
 	if !ok {
 		return ErrNotAllowed
 	}
 
-	_, err := op.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	member, err := op.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
+		return ErrNotAllowed
+	}
+
+	if member.Role.Type != auth.RoleSuperUser {
 		return ErrNotAllowed
 	}
 
@@ -28,7 +32,7 @@ func (op *OrganisationPolicy) Get(ctx context.Context, org *datastore.Organisati
 }
 
 func (op *OrganisationPolicy) Update(ctx context.Context, org *datastore.Organisation) error {
-	authCtx := ctx.Value(AuthCtxKey).(auth.AuthenticatedUser)
+	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
 	if !ok {
@@ -48,7 +52,7 @@ func (op *OrganisationPolicy) Update(ctx context.Context, org *datastore.Organis
 }
 
 func (op *OrganisationPolicy) Delete(ctx context.Context, org *datastore.Organisation) error {
-	authCtx := ctx.Value(AuthCtxKey).(auth.AuthenticatedUser)
+	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
 	if !ok {
