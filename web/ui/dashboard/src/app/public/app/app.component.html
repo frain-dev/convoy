@@ -29,61 +29,61 @@
 		<ng-container *ngIf="activeTab === 'subscriptions'">
 			<convoy-table-loader id="endpoints_loader" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
 
-			<convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
-				<convoy-table-head class="contents">
-					<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of tableHead; let i = index">{{ head }}</convoy-table-head-cell>
-				</convoy-table-head>
+			<table convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
+				<thead convoy-table-head>
+					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of tableHead; let i = index">{{ head }}</th>
+				</thead>
 
 				<tbody>
-					<convoy-table-row class="contents" *ngFor="let subscription of subscriptions?.content; let i = index">
-						<convoy-table-cell class="contents" className="pl-20px">
+					<tr convoy-table-row *ngFor="let subscription of subscriptions?.content; let i = index">
+						<td convoy-table-cell class="pl-20px">
 							<div class="w-100px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.name }}</div>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							<div class="w-200px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.endpoint_metadata.target_url }}</div>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							{{ subscription.created_at | date }}
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							{{ subscription.updated_at | date }}
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							<div class="flex flex-wrap">
 								<convoy-tag type="grey" *ngFor="let eventType of subscription?.filter_config?.event_types; let i = index" className="mr-8px">{{ eventType }}</convoy-tag>
 							</div>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
+						</td>
+						<td convoy-table-cell>
 							<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
-							<convoy-dropdown buttonSize="sm" buttonFill="clear">
-								<ng-container dropdownToggle>
+						</td>
+						<td convoy-table-cell class="contents">
+							<div convoy-dropdown>
+								<button dropdownTrigger convoy-button size="sm" fill="clear">
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
-								</ng-container>
-								<ul>
-									<convoy-list-item class="w-full" className="px-14px" [hover]="true">
+								</button>
+								<ul dropdownOptions>
+									<li convoy-list-item class="w-full" className="px-14px">
 										<button convoy-button fill="text" (click)="subscription.active_menu = false; dropdownComponent.show = false" [routerLink]="'./subscriptions/' + subscription.uid">
 											<svg width="17" height="16" class="mr-8px fill-primary-100">
 												<use xlink:href="#edit-icon"></use>
 											</svg>
 											Edit Subscription
 										</button>
-									</convoy-list-item>
-									<convoy-list-item className="px-14px" [hover]="true">
+									</li>
+									<li convoy-list-item>
 										<button convoy-button fill="text" color="danger" (click)="subscription.active_menu = false; activeSubscription = subscription; showDeleteSubscriptionModal = true; dropdownComponent.show = false">
 											<svg width="16" height="16" class="mr-8px fill-danger-100">
 												<use xlink:href="#delete-icon"></use>
 											</svg>
 											Delete Subscription
 										</button>
-									</convoy-list-item>
+									</li>
 								</ul>
-							</convoy-dropdown>
-						</convoy-table-cell>
-					</convoy-table-row>
+							</div>
+						</td>
+					</tr>
 				</tbody>
-			</convoy-table>
+			</table>
 
 			<convoy-empty-state className="h-[20vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
 		</ng-container>

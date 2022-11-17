@@ -40,8 +40,12 @@
 			<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
 			<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
 			<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
-				<convoy-input label="What's your bussiness name?" name="name" formControlName="name" placeholder="e.g. Kuda" errorMessage="Organisation name is required"></convoy-input>
-				<div class="flex items-center w-full">
+				<convoy-input-field>
+					<label for="name" required="true" convoy-label>What's your bussiness name?</label>
+					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
+					<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
+				</convoy-input-field>
+				<div class="flex items-center justify-end w-full">
 					<button convoy-button type="button" fill="outline" class="hover:text-danger-100 hover:border-danger-100 transition-all duration-300 mr-24px" (click)="showCreateModal = false">Cancel</button>
 					<button convoy-button [disabled]="creatingOrganisation" class="self-stretch px-66px">Submit</button>
 				</div>

@@ -7,11 +7,11 @@ import { CreateOrganisationModule } from './components/create-organisation/creat
 import { AddAnalyticsModule } from './components/add-analytics/add-analytics.module';
 import { ButtonComponent } from '../components/button/button.component';
 import { BadgeComponent } from '../components/badge/badge.component';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { GithubStarComponent } from '../components/github-star/github-star.component';
 
 @NgModule({
 	declarations: [PrivateComponent],
-	imports: [CommonModule, PrivateRoutingModule, CreateOrganisationModule, AddAnalyticsModule, DropdownComponent, ButtonComponent, BadgeComponent, GithubStarComponent]
+	imports: [CommonModule, PrivateRoutingModule, CreateOrganisationModule, AddAnalyticsModule, DropdownComponent, ButtonComponent, BadgeComponent, GithubStarComponent, DropdownOptionDirective]
 })
 export class PrivateModule {}

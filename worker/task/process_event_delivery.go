@@ -124,9 +124,12 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 		}
 
-		dispatch := net.NewDispatcher(httpDuration)
-
 		done := true
+		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
+		if err != nil {
+			log.Errorf("error occurred while creating the http client - %+v\n", err)
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
 
 		e := endpoint
 		if ed.Status == datastore.SuccessEventStatus {
@@ -201,7 +204,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 
 			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false)
+			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -240,7 +243,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				}
 
 				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true)
+				err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
 				if err != nil {
 					log.WithError(err).Error("failed to send notification")
 				}

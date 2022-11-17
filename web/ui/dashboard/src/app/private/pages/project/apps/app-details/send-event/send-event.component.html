@@ -42,7 +42,10 @@
 					<span>Data is required</span>
 				</div>
 			</div>
-			<convoy-input label="Event Type" name="event_type" formControlName="event_type" placeholder="Event type" errorMessage="Event type is required"></convoy-input>
+			<convoy-input-field>
+				<label for="event_type" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Event Type</label>
+				<input id="event_type" convoy-input autocomplete="event_type" formControlName="event_type" placeholder="Event type" />
+			</convoy-input-field>
 		</form>
 		<div class="flex justify-end mt-40px">
 			<button convoy-button fill="outline" class="mr-24px" (click)="cancel()">Discard</button>

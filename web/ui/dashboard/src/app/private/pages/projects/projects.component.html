@@ -40,7 +40,7 @@
 		</div>
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="!isLoadingProjects">
-			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
+			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]" *ngIf="projects.length">
 				<svg width="22" height="22" class="mr-2" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
 				</svg>

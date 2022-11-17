@@ -133,7 +133,11 @@ func addLoginCommand() *cobra.Command {
 
 			var response *socket.LoginResponse
 
-			dispatch := convoyNet.NewDispatcher(time.Second * 10)
+			dispatch, err := convoyNet.NewDispatcher(time.Second * 10, "")
+			if err != nil {
+				return err
+			}
+
 			url := fmt.Sprintf("%s/stream/login", c.Host)
 			resp, err := dispatch.SendCliRequest(url, convoy.HttpPost, c.ActiveApiKey, body)
 			if err != nil {
