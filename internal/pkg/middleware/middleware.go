@@ -28,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/server/policies"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/go-chi/chi/v5"
@@ -717,7 +718,9 @@ func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
+			authCtx := context.WithValue(r.Context(), policies.AuthCtxKey, authUser)
+
+			r = r.WithContext(setAuthUserInContext(authCtx, authUser))
 			next.ServeHTTP(w, r)
 		})
 	}
