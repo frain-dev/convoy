@@ -409,6 +409,7 @@ var (
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
+	ErrPortalLinkNotFound            = errors.New("portal link not found")
 	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
@@ -827,6 +828,21 @@ type OrganisationInvite struct {
 	Status         InviteStatus       `json:"status" bson:"status"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	ExpiresAt      primitive.DateTime `json:"-" bson:"expires_at"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type PortalLink struct {
+	ID                primitive.ObjectID `json:"-" bson:"_id"`
+	UID               string             `json:"uid" bson:"uid"`
+	Name              string             `json:"name" bson:"name"`
+	GroupID           string             `json:"group_id" bson:"group_id"`
+	Token             string             `json:"-" bson:"token"`
+	Endpoints         []string           `json:"endpoints" bson:"endpoints"`
+	EndpointsMetadata []Endpoint         `json:"endpoints_metadata" bson:"endpoints_metadata"`
+
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
