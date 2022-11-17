@@ -470,46 +470,7 @@ var Migrations = []*Migration{
 			appCollection := "applications"
 			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, appCollection)
 
-			type Endpoint struct {
-				UID                string             `json:"uid" bson:"uid"`
-				TargetURL          string             `json:"target_url" bson:"target_url"`
-				Description        string             `json:"description" bson:"description"`
-				Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
-				Secrets            []datastore.Secret `json:"secrets" bson:"secrets"`
-				AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
-
-				HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-				RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-				RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-				Authentication    *datastore.EndpointAuthentication `json:"authentication" bson:"authentication"`
-
-				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
-			}
-
-			type Application struct {
-				ID              primitive.ObjectID `json:"-" bson:"_id"`
-				UID             string             `json:"uid" bson:"uid"`
-				GroupID         string             `json:"group_id" bson:"group_id"`
-				Title           string             `json:"name" bson:"title"`
-				SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
-				SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-				IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
-
-				Endpoints []Endpoint         `json:"endpoints,omitempty" bson:"endpoints"`
-				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-				Events int64 `json:"events,omitempty" bson:"-"`
-
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
-			}
-
-			var apps []*Application
+			var apps []*datastore.Application
 			var endpoints []*datastore.Endpoint
 
 			err := store.FindAll(ctx, nil, nil, nil, &apps)
@@ -583,45 +544,6 @@ var Migrations = []*Migration{
 
 			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
 
-			type Endpoint struct {
-				UID                string             `json:"uid" bson:"uid"`
-				TargetURL          string             `json:"target_url" bson:"target_url"`
-				Description        string             `json:"description" bson:"description"`
-				Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
-				Secrets            []datastore.Secret `json:"secrets" bson:"secrets"`
-				AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
-
-				HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-				RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-				RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-				Authentication    *datastore.EndpointAuthentication `json:"authentication" bson:"authentication"`
-
-				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
-			}
-
-			type Application struct {
-				ID              primitive.ObjectID `json:"-" bson:"_id"`
-				UID             string             `json:"uid" bson:"uid"`
-				GroupID         string             `json:"group_id" bson:"group_id"`
-				Title           string             `json:"name" bson:"title"`
-				SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
-				SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-				IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
-
-				Endpoints []Endpoint         `json:"endpoints,omitempty" bson:"endpoints"`
-				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
-
-				Events int64 `json:"events,omitempty" bson:"-"`
-
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
-			}
-
 			var endpoints []*datastore.Endpoint
 			err := store.FindAll(ctx, nil, nil, nil, &endpoints)
 			if err != nil {
@@ -629,11 +551,11 @@ var Migrations = []*Migration{
 				return err
 			}
 
-			mApps := make(map[string]*Application, 0)
+			mApps := make(map[string]*datastore.Application, 0)
 
 			for _, endpoint := range endpoints {
 				ap, ok := mApps[endpoint.AppID]
-				endpointResp := Endpoint{
+				endpointResp := datastore.DeprecatedEndpoint{
 					UID:                endpoint.UID,
 					TargetURL:          endpoint.TargetURL,
 					Description:        endpoint.Description,
@@ -652,7 +574,7 @@ var Migrations = []*Migration{
 				if ok {
 					ap.Endpoints = append(ap.Endpoints, endpointResp)
 				} else {
-					ap := &Application{
+					ap := &datastore.Application{
 						ID:              primitive.NewObjectID(),
 						UID:             endpoint.AppID,
 						GroupID:         endpoint.GroupID,
@@ -666,7 +588,7 @@ var Migrations = []*Migration{
 					}
 
 					if !util.IsStringEmpty(endpoint.TargetURL) {
-						ap.Endpoints = []Endpoint{endpointResp}
+						ap.Endpoints = []datastore.DeprecatedEndpoint{endpointResp}
 					}
 
 					mApps[endpoint.AppID] = ap
