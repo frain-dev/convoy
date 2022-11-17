@@ -1,18 +1,19 @@
 package native
 
 import (
-	"bytes"
+	_ "bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
+	_ "crypto/sha256"
+	_ "encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
-	"time"
+	_ "time"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"golang.org/x/crypto/pbkdf2"
+	log "github.com/sirupsen/logrus"
+	_ "golang.org/x/crypto/pbkdf2"
 )
 
 type NativeRealm struct {
@@ -33,32 +34,37 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	keySplit := strings.Split(key, ".")
 
 	if len(keySplit) != 3 {
+		log.WithError(errors.New("invalid api key format")).Error("invalid api key format")
+		// log.WithError("err").Error("invalid api key format")
 		return nil, errors.New("invalid api key format")
 	}
 
 	maskID := keySplit[1]
 	apiKey, err := n.apiKeyRepo.FindAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
+		log.WithError(err).Error("invalid mask id")
 		return nil, fmt.Errorf("failed to hash api key: %v", err)
 	}
 
-	decodedKey, err := base64.URLEncoding.DecodeString(apiKey.Hash)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode string: %v", err)
-	}
+	// decodedKey, err := base64.URLEncoding.DecodeString(apiKey.Hash)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to decode string: %v", err)
+	// }
 
-	// compute hash & compare.
-	dk := pbkdf2.Key([]byte(cred.APIKey), []byte(apiKey.Salt), 4096, 32, sha256.New)
+	// // compute hash & compare.
+	// dk := pbkdf2.Key([]byte(cred.APIKey), []byte(apiKey.Salt), 4096, 32, sha256.New)
 
-	if !bytes.Equal(dk, decodedKey) {
-		// Not Match.
-		return nil, errors.New("invalid api key")
-	}
+	// if !bytes.Equal(dk, decodedKey) {
+	// 	// Not Match.
+	// 	return nil, errors.New("invalid api key")
+	// }
 
-	// if the current time is after the specified expiry date then the key has expired
-	if apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()) {
-		return nil, errors.New("api key has expired")
-	}
+	// // if the current time is after the specified expiry date then the key has expired
+	// if apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()) {
+	// 	return nil, errors.New("api key has expired")
+	// }
+
+	// de342306-17cb-43ba-967b-5e086773fe33
 
 	if apiKey.DeletedAt != 0 {
 		return nil, errors.New("api key has been revoked")

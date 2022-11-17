@@ -230,6 +230,7 @@ type Endpoint struct {
 	ID                 primitive.ObjectID `json:"-" bson:"_id"`
 	UID                string             `json:"uid" bson:"uid"`
 	GroupID            string             `json:"group_id" bson:"group_id"`
+	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
 	TargetURL          string             `json:"target_url" bson:"target_url"`
 	Title              string             `json:"title" bson:"title"`
 	Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
@@ -409,6 +410,7 @@ var (
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
+	ErrPortalLinkNotFound            = errors.New("portal link not found")
 	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
@@ -437,17 +439,12 @@ type Event struct {
 	EventType        EventType          `json:"event_type" bson:"event_type"`
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
-	// ProviderID is a custom ID that can be used to reconcile this Event
-	// with your internal systems.
-	// This is optional
-	// If not provided, we will generate one for you
-	ProviderID string                `json:"provider_id,omitempty" bson:"provider_id"`
-	SourceID   string                `json:"source_id,omitempty" bson:"source_id"`
-	GroupID    string                `json:"group_id,omitempty" bson:"group_id"`
-	EndpointID string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	Endpoint   *Endpoint             `json:"endpoint_metadata,omitempty" bson:"-"`
-	Source     *Source               `json:"source_metadata,omitempty" bson:"-"`
+	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
+	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
+	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
+	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"-"`
+	Source           *Source               `json:"source_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -827,6 +824,21 @@ type OrganisationInvite struct {
 	Status         InviteStatus       `json:"status" bson:"status"`
 	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	ExpiresAt      primitive.DateTime `json:"-" bson:"expires_at"`
+	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type PortalLink struct {
+	ID                primitive.ObjectID `json:"-" bson:"_id"`
+	UID               string             `json:"uid" bson:"uid"`
+	Name              string             `json:"name" bson:"name"`
+	GroupID           string             `json:"group_id" bson:"group_id"`
+	Token             string             `json:"-" bson:"token"`
+	Endpoints         []string           `json:"endpoints" bson:"endpoints"`
+	EndpointsMetadata []Endpoint         `json:"endpoints_metadata" bson:"endpoints_metadata"`
+
+	DocumentStatus DocumentStatus     `json:"-" bson:"document_status"`
 	CreatedAt      primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`

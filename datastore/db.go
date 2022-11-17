@@ -32,6 +32,7 @@ const (
 	EventDeliveryCollection       = "eventdeliveries"
 	APIKeyCollection              = "apiKeys"
 	DeviceCollection              = "devices"
+	PortalLinkCollection          = "portal_links"
 )
 
 const CollectionCtx CollectionKey = "collection"
@@ -541,6 +542,8 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return "data_migrations", nil
 	case "applications", nil:
 		return "applications", nil
+	case "portal_links":
+		return PortalLinkCollection, nil
 	default:
 		return "", ErrInvalidCollection
 	}

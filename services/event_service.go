@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,7 +24,8 @@ import (
 
 var ErrInvalidEventDeliveryStatus = errors.New("only successful events can be force resent")
 var ErrNoValidEndpointFound = errors.New("no valid endpoint found")
-var ErrInvalidEndpointID = errors.New("please provide an app ID or a list of endpoints ID")
+var ErrNoValidOwnerIDEndpointFound = errors.New("owner ID has no configured endpoints")
+var ErrInvalidEndpointID = errors.New("please provide an endpoint ID")
 
 type EventService struct {
 	endpointRepo      datastore.EndpointRepository
@@ -35,6 +37,13 @@ type EventService struct {
 	cache             cache.Cache
 	searcher          searcher.Searcher
 	deviceRepo        datastore.DeviceRepository
+}
+
+type createEvent struct {
+	Data          json.RawMessage
+	EventType     string
+	EndpointID    string
+	CustomHeaders map[string]string
 }
 
 func NewEventService(
@@ -53,7 +62,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	if util.IsStringEmpty(newMessage.AppID) && len(newMessage.Endpoints) == 0 {
+	if util.IsStringEmpty(newMessage.AppID) && util.IsStringEmpty(newMessage.EndpointID) {
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpointID)
 	}
 
@@ -63,26 +72,64 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 	}
 
 	if len(endpoints) == 0 {
-		return nil, util.NewServiceError(http.StatusNotFound, errors.New("no valid endpoint found"))
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrNoValidEndpointFound)
 	}
 
-	var events []*datastore.Event
-
-	for _, endpoint := range endpoints {
-		event, err := e.createEvent(ctx, &endpoint, newMessage, g)
-		if err != nil {
-			return nil, err
-		}
-
-		events = append(events, event)
+	createEvent := &createEvent{
+		Data:          newMessage.Data,
+		EventType:     newMessage.EventType,
+		EndpointID:    newMessage.EndpointID,
+		CustomHeaders: newMessage.CustomHeaders,
 	}
 
-	return events[0], nil
+	event, err := e.createEvent(ctx, endpoints, createEvent, g)
+	if err != nil {
+		return nil, err
+	}
+
+	return event, nil
+}
+
+func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models.FanoutEvent, g *datastore.Group) (*datastore.Event, error) {
+	if g == nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
+	}
+
+	if err := util.Validate(newMessage); err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	endpoints, err := e.endpointRepo.FindEndpointsByOwnerID(ctx, g.UID, newMessage.OwnerID)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	if len(endpoints) == 0 {
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrNoValidOwnerIDEndpointFound)
+	}
+
+	createEvent := &createEvent{
+		Data:          newMessage.Data,
+		EventType:     newMessage.EventType,
+		CustomHeaders: newMessage.CustomHeaders,
+	}
+
+	event, err := e.createEvent(ctx, endpoints, createEvent, g)
+	if err != nil {
+		return nil, err
+	}
+
+	return event, nil
 }
 
 func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, g *datastore.Group) error {
 	taskName := convoy.CreateEventProcessor
-	eventByte, err := json.Marshal(event)
+
+	createEvent := task.CreateEvent{
+		Event: *event,
+	}
+
+	eventByte, err := json.Marshal(createEvent)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -211,20 +258,21 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
-	endpointMap := datastore.EndpointMap{}
+	var endpointMetaData []*datastore.Endpoint
 	sourceMap := datastore.SourceMap{}
 
 	for i, event := range events {
-		if _, ok := endpointMap[event.EndpointID]; !ok {
-			a, _ := e.endpointRepo.FindEndpointByID(ctx, event.EndpointID)
+		for _, endpointID := range event.Endpoints {
+			a, _ := e.endpointRepo.FindEndpointByID(ctx, endpointID)
 			aa := &datastore.Endpoint{
 				UID:          a.UID,
 				Title:        a.Title,
 				GroupID:      a.GroupID,
+				OwnerID:      a.OwnerID,
 				SupportEmail: a.SupportEmail,
 				TargetURL:    a.TargetURL,
 			}
-			endpointMap[event.EndpointID] = aa
+			endpointMetaData = append(endpointMetaData, aa)
 		}
 
 		if _, ok := sourceMap[event.SourceID]; !ok && !util.IsStringEmpty(event.SourceID) {
@@ -238,7 +286,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 			}
 		}
 
-		events[i].Endpoint = endpointMap[event.EndpointID]
+		events[i].EndpointMetadata = endpointMetaData
 		events[i].Source = sourceMap[event.SourceID]
 	}
 
@@ -391,13 +439,13 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	return nil
 }
 
-func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHeader {
+func (e *EventService) getCustomHeaders(customHeaders map[string]string) httpheader.HTTPHeader {
 	var headers map[string][]string
 
-	if event.CustomHeaders != nil {
+	if customHeaders != nil {
 		headers = make(map[string][]string)
 
-		for key, value := range event.CustomHeaders {
+		for key, value := range customHeaders {
 			headers[key] = []string{value}
 		}
 	}
@@ -405,16 +453,22 @@ func (e *EventService) getCustomHeaders(event *models.Event) httpheader.HTTPHead
 	return headers
 }
 
-func (e *EventService) createEvent(ctx context.Context, endpoint *datastore.Endpoint, newMessage *models.Event, g *datastore.Group) (*datastore.Event, error) {
+func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *createEvent, g *datastore.Group) (*datastore.Event, error) {
+	var endpointIDs []string
+
+	for _, endpoint := range endpoints {
+		endpointIDs = append(endpointIDs, endpoint.UID)
+	}
+
 	event := &datastore.Event{
 		UID:            uuid.New().String(),
 		EventType:      datastore.EventType(newMessage.EventType),
 		Data:           newMessage.Data,
-		Headers:        e.getCustomHeaders(newMessage),
+		Headers:        e.getCustomHeaders(newMessage.CustomHeaders),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		EndpointID:     endpoint.UID,
-		GroupID:        endpoint.GroupID,
+		Endpoints:      endpointIDs,
+		GroupID:        g.UID,
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
@@ -424,7 +478,13 @@ func (e *EventService) createEvent(ctx context.Context, endpoint *datastore.Endp
 	}
 
 	taskName := convoy.CreateEventProcessor
-	eventByte, err := json.Marshal(event)
+
+	createEvent := task.CreateEvent{
+		Event:              *event,
+		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
+	}
+
+	eventByte, err := json.Marshal(createEvent)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -447,17 +507,18 @@ func (e *EventService) createEvent(ctx context.Context, endpoint *datastore.Endp
 func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
-	if !util.IsStringEmpty(newMessage.AppID) {
-		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID)
+	if !util.IsStringEmpty(newMessage.EndpointID) {
+		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID)
 		if err != nil {
 			return endpoints, err
 		}
 
+		endpoints = append(endpoints, *endpoint)
 		return endpoints, nil
 	}
 
-	if len(newMessage.Endpoints) > 0 {
-		endpoints, err := e.endpointRepo.FindEndpointsByID(ctx, newMessage.Endpoints)
+	if !util.IsStringEmpty(newMessage.AppID) {
+		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID)
 		if err != nil {
 			return endpoints, err
 		}

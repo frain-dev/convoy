@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -124,7 +125,11 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
-	eventByte, err := json.Marshal(event)
+	createEvent := task.CreateEvent{
+		Event: *event,
+	}
+
+	eventByte, err := json.Marshal(createEvent)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

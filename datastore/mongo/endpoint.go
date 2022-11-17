@@ -83,6 +83,20 @@ func (db *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string) ([]
 	return endpoints, nil
 }
 
+func (db *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, groupID string, ownerID string) ([]datastore.Endpoint, error) {
+	ctx = db.setCollectionInContext(ctx)
+
+	endpoints := make([]datastore.Endpoint, 0)
+	filter := bson.M{"group_id": groupID, "owner_id": ownerID}
+
+	err := db.store.FindAll(ctx, filter, nil, nil, &endpoints)
+	if err != nil {
+		return endpoints, err
+	}
+
+	return endpoints, nil
+}
+
 func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
