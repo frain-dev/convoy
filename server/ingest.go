@@ -84,16 +84,27 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	cfg, err := config.Get()
+	g, err := createGroupService(a).FindGroupByID(r.Context(), source.GroupID)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load config")
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	maxRead := g.Config.MaxPayloadReadSize
+	if maxRead == 0 {
+		cfg, err := config.Get()
+		if err != nil {
+			a.A.Logger.WithError(err).Error("failed to load config")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+			return
+		}
+
+		maxRead = cfg.MaxResponseSize
 	}
 
 	// 3.1 On Failure
 	// Return 400 Bad Request.
-	body := io.LimitReader(r.Body, int64(cfg.MaxResponseSize))
+	body := io.LimitReader(r.Body, int64(maxRead))
 	payload, err := io.ReadAll(body)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

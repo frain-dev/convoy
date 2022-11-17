@@ -338,6 +338,7 @@ type GroupConfig struct {
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
+	MaxPayloadReadSize       uint64                        `json:"max_payload_read_size" bson:"max_payload_read_size"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
 	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
 	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
