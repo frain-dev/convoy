@@ -329,15 +329,6 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "created_at", Value: 1},
 				},
 			},
-			{
-				Keys: bson.D{
-					{Key: "group_id", Value: 1},
-					{Key: "document_status", Value: 1},
-					{Key: "deleted_at", Value: 1},
-					{Key: "title", Value: 1},
-				},
-				Options: options.Index().SetUnique(true),
-			},
 		},
 
 		datastore.OrganisationInvitesCollection: {

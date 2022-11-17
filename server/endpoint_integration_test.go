@@ -296,32 +296,6 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NameNotUnique() {
-	endpointTitle := uuid.New().String()
-	endpointURL := faker.New().Internet().URL()
-	expectedStatusCode := http.StatusBadRequest
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", endpointTitle, true)
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultGroup.UID)
-	plainBody := fmt.Sprintf(`{
-		"name": "%s",
-		"description": "test endpoint",
-		"url": "%s"
-	}`, endpointTitle, endpointURL)
-	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
 func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 	endpointID := uuid.New().String()
 	expectedStatusCode := http.StatusBadRequest
@@ -332,35 +306,6 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultGroup.UID, endpointID)
 	plainBody := ""
-	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_DuplicateNames() {
-	endpointID := uuid.New().String()
-	endpointTitle := "appTitle"
-	endpointURL := faker.New().Internet().URL()
-	expectedStatusCode := http.StatusBadRequest
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", endpointTitle, false)
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", false)
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultGroup.UID, endpointID)
-	plainBody := fmt.Sprintf(`{
-		"name": "%s",
-		"description": "test endpoint",
-		"url": "%s",
-		"support_email": "%s"
-	}`, endpointTitle, endpointURL, "10xengineer@getconvoy.io")
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()

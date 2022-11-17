@@ -45,16 +45,6 @@ func Test_UpdateEndpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, newTitle, newApp.Title)
-
-	app2 := &datastore.Endpoint{
-		Title:          newTitle,
-		GroupID:        newGroup.UID,
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	err = endpointRepo.CreateEndpoint(context.Background(), app2, app2.GroupID)
-	require.Equal(t, datastore.ErrDuplicateEndpointName, err)
 }
 
 func Test_CreateEndpoint(t *testing.T) {
@@ -79,16 +69,6 @@ func Test_CreateEndpoint(t *testing.T) {
 	}
 
 	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
-
-	endpoint2 := &datastore.Endpoint{
-		Title:          "Next application name",
-		GroupID:        newOrg.UID,
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-	}
-
-	err := endpointRepo.CreateEndpoint(context.Background(), endpoint2, endpoint2.GroupID)
-	require.Equal(t, datastore.ErrDuplicateEndpointName, err)
 }
 
 func Test_LoadEndpointsPaged(t *testing.T) {

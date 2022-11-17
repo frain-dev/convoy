@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -28,14 +27,6 @@ func NewEndpointRepo(store datastore.Store) datastore.EndpointRepository {
 
 func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
-	err := db.assertUniqueEndpointTitle(ctx, endpoint, groupID)
-	if err != nil {
-		if errors.Is(err, datastore.ErrDuplicateEndpointName) {
-			return err
-		}
-
-		return fmt.Errorf("failed to check if application name is unique: %v", err)
-	}
 
 	endpoint.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(endpoint.UID) {
@@ -94,15 +85,6 @@ func (db *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string) ([]
 
 func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
-
-	err := db.assertUniqueEndpointTitle(ctx, endpoint, groupID)
-	if err != nil {
-		if errors.Is(err, datastore.ErrDuplicateEndpointName) {
-			return err
-		}
-
-		return fmt.Errorf("failed to check if endpoint name is unique: %v", err)
-	}
 
 	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
@@ -326,27 +308,6 @@ func (db *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) 
 	return endpoints, nil
 }
 
-func (db *endpointRepo) assertUniqueEndpointTitle(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
-	ctx = db.setCollectionInContext(ctx)
-	f := bson.M{
-		"uid":      bson.M{"$ne": endpoint.UID},
-		"title":    endpoint.Title,
-		"group_id": groupID,
-	}
-
-	count, err := db.store.Count(ctx, f)
-
-	if err != nil {
-		return err
-	}
-
-	if count != 0 {
-		return datastore.ErrDuplicateEndpointName
-	}
-
-	return nil
-}
-
 func (db *endpointRepo) deleteEndpointEvents(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 
@@ -370,15 +331,6 @@ func (db *endpointRepo) deleteEndpoint(ctx context.Context, endpoint *datastore.
 
 func (db *endpointRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EndpointCollection)
-}
-
-func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
-	for _, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			return &endpoint, nil
-		}
-	}
-	return nil, datastore.ErrEndpointNotFound
 }
 
 func (db *endpointRepo) deleteSubscription(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {
