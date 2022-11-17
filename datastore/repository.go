@@ -138,3 +138,12 @@ type ConfigurationRepository interface {
 	LoadConfiguration(context.Context) (*Configuration, error)
 	UpdateConfiguration(context.Context, *Configuration) error
 }
+
+type PortalLinkRepository interface {
+	CreatePortalLink(context.Context, *PortalLink) error
+	UpdatePortalLink(ctx context.Context, groupID string, portal *PortalLink) error
+	FindPortalLinkByID(ctx context.Context, groupID string, id string) (*PortalLink, error)
+	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
+	LoadPortalLinksPaged(ctx context.Context, groupID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
+	RevokePortalLink(ctx context.Context, groupID string, id string) error
+}

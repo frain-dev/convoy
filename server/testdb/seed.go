@@ -606,6 +606,26 @@ func SeedDevice(store datastore.Store, g *datastore.Group, endpointID string) er
 	return nil
 }
 
+func SeedPortalLink(store datastore.Store, g *datastore.Group, endpoints []string) (*datastore.PortalLink, error) {
+	portalLink := &datastore.PortalLink{
+		UID:            uuid.NewString(),
+		GroupID:        g.UID,
+		Name:           fmt.Sprintf("TestPortalLink-%s", uuid.NewString()),
+		Token:          uuid.NewString(),
+		Endpoints:      endpoints,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	portalLinkRepo := cm.NewPortalLinkRepo(store)
+	err := portalLinkRepo.CreatePortalLink(context.TODO(), portalLink)
+	if err != nil {
+		return nil, err
+	}
+
+	return portalLink, nil
+
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(t *testing.T, db cm.Client) {
