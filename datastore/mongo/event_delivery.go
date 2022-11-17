@@ -296,13 +296,7 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	filter := getFilter(groupID, appID, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
-	matchStage := bson.D{
-		{
-			Key:   "$match",
-			Value: filter,
-		},
-	}
-
+	matchStage := bson.D{{Key: "$match", Value: mToD(filter)}}
 	appLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.AppCollection},
@@ -416,15 +410,11 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		},
 	}
 
-	sortAndLimitStages := []bson.D{
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
-		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
-		{{Key: "$limit", Value: pageable.PerPage}},
-	}
-
 	pipeline := mongo.Pipeline{
 		matchStage,
+		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$limit", Value: pageable.PerPage}},
 		appLookupStage,
 		eventLookupStage,
 		deviceLookupStage,
@@ -432,8 +422,6 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		setStage,
 		unsetStage,
 	}
-
-	pipeline = append(pipeline, sortAndLimitStages...)
 
 	var eventDeliveries []datastore.EventDelivery
 	err := db.store.Aggregate(ctx, pipeline, &eventDeliveries, false)
@@ -557,4 +545,33 @@ func getFilter(groupID string, appID string, eventID string, status []datastore.
 	}
 
 	return filter
+}
+
+// mToD created a bson.D from the entries in M
+func mToD(m bson.M) bson.D {
+	d := bson.D{}
+
+	for k, v := range m {
+		switch n := v.(type) {
+		case bson.M:
+			d = append(d, bson.E{Key: k, Value: mToD(n)})
+		default:
+			d = append(d, bson.E{Key: k, Value: n})
+		}
+	}
+
+	return d
+}
+
+// dToM creates a map from the elements of the D.
+func DToM(d bson.D) bson.M {
+	m := make(bson.M, len(d))
+	for _, e := range d {
+		if v, ok := e.Value.(bson.D); ok {
+			m[e.Key] = v.Map()
+			continue
+		}
+		m[e.Key] = e.Value
+	}
+	return m
 }

@@ -188,22 +188,27 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(f.SearchParams)}
-	matchStage := bson.D{{Key: "$match", Value: bson.D{
-		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+	d := bson.D{
 		{Key: "created_at", Value: getCreatedDateFilter(f.SearchParams)},
-		{Key: "group_id", Value: f.Group.UID},
-	}}}
+		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+	}
+
+	if !util.IsStringEmpty(f.Group.UID) {
+		filter["group_id"] = f.Group.UID
+		d = append(d, bson.E{Key: "group_id", Value: f.Group.UID})
+	}
 
 	if !util.IsStringEmpty(f.AppID) {
 		filter["app_id"] = f.AppID
-		matchStage[0].Value = append(matchStage[0].Value.(bson.D), primitive.E{Key: "app_id", Value: f.AppID})
+		d = append(d, bson.E{Key: "app_id", Value: f.AppID})
 	}
 
 	if !util.IsStringEmpty(f.SourceID) {
 		filter["source_id"] = f.SourceID
-		matchStage[0].Value = append(matchStage[0].Value.(bson.D), primitive.E{Key: "source_id", Value: f.SourceID})
+		d = append(d, bson.E{Key: "source_id", Value: f.SourceID})
 	}
 
+	matchStage := bson.D{{Key: "$match", Value: d}}
 	appLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.AppCollection},
@@ -259,14 +264,13 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 
 	pipeline := mongo.Pipeline{
 		matchStage,
+		{{Key: "$skip", Value: getSkip(f.Pageable.Page, f.Pageable.PerPage)}},
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$limit", Value: f.Pageable.PerPage}},
 		appLookupStage,
 		sourceLookupStage,
 		projectStage,
 		unsetStage,
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
-		{{Key: "$skip", Value: getSkip(f.Pageable.Page, f.Pageable.PerPage)}},
-		{{Key: "$limit", Value: f.Pageable.PerPage}},
 	}
 
 	var events []datastore.Event
@@ -301,7 +305,16 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 }
 
 func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {
-	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
+	sf := bson.M{}
+	if searchParams.CreatedAtStart > 0 {
+		sf["$gte"] = primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0))
+	}
+
+	if searchParams.CreatedAtEnd > 0 {
+		sf["$lte"] = primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))
+	}
+
+	return sf
 }
 
 func (db *eventRepo) setCollectionInContext(ctx context.Context) context.Context {

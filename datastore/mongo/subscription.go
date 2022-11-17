@@ -196,25 +196,21 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 	unwindEndpointStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$endpoint_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
-	sortAndLimitStages := []bson.D{
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
-		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
-		{{Key: "$limit", Value: pageable.PerPage}},
-	}
 
 	// pipeline definition
 	pipeline := mongo.Pipeline{
 		matchStage,
+		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$limit", Value: pageable.PerPage}},
 		appStage,
-		unwindAppStage,
 		sourceStage,
-		unwindSourceStage,
 		endpointStage,
+		unwindAppStage,
+		unwindSourceStage,
 		unwindEndpointStage,
 	}
 
-	pipeline = append(pipeline, sortAndLimitStages...)
 	err := s.store.Aggregate(ctx, pipeline, &subscriptions, true)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
