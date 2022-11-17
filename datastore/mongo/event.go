@@ -305,16 +305,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 }
 
 func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {
-	sf := bson.M{}
-	if searchParams.CreatedAtStart > 0 {
-		sf["$gte"] = primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0))
-	}
-
-	if searchParams.CreatedAtEnd > 0 {
-		sf["$lte"] = primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))
-	}
-
-	return sf
+	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
 }
 
 func (db *eventRepo) setCollectionInContext(ctx context.Context) context.Context {
