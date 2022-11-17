@@ -245,7 +245,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingGroup
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "", "", false)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
