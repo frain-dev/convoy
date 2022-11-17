@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -458,6 +459,235 @@ var Migrations = []*Migration{
 			}
 
 			return store.WithTransaction(ctx, fn)
+		},
+	},
+
+	{
+		ID: "20221116142027_migrate_apps_to_endpoints",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+
+			appCollection := "applications"
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, appCollection)
+
+			type Endpoint struct {
+				UID                string             `json:"uid" bson:"uid"`
+				TargetURL          string             `json:"target_url" bson:"target_url"`
+				Description        string             `json:"description" bson:"description"`
+				Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
+				Secrets            []datastore.Secret `json:"secrets" bson:"secrets"`
+				AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
+
+				HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+				RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+				RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+				Authentication    *datastore.EndpointAuthentication `json:"authentication" bson:"authentication"`
+
+				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+
+				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+			}
+
+			type Application struct {
+				ID              primitive.ObjectID `json:"-" bson:"_id"`
+				UID             string             `json:"uid" bson:"uid"`
+				GroupID         string             `json:"group_id" bson:"group_id"`
+				Title           string             `json:"name" bson:"title"`
+				SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
+				SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+				IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
+
+				Endpoints []Endpoint         `json:"endpoints,omitempty" bson:"endpoints"`
+				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+
+				Events int64 `json:"events,omitempty" bson:"-"`
+
+				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+			}
+
+			var apps []*Application
+			var endpoints []*datastore.Endpoint
+
+			err := store.FindAll(ctx, nil, nil, nil, &apps)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find apps")
+				return err
+			}
+
+			for _, app := range apps {
+				if len(app.Endpoints) > 0 {
+					for _, e := range app.Endpoints {
+						endpoint := &datastore.Endpoint{
+							ID:                 primitive.NewObjectID(),
+							UID:                e.UID,
+							GroupID:            app.GroupID,
+							TargetURL:          e.TargetURL,
+							Title:              app.Title,
+							SupportEmail:       app.SupportEmail,
+							Secrets:            e.Secrets,
+							AdvancedSignatures: e.AdvancedSignatures,
+							Description:        e.Description,
+							SlackWebhookURL:    app.SlackWebhookURL,
+							AppID:              app.UID,
+							HttpTimeout:        e.HttpTimeout,
+							RateLimit:          e.RateLimit,
+							RateLimitDuration:  e.RateLimitDuration,
+							Authentication:     e.Authentication,
+							CreatedAt:          e.CreatedAt,
+							UpdatedAt:          e.UpdatedAt,
+							DocumentStatus:     e.DocumentStatus,
+						}
+
+						endpoints = append(endpoints, endpoint)
+					}
+				} else {
+					endpoint := &datastore.Endpoint{
+						ID:              primitive.NewObjectID(),
+						UID:             app.UID,
+						GroupID:         app.GroupID,
+						Title:           app.Title,
+						SupportEmail:    app.SupportEmail,
+						SlackWebhookURL: app.SlackWebhookURL,
+						AppID:           app.UID,
+						CreatedAt:       app.CreatedAt,
+						UpdatedAt:       app.UpdatedAt,
+						DocumentStatus:  app.DocumentStatus,
+					}
+
+					endpoints = append(endpoints, endpoint)
+				}
+			}
+
+			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+			for _, endpoint := range endpoints {
+				err := store.Save(endpointCtx, endpoint, nil)
+				if err != nil {
+					return err
+				}
+			}
+
+			//drop the applications collection
+			err = db.Collection(appCollection).Drop(ctx)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+
+			type Endpoint struct {
+				UID                string             `json:"uid" bson:"uid"`
+				TargetURL          string             `json:"target_url" bson:"target_url"`
+				Description        string             `json:"description" bson:"description"`
+				Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
+				Secrets            []datastore.Secret `json:"secrets" bson:"secrets"`
+				AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
+
+				HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+				RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+				RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+				Authentication    *datastore.EndpointAuthentication `json:"authentication" bson:"authentication"`
+
+				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+
+				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+			}
+
+			type Application struct {
+				ID              primitive.ObjectID `json:"-" bson:"_id"`
+				UID             string             `json:"uid" bson:"uid"`
+				GroupID         string             `json:"group_id" bson:"group_id"`
+				Title           string             `json:"name" bson:"title"`
+				SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
+				SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+				IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
+
+				Endpoints []Endpoint         `json:"endpoints,omitempty" bson:"endpoints"`
+				CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+				UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+				DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+
+				Events int64 `json:"events,omitempty" bson:"-"`
+
+				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+			}
+
+			var endpoints []*datastore.Endpoint
+			err := store.FindAll(ctx, nil, nil, nil, &endpoints)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find endpoints")
+				return err
+			}
+
+			mApps := make(map[string]*Application, 0)
+
+			for _, endpoint := range endpoints {
+				ap, ok := mApps[endpoint.AppID]
+				endpointResp := Endpoint{
+					UID:                endpoint.UID,
+					TargetURL:          endpoint.TargetURL,
+					Description:        endpoint.Description,
+					Secret:             endpoint.Secret,
+					Secrets:            endpoint.Secrets,
+					AdvancedSignatures: endpoint.AdvancedSignatures,
+					HttpTimeout:        endpoint.HttpTimeout,
+					RateLimit:          endpoint.RateLimit,
+					RateLimitDuration:  endpoint.RateLimitDuration,
+					Authentication:     endpoint.Authentication,
+					CreatedAt:          endpoint.CreatedAt,
+					UpdatedAt:          endpoint.UpdatedAt,
+					DocumentStatus:     endpoint.DocumentStatus,
+				}
+
+				if ok {
+					ap.Endpoints = append(ap.Endpoints, endpointResp)
+				} else {
+					ap := &Application{
+						ID:              primitive.NewObjectID(),
+						UID:             endpoint.AppID,
+						GroupID:         endpoint.GroupID,
+						Title:           endpoint.Title,
+						SupportEmail:    endpoint.SupportEmail,
+						SlackWebhookURL: endpoint.SlackWebhookURL,
+						IsDisabled:      endpoint.IsDisabled,
+						CreatedAt:       endpoint.CreatedAt,
+						UpdatedAt:       endpoint.UpdatedAt,
+						DocumentStatus:  endpoint.DocumentStatus,
+					}
+
+					if !util.IsStringEmpty(endpoint.TargetURL) {
+						ap.Endpoints = []Endpoint{endpointResp}
+					}
+
+					mApps[endpoint.AppID] = ap
+				}
+			}
+
+			appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, "applications")
+			for _, app := range mApps {
+				err := store.Save(appCtx, app, nil)
+				if err != nil {
+					return err
+				}
+			}
+
+			//drop the endpoints collection
+			err = db.Collection(datastore.EndpointCollection).Drop(ctx)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	},
 }
