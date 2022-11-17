@@ -239,7 +239,7 @@ type Endpoint struct {
 	Description        string             `json:"description" bson:"description"`
 	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
 	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
-	AppID              string             `json:"app_id" bson:"app_id"` //Deprecated but necessary for backward compatibility
+	AppID              string             `json:"-" bson:"app_id"` //Deprecated but necessary for backward compatibility
 
 	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`

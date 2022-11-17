@@ -337,7 +337,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 						groupSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 							endpointSubRouter.Post("/", a.CreateEndpoint)
-							endpointSubRouter.Get("/", a.GetEndpoints)
+							endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
 
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Use(a.M.RequireEndpoint())
@@ -480,12 +480,12 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 				endpointSubRouter.Route("/events", func(eventRouter chi.Router) {
 					eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
-			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-				eventSubRouter.Use(a.M.RequireEvent())
-				eventSubRouter.Get("/", a.GetEndpointEvent)
-				eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
-			})
-		})
+					eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+						eventSubRouter.Use(a.M.RequireEvent())
+						eventSubRouter.Get("/", a.GetEndpointEvent)
+						eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
+					})
+				})
 
 				endpointSubRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
 					subsriptionRouter.Post("/", a.CreateSubscription)
