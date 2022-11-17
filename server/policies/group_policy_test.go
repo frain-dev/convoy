@@ -3,7 +3,6 @@ package policies
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/frain-dev/convoy/auth"
@@ -15,26 +14,160 @@ import (
 
 func Test_GroupPolicy_Create(t *testing.T) {
 	type test struct {
-		name    string
-		wantErr bool
+		basetest
+		organisation *datastore.Organisation
+		storeFn      func(*GroupPolicy)
 	}
 
 	testmatrix := map[string][]test{
-		"project_api_keys": []test{
+		"project_api_key": {
 			{
-				wantErr: false,
+				basetest: basetest{
+					name: "should_reject_when_apikey_does_not_have_access_to_group",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+			},
+		},
+		"personal_api_key": {
+			{
+				basetest: basetest{
+					name: "should_reject_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID:  "randomstring",
+							Type: datastore.PersonalKey,
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil, errors.New("rejected"))
+				},
 			},
 			{
-				wantErr: false,
+				basetest: basetest{
+					name: "should_allow_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID:  "randomstring",
+							Type: datastore.PersonalKey,
+						},
+					},
+					wantErr:       false,
+					expectedError: nil,
+				},
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(&datastore.OrganisationMember{UID: "randomstring"}, nil)
+				},
+			},
+		},
+		"user": {
+			{
+				basetest: basetest{
+					name: "should_reject_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil, errors.New("rejected"))
+				},
+			},
+			{
+				basetest: basetest{
+					name: "should_allow_when_user_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       false,
+					expectedError: nil,
+				},
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(&datastore.OrganisationMember{
+							UID: "randomstring",
+							Role: auth.Role{
+								Type: auth.RoleSuperUser,
+							},
+						}, nil)
+				},
 			},
 		},
 	}
-
-	for name, tests := range testmatrix {
+	for name, test := range testmatrix {
 		t.Run(name, func(t *testing.T) {
-			for _, tc := range tests {
+			for _, tc := range test {
 				t.Run(tc.name, func(t *testing.T) {
-					fmt.Println("Oporrrr", tc)
+					// Arrange.
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+
+					opts := &GroupPolicyOpts{
+						OrganisationRepo:       mocks.NewMockOrganisationRepository(ctrl),
+						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					}
+					policy := &GroupPolicy{
+						opts: opts,
+					}
+					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					if tc.storeFn != nil {
+						tc.storeFn(policy)
+					}
+
+					// Act.
+					err := policy.Create(authCtx, tc.organisation)
+
+					// Assert.
+					if tc.wantErr {
+						require.ErrorIs(t, err, tc.expectedError)
+						return
+					}
+
+					require.NoError(t, err)
 				})
 			}
 		})
@@ -51,15 +184,212 @@ func Test_GroupPolicy_Update(t *testing.T) {
 		storeFn func(*GroupPolicy)
 	}
 
-	testmatrix := map[string]test{
-		"personal_api_key": {},
+	testmatrix := map[string][]test{
+		"project_api_key": {
+			{
+				basetest: basetest{
+					name: "should_reject_when_apikey_does_not_have_access_to_group",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				group: &datastore.Group{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), gomock.Any()).
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+				},
+			},
+			{
+				basetest: basetest{
+					name: "should_allow_when_apikey_has_access_to_group",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID: "randomstring",
+							Role: auth.Role{
+								Group: "group-uid",
+							},
+						},
+					},
+					wantErr:       false,
+					expectedError: nil,
+				},
+				group: &datastore.Group{
+					UID: "group-uid",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), gomock.Any()).
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+				},
+			},
+		},
+		"personal_api_key": {
+			{
+				basetest: basetest{
+					name: "should_reject_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID:  "randomstring",
+							Type: datastore.PersonalKey,
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				group: &datastore.Group{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), gomock.Any()).
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil, errors.New("rejected"))
+				},
+			},
+			{
+				basetest: basetest{
+					name: "should_allow_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID:  "randomstring",
+							Type: datastore.PersonalKey,
+						},
+					},
+					wantErr:       false,
+					expectedError: nil,
+				},
+				group: &datastore.Group{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), gomock.Any()).
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(&datastore.OrganisationMember{UID: "randomstring"}, nil)
+				},
+			},
+		},
+		"user": {
+			{
+				basetest: basetest{
+					name: "should_reject_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				group: &datastore.Group{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), gomock.Any()).
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil, errors.New("rejected"))
+				},
+			},
+			{
+				basetest: basetest{
+					name: "should_allow_when_user_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       false,
+					expectedError: nil,
+				},
+				group: &datastore.Group{
+					UID: "randomstring",
+				},
+				storeFn: func(gp *GroupPolicy) {
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), gomock.Any()).
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(&datastore.OrganisationMember{
+							UID: "randomstring",
+							Role: auth.Role{
+								Type: auth.RoleSuperUser,
+							},
+						}, nil)
+				},
+			},
+		},
 	}
 
-	for name, authCtx := range testmatrix {
+	for name, test := range testmatrix {
 		t.Run(name, func(t *testing.T) {
-			for tname, tc := range tests {
-				t.Run(tname, func(t *testing.T) {
-					fmt.Println("Oporrr", tc, authCtx)
+			for _, tc := range test {
+				t.Run(tc.name, func(t *testing.T) {
+					// Arrange.
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
+
+					opts := &GroupPolicyOpts{
+						OrganisationRepo:       mocks.NewMockOrganisationRepository(ctrl),
+						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					}
+					policy := &GroupPolicy{
+						opts: opts,
+					}
+					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					if tc.storeFn != nil {
+						tc.storeFn(policy)
+					}
+
+					// Act.
+					err := policy.Update(authCtx, tc.group)
+
+					// Assert.
+					if tc.wantErr {
+						require.ErrorIs(t, err, tc.expectedError)
+						return
+					}
+
+					require.NoError(t, err)
 				})
 			}
 		})
@@ -74,152 +404,166 @@ func Test_GroupPolicy_Delete(t *testing.T) {
 	}
 
 	testmatrix := map[string][]test{
-		"project_api_key": []test{
+		"project_api_key": {
 			{
-				name: "should_reject_when_apikey_does_not_have_access_to_group",
-				authCtx: &auth.AuthenticatedUser{
-					APIKey: &datastore.APIKey{
-						UID: "randomstring",
+				basetest: basetest{
+					name: "should_reject_when_apikey_does_not_have_access_to_group",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID: "randomstring",
+						},
 					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
 				},
 				group: &datastore.Group{
 					UID: "randomstring",
 				},
 				storeFn: func(gp *GroupPolicy) {
-					orgRepo := gp.orgRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 				},
-				wantErr:       true,
-				expectedError: ErrNotAllowed,
 			},
 			{
-				name: "should_allow_when_apikey_has_access_to_group",
-				authCtx: &auth.AuthenticatedUser{
-					APIKey: &datastore.APIKey{
-						UID: "randomstring",
-						Role: auth.Role{
-							Group: "group-uid",
+				basetest: basetest{
+					name: "should_allow_when_apikey_has_access_to_group",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID: "randomstring",
+							Role: auth.Role{
+								Group: "group-uid",
+							},
 						},
 					},
+					wantErr:       false,
+					expectedError: nil,
 				},
 				group: &datastore.Group{
 					UID: "group-uid",
 				},
 				storeFn: func(gp *GroupPolicy) {
-					orgRepo := gp.orgRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 				},
-				wantErr:       false,
-				expectedError: nil,
 			},
 		},
-		"personal_api_key": []test{
+		"personal_api_key": {
 			{
-				name: "should_reject_when_user_does_not_belong_to_organisation",
-				authCtx: &auth.AuthenticatedUser{
-					APIKey: &datastore.APIKey{
-						UID:  "randomstring",
-						Type: datastore.PersonalKey,
+				basetest: basetest{
+					name: "should_reject_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID:  "randomstring",
+							Type: datastore.PersonalKey,
+						},
 					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
 				},
 				group: &datastore.Group{
 					UID: "randomstring",
 				},
 				storeFn: func(gp *GroupPolicy) {
-					orgRepo := gp.orgRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := gp.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil, errors.New("rejected"))
 				},
-				wantErr:       true,
-				expectedError: ErrNotAllowed,
 			},
 			{
-				name: "should_allow_when_user_does_not_belong_to_organisation",
-				authCtx: &auth.AuthenticatedUser{
-					APIKey: &datastore.APIKey{
-						UID:  "randomstring",
-						Type: datastore.PersonalKey,
+				basetest: basetest{
+					name: "should_allow_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						APIKey: &datastore.APIKey{
+							UID:  "randomstring",
+							Type: datastore.PersonalKey,
+						},
 					},
+					wantErr:       false,
+					expectedError: nil,
 				},
 				group: &datastore.Group{
 					UID: "randomstring",
 				},
 				storeFn: func(gp *GroupPolicy) {
-					orgRepo := gp.orgRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := gp.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(&datastore.OrganisationMember{UID: "randomstring"}, nil)
 				},
-				wantErr:       false,
-				expectedError: nil,
 			},
 		},
-		"user": []test{
+		"user": {
 			{
-				name: "should_reject_when_user_does_not_belong_to_organisation",
-				authCtx: &auth.AuthenticatedUser{
-					User: &datastore.User{
-						UID: "randomstring",
+				basetest: basetest{
+					name: "should_reject_when_user_does_not_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
 					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
 				},
 				group: &datastore.Group{
 					UID: "randomstring",
 				},
 				storeFn: func(gp *GroupPolicy) {
-					orgRepo := gp.orgRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := gp.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil, errors.New("rejected"))
 				},
-				wantErr:       true,
-				expectedError: ErrNotAllowed,
 			},
 			{
-				name: "should_allow_when_user_belong_to_organisation",
-				authCtx: &auth.AuthenticatedUser{
-					User: &datastore.User{
-						UID: "randomstring",
+				basetest: basetest{
+					name: "should_allow_when_user_belong_to_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
 					},
+					wantErr:       false,
+					expectedError: nil,
 				},
 				group: &datastore.Group{
 					UID: "randomstring",
 				},
 				storeFn: func(gp *GroupPolicy) {
-					orgRepo := gp.orgRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := gp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := gp.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := gp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -230,8 +574,6 @@ func Test_GroupPolicy_Delete(t *testing.T) {
 							},
 						}, nil)
 				},
-				wantErr:       false,
-				expectedError: nil,
 			},
 		},
 	}
@@ -244,11 +586,14 @@ func Test_GroupPolicy_Delete(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
 
-					policy := &GroupPolicy{
-						orgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-						orgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-						gRepo:         mocks.NewMockGroupRepository(ctrl),
+					opts := &GroupPolicyOpts{
+						OrganisationRepo:       mocks.NewMockOrganisationRepository(ctrl),
+						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
+					policy := &GroupPolicy{
+						opts: opts,
+					}
+
 					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
 
 					if tc.storeFn != nil {

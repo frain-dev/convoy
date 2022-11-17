@@ -8,7 +8,17 @@ import (
 )
 
 type OrganisationPolicy struct {
-	orgMemberRepo datastore.OrganisationMemberRepository
+	opts *OrganisationPolicyOpts
+}
+
+type OrganisationPolicyOpts struct {
+	OrganisationMemberRepo datastore.OrganisationMemberRepository
+}
+
+func NewOrganisationPolicy(opts *OrganisationPolicyOpts) *OrganisationPolicy {
+	return &OrganisationPolicy{
+		opts: opts,
+	}
 }
 
 func (op *OrganisationPolicy) Get(ctx context.Context, org *datastore.Organisation) error {
@@ -19,7 +29,7 @@ func (op *OrganisationPolicy) Get(ctx context.Context, org *datastore.Organisati
 		return ErrNotAllowed
 	}
 
-	member, err := op.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	member, err := op.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -39,7 +49,7 @@ func (op *OrganisationPolicy) Update(ctx context.Context, org *datastore.Organis
 		return ErrNotAllowed
 	}
 
-	member, err := op.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	member, err := op.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -59,7 +69,7 @@ func (op *OrganisationPolicy) Delete(ctx context.Context, org *datastore.Organis
 		return ErrNotAllowed
 	}
 
-	member, err := op.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	member, err := op.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
 		return ErrNotAllowed
 	}

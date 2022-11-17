@@ -13,238 +13,278 @@ import (
 )
 
 func Test_OrganisationPolicy_Get(t *testing.T) {
-	tests := map[string]struct {
-		authCtx       *auth.AuthenticatedUser
-		organisation  *datastore.Organisation
-		storeFn       func(*OrganisationPolicy)
-		wantErr       bool
-		expectedError error
-	}{
-		"should_fail_when_user_is_not_a_member_of_the_organisation": {
-			authCtx: &auth.AuthenticatedUser{
-				User: &datastore.User{
+	type test struct {
+		basetest
+		organisation *datastore.Organisation
+		storeFn      func(*OrganisationPolicy)
+	}
+
+	testmatrix := map[string][]test{
+		"user": {
+			{
+				basetest: basetest{
+					name: "should_fail_when_user_is_not_a_member_of_the_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
-			},
-			organisation: &datastore.Organisation{
-				UID: "randomstring",
-			},
-			storeFn: func(orgP *OrganisationPolicy) {
-				orgMem := orgP.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				storeFn: func(orgP *OrganisationPolicy) {
+					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
-				orgMem.EXPECT().
-					FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("Failed"))
-			},
-			wantErr:       true,
-			expectedError: ErrNotAllowed,
-		},
-		"should_fail_when_user_is_not_a_super_user": {
-			authCtx: &auth.AuthenticatedUser{
-				User: &datastore.User{
-					UID: "randomstring",
+					orgMem.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil, errors.New("Failed"))
 				},
 			},
-			organisation: &datastore.Organisation{
-				UID: "randomstring",
-			},
-			storeFn: func(orgP *OrganisationPolicy) {
-				orgMem := orgP.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+			{
+				basetest: basetest{
+					name: "should_fail_when_user_is_not_a_super_user",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+				storeFn: func(orgP *OrganisationPolicy) {
+					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
-				orgMem.EXPECT().
-					FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&datastore.OrganisationMember{
-						Role: auth.Role{Type: auth.RoleAPI},
-					}, nil)
+					orgMem.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(&datastore.OrganisationMember{
+							Role: auth.Role{Type: auth.RoleAPI},
+						}, nil)
+				},
 			},
-			wantErr:       true,
-			expectedError: ErrNotAllowed,
 		},
 	}
 
-	for name, tc := range tests {
+	for name, test := range testmatrix {
 		t.Run(name, func(t *testing.T) {
-			// Arrange.
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			for _, tc := range test {
+				t.Run(tc.name, func(t *testing.T) {
+					// Arrange.
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
 
-			policy := &OrganisationPolicy{
-				orgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					opts := &OrganisationPolicyOpts{
+						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					}
+					policy := &OrganisationPolicy{opts}
+					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					if tc.storeFn != nil {
+						tc.storeFn(policy)
+					}
+
+					// Act.
+					err := policy.Get(authCtx, tc.organisation)
+
+					// Assert.
+					if tc.wantErr {
+						require.ErrorIs(t, err, tc.expectedError)
+						return
+					}
+
+					require.NoError(t, err)
+				})
 			}
-			authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
-
-			if tc.storeFn != nil {
-				tc.storeFn(policy)
-			}
-
-			// Act.
-			err := policy.Get(authCtx, tc.organisation)
-
-			// Assert.
-			if tc.wantErr {
-				require.ErrorIs(t, err, tc.expectedError)
-				return
-			}
-
-			require.NoError(t, err)
 		})
 	}
 }
 
 func Test_OrganisationPolicy_Update(t *testing.T) {
-	tests := map[string]struct {
-		authCtx       *auth.AuthenticatedUser
-		organisation  *datastore.Organisation
-		storeFn       func(*OrganisationPolicy)
-		wantErr       bool
-		expectedError error
-	}{
-		"should_fail_when_user_is_not_a_member_of_the_organisation": {
-			authCtx: &auth.AuthenticatedUser{
-				User: &datastore.User{
+	type test struct {
+		basetest
+		organisation *datastore.Organisation
+		storeFn      func(*OrganisationPolicy)
+	}
+
+	testmatrix := map[string][]test{
+		"user": {
+			{
+				basetest: basetest{
+					name: "should_fail_when_user_is_not_a_member_of_the_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
-			},
-			organisation: &datastore.Organisation{
-				UID: "randomstring",
-			},
-			storeFn: func(orgP *OrganisationPolicy) {
-				orgMem := orgP.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				storeFn: func(orgP *OrganisationPolicy) {
+					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
-				orgMem.EXPECT().
-					FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("Failed"))
-			},
-			wantErr:       true,
-			expectedError: ErrNotAllowed,
-		},
-		"should_fail_when_user_is_not_a_super_user": {
-			authCtx: &auth.AuthenticatedUser{
-				User: &datastore.User{
-					UID: "randomstring",
+					orgMem.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil, errors.New("Failed"))
 				},
 			},
-			organisation: &datastore.Organisation{
-				UID: "randomstring",
-			},
-			storeFn: func(orgP *OrganisationPolicy) {
-				orgMem := orgP.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+			{
+				basetest: basetest{
+					name: "should_fail_when_user_is_not_a_super_user",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+				storeFn: func(orgP *OrganisationPolicy) {
+					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
-				orgMem.EXPECT().
-					FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&datastore.OrganisationMember{
-						Role: auth.Role{Type: auth.RoleAPI},
-					}, nil)
+					orgMem.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(&datastore.OrganisationMember{
+							Role: auth.Role{Type: auth.RoleAPI},
+						}, nil)
+				},
 			},
-			wantErr:       true,
-			expectedError: ErrNotAllowed,
 		},
 	}
 
-	for name, tc := range tests {
+	for name, test := range testmatrix {
 		t.Run(name, func(t *testing.T) {
-			// Arrange.
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			for _, tc := range test {
+				t.Run(tc.name, func(t *testing.T) {
+					// Arrange.
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
 
-			policy := &OrganisationPolicy{
-				orgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					opts := &OrganisationPolicyOpts{
+						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					}
+					policy := &OrganisationPolicy{opts}
+					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					if tc.storeFn != nil {
+						tc.storeFn(policy)
+					}
+
+					// Act.
+					err := policy.Update(authCtx, tc.organisation)
+
+					// Assert.
+					if tc.wantErr {
+						require.ErrorIs(t, err, tc.expectedError)
+						return
+					}
+
+					require.NoError(t, err)
+				})
 			}
-			authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
-
-			if tc.storeFn != nil {
-				tc.storeFn(policy)
-			}
-
-			// Act.
-			err := policy.Update(authCtx, tc.organisation)
-
-			// Assert.
-			if tc.wantErr {
-				require.ErrorIs(t, err, tc.expectedError)
-				return
-			}
-
-			require.NoError(t, err)
 		})
 	}
 }
 
 func Test_OrganisationPolicy_Delete(t *testing.T) {
-	tests := map[string]struct {
-		authCtx       *auth.AuthenticatedUser
-		organisation  *datastore.Organisation
-		storeFn       func(*OrganisationPolicy)
-		wantErr       bool
-		expectedError error
-	}{
-		"should_fail_when_user_is_not_a_member_of_the_organisation": {
-			authCtx: &auth.AuthenticatedUser{
-				User: &datastore.User{
+	type test struct {
+		basetest
+		organisation *datastore.Organisation
+		storeFn      func(*OrganisationPolicy)
+	}
+
+	testmatrix := map[string][]test{
+		"user": {
+			{
+				basetest: basetest{
+					name: "should_fail_when_user_is_not_a_member_of_the_organisation",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
+				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
-			},
-			organisation: &datastore.Organisation{
-				UID: "randomstring",
-			},
-			storeFn: func(orgP *OrganisationPolicy) {
-				orgMem := orgP.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				storeFn: func(orgP *OrganisationPolicy) {
+					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
-				orgMem.EXPECT().
-					FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("Failed"))
-			},
-			wantErr:       true,
-			expectedError: ErrNotAllowed,
-		},
-		"should_fail_when_user_is_not_a_super_user": {
-			authCtx: &auth.AuthenticatedUser{
-				User: &datastore.User{
-					UID: "randomstring",
+					orgMem.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil, errors.New("Failed"))
 				},
 			},
-			organisation: &datastore.Organisation{
-				UID: "randomstring",
-			},
-			storeFn: func(orgP *OrganisationPolicy) {
-				orgMem := orgP.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+			{
+				basetest: basetest{
+					name: "should_fail_when_user_is_not_a_super_user",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{
+							UID: "randomstring",
+						},
+					},
+					wantErr:       true,
+					expectedError: ErrNotAllowed,
+				},
 
-				orgMem.EXPECT().
-					FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&datastore.OrganisationMember{
-						Role: auth.Role{Type: auth.RoleAPI},
-					}, nil)
+				organisation: &datastore.Organisation{
+					UID: "randomstring",
+				},
+				storeFn: func(orgP *OrganisationPolicy) {
+					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMem.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(&datastore.OrganisationMember{
+							Role: auth.Role{Type: auth.RoleAPI},
+						}, nil)
+				},
 			},
-			wantErr:       true,
-			expectedError: ErrNotAllowed,
 		},
 	}
 
-	for name, tc := range tests {
+	for name, test := range testmatrix {
 		t.Run(name, func(t *testing.T) {
-			// Arrange.
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			for _, tc := range test {
+				t.Run(tc.name, func(t *testing.T) {
+					// Arrange.
+					ctrl := gomock.NewController(t)
+					defer ctrl.Finish()
 
-			policy := &OrganisationPolicy{
-				orgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					opts := &OrganisationPolicyOpts{
+						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+					}
+					policy := &OrganisationPolicy{opts}
+					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					if tc.storeFn != nil {
+						tc.storeFn(policy)
+					}
+
+					// Act.
+					err := policy.Delete(authCtx, tc.organisation)
+
+					// Assert.
+					if tc.wantErr {
+						require.ErrorIs(t, err, tc.expectedError)
+						return
+					}
+
+					require.NoError(t, err)
+				})
 			}
-			authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
-
-			if tc.storeFn != nil {
-				tc.storeFn(policy)
-			}
-
-			// Act.
-			err := policy.Delete(authCtx, tc.organisation)
-
-			// Assert.
-			if tc.wantErr {
-				require.ErrorIs(t, err, tc.expectedError)
-				return
-			}
-
-			require.NoError(t, err)
 		})
 	}
 }

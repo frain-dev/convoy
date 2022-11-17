@@ -8,15 +8,24 @@ import (
 )
 
 type GroupPolicy struct {
-	orgRepo       datastore.OrganisationRepository
-	orgMemberRepo datastore.OrganisationMemberRepository
-	gRepo         datastore.GroupRepository
+	opts *GroupPolicyOpts
+}
+
+type GroupPolicyOpts struct {
+	OrganisationRepo       datastore.OrganisationRepository
+	OrganisationMemberRepo datastore.OrganisationMemberRepository
+}
+
+func NewGroupPolicy(opts *GroupPolicyOpts) *GroupPolicy {
+	return &GroupPolicy{
+		opts: opts,
+	}
 }
 
 func (gp *GroupPolicy) Get(ctx context.Context, group *datastore.Group) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
-	org, err := gp.orgRepo.FetchOrganisationByID(ctx, group.OrganisationID)
+	org, err := gp.opts.OrganisationRepo.FetchOrganisationByID(ctx, group.OrganisationID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -25,7 +34,7 @@ func (gp *GroupPolicy) Get(ctx context.Context, group *datastore.Group) error {
 	if ok {
 		// Personal Access Tokens
 		if apiKey.Type == datastore.PersonalKey {
-			_, err := gp.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
+			_, err := gp.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
 			if err != nil {
 				return ErrNotAllowed
 			}
@@ -42,21 +51,26 @@ func (gp *GroupPolicy) Get(ctx context.Context, group *datastore.Group) error {
 	}
 
 	// JWT Access.
-	orgPolicy := OrganisationPolicy{gp.orgMemberRepo}
+	opts := &OrganisationPolicyOpts{
+		OrganisationMemberRepo: gp.opts.OrganisationMemberRepo,
+	}
+	orgPolicy := OrganisationPolicy{opts}
 	return orgPolicy.Get(ctx, org)
 }
 
 func (gp *GroupPolicy) Create(ctx context.Context, org *datastore.Organisation) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
-	apiKey, ok := authCtx.APIKey.(datastore.APIKey)
+	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
 	if ok {
 		// Personal Access Tokens.
 		if apiKey.Type == datastore.PersonalKey {
-			_, err := gp.orgMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
+			_, err := gp.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
 			if err != nil {
 				return ErrNotAllowed
 			}
+
+			return nil
 		}
 
 		// API Key
@@ -64,7 +78,10 @@ func (gp *GroupPolicy) Create(ctx context.Context, org *datastore.Organisation) 
 	}
 
 	// JWT Access
-	orgPolicy := OrganisationPolicy{gp.orgMemberRepo}
+	opts := &OrganisationPolicyOpts{
+		OrganisationMemberRepo: gp.opts.OrganisationMemberRepo,
+	}
+	orgPolicy := OrganisationPolicy{opts}
 	return orgPolicy.Get(ctx, org)
 }
 

@@ -2,9 +2,9 @@ package policies
 
 import "errors"
 
-var (
-	AuthCtxKey = "GoAuthzKey"
-)
+type AuthKey string
+
+const AuthCtxKey AuthKey = "GoAuthzKey"
 
 var (
 	// ErrNotAllowed is returned when request is not permitted.

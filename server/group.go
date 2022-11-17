@@ -6,13 +6,14 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/server/policies"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
- 
+
 func createGroupService(a *ApplicationHandler) *services.GroupService {
 	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
 	appRepo := mongo.NewApplicationRepo(a.A.Store)
@@ -94,14 +95,15 @@ func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 	group := m.GetGroupFromContext(r.Context())
 	groupService := createGroupService(a)
 
-	gp := GroupPolicy{}
+	opts := &policies.GroupPolicyOpts{
+		OrganisationRepo:       mongo.NewOrgRepo(a.A.Store),
+		OrganisationMemberRepo: mongo.NewOrgMemberRepo(a.A.Store),
+	}
+	gp := policies.NewGroupPolicy(opts)
 	if err := gp.Delete(r.Context(), group); err != nil {
-		return Unauthorised.
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		return
 	}
-
-	if err := authz.Authorize(r.Context(), GroupPolicy, "Delete", group); err != nil {
-	}
-
 
 	err := groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
