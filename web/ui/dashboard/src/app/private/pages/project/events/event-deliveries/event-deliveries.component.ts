@@ -102,6 +102,7 @@ export class EventDeliveriesComponent implements OnInit {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ pageNo: page, eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.generalService.setContentDisplayed(eventDeliveriesResponse.data.content);
+			this.displayedEventDeliveries = this.displayedEventDeliveries?.sort((a, b) => new Date(b.date).getDate() - new Date(a.date).getDate());
 
 			this.pushEventDeliveries.emit(this.eventDeliveries);
 
