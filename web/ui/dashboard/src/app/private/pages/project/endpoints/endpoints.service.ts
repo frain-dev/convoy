@@ -7,7 +7,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class EndpointsService {
-    projectId = this.privateService.activeProjectDetails?.uid;
+	projectId = this.privateService.activeProjectDetails?.uid;
 
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
@@ -18,6 +18,22 @@ export class EndpointsService {
 					url: `${this.privateService.urlFactory('org_project')}/keys`,
 					method: 'post',
 					body: requestDetails.body
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getEndpoints(token?: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: token ? '/endpoints' : this.privateService.urlFactory('org_project') + `/endpoints`,
+					method: 'get',
+					token
 				});
 
 				return resolve(response);

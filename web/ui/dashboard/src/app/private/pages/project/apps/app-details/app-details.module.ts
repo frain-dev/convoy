@@ -12,8 +12,8 @@ import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skel
 import { SendEventComponent } from './send-event/send-event.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
-import { CliKeysComponent } from './cli-keys/cli-keys.component';
-import { DevicesComponent } from './devices/devices.component';
+import { CliKeysComponent } from '../../endpoint-details/cli-keys/cli-keys.component';
+import { DevicesComponent } from '../../endpoint-details/devices/devices.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ReactiveFormsModule } from '@angular/forms';

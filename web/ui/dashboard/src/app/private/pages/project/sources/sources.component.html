@@ -186,7 +186,7 @@
 
 <convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [title]="shouldShowUpdateSourceModal ? 'Update Source' : 'Create source'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
 	<ng-container modalBody>
-		<app-create-source (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></app-create-source>
+		<convoy-create-source (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
 	</ng-container>
 </convoy-modal>
 

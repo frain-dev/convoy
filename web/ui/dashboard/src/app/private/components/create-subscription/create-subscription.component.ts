@@ -8,7 +8,7 @@ import { PrivateService } from '../../private.service';
 import { CreateSubscriptionService } from './create-subscription.service';
 
 @Component({
-	selector: 'app-create-subscription',
+	selector: 'convoy-create-subscription',
 	templateUrl: './create-subscription.component.html',
 	styleUrls: ['./create-subscription.component.scss'],
 	providers: [FormatSecondsPipe]

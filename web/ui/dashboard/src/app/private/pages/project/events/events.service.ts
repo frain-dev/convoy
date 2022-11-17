@@ -45,11 +45,11 @@ export class EventsService {
 		});
 	}
 
-	getApps(requestDetails: { pageNo: number; searchString?: string }): Promise<HTTP_RESPONSE> {
+	getEndpoints(requestDetails: { pageNo: number; searchString?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/apps?sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `${this.privateService.urlFactory('org_project')}/endpoints?sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
 					method: 'get'
 				});
 

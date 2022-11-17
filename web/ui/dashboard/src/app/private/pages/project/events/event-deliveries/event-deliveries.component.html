@@ -1,4 +1,19 @@
-<convoy-card className="rounded-tl-[0] rounded-tr-[0]">
+<convoy-card>
+	<div class="flex justify-between mt-20px px-20px">
+		<h4 class="font-semibold">Event Deliveries</h4>
+		<span class="text-grey-40 text-14 font-medium whitespace-nowrap" *ngIf="eventDeliveries">
+			{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? (eventDeliveries.pagination.prev ? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev : 1) : 0 }} -
+			{{
+				eventDeliveries && eventDeliveries.pagination.total < 20
+					? eventDeliveries.pagination.total
+					: eventDeliveries.pagination.prev
+					? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev + eventDeliveries.content.length
+					: eventDeliveries.pagination.perPage
+			}}
+			<strong>of</strong>
+			{{ eventDeliveries.pagination.total || 0 }}
+		</span>
+	</div>
 	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
 		<div class="flex">
 			<date-filter (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #dateFilter></date-filter>
@@ -38,18 +53,18 @@
 			>
 				<ng-container dropdownToggle>
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
-					<span class="text-grey-40 w-full">All Apps</span>
+					<span class="text-grey-40 w-full">All Endpoints</span>
 					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 				</ng-container>
 
 				<ng-container>
 					<div class="m-10px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
 						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
-						<input type="search" placeholder="Search apps here" #eventDelsAppsFilter class="w-full outline-none text-12" />
+						<input type="search" placeholder="Search apps here" #eventDelsEndpointFilter class="w-full outline-none text-12" />
 					</div>
 
 					<ul class="min-h-[100px] px-10px pb-10px">
-						<convoy-list-item *ngFor="let app of eventsDelAppsFilter$ | async" className="pt-4px pb-4px">
+						<convoy-list-item *ngFor="let app of eventsDelEndpointFilter$ | async" className="pt-4px pb-4px">
 							<label [for]="app.uid + 'eventDel'" class="text-12 block w-full">{{ app.name }}</label>
 							<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid + 'eventDel'" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event)" />
 						</convoy-list-item>

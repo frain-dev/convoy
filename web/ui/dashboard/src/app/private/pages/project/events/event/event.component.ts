@@ -120,7 +120,7 @@ export class EventComponent implements OnInit {
 
 	async getAppsForFilter(search: string): Promise<APP[]> {
 		return await (
-			await this.eventsService.getApps({ pageNo: 1, searchString: search })
+			await this.eventsService.getEndpoints({ pageNo: 1, searchString: search })
 		).data.content;
 	}
 

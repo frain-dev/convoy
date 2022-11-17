@@ -52,7 +52,7 @@
 			</convoy-dropdown>
 		</div>
 
-		<convoy-card className="relative">
+		<convoy-card className="relative mb-22px">
 			<ul class="flex flex-wrap items-center min-h-[76px] metrics">
 				<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
 					<img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
@@ -91,7 +91,7 @@
 			</div>
 		</convoy-card>
 
-		<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
+		<!-- <convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
 			<div class="flex items-center justify-center">
 				<ul class="w-full flex items-center pl-18px">
 					<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)" class="mr-24px !list-none last-of-type:mr-0">
@@ -122,14 +122,15 @@
 					</div>
 				</ul>
 			</div>
-		</convoy-card>
+		</convoy-card> -->
+        <app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 
-		<div [hidden]="activeTab !== 'events'">
+		<!-- <div [hidden]="activeTab !== 'events'">
 			<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)" (openApp)="openApp($event)" (openSource)="openSource($event)"></app-event>
 		</div>
 		<div [hidden]="activeTab !== 'event deliveries'">
 			<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
-		</div>
+		</div> -->
 	</ng-container>
 
 	<send-event *ngIf="showAddEventModal" (onAction)="$event?.action == 'cancel' ? (showAddEventModal = false) : fetchEvents(); showAddEventModal = false"></send-event>

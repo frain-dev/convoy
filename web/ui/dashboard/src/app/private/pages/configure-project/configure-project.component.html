@@ -11,7 +11,7 @@
 						<use xlink:href="#doc-icon"></use>
 					</svg>
 				</convoy-button>
-				<convoy-button type="outline" size="sm" (click)="toggleActiveStage({ project: 'createApplication' })">
+				<convoy-button type="outline" size="sm" (click)="toggleActiveStage({ project: 'createEndpoint' })">
 					Setup Without SDK
 					<svg width="14" height="14" class="ml-8px fill-primary-100">
 						<use xlink:href="#info-icon"></use>
@@ -39,9 +39,9 @@
 				<h2 class="mt-24px font-semibold">Create your first source</h2>
 				<p class="text-14 text-grey-40 mt-8px w-4/5">Create a source that'll triger a webhook event in your project</p>
 			</div>
-			<div *ngIf="projectStage === 'createApplication'">
-				<h2 class="mt-24px font-semibold">Create your first application</h2>
-				<p class="text-14 text-grey-40 mt-8px w-4/5">Create and aplication and endpoint(s) that'll listen to events on this project</p>
+			<div *ngIf="projectStage === 'createEndpoint'">
+				<h2 class="mt-24px font-semibold">Create your first endpoint</h2>
+				<p class="text-14 text-grey-40 mt-8px w-4/5">Create an endpoint(s) that'll listen to events on this project</p>
 			</div>
 			<div *ngIf="projectStage === 'createSubscription'">
 				<h2 class="mt-24px font-semibold">Create your first subscription</h2>
@@ -49,14 +49,10 @@
 			</div>
 		</convoy-card>
 
-		<app-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></app-create-source>
+		<convoy-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></convoy-create-source>
 
-		<app-create-app
-			*ngIf="projectStage === 'createApplication' && privateService.activeProjectDetails?.uid"
-			(discardApp)="cancel()"
-			(createApp)="projectType == 'incoming' ? toggleActiveStage({ project: 'createSource', prevStage: 'createApplication' }) : toggleActiveStage({ project: 'createSubscription', prevStage: 'createApplication' })"
-		></app-create-app>
+		<convoy-create-endpoint *ngIf="projectStage === 'createEndpoint' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></convoy-create-endpoint>
 
-		<app-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails?.uid" (onAction)="onProjectOnboardingComplete()"></app-create-subscription>
+		<convoy-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails?.uid" (onAction)="onProjectOnboardingComplete()"></convoy-create-subscription>
 	</div>
 </convoy-modal>

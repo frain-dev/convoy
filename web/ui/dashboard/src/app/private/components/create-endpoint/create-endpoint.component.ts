@@ -59,7 +59,7 @@ export class CreateEndpointComponent implements OnInit {
 				? await this.endpointService.editEndpoint({ appId: this.appId, endpointId: this.selectedEndpoint?.uid || '', body: this.addNewEndpointForm.value, token: this.token })
 				: await this.endpointService.addNewEndpoint({ appId: this.appId, body: this.addNewEndpointForm.value, token: this.token });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.onAction.emit({ action: 'savedEndpoint', data: response.data });
+			this.onAction.emit({ action: this.selectedEndpoint ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
 			this.savingEndpoint = false;
 			return;

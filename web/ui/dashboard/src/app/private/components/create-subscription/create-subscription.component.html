@@ -26,26 +26,6 @@
 
 		<ng-container *ngIf="!token">
 			<convoy-select
-				className="mb-0"
-				[options]="apps"
-				name="application"
-				formControlName="app_id"
-				errorMessage="Select or create an application"
-				label="Application"
-				placeholder="Select application"
-				[required]="true"
-				(selectedOption)="subscriptionForm.patchValue({ app_id: $event }); onUpdateAppSelection()"
-			></convoy-select>
-			<convoy-button type="text" buttonType="button" className="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateAppModal = true">
-				<svg width="14" height="14" class="mr-4px" fill="currentColor">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				New App
-			</convoy-button>
-		</ng-container>
-
-		<div [ngClass]="{ 'opacity-50 pointer-events-none': subscriptionForm.get('app_id')?.invalid }">
-			<convoy-select
 				className="mb-0 mt-24px"
 				[options]="endPoints"
 				name="endpoint"
@@ -62,7 +42,8 @@
 				</svg>
 				New Endpoint
 			</convoy-button>
-		</div>
+		</ng-container>
+
 
 		<div class="mt-24px" *ngIf="projectType === 'outgoing' || token">
 			<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
@@ -135,7 +116,7 @@
 >
 	<div modalBody>
 		<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
-		<app-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action === 'close' ? (showCreateSourceModal = false) : onCreateSource($event.data); showCreateSourceModal = false"></app-create-source>
+		<convoy-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action === 'close' ? (showCreateSourceModal = false) : onCreateSource($event.data); showCreateSourceModal = false"></convoy-create-source>
 		<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false"></app-create-endpoint>
 	</div>
 </convoy-modal>

@@ -45,8 +45,8 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-	eventsDelAppsFilter$!: Observable<APP[]>;
-	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
+	eventsDelEndpointFilter$!: Observable<APP[]>;
+	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
 	@ViewChild('appsFilterDropdown', { static: true }) appsFilterDropdown!: DropdownComponent;
@@ -58,12 +58,12 @@ export class EventDeliveriesComponent implements OnInit {
 
 	ngAfterViewInit() {
 		if (!this.appPortalToken) {
-			this.eventsDelAppsFilter$ = fromEvent<any>(this.eventDelsAppsFilter?.nativeElement, 'keyup').pipe(
+			this.eventsDelEndpointFilter$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
 				map(event => event.target.value),
 				startWith(''),
 				debounceTime(500),
 				distinctUntilChanged(),
-				switchMap(search => this.getAppsForFilter(search))
+				switchMap(search => this.getEndpointsForFilter(search))
 			);
 		}
 	}
@@ -248,9 +248,9 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 	}
 
-	async getAppsForFilter(search: string): Promise<APP[]> {
+	async getEndpointsForFilter(search: string): Promise<APP[]> {
 		return await (
-			await this.eventsService.getApps({ pageNo: 1, searchString: search })
+			await this.eventsService.getEndpoints({ pageNo: 1, searchString: search })
 		).data.content;
 	}
 

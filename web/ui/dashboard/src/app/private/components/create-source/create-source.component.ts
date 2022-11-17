@@ -5,7 +5,7 @@ import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
 
 @Component({
-	selector: 'app-create-source',
+	selector: 'convoy-create-source',
 	templateUrl: './create-source.component.html',
 	styleUrls: ['./create-source.component.scss']
 })

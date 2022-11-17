@@ -17,11 +17,28 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
+import { EndpointsService } from './endpoints.service';
 
 @Component({
 	selector: 'convoy-endpoints',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, TableCellComponent, TableComponent, TableHeadCellComponent, TableHeadComponent, TableRowComponent, TableLoaderModule, TableRowComponent, CardComponent, EmptyStateComponent, DropdownComponent, ListItemComponent, ModalComponent, CreateEndpointComponent],
+	imports: [
+		CommonModule,
+		ButtonComponent,
+		TableCellComponent,
+		TableComponent,
+		TableHeadCellComponent,
+		TableHeadComponent,
+		TableRowComponent,
+		TableLoaderModule,
+		TableRowComponent,
+		CardComponent,
+		EmptyStateComponent,
+		DropdownComponent,
+		ListItemComponent,
+		ModalComponent,
+		CreateEndpointComponent
+	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
 })
@@ -33,9 +50,16 @@ export class EndpointsComponent implements OnInit {
 	endpoints!: { pagination: PAGINATION; content: ENDPOINT[] };
 	isLoadingEndpoints = false;
 
-	constructor(public privateService: PrivateService, private router: Router) {}
+	constructor(public privateService: PrivateService, private router: Router, private endpointService: EndpointsService) {}
 
-	ngOnInit(): void {}
+	ngOnInit() {
+		this.getEndpoints();
+	}
 
-	getEndpoints(requestDetails: { page: number }) {}
+	async getEndpoints(requestDetails?: { page?: number }) {
+		try {
+			const response = await this.endpointService.getEndpoints();
+			console.log(response);
+		} catch {}
+	}
 }

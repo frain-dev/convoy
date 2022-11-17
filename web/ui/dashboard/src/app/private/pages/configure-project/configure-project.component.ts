@@ -10,20 +10,21 @@ import { SdkDocumentationComponent } from '../../components/sdk-documentation/sd
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
+import { CreateEndpointComponent } from '../../components/create-endpoint/create-endpoint.component';
 
-export type STAGES = 'setupSDK' | 'createSource' | 'createApplication' | 'createSubscription';
+export type STAGES = 'setupSDK' | 'createSource' | 'createEndpoint' | 'createSubscription';
 
 @Component({
 	selector: 'convoy-configure-project',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateAppModule, CreateSubscriptionModule, SdkDocumentationComponent],
+	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateAppModule, CreateSubscriptionModule, SdkDocumentationComponent, CreateEndpointComponent],
 	templateUrl: './configure-project.component.html',
 	styleUrls: ['./configure-project.component.scss']
 })
 export class ConfigureProjectComponent implements OnInit {
 	projectStage: STAGES = 'setupSDK';
 	projectStages = [
-		{ projectStage: 'Create Application', currentStage: 'pending', id: 'createApplication' },
+		{ projectStage: 'Create Endpoint', currentStage: 'pending', id: 'createEndpoint' },
 		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
 		{ projectStage: 'Create Subscription', currentStage: 'pending', id: 'createSubscription' }
 	];
@@ -43,7 +44,7 @@ export class ConfigureProjectComponent implements OnInit {
 			this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
 			this.toggleActiveStage({ project: 'setupSDK' });
 		} else {
-			this.toggleActiveStage({ project: 'createApplication' });
+			this.toggleActiveStage({ project: 'createEndpoint' });
 		}
 	}
 

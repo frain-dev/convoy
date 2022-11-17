@@ -7,7 +7,7 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from './app-details.service';
-import { CliKeysComponent } from './cli-keys/cli-keys.component';
+import { CliKeysComponent } from '../../endpoint-details/cli-keys/cli-keys.component';
 
 @Component({
 	selector: 'app-app-details',

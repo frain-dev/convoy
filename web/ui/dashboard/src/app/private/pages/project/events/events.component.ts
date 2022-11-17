@@ -23,7 +23,7 @@ export class EventsComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
-	activeTab: 'events' | 'event deliveries' = 'events';
+	activeTab: 'events' | 'event deliveries' = 'event deliveries';
 	showOverlay: boolean = false;
 	isloadingDashboardData: boolean = false;
 	showFilterDropdown: boolean = false;
@@ -49,7 +49,7 @@ export class EventsComponent implements OnInit {
 		await Promise.all([this.fetchDashboardData(), this.fetchEvents()]);
 		this.isloadingDashboardData = false;
 
-		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
+		// this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 	}
 
 	closeFilterOptions() {
