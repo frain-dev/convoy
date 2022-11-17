@@ -69,6 +69,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	endpoint := &datastore.Endpoint{
 		UID:               uuid.New().String(),
 		GroupID:           groupID,
+		OwnerID:           e.OwnerID,
 		Title:             e.Name,
 		SupportEmail:      e.SupportEmail,
 		SlackWebhookURL:   e.SlackWebhookURL,

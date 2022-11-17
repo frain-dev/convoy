@@ -208,7 +208,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	event := &datastore.Event{
 		UID:            uuid.NewString(),
 		GroupID:        endpoint1.GroupID,
-		EndpointID:     endpoint1.UID,
+		Endpoints:      []string{endpoint1.UID},
 		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 

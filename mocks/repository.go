@@ -1061,6 +1061,21 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByID(ctx, ids interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByID), ctx, ids)
 }
 
+// FindEndpointsByOwnerID mocks base method.
+func (m *MockEndpointRepository) FindEndpointsByOwnerID(ctx context.Context, groupID, ownerID string) ([]datastore.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointsByOwnerID", ctx, groupID, ownerID)
+	ret0, _ := ret[0].([]datastore.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointsByOwnerID indicates an expected call of FindEndpointsByOwnerID.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByOwnerID(ctx, groupID, ownerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByOwnerID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByOwnerID), ctx, groupID, ownerID)
+}
+
 // LoadEndpointsPaged mocks base method.
 func (m *MockEndpointRepository) LoadEndpointsPaged(ctx context.Context, groupID, query string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()

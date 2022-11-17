@@ -230,6 +230,7 @@ type Endpoint struct {
 	ID                 primitive.ObjectID `json:"-" bson:"_id"`
 	UID                string             `json:"uid" bson:"uid"`
 	GroupID            string             `json:"group_id" bson:"group_id"`
+	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
 	TargetURL          string             `json:"target_url" bson:"target_url"`
 	Title              string             `json:"title" bson:"title"`
 	Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
@@ -438,17 +439,12 @@ type Event struct {
 	EventType        EventType          `json:"event_type" bson:"event_type"`
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
-	// ProviderID is a custom ID that can be used to reconcile this Event
-	// with your internal systems.
-	// This is optional
-	// If not provided, we will generate one for you
-	ProviderID string                `json:"provider_id,omitempty" bson:"provider_id"`
-	SourceID   string                `json:"source_id,omitempty" bson:"source_id"`
-	GroupID    string                `json:"group_id,omitempty" bson:"group_id"`
-	EndpointID string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	Endpoint   *Endpoint             `json:"endpoint_metadata,omitempty" bson:"-"`
-	Source     *Source               `json:"source_metadata,omitempty" bson:"-"`
+	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
+	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
+	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
+	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"-"`
+	Source           *Source               `json:"source_metadata,omitempty" bson:"-"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
