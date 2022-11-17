@@ -1,0 +1,64 @@
+<div class="text-12 font-medium flex items-center uppercase">
+	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+	<svg width="16" height="16" class="mx-4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	{{ privateService.activeProjectDetails?.name }}
+	<svg width="16" height="16" class="mx-4px">
+		<use xlink:href="#arrow-right-icon"></use>
+	</svg>
+	<span class="text-primary-100 font-medium">Event Logs</span>
+</div>
+
+<convoy-card *ngIf="isLoadingEventLogs">
+	<convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead"></convoy-table-loader>
+</convoy-card>
+
+<convoy-card>
+	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
+		<convoy-table>
+			<convoy-table-head class="contents">
+				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</convoy-table-head-cell>
+			</convoy-table-head>
+			<tbody>
+				<convoy-table-row class="contents">
+					<convoy-table-cell class="contents">
+                        <convoy-tag type="grey" className="mr-8px">event.type</convoy-tag>
+                    </convoy-table-cell>
+					<convoy-table-cell class="contents">Github Ingester</convoy-table-cell>
+					<convoy-table-cell class="contents">10:12:00pm</convoy-table-cell>
+					<convoy-table-cell class="contents">
+						<convoy-button type="clear" className="!p-0" size="sm">
+							Deliveries
+							<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
+						</convoy-button>
+					</convoy-table-cell>
+				</convoy-table-row>
+			</tbody>
+		</convoy-table>
+	</div>
+</convoy-card>
+
+<!-- <convoy-card className="mt-16px" *ngIf="!isLoadingEventLogs && eventLogs?.length === 0">
+	<convoy-empty-state
+		imgSrc="/assets/img/new-empty-state.png"
+        description="There are currently no event logs"
+		className="min-h-[65vh]"
+		id="events-empty-state"
+	></convoy-empty-state>
+</convoy-card> -->
+
+<!-- <div class="flex items-center mt-16px">
+	<convoy-button type="outline" size="sm" className="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: eventLogs?.pagination?.prev || 0 }" [disable]="apps?.pagination?.prev === 0" (click)="getEvents({ page: eventLogs?.pagination?.prev })">
+		<svg width="24" height="24" class="mr-8px fill-primary-100">
+			<use xlink:href="#arrow-left-icon"></use>
+		</svg>
+		Previous
+	</convoy-button>
+	<convoy-button type="outline" size="sm" className="pr-4px pl-16px py-4px border-primary-300 ml-16px" routerLink="./" [queryParams]="{ page: eventLogs?.pagination?.next }" [disable]="eventLogs?.pagination?.next === 0" (click)="getEvents({ page: eventLogs?.pagination?.next })">
+		Next
+		<svg width="24" height="24" class="ml-8px fill-primary-100">
+			<use xlink:href="#arrow-right-icon"></use>
+		</svg>
+	</convoy-button>
+</div> -->

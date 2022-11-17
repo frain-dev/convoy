@@ -56,6 +56,18 @@ const routes: Routes = [
 			{
 				path: 'endpoints/new',
 				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
+			},
+			{
+				path: 'portal-links',
+				loadComponent: () => import('./portal-links/portal-links.component').then(m => m.PortalLinksComponent)
+			},
+			{
+				path: 'portal-links/new',
+				loadComponent: () => import('./portal-links/portal-links.component').then(m => m.PortalLinksComponent)
+			},
+            {
+				path: 'event-logs',
+				loadComponent: () => import('./event-logs/event-logs.component').then(m => m.EventLogsComponent)
 			}
 		]
 	}

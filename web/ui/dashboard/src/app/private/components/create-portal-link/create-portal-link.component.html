@@ -1,0 +1,11 @@
+<convoy-modal position="full" title="Create Portal Link">
+    <div modalBody>
+        <form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
+            <convoy-card className="p-24px">
+                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Link name" placeholder="Enter link name" [required]="true"></convoy-input>
+                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Endpoint" placeholder="Enter source name" [required]="true"></convoy-input>
+                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Url" placeholder="Enter source name" [required]="true"></convoy-input>
+            </convoy-card>
+        </form>
+    </div>
+</convoy-modal>

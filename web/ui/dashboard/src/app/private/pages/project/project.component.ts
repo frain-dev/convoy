@@ -66,6 +66,7 @@ export class ProjectComponent implements OnInit {
 			this.projectDetails = projectDetails.data;
 			localStorage.setItem('PROJECT_CONFIG', JSON.stringify(projectDetails.data?.config));
 			if (this.projectDetails.type === 'outgoing') this.sideBarItems.splice(1, 1);
+			if (this.projectDetails.type === 'incoming') this.sideBarItems.splice(4, 1);
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
