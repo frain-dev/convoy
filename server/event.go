@@ -32,9 +32,9 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 	)
 }
 
-// CreateAppEvent
-// @Summary Create app event
-// @Description This endpoint creates an app event
+// CreateEndpointEvent
+// @Summary Create endpoint event
+// @Description This endpoint creates an endpoint event
 // @Tags Events
 // @Accept  json
 // @Produce  json
@@ -44,7 +44,7 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events [post]
-func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.Event
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
@@ -61,12 +61,32 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("App event created successfully", event, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
 }
 
-// ReplayAppEvent
-// @Summary Replay app event
-// @Description This endpoint replays an app event
+func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
+	var newMessage models.FanoutEvent
+	err := util.ReadJSON(r, &newMessage)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	g := m.GetGroupFromContext(r.Context())
+	eventService := createEventService(a)
+
+	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, g)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
+}
+
+// ReplayEndpointEvent
+// @Summary Replay endpoint event
+// @Description This endpoint replays an endpoint event
 // @Tags Events
 // @Accept  json
 // @Produce  json
@@ -76,7 +96,7 @@ func (a *ApplicationHandler) CreateAppEvent(w http.ResponseWriter, r *http.Reque
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
-func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	g := m.GetGroupFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
 	eventService := createEventService(a)
@@ -87,12 +107,12 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("App event replayed successfully", event, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", event, http.StatusOK))
 }
 
-// GetAppEvent
-// @Summary Get app event
-// @Description This endpoint fetches an app event
+// GetEndpointEvent
+// @Summary Get endpoint event
+// @Description This endpoint fetches an endpoint event
 // @Tags Events
 // @Accept  json
 // @Produce  json
@@ -102,8 +122,8 @@ func (a *ApplicationHandler) ReplayAppEvent(w http.ResponseWriter, r *http.Reque
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/{eventID} [get]
-func (a *ApplicationHandler) GetAppEvent(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("App event fetched successfully",
+func (a *ApplicationHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully",
 		*m.GetEventFromContext(r.Context()), http.StatusOK))
 }
 

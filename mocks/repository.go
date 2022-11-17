@@ -1061,6 +1061,21 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByID(ctx, ids interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByID), ctx, ids)
 }
 
+// FindEndpointsByOwnerID mocks base method.
+func (m *MockEndpointRepository) FindEndpointsByOwnerID(ctx context.Context, groupID, ownerID string) ([]datastore.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointsByOwnerID", ctx, groupID, ownerID)
+	ret0, _ := ret[0].([]datastore.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointsByOwnerID indicates an expected call of FindEndpointsByOwnerID.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByOwnerID(ctx, groupID, ownerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsByOwnerID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsByOwnerID), ctx, groupID, ownerID)
+}
+
 // LoadEndpointsPaged mocks base method.
 func (m *MockEndpointRepository) LoadEndpointsPaged(ctx context.Context, groupID, query string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
@@ -1704,4 +1719,115 @@ func (m *MockConfigurationRepository) UpdateConfiguration(arg0 context.Context, 
 func (mr *MockConfigurationRepositoryMockRecorder) UpdateConfiguration(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockConfigurationRepository)(nil).UpdateConfiguration), arg0, arg1)
+}
+
+// MockPortalLinkRepository is a mock of PortalLinkRepository interface.
+type MockPortalLinkRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockPortalLinkRepositoryMockRecorder
+}
+
+// MockPortalLinkRepositoryMockRecorder is the mock recorder for MockPortalLinkRepository.
+type MockPortalLinkRepositoryMockRecorder struct {
+	mock *MockPortalLinkRepository
+}
+
+// NewMockPortalLinkRepository creates a new mock instance.
+func NewMockPortalLinkRepository(ctrl *gomock.Controller) *MockPortalLinkRepository {
+	mock := &MockPortalLinkRepository{ctrl: ctrl}
+	mock.recorder = &MockPortalLinkRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPortalLinkRepository) EXPECT() *MockPortalLinkRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreatePortalLink mocks base method.
+func (m *MockPortalLinkRepository) CreatePortalLink(arg0 context.Context, arg1 *datastore.PortalLink) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePortalLink", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreatePortalLink indicates an expected call of CreatePortalLink.
+func (mr *MockPortalLinkRepositoryMockRecorder) CreatePortalLink(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePortalLink", reflect.TypeOf((*MockPortalLinkRepository)(nil).CreatePortalLink), arg0, arg1)
+}
+
+// FindPortalLinkByID mocks base method.
+func (m *MockPortalLinkRepository) FindPortalLinkByID(ctx context.Context, groupID, id string) (*datastore.PortalLink, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindPortalLinkByID", ctx, groupID, id)
+	ret0, _ := ret[0].(*datastore.PortalLink)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindPortalLinkByID indicates an expected call of FindPortalLinkByID.
+func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByID(ctx, groupID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkByID", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkByID), ctx, groupID, id)
+}
+
+// FindPortalLinkByToken mocks base method.
+func (m *MockPortalLinkRepository) FindPortalLinkByToken(ctx context.Context, token string) (*datastore.PortalLink, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindPortalLinkByToken", ctx, token)
+	ret0, _ := ret[0].(*datastore.PortalLink)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindPortalLinkByToken indicates an expected call of FindPortalLinkByToken.
+func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkByToken", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkByToken), ctx, token)
+}
+
+// LoadPortalLinksPaged mocks base method.
+func (m *MockPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, groupID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadPortalLinksPaged", ctx, groupID, f, pageable)
+	ret0, _ := ret[0].([]datastore.PortalLink)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadPortalLinksPaged indicates an expected call of LoadPortalLinksPaged.
+func (mr *MockPortalLinkRepositoryMockRecorder) LoadPortalLinksPaged(ctx, groupID, f, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPortalLinksPaged", reflect.TypeOf((*MockPortalLinkRepository)(nil).LoadPortalLinksPaged), ctx, groupID, f, pageable)
+}
+
+// RevokePortalLink mocks base method.
+func (m *MockPortalLinkRepository) RevokePortalLink(ctx context.Context, groupID, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokePortalLink", ctx, groupID, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokePortalLink indicates an expected call of RevokePortalLink.
+func (mr *MockPortalLinkRepositoryMockRecorder) RevokePortalLink(ctx, groupID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokePortalLink", reflect.TypeOf((*MockPortalLinkRepository)(nil).RevokePortalLink), ctx, groupID, id)
+}
+
+// UpdatePortalLink mocks base method.
+func (m *MockPortalLinkRepository) UpdatePortalLink(ctx context.Context, groupID string, portal *datastore.PortalLink) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePortalLink", ctx, groupID, portal)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePortalLink indicates an expected call of UpdatePortalLink.
+func (mr *MockPortalLinkRepositoryMockRecorder) UpdatePortalLink(ctx, groupID, portal interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePortalLink", reflect.TypeOf((*MockPortalLinkRepository)(nil).UpdatePortalLink), ctx, groupID, portal)
 }

@@ -78,7 +78,7 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 		*m.GetEndpointFromContext(r.Context()), http.StatusOK))
 }
 
-// GetAppEndpoints
+// GetEndpoints
 // @Summary Get endpoints
 // @Description This endpoint fetches an endpoints
 // @Tags Endpoints

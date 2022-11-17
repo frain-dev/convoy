@@ -23,7 +23,7 @@ import (
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
-func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title string, disabled bool) (*datastore.Endpoint, error) {
+func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID string, disabled bool) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -32,10 +32,15 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title string, 
 		title = fmt.Sprintf("TestEndpoint-%s", uid)
 	}
 
+	if util.IsStringEmpty(ownerID) {
+		ownerID = uuid.New().String()
+	}
+
 	endpoint := &datastore.Endpoint{
 		UID:            uid,
 		Title:          title,
 		GroupID:        g.UID,
+		OwnerID:        ownerID,
 		IsDisabled:     disabled,
 		AppID:          uid,
 		DocumentStatus: datastore.ActiveDocumentStatus,
@@ -340,7 +345,7 @@ func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, groupID stri
 		UID:            uid,
 		EventType:      datastore.EventType(eventType),
 		Data:           data,
-		EndpointID:     endpoint.UID,
+		Endpoints:      []string{endpoint.UID},
 		GroupID:        groupID,
 		SourceID:       sourceID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -600,6 +605,26 @@ func SeedDevice(store datastore.Store, g *datastore.Group, endpointID string) er
 	}
 
 	return nil
+}
+
+func SeedPortalLink(store datastore.Store, g *datastore.Group, endpoints []string) (*datastore.PortalLink, error) {
+	portalLink := &datastore.PortalLink{
+		UID:            uuid.NewString(),
+		GroupID:        g.UID,
+		Name:           fmt.Sprintf("TestPortalLink-%s", uuid.NewString()),
+		Token:          uuid.NewString(),
+		Endpoints:      endpoints,
+		DocumentStatus: datastore.ActiveDocumentStatus,
+	}
+
+	portalLinkRepo := cm.NewPortalLinkRepo(store)
+	err := portalLinkRepo.CreatePortalLink(context.TODO(), portalLink)
+	if err != nil {
+		return nil, err
+	}
+
+	return portalLink, nil
+
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have
