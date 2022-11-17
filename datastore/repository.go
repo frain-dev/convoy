@@ -82,6 +82,7 @@ type EndpointRepository interface {
 	FindEndpointByID(çtx context.Context, id string) (*Endpoint, error)
 	FindEndpointsByID(ctx context.Context, ids []string) ([]Endpoint, error)
 	FindEndpointsByAppID(ctx context.Context, appID string) ([]Endpoint, error)
+	FindEndpointsByOwnerID(ctx context.Context, groupID string, ownerID string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
 	CountGroupEndpoints(ctx context.Context, groupID string) (int64, error)
@@ -136,4 +137,13 @@ type ConfigurationRepository interface {
 	CreateConfiguration(context.Context, *Configuration) error
 	LoadConfiguration(context.Context) (*Configuration, error)
 	UpdateConfiguration(context.Context, *Configuration) error
+}
+
+type PortalLinkRepository interface {
+	CreatePortalLink(context.Context, *PortalLink) error
+	UpdatePortalLink(ctx context.Context, groupID string, portal *PortalLink) error
+	FindPortalLinkByID(ctx context.Context, groupID string, id string) (*PortalLink, error)
+	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
+	LoadPortalLinksPaged(ctx context.Context, groupID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
+	RevokePortalLink(ctx context.Context, groupID string, id string) error
 }
