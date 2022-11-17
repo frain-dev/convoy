@@ -230,6 +230,7 @@ export class EventComponent implements OnInit {
 				token: this.appPortalToken
 			});
 			this.events = eventsResponse.data;
+
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
 			// to show app name or source name on events table header
