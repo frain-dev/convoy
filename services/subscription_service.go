@@ -40,7 +40,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, newSubscription.EndpointID)
+	endpoint, err := s.findEndpoint(ctx, newSubscription.AppID, newSubscription.EndpointID)
 	if err != nil {
 		log.WithError(err).Error("failed to find endpoint by id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find endpoint by id"))
@@ -293,6 +293,35 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 	}
 
 	return subscriptions, paginatedData, nil
+}
+
+func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string) (*datastore.Endpoint, error) {
+	if !util.IsStringEmpty(appID) {
+		endpoints, err := s.endpointRepo.FindEndpointsByAppID(ctx, appID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(endpoints) == 0 {
+			return nil, errors.New("failed to find application by id")
+		}
+
+		for _, endpoint := range endpoints {
+			if endpoint.UID == endpointID {
+				return &endpoint, nil
+			}
+		}
+
+		return nil, datastore.ErrEndpointNotFound
+	}
+
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointID)
+	if err != nil {
+		return nil, datastore.ErrEndpointNotFound
+	}
+
+	return endpoint, nil
 }
 
 func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfiguration, error) {

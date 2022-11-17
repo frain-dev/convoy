@@ -43,6 +43,7 @@ const (
 	orgCtx              contextKey = "organisation"
 	orgMemberCtx        contextKey = "organisation_member"
 	endpointCtx         contextKey = "endpoint"
+	endpointsCtx        contextKey = "endpoints"
 	eventCtx            contextKey = "event"
 	eventDeliveryCtx    contextKey = "eventDelivery"
 	authLoginCtx        contextKey = "authLogin"
@@ -1083,6 +1084,64 @@ func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 	}
 }
 
+func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			appID := chi.URLParam(r, "appID")
+
+			endpoints, err := m.endpointRepo.FindEndpointsByAppID(r.Context(), appID)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while retrieving app details", http.StatusBadRequest))
+				return
+			}
+
+			if len(endpoints) == 0 {
+				_ = render.Render(w, r, util.NewErrorResponse("application not found", http.StatusNotFound))
+				return
+			}
+
+			r = r.WithContext(setEndpointsInContext(r.Context(), endpoints))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			endpoints := GetEndpointsFromContext(r.Context())
+			endPointId := chi.URLParam(r, "endpointID")
+
+			for _, endpoint := range endpoints {
+				if endpoint.UID == endPointId {
+					r = r.WithContext(setEndpointInContext(r.Context(), &endpoint))
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("endpoint not found", http.StatusBadRequest))
+		})
+	}
+}
+
+func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			endpoints := GetEndpointsFromContext(r.Context())
+
+			group := GetGroupFromContext(r.Context())
+
+			if endpoints[0].GroupID != group.UID {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func setEndpointIDInContext(ctx context.Context, endpointID string) context.Context {
 	return context.WithValue(ctx, endpointIdCtx, endpointID)
 }
@@ -1137,8 +1196,12 @@ func GetEndpointFromContext(ctx context.Context) *datastore.Endpoint {
 	return ctx.Value(endpointCtx).(*datastore.Endpoint)
 }
 
-func GetEndpointsFromContext(ctx context.Context) *[]datastore.Endpoint {
-	return ctx.Value(endpointCtx).(*[]datastore.Endpoint)
+func setEndpointsInContext(ctx context.Context, endpoints []datastore.Endpoint) context.Context {
+	return context.WithValue(ctx, endpointsCtx, endpoints)
+}
+
+func GetEndpointsFromContext(ctx context.Context) []datastore.Endpoint {
+	return ctx.Value(endpointsCtx).([]datastore.Endpoint)
 }
 
 func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {

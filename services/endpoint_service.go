@@ -78,10 +78,15 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		Description:       e.Description,
 		RateLimit:         e.RateLimit,
 		HttpTimeout:       e.HttpTimeout,
+		AppID:             e.AppID,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		DocumentStatus:    datastore.ActiveDocumentStatus,
+	}
+
+	if util.IsStringEmpty(endpoint.AppID) {
+		endpoint.AppID = endpoint.UID
 	}
 
 	if util.IsStringEmpty(e.Secret) {
@@ -109,7 +114,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		})
 	}
 
-	auth, err := validateEndpointAuthentication(e.Authentication)
+	auth, err := ValidateEndpointAuthentication(e.Authentication)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -235,7 +240,7 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 		endpoint.Secret = e.Secret
 	}
 
-	auth, err := validateEndpointAuthentication(e.Authentication)
+	auth, err := ValidateEndpointAuthentication(e.Authentication)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +327,7 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	return endpoint, nil
 }
 
-func validateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*datastore.EndpointAuthentication, error) {
+func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*datastore.EndpointAuthentication, error) {
 	if auth != nil && !util.IsStringEmpty(string(auth.Type)) {
 		if err := util.Validate(auth); err != nil {
 			return nil, err
