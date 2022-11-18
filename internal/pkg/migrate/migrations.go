@@ -646,31 +646,22 @@ var Migrations = []*Migration{
 				store := datastore.New(db)
 				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
 
-				fn := func(sessCtx mongo.SessionContext) error {
-					filter := bson.M{
-						"$or": []interface{}{
-							bson.D{{Key: "deleted_at", Value: bson.M{"$exists": false}}},
-							bson.D{{Key: "deleted_at", Value: bson.M{"$lte": primitive.NewDateTimeFromTime(time.Date(1971, 0, 0, 0, 0, 0, 0, time.UTC))}}},
-						},
-					}
-
-					set := bson.M{
-						"$set": bson.M{
-							"deleted_at": nil,
-						},
-					}
-
-					err := store.UpdateMany(sessCtx, filter, set, true)
-					if err != nil {
-						log.WithError(err).Fatalf("Failed migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
-						return err
-					}
-
-					return nil
+				filter := bson.M{
+					"$or": []interface{}{
+						bson.D{{Key: "deleted_at", Value: bson.M{"$exists": false}}},
+						bson.D{{Key: "deleted_at", Value: bson.M{"$lte": primitive.NewDateTimeFromTime(time.Date(1971, 0, 0, 0, 0, 0, 0, time.UTC))}}},
+					},
 				}
 
-				err := store.WithTransaction(ctx, fn)
+				set := bson.M{
+					"$set": bson.M{
+						"deleted_at": nil,
+					},
+				}
+
+				err := store.UpdateMany(ctx, filter, set, true)
 				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
 					return err
 				}
 			}
@@ -698,26 +689,17 @@ var Migrations = []*Migration{
 				store := datastore.New(db)
 				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
 
-				fn := func(sessCtx mongo.SessionContext) error {
-					filter := bson.M{"deleted_at": nil}
+				filter := bson.M{"deleted_at": nil}
 
-					update := bson.M{
-						"$unset": bson.M{
-							"deleted_at": 1,
-						},
-					}
-
-					err := store.UpdateMany(sessCtx, filter, update, true)
-					if err != nil {
-						log.WithError(err).Fatalf("Failed rollback migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
-						return err
-					}
-
-					return nil
+				update := bson.M{
+					"$unset": bson.M{
+						"deleted_at": "",
+					},
 				}
 
-				err := store.WithTransaction(ctx, fn)
+				err := store.UpdateMany(ctx, filter, update, true)
 				if err != nil {
+					log.WithError(err).Fatalf("Failed rollback migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
 					return err
 				}
 			}
