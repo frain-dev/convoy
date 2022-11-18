@@ -287,30 +287,6 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NoName() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NameNotUnique() {
-	appTitle := uuid.New().String()
-	expectedStatusCode := http.StatusBadRequest
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", appTitle, "", true)
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultGroup.UID)
-	plainBody := fmt.Sprintf(`{
-		"group_id": "%s",
-		"name": "%s"
-	}`, s.DefaultGroup.UID, appTitle)
-	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
 func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 	appID := uuid.New().String()
 	expectedStatusCode := http.StatusBadRequest
@@ -321,32 +297,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
 	plainBody := ""
-	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
-func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_DuplicateNames() {
-	appID := uuid.New().String()
-	appTitle := "appTitle"
-	expectedStatusCode := http.StatusBadRequest
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, "", appTitle, "", false)
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false)
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
-	plainBody := fmt.Sprintf(`{
-		"name": "%s",
-		"support_email": "%s"
-	}`, appTitle, "10xengineer@getconvoy.io")
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
