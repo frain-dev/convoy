@@ -16,6 +16,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
+import { CreateSubscriptionFilterComponent } from '../create-subscription-filter/create-subscription-filter.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -26,7 +27,6 @@ import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pi
 		CreateSourceModule,
 		LoaderModule,
 		CreateEndpointModule,
-
 		SelectComponent,
 		ButtonComponent,
 		TooltipComponent,
@@ -36,6 +36,7 @@ import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pi
 		RadioComponent,
 		ConfirmationModalComponent,
 		FormatSecondsPipe,
+        CreateSubscriptionFilterComponent,
 		InputFieldDirective,
 		InputErrorComponent,
 		InputDirective,

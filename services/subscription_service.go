@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,12 +17,14 @@ import (
 )
 
 var (
-	ErrSubscriptionNotFound         = errors.New("subscription not found")
-	ErrUpateSubscriptionError       = errors.New("failed to update subscription")
-	ErrCreateSubscriptionError      = errors.New("failed to create subscription")
-	ErrDeletedSubscriptionError     = errors.New("failed to delete subscription")
-	ErrValidateSubscriptionError    = errors.New("failed to validate subscription")
-	ErrCannotFetchSubcriptionsError = errors.New("an error occurred while fetching subscriptions")
+	ErrSubscriptionNotFound            = errors.New("subscription not found")
+	ErrUpateSubscriptionError          = errors.New("failed to update subscription")
+	ErrCreateSubscriptionError         = errors.New("failed to create subscription")
+	ErrDeletedSubscriptionError        = errors.New("failed to delete subscription")
+	ErrValidateSubscriptionError       = errors.New("failed to validate subscription")
+	ErrInvalidSubscriptionFilterFormat = errors.New("invalid subscription filter format")
+	ErrValidateSubscriptionFilterError = errors.New("failed to validate subscription filter")
+	ErrCannotFetchSubcriptionsError    = errors.New("an error occurred while fetching subscriptions")
 )
 
 type SubcriptionService struct {
@@ -94,10 +97,23 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		subscription.DisableEndpoint = newSubscription.DisableEndpoint
 	}
 
-	if subscription.FilterConfig == nil ||
-		subscription.FilterConfig.EventTypes == nil ||
-		len(subscription.FilterConfig.EventTypes) == 0 {
-		subscription.FilterConfig = &datastore.FilterConfiguration{EventTypes: []string{"*"}}
+	if subscription.FilterConfig == nil {
+		subscription.FilterConfig = &datastore.FilterConfiguration{}
+	}
+
+	if subscription.FilterConfig.EventTypes == nil || len(subscription.FilterConfig.EventTypes) == 0 {
+		subscription.FilterConfig.EventTypes = []string{"*"}
+	}
+
+	if len(subscription.FilterConfig.Filter) == 0 {
+		subscription.FilterConfig.Filter = map[string]interface{}{}
+	} else {
+		// validate that the filter is a json string
+		_, err := json.Marshal(subscription.FilterConfig.Filter)
+		if err != nil {
+			log.WithError(err).Error(ErrInvalidSubscriptionFilterFormat.Error())
+			return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidSubscriptionFilterFormat)
+		}
 	}
 
 	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
@@ -195,8 +211,20 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		subscription.RetryConfig.RetryCount = update.RetryConfig.RetryCount
 	}
 
-	if update.FilterConfig != nil && len(update.FilterConfig.EventTypes) > 0 {
-		subscription.FilterConfig.EventTypes = update.FilterConfig.EventTypes
+	if update.FilterConfig != nil {
+		if len(update.FilterConfig.EventTypes) > 0 {
+			subscription.FilterConfig.EventTypes = update.FilterConfig.EventTypes
+		}
+
+		if len(update.FilterConfig.Filter) > 0 {
+			// validate that the filter is a json string
+			_, err := json.Marshal(update.FilterConfig.Filter)
+			if err != nil {
+				log.WithError(err).Error(ErrInvalidSubscriptionFilterFormat.Error())
+				return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidSubscriptionFilterFormat)
+			}
+			subscription.FilterConfig.Filter = update.FilterConfig.Filter
+		}
 	}
 
 	if update.RateLimitConfig != nil && update.RateLimitConfig.Count > 0 {
@@ -261,6 +289,16 @@ func (s *SubcriptionService) DeleteSubscription(ctx context.Context, groupId str
 	}
 
 	return nil
+}
+
+func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testRequest map[string]interface{}, bodyFilter map[string]interface{}) (bool, error) {
+	passed, err := s.subRepo.TestSubscriptionFilter(ctx, testRequest, bodyFilter)
+	if err != nil {
+		log.WithError(err).Error(ErrValidateSubscriptionFilterError.Error())
+		return false, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	return passed, nil
 }
 
 func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *datastore.Group, subscriptionId string, skipCache bool) (*datastore.Subscription, error) {
