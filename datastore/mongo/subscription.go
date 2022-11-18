@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -53,6 +55,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 			"endpoint_id": subscription.EndpointID,
 
 			"filter_config.event_types": subscription.FilterConfig.EventTypes,
+			"filter_config.filter":      subscription.FilterConfig.Filter,
 			"alert_config":              subscription.AlertConfig,
 			"retry_config":              subscription.RetryConfig,
 			"disable_endpoint":          subscription.DisableEndpoint,
@@ -202,25 +205,24 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 	unwindEndpointStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$endpoint_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
-	sortAndLimitStages := []bson.D{
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
-		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
-		{{Key: "$limit", Value: pageable.PerPage}},
-	}
+	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: pageable.PerPage}}
 
 	// pipeline definition
 	pipeline := mongo.Pipeline{
 		matchStage,
+		skipStage,
+		sortStage,
+		limitStage,
 		appStage,
-		unwindAppStage,
 		sourceStage,
-		unwindSourceStage,
 		endpointStage,
+		unwindAppStage,
+		unwindSourceStage,
 		unwindEndpointStage,
 	}
 
-	pipeline = append(pipeline, sortAndLimitStages...)
 	err := s.store.Aggregate(ctx, pipeline, &subscriptions, true)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -354,8 +356,109 @@ func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId
 	return err
 }
 
+func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.FilterCollection)
+	isValid := false
+
+	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
+		f := datastore.SubscriptionFilter{
+			ID:     primitive.NewObjectID(),
+			UID:    uuid.NewString(),
+			Filter: payload,
+		}
+
+		// insert the desired request payload
+		err := s.store.Save(sessCtx, f, nil)
+		if err != nil {
+			return err
+		}
+
+		// compare the filter with the test request payload
+		var q map[string]interface{}
+		if len(filter) == 0 {
+			filter = nil
+		}
+
+		if filter != nil {
+			q, err = flattenFilter(filter)
+			if err != nil {
+				return err
+			}
+		}
+
+		var filters []datastore.SubscriptionFilter
+		err = s.store.FindAll(sessCtx, q, nil, nil, &filters)
+		if err != nil {
+			return err
+		}
+
+		isValid = len(filters) > 0
+
+		err = s.store.DeleteByID(sessCtx, f.UID, true)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return isValid, err
+}
+
 func (s *subscriptionRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
+}
+
+func flattenFilter(f map[string]interface{}) (map[string]interface{}, error) {
+	isAndOr := false
+	var operator string
+
+	for k := range f {
+		if k == "$or" {
+			if len(f) > 1 {
+				return nil, flatten.ErrTopLevelElementOr
+			}
+			operator = k
+			isAndOr = true
+			break
+		}
+
+		if k == "$and" {
+			if len(f) > 1 {
+				return nil, flatten.ErrTopLevelElementAnd
+			}
+			isAndOr = true
+			break
+		}
+	}
+
+	if isAndOr {
+		if a, ok := f[operator].([]interface{}); ok {
+			if !ok {
+				return nil, flatten.ErrOrAndMustBeArray
+			}
+
+			for i := range a {
+				t, err := flatten.FlattenWithPrefix("filter", a[i].(map[string]interface{}))
+				if err != nil {
+					return nil, err
+				}
+
+				a[i] = t
+			}
+
+			f[operator] = a
+			return f, nil
+		}
+	}
+
+	query := map[string]interface{}{"filter": f}
+	q, err := flatten.Flatten(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return q, nil
 }
 
 // getSkip returns calculated skip value for the query

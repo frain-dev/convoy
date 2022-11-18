@@ -258,36 +258,6 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
 	}
 
-	appMap := datastore.AppMap{}
-	sourceMap := datastore.SourceMap{}
-
-	for i, event := range events {
-		if _, ok := appMap[event.AppID]; !ok {
-			a, _ := e.appRepo.FindApplicationByID(ctx, event.AppID)
-			aa := &datastore.Application{
-				UID:          a.UID,
-				Title:        a.Title,
-				GroupID:      a.GroupID,
-				SupportEmail: a.SupportEmail,
-			}
-			appMap[event.AppID] = aa
-		}
-
-		if _, ok := sourceMap[event.SourceID]; !ok && !util.IsStringEmpty(event.SourceID) {
-			ev, err := e.sourceRepo.FindSourceByID(ctx, event.GroupID, event.SourceID)
-			if err == nil {
-				source := &datastore.Source{
-					UID:  ev.UID,
-					Name: ev.Name,
-				}
-				sourceMap[event.SourceID] = source
-			}
-		}
-
-		events[i].App = appMap[event.AppID]
-		events[i].Source = sourceMap[event.SourceID]
-	}
-
 	return events, paginationData, nil
 }
 
@@ -296,70 +266,6 @@ func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *data
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
-	}
-
-	appMap := datastore.AppMap{}
-	eventMap := datastore.EventMap{}
-	deviceMap := datastore.DeviceMap{}
-	endpointMap := datastore.EndpointMap{}
-
-	for i, ed := range deliveries {
-		if _, ok := appMap[ed.AppID]; !ok {
-			a, err := e.appRepo.FindApplicationByID(ctx, ed.AppID)
-			if err == nil {
-				aa := &datastore.Application{
-					UID:          a.UID,
-					Title:        a.Title,
-					GroupID:      a.GroupID,
-					SupportEmail: a.SupportEmail,
-				}
-				appMap[ed.AppID] = aa
-			}
-		}
-
-		if _, ok := eventMap[ed.EventID]; !ok {
-			ev, err := e.eventRepo.FindEventByID(ctx, ed.EventID)
-			if err == nil {
-				event := &datastore.Event{
-					UID:       ev.UID,
-					EventType: ev.EventType,
-				}
-				eventMap[ed.EventID] = event
-			}
-		}
-
-		if !util.IsStringEmpty(ed.DeviceID) {
-			if _, ok := deviceMap[ed.DeviceID]; !ok {
-				dev, err := e.deviceRepo.FetchDeviceByID(ctx, ed.DeviceID, ed.AppID, ed.GroupID)
-				if err == nil {
-					device := &datastore.Device{
-						UID:      dev.UID,
-						HostName: dev.HostName,
-					}
-					deviceMap[ed.DeviceID] = device
-				}
-			}
-			deliveries[i].CLIMetadata.HostName = deviceMap[ed.DeviceID].HostName
-		}
-
-		if _, ok := endpointMap[ed.EndpointID]; !ok {
-			en, err := e.appRepo.FindApplicationEndpointByID(ctx, ed.AppID, ed.EndpointID)
-			if err == nil {
-				endpoint := &datastore.Endpoint{
-					UID:               en.UID,
-					TargetURL:         en.TargetURL,
-					Secrets:           en.Secrets,
-					HttpTimeout:       en.HttpTimeout,
-					RateLimit:         en.RateLimit,
-					RateLimitDuration: en.RateLimitDuration,
-				}
-				endpointMap[ed.EndpointID] = endpoint
-			}
-		}
-
-		deliveries[i].App = appMap[ed.AppID]
-		deliveries[i].Event = eventMap[ed.EventID]
-		deliveries[i].Endpoint = endpointMap[ed.EndpointID]
 	}
 
 	return deliveries, paginationData, nil

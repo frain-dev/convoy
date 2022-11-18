@@ -71,15 +71,15 @@
 						<td convoy-table-cell [forDate]="true"></td>
 						<td convoy-table-cell [forDate]="true"></td>
 					</tr>
-					<tr convoy-table-row *ngFor="let app of apps.content; let index = index" [id]="'app' + i" [routerLink]="['./' + app.uid]">
-						<td convoy-table-cell class="pl-16px">
+					<tr convoy-table-row *ngFor="let app of apps.content; let index = index" [id]="'app' + i">
+						<td convoy-table-cell class="pl-16px" [routerLink]="['./' + app.uid]">
 							<convoy-tag [type]="!app.is_disabled ? 'success' : 'grey'">{{ app.is_disabled ? 'Disabled' : 'Enabled' }}</convoy-tag>
 						</td>
-						<td convoy-table-cell>{{ app.name }}</td>
-						<td convoy-table-cell>{{ app.created_at | date: 'hh:mm:ss a' }}</td>
-						<td convoy-table-cell>{{ app.updated_at | date }}</td>
-						<td convoy-table-cell>{{ app.events || 0 }}</td>
-						<td convoy-table-cell>{{ app?.endpoints?.length || 0 }}</td>
+						<td convoy-table-cell [routerLink]="['./' + app.uid]">{{ app.name }}</td>
+						<td convoy-table-cell [routerLink]="['./' + app.uid]">{{ app.created_at | date: 'hh:mm:ss a' }}</td>
+						<td convoy-table-cell [routerLink]="['./' + app.uid]">{{ app.updated_at | date }}</td>
+						<td convoy-table-cell [routerLink]="['./' + app.uid]">{{ app.events || 0 }}</td>
+						<td convoy-table-cell [routerLink]="['./' + app.uid]">{{ app?.endpoints?.length || 0 }}</td>
 						<td convoy-table-cell>
 							<button convoy-button title="view events" size="xs" texture="light" (click)="loadEventsFromAppsTable($event, app.uid)" [disabled]="app.events <= 0">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
@@ -87,19 +87,19 @@
 							</button>
 						</td>
 						<td convoy-table-cell>
-							<convoy-dropdown size="sm" buttonSize="sm" buttonFill="clear" #appTableDropdown>
-								<ng-container dropdownToggle>
+							<div convoy-dropdown size="sm" #appTableDropdown>
+								<button dropdownTrigger convoy-button size="sm" fill="clear">
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
-								</ng-container>
-								<ul>
-									<convoy-list-item class="w-full" className="px-14px" [hover]="true">
+								</button>
+								<ul dropdownOptions>
+									<li convoy-list-item convoy-dropdown-option class="w-full">
 										<a class="w-full text-12" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/apps/' + app.uid + '/edit'">Update</a>
-									</convoy-list-item>
-									<convoy-list-item className="px-14px" [hover]="true">
+									</li>
+									<li convoy-list-item convoy-dropdown-option>
 										<button convoy-button class="w-full" class="w-full !justify-start" fill="text" color="danger" (click)="promptDeleteModal($event, app)">Delete</button>
-									</convoy-list-item>
+									</li>
 								</ul>
-							</convoy-dropdown>
+							</div>
 						</td>
 					</tr>
 				</ng-container>

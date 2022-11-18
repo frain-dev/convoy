@@ -1107,7 +1107,15 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 				}
 				ed.EXPECT().LoadEventsPaged(gomock.Any(), f).
 					Times(1).
-					Return([]datastore.Event{{UID: "1234"}}, datastore.PaginationData{
+					Return([]datastore.Event{{
+						UID: "1234",
+						App: &datastore.Application{
+							UID:          "abc",
+							Title:        "Title",
+							GroupID:      "123",
+							SupportEmail: "SupportEmail",
+						},
+					}}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,
 						PerPage:   2,
@@ -1115,14 +1123,6 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 						Next:      3,
 						TotalPage: 2,
 					}, nil)
-
-				ap, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
-					UID:          "abc",
-					Title:        "Title",
-					GroupID:      "123",
-					SupportEmail: "SupportEmail",
-				}, nil).Times(1)
 			},
 			wantEvents: []datastore.Event{
 				{
@@ -1364,7 +1364,32 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						Sort:    1,
 					}).
 					Times(1).
-					Return([]datastore.EventDelivery{{UID: "1234"}}, datastore.PaginationData{
+					Return([]datastore.EventDelivery{{
+						UID: "1234",
+						App: &datastore.Application{
+							UID:          "abc",
+							Title:        "Title",
+							GroupID:      "123",
+							SupportEmail: "SupportEmail",
+						},
+						Event: &datastore.Event{
+							UID:       "123",
+							EventType: "incoming",
+						},
+						Endpoint: &datastore.Endpoint{
+							UID:       "1234",
+							TargetURL: "http://localhost.com",
+							Secrets: []datastore.Secret{
+								{
+									UID:   "abc",
+									Value: "Secret",
+								},
+							},
+							HttpTimeout:       "30s",
+							RateLimit:         10,
+							RateLimitDuration: "1h",
+						},
+					}}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,
 						PerPage:   2,
@@ -1372,35 +1397,6 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						Next:      3,
 						TotalPage: 2,
 					}, nil)
-
-				ap, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				ap.EXPECT().FindApplicationByID(gomock.Any(), gomock.Any()).Return(&datastore.Application{
-					UID:          "abc",
-					Title:        "Title",
-					GroupID:      "123",
-					SupportEmail: "SupportEmail",
-				}, nil).Times(1)
-
-				ev, _ := es.eventRepo.(*mocks.MockEventRepository)
-				ev.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Return(&datastore.Event{
-					UID:       "123",
-					EventType: "incoming",
-				}, nil)
-
-				en, _ := es.appRepo.(*mocks.MockApplicationRepository)
-				en.EXPECT().FindApplicationEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
-					UID:       "1234",
-					TargetURL: "http://localhost.com",
-					Secrets: []datastore.Secret{
-						{
-							UID:   "abc",
-							Value: "Secret",
-						},
-					},
-					HttpTimeout:       "30s",
-					RateLimit:         10,
-					RateLimitDuration: "1h",
-				}, nil)
 			},
 			wantEventDeliveries: []datastore.EventDelivery{
 				{

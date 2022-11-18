@@ -22,6 +22,7 @@ import (
 func addServerCommand(a *app) *cobra.Command {
 	var env string
 	var host string
+	var proxy string
 	var sentry string
 	var limiter string
 	var cache string
@@ -98,6 +99,7 @@ func addServerCommand(a *app) *cobra.Command {
 	cmd.Flags().StringVar(&basicAuthConfig, "basic-auth", "", "Basic authentication credentials")
 	cmd.Flags().StringVar(&logLevel, "log-level", "error", "Log level")
 	cmd.Flags().StringVar(&logger, "logger", "info", "Logger")
+	cmd.Flags().StringVar(&proxy, "proxy", "", "HTTP Proxy")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
@@ -194,10 +196,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		lo.SetLevel(lvl)
 
 		// register worker.
-		consumer, err := worker.NewConsumer(a.queue, lo)
-		if err != nil {
-			a.logger.WithError(err).Error("failed to create worker")
-		}
+		consumer := worker.NewConsumer(a.queue, lo)
 
 		appRepo := cm.NewApplicationRepo(a.store)
 		eventRepo := cm.NewEventRepository(a.store)
@@ -394,6 +393,16 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Server.HTTP.SSLCertFile = sslCertFile
 	}
 
+	// HTTP_PROXY
+	proxy, err := cmd.Flags().GetString("proxy")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(proxy) {
+		c.Server.HTTP.HttpProxy = proxy
+	}
+
 	// CONVOY_SMTP_PROVIDER
 	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
 	if err != nil {
@@ -424,7 +433,7 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.SMTP.Username = smtpUsername
 	}
 
-	// CONVOY_SMTP_PASSWORDvar configFile string
+	// CONVOY_SMTP_PASSWORD
 	smtpPassword, err := cmd.Flags().GetString("smtp-password")
 	if err != nil {
 		return nil, err

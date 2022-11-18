@@ -8,7 +8,6 @@ import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { SOURCE } from 'src/app/models/group.model';
@@ -51,9 +50,7 @@ export class EventComponent implements OnInit {
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('timeFilter', { static: true }) timeFilter!: TimePickerComponent;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	@ViewChild('sourcesDropdown', { static: true }) sourcesDropdown!: DropdownComponent;
 	@ViewChild('eventsAppsFilter', { static: true }) eventsAppsFilter!: ElementRef;
-	@ViewChild(DropdownComponent) appDropdownComponent!: DropdownComponent;
 	eventsAppsFilter$!: Observable<APP[]>;
 	appPortalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
@@ -90,7 +87,6 @@ export class EventComponent implements OnInit {
 		switch (filterType) {
 			case 'eventsApp':
 				filterItems = ['eventsApp'];
-				this.appDropdownComponent.show = false;
 				break;
 			case 'eventsDate':
 				filterItems = ['eventsStartDate', 'eventsEndDate'];
@@ -100,7 +96,6 @@ export class EventComponent implements OnInit {
 				break;
 			case 'eventsSource':
 				filterItems = ['eventsSource'];
-				this.sourcesDropdown.show = false;
 				break;
 			default:
 				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsApp', 'eventsSearch', 'eventsSource'];
@@ -235,6 +230,7 @@ export class EventComponent implements OnInit {
 				token: this.appPortalToken
 			});
 			this.events = eventsResponse.data;
+
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
 			// to show app name or source name on events table header
