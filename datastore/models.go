@@ -200,7 +200,7 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy: "60d",
+		Policy: "30d",
 	}
 )
 

@@ -12,10 +12,19 @@ definitions:
   datastore.APIKey:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       expires_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       hash:
         type: string
@@ -32,6 +41,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       user_id:
         type: string
@@ -270,6 +282,9 @@ definitions:
         items:
           type: string
         type: array
+      filter:
+        additionalProperties: true
+        type: object
     type: object
   datastore.Group:
     properties:
@@ -357,6 +372,9 @@ definitions:
       interval_seconds:
         type: integer
       next_send_time:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       num_trials:
         description: |-
@@ -792,8 +810,14 @@ definitions:
   models.LoginUserResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       email:
         type: string
@@ -806,6 +830,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
     type: object
   models.Organisation:
@@ -898,8 +925,14 @@ definitions:
   models.SourceResponse:
     properties:
       created_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       deleted_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       group_id:
         type: string
@@ -918,6 +951,9 @@ definitions:
       uid:
         type: string
       updated_at:
+        description: |-
+          NextSendTime denotes the next time an Event will be published in
+          case it failed the first time
         type: integer
       url:
         type: string
@@ -3737,6 +3773,66 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Toggles a subscription's status from active <-> inactive
+      tags:
+      - Subscriptions
+  /api/v1/projects/{projectID}/subscriptions/test_filter:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint tests a subscription's filter
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: subscription id
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Test subscription filter
       tags:
       - Subscriptions
   /devices/{appID}:

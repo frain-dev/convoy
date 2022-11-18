@@ -4541,6 +4541,116 @@
                 }
             }
         },
+        "/api/v1/projects/{projectID}/subscriptions/test_filter": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint tests a subscription's filter",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Test subscription filter",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project id",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "subscription id",
+                        "name": "subscriptionID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
             "get": {
                 "security": [
@@ -9924,12 +10034,15 @@
             "type": "object",
             "properties": {
                 "created_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "expires_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "hash": {
@@ -9954,6 +10067,7 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "user_id": {
@@ -10306,6 +10420,10 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "filter": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },
@@ -10439,6 +10557,7 @@
                     "type": "integer"
                 },
                 "next_send_time": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "num_trials": {
@@ -11100,9 +11219,11 @@
             "type": "object",
             "properties": {
                 "created_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "email": {
@@ -11121,6 +11242,7 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -11264,9 +11386,11 @@
             "type": "object",
             "properties": {
                 "created_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "group_id": {
@@ -11294,6 +11418,7 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "url": {
