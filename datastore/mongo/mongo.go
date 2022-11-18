@@ -90,9 +90,16 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(datastore.EndpointCollection, "group_id", false, nil)
 	c.ensureIndex(datastore.EndpointCollection, "owner_id", false, nil)
 
+	c.ensureIndex(datastore.UserCollection, "uid", true, nil)
+
+	c.ensureIndex(datastore.APIKeyCollection, "uid", true, nil)
+	c.ensureIndex(datastore.APIKeyCollection, "mask_id", true, nil)
+
 	c.ensureIndex(datastore.EventCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EventCollection, "app_id", false, nil)
 	c.ensureIndex(datastore.EventCollection, "group_id", false, nil)
+
+	c.ensureIndex(datastore.EventDeliveryCollection, "status", false, nil)
 
 	c.ensureIndex(datastore.SourceCollection, "uid", true, nil)
 	c.ensureIndex(datastore.SourceCollection, "mask_id", true, nil)
@@ -103,10 +110,14 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(datastore.UserCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EventDeliveryCollection, "status", false, nil)
 
+	// register compound indexes
 	c.ensureCompoundIndex(datastore.EndpointCollection)
-	c.ensureCompoundIndex(datastore.EventCollection)
 	c.ensureCompoundIndex(datastore.UserCollection)
+	c.ensureCompoundIndex(datastore.EventCollection)
 	c.ensureCompoundIndex(datastore.GroupCollection)
+	c.ensureCompoundIndex(datastore.DeviceCollection)
+	c.ensureCompoundIndex(datastore.APIKeyCollection)
+	c.ensureCompoundIndex(datastore.SubscriptionCollection)
 	c.ensureCompoundIndex(datastore.EventDeliveryCollection)
 	c.ensureCompoundIndex(datastore.OrganisationInvitesCollection)
 	c.ensureCompoundIndex(datastore.OrganisationMembersCollection)
@@ -177,74 +188,78 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Options: options.Index().SetUnique(true),
 			},
 		},
+
 		datastore.EventCollection: {
 			{
 				Keys: bson.D{
-					{Key: "group_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
+					{Key: "created_at", Value: -1},
 					{Key: "document_status", Value: 1},
+					{Key: "group_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+					{Key: "document_status", Value: 1},
+					{Key: "source_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+					{Key: "document_status", Value: 1},
+					{Key: "app_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+					{Key: "document_status", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "app_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+					{Key: "document_status", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "source_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+					{Key: "document_status", Value: 1},
+					{Key: "app_id", Value: 1},
+					{Key: "source_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: -1},
+					{Key: "document_status", Value: 1},
+					{Key: "group_id", Value: 1},
+					{Key: "source_id", Value: 1},
+					{Key: "app_id", Value: 1},
+				},
+			},
+
+			{
+				Keys: bson.D{
 					{Key: "created_at", Value: -1},
 				},
 			},
 
 			{
 				Keys: bson.D{
-					{Key: "group_id", Value: 1},
-					{Key: "app_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
-					{Key: "document_status", Value: 1},
-					{Key: "created_at", Value: -1},
-				},
-			},
-
-			{
-				Keys: bson.D{
-					{Key: "app_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
-					{Key: "document_status", Value: 1},
-					{Key: "created_at", Value: -1},
-				},
-			},
-
-			{
-				Keys: bson.D{
-					{Key: "group_id", Value: 1},
-					{Key: "app_id", Value: 1},
-					{Key: "created_at", Value: -1},
-				},
-			},
-
-			{
-				Keys: bson.D{
-					{Key: "app_id", Value: 1},
-					{Key: "group_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
-					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
-				},
-			},
-
-			{
-				Keys: bson.D{
-					{Key: "app_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
-					{Key: "document_status", Value: 1},
-					{Key: "created_at", Value: 1},
-				},
-			},
-
-			{
-				Keys: bson.D{
-					{Key: "group_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
-					{Key: "document_status", Value: 1},
-					{Key: "created_at", Value: 1},
-				},
-			},
-
-			{
-				Keys: bson.D{
-					{Key: "created_at", Value: -1},
 				},
 			},
 		},
@@ -252,26 +267,23 @@ func compoundIndices() map[string][]mongo.IndexModel {
 		datastore.EventDeliveryCollection: {
 			{
 				Keys: bson.D{
-					{Key: "event_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
+					{Key: "event_id", Value: 1},
 				},
 			},
 
 			{
 				Keys: bson.D{
-					{Key: "event_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
+					{Key: "event_id", Value: 1},
 					{Key: "status", Value: 1},
 				},
 			},
 
 			{
 				Keys: bson.D{
-					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
 					{Key: "group_id", Value: 1},
@@ -282,23 +294,20 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "uid", Value: 1},
-					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},
 			},
 
 			{
 				Keys: bson.D{
-					{Key: "group_id", Value: 1},
-					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: 1},
+					{Key: "group_id", Value: 1},
 				},
 			},
 
 			{
 				Keys: bson.D{
-					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 					{Key: "group_id", Value: 1},
@@ -307,7 +316,6 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
-					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 					{Key: "created_at", Value: -1},
 					{Key: "app_id", Value: 1},
@@ -318,6 +326,12 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "created_at", Value: -1},
+				},
+			},
+
+			{
+				Keys: bson.D{
+					{Key: "created_at", Value: 1},
 				},
 			},
 		},
@@ -401,11 +415,35 @@ func compoundIndices() map[string][]mongo.IndexModel {
 		datastore.SubscriptionCollection: {
 			{
 				Keys: bson.D{
+					{Key: "uid", Value: 1},
 					{Key: "app_id", Value: 1},
 					{Key: "group_id", Value: 1},
 					{Key: "source_id", Value: 1},
 					{Key: "device_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
+
+		datastore.APIKeyCollection: {
+			{
+				Keys: bson.D{
+					{Key: "user_id", Value: 1},
+					{Key: "role.app", Value: 1},
+					{Key: "key_type", Value: 1},
+					{Key: "role.group", Value: 1},
+					{Key: "deleted_at", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: bson.D{
+					{Key: "hash", Value: 1},
+					{Key: "mask_id", Value: 1},
 					{Key: "deleted_at", Value: 1},
 					{Key: "document_status", Value: 1},
 				},

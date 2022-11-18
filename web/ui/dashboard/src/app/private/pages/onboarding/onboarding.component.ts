@@ -4,7 +4,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { PrivateService } from '../../private.service';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
 import { LoaderModule } from '../../components/loader/loader.module';
@@ -14,7 +14,7 @@ export type STAGES = 'organisation' | 'project';
 @Component({
 	selector: 'convoy-onboarding',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, ReactiveFormsModule, ModalComponent, InputComponent, LoaderModule],
+	imports: [CommonModule, ButtonComponent, ReactiveFormsModule, ModalComponent, LoaderModule, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
 	templateUrl: './onboarding.component.html',
 	styleUrls: ['./onboarding.component.scss']
 })

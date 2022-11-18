@@ -1,19 +1,19 @@
 <div class="fixed bg-black bg-opacity-50 h-screen w-screen top-0 right-0 bottom-0 overflow-hidden z-40" (click)="closeModal.emit()"></div>
-<div class="fixed w-full shadow z-50" [class]="position === 'full' ? 'bg-[#fafafe] ' + classes : 'bg-white-100 ' + classes">
+<div class="fixed w-full shadow z-50" [id]="id" [class]="position === 'full' ? 'bg-[#fafafe] ' + classes : 'bg-white-100 ' + classes">
 	<div *ngIf="title" class="px-20px pt-20px pb-16px border-b border-b-grey-10 bg-white-100 rounded-tr-16px rounded-tl-16px">
 		<div class="flex items-center justify-between" *ngIf="position !== 'full'">
 			<h2 class="font-semibold capitalize">{{ title }}</h2>
 
-			<convoy-button texture="light" size="sm" className="px-8px !py-10px" (click)="closeModal.emit()">
+			<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal.emit()">
 				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-			</convoy-button>
+			</button>
 		</div>
 
 		<div class="flex items-center justify-between m-auto max-w-[834px]" *ngIf="position === 'full'">
 			<div class="flex items-center">
-				<convoy-button size="sm" texture="light" className="px-10px !py-10px" (click)="closeModal.emit()">
+				<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="closeModal.emit()">
 					<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
-				</convoy-button>
+				</button>
 
 				<h2 class="font-semibold capitalize ml-2">{{ title }}</h2>
 			</div>

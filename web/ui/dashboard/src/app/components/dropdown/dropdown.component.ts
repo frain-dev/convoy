@@ -1,43 +1,50 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Directive, ElementRef, EventEmitter, Host, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
+import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
+import { ScreenDirective } from '../screen/screen.directive';
+
+@Directive({
+	selector: '[convoy-dropdown-option], [convoy-dropdown-close]',
+	standalone: true,
+	host: { '(click)': 'onSelectOption()' }
+})
+export class DropdownOptionDirective {
+    @Output() readonly onSelect = new EventEmitter<any>;
+    @Input('value') value: any = undefined;
+    parent: DropdownComponent;
+
+    constructor(@Host() parent: DropdownComponent) {
+        this.parent = parent;
+
+    }
+
+    onSelectOption() {
+        this.onSelect.emit();
+        this.parent.show = false;
+        this.parent.onSelect.emit(this.value);
+    }
+}
 
 @Component({
-	selector: 'convoy-dropdown',
+	selector: 'convoy-dropdown, [convoy-dropdown]',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent],
+	imports: [CommonModule, ButtonComponent, DropdownContainerComponent, ScreenDirective, DropdownOptionDirective],
 	templateUrl: './dropdown.component.html',
-	styleUrls: ['./dropdown.component.scss']
+    styleUrls: ['./dropdown.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Default
 })
 export class DropdownComponent implements OnInit {
-	@Input('onSelectOption') onSelectOption = new EventEmitter();
 	@Input('position') position: 'right' | 'left' | 'center' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
-	@Input('active') active: boolean = false;
-	@Input('className') class!: string;
-	@Input('buttonText') buttonText!: string;
-	@Input('buttonClass') buttonClass = '';
-	@Input('buttonColor') buttonColor!: 'primary' | 'success' | 'warning' | 'danger' | 'grey';
-	@Input('buttonSize') buttonSize: 'sm' | 'md' | 'lg' = 'md';
-	@Input('buttonType') buttonType: 'default' | 'outline' | 'clear' | 'text' | 'link' | 'unstyled' = 'default';
-	@Input('buttonTexture') buttonTexture: 'deep' | 'light' = 'deep';
-	sizes = { sm: 'w-[140px]', md: 'w-[200px]', lg: 'w-[249px]', xl: 'w-[350px]', full: 'w-full' };
+	@ViewChild('dropdownTriggerContainer', { static: true }) dropdownTriggerContainer!: ElementRef;
+	@ViewChild('dropdownContainer', { static: true }) dropdownOptions!: ElementRef;
+    @Output() readonly onSelect = new EventEmitter<any>;
 	show = false;
 
-	constructor() {}
+    constructor() {}
 
-	ngOnInit(): void {}
-
-	get classes(): string {
-		const positions = {
-			right: 'right-[5%]',
-			left: 'left-[5%]',
-			center: 'left-0'
-		};
-		return `${this.sizes[this.size]} ${positions[this.position]} ${this.show ? 'opacity-100 h-fit overflow-y-auto pointer-events-auto' : 'opacity-0 h-0 overflow-hidden pointer-events-none'} ${this.class}`;
-	}
-
-	get buttonClasses(): string {
-		return `${this.active ? 'text-primary-100 !bg-primary-500' : ''} empty:hidden ${this.buttonClass}`;
-	}
+    ngOnInit(): void {
+		this.dropdownTriggerContainer.nativeElement.children[0].addEventListener('click', () => (this.show = !this.show));
+    }
 }

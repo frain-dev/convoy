@@ -13,6 +13,7 @@ export class ModalComponent implements OnInit {
 	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
 	@Input('title') title!: string;
+	@Input('id') id!: string;
 	@Input('className') class!: string;
 	@Output('closeModal') closeModal = new EventEmitter<any>();
 	modalSizes = { sm: 'max-w-[380px]', md: 'max-w-[460px]', lg: 'max-w-[600px]' };

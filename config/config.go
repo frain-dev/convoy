@@ -65,6 +65,7 @@ type HTTPServerConfiguration struct {
 	Port        uint32 `json:"port" envconfig:"PORT"`
 	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
 	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
+	HttpProxy   string `json:"proxy" envconfig:"HTTP_PROXY"`
 }
 
 type QueueConfiguration struct {

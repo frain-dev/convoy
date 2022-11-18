@@ -40,7 +40,7 @@
 		</div>
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="!isLoadingProjects">
-			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
+			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]" *ngIf="projects.length">
 				<svg width="22" height="22" class="mr-2" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
@@ -63,11 +63,11 @@
 					</div>
 
 					<div class="flex items-center p-0">
-						<div class="py-2 px-6 text-12 font-medium w-2/5">
+						<div class="py-2 px-6 text-12 font-medium w-1/2 whitespace-nowrap">
 							<span class="text-black mr-2">{{ project.statistics?.messages_sent }}</span>
 							<span class="text-grey-40">Events {{ project.type === 'incoming' ? 'Received' : 'Sent' }}</span>
 						</div>
-						<div class="py-2 px-6 w-3/5 flex items-center justify-between border-l border-l-grey-10">
+						<div class="py-2 px-6 w-1/2 flex items-center justify-between border-l border-l-grey-10">
 							<div class="text-12 font-medium">
 								<span class="text-black mr-2">{{ project.statistics?.total_apps }}</span>
 								<span class="text-grey-40">Apps</span>

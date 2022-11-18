@@ -17,7 +17,7 @@ type Consumer struct {
 	log   log.StdLogger
 }
 
-func NewConsumer(q queue.Queuer, l log.StdLogger) (*Consumer, error) {
+func NewConsumer(q queue.Queuer, l log.StdLogger) *Consumer {
 	srv := asynq.NewServer(
 		q.Options().RedisClient,
 		asynq.Config{
@@ -41,7 +41,7 @@ func NewConsumer(q queue.Queuer, l log.StdLogger) (*Consumer, error) {
 		log:   l,
 		mux:   mux,
 		srv:   srv,
-	}, nil
+	}
 }
 
 func (c *Consumer) Start() {

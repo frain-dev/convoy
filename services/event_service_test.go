@@ -1159,14 +1159,6 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 						Next:      3,
 						TotalPage: 2,
 					}, nil)
-
-				ap, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				ap.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
-					UID:          "abc",
-					Title:        "Title",
-					GroupID:      "123",
-					SupportEmail: "SupportEmail",
-				}, nil).Times(1)
 			},
 			wantEvents: []datastore.Event{
 				{
@@ -1420,31 +1412,6 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						Next:      3,
 						TotalPage: 2,
 					}, nil)
-
-				ev, _ := es.eventRepo.(*mocks.MockEventRepository)
-				ev.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Return(&datastore.Event{
-					UID:       "123",
-					EventType: "incoming",
-				}, nil)
-
-				en, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				en.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Return(&datastore.Endpoint{
-					UID:            "1234",
-					Title:          "Title",
-					GroupID:        "123",
-					SupportEmail:   "SupportEmail",
-					TargetURL:      "http://localhost.com",
-					DocumentStatus: "Active",
-					Secrets: []datastore.Secret{
-						{
-							UID:   "abc",
-							Value: "Secret",
-						},
-					},
-					HttpTimeout:       "30s",
-					RateLimit:         10,
-					RateLimitDuration: "1h",
-				}, nil)
 			},
 			wantEventDeliveries: []datastore.EventDelivery{
 				{

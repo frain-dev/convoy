@@ -111,6 +111,12 @@
                                 </p>
                                 <ul>
                                     <li><strong>URL:</strong> {{.target_url}}</li>
+                                    {{if eq .response_body ""}}
+                                    <li><strong>Most recent failure message:</strong> {{ .failure_msg }}</li>
+                                    {{else}}
+                                    <li><strong>Endpoint Response Body:</strong> {{ .response_body }}</li>
+                                    <li><strong>Status code:</strong> {{ .status_code }}</li>
+                                    {{end}}
                                 </ul>
                                 <p>
                                     <strong>Important:</strong> You're receiving this email because your endpoint has consecutively failed to receive events, and
