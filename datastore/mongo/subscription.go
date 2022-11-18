@@ -362,10 +362,9 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload m
 
 	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
 		f := datastore.SubscriptionFilter{
-			ID:             primitive.NewObjectID(),
-			UID:            uuid.NewString(),
-			Filter:         payload,
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			ID:     primitive.NewObjectID(),
+			UID:    uuid.NewString(),
+			Filter: payload,
 		}
 
 		// insert the desired request payload
