@@ -13,7 +13,7 @@ export type SETTINGS = 'organisation settings' | 'configuration settings' | 'per
 export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';
 	settingsMenu: { name: SETTINGS; icon: string }[] = [
-		{ name: 'organisation settings', icon: 'settings' },
+		{ name: 'organisation settings', icon: 'settings' }
 		// hidden for cloud instance
 		// { name: 'configuration settings', icon: 'settings' },
 	];
