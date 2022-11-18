@@ -402,7 +402,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 		datastore.DeviceCollection: {
 			{
 				Keys: bson.D{
-					{Key: "app_id", Value: 1},
+					{Key: "endpoint_id", Value: 1},
 					{Key: "group_id", Value: 1},
 					{Key: "host_name", Value: 1},
 					{Key: "deleted_at", Value: 1},
