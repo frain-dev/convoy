@@ -440,6 +440,7 @@ type Event struct {
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
 	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
+	AppID            string                `json:"app_id" bson:"app_id"` //Deprecated
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`

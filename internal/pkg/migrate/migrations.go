@@ -612,4 +612,79 @@ var Migrations = []*Migration{
 			return nil
 		},
 	},
+
+	{
+		ID: "20221117161319_migrate_app_events_to_endpoints",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
+
+			var events []*datastore.Event
+
+			err := store.FindAll(eventCtx, nil, nil, nil, &events)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find events")
+				return err
+			}
+
+			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+			for _, event := range events {
+				endpoints := make([]datastore.Endpoint, 0)
+
+				filter := bson.M{"app_id": event.AppID}
+				err := store.FindAll(endpointCtx, filter, nil, nil, &endpoints)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed to find endpoints")
+					return err
+				}
+
+				var endpointIDs []string
+
+				for _, endpoint := range endpoints {
+					endpointIDs = append(endpointIDs, endpoint.UID)
+				}
+
+				update := bson.M{
+					"$set": bson.M{
+						"endpoints": endpointIDs,
+					},
+				}
+
+				err = store.UpdateByID(eventCtx, event.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221117161319_migrate_app_events_to_endpoints")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
+
+			var events []*datastore.Event
+
+			err := store.FindAll(eventCtx, nil, nil, nil, &events)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find events")
+				return err
+			}
+
+			for _, event := range events {
+				update := bson.M{
+					"$set": bson.M{
+						"endpoints": nil,
+					},
+				}
+
+				err = store.UpdateByID(eventCtx, event.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221117161319_migrate_app_events_to_endpoints")
+					return err
+				}
+			}
+			return nil
+		},
+	},
 }
