@@ -91,8 +91,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	maxRead := g.Config.MaxPayloadReadSize
-	if maxRead == 0 {
+	maxIngestSize := g.Config.MaxIngestSize
+	if maxIngestSize == 0 {
 		cfg, err := config.Get()
 		if err != nil {
 			a.A.Logger.WithError(err).Error("failed to load config")
@@ -100,12 +100,12 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		maxRead = cfg.MaxResponseSize
+		maxIngestSize = cfg.MaxResponseSize
 	}
 
 	// 3.1 On Failure
 	// Return 400 Bad Request.
-	body := io.LimitReader(r.Body, int64(maxRead))
+	body := io.LimitReader(r.Body, int64(maxIngestSize))
 	payload, err := io.ReadAll(body)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
