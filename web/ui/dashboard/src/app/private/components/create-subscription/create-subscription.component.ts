@@ -17,7 +17,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
 		type: [null, Validators.required],
-		app_id: [null, Validators.required],
 		source_id: [null, Validators.required],
 		endpoint_id: [null, Validators.required],
 		group_id: [null, Validators.required],
@@ -35,6 +34,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			event_types: [null]
 		})
 	});
+    endpoints!: ENDPOINT[];
 	apps!: APP[];
 	sources!: SOURCE[];
 	endPoints: ENDPOINT[] = [];
@@ -62,7 +62,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([this.getApps(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 	}
 
@@ -107,20 +107,21 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async getApps() {
+	async getEndpoints() {
 		if (this.token) {
 			await this.getAppPortalApp();
 			return;
 		}
 
 		try {
-			const appsResponse = await this.privateService.getApps();
-			this.apps = appsResponse.data.content;
+			const response = await this.privateService.getEndpoints();
+			this.endpoints = response.data.content;
+            this.modifyEndpointData(response.data.content);
 
-			if (this.subscriptionForm.value.app_id) {
-				const endpoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
-				this.modifyEndpointData(endpoints);
-			}
+			// if (this.subscriptionForm.value.app_id) {
+			// 	const endpoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
+			// 	this.modifyEndpointData(endpoints);
+			// }
 			return;
 		} catch (error) {
 			return error;
@@ -156,7 +157,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onUpdateAppSelection() {
-		await this.getApps();
+		// await this.getApps();
 		const app = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id);
 		this.modifyEndpointData(app?.endpoints);
 	}
@@ -167,7 +168,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateEndpoint(newEndpoint: ENDPOINT) {
-		await this.getApps();
+		// await this.getApps();
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 	}
 
@@ -207,7 +208,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateNewApp(newApp: APP) {
-		await this.getApps();
+		// await this.getApps();
 		this.subscriptionForm.patchValue({ app_id: newApp.uid });
 		this.onUpdateAppSelection();
 	}

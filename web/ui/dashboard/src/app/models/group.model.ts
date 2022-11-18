@@ -22,7 +22,7 @@ export interface GROUP {
 	};
 	statistics?: {
 		messages_sent: number;
-		total_apps: number;
+		total_endpoints: number;
 	};
 	created_at: Date;
 	updated_at: Date;

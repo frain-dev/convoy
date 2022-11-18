@@ -12,6 +12,7 @@ export interface APP {
 }
 export interface ENDPOINT {
 	uid: string;
+    title: string;
 	advanced_signatures: boolean;
 	authentication: any;
 	created_at: string;
@@ -25,6 +26,7 @@ export interface ENDPOINT {
 	rate_limit?: number;
 	rate_limit_duration?: string;
 	http_timeout?: string;
+    support_email: string;
 }
 
 export interface DEVICE {

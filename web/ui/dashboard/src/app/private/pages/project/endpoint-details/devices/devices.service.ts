@@ -9,11 +9,11 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class DevicesService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	getAppDevices(appId: string, token?: string): Promise<HTTP_RESPONSE> {
+	getAppDevices(endpointId: string, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: token ? '/apps/devices' : `${this.privateService.urlFactory('org_project')}/apps/${appId}/devices`,
+					url: token ? '/endpoints/devices' : `${this.privateService.urlFactory('org_project')}/endpoints/${endpointId}/devices`,
 					method: 'get',
 					token
 				});

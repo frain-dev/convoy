@@ -17,7 +17,7 @@ import { DevicesService } from './devices.service';
 	styleUrls: ['./devices.component.scss']
 })
 export class DevicesComponent implements OnInit {
-	appId: string = this.route.snapshot.params.id;
+	endpointId: string = this.route.snapshot.params.id;
 	isFetchingDevices = false;
 	isloadingAppPortalAppDetails = false;
 	showError = false;
@@ -37,7 +37,7 @@ export class DevicesComponent implements OnInit {
 
 		try {
 			const app = await this.deviceService.getAppPortalApp(this.token);
-			this.appId = app.data.uid;
+			this.endpointId = app.data.uid;
 			this.getDevices();
 			return;
 		} catch (error) {
@@ -50,7 +50,7 @@ export class DevicesComponent implements OnInit {
 		this.showError = false;
 		this.isFetchingDevices = true;
 		try {
-			const response = await this.deviceService.getAppDevices(this.appId, this.token);
+			const response = await this.deviceService.getAppDevices(this.endpointId, this.token);
 			this.devices = response.data.content;
 			this.isFetchingDevices = false;
 		} catch {

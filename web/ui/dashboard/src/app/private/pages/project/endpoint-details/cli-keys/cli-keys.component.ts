@@ -38,7 +38,7 @@ export class CliKeysComponent implements OnInit {
 	apiKeys!: API_KEY[];
 	selectedApiKey?: API_KEY;
 	loaderIndex: number[] = [0, 1, 2];
-	appId: string = this.route.snapshot.params.id;
+	endpointId: string = this.route.snapshot.params.id;
 	token: string = this.route.snapshot.params.token;
 	expirationDates = [
 		{ name: '7 days', uid: 7 },
@@ -65,7 +65,7 @@ export class CliKeysComponent implements OnInit {
 
 		try {
 			const app = await this.cliKeyService.getAppPortalApp(this.token);
-			this.appId = app.data.uid;
+			this.endpointId = app.data.uid;
 			this.getApiKeys();
 			return;
 		} catch (error) {
@@ -81,7 +81,7 @@ export class CliKeysComponent implements OnInit {
 		this.showError = false;
 		this.isFetchingApiKeys = true;
 		try {
-			const response = await this.cliKeyService.getApiKeys({ appId: this.appId, token: this.token });
+			const response = await this.cliKeyService.getApiKeys({ endpointId: this.endpointId, token: this.token });
 			this.apiKeys = response.data.content;
 			this.isFetchingApiKeys = false;
 		} catch {
@@ -96,7 +96,7 @@ export class CliKeysComponent implements OnInit {
 		this.isGeneratingNewKey = true;
 		this.generateKeyForm.value.expiration = parseInt(this.generateKeyForm.value.expiration);
 		try {
-			const response = await this.cliKeyService.generateKey({ appId: this.appId, body: this.generateKeyForm.value, token: this.token });
+			const response = await this.cliKeyService.generateKey({ endpointId: this.endpointId, body: this.generateKeyForm.value, token: this.token });
 			this.apiKey = response.data.key;
 			this.generateKeyModal = false;
 			this.showApiKey = true;
@@ -117,7 +117,7 @@ export class CliKeysComponent implements OnInit {
 
 		this.isRevokingApiKey = true;
 		try {
-			const response = await this.cliKeyService.revokeApiKey({ appId: this.selectedApiKey?.role.app, keyId: this.selectedApiKey?.uid, token: this.token });
+			const response = await this.cliKeyService.revokeApiKey({ endpointId: this.selectedApiKey?.role.app, keyId: this.selectedApiKey?.uid, token: this.token });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingApiKey = false;
 			this.showRevokeApiModal = false;

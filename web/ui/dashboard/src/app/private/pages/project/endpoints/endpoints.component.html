@@ -14,7 +14,7 @@
 	<div class="flex items-center">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-			<input type="search" placeholder="Search endpoints" class="w-full text-grey-40 text-14 outline-none" />
+			<input type="search" placeholder="Search endpoints" class="w-full text-grey-40 text-14 outline-none" [(ngModel)]="endpointSearchString" (keyup)="searchEndpoint({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
 			<convoy-button className="transition-all duration-200" type="icon">
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</convoy-button>
@@ -34,21 +34,19 @@
 				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of endpointsTableHead; let i = index">{{ head }}</convoy-table-head-cell>
 			</convoy-table-head>
 			<tbody>
-				<ng-container>
+				<ng-container *ngFor="let endpointGroup of displayedEndpoints; let i = index">
 					<convoy-table-row [forDate]="true" class="contents">
-						<convoy-table-cell class="contents" [forDate]="true">May 12, 2022</convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
+						<convoy-table-cell class="contents" [forDate]="true">{{ endpointGroup.date }}</convoy-table-cell>
 						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
 						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
 						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
 						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
 						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
 					</convoy-table-row>
-					<convoy-table-row class="contents">
-						<convoy-table-cell class="contents" className="pl-18px">qwerty</convoy-table-cell>
-						<convoy-table-cell class="contents">qwerty</convoy-table-cell>
-						<convoy-table-cell class="contents">qwerty</convoy-table-cell>
-						<convoy-table-cell class="contents">qwerty</convoy-table-cell>
+					<convoy-table-row class="contents" *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i">
+						<convoy-table-cell class="contents" className="pl-18px">{{endpoint.title}}</convoy-table-cell>
+						<convoy-table-cell class="contents">{{ endpoint.created_at | date: 'hh:mm:ss a' }}</convoy-table-cell>
+						<convoy-table-cell class="contents">{{ endpoint.updated_at | date: 'mediumDate' }}</convoy-table-cell>
 						<convoy-table-cell class="contents">qwerty</convoy-table-cell>
 						<convoy-table-cell class="contents">
 							<convoy-button title="view events" size="xs" texture="light">
@@ -105,6 +103,6 @@
 
 <convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" [title]="showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint'">
 	<ng-container modalBody>
-		<convoy-create-endpoint></convoy-create-endpoint>
+		<convoy-create-endpoint (onAction)="$event.action === 'close' ? cancel() : getEndpoints()"></convoy-create-endpoint>
 	</ng-container>
 </convoy-modal>

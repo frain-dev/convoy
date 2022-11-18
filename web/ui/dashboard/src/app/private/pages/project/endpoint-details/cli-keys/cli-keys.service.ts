@@ -9,11 +9,11 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class CliKeysService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	generateKey(requestDetails: { appId: string; body: { key_type: string; name?: string; expiration?: string }; token?: string }): Promise<HTTP_RESPONSE> {
+	generateKey(requestDetails: { endpointId: string; body: { key_type: string; name?: string; expiration?: string }; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? '/apps/keys' : `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys`,
+					url: requestDetails.token ? '/endpoints/keys' : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys`,
 					method: 'post',
 					body: requestDetails.body,
 					token: requestDetails.token
@@ -26,11 +26,11 @@ export class CliKeysService {
 		});
 	}
 
-	getApiKeys(requestDetails: { appId: string; token?: string }): Promise<HTTP_RESPONSE> {
+	getApiKeys(requestDetails: { endpointId: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? '/apps/keys' : `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys`,
+					url: requestDetails.token ? '/endpoints/keys' : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys`,
 					method: 'get',
 					token: requestDetails.token
 				});
@@ -42,11 +42,11 @@ export class CliKeysService {
 		});
 	}
 
-	revokeApiKey(requestDetails: { appId: string; keyId: string; token?: string }): Promise<HTTP_RESPONSE> {
+	revokeApiKey(requestDetails: { endpointId: string; keyId: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? `/apps/keys/${requestDetails.keyId}/revoke` : `${this.privateService.urlFactory('org_project')}/apps/${requestDetails.appId}/keys/${requestDetails.keyId}/revoke`,
+					url: requestDetails.token ? `/endpoints/keys/${requestDetails.keyId}/revoke` : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys/${requestDetails.keyId}/revoke`,
 					method: 'put',
 					body: null,
 					token: requestDetails.token

@@ -49,6 +49,7 @@ export class CreateEndpointComponent implements OnInit {
 	}
 
 	async saveEndpoint() {
+		console.log(this.addNewEndpointForm.value);
 		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAsTouched();
 		this.savingEndpoint = true;
 

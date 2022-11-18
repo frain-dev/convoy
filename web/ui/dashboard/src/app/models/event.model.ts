@@ -55,5 +55,6 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	response_data?: string;
 	response_http_header: any;
 	request_http_header: any;
+    uid:string;
 	error?: string;
 }

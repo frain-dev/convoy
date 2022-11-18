@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
 import { TableComponent } from 'src/app/components/table/table.component';
@@ -18,6 +18,8 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { EndpointsService } from './endpoints.service';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -37,7 +39,8 @@ import { EndpointsService } from './endpoints.service';
 		DropdownComponent,
 		ListItemComponent,
 		ModalComponent,
-		CreateEndpointComponent
+		CreateEndpointComponent,
+		FormsModule
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
@@ -45,21 +48,35 @@ import { EndpointsService } from './endpoints.service';
 export class EndpointsComponent implements OnInit {
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Status', 'Name', 'Time Created', 'Updated', 'Events', '', ''];
-	displayedEndpoints: { date: string; content: ENDPOINT[] }[] = [];
+	endpointsTableHead = ['Name', 'Time Created', 'Updated', 'Events', '', ''];
+	displayedEndpoints!: { date: string; content: ENDPOINT[] }[];
 	endpoints!: { pagination: PAGINATION; content: ENDPOINT[] };
 	isLoadingEndpoints = false;
+	endpointSearchString!: string;
 
-	constructor(public privateService: PrivateService, private router: Router, private endpointService: EndpointsService) {}
+	constructor(public privateService: PrivateService, private router: Router, private endpointService: EndpointsService, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	ngOnInit() {
 		this.getEndpoints();
 	}
 
-	async getEndpoints(requestDetails?: { page?: number }) {
+	async getEndpoints(requestDetails?: { search?: string; page?: number }) {
+		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.endpointService.getEndpoints();
+			const response = await this.endpointService.getEndpoints({ pageNo: page, searchString: requestDetails?.search });
+			this.endpoints = response.data.content;
+			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
 			console.log(response);
 		} catch {}
+	}
+
+	searchEndpoint(searchDetails: { searchInput?: any }) {
+		const searchString: string = searchDetails?.searchInput?.target?.value || this.endpointSearchString;
+		this.getEndpoints({ search: searchString });
+	}
+
+	cancel() {
+		this.showCreateEndpointModal = false;
+		this.showEditEndpointModal = false;
 	}
 }

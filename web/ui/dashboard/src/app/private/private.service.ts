@@ -239,4 +239,20 @@ export class PrivateService {
 			return true;
 		}
 	}
+
+    getEndpoints(token?: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: token ? '/endpoints' : this.urlFactory('org_project') + `/endpoints`,
+					method: 'get',
+					token
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }
