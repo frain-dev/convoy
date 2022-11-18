@@ -1151,7 +1151,15 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 				}
 				ed.EXPECT().LoadEventsPaged(gomock.Any(), f).
 					Times(1).
-					Return([]datastore.Event{{UID: "1234", Endpoints: []string{"abc"}}}, datastore.PaginationData{
+					Return([]datastore.Event{
+						{UID: "1234",
+							Endpoints: []string{"abc"},
+							EndpointMetadata: []*datastore.Endpoint{{
+								UID:          "abc",
+								Title:        "Title",
+								GroupID:      "123",
+								SupportEmail: "SupportEmail",
+							}}}}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,
 						PerPage:   2,
@@ -1404,6 +1412,27 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 					Return([]datastore.EventDelivery{{
 						UID:        "1234",
 						EndpointID: "12345",
+						Event: &datastore.Event{
+							UID:       "123",
+							EventType: "incoming",
+						},
+						Endpoint: &datastore.Endpoint{
+							UID:            "1234",
+							Title:          "Title",
+							GroupID:        "123",
+							SupportEmail:   "SupportEmail",
+							TargetURL:      "http://localhost.com",
+							DocumentStatus: "Active",
+							Secrets: []datastore.Secret{
+								{
+									UID:   "abc",
+									Value: "Secret",
+								},
+							},
+							HttpTimeout:       "30s",
+							RateLimit:         10,
+							RateLimitDuration: "1h",
+						},
 					}}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,

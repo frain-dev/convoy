@@ -444,8 +444,8 @@ type Event struct {
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"-"`
-	Source           *Source               `json:"source_metadata,omitempty" bson:"-"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
+	Source           *Source               `json:"source_metadata,omitempty" bson:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
