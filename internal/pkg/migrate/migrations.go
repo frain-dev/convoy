@@ -294,8 +294,6 @@ var Migrations = []*Migration{
 					log.WithError(err).Fatalf("Failed migration 20221019100029_move_secret_fields_to_secrets")
 					return err
 				}
-
-				log.Printf("%+v updated", app.UID)
 			}
 
 			return nil
@@ -349,6 +347,7 @@ var Migrations = []*Migration{
 				var groups []*datastore.Group
 				err := store.FindAll(sessCtx, nil, nil, nil, &groups)
 				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221021100029_migrate_group_signature_config_to_versions UpdateByID")
 					return err
 				}
 
@@ -438,6 +437,122 @@ var Migrations = []*Migration{
 						log.WithError(err).Fatalf("Failed migration")
 						return err
 					}
+				}
+
+				return nil
+			}
+
+			return store.WithTransaction(ctx, fn)
+		},
+	},
+
+	{
+		ID: "20221181000600_migrate_api_key_roles",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.APIKeyCollection)
+			type Role struct {
+				Type   string   `json:"type"`
+				Apps   []string `json:"apps"`
+				Groups []string `json:"groups"`
+			}
+
+			type Key struct {
+				UID  string `json:"uid" bson:"uid"`
+				Role Role   `json:"role" bson:"role"`
+			}
+
+			fn := func(sessCtx mongo.SessionContext) error {
+				var keys []Key
+				err := store.FindAll(sessCtx, nil, nil, nil, &keys)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles rollback FindAll")
+					return err
+				}
+
+				for _, key := range keys {
+					update := bson.M{}
+					if len(key.Role.Groups) > 0 {
+						update["role.group"] = key.Role.Groups[0]
+					}
+
+					if len(key.Role.Apps) > 0 {
+						update["role.app"] = key.Role.Apps[0]
+					}
+
+					err := store.UpdateByID(sessCtx, key.UID, bson.M{"$set": update})
+					if err != nil {
+						log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles rollback UpdateByID")
+						return err
+					}
+				}
+
+				unset := bson.M{
+					"$unset": bson.M{
+						"role.groups": "",
+						"role.apps":   "",
+					},
+				}
+
+				err = store.UpdateMany(sessCtx, bson.M{}, unset, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles UpdateMany")
+					return err
+				}
+
+				return nil
+			}
+
+			return store.WithTransaction(ctx, fn)
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.APIKeyCollection)
+			type Role struct {
+				Type  string `json:"type"`
+				App   string `json:"apps"`
+				Group string `json:"groups"`
+			}
+
+			type Key struct {
+				UID  string `json:"uid" bson:"uid"`
+				Role Role   `json:"role" bson:"role"`
+			}
+
+			fn := func(sessCtx mongo.SessionContext) error {
+				var keys []Key
+				err := store.FindAll(sessCtx, nil, nil, nil, &keys)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles FindAll")
+					return err
+				}
+
+				for _, key := range keys {
+					update := bson.M{
+						"$set": bson.M{
+							"role.groups": []string{key.Role.Group},
+							"role.apps":   []string{key.Role.App},
+						},
+					}
+
+					err := store.UpdateByID(sessCtx, key.UID, update)
+					if err != nil {
+						log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles UpdateByID")
+						return err
+					}
+				}
+
+				unset := bson.M{
+					"$unset": bson.M{
+						"role.group": "",
+						"role.app":   "",
+					},
+				}
+
+				err = store.UpdateMany(sessCtx, bson.M{}, unset, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles UpdateMany")
+					return err
 				}
 
 				return nil
