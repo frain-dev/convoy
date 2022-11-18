@@ -445,7 +445,6 @@ var Migrations = []*Migration{
 			return store.WithTransaction(ctx, fn)
 		},
 	},
-
 	{
 		ID: "20220906166248_change_subscription_event_types_to_filters",
 		Migrate: func(db *mongo.Database) error {
