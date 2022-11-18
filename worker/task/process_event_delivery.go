@@ -152,12 +152,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 		attemptStatus := false
 		start := time.Now()
 
-		maxResponseSize := g.Config.MaxPayloadReadSize
-		if maxResponseSize == 0 {
-			maxResponseSize = cfg.MaxResponseSize
-		}
-
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.Payload, g, header, int64(maxResponseSize), ed.Headers)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.Payload, g, header, int64(cfg.MaxResponseSize), ed.Headers)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
