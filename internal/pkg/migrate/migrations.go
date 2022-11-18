@@ -447,6 +447,73 @@ var Migrations = []*Migration{
 	},
 
 	{
+		ID: "20220906166248_change_subscription_event_types_to_filters",
+		Migrate: func(db *mongo.Database) error {
+			type Subscription struct {
+				UID            string                        `json:"uid" bson:"uid"`
+				FilterConfig   datastore.FilterConfiguration `json:"filter_config" bson:"filter_config"`
+				DocumentStatus datastore.DocumentStatus      `json:"-" bson:"document_status"`
+			}
+
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+			var subscriptions []*Subscription
+			err := store.FindAll(ctx, nil, nil, nil, &subscriptions)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20220906166248_change_subscription_event_types_to_filters")
+				return err
+			}
+
+			for _, s := range subscriptions {
+				var filter map[string]interface{}
+
+				if len(s.FilterConfig.EventTypes) == 1 {
+					if s.FilterConfig.EventTypes[0] == "*" {
+						filter = map[string]interface{}{}
+					} else {
+						filter = map[string]interface{}{"event_types": s.FilterConfig.EventTypes[0]}
+					}
+				} else {
+					filter = map[string]interface{}{"event_types": map[string]interface{}{"$in": s.FilterConfig.EventTypes}}
+				}
+
+				update := bson.M{
+					"$set": bson.M{
+						"filter_config.filter": filter,
+					},
+				}
+
+				err := store.UpdateByID(ctx, s.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20220906166248_change_subscription_event_types_to_filters")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+			update := bson.M{
+				"$unset": bson.M{
+					"filter_config.filter": 1,
+				},
+			}
+
+			err := store.UpdateMany(ctx, nil, update, true)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20220906166248_change_subscription_event_types_to_filters rollback")
+				return err
+			}
+
+			return nil
+		},
+	},
+
+	{
 		ID: "20221181000600_migrate_api_key_roles",
 		Migrate: func(db *mongo.Database) error {
 			store := datastore.New(db)

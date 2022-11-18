@@ -29,6 +29,8 @@ const (
 	SourceCollection              = "sources"
 	UserCollection                = "users"
 	SubscriptionCollection        = "subscriptions"
+	FilterCollection              = "filters"
+	DataMigrationsCollection      = "data_migrations"
 	EventDeliveryCollection       = "eventdeliveries"
 	APIKeyCollection              = "apiKeys"
 	DeviceCollection              = "devices"
@@ -537,8 +539,10 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return UserCollection, nil
 	case "devices":
 		return DeviceCollection, nil
+	case "filters":
+		return FilterCollection, nil
 	case "data_migrations", nil:
-		return "data_migrations", nil
+		return DataMigrationsCollection, nil
 	default:
 		return "", ErrInvalidCollection
 	}

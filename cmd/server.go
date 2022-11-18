@@ -433,7 +433,7 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.SMTP.Username = smtpUsername
 	}
 
-	// CONVOY_SMTP_PASSWORDvar configFile string
+	// CONVOY_SMTP_PASSWORD
 	smtpPassword, err := cmd.Flags().GetString("smtp-password")
 	if err != nil {
 		return nil, err

@@ -324,3 +324,8 @@ type CreateAppApiKey struct {
 	KeyType    datastore.KeyType `json:"key_type"`
 	Expiration int               `json:"expiration"`
 }
+
+type TestFilter struct {
+	Request map[string]interface{} `json:"request"`
+	Schema  map[string]interface{} `json:"schema"`
+}
