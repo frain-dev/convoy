@@ -196,13 +196,16 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 	unwindEndpointStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$endpoint_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
+	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: pageable.PerPage}}
 
 	// pipeline definition
 	pipeline := mongo.Pipeline{
 		matchStage,
-		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$limit", Value: pageable.PerPage}},
+		skipStage,
+		sortStage,
+		limitStage,
 		appStage,
 		sourceStage,
 		endpointStage,

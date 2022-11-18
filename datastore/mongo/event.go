@@ -214,7 +214,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			{Key: "from", Value: datastore.AppCollection},
 			{Key: "localField", Value: "app_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app"},
+			{Key: "as", Value: "app_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -229,13 +229,14 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			}},
 		}},
 	}
+	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$app_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	sourceLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.SourceCollection},
 			{Key: "localField", Value: "source_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "source"},
+			{Key: "as", Value: "source_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -248,29 +249,21 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			}},
 		}},
 	}
+	unwindSourceStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$source_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
-	projectStage := bson.D{
-		{Key: "$addFields", Value: bson.M{
-			"source_metadata": bson.M{
-				"$first": "$source",
-			},
-			"app_metadata": bson.M{
-				"$first": "$app",
-			},
-		}},
-	}
-
-	unsetStage := bson.D{{Key: "$unset", Value: []string{"app", "source"}}}
+	skipStage := bson.D{{Key: "$skip", Value: getSkip(f.Pageable.Page, f.Pageable.PerPage)}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: f.Pageable.PerPage}}
 
 	pipeline := mongo.Pipeline{
 		matchStage,
-		{{Key: "$skip", Value: getSkip(f.Pageable.Page, f.Pageable.PerPage)}},
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$limit", Value: f.Pageable.PerPage}},
+		skipStage,
+		sortStage,
+		limitStage,
 		appLookupStage,
 		sourceLookupStage,
-		projectStage,
-		unsetStage,
+		unwindSourceStage,
+		unwindAppStage,
 	}
 
 	var events []datastore.Event
