@@ -5,7 +5,7 @@ export default {
 	title: 'Example/TableCell',
 	component: TableCellComponent,
 	argTypes: {
-        forDate: {
+		forDate: {
 			control: { type: 'boolean' }
 		}
 	}
@@ -13,7 +13,7 @@ export default {
 
 const Template: Story<TableCellComponent> = (args: TableCellComponent) => ({
 	props: args,
-	template: `<convoy-table-cell class="contents" [forDate]="forDate">{{ngContent}}</convoy-table-cell>`
+	template: `<td convoy-table-cell [forDate]="forDate">{{ngContent}}</td>`
 });
 
 export const Base = Template.bind({});
@@ -21,4 +21,3 @@ Base.args = {
 	ngContent: 'convoy table cell',
 	forDate: true
 } as Partial<TableCellComponent>;
-

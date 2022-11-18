@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -23,8 +24,7 @@ func NewEventDeliveryRepository(store datastore.Store) datastore.EventDeliveryRe
 	}
 }
 
-func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
-	eventDelivery *datastore.EventDelivery) error {
+func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	eventDelivery.ID = primitive.NewObjectID()
@@ -35,14 +35,130 @@ func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context,
 	return db.store.Save(ctx, eventDelivery, nil)
 }
 
-func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
-	uid string) (*datastore.EventDelivery, error) {
+func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid string) (*datastore.EventDelivery, error) {
+	var eventDelivery *datastore.EventDelivery
+
 	ctx = db.setCollectionInContext(ctx)
 
-	eventDelivery := &datastore.EventDelivery{}
+	matchStage := bson.D{
+		{
+			Key: "$match",
+			Value: bson.D{
+				{Key: "uid", Value: uid},
+				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+			},
+		},
+	}
 
-	err := db.store.FindByID(ctx, uid, nil, eventDelivery)
+	endpointLookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.EndpointCollection},
+			{Key: "localField", Value: "endpoint_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "endpoint"},
+			{Key: "pipeline", Value: bson.A{
+				bson.D{
+					{Key: "$project",
+						Value: bson.D{
+							{Key: "uid", Value: 1},
+							{Key: "title", Value: 1},
+							{Key: "group_id", Value: 1},
+							{Key: "support_email", Value: 1},
+						},
+					},
+				},
+			}},
+		}},
+	}
 
+	eventLookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.EventCollection},
+			{Key: "localField", Value: "event_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "event"},
+			{Key: "pipeline", Value: bson.A{
+				bson.D{
+					{Key: "$project",
+						Value: bson.D{
+							{Key: "uid", Value: 1},
+							{Key: "event_type", Value: 1},
+						},
+					},
+				},
+			}},
+		}},
+	}
+
+	deviceLookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.DeviceCollection},
+			{Key: "localField", Value: "device_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "device"},
+			{Key: "pipeline",
+				Value: bson.A{
+					bson.D{
+						{Key: "$project",
+							Value: bson.D{
+								{Key: "uid", Value: 1},
+								{Key: "host_name", Value: 1},
+							},
+						},
+					},
+				},
+			},
+		}},
+	}
+
+	projectStage := bson.D{
+		{Key: "$addFields", Value: bson.M{
+			"device_metadata": bson.M{
+				"$first": "$device",
+			},
+			"event_metadata": bson.M{
+				"$first": "$event",
+			},
+			"endpoint_metadata": bson.M{
+				"$first": "$endpoint",
+			},
+		}},
+	}
+
+	setStage := bson.D{
+		{
+			Key: "$set",
+			Value: bson.D{
+				{Key: "cli_metadata.host_name", Value: "$device_metadata.host_name"},
+			},
+		},
+	}
+
+	unsetStage := bson.D{
+		{
+			Key: "$unset",
+			Value: []string{
+				"device",
+				"endpoint",
+				"event",
+				"endpoint_metadata.secrets",
+				"endpoint_metadata.authentication",
+			},
+		},
+	}
+
+	pipeline := mongo.Pipeline{
+		matchStage,
+		endpointLookupStage,
+		eventLookupStage,
+		deviceLookupStage,
+		projectStage,
+		setStage,
+		unsetStage,
+	}
+
+	var eventDeliveries []datastore.EventDelivery
+	err := db.store.Aggregate(ctx, pipeline, &eventDeliveries, false)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err = datastore.ErrEventDeliveryNotFound
@@ -50,11 +166,15 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context,
 		return nil, err
 	}
 
+	if len(eventDeliveries) == 0 {
+		return nil, datastore.ErrEventDeliveryNotFound
+	}
+	eventDelivery = &eventDeliveries[0]
+
 	return eventDelivery, nil
 }
 
-func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
-	ids []string) ([]datastore.EventDelivery, error) {
+func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, ids []string) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -73,8 +193,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context,
 	return deliveries, nil
 }
 
-func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
-	eventID string) ([]datastore.EventDelivery, error) {
+func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, eventID string) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"event_id": eventID}
@@ -88,8 +207,7 @@ func (db *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context,
 	return deliveries, nil
 }
 
-func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
-	status datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -105,8 +223,7 @@ func (db *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context,
 	return count, nil
 }
 
-func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context,
-	e datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
+func (db *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, e datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"uid": e.UID}
@@ -140,8 +257,7 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 	return db.store.UpdateMany(ctx, filter, update, false)
 }
 
-func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
-	e datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
+func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, e datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{"uid": e.UID}
@@ -164,16 +280,136 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	filter := getFilter(groupID, endpointID, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
-	var eventDeliveries []datastore.EventDelivery
-	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
-		int64(pageable.Page), int64(pageable.PerPage), &eventDeliveries)
+	matchStage := bson.D{{Key: "$match", Value: mToD(filter)}}
+	endpointLookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.EndpointCollection},
+			{Key: "localField", Value: "endpoint_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "endpoint_metadata"},
+			{Key: "pipeline", Value: bson.A{
+				bson.D{
+					{Key: "$project",
+						Value: bson.D{
+							{Key: "uid", Value: 1},
+							{Key: "title", Value: 1},
+							{Key: "group_id", Value: 1},
+							{Key: "support_email", Value: 1},
+						},
+					},
+				},
+			}},
+		}},
+	}
+	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$endpoint_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
-	if err != nil {
-		return eventDeliveries, datastore.PaginationData{}, err
+	eventLookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.EventCollection},
+			{Key: "localField", Value: "event_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "event_metadata"},
+			{Key: "pipeline", Value: bson.A{
+				bson.D{
+					{Key: "$project",
+						Value: bson.D{
+							{Key: "uid", Value: 1},
+							{Key: "event_type", Value: 1},
+						},
+					},
+				},
+			}},
+		}},
+	}
+	unwindEventStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$event_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
+
+	deviceLookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.DeviceCollection},
+			{Key: "localField", Value: "device_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "device_metadata"},
+			{Key: "pipeline",
+				Value: bson.A{
+					bson.D{
+						{Key: "$project",
+							Value: bson.D{
+								{Key: "uid", Value: 1},
+								{Key: "host_name", Value: 1},
+							},
+						},
+					},
+				},
+			},
+		}},
+	}
+	unwindDeviceStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$device_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
+
+	setStage := bson.D{
+		{
+			Key: "$set",
+			Value: bson.D{
+				{Key: "cli_metadata.host_name", Value: "$device_metadata.host_name"},
+			},
+		},
 	}
 
+	unsetStage := bson.D{
+		{
+			Key: "$unset",
+			Value: []string{
+				"app_metadata.endpoints",
+				"endpoint_metadata.secrets",
+				"endpoint_metadata.authentication",
+			},
+		},
+	}
+
+	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: pageable.PerPage}}
+
+	pipeline := mongo.Pipeline{
+		matchStage,
+		skipStage,
+		sortStage,
+		limitStage,
+		endpointLookupStage,
+		unwindAppStage,
+		eventLookupStage,
+		unwindEventStage,
+		deviceLookupStage,
+		unwindDeviceStage,
+		setStage,
+		unsetStage,
+	}
+
+	var eventDeliveries []datastore.EventDelivery
+	err := db.store.Aggregate(ctx, pipeline, &eventDeliveries, false)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = datastore.ErrEventDeliveryNotFound
+		}
+		return nil, datastore.PaginationData{}, err
+	}
+
+	var count int64
 	if eventDeliveries == nil {
 		eventDeliveries = make([]datastore.EventDelivery, 0)
+	} else {
+		count, err = db.store.Count(ctx, filter)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+	}
+
+	pagination := datastore.PaginationData{
+		Total:     count,
+		Page:      int64(pageable.Page),
+		PerPage:   int64(pageable.PerPage),
+		Prev:      int64(getPrevPage(pageable.Page)),
+		Next:      int64(pageable.Page + 1),
+		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
 	}
 
 	return eventDeliveries, pagination, nil
@@ -270,4 +506,33 @@ func getFilter(groupID string, endpointID string, eventID string, status []datas
 	}
 
 	return filter
+}
+
+// mToD created a bson.D from the entries in M
+func mToD(m bson.M) bson.D {
+	d := bson.D{}
+
+	for k, v := range m {
+		switch n := v.(type) {
+		case bson.M:
+			d = append(d, bson.E{Key: k, Value: mToD(n)})
+		default:
+			d = append(d, bson.E{Key: k, Value: n})
+		}
+	}
+
+	return d
+}
+
+// dToM creates a map from the elements of the D.
+func DToM(d bson.D) bson.M {
+	m := make(bson.M, len(d))
+	for _, e := range d {
+		if v, ok := e.Value.(bson.D); ok {
+			m[e.Key] = v.Map()
+			continue
+		}
+		m[e.Key] = e.Value
+	}
+	return m
 }

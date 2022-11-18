@@ -535,34 +535,6 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 				return
 			}
 
-			ev, err := m.eventRepo.FindEventByID(r.Context(), eventDelivery.EventID)
-			if err == nil {
-				event := &datastore.Event{
-					UID:       ev.UID,
-					EventType: ev.EventType,
-				}
-				eventDelivery.Event = event
-			}
-
-			en, err := m.endpointRepo.FindEndpointByID(r.Context(), eventDelivery.EndpointID)
-			if err == nil {
-				endpoint := &datastore.Endpoint{
-					UID:               en.UID,
-					TargetURL:         en.TargetURL,
-					DocumentStatus:    en.DocumentStatus,
-					Secrets:           en.Secrets,
-					HttpTimeout:       en.HttpTimeout,
-					RateLimit:         en.RateLimit,
-					RateLimitDuration: en.RateLimitDuration,
-				}
-				eventDelivery.Endpoint = endpoint
-			}
-
-			device, err := m.deviceRepo.FetchDeviceByID(r.Context(), eventDelivery.DeviceID, en.UID, en.GroupID)
-			if err == nil {
-				eventDelivery.CLIMetadata.HostName = device.HostName
-			}
-
 			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))
 			next.ServeHTTP(w, r)
 		})

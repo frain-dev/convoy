@@ -7,7 +7,6 @@ import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 interface LABELS {
 	date: string;
@@ -20,7 +19,6 @@ interface LABELS {
 	styleUrls: ['./events.component.scss']
 })
 export class EventsComponent implements OnInit {
-	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
 	activeTab: 'events' | 'event deliveries' = 'events';
@@ -50,10 +48,6 @@ export class EventsComponent implements OnInit {
 		this.isloadingDashboardData = false;
 
 		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
-	}
-
-	closeFilterOptions() {
-		this.dropdownComponent.show = false;
 	}
 
 	addTabToUrl() {

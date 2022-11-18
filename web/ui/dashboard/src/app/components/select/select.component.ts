@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, forwardRef, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, forwardRef, Input, OnInit, Output } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { DropdownComponent } from '../dropdown/dropdown.component';
@@ -20,7 +20,6 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 	]
 })
 export class SelectComponent implements OnInit, ControlValueAccessor {
-	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	@Input('options') options?: Array<any> = [];
 	@Input('name') name!: string;
 	@Input('errorMessage') errorMessage!: string;

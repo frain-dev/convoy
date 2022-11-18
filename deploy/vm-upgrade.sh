@@ -3,6 +3,7 @@
 set -e 
 
 CONFDIR="/etc/convoy"
+COMPOSECONFDIR="$CONFDIR/compose"
 
 # re-install convoy, again for backward compatibility
 install_convoy() {
@@ -23,7 +24,6 @@ else
 	exit
 fi
 
-[[ -f "convoy.json" ]] || ( echo "No convoy.json file found. Please ensure you're in the right directory" && exit 1)
 export VERSION="${VERSION:-latest}"
 
 cd $CONFDIR
@@ -49,6 +49,14 @@ docker-compose pull
 
 echo "Stopping the system!"
 docker-compose stop
+
+# Fix compose start command
+cat > $COMPOSECONFDIR/start <<EOF
+#!/bin/bash
+./cmd migrate up
+./cmd server --config convoy.json -w false
+EOF
+chmod +x $COMPOSECONFDIR/start
 
 echo "Restarting the system!"
 sudo -E docker-compose up -d

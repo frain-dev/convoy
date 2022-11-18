@@ -286,6 +286,8 @@ definitions:
         type: boolean
       is_retention_policy_enabled:
         type: boolean
+      max_payload_read_size:
+        type: integer
       ratelimit:
         $ref: '#/definitions/datastore.RateLimitConfiguration'
       replay_attacks:

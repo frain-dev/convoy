@@ -108,4 +108,8 @@ export class AppComponent implements OnInit {
 		this.showCreateSubscriptionModal = false;
 		this.router.navigate(['/app', this.token]);
 	}
+
+	onCreateSubscription() {
+		this.router.navigate(['/app', this.token]);
+	}
 }

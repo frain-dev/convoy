@@ -597,8 +597,6 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint_With_Custom_Aut
 	// Act.
 	s.Router.ServeHTTP(w, req)
 
-	fmt.Println("code", w.Code)
-
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
