@@ -295,19 +295,13 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	filter := getFilter(groupID, appID, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
-	matchStage := bson.D{
-		{
-			Key:   "$match",
-			Value: filter,
-		},
-	}
-
+	matchStage := bson.D{{Key: "$match", Value: mToD(filter)}}
 	appLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.AppCollection},
 			{Key: "localField", Value: "app_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app"},
+			{Key: "as", Value: "app_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -323,13 +317,14 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			}},
 		}},
 	}
+	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$app_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	eventLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.EventCollection},
 			{Key: "localField", Value: "event_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "event"},
+			{Key: "as", Value: "event_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -342,13 +337,14 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			}},
 		}},
 	}
+	unwindEventStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$event_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	deviceLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.DeviceCollection},
 			{Key: "localField", Value: "device_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "device"},
+			{Key: "as", Value: "device_metadata"},
 			{Key: "pipeline",
 				Value: bson.A{
 					bson.D{
@@ -363,20 +359,7 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			},
 		}},
 	}
-
-	projectStage := bson.D{
-		{Key: "$addFields", Value: bson.M{
-			"device_metadata": bson.M{
-				"$first": "$device",
-			},
-			"event_metadata": bson.M{
-				"$first": "$event",
-			},
-			"app_metadata": bson.M{
-				"$first": "$app",
-			},
-		}},
-	}
+	unwindDeviceStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$device_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	setStage := bson.D{
 		{
@@ -405,9 +388,6 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		{
 			Key: "$unset",
 			Value: []string{
-				"device",
-				"app",
-				"event",
 				"app_metadata.endpoints",
 				"endpoint_metadata.secrets",
 				"endpoint_metadata.authentication",
@@ -415,24 +395,24 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		},
 	}
 
-	sortAndLimitStages := []bson.D{
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
-		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
-		{{Key: "$limit", Value: pageable.PerPage}},
-	}
+	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: pageable.PerPage}}
 
 	pipeline := mongo.Pipeline{
 		matchStage,
+		skipStage,
+		sortStage,
+		limitStage,
 		appLookupStage,
+		unwindAppStage,
 		eventLookupStage,
+		unwindEventStage,
 		deviceLookupStage,
-		projectStage,
+		unwindDeviceStage,
 		setStage,
 		unsetStage,
 	}
-
-	pipeline = append(pipeline, sortAndLimitStages...)
 
 	var eventDeliveries []datastore.EventDelivery
 	err := db.store.Aggregate(ctx, pipeline, &eventDeliveries, false)
@@ -525,6 +505,7 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 }
 
 func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
+
 	filter := bson.M{
 		"created_at": getCreatedDateFilter(searchParams),
 	}
