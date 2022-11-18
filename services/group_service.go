@@ -214,16 +214,6 @@ func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*data
 	return nil
 }
 
-func (gs *GroupService) FindGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
-	g, err := gs.groupRepo.FetchGroupByID(ctx, id)
-	if err != nil {
-		log.WithError(err).Error("failed to fetch group by id")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch group by id"))
-	}
-
-	return g, nil
-}
-
 func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 	err := gs.groupRepo.DeleteGroup(ctx, id)
 	if err != nil {

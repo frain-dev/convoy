@@ -84,7 +84,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	g, err := createGroupService(a).FindGroupByID(r.Context(), source.GroupID)
+	groupRepo := mongo.NewGroupRepo(a.A.Store)
+	g, err := groupRepo.FetchGroupByID(r.Context(), source.GroupID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
