@@ -47,7 +47,7 @@
 				buttonSize="sm"
 				buttonType="outline"
 				buttonClass="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px"
-				#appsFilterDropdown
+				#endpointsFilterDropdown
 				[active]="!!eventDeliveriesApp"
 				[hidden]="appPortalToken || this.privateService.activeProjectDetails?.type === 'incoming'"
 			>
@@ -60,13 +60,13 @@
 				<ng-container>
 					<div class="m-10px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
 						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
-						<input type="search" placeholder="Search apps here" #eventDelsEndpointFilter class="w-full outline-none text-12" />
+						<input type="search" placeholder="Search endpoints here" #eventDelsEndpointFilter class="w-full outline-none text-12" />
 					</div>
 
 					<ul class="min-h-[100px] px-10px pb-10px">
-						<convoy-list-item *ngFor="let app of eventsDelEndpointFilter$ | async" className="pt-4px pb-4px">
-							<label [for]="app.uid + 'eventDel'" class="text-12 block w-full">{{ app.name }}</label>
-							<input type="checkbox" name="app" [value]="app.uid" [id]="app.uid + 'eventDel'" [checked]="app.uid === eventDeliveriesApp" (change)="updateAppFilter(app.uid, $event)" />
+						<convoy-list-item *ngFor="let endpoint of eventsDelEndpointFilter$ | async" className="pt-4px pb-4px">
+							<label [for]="endpoint.uid + 'eventDel'" class="text-12 block w-full">{{ endpoint.description }}</label>
+							<input type="checkbox" name="app" [value]="endpoint.uid" [id]="endpoint.uid + 'eventDel'" [checked]="endpoint.uid === eventDeliveriesApp" (change)="updateAppFilter(endpoint.uid, $event)" />
 						</convoy-list-item>
 					</ul>
 

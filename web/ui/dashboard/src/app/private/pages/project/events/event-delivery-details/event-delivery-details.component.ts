@@ -13,6 +13,8 @@ import { EventsService } from '../events.service';
 export class EventDeliveryDetailsComponent implements OnInit {
 	eventDelsDetails?: EVENT_DELIVERY;
 	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
+	eventDeliveryAtempts!: EVENT_DELIVERY_ATTEMPT[];
+    selectedDeliveryAttempt!:EVENT_DELIVERY_ATTEMPT;
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
 	shouldRenderSmallSize = false;
@@ -71,7 +73,10 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 		try {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId, this.appPortalToken);
+			console.log(response);
+			this.eventDeliveryAtempts = response.data;
 			this.eventDeliveryAtempt = response.data[response.data.length - 1];
+
 			this.isloadingDeliveryAttempts = false;
 		} catch (error) {
 			this.isloadingDeliveryAttempts = false;
@@ -83,16 +88,16 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			if (!this.eventDelsDetails?.metadata?.data) return 'No event data was sent';
 			return JSON.stringify(this.eventDelsDetails.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'res_body') {
-			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt?.response_data) return 'No response body was sent';
-			return this.eventDeliveryAtempt?.response_data;
+			if (!this.selectedDeliveryAttempt || !this.selectedDeliveryAttempt?.response_data) return 'No response body was sent';
+			return this.selectedDeliveryAttempt?.response_data;
 		} else if (type === 'res_head') {
-			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt?.response_http_header) return 'No response header was sent';
-			return JSON.stringify(this.eventDeliveryAtempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (!this.selectedDeliveryAttempt || !this.selectedDeliveryAttempt?.response_http_header) return 'No response header was sent';
+			return JSON.stringify(this.selectedDeliveryAttempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'req') {
-			if (!this.eventDeliveryAtempt || !this.eventDeliveryAtempt?.request_http_header) return 'No request header was sent';
-			return JSON.stringify(this.eventDeliveryAtempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (!this.selectedDeliveryAttempt || !this.selectedDeliveryAttempt?.request_http_header) return 'No request header was sent';
+			return JSON.stringify(this.selectedDeliveryAttempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		} else if (type === 'error') {
-			if (this.eventDeliveryAtempt?.error) return JSON.stringify(this.eventDeliveryAtempt.error, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			if (this.selectedDeliveryAttempt?.error) return JSON.stringify(this.selectedDeliveryAttempt.error, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 			return '';
 		}
 		return '';

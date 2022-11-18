@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
-import { APP } from 'src/app/models/app.model';
+import { APP, ENDPOINT } from 'src/app/models/app.model';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
@@ -45,11 +45,11 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-	eventsDelEndpointFilter$!: Observable<APP[]>;
+	eventsDelEndpointFilter$!: Observable<ENDPOINT[]>;
 	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@ViewChild('dateFilter', { static: true }) dateFilter!: DateFilterComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimeFilterComponent;
-	@ViewChild('appsFilterDropdown', { static: true }) appsFilterDropdown!: DropdownComponent;
+	@ViewChild('endpointsFilterDropdown', { static: true }) endpointsFilterDropdown!: DropdownComponent;
 	@ViewChild('sourcesFilterDropdown', { static: true }) sourcesFilterDropdown!: DropdownComponent;
 	appPortalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
@@ -186,7 +186,7 @@ export class EventDeliveriesComponent implements OnInit {
 			case 'app':
 				filterItems = ['eventDelsApp'];
 				this.eventDeliveriesApp = undefined;
-				this.appsFilterDropdown.show = false;
+				this.endpointsFilterDropdown.show = false;
 				break;
 			case 'date':
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
@@ -248,7 +248,7 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 	}
 
-	async getEndpointsForFilter(search: string): Promise<APP[]> {
+	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
 			await this.eventsService.getEndpoints({ pageNo: 1, searchString: search })
 		).data.content;
