@@ -33,12 +33,18 @@ export class LoginComponent implements OnInit {
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+
+			// identify user
 			analytics.identify(response.data.uid, {
 				first_name: response.data.first_name,
 				last_name: response.data.last_name,
 				email: response.data.email
 			});
-			this.router.navigateByUrl('/');
+
+			// get previous location in localstorage
+			const lastLoacation = localStorage.getItem('CONVOY_LAST_AUTH_LOCATION');
+
+			lastLoacation ? (location.href = lastLoacation) : this.router.navigateByUrl('/');
 			this.disableLoginBtn = false;
 		} catch {
 			this.disableLoginBtn = false;
