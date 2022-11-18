@@ -445,8 +445,9 @@ var Migrations = []*Migration{
 			return store.WithTransaction(ctx, fn)
 		},
 	},
+
 	{
-		ID: "20220906166248_change_subscription_event_types_to_filters",
+		ID: "20221031102300_change_subscription_event_types_to_filters",
 		Migrate: func(db *mongo.Database) error {
 			type Subscription struct {
 				UID            string                        `json:"uid" bson:"uid"`
