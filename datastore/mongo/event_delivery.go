@@ -45,7 +45,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			Key: "$match",
 			Value: bson.D{
 				{Key: "uid", Value: uid},
-				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
@@ -295,13 +295,19 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	filter := getFilter(groupID, appID, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
-	matchStage := bson.D{{Key: "$match", Value: mToD(filter)}}
+	matchStage := bson.D{
+		{
+			Key:   "$match",
+			Value: filter,
+		},
+	}
+
 	appLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.AppCollection},
 			{Key: "localField", Value: "app_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app_metadata"},
+			{Key: "as", Value: "app"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -317,14 +323,13 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			}},
 		}},
 	}
-	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$app_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	eventLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.EventCollection},
 			{Key: "localField", Value: "event_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "event_metadata"},
+			{Key: "as", Value: "event"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -337,14 +342,13 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			}},
 		}},
 	}
-	unwindEventStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$event_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	deviceLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
 			{Key: "from", Value: datastore.DeviceCollection},
 			{Key: "localField", Value: "device_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "device_metadata"},
+			{Key: "as", Value: "device"},
 			{Key: "pipeline",
 				Value: bson.A{
 					bson.D{
@@ -359,7 +363,20 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			},
 		}},
 	}
-	unwindDeviceStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$device_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
+
+	projectStage := bson.D{
+		{Key: "$addFields", Value: bson.M{
+			"device_metadata": bson.M{
+				"$first": "$device",
+			},
+			"event_metadata": bson.M{
+				"$first": "$event",
+			},
+			"app_metadata": bson.M{
+				"$first": "$app",
+			},
+		}},
+	}
 
 	setStage := bson.D{
 		{
@@ -388,6 +405,9 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		{
 			Key: "$unset",
 			Value: []string{
+				"device",
+				"app",
+				"event",
 				"app_metadata.endpoints",
 				"endpoint_metadata.secrets",
 				"endpoint_metadata.authentication",
@@ -395,24 +415,24 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 		},
 	}
 
-	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
-	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
-	limitStage := bson.D{{Key: "$limit", Value: pageable.PerPage}}
+	sortAndLimitStages := []bson.D{
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
+		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
+		{{Key: "$limit", Value: pageable.PerPage}},
+	}
 
 	pipeline := mongo.Pipeline{
 		matchStage,
-		skipStage,
-		sortStage,
-		limitStage,
 		appLookupStage,
-		unwindAppStage,
 		eventLookupStage,
-		unwindEventStage,
 		deviceLookupStage,
-		unwindDeviceStage,
+		projectStage,
 		setStage,
 		unsetStage,
 	}
+
+	pipeline = append(pipeline, sortAndLimitStages...)
 
 	var eventDeliveries []datastore.EventDelivery
 	err := db.store.Aggregate(ctx, pipeline, &eventDeliveries, false)
@@ -531,33 +551,4 @@ func getFilter(groupID string, appID string, eventID string, status []datastore.
 	}
 
 	return filter
-}
-
-// mToD created a bson.D from the entries in M
-func mToD(m bson.M) bson.D {
-	d := bson.D{}
-
-	for k, v := range m {
-		switch n := v.(type) {
-		case bson.M:
-			d = append(d, bson.E{Key: k, Value: mToD(n)})
-		default:
-			d = append(d, bson.E{Key: k, Value: n})
-		}
-	}
-
-	return d
-}
-
-// dToM creates a map from the elements of the D.
-func DToM(d bson.D) bson.M {
-	m := make(bson.M, len(d))
-	for _, e := range d {
-		if v, ok := e.Value.(bson.D); ok {
-			m[e.Key] = v.Map()
-			continue
-		}
-		m[e.Key] = e.Value
-	}
-	return m
 }

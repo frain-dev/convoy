@@ -179,7 +179,7 @@ func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datas
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"created_at": getCreatedDateFilter(f.SearchParams)}
+	filter := bson.M{"created_at": getCreatedDateFilter(f.SearchParams), "deleted_at": nil}
 	d := bson.D{
 		{Key: "created_at", Value: getCreatedDateFilter(f.SearchParams)},
 		{Key: "deleted_at", Value: nil},
