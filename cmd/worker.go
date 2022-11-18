@@ -52,10 +52,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			ctx := context.Background()
 
 			// register worker.
-			consumer, err := worker.NewConsumer(a.queue, lo)
-			if err != nil {
-				a.logger.WithError(err).Error("failed to create worker")
-			}
+			consumer := worker.NewConsumer(a.queue, lo)
 
 			appRepo := cm.NewApplicationRepo(a.store)
 			eventRepo := cm.NewEventRepository(a.store)

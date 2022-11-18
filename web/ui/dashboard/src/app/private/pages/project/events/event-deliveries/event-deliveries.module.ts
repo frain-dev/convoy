@@ -14,7 +14,7 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 
@@ -42,7 +42,8 @@ import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.
 		TableCellComponent,
 		TableComponent,
 		TimePickerComponent,
-		DatePickerComponent
+		DatePickerComponent,
+		DropdownOptionDirective
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]
