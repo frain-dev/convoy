@@ -447,6 +447,30 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Options: options.Index().SetUnique(true),
 			},
 		},
+
+		datastore.APIKeyCollection: {
+			{
+				Keys: bson.D{
+					{Key: "hash", Value: 1},
+					{Key: "user_id", Value: 1},
+					{Key: "key_type", Value: 1},
+					{Key: "role.app", Value: 1},
+					{Key: "role.group", Value: 1},
+					{Key: "deleted_at", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+			{
+				Keys: bson.D{
+					{Key: "hash", Value: 1},
+					{Key: "mask_id", Value: 1},
+					{Key: "deleted_at", Value: 1},
+					{Key: "document_status", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
 	}
 
 	return compoundIndices

@@ -552,3 +552,32 @@ func getFilter(groupID string, appID string, eventID string, status []datastore.
 
 	return filter
 }
+
+// mToD created a bson.D from the entries in M
+func mToD(m bson.M) bson.D {
+	d := bson.D{}
+
+	for k, v := range m {
+		switch n := v.(type) {
+		case bson.M:
+			d = append(d, bson.E{Key: k, Value: mToD(n)})
+		default:
+			d = append(d, bson.E{Key: k, Value: n})
+		}
+	}
+
+	return d
+}
+
+// dToM creates a map from the elements of the D.
+func DToM(d bson.D) bson.M {
+	m := make(bson.M, len(d))
+	for _, e := range d {
+		if v, ok := e.Value.(bson.D); ok {
+			m[e.Key] = v.Map()
+			continue
+		}
+		m[e.Key] = e.Value
+	}
+	return m
+}
