@@ -25,15 +25,14 @@ func Test_CreateDevice(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:            uuid.NewString(),
-		GroupID:        uuid.NewString(),
-		AppID:          uuid.NewString(),
-		HostName:       "",
-		Status:         datastore.DeviceStatusOnline,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:        uuid.NewString(),
+		GroupID:    uuid.NewString(),
+		AppID:      uuid.NewString(),
+		HostName:   "",
+		Status:     datastore.DeviceStatusOnline,
+		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -54,15 +53,14 @@ func Test_UpdateDevice(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:            uuid.NewString(),
-		GroupID:        uuid.NewString(),
-		AppID:          uuid.NewString(),
-		HostName:       "",
-		Status:         datastore.DeviceStatusOnline,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:        uuid.NewString(),
+		GroupID:    uuid.NewString(),
+		AppID:      uuid.NewString(),
+		HostName:   "",
+		Status:     datastore.DeviceStatusOnline,
+		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -88,15 +86,14 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:            uuid.NewString(),
-		GroupID:        uuid.NewString(),
-		AppID:          uuid.NewString(),
-		HostName:       "",
-		Status:         datastore.DeviceStatusOnline,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:        uuid.NewString(),
+		GroupID:    uuid.NewString(),
+		AppID:      uuid.NewString(),
+		HostName:   "",
+		Status:     datastore.DeviceStatusOnline,
+		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -122,15 +119,14 @@ func Test_DeleteDevice(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:            uuid.NewString(),
-		GroupID:        uuid.NewString(),
-		AppID:          uuid.NewString(),
-		HostName:       "",
-		Status:         datastore.DeviceStatusOnline,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:        uuid.NewString(),
+		GroupID:    uuid.NewString(),
+		AppID:      uuid.NewString(),
+		HostName:   "",
+		Status:     datastore.DeviceStatusOnline,
+		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -150,15 +146,14 @@ func Test_FetchDeviceByID(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:            uuid.NewString(),
-		GroupID:        uuid.NewString(),
-		AppID:          uuid.NewString(),
-		HostName:       "",
-		Status:         datastore.DeviceStatusOnline,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:        uuid.NewString(),
+		GroupID:    uuid.NewString(),
+		AppID:      uuid.NewString(),
+		HostName:   "",
+		Status:     datastore.DeviceStatusOnline,
+		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -264,12 +259,11 @@ func Test_LoadDevicesPaged(t *testing.T) {
 
 			for i := 0; i < tc.count; i++ {
 				device := &datastore.Device{
-					UID:            uuid.NewString(),
-					GroupID:        tc.groupID,
-					AppID:          uuid.NewString(),
-					HostName:       "",
-					Status:         datastore.DeviceStatusOnline,
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					UID:      uuid.NewString(),
+					GroupID:  tc.groupID,
+					AppID:    uuid.NewString(),
+					HostName: "",
+					Status:   datastore.DeviceStatusOnline,
 				}
 
 				if !util.IsStringEmpty(tc.filter.AppID) {
@@ -288,7 +282,6 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
 			require.Equal(t, tc.expected.paginationData.Prev, pageable.Prev)
 			require.Equal(t, tc.expected.paginationData.Next, pageable.Next)
-
 		})
 	}
 }

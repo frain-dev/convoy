@@ -111,7 +111,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -183,7 +182,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -237,7 +235,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -289,7 +286,6 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -471,7 +467,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 						DisableEndpoint: true,
 						ReplayAttacks:   true,
 					},
-					DocumentStatus: datastore.ActiveDocumentStatus,
 				},
 				update: &models.UpdateGroup{
 					Name:    "test_group",
@@ -509,7 +504,6 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
-				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(gs *GroupService) {
 				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)

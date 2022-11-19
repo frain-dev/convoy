@@ -97,7 +97,6 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		RateLimit:         newGroup.RateLimit,
 		RateLimitDuration: newGroup.RateLimitDuration,
-		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	err = gs.groupRepo.CreateGroup(ctx, group)

@@ -34,7 +34,6 @@ func createSubscription() *datastore.Subscription {
 		FilterConfig: &datastore.FilterConfiguration{
 			EventTypes: []string{"some.event"},
 		},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 }
 
@@ -48,13 +47,12 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{
-			UID:            uuid.NewString(),
-			Name:           fmt.Sprintf("Subscription %d", i),
-			Type:           datastore.SubscriptionTypeAPI,
-			GroupID:        "group-id-1",
-			SourceID:       uuid.NewString(),
-			EndpointID:     uuid.NewString(),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID:        uuid.NewString(),
+			Name:       fmt.Sprintf("Subscription %d", i),
+			Type:       datastore.SubscriptionTypeAPI,
+			GroupID:    "group-id-1",
+			SourceID:   uuid.NewString(),
+			EndpointID: uuid.NewString(),
 		}
 
 		if i == 0 {
@@ -227,14 +225,13 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{
-			UID:            uuid.NewString(),
-			Name:           fmt.Sprintf("Subscription %d", i),
-			Type:           datastore.SubscriptionTypeAPI,
-			AppID:          "app-id-1",
-			GroupID:        "group-id-1",
-			SourceID:       uuid.NewString(),
-			EndpointID:     uuid.NewString(),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID:        uuid.NewString(),
+			Name:       fmt.Sprintf("Subscription %d", i),
+			Type:       datastore.SubscriptionTypeAPI,
+			AppID:      "app-id-1",
+			GroupID:    "group-id-1",
+			SourceID:   uuid.NewString(),
+			EndpointID: uuid.NewString(),
 		}
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
 	}
@@ -258,13 +255,12 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	subRepo := NewSubscriptionRepo(store)
 
 	subscription := &datastore.Subscription{
-		UID:            uuid.NewString(),
-		Name:           "test_subscription",
-		Type:           datastore.SubscriptionTypeAPI,
-		SourceID:       "source-id-1",
-		DeviceID:       "device-id-1",
-		GroupID:        "group-id-1",
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:      uuid.NewString(),
+		Name:     "test_subscription",
+		Type:     datastore.SubscriptionTypeAPI,
+		SourceID: "source-id-1",
+		DeviceID: "device-id-1",
+		GroupID:  "group-id-1",
 	}
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
 

@@ -16,7 +16,6 @@ import (
 )
 
 var Migrations = []*Migration{
-
 	{
 		ID: "20220901162904_change_group_rate_limit_configuration",
 		Migrate: func(db *mongo.Database) error {
@@ -29,9 +28,8 @@ var Migrations = []*Migration{
 			}
 
 			type Group struct {
-				UID            string                   `json:"uid" bson:"uid"`
-				Config         Config                   `json:"config" bson:"config"`
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+				UID    string `json:"uid" bson:"uid"`
+				Config Config `json:"config" bson:"config"`
 			}
 
 			store := datastore.New(db)
@@ -109,9 +107,8 @@ var Migrations = []*Migration{
 			}
 
 			type Subscription struct {
-				UID            string                   `json:"uid" bson:"uid"`
-				RetryConfig    RetryConfig              `json:"retry_config" bson:"retry_config"`
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+				UID         string      `json:"uid" bson:"uid"`
+				RetryConfig RetryConfig `json:"retry_config" bson:"retry_config"`
 			}
 
 			store := datastore.New(db)
@@ -273,11 +270,10 @@ var Migrations = []*Migration{
 					}
 
 					endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-						UID:            uuid.NewString(),
-						Value:          endpoint.Secret,
-						CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-						UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-						DocumentStatus: datastore.ActiveDocumentStatus,
+						UID:       uuid.NewString(),
+						Value:     endpoint.Secret,
+						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+						UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 					})
 					// endpoint.Secret = ""
 					endpoint.AdvancedSignatures = false // explicitly set default
@@ -450,9 +446,8 @@ var Migrations = []*Migration{
 		ID: "20221031102300_change_subscription_event_types_to_filters",
 		Migrate: func(db *mongo.Database) error {
 			type Subscription struct {
-				UID            string                        `json:"uid" bson:"uid"`
-				FilterConfig   datastore.FilterConfiguration `json:"filter_config" bson:"filter_config"`
-				DocumentStatus datastore.DocumentStatus      `json:"-" bson:"document_status"`
+				UID          string                        `json:"uid" bson:"uid"`
+				FilterConfig datastore.FilterConfiguration `json:"filter_config" bson:"filter_config"`
 			}
 
 			store := datastore.New(db)
@@ -626,6 +621,90 @@ var Migrations = []*Migration{
 			}
 
 			return store.WithTransaction(ctx, fn)
+		},
+	},
+	{
+		ID: "20221109100029_migrate_deprecate_document_status_field",
+		Migrate: func(db *mongo.Database) error {
+			collectionList := []string{
+				datastore.ConfigCollection,
+				datastore.GroupCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.AppCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				filter := bson.M{
+					"$or": []interface{}{
+						bson.D{{Key: "deleted_at", Value: bson.M{"$exists": false}}},
+						bson.D{{Key: "deleted_at", Value: bson.M{"$lte": primitive.NewDateTimeFromTime(time.Date(1971, 0, 0, 0, 0, 0, 0, time.UTC))}}},
+					},
+				}
+
+				set := bson.M{
+					"$set": bson.M{
+						"deleted_at": nil,
+					},
+				}
+
+				err := store.UpdateMany(ctx, filter, set, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			collectionList := []string{
+				datastore.ConfigCollection,
+				datastore.GroupCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.AppCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				filter := bson.M{"deleted_at": nil}
+
+				update := bson.M{
+					"$unset": bson.M{
+						"deleted_at": "",
+					},
+				}
+
+				err := store.UpdateMany(ctx, filter, update, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed rollback migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
+					return err
+				}
+			}
+
+			return nil
 		},
 	},
 }
