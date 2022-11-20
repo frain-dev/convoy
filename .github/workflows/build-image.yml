@@ -1,44 +1,67 @@
 name: Build docker image
 
 on:
-    push:
-        branches:
-            - main
-    workflow_dispatch:
-        inputs:
-            name:
-                description: "Manual workflow name"
-                required: true
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Manual workflow name"
+        required: true
 
 jobs:
-    deploy:
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v2
-            - name: Get the version
-              id: get_version
-              run: echo ::set-output name=tag::$(cat VERSION)
+  build:
+    name: Build Docker Image
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=tag::$(cat VERSION)
 
-            - name: Authenticate
-              uses: actions-hub/docker/login@master
-              env:
-                  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-                  DOCKER_PASSWORD: ${{ secrets.PAT }}
-                  DOCKER_REGISTRY_URL: ghcr.io
+      - name: Authenticate
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.PAT }}
+          DOCKER_REGISTRY_URL: ghcr.io
 
-            - name: Build latest image
-              run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:latest .
+      - name: Build latest image
+        run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:latest .
 
-            - name: Push latest image
-              uses: actions-hub/docker@master
-              with:
-                  args: push ghcr.io/${GITHUB_REPOSITORY}:latest
+      - name: Push latest image
+        uses: actions-hub/docker@master
+        with:
+          args: push ghcr.io/${GITHUB_REPOSITORY}:latest
 
-            - name: Build image with SHA for rollbacks
-              run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} .
+      - name: Build image with SHA for rollbacks
+        run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} .
 
-            - name: Push image with SHA
-              uses: actions-hub/docker@master
-              with:
-                  args: push ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }}
+      - name: Push image with SHA
+        uses: actions-hub/docker@master
+        with:
+          args: push ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }}
+
+  deploy:
+    name: Deploy to Cluster
+    runs-on: "ubuntu-latest"
+    needs: [build]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=tag::$(cat VERSION)
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Get cluster config
+        run: doctl k8s cluster kubeconfig show convoy > .kubeconfig
+
+      - name: Push image to DigitalOcean Container Registry
+        run: helm --debug upgrade --install --version ${{ steps.get_version.outputs.tag }} convoy "https://github.com/frain-dev/helm-charts/releases/download/convoy-v0.7/convoy-v0.7.tgz" --kubeconfig=.kubeconfig --namespace=dev --set image.repository=ghcr.io/$GITHUB_REPOSITORY,image.tag=latest
