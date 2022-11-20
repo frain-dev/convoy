@@ -74,8 +74,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Type:  auth.RoleAdmin,
 					Group: "1234",
 				},
-				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				ExpiresAt: primitive.NewDateTimeFromTime(expires),
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
@@ -323,8 +322,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 					Group: "1234",
 					App:   "abc",
 				},
-				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -356,8 +354,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 					Group: "1234",
 					App:   "abc",
 				},
-				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 7)),
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 7)),
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -957,11 +954,10 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 					Times(1).Return(nil)
 			},
 			wantAPIKey: &datastore.APIKey{
-				UserID:         "1234",
-				Name:           "test_personal_key",
-				ExpiresAt:      primitive.NewDateTimeFromTime(expires),
-				Type:           datastore.PersonalKey,
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				UserID:    "1234",
+				Name:      "test_personal_key",
+				ExpiresAt: primitive.NewDateTimeFromTime(expires),
+				Type:      datastore.PersonalKey,
 			},
 			wantErr: false,
 		},

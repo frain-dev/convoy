@@ -34,9 +34,8 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             device.UID,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      device.UID,
+		"group_id": groupID,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -61,9 +60,8 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             device.UID,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      device.UID,
+		"group_id": groupID,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -85,9 +83,8 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, appID, groupI
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             uid,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      uid,
+		"group_id": groupID,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -101,9 +98,8 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             uid,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      uid,
+		"group_id": groupID,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -126,9 +122,8 @@ func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string,
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"group_id":        groupID,
-		"host_name":       hostName,
-		"document_status": datastore.ActiveDocumentStatus,
+		"group_id":  groupID,
+		"host_name": hostName,
 	}
 
 	if !util.IsStringEmpty(appID) {
@@ -152,7 +147,7 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *da
 
 	var devices []datastore.Device
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID}
+	filter := bson.M{"deleted_at": nil, "group_id": groupID}
 
 	if !util.IsStringEmpty(f.AppID) {
 		filter["app_id"] = f.AppID
@@ -160,7 +155,6 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *da
 
 	pagination, err := d.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &devices)
-
 	if err != nil {
 		return devices, datastore.PaginationData{}, err
 	}

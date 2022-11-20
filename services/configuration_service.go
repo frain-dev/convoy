@@ -45,11 +45,10 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 	}
 
 	config := &datastore.Configuration{
-		UID:            uuid.New().String(),
-		StoragePolicy:  newConfig.StoragePolicy,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:           uuid.New().String(),
+		StoragePolicy: newConfig.StoragePolicy,
+		CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	if newConfig.IsAnalyticsEnabled != nil {
@@ -66,7 +65,6 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 	}
 
 	return config, nil
-
 }
 
 func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.Configuration) (*datastore.Configuration, error) {

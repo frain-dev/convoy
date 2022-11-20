@@ -16,7 +16,6 @@ import (
 )
 
 var Migrations = []*Migration{
-
 	{
 		ID: "20220901162904_change_group_rate_limit_configuration",
 		Migrate: func(db *mongo.Database) error {
@@ -29,9 +28,8 @@ var Migrations = []*Migration{
 			}
 
 			type Group struct {
-				UID            string                   `json:"uid" bson:"uid"`
-				Config         Config                   `json:"config" bson:"config"`
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+				UID    string `json:"uid" bson:"uid"`
+				Config Config `json:"config" bson:"config"`
 			}
 
 			store := datastore.New(db)
@@ -109,9 +107,8 @@ var Migrations = []*Migration{
 			}
 
 			type Subscription struct {
-				UID            string                   `json:"uid" bson:"uid"`
-				RetryConfig    RetryConfig              `json:"retry_config" bson:"retry_config"`
-				DocumentStatus datastore.DocumentStatus `json:"-" bson:"document_status"`
+				UID         string      `json:"uid" bson:"uid"`
+				RetryConfig RetryConfig `json:"retry_config" bson:"retry_config"`
 			}
 
 			store := datastore.New(db)
@@ -273,11 +270,10 @@ var Migrations = []*Migration{
 					}
 
 					endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-						UID:            uuid.NewString(),
-						Value:          endpoint.Secret,
-						CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-						UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-						DocumentStatus: datastore.ActiveDocumentStatus,
+						UID:       uuid.NewString(),
+						Value:     endpoint.Secret,
+						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+						UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 					})
 					// endpoint.Secret = ""
 					endpoint.AdvancedSignatures = false // explicitly set default
@@ -294,8 +290,6 @@ var Migrations = []*Migration{
 					log.WithError(err).Fatalf("Failed migration 20221019100029_move_secret_fields_to_secrets")
 					return err
 				}
-
-				log.Printf("%+v updated", app.UID)
 			}
 
 			return nil
@@ -349,6 +343,7 @@ var Migrations = []*Migration{
 				var groups []*datastore.Group
 				err := store.FindAll(sessCtx, nil, nil, nil, &groups)
 				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221021100029_migrate_group_signature_config_to_versions UpdateByID")
 					return err
 				}
 
@@ -444,6 +439,272 @@ var Migrations = []*Migration{
 			}
 
 			return store.WithTransaction(ctx, fn)
+		},
+	},
+
+	{
+		ID: "20221031102300_change_subscription_event_types_to_filters",
+		Migrate: func(db *mongo.Database) error {
+			type Subscription struct {
+				UID          string                        `json:"uid" bson:"uid"`
+				FilterConfig datastore.FilterConfiguration `json:"filter_config" bson:"filter_config"`
+			}
+
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+			var subscriptions []*Subscription
+			err := store.FindAll(ctx, nil, nil, nil, &subscriptions)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20220906166248_change_subscription_event_types_to_filters")
+				return err
+			}
+
+			for _, s := range subscriptions {
+				var filter map[string]interface{}
+
+				if len(s.FilterConfig.EventTypes) == 1 {
+					if s.FilterConfig.EventTypes[0] == "*" {
+						filter = map[string]interface{}{}
+					} else {
+						filter = map[string]interface{}{"event_types": s.FilterConfig.EventTypes[0]}
+					}
+				} else {
+					filter = map[string]interface{}{"event_types": map[string]interface{}{"$in": s.FilterConfig.EventTypes}}
+				}
+
+				update := bson.M{
+					"$set": bson.M{
+						"filter_config.filter": filter,
+					},
+				}
+
+				err := store.UpdateByID(ctx, s.UID, update)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20220906166248_change_subscription_event_types_to_filters")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+			update := bson.M{
+				"$unset": bson.M{
+					"filter_config.filter": 1,
+				},
+			}
+
+			err := store.UpdateMany(ctx, nil, update, true)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20220906166248_change_subscription_event_types_to_filters rollback")
+				return err
+			}
+
+			return nil
+		},
+	},
+
+	{
+		ID: "20221181000600_migrate_api_key_roles",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.APIKeyCollection)
+			type Role struct {
+				Type   string   `json:"type"`
+				Apps   []string `json:"apps"`
+				Groups []string `json:"groups"`
+			}
+
+			type Key struct {
+				UID  string `json:"uid" bson:"uid"`
+				Role Role   `json:"role" bson:"role"`
+			}
+
+			fn := func(sessCtx mongo.SessionContext) error {
+				var keys []Key
+				err := store.FindAll(sessCtx, nil, nil, nil, &keys)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles rollback FindAll")
+					return err
+				}
+
+				for _, key := range keys {
+					update := bson.M{}
+					if len(key.Role.Groups) > 0 {
+						update["role.group"] = key.Role.Groups[0]
+					}
+
+					if len(key.Role.Apps) > 0 {
+						update["role.app"] = key.Role.Apps[0]
+					}
+
+					err := store.UpdateByID(sessCtx, key.UID, bson.M{"$set": update})
+					if err != nil {
+						log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles rollback UpdateByID")
+						return err
+					}
+				}
+
+				unset := bson.M{
+					"$unset": bson.M{
+						"role.groups": "",
+						"role.apps":   "",
+					},
+				}
+
+				err = store.UpdateMany(sessCtx, bson.M{}, unset, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles UpdateMany")
+					return err
+				}
+
+				return nil
+			}
+
+			return store.WithTransaction(ctx, fn)
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.APIKeyCollection)
+			type Role struct {
+				Type  string `json:"type"`
+				App   string `json:"apps"`
+				Group string `json:"groups"`
+			}
+
+			type Key struct {
+				UID  string `json:"uid" bson:"uid"`
+				Role Role   `json:"role" bson:"role"`
+			}
+
+			fn := func(sessCtx mongo.SessionContext) error {
+				var keys []Key
+				err := store.FindAll(sessCtx, nil, nil, nil, &keys)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles FindAll")
+					return err
+				}
+
+				for _, key := range keys {
+					update := bson.M{
+						"$set": bson.M{
+							"role.groups": []string{key.Role.Group},
+							"role.apps":   []string{key.Role.App},
+						},
+					}
+
+					err := store.UpdateByID(sessCtx, key.UID, update)
+					if err != nil {
+						log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles UpdateByID")
+						return err
+					}
+				}
+
+				unset := bson.M{
+					"$unset": bson.M{
+						"role.group": "",
+						"role.app":   "",
+					},
+				}
+
+				err = store.UpdateMany(sessCtx, bson.M{}, unset, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221181000600_migrate_api_key_roles UpdateMany")
+					return err
+				}
+
+				return nil
+			}
+
+			return store.WithTransaction(ctx, fn)
+		},
+	},
+	{
+		ID: "20221109100029_migrate_deprecate_document_status_field",
+		Migrate: func(db *mongo.Database) error {
+			collectionList := []string{
+				datastore.ConfigCollection,
+				datastore.GroupCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.AppCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				filter := bson.M{
+					"$or": []interface{}{
+						bson.D{{Key: "deleted_at", Value: bson.M{"$exists": false}}},
+						bson.D{{Key: "deleted_at", Value: bson.M{"$lte": primitive.NewDateTimeFromTime(time.Date(1971, 0, 0, 0, 0, 0, 0, time.UTC))}}},
+					},
+				}
+
+				set := bson.M{
+					"$set": bson.M{
+						"deleted_at": nil,
+					},
+				}
+
+				err := store.UpdateMany(ctx, filter, set, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			collectionList := []string{
+				datastore.ConfigCollection,
+				datastore.GroupCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.AppCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				filter := bson.M{"deleted_at": nil}
+
+				update := bson.M{
+					"$unset": bson.M{
+						"deleted_at": "",
+					},
+				}
+
+				err := store.UpdateMany(ctx, filter, update, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed rollback migration 20221109100029_migrate_deprecate_document_status_field UpdateMany")
+					return err
+				}
+			}
+
+			return nil
 		},
 	},
 }

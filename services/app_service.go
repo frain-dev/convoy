@@ -47,7 +47,6 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 		Endpoints:       []datastore.Endpoint{},
-		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
 	err := a.appRepo.CreateApplication(ctx, app, app.GroupID)
@@ -168,7 +167,6 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	if util.IsStringEmpty(e.Secret) {
@@ -179,20 +177,18 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 		endpoint.Secrets = []datastore.Secret{
 			{
-				UID:            uuid.NewString(),
-				Value:          sc,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				UID:       uuid.NewString(),
+				Value:     sc,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			},
 		}
 	} else {
 		endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-			UID:            uuid.NewString(),
-			Value:          e.Secret,
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID:       uuid.NewString(),
+			Value:     e.Secret,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		})
 	}
 
@@ -307,11 +303,10 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 	}
 
 	sc := datastore.Secret{
-		UID:            uuid.NewString(),
-		Value:          newSecret,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		Value:     newSecret,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	secrets := append(endpoint.Secrets, sc)
@@ -334,7 +329,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 
 func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoint, app *datastore.Application) error {
 	for i, endpoint := range app.Endpoints {
-		if endpoint.UID == e.UID && endpoint.DeletedAt == 0 {
+		if endpoint.UID == e.UID && endpoint.DeletedAt == nil {
 			app.Endpoints = append(app.Endpoints[:i], app.Endpoints[i+1:]...)
 			break
 		}
@@ -367,7 +362,7 @@ func (a *AppService) CountGroupApplications(ctx context.Context, groupID string)
 
 func updateEndpointIfFound(endpoints *[]datastore.Endpoint, id string, e models.Endpoint) (*[]datastore.Endpoint, *datastore.Endpoint, error) {
 	for i, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
+		if endpoint.UID == id && endpoint.DeletedAt == nil {
 			endpoint.TargetURL = e.URL
 			endpoint.Description = e.Description
 

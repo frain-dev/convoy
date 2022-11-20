@@ -196,10 +196,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		lo.SetLevel(lvl)
 
 		// register worker.
-		consumer, err := worker.NewConsumer(a.queue, lo)
-		if err != nil {
-			a.logger.WithError(err).Error("failed to create worker")
-		}
+		consumer := worker.NewConsumer(a.queue, lo)
 
 		appRepo := cm.NewApplicationRepo(a.store)
 		eventRepo := cm.NewEventRepository(a.store)
@@ -436,7 +433,7 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.SMTP.Username = smtpUsername
 	}
 
-	// CONVOY_SMTP_PASSWORDvar configFile string
+	// CONVOY_SMTP_PASSWORD
 	smtpPassword, err := cmd.Flags().GetString("smtp-password")
 	if err != nil {
 		return nil, err
