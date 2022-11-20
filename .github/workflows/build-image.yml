@@ -47,7 +47,7 @@ jobs:
   deploy:
     name: Deploy to Cluster
     runs-on: "ubuntu-latest"
-    needs: [deploy]
+    needs: [build]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
