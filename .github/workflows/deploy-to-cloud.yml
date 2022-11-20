@@ -3,8 +3,7 @@ name: Deploy to k8s cluster
 on:
   push:
     branches:
-      - "dev"
-      - "raymond/feat/add-deployment-scripts"
+      - "main"
   workflow_dispatch:
     inputs:
       name:
@@ -30,4 +29,4 @@ jobs:
         run: doctl k8s cluster kubeconfig show convoy > .kubeconfig
 
       - name: Push image to DigitalOcean Container Registry
-        run: helm --debug upgrade --install --version ${{ steps.get_version.outputs.tag }} convoy "https://github.com/frain-dev/helm-charts/releases/download/convoy-v0.7/convoy-v0.7.tgz" --kubeconfig=.kubeconfig --namespace=staging --set image.repository=ghcr.io/$GITHUB_REPOSITORY,image.tag=latest
+        run: helm --debug upgrade --install --version ${{ steps.get_version.outputs.tag }} convoy "https://github.com/frain-dev/helm-charts/releases/download/convoy-v0.7/convoy-v0.7.tgz" --kubeconfig=.kubeconfig --namespace=dev --set image.repository=ghcr.io/$GITHUB_REPOSITORY,image.tag=latest
