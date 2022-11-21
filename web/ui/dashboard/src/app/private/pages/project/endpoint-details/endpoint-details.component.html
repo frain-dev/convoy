@@ -19,19 +19,19 @@
 		<h3 class="font-medium">{{ endpointDetails?.title }}</h3>
 		<div class="flex">
 			<div class="flex items-center">
-				<convoy-button size="sm" type="text">
+				<button convoy-button size="sm" fill="text" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + endpointDetails?.uid + '/edit'">
 					<svg width="16" height="16" class="mr-8px fill-primary-100">
 						<use xlink:href="#edit-icon"></use>
 					</svg>
 					Edit
-				</convoy-button>
+				</button>
 				<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
-				<convoy-button size="sm" type="text" color="danger">
+				<button convoy-button size="sm" fill="text" color="danger" (click)="showDeleteModal = true">
 					<svg width="16" height="16" class="mr-8px fill-danger-100">
 						<use xlink:href="#delete-icon"></use>
 					</svg>
 					Delete
-				</convoy-button>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -81,16 +81,37 @@
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">EVENTS</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails?.events | date: 'mediumDate' }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails?.events || 0 }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SECRET</p>
-				<p class="text-black text-14 font-normal"></p>
+				<p class="text-black text-14 font-normal flex items-center">
+					<button convoy-button fill="text" class="mr-6px" (click)="showSecretKey = !showSecretKey">
+						<svg width="18" height="18">
+							<use xlink:href="#eye-off-icon"></use>
+						</svg>
+					</button>
+					<span *ngIf="showSecretKey" class="w-100px text-12 overflow-hidden whitespace-nowrap text-ellipsis mr-6px">{{ secretKey.value }}</span>
+					<convoy-copy-button *ngIf="showSecretKey" [text]="secretKey.value || ''"></convoy-copy-button>
+					<span *ngIf="!showSecretKey">*********</span>
+				</p>
 			</div>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">URL</p>
-			<p class="text-black text-14 font-normal">{{ endpointDetails?.target_url }}</p>
+			<p class="text-black text-14 font-normal flex">
+				<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
+				{{ endpointDetails?.target_url }}
+			</p>
+		</div>
+
+		<div class="flex justify-end items-center mt-80px">
+			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="showAddEventModal = true">Send Event</button>
+			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails?.uid)">View Events</button>
+			<button convoy-button fill="outline" size="sm">
+				Open Portal Link
+				<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
+			</button>
 		</div>
 	</div>
 </convoy-card>
@@ -106,13 +127,9 @@
 					</button>
 				</li>
 
-				<!-- <div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
-					<convoy-button size="sm" (click)="cliKeys.generateKeyModal = true" className="mt-6px">
-						<svg width="18" height="18" class="fill-white-100">
-							<use xlink:href="#plus-icon"></use>
-						</svg>
-					</convoy-button>
-				</div> -->
+				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px" *ngIf="activeTab === 'CLI Keys'">
+					<convoy-button size="sm" fill="outline" (click)="cliKeys.generateKeyModal = true" class="mt-6px">Generate Key</convoy-button>
+				</div>
 			</ul>
 		</div>
 	</convoy-card>
@@ -126,38 +143,10 @@
 </ng-container>
 
 <!-- send event form  -->
-<send-event *ngIf="showAddEventModal &&  endpointDetails" [endpointId]="endpointDetails.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getEndpointDetails(endpointDetails.uid); showAddEventModal = false"></send-event>
+<send-event *ngIf="showAddEventModal && endpointDetails" [endpointId]="endpointDetails.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getEndpointDetails(endpointDetails.uid); showAddEventModal = false"></send-event>
 
 <!-- endpoint secret  -->
-<!-- <convoy-modal *ngIf="showEndpointSecret" title="Endpoint Secret" (closeModal)="showEndpointSecret = false">
-	<div modalBody>
-		<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
-			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ endpointSecret?.value || '' }}</span>
-			<convoy-copy-button [text]="endpointSecret?.value || ''"></convoy-copy-button>
-		</div>
-		<convoy-button size="xs" type="text" color="danger" *ngIf="!showExpireSecret" (clickItem)="showExpireSecret = true">Expire Secret</convoy-button>
-
-		<ng-container *ngIf="showExpireSecret">
-			<form [formGroup]="expireSecretForm" class="mt-24px">
-				<convoy-select
-					label="Expiry duration"
-					name="expiration"
-					formControlName="expiration"
-					[options]="expirationDates"
-					errorMessage="Please select an expiry duration"
-					[required]="true"
-					(selectedOption)="expireSecretForm.patchValue({ expiration: $event })"
-				></convoy-select>
-			</form>
-		</ng-container>
-
-		<div class="flex justify-end mt-38px mb-140px" *ngIf="showExpireSecret">
-			<convoy-button type="outline" className="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (clickItem)="showEndpointSecret = false" *ngIf="showExpireSecret">Cancel</convoy-button>
-			<convoy-button color="danger" className="mr-16px" *ngIf="showExpireSecret" (clickItem)="expireSecret()">Expire Secret</convoy-button>
-			<convoy-button (clickItem)="showExpireSecret = false" *ngIf="!showExpireSecret">Done</convoy-button>
-		</div>
-	</div>
-</convoy-modal> -->
+<convoy-endpoint-secret *ngIf="showEndpointSecret && endpointDetails" [endpointDetails]="endpointDetails" (closeSecretModal)="showEndpointSecret = false"></convoy-endpoint-secret>
 
 <!-- delete modal  -->
-<!-- <app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.description + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal> -->
+<app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + endpointDetails?.title + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>

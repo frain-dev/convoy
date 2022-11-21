@@ -1,15 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-// import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
-// import { TableComponent } from 'src/app/components/table/table.component';
-// import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
-// import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
-// import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
-import { ENDPOINT } from 'src/app/models/app.model';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
@@ -21,6 +16,7 @@ import { EndpointsService } from './endpoints.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -41,7 +37,9 @@ import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellCom
 		ListItemComponent,
 		ModalComponent,
 		CreateEndpointComponent,
-		FormsModule
+        TagComponent,
+		FormsModule,
+		RouterModule
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
@@ -49,7 +47,7 @@ import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellCom
 export class EndpointsComponent implements OnInit {
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Name', 'Time Created', 'Updated', 'Events', '', ''];
+	endpointsTableHead = ['Status','Name', 'Time Created', 'Updated', 'Events', ''];
 	displayedEndpoints!: { date: string; content: ENDPOINT[] }[];
 	endpoints!: { pagination: PAGINATION; content: ENDPOINT[] };
 	isLoadingEndpoints = false;
@@ -67,7 +65,6 @@ export class EndpointsComponent implements OnInit {
 			const response = await this.endpointService.getEndpoints({ pageNo: page, searchString: requestDetails?.search });
 			this.endpoints = response.data.content;
 			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
-			console.log(response);
 		} catch {}
 	}
 
@@ -77,7 +74,6 @@ export class EndpointsComponent implements OnInit {
 	}
 
 	cancel() {
-		this.showCreateEndpointModal = false;
-		this.showEditEndpointModal = false;
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints');
 	}
 }

@@ -9,7 +9,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ENDPOINT } from 'src/app/models/app.model';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
 
 @Component({
 	selector: 'send-event',
@@ -32,7 +32,7 @@ export class SendEventComponent implements OnInit {
 
 	ngOnInit() {
 		this.getEndpoints();
-		this.setEventEndpointId();
+		if (this.endpointId) this.setEventEndpointId();
 	}
 
 	cancel() {
@@ -52,7 +52,7 @@ export class SendEventComponent implements OnInit {
 			this.sendEventForm.reset();
 			this.onAction.emit({ action: 'sentEvent' });
 			this.isSendingNewEvent = false;
-			this.router.navigate(['/projects/' + this.endpointService.projectId + '/events'], { queryParams: { eventsApp: this.endpointId } });
+			// this.router.navigate(['/projects/' + this.endpointService.projectId + '/events'], { queryParams: { eventsApp: this.endpointId } });
 		} catch {
 			this.isSendingNewEvent = false;
 		}
@@ -61,8 +61,11 @@ export class SendEventComponent implements OnInit {
 	async getEndpoints() {
 		try {
 			const response = await this.endpointService.getEndpoints();
-			this.endpoints = response.data.content;
-			console.log(response);
+			const endpointData = response.data.content;
+			endpointData.forEach((data: ENDPOINT) => {
+				data.name = data.title;
+			});
+			this.endpoints = endpointData;
 		} catch {}
 	}
 

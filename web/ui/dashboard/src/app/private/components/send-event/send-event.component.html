@@ -2,7 +2,17 @@
 <convoy-modal title="Send Event" (closeModal)="cancel()">
 	<ng-container modalBody>
 		<form [formGroup]="sendEventForm">
-			<!-- <convoy-select label="App ID" name="app_id" formControlName="app_id" [options]="apps?.content" [value]="appId" [required]="true" errorMessage="App Id is required" className="mb-24px" (selectedOption)="sendEventForm.patchValue({ app_id: $event })"></convoy-select> -->
+			<convoy-select
+				label="Endpoint"
+				name="endpoint_id"
+				formControlName="endpoint_id"
+				[options]="endpoints"
+				[value]="endpointId"
+				[required]="true"
+				errorMessage="Endpoint Id is required"
+				className="mb-24px"
+				(selectedOption)="sendEventForm.patchValue({ endpoint_id: $event })"
+			></convoy-select>
 			<div class="my-24px">
 				<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" for="data">
 					Data

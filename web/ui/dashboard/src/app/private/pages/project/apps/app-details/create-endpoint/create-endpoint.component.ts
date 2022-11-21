@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { ENDPOINT } from 'src/app/models/app.model';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';
 

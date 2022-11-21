@@ -43,40 +43,6 @@ export class EndpointsService {
 		});
 	}
 
-	addNewEndpoint(requestDetails: { appId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: requestDetails.token ? '/endpoints' : this.privateService.urlFactory('org_project') + `/endpoints`,
-					body: requestDetails.body,
-					method: 'post',
-					token: requestDetails?.token
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
-	editEndpoint(requestDetails: { appId: string; endpointId: string; body: any; token?: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}`,
-					body: requestDetails.body,
-					method: 'put',
-					token: requestDetails?.token
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
 	deleteEndpoint(requestDetails: { appId: string; endpointId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

@@ -5,7 +5,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { ActivatedRoute } from '@angular/router';
-import { API_KEY } from 'src/app/models/app.model';
+import { API_KEY } from 'src/app/models/endpoint.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';

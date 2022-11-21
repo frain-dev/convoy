@@ -6,7 +6,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
-import { APP } from 'src/app/models/app.model';
+import { APP } from 'src/app/models/endpoint.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AppDetailsService } from '../app-details.service';

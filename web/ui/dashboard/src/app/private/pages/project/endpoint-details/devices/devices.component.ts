@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { DEVICE } from 'src/app/models/app.model';
+import { DEVICE } from 'src/app/models/endpoint.model';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';

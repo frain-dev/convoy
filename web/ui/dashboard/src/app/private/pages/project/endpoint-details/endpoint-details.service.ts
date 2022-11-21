@@ -23,4 +23,34 @@ export class EndpointDetailsService {
 			}
 		});
 	}
+
+	deleteEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/endpoints/${endpointId}`,
+					method: 'delete'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	expireSecret(requestDetails: { endpointId: string; body: { expiration: number } }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/expire_secret`,
+					method: 'put',
+					body: requestDetails.body
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }
