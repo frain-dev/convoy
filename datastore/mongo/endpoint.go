@@ -62,7 +62,7 @@ func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datas
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 
-	filter := bson.M{"endpoint_id": endpoint.UID}
+	filter := bson.M{"endpoints": endpoint.UID}
 	count, err := db.store.Count(eventsCtx, filter)
 	if err != nil {
 		log.WithError(err).Errorf("failed to count events in %s", endpoint.UID)
