@@ -50,6 +50,7 @@ export class AppComponent implements OnInit {
 		switch (subscribeButtonState) {
 			case 'true':
 				this.showCreateSubscription = true;
+				this.tableHead.pop();
 				break;
 			case 'false':
 				this.showCreateSubscription = false;
