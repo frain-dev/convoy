@@ -70,8 +70,7 @@ type Options struct {
 }
 
 type MigrationDoc struct {
-	ID             string                   `json:"id" bson:"id"`
-	DocumentStatus datastore.DocumentStatus `json:"document_status" bson:"document_status"`
+	ID string `json:"id" bson:"id"`
 }
 
 type InitSchemaFunc func(context.Context, *mongo.Database) (bool, error)
@@ -325,7 +324,7 @@ func (m *Migrator) migrationRan(migration *Migration) (bool, error) {
 		"id": migration.ID,
 	}
 
-	count, err := store.Count(ctx, filter)
+	count, err := store.CountWithDeleted(ctx, filter)
 
 	return count > 0, err
 }
@@ -335,7 +334,7 @@ func (m *Migrator) insertMigration(ctx context.Context, id string) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, m.opts.CollectionName)
 
 	var result MigrationDoc
-	payload := &MigrationDoc{ID: id, DocumentStatus: datastore.ActiveDocumentStatus}
+	payload := &MigrationDoc{ID: id}
 
 	if m.session != nil {
 		ctx = mongo.NewSessionContext(ctx, m.session)

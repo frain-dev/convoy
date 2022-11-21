@@ -6,7 +6,7 @@ import { CreateAppModule } from '../create-app/create-app.module';
 import { CreateSourceModule } from '../create-source/create-source.module';
 import { LoaderModule } from '../loader/loader.module';
 import { CreateEndpointModule } from '../../pages/project/apps/app-details/create-endpoint/create-endpoint.module';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
@@ -16,6 +16,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
+import { CreateSubscriptionFilterComponent } from '../create-subscription-filter/create-subscription-filter.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -26,7 +27,6 @@ import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pi
 		CreateSourceModule,
 		LoaderModule,
 		CreateEndpointModule,
-		InputComponent,
 		SelectComponent,
 		ButtonComponent,
 		TooltipComponent,
@@ -35,7 +35,12 @@ import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pi
 		CardComponent,
 		RadioComponent,
 		ConfirmationModalComponent,
-        FormatSecondsPipe
+		FormatSecondsPipe,
+        CreateSubscriptionFilterComponent,
+		InputFieldDirective,
+		InputErrorComponent,
+		InputDirective,
+		LabelComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

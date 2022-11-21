@@ -59,7 +59,6 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 		Role:           newIV.Role,
 		Status:         datastore.InviteStatusPending,
 		ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 14)), // expires in 2 weeks
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -77,6 +76,7 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 
 	return iv, nil
 }
+
 func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.Context, org *datastore.Organisation, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	invites, paginationData, err := ois.orgInviteRepo.LoadOrganisationsInvitesPaged(ctx, org.UID, inviteStatus, pageable)
 	if err != nil {
@@ -203,10 +203,9 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 		LastName:  newUser.LastName,
 		Email:     email,
 		Password:  string(p.Hash),
-		//Role:          newUser.Role, // TODO(all): this role field shouldn't be in user.
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		// Role:          newUser.Role, // TODO(all): this role field shouldn't be in user.
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = ois.userRepo.CreateUser(ctx, user)
@@ -270,7 +269,7 @@ func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context
 	}
 
 	iv.Status = datastore.InviteStatusCancelled
-	iv.DocumentStatus = datastore.DeletedDocumentStatus
+	iv.DeletedAt = util.NewDateTime()
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {

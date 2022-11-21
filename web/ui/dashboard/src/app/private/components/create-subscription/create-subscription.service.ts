@@ -74,4 +74,20 @@ export class CreateSubscriptionService {
 			}
 		});
 	}
+
+    testSubsriptionFilter(requestDetails: { schema: any; request: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const projectResponse = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/subscriptions/test_filter`,
+					method: 'post',
+					body: requestDetails
+				});
+
+				return resolve(projectResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

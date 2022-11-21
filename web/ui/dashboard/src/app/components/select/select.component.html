@@ -1,5 +1,5 @@
-<convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
-	<div class="w-full" customDropdownToggle>
+<div convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
+	<div class="w-full" dropdownTrigger>
 		<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
 			<div class="flex items-center">
 				{{ label }}
@@ -46,12 +46,12 @@
 		</div>
 	</div>
 
-	<div class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
+	<div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
 		<ul>
 			<li class="text-14 text-grey-20">Select</li>
 			<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
-				<convoy-button type="unstyled" buttonType="button" (clickItem)="selectOption(option); dropdownComponent.show = false" className="text-12 w-full !justify-start">{{ option?.name || option }}</convoy-button>
+				<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 			</li>
 		</ul>
 	</div>
-</convoy-dropdown>
+</div>

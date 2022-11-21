@@ -32,7 +32,8 @@ export class CreateSubscriptionComponent implements OnInit {
 			duration: [null]
 		}),
 		filter_config: this.formBuilder.group({
-			event_types: [null]
+			event_types: [null],
+			filter: [null]
 		})
 	});
 	apps!: APP[];
@@ -43,6 +44,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	showCreateSourceModal = false;
 	showCreateEndpointModal = false;
 	enableMoreConfig = false;
+	showFilterForm = false;
 	retryLogicTypes = [
 		{ uid: 'linear', name: 'Linear time retry' },
 		{ uid: 'exponential', name: 'Exponential time backoff' }
@@ -253,6 +255,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
+	cancel() {
+		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.confirmModal = true;
+	}
+
 	goToSubsriptionsPage() {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
 	}
@@ -260,5 +267,17 @@ export class CreateSubscriptionComponent implements OnInit {
 	isNewProjectRoute(): boolean {
 		if (this.router.url == '/projects/new') return true;
 		return false;
+	}
+
+	setupFilter() {
+		this.showFilterForm = true;
+		document.getElementById('subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
+	}
+
+	getFilterSchema(schema: any) {
+		this.subscriptionForm.patchValue({
+			filter_config: { filter: schema }
+		});
+		this.showFilterForm = false;
 	}
 }

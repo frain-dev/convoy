@@ -1,14 +1,10 @@
-<div class="fixed h-screen w-screen top-0 right-0 bottom-0 z-[5]" *ngIf="show" (click)="$event.stopPropagation(); show = false"></div>
+<div convoyScreen *ngIf="show" (onClick)="show = false"></div>
 <div class="relative">
-	<convoy-button [color]="buttonColor" [texture]="buttonTexture" [type]="buttonType" [size]="buttonSize" buttonType="button" (clickItem)="$event.stopPropagation(); show = !show" [className]="buttonClasses" [buttonText]="buttonText ? buttonText : ''">
-		<ng-content select="[dropdownToggle]"></ng-content>
-	</convoy-button>
-
-	<div class="empty:hidden" (click)="$event.stopPropagation(); show = !show">
-		<ng-content select="[customDropdownToggle]"></ng-content>
+	<div class="empty:hidden" #dropdownTriggerContainer>
+		<ng-content select="[dropdownTrigger]"></ng-content>
 	</div>
 
-	<div class="absolute top-[110%] w-full bg-white-100 border border-grey-10 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300 max-h-300px" [class]="classes">
-		<ng-content></ng-content>
+	<div convoy-dropdown-container #dropdownContainer [position]="position" [show]="show" [size]="size">
+		<ng-content select="[dropdownOptions]"></ng-content>
 	</div>
 </div>
