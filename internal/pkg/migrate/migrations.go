@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -534,67 +533,9 @@ var Migrations = []*Migration{
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
-			store := datastore.New(db)
-
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
-
-			var endpoints []*datastore.Endpoint
-			err := store.FindAll(ctx, nil, nil, nil, &endpoints)
+			err := db.Collection(datastore.EndpointCollection).Drop(context.Background())
 			if err != nil {
-				log.WithError(err).Fatalf("Failed to find endpoints")
 				return err
-			}
-
-			mApps := make(map[string]*datastore.Application, 0)
-
-			for _, endpoint := range endpoints {
-				ap, ok := mApps[endpoint.AppID]
-				endpointResp := datastore.DeprecatedEndpoint{
-					UID:                endpoint.UID,
-					TargetURL:          endpoint.TargetURL,
-					Description:        endpoint.Description,
-					Secret:             endpoint.Secret,
-					Secrets:            endpoint.Secrets,
-					AdvancedSignatures: endpoint.AdvancedSignatures,
-					HttpTimeout:        endpoint.HttpTimeout,
-					RateLimit:          endpoint.RateLimit,
-					RateLimitDuration:  endpoint.RateLimitDuration,
-					Authentication:     endpoint.Authentication,
-					CreatedAt:          endpoint.CreatedAt,
-					UpdatedAt:          endpoint.UpdatedAt,
-					DocumentStatus:     endpoint.DocumentStatus,
-				}
-
-				if ok {
-					ap.Endpoints = append(ap.Endpoints, endpointResp)
-				} else {
-					ap := &datastore.Application{
-						ID:              primitive.NewObjectID(),
-						UID:             endpoint.AppID,
-						GroupID:         endpoint.GroupID,
-						Title:           endpoint.Title,
-						SupportEmail:    endpoint.SupportEmail,
-						SlackWebhookURL: endpoint.SlackWebhookURL,
-						IsDisabled:      endpoint.IsDisabled,
-						CreatedAt:       endpoint.CreatedAt,
-						UpdatedAt:       endpoint.UpdatedAt,
-						DocumentStatus:  endpoint.DocumentStatus,
-					}
-
-					if !util.IsStringEmpty(endpoint.TargetURL) {
-						ap.Endpoints = []datastore.DeprecatedEndpoint{endpointResp}
-					}
-
-					mApps[endpoint.AppID] = ap
-				}
-			}
-
-			appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, "applications")
-			for _, app := range mApps {
-				err := store.Save(appCtx, app, nil)
-				if err != nil {
-					return err
-				}
 			}
 
 			return nil
@@ -674,8 +615,8 @@ var Migrations = []*Migration{
 			for appID := range endpointIDs {
 				filter := bson.M{"app_id": appID}
 				update := bson.M{
-					"$set": bson.M{
-						"endpoints": nil,
+					"$unset": bson.M{
+						"endpoints": "",
 					},
 				}
 				err := store.UpdateMany(eventCtx, filter, update, true)
