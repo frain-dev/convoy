@@ -540,6 +540,8 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return DeviceCollection, nil
 	case "data_migrations", nil:
 		return "data_migrations", nil
+	case "applications", nil:
+		return "applications", nil
 	case "portal_links":
 		return PortalLinkCollection, nil
 	default:

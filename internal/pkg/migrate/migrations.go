@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -458,6 +459,233 @@ var Migrations = []*Migration{
 			}
 
 			return store.WithTransaction(ctx, fn)
+		},
+	},
+
+	{
+		ID: "20221116142027_migrate_apps_to_endpoints",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+
+			appCollection := "applications"
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, appCollection)
+
+			var apps []*datastore.Application
+			var endpoints []*datastore.Endpoint
+
+			err := store.FindAll(ctx, nil, nil, nil, &apps)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find apps")
+				return err
+			}
+
+			for _, app := range apps {
+				if len(app.Endpoints) > 0 {
+					for _, e := range app.Endpoints {
+						endpoint := &datastore.Endpoint{
+							ID:                 primitive.NewObjectID(),
+							UID:                e.UID,
+							GroupID:            app.GroupID,
+							TargetURL:          e.TargetURL,
+							Title:              app.Title,
+							SupportEmail:       app.SupportEmail,
+							Secrets:            e.Secrets,
+							AdvancedSignatures: e.AdvancedSignatures,
+							Description:        e.Description,
+							SlackWebhookURL:    app.SlackWebhookURL,
+							AppID:              app.UID,
+							HttpTimeout:        e.HttpTimeout,
+							RateLimit:          e.RateLimit,
+							RateLimitDuration:  e.RateLimitDuration,
+							Authentication:     e.Authentication,
+							CreatedAt:          e.CreatedAt,
+							UpdatedAt:          e.UpdatedAt,
+							DocumentStatus:     e.DocumentStatus,
+						}
+
+						endpoints = append(endpoints, endpoint)
+					}
+				} else {
+					endpoint := &datastore.Endpoint{
+						ID:              primitive.NewObjectID(),
+						UID:             app.UID,
+						GroupID:         app.GroupID,
+						Title:           app.Title,
+						SupportEmail:    app.SupportEmail,
+						SlackWebhookURL: app.SlackWebhookURL,
+						AppID:           app.UID,
+						CreatedAt:       app.CreatedAt,
+						UpdatedAt:       app.UpdatedAt,
+						DocumentStatus:  app.DocumentStatus,
+					}
+
+					endpoints = append(endpoints, endpoint)
+				}
+			}
+
+			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+			for _, endpoint := range endpoints {
+				err := store.Save(endpointCtx, endpoint, nil)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+
+			var endpoints []*datastore.Endpoint
+			err := store.FindAll(ctx, nil, nil, nil, &endpoints)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find endpoints")
+				return err
+			}
+
+			mApps := make(map[string]*datastore.Application, 0)
+
+			for _, endpoint := range endpoints {
+				ap, ok := mApps[endpoint.AppID]
+				endpointResp := datastore.DeprecatedEndpoint{
+					UID:                endpoint.UID,
+					TargetURL:          endpoint.TargetURL,
+					Description:        endpoint.Description,
+					Secret:             endpoint.Secret,
+					Secrets:            endpoint.Secrets,
+					AdvancedSignatures: endpoint.AdvancedSignatures,
+					HttpTimeout:        endpoint.HttpTimeout,
+					RateLimit:          endpoint.RateLimit,
+					RateLimitDuration:  endpoint.RateLimitDuration,
+					Authentication:     endpoint.Authentication,
+					CreatedAt:          endpoint.CreatedAt,
+					UpdatedAt:          endpoint.UpdatedAt,
+					DocumentStatus:     endpoint.DocumentStatus,
+				}
+
+				if ok {
+					ap.Endpoints = append(ap.Endpoints, endpointResp)
+				} else {
+					ap := &datastore.Application{
+						ID:              primitive.NewObjectID(),
+						UID:             endpoint.AppID,
+						GroupID:         endpoint.GroupID,
+						Title:           endpoint.Title,
+						SupportEmail:    endpoint.SupportEmail,
+						SlackWebhookURL: endpoint.SlackWebhookURL,
+						IsDisabled:      endpoint.IsDisabled,
+						CreatedAt:       endpoint.CreatedAt,
+						UpdatedAt:       endpoint.UpdatedAt,
+						DocumentStatus:  endpoint.DocumentStatus,
+					}
+
+					if !util.IsStringEmpty(endpoint.TargetURL) {
+						ap.Endpoints = []datastore.DeprecatedEndpoint{endpointResp}
+					}
+
+					mApps[endpoint.AppID] = ap
+				}
+			}
+
+			appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, "applications")
+			for _, app := range mApps {
+				err := store.Save(appCtx, app, nil)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	},
+
+	{
+		ID: "20221117161319_migrate_app_events_to_endpoints",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+			eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
+
+			var endpoints []*datastore.Endpoint
+
+			err := store.FindAll(endpointCtx, nil, nil, nil, &endpoints)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find endpoints")
+				return err
+			}
+
+			endpointIDs := make(map[string][]string, 0)
+			for _, endpoint := range endpoints {
+				item, ok := endpointIDs[endpoint.AppID]
+				if ok {
+					item = append(item, endpoint.UID)
+					endpointIDs[endpoint.AppID] = item
+				}
+
+				if !ok {
+					endpointIDs[endpoint.AppID] = []string{endpoint.UID}
+				}
+			}
+
+			for appID, endpointID := range endpointIDs {
+				filter := bson.M{"app_id": appID}
+				update := bson.M{
+					"$set": bson.M{
+						"endpoints": endpointID,
+					},
+				}
+				err := store.UpdateMany(eventCtx, filter, update, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed to update events")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+			eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
+
+			var endpoints []*datastore.Endpoint
+
+			err := store.FindAll(endpointCtx, nil, nil, nil, &endpoints)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to find endpoints")
+				return err
+			}
+
+			endpointIDs := make(map[string][]string, 0)
+			for _, endpoint := range endpoints {
+				item, ok := endpointIDs[endpoint.AppID]
+				if ok {
+					item = append(item, endpoint.UID)
+					endpointIDs[endpoint.AppID] = item
+				}
+
+				if !ok {
+					endpointIDs[endpoint.AppID] = []string{endpoint.UID}
+				}
+			}
+
+			for appID := range endpointIDs {
+				filter := bson.M{"app_id": appID}
+				update := bson.M{
+					"$set": bson.M{
+						"endpoints": nil,
+					},
+				}
+				err := store.UpdateMany(eventCtx, filter, update, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed to update events")
+					return err
+				}
+			}
+
+			return nil
 		},
 	},
 }
