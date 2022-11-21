@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -28,14 +27,6 @@ func NewEndpointRepo(store datastore.Store) datastore.EndpointRepository {
 
 func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
-	err := db.assertUniqueEndpointTitle(ctx, endpoint, groupID)
-	if err != nil {
-		if errors.Is(err, datastore.ErrDuplicateEndpointName) {
-			return err
-		}
-
-		return fmt.Errorf("failed to check if application name is unique: %v", err)
-	}
 
 	endpoint.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(endpoint.UID) {
@@ -62,7 +53,7 @@ func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datas
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 
-	filter := bson.M{"endpoint_id": endpoint.UID}
+	filter := bson.M{"endpoints": endpoint.UID}
 	count, err := db.store.Count(eventsCtx, filter)
 	if err != nil {
 		log.WithError(err).Errorf("failed to count events in %s", endpoint.UID)
@@ -108,15 +99,6 @@ func (db *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, groupID stri
 
 func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
 	ctx = db.setCollectionInContext(ctx)
-
-	err := db.assertUniqueEndpointTitle(ctx, endpoint, groupID)
-	if err != nil {
-		if errors.Is(err, datastore.ErrDuplicateEndpointName) {
-			return err
-		}
-
-		return fmt.Errorf("failed to check if endpoint name is unique: %v", err)
-	}
 
 	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
@@ -212,30 +194,30 @@ func (db *endpointRepo) LoadEndpointsPaged(ctx context.Context, groupID, q strin
 		}
 	}
 
-	var apps []datastore.Endpoint
+	var endpoints []datastore.Endpoint
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
-		int64(pageable.Page), int64(pageable.PerPage), &apps)
+		int64(pageable.Page), int64(pageable.PerPage), &endpoints)
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	if apps == nil {
-		apps = make([]datastore.Endpoint, 0)
+	if endpoints == nil {
+		endpoints = make([]datastore.Endpoint, 0)
 	}
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
-	for i, app := range apps {
-		filter = bson.M{"app_id": app.UID}
+	for i, endpoint := range endpoints {
+		filter = bson.M{"endpoints": endpoint.UID}
 		count, err := db.store.Count(eventsCtx, filter)
 		if err != nil {
-			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
-			return apps, datastore.PaginationData{}, err
+			log.Errorf("failed to count events in %s. Reason: %s", endpoint.UID, err)
+			return endpoints, datastore.PaginationData{}, err
 		}
-		apps[i].Events = count
+		endpoints[i].Events = count
 	}
 
-	return apps, pagination, nil
+	return endpoints, pagination, nil
 }
 
 func (db *endpointRepo) LoadEndpointsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
@@ -256,11 +238,11 @@ func (db *endpointRepo) LoadEndpointsPagedByGroupId(ctx context.Context, groupID
 	}
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
-	for i, app := range endpoints {
-		filter = bson.M{"endpoint_id": app.UID}
+	for i, endpoint := range endpoints {
+		filter = bson.M{"endpoints": endpoint.UID}
 		count, err := db.store.Count(eventsCtx, filter)
 		if err != nil {
-			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+			log.Errorf("failed to count events in %s. Reason: %s", endpoint.UID, err)
 			return endpoints, datastore.PaginationData{}, err
 		}
 		endpoints[i].Events = count
@@ -295,7 +277,7 @@ func (db *endpointRepo) SearchEndpointsByGroupId(ctx context.Context, groupId st
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 	for i, endpoint := range endpoints {
-		filter = bson.M{"app_id": endpoint.UID}
+		filter = bson.M{"endpoints": endpoint.UID}
 		count, err := db.store.Count(eventsCtx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", endpoint.UID, err)
@@ -340,27 +322,6 @@ func (db *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) 
 	return endpoints, nil
 }
 
-func (db *endpointRepo) assertUniqueEndpointTitle(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
-	ctx = db.setCollectionInContext(ctx)
-	f := bson.M{
-		"uid":      bson.M{"$ne": endpoint.UID},
-		"title":    endpoint.Title,
-		"group_id": groupID,
-	}
-
-	count, err := db.store.Count(ctx, f)
-
-	if err != nil {
-		return err
-	}
-
-	if count != 0 {
-		return datastore.ErrDuplicateEndpointName
-	}
-
-	return nil
-}
-
 func (db *endpointRepo) deleteEndpointEvents(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 
@@ -384,15 +345,6 @@ func (db *endpointRepo) deleteEndpoint(ctx context.Context, endpoint *datastore.
 
 func (db *endpointRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EndpointCollection)
-}
-
-func findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
-	for _, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			return &endpoint, nil
-		}
-	}
-	return nil, datastore.ErrEndpointNotFound
 }
 
 func (db *endpointRepo) deleteSubscription(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {

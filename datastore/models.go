@@ -239,7 +239,7 @@ type Endpoint struct {
 	Description        string             `json:"description" bson:"description"`
 	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
 	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
-	AppID              string             `json:"app_id" bson:"app_id"` //Deprecated but necessary for backward compatibility
+	AppID              string             `json:"-" bson:"app_id"` //Deprecated but necessary for backward compatibility
 
 	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
@@ -441,6 +441,7 @@ type Event struct {
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
 	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
+	AppID            string                `json:"app_id" bson:"app_id"` //Deprecated
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
@@ -616,8 +617,8 @@ type Subscription struct {
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source   `json:"source_metadata" bson:"-"`
-	Endpoint *Endpoint `json:"endpoint_metadata" bson:"-"`
+	Source   *Source   `json:"source_metadata" bson:"source_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata" bson:"endpoint_metadata"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
