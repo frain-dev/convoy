@@ -531,12 +531,6 @@ var Migrations = []*Migration{
 				}
 			}
 
-			//drop the applications collection
-			err = db.Collection(appCollection).Drop(ctx)
-			if err != nil {
-				return err
-			}
-
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
@@ -603,12 +597,6 @@ var Migrations = []*Migration{
 				}
 			}
 
-			//drop the endpoints collection
-			err = db.Collection(datastore.EndpointCollection).Drop(ctx)
-			if err != nil {
-				return err
-			}
-
 			return nil
 		},
 	},
@@ -617,42 +605,40 @@ var Migrations = []*Migration{
 		ID: "20221117161319_migrate_app_events_to_endpoints",
 		Migrate: func(db *mongo.Database) error {
 			store := datastore.New(db)
+			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
 			eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 
-			var events []*datastore.Event
+			var endpoints []*datastore.Endpoint
 
-			err := store.FindAll(eventCtx, nil, nil, nil, &events)
+			err := store.FindAll(endpointCtx, nil, nil, nil, &endpoints)
 			if err != nil {
-				log.WithError(err).Fatalf("Failed to find events")
+				log.WithError(err).Fatalf("Failed to find endpoints")
 				return err
 			}
 
-			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
-			for _, event := range events {
-				endpoints := make([]datastore.Endpoint, 0)
-
-				filter := bson.M{"app_id": event.AppID}
-				err := store.FindAll(endpointCtx, filter, nil, nil, &endpoints)
-				if err != nil {
-					log.WithError(err).Fatalf("Failed to find endpoints")
-					return err
+			endpointIDs := make(map[string][]string, 0)
+			for _, endpoint := range endpoints {
+				item, ok := endpointIDs[endpoint.AppID]
+				if ok {
+					item = append(item, endpoint.UID)
+					endpointIDs[endpoint.AppID] = item
 				}
 
-				var endpointIDs []string
-
-				for _, endpoint := range endpoints {
-					endpointIDs = append(endpointIDs, endpoint.UID)
+				if !ok {
+					endpointIDs[endpoint.AppID] = []string{endpoint.UID}
 				}
+			}
 
+			for appID, endpointID := range endpointIDs {
+				filter := bson.M{"app_id": appID}
 				update := bson.M{
 					"$set": bson.M{
-						"endpoints": endpointIDs,
+						"endpoints": endpointID,
 					},
 				}
-
-				err = store.UpdateByID(eventCtx, event.UID, update)
+				err := store.UpdateMany(eventCtx, filter, update, true)
 				if err != nil {
-					log.WithError(err).Fatalf("Failed migration 20221117161319_migrate_app_events_to_endpoints")
+					log.WithError(err).Fatalf("Failed to update events")
 					return err
 				}
 			}
@@ -661,29 +647,44 @@ var Migrations = []*Migration{
 		},
 		Rollback: func(db *mongo.Database) error {
 			store := datastore.New(db)
+			endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
 			eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 
-			var events []*datastore.Event
+			var endpoints []*datastore.Endpoint
 
-			err := store.FindAll(eventCtx, nil, nil, nil, &events)
+			err := store.FindAll(endpointCtx, nil, nil, nil, &endpoints)
 			if err != nil {
-				log.WithError(err).Fatalf("Failed to find events")
+				log.WithError(err).Fatalf("Failed to find endpoints")
 				return err
 			}
 
-			for _, event := range events {
+			endpointIDs := make(map[string][]string, 0)
+			for _, endpoint := range endpoints {
+				item, ok := endpointIDs[endpoint.AppID]
+				if ok {
+					item = append(item, endpoint.UID)
+					endpointIDs[endpoint.AppID] = item
+				}
+
+				if !ok {
+					endpointIDs[endpoint.AppID] = []string{endpoint.UID}
+				}
+			}
+
+			for appID := range endpointIDs {
+				filter := bson.M{"app_id": appID}
 				update := bson.M{
 					"$set": bson.M{
 						"endpoints": nil,
 					},
 				}
-
-				err = store.UpdateByID(eventCtx, event.UID, update)
+				err := store.UpdateMany(eventCtx, filter, update, true)
 				if err != nil {
-					log.WithError(err).Fatalf("Failed migration 20221117161319_migrate_app_events_to_endpoints")
+					log.WithError(err).Fatalf("Failed to update events")
 					return err
 				}
 			}
+
 			return nil
 		},
 	},
