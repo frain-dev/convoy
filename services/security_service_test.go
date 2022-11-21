@@ -323,7 +323,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 					Group: "1234",
 					App:   "abc",
 				},
-				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
+				ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 30)),
 				DocumentStatus: datastore.ActiveDocumentStatus,
 			},
 			dbFn: func(ss *SecurityService) {

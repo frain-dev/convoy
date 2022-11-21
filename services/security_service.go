@@ -187,7 +187,7 @@ func (ss *SecurityService) CreateAppAPIKey(ctx context.Context, d *models.Create
 	if d.KeyType == datastore.CLIKey {
 		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(d.Expiration))
 	} else if d.KeyType == datastore.AppPortalKey {
-		expiresAt = time.Now().Add(30 * time.Minute)
+		expiresAt = time.Now().Add(time.Hour * 24 * 30)
 	}
 
 	apiKey := &datastore.APIKey{
