@@ -75,7 +75,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 
-			subscriptions, err = matchSubscriptionsUsingFilter(ctx, event.Data, subRepo, subs)
+			subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 			if err != nil {
 				return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
@@ -86,7 +86,7 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 				return &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 			}
 
-			subscriptions, err = matchSubscriptionsUsingFilter(ctx, event.Data, subRepo, subs)
+			subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 			if err != nil {
 				return &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 			}
@@ -202,13 +202,15 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 	}
 }
 
-func matchSubscriptionsUsingFilter(ctx context.Context, filter []byte, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
+func matchSubscriptionsUsingFilter(ctx context.Context, e datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
 	var payload map[string]interface{}
-	err := json.Unmarshal(filter, &payload)
+	err := json.Unmarshal(e.Data, &payload)
 	if err != nil {
 		return nil, err
 	}
+
+	payload["event_type"] = e.EventType
 
 	for _, s := range subscriptions {
 		isMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter)
