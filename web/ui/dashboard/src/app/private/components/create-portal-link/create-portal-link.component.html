@@ -2,9 +2,21 @@
     <div modalBody>
         <form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
             <convoy-card className="p-24px">
-                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Link name" placeholder="Enter link name" [required]="true"></convoy-input>
+                <convoy-input-field>
+                    <label for="linkName" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Event Type</label>
+                    <input id="linkName" convoy-input autocomplete="linkName" formControlName="linkName" placeholder="Event type" />
+                </convoy-input-field>
+                <convoy-input-field>
+                    <label for="linkName" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Event Type</label>
+                    <input id="linkName" convoy-input autocomplete="linkName" formControlName="linkName" placeholder="Event type" />
+                </convoy-input-field>
+                <convoy-input-field>
+                    <label for="linkName" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Event Type</label>
+                    <input id="linkName" convoy-input autocomplete="linkName" formControlName="linkName" placeholder="Event type" />
+                </convoy-input-field>
+                <!-- <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Link name" placeholder="Enter link name" [required]="true"></convoy-input>
                 <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Endpoint" placeholder="Enter source name" [required]="true"></convoy-input>
-                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Url" placeholder="Enter source name" [required]="true"></convoy-input>
+                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Url" placeholder="Enter source name" [required]="true"></convoy-input> -->
             </convoy-card>
         </form>
     </div>

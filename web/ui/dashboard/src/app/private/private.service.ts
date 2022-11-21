@@ -96,7 +96,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const subscriptionsResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}`,
+					url: `${this.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}&perPage=20`,
 					method: 'get'
 				});
 
@@ -111,7 +111,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourcesResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/sources?groupId=${this.activeProjectDetails?.uid}&page=${requestDetails?.page}`,
+					url: `${this.urlFactory('org_project')}/sources?groupId=${this.activeProjectDetails?.uid}&page=${requestDetails?.page}&perPage=20`,
 					method: 'get'
 				});
 

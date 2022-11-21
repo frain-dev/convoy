@@ -2,16 +2,17 @@
 	<div class="flex justify-between items-center pb-18px border-b border-grey-10">
 		<h3 class="font-medium">{{ eventDelsDetails?.app_metadata?.name }}</h3>
 
-		<convoy-button
+		<button
+			convoy-button
 			*ngIf="eventDelsDetails"
-			[disable]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
+			[disabled]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
 			texture="light"
 			size="sm"
-			(clickItem)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
+			(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
 		>
 			<img src="/assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 			{{ eventDelsDetails.status === 'Success' ? 'Force Retry' : 'Retry' }}
-		</convoy-button>
+		</button>
 	</div>
 
 	<div class="grid grid-cols-5 mb-24px pt-16px" *ngIf="isLoadingDeliveryDetails">
@@ -116,7 +117,7 @@
 			<p class="text-14">Retry Attempt Details {{ i + 1 }}</p>
 			<convoy-button size="sm" type="text" (click)="selectedDeliveryAttempt = deliveryAttempt">Open Details</convoy-button>
 		</div>
-		<div class="" [class]="selectedDeliveryAttempt?.uid == deliveryAttempt.uid ? 'h-full transition-[height] ease-in-out duration-500' : 'max-h-0 overflow-hidden transition-[height] ease-in-out duration-500'">
+		<div class="" [class]="selectedDeliveryAttempt?.uid == deliveryAttempt.uid ? 'h-full transition-all ease-in-out duration-500' : 'max-h-0 overflow-hidden transition-all ease-in-out duration-500'">
 			<div class="flex justify-between flex-wrap border-t border-grey-10">
 				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>

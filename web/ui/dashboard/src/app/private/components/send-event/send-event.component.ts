@@ -2,7 +2,8 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+// import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -13,7 +14,7 @@ import { ENDPOINT } from 'src/app/models/app.model';
 @Component({
 	selector: 'send-event',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, SelectComponent, InputComponent, ButtonComponent, ReactiveFormsModule],
+	imports: [CommonModule, ModalComponent, SelectComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, ReactiveFormsModule],
 	templateUrl: './send-event.component.html',
 	styleUrls: ['./send-event.component.scss']
 })

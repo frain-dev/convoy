@@ -16,26 +16,31 @@
 
 <convoy-card>
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
-		<convoy-table>
-			<convoy-table-head class="contents">
-				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-			</convoy-table-head>
-			<tbody>
-				<convoy-table-row class="contents">
-					<convoy-table-cell class="contents">
-                        <convoy-tag type="grey" className="mr-8px">event.type</convoy-tag>
-                    </convoy-table-cell>
-					<convoy-table-cell class="contents">Github Ingester</convoy-table-cell>
-					<convoy-table-cell class="contents">10:12:00pm</convoy-table-cell>
-					<convoy-table-cell class="contents">
-						<convoy-button type="clear" className="!p-0" size="sm">
-							Deliveries
-							<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
-						</convoy-button>
-					</convoy-table-cell>
-				</convoy-table-row>
-			</tbody>
-		</convoy-table>
+		<table convoy-table>
+            <thead convoy-table-head>
+                <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</th>
+            </thead>
+            <tbody>
+                <tr convoy-table-row >
+                    <td convoy-table-cell class="pl-16px">
+                        qwerty
+                    </td>
+                    <td convoy-table-cell>
+                        qwerty
+                    </td>
+                    <td convoy-table-cell class="w-150px overflow-ellipsis">
+                        qwerty
+                    </td>
+                    <td convoy-table-cell>qwerty</td>
+                    <td convoy-table-cell>
+                        <button convoy-button fill="clear" class="!p-0" size="sm">
+                            Deliveries
+                            <img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 	</div>
 </convoy-card>
 

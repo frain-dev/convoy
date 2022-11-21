@@ -3,11 +3,11 @@ import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
-import { TableComponent } from 'src/app/components/table/table.component';
-import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
-import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
-import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
+// import { TableCellComponent } from 'src/app/components/table-cell/table-cell.component';
+// import { TableComponent } from 'src/app/components/table/table.component';
+// import { TableHeadCellComponent } from 'src/app/components/table-head-cell/table-head-cell.component';
+// import { TableHeadComponent } from 'src/app/components/table-head/table-head.component';
+// import { TableRowComponent } from 'src/app/components/table-row/table-row.component';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { ENDPOINT } from 'src/app/models/app.model';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -20,6 +20,7 @@ import { CreateEndpointComponent } from 'src/app/private/components/create-endpo
 import { EndpointsService } from './endpoints.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
+import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -28,12 +29,12 @@ import { FormsModule } from '@angular/forms';
 		CommonModule,
 		ButtonComponent,
 		TableCellComponent,
-		TableComponent,
-		TableHeadCellComponent,
 		TableHeadComponent,
+		TableHeadCellComponent,
 		TableRowComponent,
+		TableCellComponent,
+		TableComponent,
 		TableLoaderModule,
-		TableRowComponent,
 		CardComponent,
 		EmptyStateComponent,
 		DropdownComponent,

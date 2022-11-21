@@ -85,16 +85,28 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	cfg, err := config.Get()
+	groupRepo := mongo.NewGroupRepo(a.A.Store)
+	g, err := groupRepo.FetchGroupByID(r.Context(), source.GroupID)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load config")
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	maxIngestSize := g.Config.MaxIngestSize
+	if maxIngestSize == 0 {
+		cfg, err := config.Get()
+		if err != nil {
+			a.A.Logger.WithError(err).Error("failed to load config")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+			return
+		}
+
+		maxIngestSize = cfg.MaxResponseSize
 	}
 
 	// 3.1 On Failure
 	// Return 400 Bad Request.
-	body := io.LimitReader(r.Body, int64(cfg.MaxResponseSize))
+	body := io.LimitReader(r.Body, int64(maxIngestSize))
 	payload, err := io.ReadAll(body)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

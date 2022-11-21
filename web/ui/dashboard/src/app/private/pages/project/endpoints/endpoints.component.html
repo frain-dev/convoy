@@ -15,12 +15,12 @@
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 			<input type="search" placeholder="Search endpoints" class="w-full text-grey-40 text-14 outline-none" [(ngModel)]="endpointSearchString" (keyup)="searchEndpoint({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
-			<convoy-button className="transition-all duration-200" type="icon">
+			<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" size="sm">
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
-			</convoy-button>
+			</button>
 		</form>
 	</div>
-	<convoy-button size="sm" className="h-36px" id="create-app-modal-button" routerLink="./new">Create Endpoint</convoy-button>
+	<button convoy-button size="sm" class="h-36px" id="create-app-modal-button" routerLink="./new">Create Endpoint</button>
 </div>
 
 <convoy-card *ngIf="isLoadingEndpoints">
@@ -29,50 +29,41 @@
 
 <convoy-card *ngIf="!isLoadingEndpoints">
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
-		<convoy-table>
-			<convoy-table-head class="contents">
-				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of endpointsTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-			</convoy-table-head>
+		<table convoy-table>
+			<thead convoy-table-head>
+				<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of endpointsTableHead; let i = index">{{ head }}</th>
+			</thead>
 			<tbody>
 				<ng-container *ngFor="let endpointGroup of displayedEndpoints; let i = index">
-					<convoy-table-row [forDate]="true" class="contents">
-						<convoy-table-cell class="contents" [forDate]="true">{{ endpointGroup.date }}</convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-						<convoy-table-cell class="contents" [forDate]="true"></convoy-table-cell>
-					</convoy-table-row>
-					<convoy-table-row class="contents" *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i">
-						<convoy-table-cell class="contents" className="pl-18px">{{endpoint.title}}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ endpoint.created_at | date: 'hh:mm:ss a' }}</convoy-table-cell>
-						<convoy-table-cell class="contents">{{ endpoint.updated_at | date: 'mediumDate' }}</convoy-table-cell>
-						<convoy-table-cell class="contents">qwerty</convoy-table-cell>
-						<convoy-table-cell class="contents">
-							<convoy-button title="view events" size="xs" texture="light">
+					<tr convoy-table-row [forDate]="true">
+						<td convoy-table-cell [forDate]="true">{{ endpointGroup.date }}</td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+						<td convoy-table-cell [forDate]="true"></td>
+					</tr>
+					<tr convoy-table-row *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i">
+						<td convoy-table-cell class="pl-16px">
+							{{ endpoint.title }}
+						</td>
+						<td convoy-table-cell>
+							{{ endpoint.created_at | date: 'hh:mm:ss a' }}
+						</td>
+						<td convoy-table-cell>
+							{{ endpoint.updated_at | date: 'mediumTime' }}
+						</td>
+						<td convoy-table-cell>qwerty</td>
+						<td convoy-table-cell>
+							<button convoy-button size="xs" texture="light">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 								View Events
-							</convoy-button>
-						</convoy-table-cell>
-						<convoy-table-cell class="contents">
-							<convoy-dropdown size="sm" buttonSize="sm" buttonType="clear">
-								<ng-container dropdownToggle>
-									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
-								</ng-container>
-								<ul>
-									<convoy-list-item class="w-full" className="px-14px">
-										<a class="w-full text-12">Update</a>
-									</convoy-list-item>
-									<convoy-list-item className="px-14px">
-										<convoy-button class="w-full" className="w-full !justify-start" type="text" color="danger">Delete</convoy-button>
-									</convoy-list-item>
-								</ul>
-							</convoy-dropdown>
-						</convoy-table-cell>
-					</convoy-table-row>
+							</button>
+						</td>
+					</tr>
 				</ng-container>
 			</tbody>
-		</convoy-table>
+		</table>
 	</div>
 </convoy-card>
 

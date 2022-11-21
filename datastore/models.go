@@ -319,6 +319,7 @@ type GroupConfig struct {
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
+	MaxIngestSize            uint64                        `json:"max_payload_read_size" bson:"max_payload_read_size"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
 	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
 	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
@@ -443,8 +444,8 @@ type Event struct {
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"-"`
-	Source           *Source               `json:"source_metadata,omitempty" bson:"-"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
+	Source           *Source               `json:"source_metadata,omitempty" bson:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -566,8 +567,8 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
-	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" bson:"-"`
-	Event    *Event    `json:"event_metadata,omitempty" bson:"-"`
+	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
+	Event    *Event    `json:"event_metadata,omitempty" bson:"event_metadata"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 	Status           EventDeliveryStatus `json:"status" bson:"status"`

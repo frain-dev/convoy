@@ -1,22 +1,27 @@
-<convoy-modal position="full" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
+<convoy-modal position="full" [id]="'configureProjectForm'" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
 	<div class="pt-40px pb-60px" modalBody>
 		<convoy-card className="p-30px" *ngIf="projectStage === 'setupSDK'">
 			<h2 class="font-semibold mb-8px">SDK installation</h2>
 			<p class="text-grey-60 text-14 max-w-[555px] mb-26px">Select your preffered and follow the intstructions below to install your SDK to get started.</p>
 
 			<div class="flex mb-36px">
-				<convoy-button size="sm" className="mr-16px" (click)="router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid)">
+				<button convoy-button size="sm" class="mr-16px" (click)="router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid)">
 					I have completed configuration
 					<svg width="14" height="14" class="ml-8px fill-white-100">
 						<use xlink:href="#doc-icon"></use>
 					</svg>
+<!-- <<<<<<< HEAD
 				</convoy-button>
 				<convoy-button type="outline" size="sm" (click)="toggleActiveStage({ project: 'createEndpoint' })">
+======= -->
+				</button>
+				<button convoy-button fill="outline" size="sm" (click)="toggleActiveStage({ project: 'createEndpoint' })">
+<!-- >>>>>>> 629e4b85f0408079896b7e438047ca6460edaf01 -->
 					Setup Without SDK
 					<svg width="14" height="14" class="ml-8px fill-primary-100">
 						<use xlink:href="#info-icon"></use>
 					</svg>
-				</convoy-button>
+				</button>
 			</div>
 
 			<sdk-documentation (onAction)="cancel()"></sdk-documentation>

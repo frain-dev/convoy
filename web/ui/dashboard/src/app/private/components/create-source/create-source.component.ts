@@ -57,7 +57,7 @@ export class CreateSourceComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private privateService: PrivateService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
-		if (this.action === 'update') this.getSourceDetails();
+		this.action === 'update' ? this.getSourceDetails() : this.getSources();
 	}
 
 	async getSourceDetails() {
@@ -96,6 +96,7 @@ export class CreateSourceComponent implements OnInit {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			this.isloading = false;
 			this.onAction.emit({ action: this.action, data: response.data });
+			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		} catch (error) {
 			this.isloading = false;
 		}
@@ -106,7 +107,7 @@ export class CreateSourceComponent implements OnInit {
 		try {
 			const response = await this.privateService.getSources();
 			const sources = response.data.content;
-			if (sources.length > 0) this.onAction.emit({ action: 'create' });
+			if (sources.length > 0 && this.router.url.includes('/configure')) this.onAction.emit({ action: 'create' });
 			this.isloading = false;
 		} catch (error) {
 			this.isloading = false;
@@ -132,6 +133,11 @@ export class CreateSourceComponent implements OnInit {
 		if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) return true;
 
 		return false;
+	}
+
+	cancel() {
+		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.confirmModal = true;
 	}
 
 	isNewProjectRoute(): boolean {

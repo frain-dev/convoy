@@ -1,74 +1,59 @@
 <div>
 	<form [formGroup]="addNewEndpointForm">
-		<convoy-card className="p-24px mt-24px">
-			<convoy-input type="text" autocomplete="name" name="name" formControlName="name" errorMessage="Please provide a name" label="Endpoint Name" placeholder="Enter endpoint name" className="mb-24px" [required]="true"></convoy-input>
-			<div class="grid grid-cols-2 gap-6">
-				<convoy-input
-					type="email"
-					autocomplete="app-slack-url"
-					name="app-slack-url"
-					formControlName="support_email"
-					label="Support Email"
-					placeholder="Support email"
-					tooltipPosition="right"
-					tooltipSize="sm"
-					tooltipContent="We use this to send an email notifcation for when a failure happens"
-				></convoy-input>
-				<convoy-input
-					type="url"
-					autocomplete="app-email"
-					name="app-email"
-					formControlName="slack_webhook_url"
-					label="Slack webhook url"
-					placeholder="Slack webhook url"
-					tooltipSize="sm"
-					tooltipContent="We use this to send notifications to your slack channel when a failure happens"
-				></convoy-input>
-				<convoy-input type="url" autocomplete="url" name="url" formControlName="url" errorMessage="Endpoint URL is required" label="Enter Url" placeholder="Enter url" className="mb-24px" [required]="true"></convoy-input>
-				<convoy-input type="text" autocomplete="description" name="description" formControlName="description" errorMessage="Please provide a description" label="Description" placeholder="Description" className="mb-24px" [required]="true"></convoy-input>
-				<convoy-input type="text" autocomplete="secret" name="secret" formControlName="secret" label="Secret" placeholder="********"></convoy-input>
-				<convoy-input
-					type="text"
-					autocomplete="http_timeout"
-					name="http_timeout"
-					formControlName="http_timeout"
-					label="Http Timeout"
-					placeholder="e.g 10s"
-					tooltipContent="This specifies how long the socket stays open in the absense of a response."
-					tooltipSize="sm"
-					tooltipPosition="right"
-				></convoy-input>
-			</div>
+		<convoy-input-field>
+			<label for="description" convoy-label required="true">Description</label>
+			<input id="description" convoy-input autocomplete="description" formControlName="description" placeholder="Description" />
+			<convoy-input-error *ngIf="addNewEndpointForm.get('description')?.touched && addNewEndpointForm.get('description')?.invalid">Please provide a description</convoy-input-error>
+		</convoy-input-field>
+		<convoy-input-field>
+			<label for="url" convoy-label required="true">Enter URL</label>
+			<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
+			<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
+		</convoy-input-field>
+		<convoy-input-field>
+			<label for="secret" convoy-label required="true">Secret</label>
+			<input id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="********" />
+			<convoy-input-error *ngIf="addNewEndpointForm.get('secret')?.touched && addNewEndpointForm.get('secret')?.invalid">Endpoint URL is required</convoy-input-error>
+		</convoy-input-field>
+		<convoy-input-field>
+			<label for="http_timeout" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Http Timeout</label>
+			<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 10s" />
+		</convoy-input-field>
 
-			<h3 class="mt-34px mb-14px font-medium text-16 flex items-center">
-				Endpoint Authentication
-				<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
-			</h3>
-			<div class="grid grid-cols-2 gap-6" formGroupName="authentication">
-				<ng-container formGroupName="api_key">
-					<convoy-input type="text" autocomplete="header-name" formControlName="header_name" label="API Key Name" placeholder="Name"></convoy-input>
-					<convoy-input type="text" autocomplete="header-value" formControlName="header_value" label="API Key Value" placeholder="Value"></convoy-input>
-				</ng-container>
-			</div>
+		<h3 class="mt-34px mb-14px font-medium text-16 flex items-center">
+			Endpoint Authentication
+			<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
+		</h3>
+		<ng-container formGroupName="authentication">
+			<ng-container formGroupName="api_key">
+				<convoy-input-field>
+					<label for="header_name" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">API Key Name</label>
+					<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
+				</convoy-input-field>
+				<convoy-input-field>
+					<label for="header_value" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">API Key Value</label>
+					<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
+				</convoy-input-field>
+			</ng-container>
+		</ng-container>
 
-			<h3 class="mt-34px mb-8px font-medium text-16 flex items-center">
-				Signature Format
-				<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
-			</h3>
-			<div class="grid grid-cols-2 gap-6 mb-50px">
-				<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
-				<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
-			</div>
-		</convoy-card>
+		<h3 class="mt-34px mb-8px font-medium text-16 flex items-center">
+			Signature Format
+			<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+		</h3>
+		<div class="grid grid-cols-2 gap-6 mb-50px">
+			<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
+			<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+		</div>
 	</form>
 
-	<div class="flex justify-end my-40px">
-		<convoy-button type="outline" className="mr-24px" (clickItem)="cancel()">Discard</convoy-button>
-		<convoy-button *ngIf="!selectedEndpoint" [disable]="savingEndpoint" (clickItem)="saveEndpoint()">
+	<div class="flex justify-end mt-40px">
+		<button convoy-button fill="outline" class="mr-24px" (click)="cancel()">Discard</button>
+		<button convoy-button *ngIf="!selectedEndpoint" [disabled]="savingEndpoint" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Adding Endpoint..' : 'Add Endpoint' }}
-		</convoy-button>
-		<convoy-button *ngIf="selectedEndpoint" [disable]="savingEndpoint" (clickItem)="saveEndpoint()">
+		</button>
+		<button convoy-button *ngIf="selectedEndpoint" [disabled]="savingEndpoint" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Updating Endpoint..' : 'Update Endpoint' }}
-		</convoy-button>
+		</button>
 	</div>
 </div>

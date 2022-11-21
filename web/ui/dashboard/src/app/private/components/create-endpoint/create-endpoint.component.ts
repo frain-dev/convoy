@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { InputComponent } from 'src/app/components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+// import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
@@ -14,7 +15,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 @Component({
 	selector: 'convoy-create-endpoint',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, InputComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent],
+	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
 })

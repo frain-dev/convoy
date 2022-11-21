@@ -23,25 +23,31 @@
 <!-- table data  -->
 <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] flex" *ngIf="!isLoadingPortalLinks">
 	<div class="bg-white-100 border border-grey-10 rounded-8px" [class]="showPortalLinkDetails ? ' w-[calc(100% - 382px)] desktop:w-0 desktop:hidden transition-all duration-200' : 'w-full transition-all duration-200'">
-		<convoy-table>
-			<convoy-table-head class="contents">
-				<convoy-table-head-cell class="contents" [className]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of linksTableHead; let i = index">{{ head }}</convoy-table-head-cell>
-			</convoy-table-head>
-			<tbody>
-				<convoy-table-row class="contents">
-					<convoy-table-cell class="contents" className="pl-20px">Endpoint</convoy-table-cell>
-					<convoy-table-cell class="contents">7</convoy-table-cell>
-					<convoy-table-cell class="contents">navigateByUrl</convoy-table-cell>
-					<convoy-table-cell class="contents">May 12, 2022</convoy-table-cell>
-
-					<convoy-table-cell class="contents">
-						<convoy-button type="icon" size="sm" className="pt-0 pb-0">
-							<img src="/assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
-						</convoy-button>
-					</convoy-table-cell>
-				</convoy-table-row>
-			</tbody>
-		</convoy-table>
+		<table convoy-table>
+            <thead convoy-table-head>
+                <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of linksTableHead; let i = index">{{ head }}</th>
+            </thead>
+            <tbody>
+                <tr convoy-table-row >
+                    <td convoy-table-cell class="pl-16px">
+                        qwerty
+                    </td>
+                    <td convoy-table-cell>
+                        qwerty
+                    </td>
+                    <td convoy-table-cell class="w-150px overflow-ellipsis">
+                        qwerty
+                    </td>
+                    <td convoy-table-cell>qwerty</td>
+                    <td convoy-table-cell>
+                        <button convoy-button fill="clear" class="!p-0" size="sm">
+                            Deliveries
+                            <img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 	</div>
 	<convoy-card className="h-full min-h-[70vh] w-full max-w-[382px] min-w-[310px] pl-16px border-l border-l-grey-10 transition-all duration-200 desktop:max-w-none desktop:border-none" *ngIf="showPortalLinkDetails">
 		<div class="flex items-center justify-between pr-24px">
@@ -52,41 +58,41 @@
 		</div>
 
 		<ul>
-			<convoy-list-item>
+			<li convoy-list-item>
 				<div class="w-1/2 text-14 font-medium">Endpoint Name</div>
 				<div class="w-1/2 text-14 font-medium text-grey-40 text-right">qwerty</div>
-			</convoy-list-item>
-			<convoy-list-item>
+            </li>
+			<li convoy-list-item>
 				<div class="w-1/2 text-14 font-medium">Endpoint Name</div>
 				<div class="w-1/2 text-14 font-medium text-grey-40 text-right">qwerty</div>
-			</convoy-list-item>
-			<convoy-list-item>
+            </li>
+			<li convoy-list-item>
 				<div class="w-1/2 text-14 font-medium">Endpoint Name</div>
 				<div class="w-1/2 text-14 font-medium text-grey-40 text-right">qwerty</div>
-			</convoy-list-item>
-			<convoy-list-item>
+            </li>
+			<li convoy-list-item>
 				<div class="w-1/2 text-14 font-medium">Endpoint Name</div>
 				<div class="w-1/2 text-14 font-medium text-grey-40 text-right">qwerty</div>
-			</convoy-list-item>
-			<convoy-list-item>
+            </li>
+			<li convoy-list-item>
 				<div class="w-1/2 text-14 font-medium">Endpoint Name</div>
 				<div class="w-1/2 text-14 font-medium text-grey-40 text-right">qwerty</div>
-			</convoy-list-item>
+            </li>
 		</ul>
 
 		<div class="flex justify-end mt-40px mr-24px">
-			<convoy-button type="outline" color="danger" size="sm">
+			<button convoy-button type="outline" color="danger" size="sm">
 				Delete
 				<svg width="18" height="18" class="ml-8px fill-danger-100">
 					<use xlink:href="#delete-icon"></use>
 				</svg>
-			</convoy-button>
-			<convoy-button size="sm" className="ml-24px">
+			</button>
+			<button convoy-button size="sm" className="ml-24px">
 				Edit
 				<svg width="18" height="18" class="ml-8px fill-white-100">
 					<use xlink:href="#edit-icon"></use>
 				</svg>
-			</convoy-button>
+			</button>
 		</div>
 	</convoy-card>
 </div>
