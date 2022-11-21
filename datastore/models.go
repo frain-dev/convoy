@@ -616,8 +616,8 @@ type Subscription struct {
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source   `json:"source_metadata" bson:"-"`
-	Endpoint *Endpoint `json:"endpoint_metadata" bson:"-"`
+	Source   *Source   `json:"source_metadata" bson:"source_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata" bson:"endpoint_metadata"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`

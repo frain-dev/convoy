@@ -62,7 +62,7 @@ func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datas
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 
-	filter := bson.M{"endpoint_id": endpoint.UID}
+	filter := bson.M{"endpoints": endpoint.UID}
 	count, err := db.store.Count(eventsCtx, filter)
 	if err != nil {
 		log.WithError(err).Errorf("failed to count events in %s", endpoint.UID)
@@ -212,30 +212,30 @@ func (db *endpointRepo) LoadEndpointsPaged(ctx context.Context, groupID, q strin
 		}
 	}
 
-	var apps []datastore.Endpoint
+	var endpoints []datastore.Endpoint
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
-		int64(pageable.Page), int64(pageable.PerPage), &apps)
+		int64(pageable.Page), int64(pageable.PerPage), &endpoints)
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	if apps == nil {
-		apps = make([]datastore.Endpoint, 0)
+	if endpoints == nil {
+		endpoints = make([]datastore.Endpoint, 0)
 	}
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
-	for i, app := range apps {
-		filter = bson.M{"app_id": app.UID}
+	for i, endpoint := range endpoints {
+		filter = bson.M{"endpoints": endpoint.UID}
 		count, err := db.store.Count(eventsCtx, filter)
 		if err != nil {
-			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
-			return apps, datastore.PaginationData{}, err
+			log.Errorf("failed to count events in %s. Reason: %s", endpoint.UID, err)
+			return endpoints, datastore.PaginationData{}, err
 		}
-		apps[i].Events = count
+		endpoints[i].Events = count
 	}
 
-	return apps, pagination, nil
+	return endpoints, pagination, nil
 }
 
 func (db *endpointRepo) LoadEndpointsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
@@ -256,11 +256,11 @@ func (db *endpointRepo) LoadEndpointsPagedByGroupId(ctx context.Context, groupID
 	}
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
-	for i, app := range endpoints {
-		filter = bson.M{"endpoint_id": app.UID}
+	for i, endpoint := range endpoints {
+		filter = bson.M{"endpoints": endpoint.UID}
 		count, err := db.store.Count(eventsCtx, filter)
 		if err != nil {
-			log.Errorf("failed to count events in %s. Reason: %s", app.UID, err)
+			log.Errorf("failed to count events in %s. Reason: %s", endpoint.UID, err)
 			return endpoints, datastore.PaginationData{}, err
 		}
 		endpoints[i].Events = count
@@ -295,7 +295,7 @@ func (db *endpointRepo) SearchEndpointsByGroupId(ctx context.Context, groupId st
 
 	eventsCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
 	for i, endpoint := range endpoints {
-		filter = bson.M{"app_id": endpoint.UID}
+		filter = bson.M{"endpoints": endpoint.UID}
 		count, err := db.store.Count(eventsCtx, filter)
 		if err != nil {
 			log.Errorf("failed to count events in %s. Reason: %s", endpoint.UID, err)

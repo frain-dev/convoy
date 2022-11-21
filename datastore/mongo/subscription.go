@@ -95,11 +95,11 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		}
 	}
 
-	appStage := bson.D{
+	endpointStage := bson.D{
 		{Key: "$lookup",
 			Value: bson.D{
-				{Key: "from", Value: "applications"},
-				{Key: "localField", Value: "app_id"},
+				{Key: "from", Value: "endpoints"},
+				{Key: "localField", Value: "endpoint_id"},
 				{Key: "foreignField", Value: "uid"},
 				{Key: "pipeline",
 					Value: bson.A{
@@ -110,17 +110,15 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 									{Key: "title", Value: 1},
 									{Key: "group_id", Value: 1},
 									{Key: "support_email", Value: 1},
-									{Key: "endpoints", Value: 1},
 								},
 							},
 						},
 					},
 				},
-				{Key: "as", Value: "app_metadata"},
+				{Key: "as", Value: "endpoint_metadata"},
 			},
 		},
 	}
-	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$app_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	sourceStage := bson.D{
 		{Key: "$lookup",
@@ -150,51 +148,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 	unwindSourceStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$source_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
-
-	endpointStage := bson.D{
-		{Key: "$project",
-			Value: bson.D{
-				{Key: "_id", Value: 1},
-				{Key: "uid", Value: 1},
-				{Key: "name", Value: 1},
-				{Key: "type", Value: 1},
-				{Key: "status", Value: 1},
-				{Key: "app_id", Value: 1},
-				{Key: "group_id", Value: 1},
-				{Key: "source_id", Value: 1},
-				{Key: "endpoint_id", Value: 1},
-				{Key: "alert_config", Value: 1},
-				{Key: "retry_config", Value: 1},
-				{Key: "filter_config", Value: 1},
-				{Key: "created_at", Value: 1},
-				{Key: "updated_at", Value: 1},
-				{Key: "deleted_at", Value: 1},
-				{Key: "document_status", Value: 1},
-				{Key: "app_metadata", Value: 1},
-				{Key: "source_metadata", Value: 1},
-				{Key: "endpoint_metadata",
-					Value: bson.D{
-						{Key: "$filter",
-							Value: bson.D{
-								{Key: "input", Value: "$app_metadata.endpoints"},
-								{Key: "as", Value: "endpoint"},
-								{Key: "cond",
-									Value: bson.D{
-										{Key: "$eq",
-											Value: bson.A{
-												"$$endpoint.uid",
-												"$endpoint_id",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 	unwindEndpointStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$endpoint_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
 	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
@@ -206,10 +159,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		skipStage,
 		sortStage,
 		limitStage,
-		appStage,
 		sourceStage,
 		endpointStage,
-		unwindAppStage,
 		unwindSourceStage,
 		unwindEndpointStage,
 	}
