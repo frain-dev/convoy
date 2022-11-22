@@ -80,7 +80,7 @@
 					<div *ngIf="!isloadingDashboardData">
 						<div class="text-16 font-medium">{{ dashboardData.apps | number }}</div>
 						<div class="text-grey-40 text-14">
-							<span class="font-normal">Endpoints</span>
+							<span class="font-normal">Endpoint</span>
 							<span class="font-normal" *ngIf="dashboardData.apps > 1">s</span>
 						</div>
 					</div>
@@ -92,46 +92,8 @@
 			</div>
 		</convoy-card>
 
-		<!-- <convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
-			<div class="flex items-center justify-center">
-				<ul class="w-full flex items-center pl-18px">
-					<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)" class="mr-24px !list-none last-of-type:mr-0">
-						<button class="py-16px px-6px flex items-center" [class]="activeTab === tab ? 'active' : ''">
-							<span class="text-14 text-left text-grey-60 font-semibold mobile:min-w-[80px] capitalize transition-all duration-300">{{ tab }}</span>
-						</button>
-					</li>
+		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 
-					<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
-						<span *ngIf="events" [hidden]="activeTab !== 'events'">
-							{{ events && events.pagination.total > 0 ? (events.pagination.prev ? events.pagination.perPage * events.pagination.prev : 1) : 0 }} -
-							{{ events && events.pagination.total < 20 ? events.pagination.total : events.pagination.prev ? events.pagination.perPage * events.pagination.prev + events.content.length : events.pagination.perPage }}
-							<strong>of</strong>
-							{{ events.pagination.total || 0 }}
-						</span>
-						<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
-							{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? (eventDeliveries.pagination.prev ? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev : 1) : 0 }} -
-							{{
-								eventDeliveries && eventDeliveries.pagination.total < 20
-									? eventDeliveries.pagination.total
-									: eventDeliveries.pagination.prev
-									? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev + eventDeliveries.content.length
-									: eventDeliveries.pagination.perPage
-							}}
-							<strong>of</strong>
-							{{ eventDeliveries.pagination.total || 0 }}
-						</span>
-					</div>
-				</ul>
-			</div>
-		</convoy-card> -->
-        <app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
-
-		<!-- <div [hidden]="activeTab !== 'events'">
-			<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)" (openApp)="openApp($event)" (openSource)="openSource($event)"></app-event>
-		</div>
-		<div [hidden]="activeTab !== 'event deliveries'">
-			<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
-		</div> -->
 	</ng-container>
 
 	<send-event *ngIf="showAddEventModal" (onAction)="$event?.action == 'cancel' ? (showAddEventModal = false) : fetchEvents(); showAddEventModal = false"></send-event>
