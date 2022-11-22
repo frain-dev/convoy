@@ -409,7 +409,6 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "uid", Value: 1},
-					{Key: "app_id", Value: 1},
 					{Key: "group_id", Value: 1},
 					{Key: "source_id", Value: 1},
 					{Key: "device_id", Value: 1},
