@@ -191,6 +191,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		}
 
 		lo := log.NewLogger(os.Stdout)
+		log.SetLogger(lo)
 
 		if cfg.Tracer.Type == config.NewRelicTracerProvider {
 			tr, err = tracer.NewTracer(cfg, lo.WithLogger())

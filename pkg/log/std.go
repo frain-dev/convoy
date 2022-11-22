@@ -22,6 +22,22 @@ func Error(args ...interface{}) {
 	stdLogger.entry.Error(args...)
 }
 
+func Errorln(args ...interface{}) {
+	stdLogger.Errorln(args...)
+}
+
+func WithFields(f Fields) *logrus.Entry {
+	return stdLogger.WithFields(f)
+}
+
+func Printf(format string, args ...interface{}) {
+	stdLogger.Printf(format, args...)
+}
+
+func Println(format string, args ...interface{}) {
+	stdLogger.Printf(format, args...)
+}
+
 func Fatal(args ...interface{}) {
 	stdLogger.entry.Fatal(args...)
 }

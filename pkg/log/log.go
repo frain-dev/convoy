@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -10,7 +11,7 @@ import (
 
 var (
 	_         StdLogger = &Logger{}
-	stdLogger *Logger   = &Logger{}
+	stdLogger           = defaultLogger()
 )
 
 type StdLogger interface {
@@ -32,6 +33,7 @@ type StdLogger interface {
 
 // Level represents a log level.
 type Level int32
+type Fields logrus.Fields
 
 const (
 	// FatalLevel is used for undesired and unexpected events that
@@ -91,6 +93,23 @@ func (l Level) ToLogrusLevel() (logrus.Level, error) {
 	}
 }
 
+func defaultLogger() *Logger {
+	log := &logrus.Logger{
+		Out: os.Stdout,
+		Formatter: &logrus.JSONFormatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+		},
+		Level: logrus.DebugLevel,
+	}
+
+	log.SetReportCaller(false)
+
+	return &Logger{
+		logger: log,
+		entry:  logrus.NewEntry(log),
+	}
+}
+
 // NewLogger creates and returns a new instance of Logger.
 // Log level is set to DebugLevel by default.
 func NewLogger(out io.Writer) *Logger {
@@ -117,8 +136,7 @@ func SetLogger(l *Logger) {
 // Logger logs message to io.Writer at various log levels.
 type Logger struct {
 	logger *logrus.Logger
-
-	entry *logrus.Entry
+	entry  *logrus.Entry
 }
 
 func (l *Logger) Debug(args ...interface{}) {
@@ -155,6 +173,22 @@ func (l *Logger) Warnf(format string, args ...interface{}) {
 
 func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.Error(fmt.Sprintf(format, args...))
+}
+
+func (l *Logger) Errorln(args ...interface{}) {
+	stdLogger.entry.Errorln(args...)
+}
+
+func (l *Logger) WithFields(f Fields) *logrus.Entry {
+	return logrus.WithFields(logrus.Fields(f))
+}
+
+func (l *Logger) Printf(format string, args ...interface{}) {
+	stdLogger.entry.Printf(format, args...)
+}
+
+func (l *Logger) Println(format string, args ...interface{}) {
+	stdLogger.entry.Printf(format, args...)
 }
 
 func (l *Logger) Fatalf(format string, args ...interface{}) {

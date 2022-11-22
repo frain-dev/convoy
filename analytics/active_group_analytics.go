@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type ActiveGroupAnalytics struct {
