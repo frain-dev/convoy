@@ -108,7 +108,7 @@
 		<div class="flex justify-end items-center mt-80px">
 			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="showAddEventModal = true">Send Event</button>
 			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails?.uid)">View Events</button>
-			<button convoy-button fill="outline" size="sm">
+			<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails?.uid)">
 				Open Portal Link
 				<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 			</button>

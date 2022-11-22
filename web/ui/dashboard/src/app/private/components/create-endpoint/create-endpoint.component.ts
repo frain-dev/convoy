@@ -19,8 +19,7 @@ import { CreateEndpointService } from './create-endpoint.service';
 	styleUrls: ['./create-endpoint.component.scss']
 })
 export class CreateEndpointComponent implements OnInit {
-	@Input() appId!: string;
-	@Input() selectedEndpoint?: ENDPOINT;
+	@Input('editMode') editMode = false;
 	@Output() onAction = new EventEmitter<any>();
 	savingEndpoint = false;
 	isLoadingEndpointDetails = false;
@@ -47,22 +46,22 @@ export class CreateEndpointComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute) {}
 
 	ngOnInit() {
-		if (this.endpointUid) this.getEndpointDetails();
+		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 	}
 
 	async saveEndpoint() {
-		console.log(this.addNewEndpointForm.value);
 		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAsTouched();
 		this.savingEndpoint = true;
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete this.addNewEndpointForm.value.authentication;
 
 		try {
-			const response = this.endpointUid
-				? await this.createEndpointService.editEndpoint({  endpointId: this.endpointUid || '', body: this.addNewEndpointForm.value, token: this.token })
-				: await this.createEndpointService.addNewEndpoint({ body: this.addNewEndpointForm.value, token: this.token });
+			const response =
+				this.endpointUid && this.editMode
+					? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: this.addNewEndpointForm.value, token: this.token })
+					: await this.createEndpointService.addNewEndpoint({ body: this.addNewEndpointForm.value, token: this.token });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.onAction.emit({ action: this.selectedEndpoint ? 'update' : 'save', data: response.data });
+			this.onAction.emit({ action: this.endpointUid && this.editMode ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
 			this.savingEndpoint = false;
 			return;
@@ -78,8 +77,6 @@ export class CreateEndpointComponent implements OnInit {
 		try {
 			const response = await this.createEndpointService.getEndpoint(this.endpointUid);
 			const endpointDetails = response.data;
-			console.log(endpointDetails);
-			// this.addNewAppForm.patchValue(response.data);
 			this.addNewEndpointForm.patchValue(endpointDetails);
 			this.addNewEndpointForm.patchValue({
 				name: endpointDetails.title,
@@ -88,15 +85,6 @@ export class CreateEndpointComponent implements OnInit {
 			this.isLoadingEndpointDetails = false;
 		} catch {
 			this.isLoadingEndpointDetails = false;
-		}
-	}
-
-	updateEndpointForm() {
-		if (this.selectedEndpoint) {
-			this.addNewEndpointForm.patchValue(this.selectedEndpoint);
-			this.addNewEndpointForm.patchValue({
-				url: this.selectedEndpoint.target_url
-			});
 		}
 	}
 

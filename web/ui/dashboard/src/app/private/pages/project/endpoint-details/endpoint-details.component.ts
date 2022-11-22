@@ -78,6 +78,10 @@ export class EndpointDetailsComponent implements OnInit {
 		if (endpointUid) this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventsEndpoint: endpointUid } });
 	}
 
+	viewEndpointPortalLinks(endpointUid?: string) {
+		if (endpointUid) this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/portal-links'], { queryParams: { linksEndpoint: endpointUid } });
+	}
+
 	toggleActiveTab(tab: 'CLI Keys' | 'devices') {
 		this.activeTab = tab;
 	}

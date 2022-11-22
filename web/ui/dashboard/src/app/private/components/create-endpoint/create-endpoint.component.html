@@ -66,10 +66,10 @@
 
 	<div class="flex justify-end mt-40px mb-60px">
 		<button convoy-button fill="outline" class="mr-24px" (click)="cancel()">Discard</button>
-		<button convoy-button *ngIf="!selectedEndpoint" [disabled]="savingEndpoint" (click)="saveEndpoint()">
+		<button convoy-button *ngIf="!editMode" [disabled]="savingEndpoint" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Creating Endpoint..' : 'Create Endpoint' }}
 		</button>
-		<button convoy-button *ngIf="selectedEndpoint" [disabled]="savingEndpoint" (click)="saveEndpoint()">
+		<button convoy-button *ngIf="editMode" [disabled]="savingEndpoint" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Updating Endpoint..' : 'Update Endpoint' }}
 		</button>
 	</div>

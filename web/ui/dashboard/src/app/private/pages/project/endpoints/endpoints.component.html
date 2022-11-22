@@ -47,7 +47,7 @@
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]" class="pl-16px">
 							<convoy-tag type="success">Enabled</convoy-tag>
 						</td>
-                        <td convoy-table-cell [routerLink]="['./' + endpoint.uid]" >
+						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
 							{{ endpoint.title }}
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
@@ -56,7 +56,7 @@
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
 							{{ endpoint.updated_at | date: 'mediumTime' }}
 						</td>
-						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">{{endpoint.events || 0}}</td>
+						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">{{ endpoint.events || 0 }}</td>
 						<td convoy-table-cell>
 							<button convoy-button size="xs" texture="light">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
@@ -71,23 +71,35 @@
 </convoy-card>
 
 <convoy-card className="mt-16px" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0">
-	<convoy-empty-state
-		imgSrc="/assets/img/new-empty-state.png"
-		buttonText="Create Endpoint"
-		description="You have not created an endpoint"
-		className="min-h-[65vh]"
-		id="endpoints-empty-state"
-	></convoy-empty-state>
+	<convoy-empty-state imgSrc="/assets/img/new-empty-state.png" buttonText="Create Endpoint" description="You have not created an endpoint" className="min-h-[65vh]" id="endpoints-empty-state"></convoy-empty-state>
 </convoy-card>
 
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedEndpoints?.length === 0 }">
-	<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: endpoints?.pagination?.prev || 0 }" [disabled]="endpoints?.pagination?.prev === 0" (click)="getEndpoints({ page: endpoints?.pagination?.prev })">
+	<button
+		convoy-button
+		fill="outline"
+		size="sm"
+		class="pl-4px pr-16px py-4px border-primary-300"
+		routerLink="./"
+		[queryParams]="{ page: endpoints?.pagination?.prev || 0 }"
+		[disabled]="endpoints?.pagination?.prev === 0"
+		(click)="getEndpoints({ page: endpoints?.pagination?.prev })"
+	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
 	</button>
-	<button convoy-button fill="outline" size="sm" class="pr-4px pl-16px py-4px border-primary-300 ml-16px" routerLink="./" [queryParams]="{ page: endpoints?.pagination?.next }" [disabled]="endpoints?.pagination?.next === 0" (click)="getEndpoints({ page: endpoints?.pagination?.next })">
+	<button
+		convoy-button
+		fill="outline"
+		size="sm"
+		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		routerLink="./"
+		[queryParams]="{ page: endpoints?.pagination?.next }"
+		[disabled]="endpoints?.pagination?.next === 0"
+		(click)="getEndpoints({ page: endpoints?.pagination?.next })"
+	>
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
@@ -97,6 +109,6 @@
 
 <convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" [title]="showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint'" (closeModal)="cancel()">
 	<ng-container modalBody>
-		<convoy-create-endpoint (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel();"></convoy-create-endpoint>
+		<convoy-create-endpoint (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
 	</ng-container>
 </convoy-modal>
