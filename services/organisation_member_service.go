@@ -34,7 +34,6 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 		OrganisationID: org.UID,
 		UserID:         user.UID,
 		Role:           *role,
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -87,7 +86,6 @@ func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Co
 
 func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Context, memberID string, org *datastore.Organisation) error {
 	member, err := om.orgMemberRepo.FetchOrganisationMemberByID(ctx, memberID, org.UID)
-
 	if err != nil {
 		log.WithError(err).Error("failed to find organisation member by id")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))

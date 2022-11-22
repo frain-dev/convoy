@@ -23,11 +23,10 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 
 	for i := 1; i < 6; i++ {
 		org := &datastore.Organisation{
-			UID:            uuid.NewString(),
-			Name:           fmt.Sprintf("org%d", i),
-			DocumentStatus: datastore.ActiveDocumentStatus,
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UID:       uuid.NewString(),
+			Name:      fmt.Sprintf("org%d", i),
+			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		}
 
 		err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -70,11 +69,10 @@ func TestUpdateOrganisation(t *testing.T) {
 	orgRepo := NewOrgRepo(store)
 
 	org := &datastore.Organisation{
-		UID:            uuid.NewString(),
-		Name:           fmt.Sprintf("new org"),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.NewString(),
+		Name:      fmt.Sprintf("new org"),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -100,11 +98,10 @@ func TestFetchOrganisationByID(t *testing.T) {
 	orgRepo := NewOrgRepo(store)
 
 	org := &datastore.Organisation{
-		UID:            uuid.NewString(),
-		Name:           fmt.Sprintf("new org"),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.NewString(),
+		Name:      fmt.Sprintf("new org"),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -124,11 +121,10 @@ func TestDeleteOrganisation(t *testing.T) {
 	orgRepo := NewOrgRepo(store)
 
 	org := &datastore.Organisation{
-		UID:            uuid.NewString(),
-		Name:           fmt.Sprintf("new org"),
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.NewString(),
+		Name:      fmt.Sprintf("new org"),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)

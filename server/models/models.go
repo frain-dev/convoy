@@ -43,9 +43,9 @@ type ConfigurationResponse struct {
 	ApiVersion         string                                `json:"api_version"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
 }
 
 type OrganisationInvite struct {
@@ -120,9 +120,9 @@ type SourceResponse struct {
 	Provider       datastore.SourceProvider  `json:"provider"`
 	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
 }
 
 type LoginUser struct {
@@ -145,9 +145,9 @@ type LoginUserResponse struct {
 	Email     string `json:"email"`
 	Token     Token  `json:"token"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
 }
 
 type UserInviteTokenResponse struct {
@@ -359,4 +359,9 @@ type PortalLinkResponse struct {
 	CreatedAt         primitive.DateTime   `json:"created_at,omitempty"`
 	UpdatedAt         primitive.DateTime   `json:"updated_at,omitempty"`
 	DeletedAt         primitive.DateTime   `json:"deleted_at,omitempty"`
+}
+
+type TestFilter struct {
+	Request map[string]interface{} `json:"request"`
+	Schema  map[string]interface{} `json:"schema"`
 }

@@ -28,9 +28,8 @@ func Test_UpdateEndpoint(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
 
 	endpoint := &datastore.Endpoint{
-		Title:          "Next application name",
-		GroupID:        newGroup.UID,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Title:   "Next application name",
+		GroupID: newGroup.UID,
 	}
 
 	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
@@ -62,10 +61,9 @@ func Test_CreateEndpoint(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
 
 	endpoint := &datastore.Endpoint{
-		Title:          "Next application name",
-		GroupID:        newOrg.UID,
-		UID:            uuid.NewString(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Title:   "Next application name",
+		GroupID: newOrg.UID,
+		UID:     uuid.NewString(),
 	}
 
 	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))

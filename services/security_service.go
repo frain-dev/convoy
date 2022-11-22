@@ -71,16 +71,15 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:            uuid.New().String(),
-		MaskID:         maskID,
-		Name:           newApiKey.Name,
-		Type:           newApiKey.Type, // TODO: this should be set to datastore.ProjectKey
-		Role:           *role,
-		Hash:           encodedKey,
-		Salt:           salt,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		MaskID:    maskID,
+		Name:      newApiKey.Name,
+		Type:      newApiKey.Type, // TODO: this should be set to datastore.ProjectKey
+		Role:      *role,
+		Hash:      encodedKey,
+		Salt:      salt,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	if newApiKey.ExpiresAt != (time.Time{}) {
@@ -116,17 +115,16 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:            uuid.New().String(),
-		MaskID:         maskID,
-		Name:           newApiKey.Name,
-		Type:           datastore.PersonalKey,
-		UserID:         user.UID,
-		Hash:           encodedKey,
-		Salt:           salt,
-		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		MaskID:    maskID,
+		Name:      newApiKey.Name,
+		Type:      datastore.PersonalKey,
+		UserID:    user.UID,
+		Hash:      encodedKey,
+		Salt:      salt,
+		ExpiresAt: primitive.NewDateTimeFromTime(expiresAt),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -191,17 +189,16 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:            uuid.New().String(),
-		MaskID:         maskID,
-		Name:           d.Name,
-		Type:           d.KeyType,
-		Role:           role,
-		Hash:           encodedKey,
-		Salt:           salt,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		ExpiresAt:      primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.New().String(),
+		MaskID:    maskID,
+		Name:      d.Name,
+		Type:      d.KeyType,
+		Role:      role,
+		Hash:      encodedKey,
+		Salt:      salt,
+		ExpiresAt: primitive.NewDateTimeFromTime(expiresAt),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)

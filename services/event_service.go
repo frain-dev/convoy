@@ -376,15 +376,14 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	}
 
 	event := &datastore.Event{
-		UID:            uuid.New().String(),
-		EventType:      datastore.EventType(newMessage.EventType),
-		Data:           newMessage.Data,
-		Headers:        e.getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      endpointIDs,
-		GroupID:        g.UID,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		EventType: datastore.EventType(newMessage.EventType),
+		Data:      newMessage.Data,
+		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		Endpoints: endpointIDs,
+		GroupID:   g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

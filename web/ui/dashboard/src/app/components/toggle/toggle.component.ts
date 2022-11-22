@@ -20,7 +20,7 @@ export class ToggleComponent implements OnInit, ControlValueAccessor {
 	@Input('isChecked') isChecked = false;
 	@Input('label') label!: string;
 	@Input('name') id!: string;
-	@Input('class') class!: string;
+	@Input('className') class!: string;
 	@Input('formControlName') formControlName?: string;
 	@Output('onChange') onChange = new EventEmitter<any>();
 	control!: any;

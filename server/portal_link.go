@@ -262,6 +262,5 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		EndpointsMetadata: pl.EndpointsMetadata,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
-		DeletedAt:         pl.DeletedAt,
 	}
 }

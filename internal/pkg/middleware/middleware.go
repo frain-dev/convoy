@@ -314,7 +314,7 @@ func (m *Middleware) RequirePortalLinkEndpoint() func(next http.Handler) http.Ha
 func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
 	activeEndpoints := make([]datastore.Endpoint, 0)
 	for _, endpoint := range endpoints {
-		if endpoint.DeletedAt == 0 {
+		if endpoint.DeletedAt == nil {
 			activeEndpoints = append(activeEndpoints, endpoint)
 		}
 	}
@@ -883,7 +883,6 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	}
 
 	cfg, err := config.Get()
-
 	if err != nil {
 		return nil
 	}

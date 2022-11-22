@@ -247,6 +247,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						subscriptionRouter.Use(a.M.RateLimitByGroupID())
 
 						subscriptionRouter.Post("/", a.CreateSubscription)
+						subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
 						subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 						subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 						subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
@@ -433,6 +434,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							subscriptionRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
 							subscriptionRouter.Post("/", a.CreateSubscription)
+							subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
 							subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 							subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 							subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
