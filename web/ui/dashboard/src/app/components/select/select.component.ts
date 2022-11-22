@@ -26,6 +26,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('label') label!: string;
 	@Input('formControlName') formControlName!: string;
 	@Input('required') required = false;
+	@Input('multiple') multiple = false;
 	@Input('placeholder') placeholder!: string;
 	@Input('className') class!: string;
 	@Input('value') value!: any;
@@ -35,6 +36,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Output('onChange') onChange = new EventEmitter<any>();
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
 	selectedValue: any;
+	selectedOptions: any = [];
 
 	control: any;
 
@@ -45,7 +47,17 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	selectOption(option?: any) {
-		this.selectedOption.emit(option?.uid || option);
+		if (this.multiple) {
+			const selectOption = this.selectedOptions?.find((item: any) => item === option) || this.selectedOptions?.find((item: any) => item.uid === option);
+			if (!selectOption) this.selectedOptions.push(option);
+
+			const selectedIds = typeof this.selectedOptions[0] !== 'string' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions;
+			this.selectedOption.emit(selectedIds);
+		} else this.selectedOption.emit(option?.uid || option);
+	}
+
+	removeOption(option: any) {
+		this.selectedOptions = this.selectedOptions.filter((e: any) => e !== option) || this.selectedOptions.filter((e: any) => e.uid !== option.uid);
 	}
 
 	get option(): string {
@@ -56,10 +68,20 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 
 	registerOnTouched() {}
 
-	writeValue(value: string) {
+	writeValue(value: string | Array<any>) {
 		if (value) {
-			if (this.options?.length && typeof this.options[0] !== 'string') return (this.selectedValue = this.options?.find(option => option.uid === value));
-			return (this.selectedValue = value);
+			if (this.options?.length && typeof this.options[0] !== 'string' && !this.multiple) return (this.selectedValue = this.options?.find(option => option.uid === value));
+			if (this.multiple && typeof value !== 'string') {
+				setTimeout(() => {
+					value.forEach((item: any) => {
+						this.selectedOptions.push({
+							uid: item,
+							name: this.options?.find(option => option.uid === item)?.name
+						});
+					});
+				}, 500);
+			}
+			if (!this.multiple) return (this.selectedValue = value);
 		}
 	}
 
