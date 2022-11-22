@@ -54,6 +54,7 @@ const (
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 	hostCtx             contextKey = "host"
 	endpointIdCtx       contextKey = "endpointId"
+	endpointIdsCtx      contextKey = "endpointIds"
 	portalLinkCtx       contextKey = "portal_link"
 )
 
@@ -243,7 +244,7 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := chi.URLParam(r, "portalLinkToken")
+			token := r.URL.Query().Get("token")
 
 			pLink, err := m.portalLinkRepo.FindPortalLinkByToken(r.Context(), token)
 			if err != nil {
@@ -284,6 +285,7 @@ func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 			}
 
 			r = r.WithContext(setPortalLinkInContext(r.Context(), pLink))
+			r = r.WithContext(setEndpointIDsInContext(r.Context(), pLink.Endpoints))
 			r = r.WithContext(setGroupInContext(r.Context(), group))
 			next.ServeHTTP(w, r)
 		})
@@ -1259,6 +1261,20 @@ func setPortalLinkInContext(ctx context.Context, pl *datastore.PortalLink) conte
 
 func GetPortalLinkFromContext(ctx context.Context) *datastore.PortalLink {
 	return ctx.Value(portalLinkCtx).(*datastore.PortalLink)
+}
+
+func setEndpointIDsInContext(ctx context.Context, endpointIDs []string) context.Context {
+	return context.WithValue(ctx, endpointIdsCtx, endpointIDs)
+}
+
+func GetEndpointIDsFromContext(ctx context.Context) []string {
+	var endpoints []string
+
+	if endpointIDs, ok := ctx.Value(endpointIdsCtx).([]string); ok {
+		return endpointIDs
+	}
+
+	return endpoints
 }
 
 func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {

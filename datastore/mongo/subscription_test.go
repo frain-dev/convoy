@@ -66,10 +66,10 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		EndpointID string
-		pageData   datastore.Pageable
-		expected   Expected
+		name        string
+		EndpointIDs []string
+		pageData    datastore.Pageable
+		expected    Expected
 	}{
 		{
 			name:     "Load Subscriptions Paged - 10 records",
@@ -117,9 +117,9 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		},
 
 		{
-			name:       "Load Subscriptions Paged with App ID - 1 record",
-			EndpointID: "app-id-1",
-			pageData:   datastore.Pageable{Page: 1, PerPage: 3},
+			name:        "Load Subscriptions Paged with Endpoint ID - 1 record",
+			EndpointIDs: []string{"app-id-1"},
+			pageData:    datastore.Pageable{Page: 1, PerPage: 3},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     1,
@@ -135,7 +135,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", &datastore.FilterBy{EndpointID: tc.EndpointID}, tc.pageData)
+			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", &datastore.FilterBy{EndpointIDs: tc.EndpointIDs}, tc.pageData)
 
 			require.NoError(t, err)
 

@@ -133,6 +133,10 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 		filter["user_id"] = f.UserID
 	}
 
+	if len(f.EndpointIDs) > 0 {
+		filter["role.endpoint"] = bson.M{"$in": f.EndpointIDs}
+	}
+
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &apiKeys)
 	if err != nil {

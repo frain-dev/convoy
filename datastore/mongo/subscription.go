@@ -8,7 +8,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -81,13 +80,15 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 
-	if !util.IsStringEmpty(f.EndpointID) {
+	if len(f.EndpointIDs) > 0 {
 		matchStage = bson.D{
 			{
 				Key: "$match",
 				Value: bson.D{
 					{Key: "group_id", Value: groupId},
-					{Key: "endpoint_id", Value: f.EndpointID},
+					{Key: "endpoint_id", Value: bson.M{
+						"$in": f.EndpointIDs,
+					}},
 					{Key: "deleted_at", Value: nil},
 				},
 			},
@@ -175,8 +176,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	}
 
 	filter := bson.M{"group_id": groupId}
-	if !util.IsStringEmpty(f.EndpointID) {
-		filter["endpoint_id"] = f.EndpointID
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoint_id"] = bson.M{"$in": f.EndpointIDs}
 	}
 
 	count, err := s.store.Count(ctx, filter)

@@ -183,6 +183,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/batchretry [post]
 func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
+	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
 
 	for _, s := range r.URL.Query()["status"] {
@@ -197,11 +198,22 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 		return
 	}
 
+	endpointID := m.GetEndpointIDFromContext(r)
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+
+	if !util.IsStringEmpty(endpointID) {
+		endpoints = []string{endpointID}
+	}
+
+	if len(endpointIDs) > 0 {
+		endpoints = endpointIDs
+	}
+
 	f := &datastore.Filter{
-		Group:      m.GetGroupFromContext(r.Context()),
-		EndpointID: m.GetEndpointIDFromContext(r),
-		EventID:    r.URL.Query().Get("eventId"),
-		Status:     status,
+		Group:       m.GetGroupFromContext(r.Context()),
+		EndpointIDs: endpoints,
+		EventID:     r.URL.Query().Get("eventId"),
+		Status:      status,
 		Pageable: datastore.Pageable{
 			Page:    0,
 			PerPage: 1000000000000, // large number so we get everything in most cases
@@ -238,6 +250,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents [get]
 func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
+	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
@@ -251,9 +264,20 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 		return
 	}
 
+	endpointID := m.GetEndpointIDFromContext(r)
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+
+	if !util.IsStringEmpty(endpointID) {
+		endpoints = []string{endpointID}
+	}
+
+	if len(endpointIDs) > 0 {
+		endpoints = endpointIDs
+	}
+
 	f := &datastore.Filter{
 		Group:        m.GetGroupFromContext(r.Context()),
-		EndpointID:   m.GetEndpointIDFromContext(r),
+		EndpointIDs:  endpoints,
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
 		SearchParams: searchParams,
@@ -319,6 +343,8 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events [get]
 func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
+	var endpoints []string
+
 	config, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -334,11 +360,22 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 	query := r.URL.Query().Get("query")
+	endpointID := m.GetEndpointIDFromContext(r)
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+
+	if !util.IsStringEmpty(endpointID) {
+		endpoints = []string{endpointID}
+	}
+
+	if len(endpointIDs) > 0 {
+		endpoints = endpointIDs
+	}
 
 	f := &datastore.Filter{
 		Query:        query,
 		Group:        group,
-		EndpointID:   m.GetEndpointIDFromContext(r),
+		EndpointID:   endpointID,
+		EndpointIDs:  endpoints,
 		SourceID:     m.GetSourceIDFromContext(r),
 		Pageable:     pageable,
 		SearchParams: searchParams,
@@ -389,6 +426,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Router /api/v1/projects/{projectID}/eventdeliveries [get]
 func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
+	var endpoints []string
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
 			status = append(status, datastore.EventDeliveryStatus(s))
@@ -401,10 +439,21 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		return
 	}
 
+	endpointID := m.GetEndpointIDFromContext(r)
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+
+	if !util.IsStringEmpty(endpointID) {
+		endpoints = []string{endpointID}
+	}
+
+	if len(endpointIDs) > 0 {
+		endpoints = endpointIDs
+	}
+
 	f := &datastore.Filter{
 		Group:        m.GetGroupFromContext(r.Context()),
-		EndpointID:   m.GetEndpointIDFromContext(r),
 		EventID:      r.URL.Query().Get("eventId"),
+		EndpointIDs:  endpoints,
 		Status:       status,
 		Pageable:     m.GetPageableFromContext(r.Context()),
 		SearchParams: searchParams,

@@ -177,7 +177,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) CountDeliveriesByStatus(arg0,
 }
 
 // CountEventDeliveries mocks base method.
-func (m *MockEventDeliveryRepository) CountEventDeliveries(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams) (int64, error) {
+func (m *MockEventDeliveryRepository) CountEventDeliveries(arg0 context.Context, arg1 string, arg2 []string, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CountEventDeliveries", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(int64)
@@ -280,7 +280,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams, arg6 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1 string, arg2 []string, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams, arg6 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]datastore.EventDelivery)

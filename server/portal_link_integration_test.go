@@ -103,7 +103,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
-	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
+	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
 	require.Equal(s.T(), 2, resp.EndpointCount)
@@ -150,7 +150,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink(
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
-	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
+	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
 	require.Equal(s.T(), 1, resp.EndpointCount)
@@ -243,7 +243,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
-	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal/%s", pl.Token))
+	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, pl.Endpoints)
 }
@@ -282,7 +282,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/portal/%s/endpoints", portalLink.Token)
+	url := fmt.Sprintf("/portal/endpoints?token=%s", portalLink.Token)
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
 
@@ -310,7 +310,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLinkEndpoint() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/portal/%s/endpoints", portalLink.Token)
+	url := fmt.Sprintf("/portal/endpoints?token=%s", portalLink.Token)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"description": "test endpoint",
@@ -362,10 +362,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointEvents() {
 
 	}
 
-	event, err := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
+	_, err = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	req := createRequest(http.MethodGet, fmt.Sprintf("/portal/%s/endpoints/%s/events", portalLink.Token, endpoint2.UID), "", nil)
+	req := createRequest(http.MethodGet, fmt.Sprintf("/portal/events?token=%s", portalLink.Token), "", nil)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -378,9 +378,8 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointEvents() {
 	resp := &pagedResponse{Content: &respEvents}
 
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(1), resp.Pagination.Total)
-	require.Equal(s.T(), 1, len(respEvents))
-	require.Equal(s.T(), event.UID, respEvents[0].UID)
+	require.Equal(s.T(), int64(6), resp.Pagination.Total)
+	require.Equal(s.T(), 6, len(respEvents))
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions() {
@@ -393,7 +392,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions
 	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	require.NoError(s.T(), err)
 
-	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{endpoint1.UID, endpoint2.UID})
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultGroup, []string{endpoint2.UID})
 	require.NoError(s.T(), err)
 
 	source := &datastore.Source{UID: uuid.NewString()}
@@ -408,7 +407,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions
 	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	require.NoError(s.T(), err)
 
-	req := createRequest(http.MethodGet, fmt.Sprintf("/portal/%s/endpoints/%s/subscriptions", portalLink.Token, endpoint2.UID), "", nil)
+	req := createRequest(http.MethodGet, fmt.Sprintf("/portal/subscriptions?token=%s", portalLink.Token), "", nil)
 	w := httptest.NewRecorder()
 
 	// Act

@@ -153,6 +153,10 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *da
 		filter["endpoint_id"] = f.EndpointID
 	}
 
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoint_id"] = bson.M{"$in": f.EndpointIDs}
+	}
+
 	pagination, err := d.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &devices)
 	if err != nil {

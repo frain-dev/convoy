@@ -51,9 +51,8 @@ func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
 
 		for _, group := range groups {
 			filter := &datastore.Filter{
-				Group:      group,
-				EndpointID: "",
-				Pageable:   datastore.Pageable{Sort: -1},
+				Group:    group,
+				Pageable: datastore.Pageable{Sort: -1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),

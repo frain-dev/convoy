@@ -39,11 +39,22 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
+	var endpoints []string
+
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
 	endpointID := m.GetEndpointIDFromContext(r)
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
 
-	filter := &datastore.FilterBy{GroupID: group.UID, EndpointID: endpointID}
+	if !util.IsStringEmpty(endpointID) {
+		endpoints = []string{endpointID}
+	}
+
+	if len(endpointIDs) > 0 {
+		endpoints = endpointIDs
+	}
+
+	filter := &datastore.FilterBy{GroupID: group.UID, EndpointIDs: endpoints}
 
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
