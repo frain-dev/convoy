@@ -49,9 +49,8 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 				group: &datastore.Group{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
-				GroupID:        "12345",
-				Endpoints:      []string{"123", "1234"},
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				GroupID:   "12345",
+				Endpoints: []string{"123", "1234"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)

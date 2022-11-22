@@ -36,7 +36,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		}
 
 		event = createEvent.Event
-		event.DocumentStatus = datastore.ActiveDocumentStatus
 
 		var group *datastore.Group
 		var subscriptions []datastore.Subscription
@@ -95,7 +94,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			rc, err := ec.retryConfig()
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
-
 			}
 
 			metadata := &datastore.Metadata{
@@ -107,7 +105,8 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
 			}
 
-			eventDelivery := &datastore.EventDelivery{UID: uuid.New().String(),
+			eventDelivery := &datastore.EventDelivery{
+				UID:            uuid.New().String(),
 				SubscriptionID: s.UID,
 				Metadata:       metadata,
 				GroupID:        group.UID,
@@ -118,7 +117,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
 			}
@@ -214,7 +212,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				return subscriptions, nil
 			}
 
-			subs = matchSubscriptions(string(event.EventType), subs)
+			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 			subscriptions = append(subscriptions, subs...)
 
 		}
@@ -229,17 +227,28 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	return subscriptions, nil
 }
 
-func matchSubscriptions(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {
+func matchSubscriptionsUsingFilter(ctx context.Context, e datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
-	for _, sub := range subscriptions {
-		for _, ev := range sub.FilterConfig.EventTypes {
-			if ev == eventType || ev == "*" { // if this event type matches, or is *, add the subscription to matched
-				matched = append(matched, sub)
-			}
+	var payload map[string]interface{}
+	err := json.Unmarshal(e.Data, &payload)
+	if err != nil {
+		return nil, err
+	}
+
+	payload["event_type"] = e.EventType
+
+	for _, s := range subscriptions {
+		isMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if isMatched {
+			matched = append(matched, s)
 		}
 	}
 
-	return matched
+	return matched, nil
 }
 
 func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
@@ -253,7 +262,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 		if !util.IsStringEmpty(subscription.DeviceID) {
 			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.GroupID)
 			if err != nil {
-				log.WithError(err).Error("an error occurred fetching the subcriptions's device")
+				log.WithError(err).Error("an error occurred fetching the subscription's device")
 				return datastore.DiscardedEventStatus
 			}
 
@@ -277,7 +286,6 @@ func generateSubscription(group *datastore.Group, endpoint *datastore.Endpoint) 
 		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 
-		Status:         datastore.ActiveSubscriptionStatus,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Status: datastore.ActiveSubscriptionStatus,
 	}
 }

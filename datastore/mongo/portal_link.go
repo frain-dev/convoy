@@ -33,7 +33,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 
 func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, groupID string, portal *datastore.PortalLink) error {
 	ctx = p.setCollectionInContext(ctx)
-	filter := bson.M{"uid": portal.UID, "group_id": portal.GroupID, "document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"uid": portal.UID, "group_id": portal.GroupID}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -84,7 +84,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 		{Key: "$match",
 			Value: bson.D{
 				{Key: "group_id", Value: groupID},
-				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
@@ -97,7 +97,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 				Value: bson.D{
 					{Key: "group_id", Value: groupID},
 					{Key: "endpoints", Value: f.EndpointID},
-					{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+					{Key: "deleted_at", Value: nil},
 				},
 			},
 		}
@@ -155,8 +155,7 @@ func (p *portalLinkRepo) DeletePortalLink(ctx context.Context, groupID string, i
 	filter := bson.M{"uid": id, "group_id": groupID}
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -169,8 +168,7 @@ func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, groupID string, i
 	filter := bson.M{"uid": id, "group_id": groupID}
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 

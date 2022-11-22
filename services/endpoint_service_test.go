@@ -27,23 +27,23 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 			}
 		}
 		g.UID = ""
-		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, 0
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, nil
 	case "endpoint":
 		e := v.(*datastore.Endpoint)
 
 		for i := range e.Secrets {
 			s := &e.Secrets[i]
 			s.UID = ""
-			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, 0
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, nil
 		}
 
 		e.UID, e.AppID = "", ""
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, nil
 	case "event":
 		e := v.(*datastore.Event)
 		e.UID = ""
 		e.MatchedEndpoints = 0
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, 0
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, nil
 	case "apiKey":
 		a := v.(*datastore.APIKey)
 		a.UID, a.MaskID, a.Salt, a.Hash = "", "", "", ""
@@ -324,13 +324,12 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				SlackWebhookURL: "https://google.com",
 				GroupID:         group.UID,
 				Secrets: []datastore.Secret{
-					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+					{Value: "1234"},
 				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         5000,
 				RateLimitDuration: "1m0s",
-				DocumentStatus:    datastore.ActiveDocumentStatus,
 			},
 			wantErr: false,
 		},
@@ -366,13 +365,12 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				GroupID: group.UID,
 				Title:   "endpoint",
 				Secrets: []datastore.Secret{
-					{Value: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+					{Value: "1234"},
 				},
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
 				RateLimitDuration: "1m0s",
-				DocumentStatus:    datastore.ActiveDocumentStatus,
 				Authentication: &datastore.EndpointAuthentication{
 					Type: datastore.APIKeyAuthentication,
 					ApiKey: &datastore.ApiKey{
@@ -719,7 +717,6 @@ func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
 						},
 					},
 					AdvancedSignatures: false,
-					DocumentStatus:     datastore.ActiveDocumentStatus,
 				},
 			},
 			dbFn: func(es *EndpointService) {

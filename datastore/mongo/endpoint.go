@@ -128,7 +128,6 @@ func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.
 	updateAsDeleted := bson.M{
 		"$set": bson.M{
 			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
 		},
 	}
 
@@ -172,8 +171,7 @@ func (db *endpointRepo) DeleteGroupEndpoints(ctx context.Context, groupID string
 
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -293,9 +291,8 @@ func (db *endpointRepo) ExpireSecret(ctx context.Context, groupID, endpointID st
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             endpointID,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      endpointID,
+		"group_id": groupID,
 	}
 
 	update := bson.M{

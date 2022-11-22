@@ -29,6 +29,8 @@ const (
 	SourceCollection              = "sources"
 	UserCollection                = "users"
 	SubscriptionCollection        = "subscriptions"
+	FilterCollection              = "filters"
+	DataMigrationsCollection      = "data_migrations"
 	EventDeliveryCollection       = "eventdeliveries"
 	APIKeyCollection              = "apiKeys"
 	DeviceCollection              = "devices"
@@ -63,6 +65,7 @@ type Store interface {
 	DeleteMany(ctx context.Context, filter, payload bson.M, hardDelete bool) error
 
 	Count(ctx context.Context, filter map[string]interface{}) (int64, error)
+	CountWithDeleted(ctx context.Context, filter map[string]interface{}) (int64, error)
 
 	Aggregate(ctx context.Context, pipeline mongo.Pipeline, result interface{}, allowDiskUse bool) error
 	WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) error) error
@@ -85,9 +88,7 @@ func New(database *mongo.Database) Store {
 	return MongoStore
 }
 
-var (
-	ErrInvalidPtr = errors.New("out param is not a valid pointer")
-)
+var ErrInvalidPtr = errors.New("out param is not a valid pointer")
 
 func IsValidPointer(i interface{}) bool {
 	v := reflect.ValueOf(i)
@@ -105,7 +106,6 @@ func (d *MongoStore) Save(ctx context.Context, payload interface{}, out interfac
 	}
 	collection := d.Database.Collection(col)
 	result, err := collection.InsertOne(ctx, payload)
-
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (d *MongoStore) FindByID(ctx context.Context, id string, projection bson.M,
 		ops.Projection = projection
 	}
 
-	return collection.FindOne(ctx, bson.M{"uid": id, "document_status": ActiveDocumentStatus}, ops).Decode(result)
+	return collection.FindOne(ctx, bson.M{"uid": id, "deleted_at": nil}, ops).Decode(result)
 }
 
 /**
@@ -183,7 +183,7 @@ func (d *MongoStore) FindOne(ctx context.Context, filter, projection bson.M, res
 	ops := options.FindOne()
 	ops.Projection = projection
 
-	filter["document_status"] = ActiveDocumentStatus
+	filter["deleted_at"] = nil
 
 	return collection.FindOne(ctx, filter, ops).Decode(result)
 }
@@ -200,7 +200,7 @@ func (d *MongoStore) FindMany(ctx context.Context, filter, projection bson.M, so
 	}
 	collection := d.Database.Collection(col)
 
-	filter["document_status"] = ActiveDocumentStatus
+	filter["deleted_at"] = nil
 
 	paginatedData, err := pager.
 		New(collection).
@@ -212,7 +212,6 @@ func (d *MongoStore) FindMany(ctx context.Context, filter, projection bson.M, so
 		Sort("_id", 1).
 		Decode(results).
 		Find()
-
 	if err != nil {
 		return PaginationData{}, err
 	}
@@ -278,7 +277,7 @@ func (d *MongoStore) FindAll(ctx context.Context, filter bson.M, sort interface{
 		filter = bson.M{}
 	}
 
-	filter["document_status"] = ActiveDocumentStatus
+	filter["deleted_at"] = nil
 
 	cursor, err := collection.Find(ctx, filter, ops)
 	if err != nil {
@@ -303,7 +302,7 @@ func (d *MongoStore) UpdateByID(ctx context.Context, id string, payload interfac
 	}
 	collection := d.Database.Collection(col)
 
-	_, err = collection.UpdateOne(ctx, bson.M{"uid": id}, payload, nil)
+	_, err = collection.UpdateOne(ctx, bson.M{"uid": id, "deleted_at": nil}, payload, nil)
 	return err
 }
 
@@ -313,6 +312,8 @@ func (d *MongoStore) UpdateOne(ctx context.Context, filter bson.M, payload inter
 		return err
 	}
 	collection := d.Database.Collection(col)
+
+	filter["deleted_at"] = nil
 
 	_, err = collection.UpdateOne(ctx, filter, payload)
 	return err
@@ -344,6 +345,7 @@ func (d *MongoStore) UpdateMany(ctx context.Context, filter, payload bson.M, bul
 	if err != nil {
 		return err
 	}
+	filter["deleted_at"] = nil
 
 	collection := d.Database.Collection(col)
 
@@ -389,15 +391,11 @@ func (d *MongoStore) DeleteByID(ctx context.Context, id string, hardDelete bool)
 	if hardDelete {
 		_, err := collection.DeleteOne(ctx, bson.M{"uid": id}, nil)
 		return err
-
-	} else {
-		payload := bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": DeletedDocumentStatus,
-		}
-		_, err := collection.UpdateOne(ctx, bson.M{"uid": id}, bson.M{"$set": payload}, nil)
-		return err
 	}
+
+	payload := bson.M{"deleted_at": primitive.NewDateTimeFromTime(time.Now())}
+	_, err = collection.UpdateOne(ctx, bson.M{"uid": id, "deleted_at": nil}, bson.M{"$set": payload}, nil)
+	return err
 }
 
 /**
@@ -417,18 +415,16 @@ func (d *MongoStore) DeleteOne(ctx context.Context, filter bson.M, hardDelete bo
 	}
 	collection := d.Database.Collection(col)
 
+	filter["deleted_at"] = nil
+
 	if hardDelete {
 		_, err := collection.DeleteOne(ctx, filter, nil)
 		return err
-
-	} else {
-		payload := bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": DeletedDocumentStatus,
-		}
-		_, err := collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
-		return err
 	}
+
+	payload := bson.M{"deleted_at": primitive.NewDateTimeFromTime(time.Now())}
+	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": payload})
+	return err
 }
 
 /**
@@ -449,13 +445,15 @@ func (d *MongoStore) DeleteMany(ctx context.Context, filter, payload bson.M, har
 	}
 	collection := d.Database.Collection(col)
 
+	filter["deleted_at"] = nil
+
 	if hardDelete {
 		_, err := collection.DeleteMany(ctx, filter)
 		return err
-	} else {
-		_, err := collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
-		return err
 	}
+
+	_, err = collection.UpdateMany(ctx, filter, bson.M{"$set": payload})
+	return err
 }
 
 func (d *MongoStore) Count(ctx context.Context, filter map[string]interface{}) (int64, error) {
@@ -465,7 +463,17 @@ func (d *MongoStore) Count(ctx context.Context, filter map[string]interface{}) (
 	}
 	collection := d.Database.Collection(col)
 
-	filter["document_status"] = ActiveDocumentStatus
+	filter["deleted_at"] = nil
+	return collection.CountDocuments(ctx, filter)
+}
+
+func (d *MongoStore) CountWithDeleted(ctx context.Context, filter map[string]interface{}) (int64, error) {
+	col, err := d.retrieveCollection(ctx)
+	if err != nil {
+		return 0, err
+	}
+	collection := d.Database.Collection(col)
+
 	return collection.CountDocuments(ctx, filter)
 }
 
@@ -499,12 +507,7 @@ func (d *MongoStore) WithTransaction(ctx context.Context, fn func(sessCtx mongo.
 	}
 
 	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		err := fn(sessCtx)
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, nil
+		return nil, fn(sessCtx)
 	})
 
 	return err
@@ -538,8 +541,10 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return UserCollection, nil
 	case "devices":
 		return DeviceCollection, nil
+	case "filters":
+		return FilterCollection, nil
 	case "data_migrations", nil:
-		return "data_migrations", nil
+		return DataMigrationsCollection, nil
 	case "applications", nil:
 		return "applications", nil
 	case "portal_links":

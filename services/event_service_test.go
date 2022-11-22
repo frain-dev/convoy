@@ -89,7 +89,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 
@@ -134,7 +133,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 		{
@@ -181,7 +179,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 		{
@@ -229,7 +226,6 @@ func TestEventService_CreateEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 				Headers:          httpheader.HTTPHeader{"X-Test-Signature": []string{"Test"}},
 			},
 		},
@@ -422,7 +418,6 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123", "12345"},
 				GroupID:          "abc",
-				DocumentStatus:   datastore.ActiveDocumentStatus,
 			},
 		},
 
@@ -1417,12 +1412,11 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 							EventType: "incoming",
 						},
 						Endpoint: &datastore.Endpoint{
-							UID:            "1234",
-							Title:          "Title",
-							GroupID:        "123",
-							SupportEmail:   "SupportEmail",
-							TargetURL:      "http://localhost.com",
-							DocumentStatus: "Active",
+							UID:          "1234",
+							Title:        "Title",
+							GroupID:      "123",
+							SupportEmail: "SupportEmail",
+							TargetURL:    "http://localhost.com",
 							Secrets: []datastore.Secret{
 								{
 									UID:   "abc",
@@ -1451,12 +1445,11 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						EventType: "incoming",
 					},
 					Endpoint: &datastore.Endpoint{
-						UID:            "1234",
-						Title:          "Title",
-						GroupID:        "123",
-						SupportEmail:   "SupportEmail",
-						TargetURL:      "http://localhost.com",
-						DocumentStatus: "Active",
+						UID:          "1234",
+						Title:        "Title",
+						GroupID:      "123",
+						SupportEmail: "SupportEmail",
+						TargetURL:    "http://localhost.com",
 						Secrets: []datastore.Secret{
 							{
 								UID:   "abc",
