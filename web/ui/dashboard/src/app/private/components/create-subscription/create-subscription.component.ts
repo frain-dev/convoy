@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { APP, ENDPOINT } from 'src/app/models/app.model';
+import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 import { PrivateService } from '../../private.service';
@@ -248,7 +248,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (endpoints) {
 			const endpointData = endpoints;
 			endpointData.forEach(data => {
-				data.name = data.description;
+				data.name = data.title;
 			});
 			this.endPoints = endpointData;
 		}

@@ -27,7 +27,7 @@
 	<convoy-table-loader id="endpoints_loader_loader" [tableHead]="endpointsTableHead"></convoy-table-loader>
 </convoy-card>
 
-<convoy-card *ngIf="!isLoadingEndpoints">
+<convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
 		<table convoy-table>
 			<thead convoy-table-head>

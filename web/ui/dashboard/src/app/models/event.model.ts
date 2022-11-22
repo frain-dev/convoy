@@ -50,7 +50,7 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	ip_address: string;
 	http_status: string;
 	api_version: string;
-	updated_at?: string;
+	updated_at: string;
 	created_at: string;
 	deleted_at?: number;
 	response_data?: string;

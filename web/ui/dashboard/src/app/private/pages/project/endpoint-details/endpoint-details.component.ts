@@ -27,7 +27,6 @@ export class EndpointDetailsComponent implements OnInit {
 	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
 	isLoadingEndpointDetails = false;
 	isCliAvailable = false;
-	showSecretKey = false;
 	showAddEventModal = false;
 	isDeletingEndpoint = false;
 	showDeleteModal = false;

@@ -14,7 +14,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	eventDelsDetails?: EVENT_DELIVERY;
 	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryAtempts!: EVENT_DELIVERY_ATTEMPT[];
-    selectedDeliveryAttempt!:EVENT_DELIVERY_ATTEMPT;
+	selectedDeliveryAttempt!: EVENT_DELIVERY_ATTEMPT;
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
 	shouldRenderSmallSize = false;
@@ -73,8 +73,9 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 		try {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId, this.appPortalToken);
-			console.log(response);
-			this.eventDeliveryAtempts = response.data;
+			const deliveries = response.data;
+			this.eventDeliveryAtempts = deliveries.sort((a: EVENT_DELIVERY_ATTEMPT, b: EVENT_DELIVERY_ATTEMPT) => new Date(a.updated_at).getDate() - new Date(b.updated_at).getDate());
+			this.selectedDeliveryAttempt = response.data[0];
 			this.eventDeliveryAtempt = response.data[response.data.length - 1];
 
 			this.isloadingDeliveryAttempts = false;

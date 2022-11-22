@@ -73,8 +73,8 @@
 					</td>
 					<td convoy-table-cell>
 						<div class="flex items-center">
-							<span class="w-150px overflow-hidden overflow-ellipsis mr-6px">{{ link.url }}</span>
-							<convoy-copy-button [text]="link.url"></convoy-copy-button>
+							<span class="w-250px overflow-hidden overflow-ellipsis mr-6px">{{ link.url }}</span>
+							<convoy-copy-button [text]="link.url" notificationText="URL has been copied to clipboard!"></convoy-copy-button>
 						</div>
 					</td>
 					<td convoy-table-cell>{{ link.created_at | date: 'mediumDate' }}</td>
