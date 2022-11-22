@@ -1,23 +1,36 @@
-<convoy-modal position="full" title="Create Portal Link">
-    <div modalBody>
-        <form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
-            <convoy-card className="p-24px">
-                <convoy-input-field>
-                    <label for="linkName" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Event Type</label>
-                    <input id="linkName" convoy-input autocomplete="linkName" formControlName="linkName" placeholder="Event type" />
-                </convoy-input-field>
-                <convoy-input-field>
-                    <label for="linkName" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Event Type</label>
-                    <input id="linkName" convoy-input autocomplete="linkName" formControlName="linkName" placeholder="Event type" />
-                </convoy-input-field>
-                <convoy-input-field>
-                    <label for="linkName" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Event Type</label>
-                    <input id="linkName" convoy-input autocomplete="linkName" formControlName="linkName" placeholder="Event type" />
-                </convoy-input-field>
-                <!-- <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Link name" placeholder="Enter link name" [required]="true"></convoy-input>
-                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Endpoint" placeholder="Enter source name" [required]="true"></convoy-input>
-                <convoy-input type="text" autocomplete="linkname" name="linkName" formControlName="linkName" errorMessage="Enter a name for the portal link" label="Url" placeholder="Enter source name" [required]="true"></convoy-input> -->
-            </convoy-card>
-        </form>
-    </div>
+<convoy-modal position="full" [title]="linkUid ? 'Update Portal Link' : 'Create Portal Link'" (closeModal)="goBack()">
+	<div modalBody>
+		<form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
+			<convoy-card className="p-24px mt-40px">
+				<h2 class="font-semibold mb-8px">{{ linkUid ? 'Update' : 'Create' }} Portal Link</h2>
+				<p class="text-grey-60 text-14 mb-20px max-w-[577px]">Portal link is a mini Convoy dashboard for your for your receiving endpoint owners to easily review and debug their webhook events from you.</p>
+
+				<convoy-input-field>
+					<label for="link-name" convoy-label required="true">Link Name</label>
+					<input id="link-name" convoy-input autocomplete="name" formControlName="name" placeholder="Link name" />
+				</convoy-input-field>
+
+				<convoy-select
+					label="Endpoints"
+					name="endpoints"
+					formControlName="endpoints"
+					[options]="endpoints"
+					[required]="true"
+					[multiple]="true"
+					errorMessage="Endpoints is required"
+					className="mb-24px"
+					(selectedOption)="portalLinkForm.patchValue({ endpoints: $event })"
+				></convoy-select>
+			</convoy-card>
+			<div class="flex justify-end items-center my-60px">
+				<button convoy-button class="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" (click)="goBack()">Cancel</button>
+				<button convoy-button [disabled]="isCreatingPortalLink">
+					Save Portal Link
+					<svg width="24" height="24" class="ml-8px" class="fill-white-100">
+						<use xlink:href="#arrow-right-icon"></use>
+					</svg>
+				</button>
+			</div>
+		</form>
+	</div>
 </convoy-modal>
