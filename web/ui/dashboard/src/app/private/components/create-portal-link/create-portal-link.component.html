@@ -7,29 +7,40 @@
 
 				<convoy-input-field>
 					<label for="link-name" convoy-label required="true">Link Name</label>
-					<input id="link-name" convoy-input autocomplete="name" formControlName="name" placeholder="Link name" />
+					<input id="link-name" convoy-input autocomplete="name" formControlName="name" placeholder="Link name" [readonly]="portalLink"/>
 				</convoy-input-field>
 
-				<convoy-select
-					label="Endpoints"
-					name="endpoints"
-					formControlName="endpoints"
-					[options]="endpoints"
-					[required]="true"
-					[multiple]="true"
-					errorMessage="Endpoints is required"
-					className="mb-24px"
-					(selectedOption)="portalLinkForm.patchValue({ endpoints: $event })"
-				></convoy-select>
+				<div [ngClass]="{ 'pointer-events-none': portalLink }">
+					<convoy-select
+						label="Endpoints"
+						name="endpoints"
+						formControlName="endpoints"
+						[options]="endpoints"
+						[required]="true"
+						[multiple]="true"
+						errorMessage="Endpoints is required"
+						className="mb-24px"
+						(selectedOption)="portalLinkForm.patchValue({ endpoints: $event })"
+					></convoy-select>
+				</div>
+
+				<ng-container *ngIf="portalLink">
+					<p class="text-grey-40 text-12 mt-20px">URL</p>
+					<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
+						<span class="text-14 font-normal whitespace-nowrap w-450px overflow-hidden text-ellipsis">{{ portalLink || '' }}</span>
+						<convoy-copy-button [text]="portalLink || ''" notificationText="URL has been copied to clipboard!"></convoy-copy-button>
+					</div>
+				</ng-container>
 			</convoy-card>
 			<div class="flex justify-end items-center my-60px">
-				<button convoy-button class="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" (click)="goBack()">Cancel</button>
-				<button convoy-button [disabled]="isCreatingPortalLink">
+				<button convoy-button class="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" *ngIf="!portalLink" (click)="goBack()">Cancel</button>
+				<button convoy-button [disabled]="isCreatingPortalLink || portalLink">
 					Save Portal Link
 					<svg width="24" height="24" class="ml-8px" class="fill-white-100">
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
 				</button>
+				<button convoy-button class="ml-16px text-14" type="button" fill="outline" *ngIf="portalLink" (click)="goBack()">Done</button>
 			</div>
 		</form>
 	</div>

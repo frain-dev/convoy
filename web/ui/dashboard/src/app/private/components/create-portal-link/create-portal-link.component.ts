@@ -11,11 +11,12 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreatePortalLinkService } from './create-portal-link.service';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 @Component({
 	selector: 'convoy-create-portal-link',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule],
+	imports: [CommonModule, ModalComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent],
 	templateUrl: './create-portal-link.component.html',
 	styleUrls: ['./create-portal-link.component.scss']
 })
@@ -27,6 +28,7 @@ export class CreatePortalLinkComponent implements OnInit {
 	endpoints!: ENDPOINT[];
 	isCreatingPortalLink = false;
 	fetchingLinkDetails = false;
+	portalLink!: string;
 	linkUid = this.route.snapshot.params.id;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private generalService: GeneralService, private createPortalLinkService: CreatePortalLinkService, private router: Router, private route: ActivatedRoute) {}
@@ -42,7 +44,7 @@ export class CreatePortalLinkComponent implements OnInit {
 			const response = this.linkUid ? await this.createPortalLinkService.updatePortalLink({ linkId: this.linkUid, data: this.portalLinkForm.value }) : await this.createPortalLinkService.createPortalLink({ data: this.portalLinkForm.value });
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.goBack();
+			if (!this.linkUid) this.portalLink = response.data.url;
 			this.isCreatingPortalLink = false;
 		} catch {
 			this.isCreatingPortalLink = false;
