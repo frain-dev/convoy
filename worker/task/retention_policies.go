@@ -18,7 +18,6 @@ import (
 )
 
 func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
-
 	return func(ctx context.Context, t *asynq.Task) error {
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
@@ -101,15 +100,15 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 func GetArgsByCollection(collection string, uri string, exportDir string, expDate time.Time, group *datastore.Group) ([]string, string, error) {
 	switch collection {
 	case "events":
-		query := fmt.Sprintf(`{ "group_id": "%s", "document_status": "Active", "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
-		//orgs/<org-id>/projects/<project-id>/events/<today-as-ISODateTime>
+		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+		// orgs/<org-id>/projects/<project-id>/events/<today-as-ISODateTime>
 		out := fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 
 	case "eventdeliveries":
-		query := fmt.Sprintf(`{ "group_id": "%s", "document_status": "Active", "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
-		//orgs/<org-id>/projects/<project-id>/eventdeliveries/<today-as-ISODateTime>
+		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+		// orgs/<org-id>/projects/<project-id>/eventdeliveries/<today-as-ISODateTime>
 		out := fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
@@ -135,7 +134,7 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 		return os.Remove(out)
 	}
 
-	//upload to object store
+	// upload to object store
 	err = objectStoreClient.Save(out)
 	if err != nil {
 		return err
@@ -153,12 +152,11 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 			return err
 		}
 		groupMetaData := group.Metadata
-		//update retain count
+		// update retain count
 		if groupMetaData == nil {
 			group.Metadata = &datastore.GroupMetadata{
 				RetainedEvents: int(numDocs),
 			}
-
 		} else {
 			group.Metadata.RetainedEvents += int(numDocs)
 		}
@@ -179,7 +177,7 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 		}
 	}
 
-	//delete documents
+	// delete documents
 	sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
 		GroupID: group.UID,
 		SearchParams: datastore.SearchParams{

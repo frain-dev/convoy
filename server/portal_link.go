@@ -204,7 +204,6 @@ func (a *ApplicationHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
 // @Router /portal/endpoints [post]
 func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
@@ -235,7 +234,6 @@ func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
 // @Router /portal/endpoints [get]
 func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
 	portalLink := m.GetPortalLinkFromContext(r.Context())
@@ -250,17 +248,77 @@ func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *ht
 	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully", endpoints, http.StatusOK))
 }
 
+// GetPortalLinkDevices
+// @Summary Get portal link devices
+// @Description This endpoint fetches all portal link devices
+// @Tags PortalLink Devices
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} util.ServerResponse{data=[]datastore.Device}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Router /portal/devices [get]
+func (a *ApplicationHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http.Request) {
+	pageable := m.GetPageableFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+
+	f := &datastore.ApiKeyFilter{
+		EndpointIDs: endpointIDs,
+	}
+
+	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
+	devices, paginationData, err := deviceRepo.LoadDevicesPaged(r.Context(), group.UID, f, pageable)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching devices", http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Devices fetched successfully", pagedResponse{Content: &devices, Pagination: &paginationData}, http.StatusOK))
+}
+
+// GetPortalLinkKeys
+// @Summary Get portal link keys
+// @Description This endpoint fetches all portal link endpoints keys
+// @Tags PortalLink Keys
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Router /portal/keys [get]
+func (a *ApplicationHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Request) {
+	group := m.GetGroupFromContext(r.Context())
+	pageable := m.GetPageableFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+
+	f := &datastore.ApiKeyFilter{
+		GroupID:     group.UID,
+		EndpointIDs: endpointIDs,
+		KeyType:     datastore.CLIKey,
+	}
+
+	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
+	apiKeys, paginationData, err := apiKeyRepo.LoadAPIKeysPaged(r.Context(), f, &pageable)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching api keys", http.StatusInternalServerError))
+		return
+	}
+
+	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
+	_ = render.Render(w, r, util.NewServerResponse("api keys fetched successfully",
+		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
+}
+
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {
 	return &models.PortalLinkResponse{
 		UID:               pl.UID,
 		GroupID:           pl.GroupID,
 		Name:              pl.Name,
-		URL:               fmt.Sprintf("%s/portal/%s", baseUrl, pl.Token),
+		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
+		Token:             pl.Token,
 		Endpoints:         pl.Endpoints,
 		EndpointCount:     len(pl.Endpoints),
 		EndpointsMetadata: pl.EndpointsMetadata,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
-		DeletedAt:         pl.DeletedAt,
 	}
 }

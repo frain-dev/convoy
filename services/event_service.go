@@ -196,7 +196,7 @@ func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datast
 }
 
 func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *datastore.Filter) (int, int, error) {
-	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.EndpointID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
+	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.EndpointIDs, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries by ids")
 		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
@@ -216,7 +216,7 @@ func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *data
 }
 
 func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter *datastore.Filter) (int64, error) {
-	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, filter.Group.UID, filter.EndpointID, filter.EventID, filter.Status, filter.SearchParams)
+	count, err := e.eventDeliveryRepo.CountEventDeliveries(ctx, filter.Group.UID, filter.EndpointIDs, filter.EventID, filter.Status, filter.SearchParams)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching event deliveries")
 		return 0, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
@@ -262,7 +262,7 @@ func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Fil
 }
 
 func (e *EventService) GetEventDeliveriesPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	deliveries, paginationData, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.EndpointID, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
+	deliveries, paginationData, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Group.UID, filter.EndpointIDs, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch event deliveries")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
@@ -376,15 +376,14 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	}
 
 	event := &datastore.Event{
-		UID:            uuid.New().String(),
-		EventType:      datastore.EventType(newMessage.EventType),
-		Data:           newMessage.Data,
-		Headers:        e.getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:      endpointIDs,
-		GroupID:        g.UID,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		EventType: datastore.EventType(newMessage.EventType),
+		Data:      newMessage.Data,
+		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		Endpoints: endpointIDs,
+		GroupID:   g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

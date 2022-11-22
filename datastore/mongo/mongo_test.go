@@ -19,7 +19,6 @@ func getDSN() string {
 }
 
 func getConfig() config.Configuration {
-
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
 			Type: config.MongodbDatabaseProvider,
@@ -29,7 +28,6 @@ func getConfig() config.Configuration {
 }
 
 func getDB(t *testing.T) (*mongo.Database, func()) {
-
 	db, err := New(getConfig())
 	require.NoError(t, err)
 

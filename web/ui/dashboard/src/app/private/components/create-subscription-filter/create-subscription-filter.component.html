@@ -1,0 +1,29 @@
+<convoy-card className="p-24px mt-40px">
+	<div class="flex items-center justify-between mb-30px">
+		<div>
+			<h2 class="font-semibold mb-8px">Setup Filter</h2>
+			<h4>Provide your filter specifications</h4>
+		</div>
+		<div class="flex items-center">
+			<button convoy-button size="sm" fill="outline" class="mr-16px min-w-[130px]" (click)="testFilter()">
+				Test Filter
+				<svg width="16" height="16" class="ml-8px" class="ml-6px">
+					<use xlink:href="#test-icon"></use>
+				</svg>
+			</button>
+			<button convoy-button size="sm" type="button" class="min-w-[130px] min-h-[34px]" [disabled]="!isFilterTestPassed" (click)="setSubscriptionFilter()">Save</button>
+		</div>
+	</div>
+	<div class="bg-[#FCFCFC] rounded-8px">
+		<div class="flex">
+			<div class="flex flex-col w-full">
+				<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold bg-[#FCFCFC] rounded-tl-8px">Event Payload</div>
+				<convoy-monaco [editorValue]="payload" #requestEditor></convoy-monaco>
+			</div>
+			<div class="flex flex-col w-full">
+				<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold bg-[#FCFCFC] rounded-tr-8px">Filter Schema</div>
+				<convoy-monaco [editorValue]="schema" #schemaEditor></convoy-monaco>
+			</div>
+		</div>
+	</div>
+</convoy-card>

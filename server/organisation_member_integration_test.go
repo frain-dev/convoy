@@ -244,6 +244,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOw
 
 	orgMemberRepo := cm.NewOrgMemberRepo(s.ConvoyApp.A.Store)
 	member, err := orgMemberRepo.FetchOrganisationMemberByUserID(context.Background(), s.DefaultUser.UID, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
@@ -259,7 +260,6 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOw
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
 }
 
 func TestOrganisationMemberIntegrationTestSuite(t *testing.T) {

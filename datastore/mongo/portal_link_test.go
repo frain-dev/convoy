@@ -195,11 +195,10 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 			for i := 0; i < tc.count; i++ {
 				portalLink := &datastore.PortalLink{
-					UID:            uuid.NewString(),
-					GroupID:        groupID,
-					Endpoints:      []string{uuid.NewString()},
-					Token:          uniuri.NewLen(5),
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					UID:       uuid.NewString(),
+					GroupID:   groupID,
+					Endpoints: []string{uuid.NewString()},
+					Token:     uniuri.NewLen(5),
 				}
 
 				require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
@@ -221,11 +220,10 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 func generatePortalLink(t *testing.T) *datastore.PortalLink {
 	return &datastore.PortalLink{
-		UID:            uuid.NewString(),
-		GroupID:        uuid.NewString(),
-		Name:           fmt.Sprintf("Test-%s", uuid.NewString()),
-		Token:          uniuri.NewLen(5),
-		Endpoints:      []string{uuid.NewString(), uuid.NewString()},
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		GroupID:   uuid.NewString(),
+		Name:      fmt.Sprintf("Test-%s", uuid.NewString()),
+		Token:     uniuri.NewLen(5),
+		Endpoints: []string{uuid.NewString(), uuid.NewString()},
 	}
 }

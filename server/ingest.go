@@ -126,15 +126,14 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
 	event := &datastore.Event{
-		UID:            uuid.New().String(),
-		EventType:      datastore.EventType(maskID),
-		SourceID:       source.UID,
-		GroupID:        source.GroupID,
-		Data:           payload,
-		Headers:        httpheader.HTTPHeader(r.Header),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		EventType: datastore.EventType(maskID),
+		SourceID:  source.UID,
+		GroupID:   source.GroupID,
+		Data:      payload,
+		Headers:   httpheader.HTTPHeader(r.Header),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	createEvent := task.CreateEvent{

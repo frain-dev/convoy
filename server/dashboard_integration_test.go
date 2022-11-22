@@ -82,13 +82,12 @@ func (s *DashboardIntegrationTestSuite) TearDownTest() {
 func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	ctx := context.Background()
 	endpoint := &datastore.Endpoint{
-		UID:            "abc",
-		GroupID:        s.DefaultGroup.UID,
-		Title:          "test-app",
-		SupportEmail:   "test@suport.com",
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:          "abc",
+		GroupID:      s.DefaultGroup.UID,
+		Title:        "test-app",
+		SupportEmail: "test@suport.com",
+		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
@@ -105,7 +104,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -116,7 +114,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -127,7 +124,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -138,7 +134,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -149,7 +144,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
@@ -160,7 +154,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 	}
 

@@ -177,7 +177,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) CountDeliveriesByStatus(arg0,
 }
 
 // CountEventDeliveries mocks base method.
-func (m *MockEventDeliveryRepository) CountEventDeliveries(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams) (int64, error) {
+func (m *MockEventDeliveryRepository) CountEventDeliveries(arg0 context.Context, arg1 string, arg2 []string, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CountEventDeliveries", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(int64)
@@ -280,7 +280,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams, arg6 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1 string, arg2 []string, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams, arg6 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]datastore.EventDelivery)
@@ -1277,6 +1277,21 @@ func (m *MockSubscriptionRepository) LoadSubscriptionsPaged(arg0 context.Context
 func (mr *MockSubscriptionRepositoryMockRecorder) LoadSubscriptionsPaged(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSubscriptionsPaged", reflect.TypeOf((*MockSubscriptionRepository)(nil).LoadSubscriptionsPaged), arg0, arg1, arg2, arg3)
+}
+
+// TestSubscriptionFilter mocks base method.
+func (m *MockSubscriptionRepository) TestSubscriptionFilter(ctx context.Context, payload, filter map[string]interface{}) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TestSubscriptionFilter", ctx, payload, filter)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TestSubscriptionFilter indicates an expected call of TestSubscriptionFilter.
+func (mr *MockSubscriptionRepositoryMockRecorder) TestSubscriptionFilter(ctx, payload, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestSubscriptionFilter", reflect.TypeOf((*MockSubscriptionRepository)(nil).TestSubscriptionFilter), ctx, payload, filter)
 }
 
 // UpdateSubscription mocks base method.

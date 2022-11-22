@@ -137,7 +137,6 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 		GroupID:        s.DefaultGroup.UID,
 		AppID:          appID,
 		IsDisabled:     false,
-		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	err := cm.NewEndpointRepo(s.ConvoyApp.A.Store).CreateEndpoint(context.TODO(), endpoint, s.DefaultGroup.UID)

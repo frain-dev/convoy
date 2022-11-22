@@ -82,7 +82,6 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		RateLimitDuration: duration.String(),
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	if util.IsStringEmpty(endpoint.AppID) {
@@ -97,20 +96,18 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 
 		endpoint.Secrets = []datastore.Secret{
 			{
-				UID:            uuid.NewString(),
-				Value:          sc,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				UID:       uuid.NewString(),
+				Value:     sc,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			},
 		}
 	} else {
 		endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-			UID:            uuid.NewString(),
-			Value:          e.Secret,
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID:       uuid.NewString(),
+			Value:     e.Secret,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		})
 	}
 
@@ -302,11 +299,10 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	}
 
 	sc := datastore.Secret{
-		UID:            uuid.NewString(),
-		Value:          newSecret,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		Value:     newSecret,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	secrets := append(endpoint.Secrets, sc)

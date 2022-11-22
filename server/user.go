@@ -245,7 +245,6 @@ func (a *ApplicationHandler) UpdatePassword(w http.ResponseWriter, r *http.Reque
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Password updated successfully", user, http.StatusOK))
-
 }
 
 // ForgotPassword

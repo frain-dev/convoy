@@ -91,10 +91,13 @@
 					<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
 				</div>
 
-				<h3 class="mt-48px mb-16px font-semibold">Enable Rentention Policy</h3>
-				<div class="grid grid-cols-2 gap-24px mb-24px">
-					<convoy-radio formControlName="is_retention_policy_enabled" label="Enable" _name="is_retention_policy_enabled" [value]="true" _id="enable_retention_policy"></convoy-radio>
-					<convoy-radio formControlName="is_retention_policy_enabled" label="Disable" _name="is_retention_policy_enabled" [value]="false" _id="disable_retention_policy"></convoy-radio>
+				<h3 class="mt-48px mb-16px font-semibold">Data Rentention</h3>
+				<div formGroupName="retention_policy">
+					<convoy-input-field>
+						<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
+						<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
+						<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
+					</convoy-input-field>
 				</div>
 
 				<ng-container *ngIf="enableMoreConfig && projectForm.value.config.is_retention_policy_enabled">

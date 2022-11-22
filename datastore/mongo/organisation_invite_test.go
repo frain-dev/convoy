@@ -24,11 +24,10 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 
 	inviteRepo := NewOrgInviteRepo(store)
 	org := &datastore.Organisation{
-		UID:            uuid.NewString(),
-		Name:           "test_org",
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.NewString(),
+		Name:      "test_org",
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := NewOrgRepo(store).CreateOrganisation(context.Background(), org)
@@ -43,7 +42,6 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			OrganisationID: org.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
 			Status:         datastore.InviteStatusPending,
-			DocumentStatus: datastore.ActiveDocumentStatus,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -60,7 +58,6 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			OrganisationID: org.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
 			Status:         datastore.InviteStatusDeclined,
-			DocumentStatus: datastore.ActiveDocumentStatus,
 			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -89,14 +86,13 @@ func TestCreateOrganisationInvite(t *testing.T) {
 
 	inviteRepo := NewOrgInviteRepo(store)
 	iv := &datastore.OrganisationInvite{
-		UID:            uuid.NewString(),
-		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-		Token:          uuid.NewString(),
-		Role:           auth.Role{Type: auth.RoleAdmin},
-		Status:         datastore.InviteStatusPending,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:          uuid.NewString(),
+		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
+		Token:        uuid.NewString(),
+		Role:         auth.Role{Type: auth.RoleAdmin},
+		Status:       datastore.InviteStatusPending,
+		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
@@ -123,10 +119,9 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 			Type:  auth.RoleAdmin,
 			Group: uuid.NewString(),
 		},
-		Status:         datastore.InviteStatusPending,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		Status:    datastore.InviteStatusPending,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
@@ -170,10 +165,9 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 			Type:  auth.RoleAdmin,
 			Group: uuid.NewString(),
 		},
-		Status:         datastore.InviteStatusPending,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		Status:    datastore.InviteStatusPending,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := inviteRepo.CreateOrganisationInvite(context.Background(), org)
@@ -200,10 +194,9 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 			Type:  auth.RoleAdmin,
 			Group: uuid.NewString(),
 		},
-		Status:         datastore.InviteStatusPending,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		Status:    datastore.InviteStatusPending,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
@@ -231,10 +224,9 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 			Type:  auth.RoleAdmin,
 			Group: uuid.NewString(),
 		},
-		Status:         datastore.InviteStatusPending,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		Status:    datastore.InviteStatusPending,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err := inviteRepo.CreateOrganisationInvite(context.Background(), iv)
