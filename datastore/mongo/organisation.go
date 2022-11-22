@@ -29,13 +29,10 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organi
 
 func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
-
 	var organisations []datastore.Organisation
 
-	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
+	pagination, err := db.store.FindMany(ctx, bson.M{}, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &organisations)
-
 	if err != nil {
 		return organisations, datastore.PaginationData{}, err
 	}
@@ -61,8 +58,7 @@ func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 	ctx = db.setCollectionInContext(ctx)
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 

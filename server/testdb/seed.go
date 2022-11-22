@@ -33,12 +33,11 @@ func SeedApplication(store datastore.Store, g *datastore.Group, uid, title strin
 	}
 
 	app := &datastore.Application{
-		UID:            uid,
-		Title:          title,
-		GroupID:        g.UID,
-		IsDisabled:     disabled,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		Endpoints:      []datastore.Endpoint{},
+		UID:        uid,
+		Title:      title,
+		GroupID:    g.UID,
+		IsDisabled: disabled,
+		Endpoints:  []datastore.Endpoint{},
 	}
 
 	// Seed Data.
@@ -55,11 +54,10 @@ func SeedMultipleApplications(store datastore.Store, g *datastore.Group, count i
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Application{
-			UID:            uid,
-			Title:          fmt.Sprintf("Test-%s", uid),
-			GroupID:        g.UID,
-			IsDisabled:     false,
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID:        uid,
+			Title:      fmt.Sprintf("Test-%s", uid),
+			GroupID:    g.UID,
+			IsDisabled: false,
 		}
 
 		// Seed Data.
@@ -74,8 +72,7 @@ func SeedMultipleApplications(store datastore.Store, g *datastore.Group, count i
 
 func SeedEndpoint(store datastore.Store, app *datastore.Application, groupID string) (*datastore.Endpoint, error) {
 	app.Endpoints = append(app.Endpoints, datastore.Endpoint{
-		UID:            uuid.New().String(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID: uuid.New().String(),
 	})
 
 	// Seed Data.
@@ -90,11 +87,10 @@ func SeedEndpoint(store datastore.Store, app *datastore.Application, groupID str
 
 func SeedEndpointSecret(store datastore.Store, app *datastore.Application, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
 	sc := datastore.Secret{
-		UID:            uuid.New().String(),
-		Value:          value,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		Value:     value,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	e.Secrets = append(e.Secrets, sc)
@@ -114,8 +110,7 @@ func SeedEndpointSecret(store datastore.Store, app *datastore.Application, e *da
 func SeedMultipleEndpoints(store datastore.Store, app *datastore.Application, groupID string, events []string, count int) ([]datastore.Endpoint, error) {
 	for i := 0; i < count; i++ {
 		endpoint := &datastore.Endpoint{
-			UID:            uuid.New().String(),
-			DocumentStatus: datastore.ActiveDocumentStatus,
+			UID: uuid.New().String(),
 		}
 
 		app.Endpoints = append(app.Endpoints, *endpoint)
@@ -166,7 +161,6 @@ func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, er
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	// Seed Data.
@@ -190,14 +184,13 @@ func SeedDefaultUser(store datastore.Store) (*datastore.User, error) {
 	}
 
 	defaultUser := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      "default",
-		LastName:       "default",
-		Email:          "default@user.com",
-		Password:       string(p.Hash),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: "default",
+		LastName:  "default",
+		Email:     "default@user.com",
+		Password:  string(p.Hash),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	// Seed Data.
@@ -212,24 +205,17 @@ func SeedDefaultUser(store datastore.Store) (*datastore.User, error) {
 
 // seed default organisation
 func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*datastore.Organisation, error) {
-	p := datastore.Password{Plaintext: DefaultUserPassword}
-	err := p.GenerateHash()
-	if err != nil {
-		return nil, err
-	}
-
 	defaultOrg := &datastore.Organisation{
-		UID:            uuid.NewString(),
-		OwnerID:        user.UID,
-		Name:           "default-org",
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.NewString(),
+		OwnerID:   user.UID,
+		Name:      "default-org",
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	// Seed Data.
 	organisationRepo := cm.NewOrgRepo(store)
-	err = organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
+	err := organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
 	if err != nil {
 		return &datastore.Organisation{}, err
 	}
@@ -239,7 +225,6 @@ func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*data
 		OrganisationID: defaultOrg.UID,
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleSuperUser},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -260,7 +245,6 @@ func SeedOrganisationMember(store datastore.Store, org *datastore.Organisation, 
 		OrganisationID: org.UID,
 		UserID:         user.UID,
 		Role:           *role,
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -288,7 +272,6 @@ func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, 
 		Token:          uniuri.NewLen(64),
 		ExpiresAt:      expiry,
 		Status:         status,
-		DocumentStatus: datastore.ActiveDocumentStatus,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -318,17 +301,16 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:            uid,
-		MaskID:         maskID,
-		Name:           name,
-		UserID:         userID,
-		Type:           datastore.KeyType(keyType),
-		Role:           role,
-		Hash:           encodedKey,
-		Salt:           salt,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uid,
+		MaskID:    maskID,
+		Name:      name,
+		UserID:    userID,
+		Type:      datastore.KeyType(keyType),
+		Role:      role,
+		Hash:      encodedKey,
+		Salt:      salt,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	apiRepo := cm.NewApiKeyRepo(store)
@@ -355,7 +337,6 @@ func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datasto
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	// Seed Data.
@@ -375,15 +356,14 @@ func SeedEvent(store datastore.Store, app *datastore.Application, groupID string
 	}
 
 	ev := &datastore.Event{
-		UID:            uid,
-		EventType:      datastore.EventType(eventType),
-		Data:           data,
-		AppID:          app.UID,
-		GroupID:        groupID,
-		SourceID:       sourceID,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uid,
+		EventType: datastore.EventType(eventType),
+		Data:      data,
+		AppID:     app.UID,
+		GroupID:   groupID,
+		SourceID:  sourceID,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	// Seed Data.
@@ -412,7 +392,6 @@ func SeedEventDelivery(store datastore.Store, app *datastore.Application, event 
 		GroupID:        groupID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 
 	// Seed Data.
@@ -436,12 +415,11 @@ func SeedOrganisation(store datastore.Store, uid, ownerID, name string) (*datast
 	}
 
 	org := &datastore.Organisation{
-		UID:            uid,
-		OwnerID:        ownerID,
-		Name:           name,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uid,
+		OwnerID:   ownerID,
+		Name:      name,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	// Seed Data.
@@ -462,12 +440,11 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 		uid := uuid.New().String()
 
 		org := &datastore.Organisation{
-			UID:            uid,
-			OwnerID:        ownerID,
-			Name:           fmt.Sprintf("TestOrg-%s", uid),
-			DocumentStatus: datastore.ActiveDocumentStatus,
-			CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+			UID:       uid,
+			OwnerID:   ownerID,
+			Name:      fmt.Sprintf("TestOrg-%s", uid),
+			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		}
 		orgs = append(orgs, org)
 
@@ -507,13 +484,12 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 	}
 
 	source := &datastore.Source{
-		UID:            uid,
-		GroupID:        g.UID,
-		MaskID:         maskID,
-		Name:           "Convoy-Prod",
-		Type:           datastore.SourceType(ds),
-		Verifier:       v,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:      uid,
+		GroupID:  g.UID,
+		MaskID:   maskID,
+		Name:     "Convoy-Prod",
+		Type:     datastore.SourceType(ds),
+		Verifier: v,
 	}
 
 	// Seed Data
@@ -562,8 +538,7 @@ func SeedSubscription(store datastore.Store,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 
-		Status:         status,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		Status: status,
 	}
 
 	subRepo := cm.NewSubscriptionRepo(store)
@@ -587,12 +562,11 @@ func SeedUser(store datastore.Store, email, password string) (*datastore.User, e
 	}
 
 	user := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      "test",
-		LastName:       "test",
-		Password:       string(p.Hash),
-		Email:          email,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: "test",
+		LastName:  "test",
+		Password:  string(p.Hash),
+		Email:     email,
 	}
 
 	// Seed Data
@@ -611,7 +585,6 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 		IsAnalyticsEnabled: true,
 		IsSignupEnabled:    true,
 		StoragePolicy:      &datastore.DefaultStoragePolicy,
-		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 
 	// Seed Data
@@ -626,12 +599,11 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 
 func SeedDevice(store datastore.Store, g *datastore.Group, appID string) error {
 	device := &datastore.Device{
-		UID:            uuid.NewString(),
-		GroupID:        g.UID,
-		AppID:          appID,
-		HostName:       "",
-		Status:         datastore.DeviceStatusOnline,
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:      uuid.NewString(),
+		GroupID:  g.UID,
+		AppID:    appID,
+		HostName: "",
+		Status:   datastore.DeviceStatusOnline,
 	}
 
 	deviceRepo := cm.NewDeviceRepository(store)
