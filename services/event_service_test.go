@@ -713,9 +713,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "13429",
+					Group:       &datastore.Group{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -742,7 +742,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 				ed.EXPECT().LoadEventDeliveriesPaged(
 					gomock.Any(),
 					"123",
-					"abc",
+					[]string{"abc"},
 					"13429",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
@@ -784,9 +784,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "13429",
+					Group:       &datastore.Group{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -811,7 +811,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 				ed.EXPECT().LoadEventDeliveriesPaged(
 					gomock.Any(),
 					"123",
-					"abc",
+					[]string{"abc"},
 					"13429",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
@@ -897,10 +897,10 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "ref",
-					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					Group:       &datastore.Group{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "ref",
+					Status:      []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
 						CreatedAtEnd:   1213,
@@ -912,7 +912,7 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 				ed.EXPECT().CountEventDeliveries(
 					gomock.Any(),
 					"123",
-					"abc",
+					[]string{"abc"},
 					"ref",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					datastore.SearchParams{
@@ -927,10 +927,10 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "ref",
-					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
+					Group:       &datastore.Group{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "ref",
+					Status:      []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
 						CreatedAtEnd:   1213,
@@ -942,7 +942,7 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 				ed.EXPECT().CountEventDeliveries(
 					gomock.Any(),
 					"123",
-					"abc",
+					[]string{"abc"},
 					"ref",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					datastore.SearchParams{
@@ -1376,9 +1376,9 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "123",
+					Group:       &datastore.Group{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "123",
 					Pageable: datastore.Pageable{
 						Page:    1,
 						PerPage: 1,
@@ -1396,7 +1396,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 				ed.EXPECT().LoadEventDeliveriesPaged(
 					gomock.Any(),
 					"123",
-					"abc",
+					[]string{"abc"},
 					"123",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
 					datastore.SearchParams{

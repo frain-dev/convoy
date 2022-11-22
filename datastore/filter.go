@@ -9,6 +9,7 @@ type Filter struct {
 	Query        string
 	Group        *Group
 	EndpointID   string
+	EndpointIDs  []string
 	EventID      string
 	SourceID     string
 	Pageable     Pageable
@@ -30,6 +31,7 @@ type ApiKeyFilter struct {
 
 type FilterBy struct {
 	EndpointID   string
+	EndpointIDs  []string
 	GroupID      string
 	SourceID     string
 	SearchParams SearchParams

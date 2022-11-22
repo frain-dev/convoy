@@ -51,9 +51,8 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 
 		for _, group := range groups {
 			filter := &datastore.Filter{
-				Group:      group,
-				EndpointID: "",
-				Pageable:   datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
+				Group:    group,
+				Pageable: datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Unix(0, 0).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),

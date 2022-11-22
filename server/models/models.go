@@ -353,6 +353,7 @@ type PortalLinkResponse struct {
 	GroupID           string               `json:"group_id"`
 	Endpoints         []string             `json:"endpoints"`
 	EndpointCount     int                  `json:"endpoint_count"`
+	Token             string               `json:"token"`
 	EndpointsMetadata []datastore.Endpoint `json:"endpoints_metadata"`
 	URL               string               `json:"url"`
 	CreatedAt         primitive.DateTime   `json:"created_at,omitempty"`

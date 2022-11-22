@@ -195,9 +195,9 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		d = append(d, bson.E{Key: "group_id", Value: f.Group.UID})
 	}
 
-	if !util.IsStringEmpty(f.EndpointID) {
-		filter["endpoints"] = f.EndpointID
-		d = append(d, bson.E{Key: "endpoints", Value: f.EndpointID})
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoints"] = bson.M{"$in": f.EndpointIDs}
+		d = append(d, bson.E{Key: "endpoints", Value: bson.M{"$in": f.EndpointIDs}})
 	}
 
 	if !util.IsStringEmpty(f.SourceID) {

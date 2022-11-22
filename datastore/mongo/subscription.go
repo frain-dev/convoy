@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -70,8 +69,9 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	var subscriptions []datastore.Subscription
 
 	filter := bson.M{"group_id": groupId, "document_status": datastore.ActiveDocumentStatus}
-	if !util.IsStringEmpty(f.EndpointID) {
-		filter["endpoint_id"] = f.EndpointID
+
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoint_id"] = bson.M{"$in": f.EndpointIDs}
 	}
 
 	matchStage := bson.D{
@@ -83,12 +83,14 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 
-	if !util.IsStringEmpty(f.EndpointID) {
+	if len(f.EndpointIDs) > 0 {
 		matchStage = bson.D{
 			{Key: "$match",
 				Value: bson.D{
 					{Key: "group_id", Value: groupId},
-					{Key: "endpoint_id", Value: f.EndpointID},
+					{Key: "endpoint_id", Value: bson.M{
+						"$in": f.EndpointIDs,
+					}},
 					{Key: "document_status", Value: datastore.ActiveDocumentStatus},
 				},
 			},
@@ -110,6 +112,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 									{Key: "title", Value: 1},
 									{Key: "group_id", Value: 1},
 									{Key: "support_email", Value: 1},
+									{Key: "target_url", Value: 1},
 								},
 							},
 						},

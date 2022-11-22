@@ -481,7 +481,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 	})
 
 	// App Portal API.
-	router.Route("/portal/{portalLinkToken}", func(portalRouter chi.Router) {
+	router.Route("/portal", func(portalRouter chi.Router) {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
 		portalRouter.Use(a.M.RequirePortalLink())
@@ -508,8 +508,11 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
 				})
 
-				endpointSubRouter.Route("/events", func(eventRouter chi.Router) {
-					eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+			})
+		})
+
+		portalRouter.Route("/events", func(eventRouter chi.Router) {
+			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 					eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 						eventSubRouter.Use(a.M.RequireEvent())
@@ -518,35 +521,32 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					})
 				})
 
-				endpointSubRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-					subsriptionRouter.Post("/", a.CreateSubscription)
-					subsriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
-					subsriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
-					subsriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
-					subsriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
+		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
+			subsriptionRouter.Post("/", a.CreateSubscription)
+			subsriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+			subsriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+			subsriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+			subsriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
+		})
+
+		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+			eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+			eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
+			eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
+			eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
+
+			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+				eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
+
+				eventDeliverySubRouter.Get("/", a.GetEventDelivery)
+				eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
+
+				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+					deliveryRouter.Use(fetchDeliveryAttempts())
+
+					deliveryRouter.Get("/", a.GetDeliveryAttempts)
+					deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 				})
-
-				endpointSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-					eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
-					eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
-					eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
-					eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
-
-					eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-						eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
-
-						eventDeliverySubRouter.Get("/", a.GetEventDelivery)
-						eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
-
-						eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-							deliveryRouter.Use(fetchDeliveryAttempts())
-
-							deliveryRouter.Get("/", a.GetDeliveryAttempts)
-							deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
-						})
-					})
-				})
-
 			})
 		})
 

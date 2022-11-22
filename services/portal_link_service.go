@@ -46,6 +46,7 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 
 	portalLink := &datastore.PortalLink{
 		UID:            uuid.New().String(),
+		Name:           portal.Name,
 		GroupID:        group.UID,
 		Token:          uniuri.NewLen(24),
 		Endpoints:      portal.Endpoints,
