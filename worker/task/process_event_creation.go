@@ -213,13 +213,22 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			}
 
 			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
+			if err != nil {
+				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
+			}
+
 			subscriptions = append(subscriptions, subs...)
 
 		}
 	} else if group.Type == datastore.IncomingGroup {
-		subscriptions, err = subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
+		subs, err := subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
 		if err != nil {
 			log.Errorf("error fetching subscriptions for this source %s", err)
+			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+		}
+
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
+		if err != nil {
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 		}
 	}
