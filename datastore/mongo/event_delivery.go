@@ -45,7 +45,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			Key: "$match",
 			Value: bson.D{
 				{Key: "uid", Value: uid},
-				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
@@ -244,7 +244,6 @@ func (db *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, 
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	update := bson.M{
@@ -432,13 +431,11 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	f := bson.M{
-		"group_id":        filter.GroupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"group_id": filter.GroupID,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -460,7 +457,6 @@ func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, e
 		"device_id":       deviceId,
 		"status":          datastore.DiscardedEventStatus,
 		"created_at":      getCreatedDateFilter(searchParams),
-		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0)
@@ -480,8 +476,7 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 func getFilter(groupID string, endpointID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
 
 	filter := bson.M{
-		"document_status": datastore.ActiveDocumentStatus,
-		"created_at":      getCreatedDateFilter(searchParams),
+		"created_at": getCreatedDateFilter(searchParams),
 	}
 
 	hasEndpointFilter := !util.IsStringEmpty(endpointID)

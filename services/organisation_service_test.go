@@ -44,7 +44,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 				newOrg: &models.Organisation{Name: "new_org"},
 				user:   &datastore.User{UID: "1234"},
 			},
-			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234"},
 			dbFn: func(os *OrganisationService) {
 				a, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).

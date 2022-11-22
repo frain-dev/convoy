@@ -82,20 +82,18 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
-		CreatedAt:      time.Now().UTC().Add(-duration),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
 
 	//seed eventdelivery
 	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
-		CreatedAt:      time.Now().UTC().Add(-duration),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
 
 	// call handler
-	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
+	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
 	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.groupRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
 	err = fn(context.Background(), task)
@@ -150,15 +148,13 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	require.NoError(r.T(), err)
 	// seed event
 	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
-		CreatedAt:      time.Now().UTC(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt: time.Now().UTC(),
 	})
 	require.NoError(r.T(), err)
 
 	//seed eventdelivery
 	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
-		CreatedAt:      time.Now().UTC(),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		CreatedAt: time.Now().UTC(),
 	})
 	require.NoError(r.T(), err)
 
@@ -243,14 +239,13 @@ func seedEvent(store datastore.Store, endpointID string, groupID string, uid, ev
 	}
 
 	ev := &datastore.Event{
-		UID:            uid,
-		EventType:      datastore.EventType(eventType),
-		Data:           data,
-		Endpoints:      []string{endpointID},
-		GroupID:        groupID,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: filter.DocumentStatus,
+		UID:       uid,
+		EventType: datastore.EventType(eventType),
+		Data:      data,
+		Endpoints: []string{endpointID},
+		GroupID:   groupID,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	// Seed Data.
@@ -277,7 +272,6 @@ func seedEventDelivery(store datastore.Store, eventID string, endpointID string,
 		GroupID:        groupID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: filter.DocumentStatus,
 	}
 
 	// Seed Data.
@@ -298,7 +292,6 @@ func seedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 		UID:                uuid.NewString(),
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
-		DocumentStatus:     datastore.ActiveDocumentStatus,
 	}
 
 	// Seed Data
@@ -311,6 +304,5 @@ func seedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 }
 
 type SeedFilter struct {
-	CreatedAt      time.Time
-	DocumentStatus datastore.DocumentStatus
+	CreatedAt time.Time
 }

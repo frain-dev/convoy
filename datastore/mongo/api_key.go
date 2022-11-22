@@ -65,8 +65,7 @@ func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*d
 	apiKey := new(datastore.APIKey)
 
 	filter := bson.M{
-		"mask_id":         maskID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"mask_id": maskID,
 	}
 
 	err := db.store.FindOne(ctx, filter, nil, apiKey)
@@ -89,10 +88,7 @@ func (db *apiKeyRepo) RevokeAPIKeys(ctx context.Context, uids []string) error {
 		},
 	}
 
-	updateAsDeleted := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
-	}
+	updateAsDeleted := bson.M{"deleted_at": primitive.NewDateTimeFromTime(time.Now())}
 
 	return db.store.UpdateMany(ctx, filter, bson.M{"$set": updateAsDeleted}, false)
 }
@@ -101,10 +97,7 @@ func (db *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datas
 	ctx = db.setCollectionInContext(ctx)
 	apiKey := &datastore.APIKey{}
 
-	filter := bson.M{
-		"hash":            hash,
-		"document_status": datastore.ActiveDocumentStatus,
-	}
+	filter := bson.M{"hash": hash}
 
 	err := db.store.FindOne(ctx, filter, nil, apiKey)
 	if err != nil {
@@ -122,7 +115,7 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 
 	var apiKeys []datastore.APIKey
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{}
 
 	if !util.IsStringEmpty(f.GroupID) {
 		filter["role.group"] = f.GroupID

@@ -3,6 +3,9 @@ package services
 import (
 	"context"
 	"errors"
+	"net/http"
+	"time"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
@@ -10,8 +13,6 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"time"
 )
 
 type OrganisationService struct {
@@ -30,12 +31,11 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 	}
 
 	org := &datastore.Organisation{
-		UID:            uuid.NewString(),
-		OwnerID:        user.UID,
-		Name:           newOrg.Name,
-		DocumentStatus: datastore.ActiveDocumentStatus,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.NewString(),
+		OwnerID:   user.UID,
+		Name:      newOrg.Name,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = os.orgRepo.CreateOrganisation(ctx, org)

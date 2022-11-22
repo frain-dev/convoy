@@ -46,10 +46,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		// endpoint, err := endpointRepo.FindApplicationEndpointByID(context.Background(), ed.AppID, ed.EndpointID)
-		// if err != nil {
-		// 	return &EndpointError{Err: err, delay: 10 * time.Second}
-		// }
 
 		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID)
 		if err != nil {
@@ -273,7 +269,7 @@ func newSignature(endpoint *datastore.Endpoint, g *datastore.Group, data json.Ra
 		}
 
 		for _, sc := range endpoint.Secrets {
-			if sc.DeletedAt == 0 {
+			if sc.DeletedAt == nil {
 				// the secret has not been expired
 				scheme.Secret = append(scheme.Secret, sc.Value)
 			}

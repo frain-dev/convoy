@@ -62,7 +62,6 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		AppID:           uid,
 		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus:  datastore.ActiveDocumentStatus,
 	}
 
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
@@ -358,20 +357,18 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 			endpoint.Secrets = []datastore.Secret{
 				{
-					UID:            uuid.NewString(),
-					Value:          sc,
-					CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					UID:       uuid.NewString(),
+					Value:     sc,
+					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				},
 			}
 		} else {
 			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-				UID:            uuid.NewString(),
-				Value:          req.Secret,
-				CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				UID:       uuid.NewString(),
+				Value:     req.Secret,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			})
 		}
 
