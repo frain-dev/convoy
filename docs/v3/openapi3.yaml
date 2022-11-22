@@ -12,19 +12,10 @@ components:
     datastore.APIKey:
       properties:
         created_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         deleted_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         expires_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         hash:
           type: string
@@ -41,9 +32,6 @@ components:
         uid:
           type: string
         updated_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         user_id:
           type: string
@@ -372,9 +360,6 @@ components:
         interval_seconds:
           type: integer
         next_send_time:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         num_trials:
           description: |-
@@ -809,14 +794,8 @@ components:
     models.LoginUserResponse:
       properties:
         created_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         deleted_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         email:
           type: string
@@ -829,9 +808,6 @@ components:
         uid:
           type: string
         updated_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
       type: object
     models.Organisation:
@@ -924,14 +900,8 @@ components:
     models.SourceResponse:
       properties:
         created_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         deleted_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         group_id:
           type: string
@@ -950,9 +920,6 @@ components:
         uid:
           type: string
         updated_at:
-          description: |-
-            NextSendTime denotes the next time an Event will be published in
-            case it failed the first time
           type: integer
         url:
           type: string

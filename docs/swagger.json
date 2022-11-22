@@ -10034,15 +10034,12 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "expires_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "hash": {
@@ -10067,7 +10064,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "user_id": {
@@ -10557,7 +10553,6 @@
                     "type": "integer"
                 },
                 "next_send_time": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "num_trials": {
@@ -11219,11 +11214,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "email": {
@@ -11242,7 +11235,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 }
             }
@@ -11386,11 +11378,9 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "deleted_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "group_id": {
@@ -11418,7 +11408,6 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
                     "type": "integer"
                 },
                 "url": {
