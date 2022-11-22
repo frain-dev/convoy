@@ -7,9 +7,10 @@ import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { CreateEndpointService } from './create-endpoint.service';
+import { PrivateService } from '../../private.service';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -23,6 +24,7 @@ export class CreateEndpointComponent implements OnInit {
 	@Output() onAction = new EventEmitter<any>();
 	savingEndpoint = false;
 	isLoadingEndpointDetails = false;
+	isLoadingEndpoints = false;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		support_email: [],
@@ -43,9 +45,10 @@ export class CreateEndpointComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;
 	endpointUid: string = this.route.snapshot.params.id;
 
-	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute) {}
+	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute, private privateService: PrivateService, private router: Router) {}
 
 	ngOnInit() {
+		if (!this.editMode) this.getEndpoints();
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 	}
 
@@ -85,6 +88,18 @@ export class CreateEndpointComponent implements OnInit {
 			this.isLoadingEndpointDetails = false;
 		} catch {
 			this.isLoadingEndpointDetails = false;
+		}
+	}
+
+	async getEndpoints() {
+		this.isLoadingEndpoints = true;
+		try {
+			const response = await this.privateService.getEndpoints();
+			const endpoints = response.data.content;
+			if (endpoints.length > 0 && this.router.url.includes('/configure')) this.onAction.emit({ action: 'save' });
+			this.isLoadingEndpoints = false;
+		} catch {
+			this.isLoadingEndpoints = false;
 		}
 	}
 

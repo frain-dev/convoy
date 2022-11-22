@@ -10,13 +10,9 @@
 					<svg width="14" height="14" class="ml-8px fill-white-100">
 						<use xlink:href="#doc-icon"></use>
 					</svg>
-<!-- <<<<<<< HEAD
-				</convoy-button>
-				<convoy-button type="outline" size="sm" (click)="toggleActiveStage({ project: 'createEndpoint' })">
-======= -->
 				</button>
 				<button convoy-button fill="outline" size="sm" (click)="toggleActiveStage({ project: 'createEndpoint' })">
-<!-- >>>>>>> 629e4b85f0408079896b7e438047ca6460edaf01 -->
+
 					Setup Without SDK
 					<svg width="14" height="14" class="ml-8px fill-primary-100">
 						<use xlink:href="#info-icon"></use>
@@ -56,7 +52,7 @@
 
 		<convoy-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></convoy-create-source>
 
-		<convoy-create-endpoint *ngIf="projectStage === 'createEndpoint' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></convoy-create-endpoint>
+		<convoy-create-endpoint *ngIf="projectStage === 'createEndpoint' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSource', prevStage: 'createEndpoint' })"></convoy-create-endpoint>
 
 		<convoy-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails?.uid" (onAction)="onProjectOnboardingComplete()"></convoy-create-subscription>
 	</div>
