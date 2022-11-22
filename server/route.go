@@ -498,30 +498,29 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 				endpointSubRouter.Get("/", a.GetEndpoint)
 				endpointSubRouter.Put("/", a.UpdateEndpoint)
-
-				endpointSubRouter.Route("/keys", func(keySubRouter chi.Router) {
-					keySubRouter.Use(a.M.RequireBaseUrl())
-					keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
-					keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
-					keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
-				})
-
-				endpointSubRouter.Route("/devices", func(deviceRouter chi.Router) {
-					deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
-				})
-
 			})
+		})
+
+		portalRouter.Route("/devices", func(deviceRouter chi.Router) {
+			deviceRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkDevices)
+		})
+
+		portalRouter.Route("/keys", func(keySubRouter chi.Router) {
+			keySubRouter.Use(a.M.RequireBaseUrl())
+			keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
+			keySubRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkKeys)
+			keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
-					eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-						eventSubRouter.Use(a.M.RequireEvent())
-						eventSubRouter.Get("/", a.GetEndpointEvent)
-						eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
-					})
-				})
+			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+				eventSubRouter.Use(a.M.RequireEvent())
+				eventSubRouter.Get("/", a.GetEndpointEvent)
+				eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
+			})
+		})
 
 		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
 			subsriptionRouter.Post("/", a.CreateSubscription)

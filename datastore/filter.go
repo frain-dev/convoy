@@ -23,10 +23,11 @@ type SourceFilter struct {
 }
 
 type ApiKeyFilter struct {
-	GroupID    string
-	EndpointID string
-	UserID     string
-	KeyType    KeyType
+	GroupID     string
+	EndpointID  string
+	EndpointIDs []string
+	UserID      string
+	KeyType     KeyType
 }
 
 type FilterBy struct {
