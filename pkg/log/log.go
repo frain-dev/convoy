@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	_ StdLogger = &Logger{}
+	_         StdLogger = &Logger{}
+	stdLogger *Logger   = &Logger{}
 )
 
 type StdLogger interface {
@@ -107,6 +108,10 @@ func NewLogger(out io.Writer) *Logger {
 		logger: log,
 		entry:  logrus.NewEntry(log),
 	}
+}
+
+func SetLogger(l *Logger) {
+	stdLogger = l
 }
 
 // Logger logs message to io.Writer at various log levels.

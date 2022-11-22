@@ -18,12 +18,15 @@
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"expires_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"hash": {
@@ -48,6 +51,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"user_id": {
@@ -400,6 +404,10 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"filter": {
+						"additionalProperties": true,
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -533,6 +541,7 @@
 						"type": "integer"
 					},
 					"next_send_time": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"num_trials": {
@@ -1193,9 +1202,11 @@
 			"models.LoginUserResponse": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"email": {
@@ -1214,6 +1225,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					}
 				},
@@ -1357,9 +1369,11 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"group_id": {
@@ -1387,6 +1401,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"url": {
@@ -6668,6 +6683,130 @@
 					}
 				],
 				"summary": "Creates a subscription",
+				"tags": [
+					"Subscriptions"
+				]
+			}
+		},
+		"/api/v1/projects/{projectID}/subscriptions/test_filter": {
+			"post": {
+				"description": "This endpoint tests a subscription's filter",
+				"parameters": [
+					{
+						"description": "Project id",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "subscription id",
+						"in": "path",
+						"name": "subscriptionID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Test subscription filter",
 				"tags": [
 					"Subscriptions"
 				]
