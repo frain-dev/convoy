@@ -96,6 +96,11 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(datastore.APIKeyCollection, "uid", true, nil)
 	c.ensureIndex(datastore.APIKeyCollection, "mask_id", true, nil)
 
+	c.ensureIndex(datastore.UserCollection, "uid", true, nil)
+
+	c.ensureIndex(datastore.APIKeyCollection, "uid", true, nil)
+	c.ensureIndex(datastore.APIKeyCollection, "mask_id", true, nil)
+
 	c.ensureIndex(datastore.EventCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EventCollection, "endpoints", false, nil)
 	c.ensureIndex(datastore.EventCollection, "group_id", false, nil)
@@ -249,7 +254,12 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
-					{Key: "group_id", Value: 1},
+					{Key: "created_at", Value: -1},
+				},
+			},
+
+			{
+				Keys: bson.D{
 					{Key: "deleted_at", Value: 1},
 					{Key: "created_at", Value: -1},
 				},
@@ -263,7 +273,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
-					{Key: "created_at", Value: -1},
+					{Key: "deleted_at", Value: -1},
 				},
 			},
 
