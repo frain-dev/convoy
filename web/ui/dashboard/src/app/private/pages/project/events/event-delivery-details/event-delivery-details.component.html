@@ -113,11 +113,14 @@
 	<h3 class="font-semibold mb-8px">Attempts</h3>
 
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
-		<div class="flex justify-between items-center py-22px">
+		<div class="flex justify-between items-center py-22px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<p class="text-14">Retry Attempt Details {{ i + 1 }}</p>
-			<convoy-button size="sm" type="text" (click)="selectedDeliveryAttempt = deliveryAttempt">Open Details</convoy-button>
+			<button convoy-button size="sm" fill="text" (click)="selectedDeliveryAttempt = deliveryAttempt">
+				Open Details
+				<img src="/assets/img/angle-arrow-right-primary.svg" class="ml-6px h-16px transition-all duration-300" [ngClass]="{ 'rotate-90': selectedDeliveryAttempt?.uid == deliveryAttempt.uid }" alt="link out" />
+			</button>
 		</div>
-		<div class="" [class]="selectedDeliveryAttempt?.uid == deliveryAttempt.uid ? 'h-full transition-all ease-in-out duration-500' : 'max-h-0 overflow-hidden transition-all ease-in-out duration-500'">
+		<div class="transition-all duration-500" [class]="selectedDeliveryAttempt?.uid == deliveryAttempt.uid ? 'h-full' : 'max-h-0 overflow-hidden'">
 			<div class="flex justify-between flex-wrap border-t border-grey-10">
 				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>

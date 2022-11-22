@@ -66,26 +66,26 @@
 					</div>
 				</div>
 
-				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.app_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
+				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.endpoint_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
 					<div class="w-full">
-						<div class="text-grey-40 text-10 mb-3">App</div>
-						<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
+						<div class="text-grey-40 text-10 mb-3">Endpoint</div>
+						<div class="text-12">{{ subscription?.endpoint_metadata?.title }}</div>
 					</div>
 					<div class="w-full">
 						<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
 							{{ subscription?.endpoint_metadata?.target_url }}
 						</div>
 					</div>
-					<div class="w-full" *ngIf="subscription?.endpoint_metadata">
+					<div class="w-full" *ngIf="subscription?.endpoint_metadata?.secrets?.length">
 						<div class="text-12 flex items-center whitespace-nowrap">
 							Endpoint Secret
-							<convoy-copy-button [text]="subscription.endpoint_metadata.secret" size="md" (copyText)="copyText()" className="ml-8px"></convoy-copy-button>
+							<!-- <convoy-copy-button [text]="subscription.endpoint_metadata.secrets[subscription.endpoint_metadata.secrets.length - 1]" size="md" (copyText)="copyText()" className="ml-8px"></convoy-copy-button> -->
 						</div>
 					</div>
 
 					<div class="flex items-center justify-end w-[50%]">
-						<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/apps/' + subscription.app_metadata?.uid">
-							<div class="whitespace-nowrap">Go to app</div>
+						<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/endpoints/' + subscription.endpoint_metadata?.uid">
+							<div class="whitespace-nowrap">Go to endpoint</div>
 							<svg width="18" height="18" class="ml-2" fill="#477db3">
 								<use xlink:href="#arrow-right-icon"></use>
 							</svg>

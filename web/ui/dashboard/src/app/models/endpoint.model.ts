@@ -12,7 +12,7 @@ export interface APP {
 }
 export interface ENDPOINT {
 	uid: string;
-    title: string;
+	title: string;
 	advanced_signatures: boolean;
 	authentication: any;
 	created_at: string;
@@ -26,7 +26,7 @@ export interface ENDPOINT {
 	rate_limit?: number;
 	rate_limit_duration?: string;
 	http_timeout?: string;
-    support_email: string;
+	support_email: string;
 }
 
 export interface DEVICE {
@@ -38,6 +38,18 @@ export interface DEVICE {
 	last_seen_at: Date;
 	created_at: Date;
 	updated_at: Date;
+}
+
+export interface PORTAL_LINK {
+	uid: string;
+	group_id: string;
+	endpoint_count: number;
+	endpoint: string[];
+	endpoints_metadata: ENDPOINT[];
+	name: string;
+	url: string;
+	created_at: string;
+	updated_at: string;
 }
 
 export interface API_KEY {

@@ -240,13 +240,13 @@ export class PrivateService {
 		}
 	}
 
-    getEndpoints(token?: string): Promise<HTTP_RESPONSE> {
+	getEndpoints(requestDetails?: { pageNo?: number; searchString?: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: token ? '/endpoints' : this.urlFactory('org_project') + `/endpoints`,
+					url: requestDetails?.token ? '/endpoints' : this.urlFactory('org_project') + `/endpoints?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
 					method: 'get',
-					token
+					token: requestDetails?.token
 				});
 
 				return resolve(response);

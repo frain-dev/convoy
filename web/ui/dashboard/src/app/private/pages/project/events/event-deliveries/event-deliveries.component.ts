@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
-import { APP, ENDPOINT } from 'src/app/models/app.model';
+import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
@@ -34,7 +34,7 @@ export class EventDeliveriesComponent implements OnInit {
 	isRetrying = false;
 	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
-	eventDeliveriesApp?: string;
+	eventDeliveriesEndpoint?: string;
 	eventDeliveriesSource?: string;
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
@@ -45,27 +45,19 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-// <<<<<<< HEAD
 	eventsDelEndpointFilter$!: Observable<ENDPOINT[]>;
 	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimePickerComponent;
 	@ViewChild('endpointsFilterDropdown', { static: true }) endpointsFilterDropdown!: DropdownComponent;
-// =======
-// 	eventsDelAppsFilter$!: Observable<APP[]>;
-// 	@ViewChild('eventDelsAppsFilter', { static: true }) eventDelsAppsFilter!: ElementRef;
-// 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-// 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimePickerComponent;
-// 	@ViewChild('appsFilterDropdown', { static: true }) appsFilterDropdown!: DropdownComponent;
-// >>>>>>> 629e4b85f0408079896b7e438047ca6460edaf01
 	@ViewChild('sourcesFilterDropdown', { static: true }) sourcesFilterDropdown!: DropdownComponent;
-	appPortalToken = this.route.snapshot.params?.token;
+	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, private route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
 
 	ngAfterViewInit() {
-		if (!this.appPortalToken) {
+		if (!this.portalToken) {
 			this.eventsDelEndpointFilter$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
 				map(event => event.target.value),
 				startWith(''),
@@ -79,7 +71,7 @@ export class EventDeliveriesComponent implements OnInit {
 	ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEventDeliveries();
-		if (!this.appPortalToken) this.getSourcesForFilter();
+		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
 	ngOnChanges(changes: SimpleChanges) {
@@ -96,7 +88,7 @@ export class EventDeliveriesComponent implements OnInit {
 			startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '',
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		};
-		this.eventDeliveriesApp = filters.eventDelsApp ?? '';
+		this.eventDeliveriesEndpoint = filters.eventDelsEndpoint ?? '';
 		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
 
@@ -132,9 +124,9 @@ export class EventDeliveriesComponent implements OnInit {
 				pageNo: requestDetails.pageNo || 1,
 				startDate: requestDetails.startDate,
 				endDate: requestDetails.endDate,
-				appId: this.eventDeliveriesApp || '',
+				endpointId: this.eventDeliveriesEndpoint || '',
 				statusQuery: eventDeliveryStatusFilterQuery || '',
-				token: this.appPortalToken,
+				token: this.portalToken,
 				sourceId: this.eventDeliveriesSource || ''
 			});
 			return eventDeliveriesResponse;
@@ -149,7 +141,7 @@ export class EventDeliveriesComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter({ ...this.dateFiltersFromURL, ...this.eventDelsTimeFilterData });
 		if (startDate) queryParams.eventDelsStartDate = startDate;
 		if (endDate) queryParams.eventDelsEndDate = endDate;
-		if (this.eventDeliveriesApp) queryParams.eventDelsApp = this.eventDeliveriesApp;
+		if (this.eventDeliveriesEndpoint) queryParams.eventDelsEndpoint = this.eventDeliveriesEndpoint;
 		queryParams.eventDelsSource = this.eventDeliveriesSource;
 		queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 
@@ -181,7 +173,7 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ addToURL: true });
 	}
 
-	clearFilters(filterType?: 'app' | 'time' | 'date' | 'status' | 'source') {
+	clearFilters(filterType?: 'endpoint' | 'time' | 'date' | 'status' | 'source') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.datePicker.clearDate();
@@ -191,9 +183,9 @@ export class EventDeliveriesComponent implements OnInit {
 		this.eventDeliveryTimerFilter.filterEndMinute = 59;
 
 		switch (filterType) {
-			case 'app':
-				filterItems = ['eventDelsApp'];
-				this.eventDeliveriesApp = undefined;
+			case 'endpoint':
+				filterItems = ['eventDelsEndpoint'];
+				this.eventDeliveriesEndpoint = undefined;
 				this.endpointsFilterDropdown.show = false;
 				break;
 			case 'date':
@@ -214,8 +206,8 @@ export class EventDeliveriesComponent implements OnInit {
 				this.eventDeliveriesSource = undefined;
 				break;
 			default:
-				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsApp', 'eventDelsStatus', 'eventDelsSource'];
-				this.eventDeliveriesApp = undefined;
+				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsEndpoint', 'eventDelsStatus', 'eventDelsSource'];
+				this.eventDeliveriesEndpoint = undefined;
 				this.eventDeliveriesSource = undefined;
 				this.dateFiltersFromURL = { startDate: '', endDate: '' };
 				this.eventDeliveryFilteredByEventId = undefined;
@@ -243,9 +235,9 @@ export class EventDeliveriesComponent implements OnInit {
 				pageNo: this.eventDeliveriesPage || 1,
 				startDate: startDate,
 				endDate: endDate,
-				appId: this.eventDeliveriesApp || '',
+				endpointId: this.eventDeliveriesEndpoint || '',
 				statusQuery: eventDeliveryStatusFilterQuery || '',
-				token: this.appPortalToken
+				token: this.portalToken
 			});
 
 			this.batchRetryCount = response.data.num;
@@ -269,8 +261,8 @@ export class EventDeliveriesComponent implements OnInit {
 		} catch (error) {}
 	}
 
-	updateAppFilter(appId: string, isChecked: any) {
-		isChecked.target.checked ? (this.eventDeliveriesApp = appId) : (this.eventDeliveriesApp = undefined);
+	updateEndpointFilter(endpointId: string, isChecked: any) {
+		isChecked.target.checked ? (this.eventDeliveriesEndpoint = endpointId) : (this.eventDeliveriesEndpoint = undefined);
 		this.getEventDeliveries({ addToURL: true, fromFilter: true });
 	}
 
@@ -282,7 +274,7 @@ export class EventDeliveriesComponent implements OnInit {
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 		try {
-			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.appPortalToken });
+			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.portalToken });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 		} catch (error) {
@@ -298,7 +290,7 @@ export class EventDeliveriesComponent implements OnInit {
 		};
 
 		try {
-			const response = await this.eventsService.forceRetryEvent({ body: payload, token: this.appPortalToken });
+			const response = await this.eventsService.forceRetryEvent({ body: payload, token: this.portalToken });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 		} catch (error) {
@@ -319,9 +311,9 @@ export class EventDeliveriesComponent implements OnInit {
 				pageNo: this.eventDeliveriesPage || 1,
 				startDate: startDate,
 				endDate: endDate,
-				appId: this.eventDeliveriesApp || '',
+				endpointId: this.eventDeliveriesEndpoint || '',
 				statusQuery: eventDeliveryStatusFilterQuery || '',
-				token: this.appPortalToken
+				token: this.portalToken
 			});
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
