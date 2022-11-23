@@ -302,7 +302,7 @@ func TestTestSubscriptionFilter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "equal with operator",
+			name: "equal with operator - number",
 			request: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 5,
@@ -318,7 +318,7 @@ func TestTestSubscriptionFilter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "equal with operator",
+			name: "equal with operator - string",
 			request: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": "tunde",
@@ -503,7 +503,6 @@ func TestTestSubscriptionFilter(t *testing.T) {
 				require.ErrorIs(t, err, tt.Err)
 			}
 
-			t.Log(tt.want, matched)
 			require.Equal(t, tt.want, matched)
 		})
 	}

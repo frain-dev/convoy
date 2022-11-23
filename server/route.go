@@ -495,9 +495,11 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
 				endpointSubRouter.Use(a.M.RequireEndpoint())
 				endpointSubRouter.Use(a.M.RequirePortalLinkEndpoint())
+				endpointSubRouter.Use(a.M.RequireBaseUrl())
 
 				endpointSubRouter.Get("/", a.GetEndpoint)
 				endpointSubRouter.Put("/", a.UpdateEndpoint)
+				endpointSubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/keys", a.CreateEndpointAPIKey)
 			})
 		})
 
@@ -507,7 +509,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 		portalRouter.Route("/keys", func(keySubRouter chi.Router) {
 			keySubRouter.Use(a.M.RequireBaseUrl())
-			keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
 			keySubRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkKeys)
 			keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
 		})

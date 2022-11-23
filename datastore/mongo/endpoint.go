@@ -127,17 +127,12 @@ func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.
 
 	updateAsDeleted := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
 	err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
-		err := db.deleteEndpointEvents(sessCtx, endpoint, updateAsDeleted)
-		if err != nil {
-			return err
-		}
-
-		err = db.deleteSubscription(sessCtx, endpoint, updateAsDeleted)
+		err := db.deleteSubscription(sessCtx, endpoint, updateAsDeleted)
 		if err != nil {
 			return err
 		}
@@ -317,15 +312,6 @@ func (db *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) 
 	}
 
 	return endpoints, nil
-}
-
-func (db *endpointRepo) deleteEndpointEvents(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {
-	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
-
-	filter := bson.M{"endpoint_id": endpoint.UID}
-	err := db.store.UpdateMany(ctx, filter, update, true)
-
-	return err
 }
 
 func (db *endpointRepo) deleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {
