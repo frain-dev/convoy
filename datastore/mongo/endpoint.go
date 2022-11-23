@@ -314,15 +314,6 @@ func (db *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) 
 	return endpoints, nil
 }
 
-func (db *endpointRepo) deleteEndpointEvents(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {
-	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
-
-	filter := bson.M{"endpoint_id": endpoint.UID}
-	err := db.store.UpdateMany(ctx, filter, update, true)
-
-	return err
-}
-
 func (db *endpointRepo) deleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint, update bson.M) error {
 	ctx = db.setCollectionInContext(ctx)
 
