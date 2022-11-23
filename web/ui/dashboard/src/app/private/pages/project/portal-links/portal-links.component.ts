@@ -54,7 +54,7 @@ export class PortalLinksComponent implements OnInit {
 	linkEndpoint?: string = this.route.snapshot.queryParams.linksEndpoint;
 	linkSearchString!: string;
 	linksTableHead = ['Link Name', 'Endpoint Count', 'URL', 'Created', ''];
-	portalLinks!: { pagination: PAGINATION; content: PORTAL_LINK[] };
+	portalLinks?: { pagination: PAGINATION; content: PORTAL_LINK[] };
 	activeLink?: PORTAL_LINK;
 	@ViewChild('linksEndpointFilter', { static: true }) linksEndpointFilter!: ElementRef;
 	linksEndpointFilter$!: Observable<ENDPOINT[]>;

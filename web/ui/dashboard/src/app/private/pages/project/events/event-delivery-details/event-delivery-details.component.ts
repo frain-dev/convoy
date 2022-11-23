@@ -14,7 +14,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	eventDelsDetails?: EVENT_DELIVERY;
 	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryAtempts!: EVENT_DELIVERY_ATTEMPT[];
-	selectedDeliveryAttempt!: EVENT_DELIVERY_ATTEMPT;
+	selectedDeliveryAttempt?: EVENT_DELIVERY_ATTEMPT;
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
 	shouldRenderSmallSize = false;

@@ -31,7 +31,7 @@ export class EndpointDetailsComponent implements OnInit {
 	isDeletingEndpoint = false;
 	showDeleteModal = false;
 	showEndpointSecret = false;
-	endpointDetails!: ENDPOINT;
+	endpointDetails?: ENDPOINT;
 	secretKey: any;
 	screenWidth = window.innerWidth;
 	tabs: ['CLI Keys', 'devices'] = ['CLI Keys', 'devices'];

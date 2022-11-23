@@ -65,15 +65,16 @@
 			<convoy-skeleton-loader className="mt-10px w-320px h-20px"></convoy-skeleton-loader>
 		</div>
 	</div>
+
 	<div *ngIf="!isLoadingEndpointDetails && endpointDetails">
 		<div class="flex items-center flex-wrap justify-between mb-32px">
 			<div>
 				<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails?.created_at | date: 'mediumDate' }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.created_at | date: 'mediumDate' }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails?.support_email || '...no support email provided' }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.support_email || '...no support email provided' }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SECRET</p>
@@ -84,25 +85,25 @@
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">EVENTS</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails?.events || 0 }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.events || 0 }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">UPDATED</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails?.updated_at | date: 'mediumDate' }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.updated_at | date: 'mediumDate' }}</p>
 			</div>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">URL</p>
 			<p class="text-black text-14 font-normal flex">
 				<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
-				{{ endpointDetails?.target_url }}
+				{{ endpointDetails.target_url }}
 			</p>
 		</div>
 
 		<div class="flex justify-end items-center mt-80px">
 			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="showAddEventModal = true">Send Event</button>
-			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails?.uid)">View Events</button>
-			<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails?.uid)">
+			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails.uid)">View Events</button>
+			<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
 				Open Portal Link
 				<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 			</button>
