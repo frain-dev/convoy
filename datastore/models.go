@@ -866,7 +866,8 @@ type (
 )
 
 type SubscriptionFilter struct {
-	ID     primitive.ObjectID     `json:"-" bson:"_id"`
-	UID    string                 `json:"uid" bson:"uid"`
-	Filter map[string]interface{} `json:"filter" bson:"filter"`
+	ID        primitive.ObjectID     `json:"-" bson:"_id"`
+	UID       string                 `json:"uid" bson:"uid"`
+	Filter    map[string]interface{} `json:"filter" bson:"filter"`
+	DeletedAt *primitive.DateTime    `json:"deleted_at,omitempty" bson:"deleted_at"`
 }
