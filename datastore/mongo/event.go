@@ -212,6 +212,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 							{Key: "title", Value: 1},
 							{Key: "group_id", Value: 1},
 							{Key: "support_email", Value: 1},
+							{Key: "target_url", Value: 1},
 						},
 					},
 				},

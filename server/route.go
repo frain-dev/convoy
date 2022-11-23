@@ -522,12 +522,13 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			})
 		})
 
-		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-			subsriptionRouter.Post("/", a.CreateSubscription)
-			subsriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
-			subsriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
-			subsriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
-			subsriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
+		portalRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
+			subscriptionRouter.Post("/", a.CreateSubscription)
+			subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
+			subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+			subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+			subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+			subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
 		})
 
 		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {

@@ -248,5 +248,5 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter valiadted successfully", isValid, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusCreated))
 }

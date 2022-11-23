@@ -64,6 +64,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 							{Key: "title", Value: 1},
 							{Key: "group_id", Value: 1},
 							{Key: "support_email", Value: 1},
+							{Key: "target_url", Value: 1},
 						},
 					},
 				},
@@ -294,6 +295,7 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 							{Key: "title", Value: 1},
 							{Key: "group_id", Value: 1},
 							{Key: "support_email", Value: 1},
+							{Key: "target_url", Value: 1},
 						},
 					},
 				},
@@ -453,10 +455,10 @@ func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, e
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"endpoint_id":     endpointID,
-		"device_id":       deviceId,
-		"status":          datastore.DiscardedEventStatus,
-		"created_at":      getCreatedDateFilter(searchParams),
+		"endpoint_id": endpointID,
+		"device_id":   deviceId,
+		"status":      datastore.DiscardedEventStatus,
+		"created_at":  getCreatedDateFilter(searchParams),
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0)

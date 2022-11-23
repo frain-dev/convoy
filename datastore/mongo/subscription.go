@@ -112,6 +112,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 									{Key: "title", Value: 1},
 									{Key: "group_id", Value: 1},
 									{Key: "support_email", Value: 1},
+									{Key: "target_url", Value: 1},
 								},
 							},
 						},
