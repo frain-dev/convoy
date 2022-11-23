@@ -67,18 +67,18 @@ export class EndpointDetailsComponent implements OnInit {
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.showDeleteModal = false;
 			this.isDeletingEndpoint = false;
-			this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints');
+			this.goBack();
 		} catch {
 			this.isDeletingEndpoint = false;
 		}
 	}
 
 	viewEndpointEvents(endpointUid?: string) {
-		if (endpointUid) this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventDelsEndpoint: endpointUid } });
+		if (endpointUid) this.router.navigate(['../../events'], { relativeTo: this.route, queryParams: { eventDelsEndpoint: endpointUid } });
 	}
 
 	viewEndpointPortalLinks(endpointUid?: string) {
-		if (endpointUid) this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/portal-links'], { queryParams: { linksEndpoint: endpointUid } });
+		if (endpointUid) this.router.navigate(['../../portal-links'], { relativeTo: this.route, queryParams: { linksEndpoint: endpointUid } });
 	}
 
 	toggleActiveTab(tab: 'CLI Keys' | 'devices') {
@@ -86,6 +86,6 @@ export class EndpointDetailsComponent implements OnInit {
 	}
 
 	goBack() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints');
+		this.router.navigate(['../../endpoints'], { relativeTo: this.route });
 	}
 }
