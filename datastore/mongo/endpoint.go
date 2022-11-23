@@ -127,17 +127,12 @@ func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.
 
 	updateAsDeleted := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
 	err := db.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
-		err := db.deleteEndpointEvents(sessCtx, endpoint, updateAsDeleted)
-		if err != nil {
-			return err
-		}
-
-		err = db.deleteSubscription(sessCtx, endpoint, updateAsDeleted)
+		err := db.deleteSubscription(sessCtx, endpoint, updateAsDeleted)
 		if err != nil {
 			return err
 		}
