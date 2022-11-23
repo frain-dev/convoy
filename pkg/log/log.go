@@ -137,10 +137,6 @@ func NewContext(ctx context.Context, lo StdLogger, fields Fields) context.Contex
 	return context.WithValue(ctx, LoggerContextKey, e)
 }
 
-func SetLogger(l *Logger) {
-	stdLogger = l
-}
-
 // Logger logs message to io.Writer at various log levels.
 type Logger struct {
 	logger *logrus.Logger
