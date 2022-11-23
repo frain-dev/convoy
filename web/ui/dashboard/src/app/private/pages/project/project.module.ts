@@ -34,10 +34,6 @@ const routes: Routes = [
 				loadChildren: () => import('./sources/sources.module').then(m => m.SourcesModule)
 			},
 			{
-				path: 'apps',
-				loadChildren: () => import('./apps/apps.module').then(m => m.AppsModule)
-			},
-			{
 				path: 'settings',
 				loadChildren: () => import('./settings/settings.module').then(m => m.SettingsModule)
 			},
@@ -61,12 +57,20 @@ const routes: Routes = [
 				path: 'endpoints/:id',
 				loadComponent: () => import('./endpoint-details/endpoint-details.component').then(m => m.EndpointDetailsComponent)
 			},
+            {
+				path: 'endpoints/:id/edit',
+				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
+			},
 			{
 				path: 'portal-links',
 				loadComponent: () => import('./portal-links/portal-links.component').then(m => m.PortalLinksComponent)
 			},
 			{
 				path: 'portal-links/new',
+				loadComponent: () => import('./portal-links/portal-links.component').then(m => m.PortalLinksComponent)
+			},
+            {
+				path: 'portal-links/:id/edit',
 				loadComponent: () => import('./portal-links/portal-links.component').then(m => m.PortalLinksComponent)
 			},
             {

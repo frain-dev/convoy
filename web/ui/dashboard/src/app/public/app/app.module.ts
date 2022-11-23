@@ -2,11 +2,9 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppComponent } from './app.component';
 import { RouterModule, Routes } from '@angular/router';
-import { EventModule } from 'src/app/private/pages/project/events/event/event.module';
 import { EventDeliveriesModule } from 'src/app/private/pages/project/events/event-deliveries/event-deliveries.module';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
-import { CreateEndpointModule } from 'src/app/private/pages/project/apps/app-details/create-endpoint/create-endpoint.module';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { PageComponent } from 'src/app/components/page/page.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
@@ -20,6 +18,7 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CliKeysComponent } from 'src/app/private/pages/project/endpoint-details/cli-keys/cli-keys.component';
 import { DevicesComponent } from 'src/app/private/pages/project/endpoint-details/devices/devices.component';
+import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 
 const routes: Routes = [{ path: '', component: AppComponent }];
 
@@ -29,11 +28,10 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		CommonModule,
 		RouterModule.forChild(routes),
 		StatusColorModule,
-		EventModule,
 		EventDeliveriesModule,
 		TableLoaderModule,
 		CreateSubscriptionModule,
-		CreateEndpointModule,
+		CreateEndpointComponent,
 		DeleteModalComponent,
 		ModalComponent,
 		PageComponent,

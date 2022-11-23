@@ -33,7 +33,7 @@ export class EventsService {
 				const response = await this.http.request({
 					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${
 						requestDetails.endpointId
-					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId || ''}`,
+					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId || ''}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});
@@ -128,9 +128,9 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${
-						requestDetails.endpointId
-					}${requestDetails.statusQuery || ''}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&endpointId=${requestDetails.endpointId}${requestDetails.statusQuery || ''}`,
 					method: 'post',
 					body: null,
 					token: requestDetails.token

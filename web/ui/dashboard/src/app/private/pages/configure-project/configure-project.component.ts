@@ -4,7 +4,6 @@ import { PrivateService } from '../../private.service';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
-import { CreateAppModule } from '../../components/create-app/create-app.module';
 import { CreateSubscriptionModule } from '../../components/create-subscription/create-subscription.module';
 import { SdkDocumentationComponent } from '../../components/sdk-documentation/sdk-documentation.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
@@ -17,7 +16,7 @@ export type STAGES = 'setupSDK' | 'createSource' | 'createEndpoint' | 'createSub
 @Component({
 	selector: 'convoy-configure-project',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateAppModule, CreateSubscriptionModule, SdkDocumentationComponent, CreateEndpointComponent],
+	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, SdkDocumentationComponent, CreateEndpointComponent],
 	templateUrl: './configure-project.component.html',
 	styleUrls: ['./configure-project.component.scss']
 })

@@ -45,6 +45,7 @@ export class CreatePortalLinkComponent implements OnInit {
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			if (!this.linkUid) this.portalLink = response.data.url;
+			if (this.linkUid) this.goBack();
 			this.isCreatingPortalLink = false;
 		} catch {
 			this.isCreatingPortalLink = false;

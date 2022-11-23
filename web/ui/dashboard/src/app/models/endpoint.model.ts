@@ -57,7 +57,7 @@ export interface API_KEY {
 	expires_at: Date;
 	key_type: string;
 	name: string;
-	role: { type: string; group: string; app: string };
+	role: { type: string; group: string; endpoint: string };
 	uid: string;
 	updated_at: Date;
 }

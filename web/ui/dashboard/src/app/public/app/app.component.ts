@@ -18,7 +18,7 @@ export class AppComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
 	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status', ''];
-	token: string = this.route.snapshot.params.token;
+	token: string = this.route.snapshot.queryParams.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
 	tabs: string[] = ['subscriptions'];
@@ -43,7 +43,6 @@ export class AppComponent implements OnInit {
 	ngOnInit(): void {
 		this.getSubscripions();
 		this.checkFlags();
-
 		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
 		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
 
@@ -106,10 +105,10 @@ export class AppComponent implements OnInit {
 
 	closeCreateSubscriptionModal() {
 		this.showCreateSubscriptionModal = false;
-		this.router.navigate(['/app', this.token]);
+		this.router.navigate(['/portal', { queryParams: { token: this.token } }]);
 	}
 
 	onCreateSubscription() {
-		this.router.navigate(['/app', this.token]);
+		this.router.navigate(['/portal', { queryParams: { token: this.token } }]);
 	}
 }

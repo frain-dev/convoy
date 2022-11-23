@@ -7,19 +7,19 @@ const routes: Routes = [
 		loadChildren: () => import('./private/private.module').then(m => m.PrivateModule)
 	},
 	{
-		path: 'app/:token',
+		path: 'portal',
 		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
 	},
 	{
-		path: 'app/:token/event-deliveries/:id',
+		path: 'portal/event-deliveries/:id',
 		loadChildren: () => import('./public/event-delivery/event-delivery.module').then(m => m.EventDeliveryModule)
 	},
 	{
-		path: 'app/:token/subscriptions/new',
+		path: 'portal/subscriptions/new',
 		loadChildren: () => import('./public/create-subscription/create-subscription.module').then(m => m.CreateSubscriptionPublicModule)
 	},
 	{
-		path: 'app/:token/subscriptions/:id',
+		path: 'portal/subscriptions/:id',
 		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
 	},
 	{
