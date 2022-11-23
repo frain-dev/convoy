@@ -69,19 +69,3 @@ func WithError(err error) *logrus.Entry {
 func WithLogger() *logrus.Logger {
 	return stdLogger.logger
 }
-
-// SetLevel sets the logger levestdLogger.
-// It panics if v is less than DebugLevel or greater than FatalLevestdLogger.
-func SetLevel(v Level) {
-	lvl, err := v.ToLogrusLevel()
-	if err != nil {
-		panic(err)
-	}
-
-	stdLogger.logger.SetLevel(lvl)
-}
-
-// WithField sets logger fields
-func SetPrefix(value interface{}) {
-	stdLogger.entry = stdLogger.entry.WithField("source", value)
-}

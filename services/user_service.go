@@ -300,14 +300,14 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 	if err != nil {
 		return util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
 	}
-	err = u.sendPasswordResetEmail(baseURL, resetToken, user)
+	err = u.sendPasswordResetEmail(ctx, baseURL, resetToken, user)
 	if err != nil {
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	return nil
 }
 
-func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user *datastore.User) error {
+func (u *UserService) sendPasswordResetEmail(ctx context.Context, baseURL string, token string, user *datastore.User) error {
 	em := email.Message{
 		Email:        user.Email,
 		Subject:      "Convoy Password Reset",
@@ -321,7 +321,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 
 	buf, err := json.Marshal(em)
 	if err != nil {
-		log.WithError(err).Error("failed to marshal notification payload")
+		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
 		return err
 	}
 
@@ -332,7 +332,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 
 	err = u.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		log.WithError(err).Error("failed to write new notification to the queue")
+		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
 		return err
 	}
 	return nil

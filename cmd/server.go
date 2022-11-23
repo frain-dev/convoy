@@ -245,7 +245,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
-		//start worker
+		// start worker
 		a.logger.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}

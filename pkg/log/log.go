@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +12,7 @@ import (
 
 var (
 	_         StdLogger = &Logger{}
-	stdLogger           = defaultLogger()
+	stdLogger           = NewLogger(os.Stdout)
 )
 
 type StdLogger interface {
@@ -27,13 +28,13 @@ type StdLogger interface {
 	Errorf(format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
 
-	WithLogger() *logrus.Logger
+	WithFields(f Fields) *logrus.Entry
 	WithError(err error) *logrus.Entry
 }
 
 // Level represents a log level.
 type Level int32
-type Fields logrus.Fields
+type Fields = logrus.Fields
 
 const (
 	// FatalLevel is used for undesired and unexpected events that
@@ -93,23 +94,6 @@ func (l Level) ToLogrusLevel() (logrus.Level, error) {
 	}
 }
 
-func defaultLogger() *Logger {
-	log := &logrus.Logger{
-		Out: os.Stdout,
-		Formatter: &logrus.JSONFormatter{
-			TimestampFormat: "2006-01-02 15:04:05",
-		},
-		Level: logrus.DebugLevel,
-	}
-
-	log.SetReportCaller(false)
-
-	return &Logger{
-		logger: log,
-		entry:  logrus.NewEntry(log),
-	}
-}
-
 // NewLogger creates and returns a new instance of Logger.
 // Log level is set to DebugLevel by default.
 func NewLogger(out io.Writer) *Logger {
@@ -118,15 +102,39 @@ func NewLogger(out io.Writer) *Logger {
 		Formatter: &logrus.JSONFormatter{
 			TimestampFormat: "2006-01-02 15:04:05",
 		},
-		Level: logrus.DebugLevel,
+		Level:        logrus.DebugLevel,
+		ReportCaller: false,
 	}
-
-	log.SetReportCaller(false)
 
 	return &Logger{
 		logger: log,
 		entry:  logrus.NewEntry(log),
 	}
+}
+
+type Key string
+
+const LoggerContextKey Key = "log_entry"
+
+// FromContext extracts the log entry from the given context
+func FromContext(ctx context.Context) StdLogger {
+	v := ctx.Value(LoggerContextKey)
+	if v == nil {
+		return stdLogger.entry.WithFields(logrus.Fields{})
+	}
+
+	e, ok := v.(*logrus.Entry)
+	if ok {
+		return e
+	}
+
+	return stdLogger.entry.WithFields(logrus.Fields{})
+}
+
+// NewContext creates a new log entry and adds it to the given context
+func NewContext(ctx context.Context, lo StdLogger, fields Fields) context.Context {
+	e := lo.WithFields(fields)
+	return context.WithValue(ctx, LoggerContextKey, e)
 }
 
 func SetLogger(l *Logger) {
@@ -160,39 +168,39 @@ func (l *Logger) Fatal(args ...interface{}) {
 }
 
 func (l *Logger) Debugf(format string, args ...interface{}) {
-	l.Debug(fmt.Sprintf(format, args...))
+	l.entry.Debug(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Infof(format string, args ...interface{}) {
-	l.Info(fmt.Sprintf(format, args...))
+	l.entry.Info(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.Warn(fmt.Sprintf(format, args...))
+	l.entry.Warn(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.Error(fmt.Sprintf(format, args...))
+	l.entry.Error(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Errorln(args ...interface{}) {
-	stdLogger.entry.Errorln(args...)
+	l.entry.Errorln(args...)
 }
 
 func (l *Logger) WithFields(f Fields) *logrus.Entry {
-	return logrus.WithFields(logrus.Fields(f))
+	return l.entry.WithFields(f)
 }
 
 func (l *Logger) Printf(format string, args ...interface{}) {
-	stdLogger.entry.Printf(format, args...)
+	l.entry.Printf(format, args...)
 }
 
 func (l *Logger) Println(format string, args ...interface{}) {
-	stdLogger.entry.Printf(format, args...)
+	l.entry.Printf(format, args...)
 }
 
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.Fatal(fmt.Sprintf(format, args...))
+	l.entry.Fatal(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) WithError(err error) *logrus.Entry {

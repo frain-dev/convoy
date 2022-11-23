@@ -56,7 +56,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 		if err == datastore.ErrDuplicateAppName {
 			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
 		}
-		log.WithError(err).Error(msg)
+		log.FromContext(ctx).WithError(err).Error(msg)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
@@ -72,7 +72,7 @@ func (a *AppService) CreateApp(ctx context.Context, newApp *models.Application, 
 func (a *AppService) LoadApplicationsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Application, datastore.PaginationData, error) {
 	apps, paginationData, err := a.appRepo.LoadApplicationsPaged(ctx, uid, strings.TrimSpace(q), pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch apps")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch apps")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching apps"))
 	}
 
@@ -108,7 +108,7 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 		if err == datastore.ErrDuplicateAppName {
 			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateAppName, app.Title)
 		}
-		log.WithError(err).Error(msg)
+		log.FromContext(ctx).WithError(err).Error(msg)
 		return util.NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
@@ -124,7 +124,7 @@ func (a *AppService) UpdateApplication(ctx context.Context, appUpdate *models.Up
 func (a *AppService) DeleteApplication(ctx context.Context, app *datastore.Application) error {
 	err := a.appRepo.DeleteApplication(ctx, app)
 	if err != nil {
-		log.Errorln("failed to delete app - ", err)
+		log.FromContext(ctx).WithError(err).Error("failed to delete app - ")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app"))
 	}
 
@@ -202,14 +202,14 @@ func (a *AppService) CreateAppEndpoint(ctx context.Context, e models.Endpoint, a
 
 	err = a.appRepo.CreateApplicationEndpoint(ctx, app.GroupID, app.UID, endpoint)
 	if err != nil {
-		log.WithError(err).Error("failed to create application endpoint")
+		log.FromContext(ctx).WithError(err).Error("failed to create application endpoint")
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding app endpoint"))
 	}
 
 	app.Endpoints = append(app.Endpoints, *endpoint)
 	app, err = a.appRepo.FindApplicationByID(ctx, app.UID)
 	if err != nil {
-		log.WithError(err).Error("failed to find application")
+		log.FromContext(ctx).WithError(err).Error("failed to find application")
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to fetch application to update cache"))
 	}
 
@@ -291,7 +291,7 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 	taskName := convoy.ExpireSecretsProcessor
 	err = a.queue.Write(taskName, convoy.DefaultQueue, job)
 	if err != nil {
-		log.Errorf("Error occurred sending new event to the queue %s", err)
+		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
 	}
 
 	// Generate new secret.
@@ -315,14 +315,14 @@ func (a *AppService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, e
 
 	err = a.appRepo.ExpireSecret(ctx, app.UID, endpoint.UID, secrets)
 	if err != nil {
-		log.Errorf("Error occurred expiring secret %s", err)
+		log.FromContext(ctx).Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
 	}
 
 	appCacheKey := convoy.ApplicationsCacheKey.Get(app.UID).String()
 	err = a.cache.Set(ctx, appCacheKey, &app, time.Minute*5)
 	if err != nil {
-		log.WithError(err).Error("failed to update app cache")
+		log.FromContext(ctx).WithError(err).Error("failed to update app cache")
 	}
 
 	return app, nil
@@ -338,7 +338,7 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 
 	err := a.appRepo.UpdateApplication(ctx, app, app.GroupID)
 	if err != nil {
-		log.WithError(err).Error("failed to delete app endpoint")
+		log.FromContext(ctx).WithError(err).Error("failed to delete app endpoint")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting app endpoint"))
 	}
 
@@ -354,7 +354,7 @@ func (a *AppService) DeleteAppEndpoint(ctx context.Context, e *datastore.Endpoin
 func (a *AppService) CountGroupApplications(ctx context.Context, groupID string) (int64, error) {
 	apps, err := a.appRepo.CountGroupApplications(ctx, groupID)
 	if err != nil {
-		log.WithError(err).Error("failed to count group applications")
+		log.FromContext(ctx).WithError(err).Error("failed to count group applications")
 		return 0, util.NewServiceError(http.StatusBadRequest, errors.New("failed to count group applications"))
 	}
 
