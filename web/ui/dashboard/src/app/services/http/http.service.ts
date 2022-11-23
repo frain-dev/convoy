@@ -40,10 +40,10 @@ export class HttpService {
 							const errorResponse: any = error.response;
 							let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
 							if (error.response?.status == 401 && this.router.url.split('/')[1] !== 'app') {
-                                // save previous location before session timeout
+								// save previous location before session timeout
 								localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
 
-                                // then logout
+								// then logout
 								this.router.navigate(['/login'], { replaceUrl: true });
 								localStorage.removeItem('CONVOY_AUTH');
 								this.generalService.showNotification({
@@ -75,7 +75,7 @@ export class HttpService {
 				);
 
 				const requestHeader = {
-					Authorization: `Bearer ${requestDetails.token ?? this.authDetails()?.token}`
+					Authorization: requestDetails.token ? '' : `Bearer ${this.authDetails()?.token}`
 				};
 
 				// make request

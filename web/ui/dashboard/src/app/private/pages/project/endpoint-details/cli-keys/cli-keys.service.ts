@@ -13,7 +13,7 @@ export class CliKeysService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? `/endpoints/${requestDetails.endpointId}/keys?token=${requestDetails.token}` : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys${requestDetails.token ? `?token=${requestDetails.token}` : ''}`,
 					method: 'post',
 					body: requestDetails.body,
 					token: requestDetails.token
@@ -46,7 +46,7 @@ export class CliKeysService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? `/keys/${requestDetails.keyId}/revoke?token=${requestDetails.token}` : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys/${requestDetails.keyId}/revoke`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys/${requestDetails.keyId}/revoke${requestDetails.token ? `?token=${requestDetails.token}` : ''}`,
 					method: 'put',
 					body: null,
 					token: requestDetails.token

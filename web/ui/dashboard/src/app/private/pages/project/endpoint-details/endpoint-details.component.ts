@@ -74,7 +74,7 @@ export class EndpointDetailsComponent implements OnInit {
 	}
 
 	viewEndpointEvents(endpointUid?: string) {
-		if (endpointUid) this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventsEndpoint: endpointUid } });
+		if (endpointUid) this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventDelsEndpoint: endpointUid } });
 	}
 
 	viewEndpointPortalLinks(endpointUid?: string) {

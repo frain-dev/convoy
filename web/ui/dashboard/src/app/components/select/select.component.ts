@@ -50,7 +50,6 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 		if (this.multiple) {
 			const selectOption = this.selectedOptions?.find((item: any) => item === option) || this.selectedOptions?.find((item: any) => item.uid === option);
 			if (!selectOption) this.selectedOptions.push(option);
-
 			const selectedIds = typeof this.selectedOptions[0] !== 'string' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions;
 			this.selectedOption.emit(selectedIds);
 		} else this.selectedOption.emit(option?.uid || option);
@@ -71,7 +70,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	writeValue(value: string | Array<any>) {
 		if (value) {
 			if (this.options?.length && typeof this.options[0] !== 'string' && !this.multiple) return (this.selectedValue = this.options?.find(option => option.uid === value));
-			if (this.multiple && typeof value !== 'string') {
+			if (this.multiple && typeof value !== 'string' && this.selectedOptions?.length === 0) {
 				setTimeout(() => {
 					value.forEach((item: any) => {
 						this.selectedOptions.push({

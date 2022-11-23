@@ -89,7 +89,10 @@
 	</convoy-card>
 	<convoy-card className="h-full min-h-[70vh] w-full max-w-[382px] min-w-[350px] ml-16px first-letter:border-l border-l-grey-10 transition-all duration-200 desktop:max-w-none desktop:border-none" *ngIf="activeLink?.uid">
 		<div class="flex items-center justify-between pt-16px px-16px mb-20px">
-			<h2 class="text-16 font-bold">{{ activeLink?.name || 'Linkname' }}</h2>
+			<h2 class="text-16 font-bold underline text-primary-100 flex items-center">
+				<a [href]="activeLink?.url" target="_blank">{{ activeLink?.name || 'Linkname' }}</a>
+				<img src="/assets/img/arrow-up-right.svg" class="w-16px ml-4px" alt="link out" />
+			</h2>
 			<a class="w-32px h-32px flex items-center justify-center rounded-[6px] bg-primary-500" [routerLink]="['./']" [queryParams]="{}" tabindex="0">
 				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 			</a>

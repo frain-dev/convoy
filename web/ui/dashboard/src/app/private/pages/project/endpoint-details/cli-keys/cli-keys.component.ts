@@ -136,7 +136,7 @@ export class CliKeysComponent implements OnInit {
 
 		this.isRevokingApiKey = true;
 		try {
-			const response = await this.cliKeyService.revokeApiKey({ endpointId: this.selectedApiKey?.role.app, keyId: this.selectedApiKey?.uid, token: this.token });
+			const response = await this.cliKeyService.revokeApiKey({ endpointId: this.selectedApiKey?.role.endpoint, keyId: this.selectedApiKey?.uid, token: this.token });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingApiKey = false;
 			this.showRevokeApiModal = false;
