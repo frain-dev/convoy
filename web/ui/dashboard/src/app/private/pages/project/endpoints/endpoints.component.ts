@@ -48,8 +48,8 @@ export class EndpointsComponent implements OnInit {
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
 	endpointsTableHead = ['Status','Name', 'Time Created', 'Updated', 'Events', ''];
-	displayedEndpoints!: { date: string; content: ENDPOINT[] }[];
-	endpoints!: { pagination: PAGINATION; content: ENDPOINT[] };
+	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
+	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	isLoadingEndpoints = false;
 	endpointSearchString!: string;
 

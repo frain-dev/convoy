@@ -141,12 +141,6 @@
 					<div class="w-[50%] text-grey-40">Endpoint</div>
 					<div class="w-[50%] text-right text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
 				</li>
-				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.app_metadata">
-					<div class="w-[50%] text-grey-40">App Name</div>
-					<a [routerLink]="'/projects/' + projectId + '/apps/' + activeSubscription?.app_metadata?.uid" class="w-[50%] font-medium text-primary-100 text-right underline">
-						{{ activeSubscription?.app_metadata?.name }}
-					</a>
-				</li>
 				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.type === 'incoming'">
 					<div class="w-[50%] text-grey-40">Source</div>
 					<a [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: activeSubscription?.uid }" class="w-[50%] font-medium text-primary-100 text-right underline">
