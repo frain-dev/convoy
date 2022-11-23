@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
-// import { InputComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -52,7 +51,6 @@ export class SendEventComponent implements OnInit {
 			this.sendEventForm.reset();
 			this.onAction.emit({ action: 'sentEvent' });
 			this.isSendingNewEvent = false;
-			// this.router.navigate(['/projects/' + this.endpointService.projectId + '/events'], { queryParams: { eventsApp: this.endpointId } });
 		} catch {
 			this.isSendingNewEvent = false;
 		}

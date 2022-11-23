@@ -114,7 +114,6 @@ export class EventDeliveriesComponent implements OnInit {
 				const content = { event_type: eventType, created_at: filteredDeliveryDate, eventDeliveries: filteredDelivery };
 				filteredEventDeliveries.push(content);
 			});
-			// this.pushEventDeliveries.emit(this.eventDeliveries);
 
 			console.log(uniqueEvents);
 			console.log(filteredEventDeliveries);
@@ -127,19 +126,6 @@ export class EventDeliveriesComponent implements OnInit {
 			return error;
 		}
 	}
-
-	// setContentDisplayed(content: { created_at: Date }[]) {
-	// 	const dateCreateds = content.map((item: { created_at: Date }) => this.getDate(item.created_at));
-	// 	const uniqueDateCreateds = [...new Set(dateCreateds)];
-	// 	let displayedItems: any = [];
-	// 	uniqueDateCreateds.forEach(itemDate => {
-	// 		const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
-	// 		const contents = { date: itemDate, content: filteredItemDate };
-	// 		displayedItems.push(contents);
-	// 		displayedItems = displayedItems.sort((a: any, b: any) => new Date(b.date).getDate() - new Date(a.date).getDate());
-	// 	});
-	// 	return displayedItems;
-	// }
 
 	async eventDeliveriesRequest(requestDetails: { pageNo?: number; eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
 		let eventDeliveryStatusFilterQuery = '';

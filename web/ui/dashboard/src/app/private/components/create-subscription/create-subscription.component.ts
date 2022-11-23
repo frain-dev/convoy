@@ -87,14 +87,11 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async getSubscriptionDetails() {
 		if (this.action !== 'update') return;
-		console.log(this.subscriptionForm.value);
-        console.log(this.subscriptionId)
-        console.log(this.token)
+
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-			// if (!this.token) this.onUpdateAppSelection();
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {
@@ -161,7 +158,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateEndpoint(newEndpoint: ENDPOINT) {
-		// await this.getApps();
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 	}
 
@@ -201,7 +197,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateNewApp(newApp: APP) {
-		// await this.getApps();
 		this.subscriptionForm.patchValue({ app_id: newApp.uid });
 		this.onUpdateAppSelection();
 	}
