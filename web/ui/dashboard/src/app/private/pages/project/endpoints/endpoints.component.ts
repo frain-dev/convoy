@@ -37,7 +37,7 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		ListItemComponent,
 		ModalComponent,
 		CreateEndpointComponent,
-        TagComponent,
+		TagComponent,
 		FormsModule,
 		RouterModule
 	],
@@ -47,25 +47,29 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 export class EndpointsComponent implements OnInit {
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Status','Name', 'Time Created', 'Updated', 'Events', ''];
+	endpointsTableHead = ['Status', 'Name', 'Time Created', 'Updated', 'Events', ''];
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	isLoadingEndpoints = false;
 	endpointSearchString!: string;
 
-	constructor(public privateService: PrivateService, private router: Router, private endpointService: EndpointsService, private generalService: GeneralService, private route: ActivatedRoute) {}
+	constructor(public privateService: PrivateService, public router: Router, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
 
 	ngOnInit() {
 		this.getEndpoints();
 	}
 
 	async getEndpoints(requestDetails?: { search?: string; page?: number }) {
+		this.isLoadingEndpoints = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
 			const response = await this.endpointService.getEndpoints({ pageNo: page, searchString: requestDetails?.search });
-			this.endpoints = response.data.content;
+			this.endpoints = response.data;
 			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
-		} catch {}
+			this.isLoadingEndpoints = false;
+		} catch {
+			this.isLoadingEndpoints = false;
+		}
 	}
 
 	searchEndpoint(searchDetails: { searchInput?: any }) {

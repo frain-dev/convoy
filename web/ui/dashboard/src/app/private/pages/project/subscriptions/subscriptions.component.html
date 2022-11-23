@@ -11,7 +11,7 @@
 </div>
 
 <!-- subscriptions loader  -->
-<div class="min-h-[70vh]" *ngIf="isLoadindingSubscriptions">
+<div class="min-h-[70vh] mt-80px" *ngIf="isLoadindingSubscriptions">
 	<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptionsLoaders">
 		<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10 px-16px">
 			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
@@ -19,8 +19,7 @@
 		</div>
 		<div class="flex items-end justify-between pb-8px px-16px mt-8px" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
 			<div>
-				<div class="text-grey-40 text-10 mb-3">App</div>
-
+				<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[80px] mb-12px"></div>
 				<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[120px]"></div>
 			</div>
 			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[150px]"></div>
@@ -68,7 +67,7 @@
 
 				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.endpoint_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
 					<div class="w-full">
-						<div class="text-grey-40 text-10 mb-3">Endpoint</div>
+						<div class="text-grey-40 text-10 mb-12px">Endpoint</div>
 						<div class="text-12">{{ subscription?.endpoint_metadata?.title }}</div>
 					</div>
 					<div class="w-full flex items-center">
@@ -83,7 +82,6 @@
 							<!-- <convoy-copy-button [text]="subscription.endpoint_metadata.secrets[subscription.endpoint_metadata.secrets.length - 1]" size="md" (copyText)="copyText()" className="ml-8px"></convoy-copy-button> -->
 						</div>
 					</div>
-
 					<div class="flex items-center justify-end w-[50%]">
 						<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/endpoints/' + subscription.endpoint_metadata?.uid">
 							<div class="whitespace-nowrap">Go to endpoint</div>
@@ -96,7 +94,7 @@
 
 				<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="privateService.activeProjectDetails?.type === 'incoming' && subscription.source_metadata">
 					<div class="w-full">
-						<div class="text-grey-40 text-10 mb-10px">Source</div>
+						<div class="text-grey-40 text-10 mb-12px">Source</div>
 						<div class="text-12">{{ subscription.source_metadata.name }}</div>
 					</div>
 					<div class="w-full">

@@ -7,7 +7,7 @@
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="text-primary-100 font-medium">Portal Link</span>
+	<span class="text-primary-100 font-medium">Events Log</span>
 </div>
 
 <div class="flex py-24px items-center justify-between">
@@ -145,22 +145,37 @@
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
 					<prism language="json" [code]="getCodeSnippetString()" title="Event"></prism>
 
-					<ng-container *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
-						<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
-						<ul>
-							<li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['./event-deliveries/' + delivery.uid]" class="cursor-pointer flex !justify-start">
-								<div class="flex items-center">
-									<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
-										<use xlink:href="#cli-icon"></use>
-									</svg>
-									<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
-								</div>
-								<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
-									{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
-								</div>
-							</li>
-						</ul>
-					</ng-container>
+					<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
+					<div *ngIf="isLoadingSidebarDeliveries">
+						<div class="flex mb-20px">
+							<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
+							<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
+						</div>
+						<div class="flex mb-20px">
+							<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
+							<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
+						</div>
+						<div class="flex mb-20px">
+							<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
+							<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
+						</div>
+					</div>
+
+					<div class="mt-30px italic text-center w-full text-primary-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0">...no event deliveries for this event</div>
+
+					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
+						<li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['../events/event-deliveries/' + delivery.uid]" [relativeTo]="route" class="cursor-pointer flex !justify-start">
+							<div class="flex items-center">
+								<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
+									<use xlink:href="#cli-icon"></use>
+								</svg>
+								<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
+							</div>
+							<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
+								{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
+							</div>
+						</li>
+					</ul>
 				</ng-container>
 			</div>
 		</div>

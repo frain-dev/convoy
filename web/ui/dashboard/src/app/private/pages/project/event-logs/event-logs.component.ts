@@ -32,7 +32,7 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 	imports: [
 		CommonModule,
 		RouterModule,
-        FormsModule,
+		FormsModule,
 		StatusColorModule,
 		PrismModule,
 		LoaderModule,
@@ -48,7 +48,7 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 		TableCellComponent,
 		TimePickerComponent,
 		DatePickerComponent,
-        DropdownComponent
+		DropdownComponent
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
@@ -83,8 +83,9 @@ export class EventLogsComponent implements OnInit {
 	eventsEndpointFilter$!: Observable<ENDPOINT[]>;
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
+	isLoadingSidebarDeliveries = false;
 
-	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, private route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
+	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
@@ -277,19 +278,27 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	async getEventDeliveriesForSidebar(eventId: string) {
+		this.isLoadingSidebarDeliveries = true;
 		this.sidebarEventDeliveries = [];
 
-		const response = await this.eventsLogService.getEventDeliveries({
-			eventId,
-			startDate: '',
-			endDate: '',
-			pageNo: 1,
-			endpointId: '',
-			statusQuery: '',
-			token: this.portalToken
-		});
-		this.sidebarEventDeliveries = response.data.content;
-		return;
+		try {
+			const response = await this.eventsLogService.getEventDeliveries({
+				eventId,
+				startDate: '',
+				endDate: '',
+				pageNo: 1,
+				endpointId: '',
+				statusQuery: '',
+				token: this.portalToken
+			});
+			this.sidebarEventDeliveries = response.data.content;
+			this.isLoadingSidebarDeliveries = false;
+
+			return;
+		} catch (error) {
+			this.isLoadingSidebarDeliveries = false;
+			return error;
+		}
 	}
 
 	openDeliveriesTab(eventId: string) {

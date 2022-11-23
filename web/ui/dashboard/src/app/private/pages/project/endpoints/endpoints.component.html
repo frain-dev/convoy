@@ -20,7 +20,8 @@
 			</button>
 		</form>
 	</div>
-	<button convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
+
+	<button *ngIf="!isLoadingEndpoints && displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
 </div>
 
 <convoy-card *ngIf="isLoadingEndpoints">
@@ -58,7 +59,7 @@
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">{{ endpoint.events || 0 }}</td>
 						<td convoy-table-cell>
-							<button convoy-button size="xs" texture="light">
+							<button convoy-button size="xs" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 								View Events
 							</button>
@@ -70,11 +71,17 @@
 	</div>
 </convoy-card>
 
-<convoy-card className="mt-16px" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0">
-	<convoy-empty-state imgSrc="/assets/img/new-empty-state.png" buttonText="Create Endpoint" description="You have not created an endpoint" className="min-h-[65vh]" id="endpoints-empty-state"></convoy-empty-state>
-</convoy-card>
+<convoy-empty-state
+	*ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0"
+	imgSrc="/assets/img/new-empty-state.png"
+	buttonText="Create Endpoint"
+	description="You have not created an endpoint"
+	className="mt-16px min-h-[65vh]"
+	id="endpoints-empty-state"
+	(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
+></convoy-empty-state>
 
-<div class="flex items-center mt-16px" [ngClass]="{ invisible: displayedEndpoints?.length === 0 }">
+<div class="flex items-center mt-16px" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
 	<button
 		convoy-button
 		fill="outline"
@@ -90,6 +97,7 @@
 		</svg>
 		Previous
 	</button>
+
 	<button
 		convoy-button
 		fill="outline"
