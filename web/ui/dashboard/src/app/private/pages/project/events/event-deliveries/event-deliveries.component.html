@@ -153,16 +153,6 @@
 						<td convoy-table-cell [forDate]="true"></td>
 					</tr>
 					<ng-container *ngFor="let eventDelivery of eventDeliveriesGroup.content; let index = index">
-						<tr convoy-table-row [forDate]="true">
-							<td convoy-table-cell [forDate]="true">
-								<convoy-tag type="grey">{{ eventDelivery.event_type }}</convoy-tag>
-							</td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-						</tr>
 						<tr convoy-table-row *ngFor="let event of eventDelivery.eventDeliveries; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
 							<td convoy-table-cell class="pl-16px relative">
 								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
@@ -197,6 +187,7 @@
 								</button>
 							</td>
 						</tr>
+						<tr convoy-table-row [forDate]="true"></tr>
 					</ng-container>
 				</ng-container>
 			</tbody>
