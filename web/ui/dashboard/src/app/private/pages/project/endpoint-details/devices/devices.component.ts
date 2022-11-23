@@ -23,12 +23,12 @@ export class DevicesComponent implements OnInit {
 	showError = false;
 	devices!: DEVICE[];
 	loaderIndex: number[] = [0, 1, 2];
-	token: string = this.route.snapshot.params.token;
+	token: string = this.route.snapshot.queryParams.token;
 
 	constructor(private route: ActivatedRoute, private deviceService: DevicesService) {}
 
 	ngOnInit() {
-		this.token ? this.getAppPortalApp() : this.getDevices();
+		this.getDevices();
 	}
 
 	async getAppPortalApp() {

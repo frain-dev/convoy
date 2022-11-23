@@ -152,40 +152,52 @@
 						<td convoy-table-cell [forDate]="true"></td>
 						<td convoy-table-cell [forDate]="true"></td>
 					</tr>
-					<tr convoy-table-row *ngFor="let event of eventDeliveriesGroup.content; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]">
-						<td convoy-table-cell class="pl-16px relative">
-							<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
-							<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
-						</td>
-						<td convoy-table-cell>
-							<div class="flex items-center">
-								<svg width="16" height="14" class="mr-10px" *ngIf="event.device_id">
-									<use xlink:href="#cli-icon"></use>
-								</svg>
-								<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
-							</div>
-						</td>
-						<td convoy-table-cell>{{ event.metadata.num_trials }}</td>
-						<td convoy-table-cell>{{ event.metadata.retry_limit }}</td>
-						<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
-						<td convoy-table-cell>
-							<button
-								convoy-button
-								size="xs"
-								texture="light"
-								[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
-								(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
-							>
-								<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-								{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
-							</button>
-						</td>
-						<td convoy-table-cell>
-							<button size="xs" [routerLink]="'./event-deliveries/' + event.uid">
-								<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
-							</button>
-						</td>
-					</tr>
+					<ng-container *ngFor="let eventDelivery of eventDeliveriesGroup.content; let index = index">
+						<tr convoy-table-row [forDate]="true">
+							<td convoy-table-cell [forDate]="true">
+								<convoy-tag type="grey">{{ eventDelivery.event_type }}</convoy-tag>
+							</td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+						</tr>
+						<tr convoy-table-row *ngFor="let event of eventDelivery.eventDeliveries; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
+							<td convoy-table-cell class="pl-16px relative">
+								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
+								<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
+							</td>
+							<td convoy-table-cell>
+								<div class="flex items-center">
+									<svg width="16" height="14" class="mr-10px" *ngIf="event.device_id">
+										<use xlink:href="#cli-icon"></use>
+									</svg>
+									<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
+								</div>
+							</td>
+							<td convoy-table-cell>{{ event.metadata.num_trials }}</td>
+							<td convoy-table-cell>{{ event.metadata.retry_limit }}</td>
+							<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
+							<td convoy-table-cell>
+								<button
+									convoy-button
+									size="xs"
+									texture="light"
+									[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
+									(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
+								>
+									<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+									{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
+								</button>
+							</td>
+							<td convoy-table-cell>
+								<button size="xs" [routerLink]="'./event-deliveries/' + event.uid">
+									<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
+								</button>
+							</td>
+						</tr>
+					</ng-container>
 				</ng-container>
 			</tbody>
 		</table>

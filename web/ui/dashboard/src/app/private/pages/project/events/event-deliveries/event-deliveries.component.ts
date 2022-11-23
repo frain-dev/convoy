@@ -39,7 +39,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryIndex!: number;
 	eventDeliveriesPage: number = 1;
 	selectedEventsFromEventDeliveriesTable: string[] = [];
-	displayedEventDeliveries!: { date: string; content: EVENT_DELIVERY[] }[];
+	displayedEventDeliveries!: { date: string; content: any[] }[];
 	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	sidebarEventDeliveries!: EVENT_DELIVERY[];
 	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
@@ -51,7 +51,7 @@ export class EventDeliveriesComponent implements OnInit {
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimePickerComponent;
 	@ViewChild('endpointsFilterDropdown', { static: true }) endpointsFilterDropdown!: DropdownComponent;
 	@ViewChild('sourcesFilterDropdown', { static: true }) sourcesFilterDropdown!: DropdownComponent;
-	portalToken = this.route.snapshot.params?.token;
+	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, private route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
@@ -101,10 +101,25 @@ export class EventDeliveriesComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ pageNo: page, eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
 			this.eventDeliveries = eventDeliveriesResponse.data;
-			this.displayedEventDeliveries = this.generalService.setContentDisplayed(eventDeliveriesResponse.data.content);
+			const eventdels = eventDeliveriesResponse.data.content;
+			const eventTypes: any = [];
+			const filteredEventDeliveries: any = [];
+			eventdels.forEach((item: any) => {
+				eventTypes.push(item.event_metadata.event_type);
+			});
+			const uniqueEvents = [...new Set(eventTypes)];
+			uniqueEvents.forEach(eventType => {
+				const filteredDelivery = eventdels.filter((item: any) => item.event_metadata.event_type === eventType);
+				const filteredDeliveryDate = eventdels.find((item: any) => item.event_metadata.event_type === eventType)?.created_at;
+				const content = { event_type: eventType, created_at: filteredDeliveryDate, eventDeliveries: filteredDelivery };
+				filteredEventDeliveries.push(content);
+			});
+			// this.pushEventDeliveries.emit(this.eventDeliveries);
 
-			this.pushEventDeliveries.emit(this.eventDeliveries);
-
+			console.log(uniqueEvents);
+			console.log(filteredEventDeliveries);
+			this.displayedEventDeliveries = this.generalService.setContentDisplayed(filteredEventDeliveries);
+			console.log(this.generalService.setContentDisplayed(filteredEventDeliveries));
 			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse;
 		} catch (error: any) {
@@ -112,6 +127,19 @@ export class EventDeliveriesComponent implements OnInit {
 			return error;
 		}
 	}
+
+	// setContentDisplayed(content: { created_at: Date }[]) {
+	// 	const dateCreateds = content.map((item: { created_at: Date }) => this.getDate(item.created_at));
+	// 	const uniqueDateCreateds = [...new Set(dateCreateds)];
+	// 	let displayedItems: any = [];
+	// 	uniqueDateCreateds.forEach(itemDate => {
+	// 		const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
+	// 		const contents = { date: itemDate, content: filteredItemDate };
+	// 		displayedItems.push(contents);
+	// 		displayedItems = displayedItems.sort((a: any, b: any) => new Date(b.date).getDate() - new Date(a.date).getDate());
+	// 	});
+	// 	return displayedItems;
+	// }
 
 	async eventDeliveriesRequest(requestDetails: { pageNo?: number; eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
 		let eventDeliveryStatusFilterQuery = '';

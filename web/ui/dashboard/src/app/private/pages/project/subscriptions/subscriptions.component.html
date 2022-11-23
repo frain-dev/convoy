@@ -71,10 +71,11 @@
 						<div class="text-grey-40 text-10 mb-3">Endpoint</div>
 						<div class="text-12">{{ subscription?.endpoint_metadata?.title }}</div>
 					</div>
-					<div class="w-full">
+					<div class="w-full flex items-center">
 						<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
 							{{ subscription?.endpoint_metadata?.target_url }}
 						</div>
+						<convoy-copy-button [text]="subscription?.endpoint_metadata?.target_url || ''" size="md" notificationText="Endpoint URL has been copied to you clipboard" className="ml-8px"></convoy-copy-button>
 					</div>
 					<div class="w-full" *ngIf="subscription?.endpoint_metadata?.secrets?.length">
 						<div class="text-12 flex items-center whitespace-nowrap">

@@ -20,7 +20,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	shouldRenderSmallSize = false;
 	eventDeliveryId = this.route.snapshot.params?.id;
 	screenWidth = window.innerWidth;
-	appPortalToken = this.route.snapshot.params?.token;
+	portalToken = this.route.snapshot.queryParams?.token;
 
 	constructor(private route: ActivatedRoute, private eventDeliveryDetailsService: EventDeliveryDetailsService, private generalService: GeneralService, private eventsService: EventsService) {}
 
@@ -34,7 +34,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.isLoadingDeliveryDetails = true;
 
 		try {
-			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id, this.appPortalToken);
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id, this.portalToken);
 			this.eventDelsDetails = response.data;
 			this.isLoadingDeliveryDetails = false;
 		} catch (error) {
@@ -48,7 +48,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		};
 
 		try {
-			await this.eventsService.forceRetryEvent({ body: payload, token: this.appPortalToken });
+			await this.eventsService.forceRetryEvent({ body: payload, token: this.portalToken });
 			this.getEventDeliveryDetails(requestDetails.eventDeliveryId);
 			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
 		} catch (error: any) {
@@ -59,7 +59,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 	async retryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
 		try {
-			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.appPortalToken });
+			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.portalToken });
 			this.getEventDeliveryDetails(requestDetails.eventDeliveryId);
 			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
 		} catch (error: any) {
@@ -72,7 +72,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.isloadingDeliveryAttempts = true;
 
 		try {
-			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId, this.appPortalToken);
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId, this.portalToken);
 			const deliveries = response.data;
 			this.eventDeliveryAtempts = deliveries.sort((a: EVENT_DELIVERY_ATTEMPT, b: EVENT_DELIVERY_ATTEMPT) => new Date(a.updated_at).getDate() - new Date(b.updated_at).getDate());
 			this.selectedDeliveryAttempt = response.data[0];

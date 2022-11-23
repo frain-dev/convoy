@@ -28,25 +28,23 @@
 			</button>
 		</ng-container>
 
-		<ng-container *ngIf="!token">
-			<convoy-select
-				className="mb-0 mt-24px"
-				[options]="endPoints"
-				name="endpoint"
-				formControlName="endpoint_id"
-				errorMessage="Select or create an endpoint"
-				label="Endpoint"
-				placeholder="Select an endpoint"
-				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
-				[required]="true"
-			></convoy-select>
-			<button convoy-button fill="text" type="button" class="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true" *ngIf="!token">
-				<svg width="14" height="14" class="mr-4px" fill="currentColor">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				New Endpoint
-			</button>
-		</ng-container>
+		<convoy-select
+			className="mb-0 mt-24px"
+			[options]="endPoints"
+			name="endpoint"
+			formControlName="endpoint_id"
+			errorMessage="Select or create an endpoint"
+			label="Endpoint"
+			placeholder="Select an endpoint"
+			(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
+			[required]="true"
+		></convoy-select>
+		<button convoy-button fill="text" type="button" class="px-0 py-0 mt-1 mb-24px font-medium text-12" (click)="showCreateEndpointModal = true" *ngIf="!token">
+			<svg width="14" height="14" class="mr-4px" fill="currentColor">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			New Endpoint
+		</button>
 
 		<div class="mt-24px" *ngIf="projectType === 'outgoing' || token">
 			<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
@@ -130,8 +128,6 @@
 				</div>
 			</div>
 		</div>
-
-
 	</convoy-card>
 
 	<div class="flex justify-end mt-32px">
@@ -150,16 +146,10 @@
 	<button convoy-button size="sm" class="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</button>
 </div>
 
-<convoy-modal
-	size="lg"
-	[title]="showCreateAppModal ? 'Create New App' : showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'"
-	*ngIf="showCreateAppModal || showCreateSourceModal || showCreateEndpointModal"
-	(closeModal)="showCreateAppModal = false; showCreateSourceModal = false; showCreateEndpointModal = false"
->
+<convoy-modal size="lg" [title]="showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'" *ngIf="showCreateSourceModal || showCreateEndpointModal" (closeModal)="showCreateSourceModal = false; showCreateEndpointModal = false">
 	<div modalBody>
-		<app-create-app (createApp)="onCreateNewApp($event); showCreateAppModal = false" (discardApp)="showCreateAppModal = false" *ngIf="showCreateAppModal"></app-create-app>
 		<convoy-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action === 'close' ? (showCreateSourceModal = false) : onCreateSource($event.data); showCreateSourceModal = false"></convoy-create-source>
-		<app-create-endpoint *ngIf="showCreateEndpointModal" [appId]="subscriptionForm.value.app_id" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false"></app-create-endpoint>
+		<convoy-create-endpoint *ngIf="showCreateEndpointModal" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false"></convoy-create-endpoint>
 	</div>
 </convoy-modal>
 

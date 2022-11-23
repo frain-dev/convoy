@@ -13,7 +13,7 @@ export class CliKeysService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? '/endpoints/keys' : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys`,
+					url: requestDetails.token ? `/endpoints/${requestDetails.endpointId}/keys?token=${requestDetails.token}` : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys`,
 					method: 'post',
 					body: requestDetails.body,
 					token: requestDetails.token
@@ -30,7 +30,7 @@ export class CliKeysService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? '/endpoints/keys' : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys`,
+					url: requestDetails.token ? `/keys?token=${requestDetails.token}` : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys`,
 					method: 'get',
 					token: requestDetails.token
 				});
@@ -46,7 +46,7 @@ export class CliKeysService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? `/endpoints/keys/${requestDetails.keyId}/revoke` : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys/${requestDetails.keyId}/revoke`,
+					url: requestDetails.token ? `/keys/${requestDetails.keyId}/revoke?token=${requestDetails.token}` : `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/keys/${requestDetails.keyId}/revoke`,
 					method: 'put',
 					body: null,
 					token: requestDetails.token
@@ -63,7 +63,23 @@ export class CliKeysService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps`,
+					url: `/apps?token=${token}`,
+					method: 'get',
+					token
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getEndpoints(token?: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/endpoints?sort=AESC&page=1${token ? `&token=${token}` : ''}`,
 					method: 'get',
 					token
 				});

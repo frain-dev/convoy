@@ -50,6 +50,9 @@
 
 <convoy-modal title="Generate CLI key" (closeModal)="generateKeyModal = false; generateKeyForm.reset()" *ngIf="generateKeyModal">
 	<form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()" modalBody>
+		<ng-container *ngIf="token">
+			<convoy-select label="Endpoint" name="endpoint_id" formControlName="endpoint_id" [options]="endpoints" [value]="endpointId" [required]="true" errorMessage="Endpoint Id is required" className="mb-24px" (selectedOption)="setEndpointId($event)"></convoy-select>
+		</ng-container>
 		<convoy-input-field>
 			<label for="name" convoy-label>CLI key name</label>
 			<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="CLI key name" />

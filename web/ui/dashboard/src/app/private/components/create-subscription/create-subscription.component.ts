@@ -35,7 +35,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			filter: [null]
 		})
 	});
-    endpoints!: ENDPOINT[];
+	endpoints!: ENDPOINT[];
 	apps!: APP[];
 	sources!: SOURCE[];
 	endPoints: ENDPOINT[] = [];
@@ -55,8 +55,8 @@ export class CreateSubscriptionComponent implements OnInit {
 	projectType!: 'incoming' | 'outgoing';
 	isLoadingForm = true;
 	subscriptionId = this.route.snapshot.params.id;
-	isloadingAppPortalAppDetails = false;
-	token: string = this.route.snapshot.params.token;
+	isLoadingPortalProject = false;
+	token: string = this.route.snapshot.queryParams.token;
 	showError = false;
 	confirmModal = false;
 
@@ -64,22 +64,22 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([this.getPortalProject(), this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 	}
 
-	async getAppPortalApp() {
-		this.isloadingAppPortalAppDetails = true;
+	async getPortalProject() {
+		if (!this.token) return;
+		this.isLoadingPortalProject = true;
 
 		try {
-			const apps = await this.createSubscriptionService.getAppPortalApp(this.token);
-			this.subscriptionForm.patchValue({ app_id: apps.data.uid, group_id: apps.data.group_id, type: 'outgoing' });
-			this.modifyEndpointData(apps.data.endpoints);
-			this.isloadingAppPortalAppDetails = false;
+			const response = await this.createSubscriptionService.getPortalProject(this.token);
+			this.subscriptionForm.patchValue({ group_id: response.data.uid, type: 'outgoing' });
+			this.isLoadingPortalProject = false;
 			this.showError = false;
 			return;
 		} catch (error) {
-			this.isloadingAppPortalAppDetails = false;
+			this.isLoadingPortalProject = false;
 			this.showError = true;
 			return error;
 		}
@@ -87,12 +87,14 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async getSubscriptionDetails() {
 		if (this.action !== 'update') return;
-
+		console.log(this.subscriptionForm.value);
+        console.log(this.subscriptionId)
+        console.log(this.token)
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
-			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, app_id: response.data?.app_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-			if (!this.token) this.onUpdateAppSelection();
+			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
+			// if (!this.token) this.onUpdateAppSelection();
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {
@@ -110,21 +112,10 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getEndpoints() {
-		if (this.token) {
-			await this.getAppPortalApp();
-			return;
-		}
-
 		try {
-			const response = await this.privateService.getEndpoints();
-			this.endpoints = response.data.content;
-            this.modifyEndpointData(response.data.content);
-
-			// if (this.subscriptionForm.value.app_id) {
-			// 	const endpoints = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id)?.endpoints;
-			// 	this.modifyEndpointData(endpoints);
-			// }
-			return;
+			const response = await this.createSubscriptionService.getEndpoints({ token: this.token });
+			this.endpoints = this.token ? response.data : response.data.content;
+			this.modifyEndpointData(this.token ? response.data : response.data.content);
 		} catch (error) {
 			return error;
 		}

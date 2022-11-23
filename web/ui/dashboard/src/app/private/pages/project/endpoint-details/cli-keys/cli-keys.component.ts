@@ -5,7 +5,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { ActivatedRoute } from '@angular/router';
-import { API_KEY } from 'src/app/models/endpoint.model';
+import { API_KEY, ENDPOINT } from 'src/app/models/endpoint.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
@@ -56,7 +56,8 @@ export class CliKeysComponent implements OnInit {
 	selectedApiKey?: API_KEY;
 	loaderIndex: number[] = [0, 1, 2];
 	endpointId: string = this.route.snapshot.params.id;
-	token: string = this.route.snapshot.params.token;
+	token: string = this.route.snapshot.queryParams.token;
+	endpoints!: ENDPOINT[];
 	expirationDates = [
 		{ name: '7 days', uid: 7 },
 		{ name: '14 days', uid: 14 },
@@ -66,13 +67,14 @@ export class CliKeysComponent implements OnInit {
 	generateKeyForm: FormGroup = this.formBuilder.group({
 		name: [''],
 		expiration: [''],
-		key_type: ['cli']
+		key_type: ['cli'],
+		endpoint_id: []
 	});
 
 	constructor(private route: ActivatedRoute, private generalService: GeneralService, private formBuilder: FormBuilder, private cliKeyService: CliKeysService) {}
 
-	ngOnInit() {
-		this.token ? this.getAppPortalApp() : this.getApiKeys();
+	async ngOnInit() {
+		await Promise.all([this.getApiKeys(), this.getEndpoints()]);
 	}
 
 	async getAppPortalApp() {
@@ -142,6 +144,27 @@ export class CliKeysComponent implements OnInit {
 		} catch {
 			this.isRevokingApiKey = false;
 		}
+	}
+
+	async getEndpoints() {
+		if (!this.token) return;
+		try {
+			const response = await this.cliKeyService.getEndpoints(this.token);
+			const endpointData = response.data;
+			endpointData.forEach((data: ENDPOINT) => {
+				data.name = data.title;
+			});
+			this.endpoints = endpointData;
+		} catch {
+			return;
+		}
+	}
+
+	setEndpointId(endpointId: string) {
+		this.endpointId = endpointId;
+		this.generateKeyForm.patchValue({
+			endpoint_id: endpointId
+		});
 	}
 
 	getKeyStatus(expiryDate: Date): string {

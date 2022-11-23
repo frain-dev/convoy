@@ -13,7 +13,7 @@ export class DevicesService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: token ? '/endpoints/devices' : `${this.privateService.urlFactory('org_project')}/endpoints/${endpointId}/devices`,
+					url: token ? `/devices?token=${token}` : `${this.privateService.urlFactory('org_project')}/endpoints/${endpointId}/devices`,
 					method: 'get',
 					token
 				});
@@ -29,7 +29,7 @@ export class DevicesService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/apps`,
+					url: `/apps?token=${token}`,
 					method: 'get',
 					token
 				});
