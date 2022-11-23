@@ -37,7 +37,7 @@
 				cursor-pointer
 				flex
 				items-center
-                flex-wrap
+				flex-wrap
 			"
 		>
 			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue }}</span>
@@ -58,9 +58,17 @@
 	<div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
 		<ul>
 			<li class="text-14 text-grey-20">Select</li>
-			<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
-				<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
-			</li>
+			<ng-container *ngIf="multiple">
+				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
+					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+				</li>
+			</ng-container>
+
+			<ng-container *ngIf="!multiple">
+				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20" convoy-dropdown-option>
+					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+				</li>
+			</ng-container>
 		</ul>
 	</div>
 </div>
