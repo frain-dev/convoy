@@ -101,30 +101,37 @@ export class EventDeliveriesComponent implements OnInit {
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ pageNo: page, eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
 			this.eventDeliveries = eventDeliveriesResponse.data;
-			const eventdels = eventDeliveriesResponse.data.content;
-			const eventTypes: any = [];
-			const filteredEventDeliveries: any = [];
-			eventdels.forEach((item: any) => {
-				eventTypes.push(item.event_metadata.event_type);
-			});
-			const uniqueEvents = [...new Set(eventTypes)];
-			uniqueEvents.forEach(eventType => {
-				const filteredDelivery = eventdels.filter((item: any) => item.event_metadata.event_type === eventType);
-				const filteredDeliveryDate = eventdels.find((item: any) => item.event_metadata.event_type === eventType)?.created_at;
-				const content = { event_type: eventType, created_at: filteredDeliveryDate, eventDeliveries: filteredDelivery };
-				filteredEventDeliveries.push(content);
-			});
 
-			console.log(uniqueEvents);
-			console.log(filteredEventDeliveries);
-			this.displayedEventDeliveries = this.generalService.setContentDisplayed(filteredEventDeliveries);
-			console.log(this.generalService.setContentDisplayed(filteredEventDeliveries));
+			this.displayedEventDeliveries = this.setEventDeliveriesContent(eventDeliveriesResponse.data.content);
+
 			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse;
 		} catch (error: any) {
 			this.isloadingEventDeliveries = false;
 			return error;
 		}
+	}
+
+	setEventDeliveriesContent(eventDeliveriesData: any[]) {
+		const eventTypes: any = [];
+		const finalEventDels: any = [];
+		let filteredEventDeliveries: any = [];
+		const filteredEventDeliveriesByDate = this.generalService.setContentDisplayed(eventDeliveriesData);
+		eventDeliveriesData.forEach((item: any) => {
+			eventTypes.push(item.event_metadata.event_type);
+		});
+		const uniqueEvents = [...new Set(eventTypes)];
+		filteredEventDeliveriesByDate.forEach((eventDelivery: any) => {
+			uniqueEvents.forEach(eventType => {
+				const filteredDeliveriesByEventType = eventDelivery.content.filter((item: any) => item.event_metadata.event_type === eventType);
+				filteredEventDeliveries.push({ date: eventDelivery.date, event_type: eventType, eventDeliveries: filteredDeliveriesByEventType });
+			});
+			filteredEventDeliveries = filteredEventDeliveries.filter((item: any) => item.eventDeliveries.length !== 0);
+			const uniqueEventDels = filteredEventDeliveries.filter((eventDels: any) => eventDelivery.date === eventDels.date);
+			finalEventDels.push({ date: eventDelivery.date, content: uniqueEventDels });
+		});
+
+		return finalEventDels;
 	}
 
 	async eventDeliveriesRequest(requestDetails: { pageNo?: number; eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
