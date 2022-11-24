@@ -982,4 +982,21 @@ var Migrations = []*Migration{
 			return nil
 		},
 	},
+
+	{
+		ID: "20221123174732_drop_devices_collection",
+		Migrate: func(db *mongo.Database) error {
+			// We need to drop the devices collection to succesfully
+			// rebuild the indexes scoped to the endpointID
+			err := db.Collection(datastore.DeviceCollection).Drop(context.Background())
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to drop devices collection")
+				return err
+			}
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			return nil
+		},
+	},
 }
