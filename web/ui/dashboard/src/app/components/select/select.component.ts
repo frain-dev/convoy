@@ -78,7 +78,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 							name: this.options?.find(option => option.uid === item)?.name || this.options?.find(option => option === item)
 						});
 					});
-				}, 500);
+				}, 100);
 			}
 			if (!this.multiple) return (this.selectedValue = value);
 		}
