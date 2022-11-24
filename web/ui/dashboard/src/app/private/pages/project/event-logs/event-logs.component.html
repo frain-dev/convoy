@@ -91,6 +91,7 @@
 		Clear Filters
 	</button>
 </div>
+
 <convoy-card>
 	<div class="flex">
 		<div class="min-w-[605px] w-full h-full overflow-hidden relative">
@@ -141,7 +142,7 @@
 			<div class="p-16px">
 				<convoy-loader id="details_section_loader" *ngIf="isloadingEvents"></convoy-loader>
 
-				<ng-container *ngIf="!isloadingEvents">
+				<ng-container *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
 					<prism language="json" [code]="getCodeSnippetString()" title="Event"></prism>
 
@@ -161,7 +162,7 @@
 						</div>
 					</div>
 
-					<div class="mt-30px italic text-center w-full text-primary-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0">...no event deliveries for this event</div>
+					<div class="mt-30px italic w-full text-grey-20" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0">...no event deliveries for this event</div>
 
 					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
 						<li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['../events/event-deliveries/' + delivery.uid]" [relativeTo]="route" class="cursor-pointer flex !justify-start">
@@ -177,6 +178,8 @@
 						</li>
 					</ul>
 				</ng-container>
+
+				<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
 			</div>
 		</div>
 	</div>
