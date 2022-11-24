@@ -16,27 +16,46 @@
 
 <convoy-card className="p-32px mb-20px">
 	<div class="flex justify-between items-center mb-24px">
-		<h3 class="font-medium">{{ endpointDetails?.title }}</h3>
-		<div class="flex">
-			<div class="flex items-center">
-				<button convoy-button size="sm" fill="text" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + endpointDetails?.uid + '/edit'">
-					<svg width="16" height="16" class="mr-8px fill-primary-100">
-						<use xlink:href="#edit-icon"></use>
+		<div class="flex items-center">
+			<h3 class="font-medium capitalize">{{ endpointDetails?.title }}</h3>
+			<div convoy-dropdown size="sm" position="left">
+				<button dropdownTrigger convoy-button size="sm" fill="text" class="px-10px ml-12px">
+					<svg width="16" height="16" class="fill-primary-100 rotate-90">
+						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
-					Edit
 				</button>
-				<div class="h-22px w-[1px] mx-16px border-l border-l-grey-10"></div>
-				<button convoy-button size="sm" fill="text" color="danger" (click)="showDeleteModal = true">
-					<svg width="16" height="16" class="mr-8px fill-danger-100">
-						<use xlink:href="#delete-icon"></use>
-					</svg>
-					Delete
-				</button>
+
+				<ul dropdownOptions>
+					<li convoy-dropdown-option class="border-b border-grey-20">
+						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + endpointDetails?.uid + '/edit'">
+							<svg width="16" height="16" class="mr-8px fill-primary-100">
+								<use xlink:href="#edit-icon"></use>
+							</svg>
+							Edit
+						</button>
+					</li>
+					<li convoy-dropdown-option>
+						<button convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="showDeleteModal = true">
+							<svg width="16" height="16" class="mr-8px fill-danger-100">
+								<use xlink:href="#delete-icon"></use>
+							</svg>
+							Delete
+						</button>
+					</li>
+				</ul>
 			</div>
+		</div>
+		<div class="flex justify-end items-center" *ngIf="!isLoadingEndpointDetails && endpointDetails">
+			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="showAddEventModal = true">Send Event</button>
+			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails.uid)">View Events</button>
+			<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
+				Open Portal Link
+				<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
+			</button>
 		</div>
 	</div>
 
-	<!-- app details overview  -->
+	<!-- endpoint details overview  -->
 	<div *ngIf="isLoadingEndpointDetails">
 		<div class="flex items-center flex-wrap justify-between mb-32px">
 			<div>
@@ -98,15 +117,6 @@
 				<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
 				{{ endpointDetails.target_url }}
 			</p>
-		</div>
-
-		<div class="flex justify-end items-center mt-80px">
-			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="showAddEventModal = true">Send Event</button>
-			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails.uid)">View Events</button>
-			<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
-				Open Portal Link
-				<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
-			</button>
 		</div>
 	</div>
 </convoy-card>

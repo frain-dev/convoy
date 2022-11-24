@@ -15,11 +15,12 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 @Component({
 	selector: 'convoy-endpoint-details',
 	standalone: true,
-	imports: [CommonModule, RouterModule, CardComponent, ButtonComponent, SkeletonLoaderComponent, CliKeysComponent, DevicesComponent, ModalComponent, SendEventComponent, DeleteModalComponent, CopyButtonComponent, EndpointSecretComponent],
+	imports: [CommonModule, RouterModule, CardComponent, ButtonComponent, SkeletonLoaderComponent, CliKeysComponent, DevicesComponent, ModalComponent, SendEventComponent, DeleteModalComponent, CopyButtonComponent, EndpointSecretComponent, DropdownComponent],
 	templateUrl: './endpoint-details.component.html',
 	styleUrls: ['./endpoint-details.component.scss']
 })

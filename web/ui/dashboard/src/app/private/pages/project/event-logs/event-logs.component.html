@@ -113,7 +113,7 @@
 								<td convoy-table-cell class="pl-16px">
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</td>
-								<td convoy-table-cell *ngIf="event.endpoint_metadata[0]?.title" class="w-150px overflow-ellipsis">
+								<td convoy-table-cell *ngIf="event.endpoint_metadata && event.endpoint_metadata[0]?.title" class="w-150px overflow-ellipsis">
 									<span *ngIf="!portalToken" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + event.endpoint_metadata[0].uid" class="underline text-primary-100">{{ event.endpoint_metadata[0].title }}</span>
 									<span *ngIf="portalToken">{{ event.endpoint_metadata[0].title }}</span>
 								</td>
