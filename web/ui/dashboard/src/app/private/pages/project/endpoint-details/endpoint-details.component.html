@@ -14,7 +14,6 @@
 	<span class="font-medium text-primary-100">{{ endpointDetails?.title || 'Endpoint' }}</span>
 </div>
 
-
 <convoy-card className="p-20px mb-20px">
 	<div class="flex justify-between items-center mb-24px border-b border-b-grey-20 pb-12px">
 		<ng-container *ngIf="!isLoadingEndpointDetails && endpointDetails">
@@ -50,7 +49,6 @@
 
 			<div class="flex justify-end items-center">
 				<button convoy-button fill="outline" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="mr-20px" (click)="sendTestEvent()">{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}</button>
-				<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails.uid)">View Events</button>
 				<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
 					Open Portal Link
 					<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
@@ -67,7 +65,6 @@
 				<convoy-skeleton-loader className="mt-10px w-80px h-20px"></convoy-skeleton-loader>
 			</div>
 		</div>
-
 	</div>
 
 	<!-- endpoint details overview  -->

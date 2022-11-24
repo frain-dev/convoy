@@ -39,7 +39,7 @@
 				<tbody>
 					<tr convoy-table-row *ngFor="let subscription of subscriptions?.content; let i = index">
 						<td convoy-table-cell class="pl-20px">
-							<div class="w-100px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.name }}</div>
+							<div class="overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.name }}</div>
 						</td>
 						<td convoy-table-cell>
 							<div class="w-200px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.endpoint_metadata?.target_url }}</div>
@@ -51,14 +51,14 @@
 							{{ subscription.updated_at | date }}
 						</td>
 						<td convoy-table-cell>
-							<div class="flex flex-wrap">
+							<div class="w-200px flex flex-wrap">
 								<convoy-tag type="grey" *ngFor="let eventType of subscription?.filter_config?.event_types; let i = index" className="mr-8px">{{ eventType }}</convoy-tag>
 							</div>
 						</td>
 						<td convoy-table-cell>
 							<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
 						</td>
-						<td convoy-table-cell class="contents">
+						<td convoy-table-cell class="contents" *ngIf="showCreateSubscription">
 							<div convoy-dropdown>
 								<button dropdownTrigger convoy-button size="sm" fill="clear">
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
@@ -99,7 +99,7 @@
 		<convoy-devices></convoy-devices>
 	</ng-container>
 
-    <div class="mb-24px"></div>
+	<div class="mb-24px"></div>
 
 	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 </convoy-page>
