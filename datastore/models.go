@@ -192,7 +192,7 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy: "60d",
+		Policy: "30d",
 	}
 )
 
@@ -427,7 +427,7 @@ type Event struct {
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
 	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
-	AppID            string                `json:"app_id" bson:"app_id"` //Deprecated
+	AppID            string                `json:"app_id,omitempty" bson:"app_id"` //Deprecated
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
@@ -488,8 +488,7 @@ type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
-	// NextSendTime denotes the next time an Event will be published in
-	// case it failed the first time
+
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
 	// NumTrials: number of times we have tried to deliver this Event to

@@ -36,6 +36,10 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		}
 
 		event = createEvent.Event
+		err = eventRepo.CreateEvent(ctx, &event)
+		if err != nil {
+			return &EndpointError{Err: err, delay: 10 * time.Second}
+		}
 
 		var group *datastore.Group
 		var subscriptions []datastore.Subscription
@@ -64,11 +68,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		}
 
 		event.MatchedEndpoints = len(subscriptions)
-		err = eventRepo.CreateEvent(ctx, &event)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-
 		ec := &EventDeliveryConfig{group: group}
 
 		for _, s := range subscriptions {
