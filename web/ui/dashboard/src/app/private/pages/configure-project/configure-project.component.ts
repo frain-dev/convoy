@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { PrivateService } from '../../private.service';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -8,7 +8,7 @@ import { CreateSubscriptionModule } from '../../components/create-subscription/c
 import { SdkDocumentationComponent } from '../../components/sdk-documentation/sdk-documentation.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CreateEndpointComponent } from '../../components/create-endpoint/create-endpoint.component';
 
 export type STAGES = 'setupSDK' | 'createSource' | 'createEndpoint' | 'createSubscription';
@@ -28,8 +28,9 @@ export class ConfigureProjectComponent implements OnInit {
 		{ projectStage: 'Create Subscription', currentStage: 'pending', id: 'createSubscription' }
 	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
+	activeProjectId = this.route.snapshot.params.id;
 
-	constructor(public privateService: PrivateService, private generalService: GeneralService, public router: Router, private location: Location) {}
+	constructor(public privateService: PrivateService, private generalService: GeneralService, public router: Router, private route: ActivatedRoute) {}
 
 	ngOnInit() {
 		if (this.privateService.activeProjectDetails?.uid) {
@@ -48,7 +49,7 @@ export class ConfigureProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.location.back();
+		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
 	}
 
 	onProjectOnboardingComplete() {

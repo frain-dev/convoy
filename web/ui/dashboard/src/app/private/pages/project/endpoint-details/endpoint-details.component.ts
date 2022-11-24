@@ -109,7 +109,7 @@ export class EndpointDetailsComponent implements OnInit {
 	async sendTestEvent() {
 		const testEvent = {
 			data: { data: 'test event from Convoy', convoy: 'https://getconvoy.io' },
-			endpoint_id: '8992422c-8348-4771-bac7-6951693c689d',
+			endpoint_id: this.endpointDetails?.uid,
 			event_type: 'test.convoy'
 		};
 

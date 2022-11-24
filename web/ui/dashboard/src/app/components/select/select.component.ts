@@ -75,7 +75,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 					value.forEach((item: any) => {
 						this.selectedOptions.push({
 							uid: item,
-							name: this.options?.find(option => option.uid === item)?.name
+							name: this.options?.find(option => option.uid === item)?.name || this.options?.find(option => option === item)
 						});
 					});
 				}, 500);
