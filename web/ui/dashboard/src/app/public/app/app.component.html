@@ -2,20 +2,11 @@
 	<h2 class="font-semibold mb-20px">Portal</h2>
 
 	<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
-		<div class="flex items-center justify-center">
-			<ul class="w-full flex items-center">
-				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
-					<button
-						convoy-button
-						fill="clear"
-						color="grey"
-						[className]="
-							activeTab === tab
-								? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
-								: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
-						"
-					>
-						<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+        <div class="flex items-center justify-center">
+			<ul class="flex flex-row m-auto w-full mt-12px">
+				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
+						<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
 					</button>
 				</li>
 

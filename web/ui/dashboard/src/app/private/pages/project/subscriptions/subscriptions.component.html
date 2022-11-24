@@ -149,20 +149,6 @@
 					<div class="w-[50%] text-grey-40">Created At</div>
 					<div class="w-[50%] text-right">{{ activeSubscription?.created_at | date }}</div>
 				</li>
-				<li convoy-list-item class="text-14 font-normal py-16px px-24px items-start">
-					<div class="w-[40%] flex items-center text-primary-100 text-12 whitespace-nowrap">
-						<a rou></a>
-						Events Watched
-						<svg width="18" height="18" class="ml-2 fill-primary-100">
-							<use xlink:href="#arrow-right-icon"></use>
-						</svg>
-					</div>
-					<div class="w-[60%] text-right">
-						<div class="flex items-center justify-end flex-wrap">
-							<convoy-tag type="grey" className="ml-4px mb-1 first-of-type:mr-0" *ngFor="let event of activeSubscription?.filter_config?.event_types">{{ event === '*' ? 'all events' : event }}</convoy-tag>
-						</div>
-					</div>
-				</li>
 			</ul>
 
 			<div class="flex items-center justify-end mt-40px mr-24px">

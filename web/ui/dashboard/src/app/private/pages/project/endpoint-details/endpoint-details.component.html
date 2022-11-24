@@ -19,7 +19,7 @@
 		<ng-container *ngIf="!isLoadingEndpointDetails && endpointDetails">
 			<div class="flex items-center">
 				<h3 class="font-medium capitalize">{{ endpointDetails.title }}</h3>
-				<div convoy-dropdown position="left" class="ml-4px">
+				<div convoy-dropdown position="left" size="sm" class="ml-4px">
 					<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
 						<svg width="24" height="24" class="mr-8px fill-primary-100">
 							<use xlink:href="#angle-arrow-down-icon"></use>
@@ -27,7 +27,7 @@
 					</button>
 
 					<ul dropdownOptions>
-						<li>
+						<li class="border-b border-grey-20">
 							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./edit'" [relativeTo]="route">
 								<svg width="16" height="16" class="mr-8px fill-primary-100">
 									<use xlink:href="#edit-icon"></use>

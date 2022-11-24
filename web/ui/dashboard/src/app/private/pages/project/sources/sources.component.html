@@ -33,7 +33,7 @@
 							<div class="max-w-[400px] overflow-hidden overflow-ellipsis">
 								{{ source.url }}
 							</div>
-							<convoy-copy-button [text]="source.url" size="md" className="ml-2px" (copyText)="copyText(source.name + ' URL')"></convoy-copy-button>
+							<convoy-copy-button [text]="source.url" size="md" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"></convoy-copy-button>
 						</td>
 						<td convoy-table-cell>{{ source.created_at | date }}</td>
 						<td convoy-table-cell>
@@ -86,7 +86,7 @@
 							<div class="w-1/2 text-14 font-medium">Signing secret</div>
 							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px flex justify-end">
 								*******
-								<convoy-copy-button [text]="activeSource?.verifier?.hmac?.secret || ''" size="md" className="ml-2px" (copyText)="copyText('Signing secret')"></convoy-copy-button>
+								<convoy-copy-button [text]="activeSource?.verifier?.hmac?.secret || ''" size="md" className="ml-2px" notificationText="Signing secret has been copied to clipboard"></convoy-copy-button>
 							</div>
 						</li>
 						<ng-container *ngIf="activeSource?.provider === 'twitter' && isDateBefore(activeSource?.provider_config?.twitter?.crc_verified_at, activeSource?.created_at)">
@@ -106,7 +106,7 @@
 							<div class="w-1/2 text-14 font-medium">Password</div>
 							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px flex justify-end">
 								*******
-								<convoy-copy-button [text]="activeSource?.verifier?.basic_auth?.password || ''" size="md" className="ml-2px" (copyText)="copyText('Password')"></convoy-copy-button>
+								<convoy-copy-button [text]="activeSource?.verifier?.basic_auth?.password || ''" size="md" className="ml-2px" notificationText="Password has been copied to clipboard"></convoy-copy-button>
 							</div>
 						</li>
 					</ng-container>
@@ -114,11 +114,14 @@
 					<ng-container *ngIf="activeSource?.verifier?.type == 'api_key'">
 						<li convoy-list-item>
 							<div class="w-1/2 text-14 font-medium">API Key Header</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right">{{ activeSource?.verifier?.api_key?.header }}</div>
+							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.verifier?.api_key?.header_name }}</div>
 						</li>
 						<li convoy-list-item>
 							<div class="w-1/2 text-14 font-medium">API Key</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right">{{ activeSource?.verifier?.api_key?.key }}</div>
+							<div class="w-1/2 text-14 font-medium text-grey-40 text-right flex items-center justify-end mr-24px">
+								*******
+								<convoy-copy-button [text]="activeSource?.verifier?.api_key?.header_value || ''" notificationText="Api Key has been copied to clipboard" className="ml-4px"></convoy-copy-button>
+							</div>
 						</li>
 					</ng-container>
 				</ul>
