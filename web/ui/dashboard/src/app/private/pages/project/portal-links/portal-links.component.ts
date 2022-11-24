@@ -16,7 +16,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 
@@ -29,6 +29,7 @@ import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'r
 		FormsModule,
 		ButtonComponent,
 		DropdownComponent,
+        DropdownOptionDirective,
 		CardComponent,
 		TableLoaderModule,
 		TableComponent,

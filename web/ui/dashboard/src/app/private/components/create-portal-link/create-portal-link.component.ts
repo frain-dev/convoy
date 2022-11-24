@@ -69,7 +69,6 @@ export class CreatePortalLinkComponent implements OnInit {
 		try {
 			const response = await this.createPortalLinkService.getPortalLink(this.linkUid);
 			const linkDetails = response.data;
-			console.log(linkDetails);
 			this.portalLinkForm.patchValue({
 				name: linkDetails.name,
 				endpoints: linkDetails.endpoints

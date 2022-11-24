@@ -50,13 +50,18 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 		if (this.multiple) {
 			const selectOption = this.selectedOptions?.find((item: any) => item === option) || this.selectedOptions?.find((item: any) => item.uid === option);
 			if (!selectOption) this.selectedOptions.push(option);
-			const selectedIds = typeof this.selectedOptions[0] !== 'string' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions;
-			this.selectedOption.emit(selectedIds);
+			this.updateSelectedOptions();
 		} else this.selectedOption.emit(option?.uid || option);
 	}
 
 	removeOption(option: any) {
 		this.selectedOptions = this.selectedOptions.filter((e: any) => e !== option) || this.selectedOptions.filter((e: any) => e.uid !== option.uid);
+		this.updateSelectedOptions();
+	}
+
+	updateSelectedOptions() {
+		const selectedIds = typeof this.selectedOptions[0] !== 'string' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions;
+		this.selectedOption.emit(selectedIds);
 	}
 
 	get option(): string {
