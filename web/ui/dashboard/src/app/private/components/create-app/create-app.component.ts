@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { APP } from 'src/app/models/app.model';
+import { APP } from 'src/app/models/endpoint.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { CreateAppService } from './create-app.service';
 

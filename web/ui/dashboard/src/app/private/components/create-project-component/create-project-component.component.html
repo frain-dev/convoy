@@ -80,7 +80,7 @@
 					</convoy-input-field>
 					<convoy-input-field>
 						<label for="rate-limit-count" convoy-label>Limit</label>
-						<input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="count" placeholder="e.g 5000" />
+						<input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="count" placeholder="e.g 10" />
 						<convoy-input-error *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">Please enter a rate limit</convoy-input-error>
 					</convoy-input-field>
 				</div>
@@ -99,16 +99,6 @@
 						<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
 					</convoy-input-field>
 				</div>
-
-				<ng-container *ngIf="enableMoreConfig && projectForm.value.config.is_retention_policy_enabled">
-					<div formGroupName="retention_policy">
-						<convoy-input-field>
-							<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
-							<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
-							<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
-						</convoy-input-field>
-					</div>
-				</ng-container>
 			</div>
 		</div>
 

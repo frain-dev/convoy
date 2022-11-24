@@ -1,35 +1,36 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { PrivateService } from '../../private.service';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
-import { CreateAppModule } from '../../components/create-app/create-app.module';
 import { CreateSubscriptionModule } from '../../components/create-subscription/create-subscription.module';
 import { SdkDocumentationComponent } from '../../components/sdk-documentation/sdk-documentation.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CreateEndpointComponent } from '../../components/create-endpoint/create-endpoint.component';
 
-export type STAGES = 'setupSDK' | 'createSource' | 'createApplication' | 'createSubscription';
+export type STAGES = 'setupSDK' | 'createSource' | 'createEndpoint' | 'createSubscription';
 
 @Component({
 	selector: 'convoy-configure-project',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateAppModule, CreateSubscriptionModule, SdkDocumentationComponent],
+	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, SdkDocumentationComponent, CreateEndpointComponent],
 	templateUrl: './configure-project.component.html',
 	styleUrls: ['./configure-project.component.scss']
 })
 export class ConfigureProjectComponent implements OnInit {
 	projectStage: STAGES = 'setupSDK';
 	projectStages = [
-		{ projectStage: 'Create Application', currentStage: 'pending', id: 'createApplication' },
+		{ projectStage: 'Create Endpoint', currentStage: 'pending', id: 'createEndpoint' },
 		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
 		{ projectStage: 'Create Subscription', currentStage: 'pending', id: 'createSubscription' }
 	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
+	activeProjectId = this.route.snapshot.params.id;
 
-	constructor(public privateService: PrivateService, private generalService: GeneralService, public router: Router, private location: Location) {}
+	constructor(public privateService: PrivateService, private generalService: GeneralService, public router: Router, private route: ActivatedRoute) {}
 
 	ngOnInit() {
 		if (this.privateService.activeProjectDetails?.uid) {
@@ -43,12 +44,12 @@ export class ConfigureProjectComponent implements OnInit {
 			this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
 			this.toggleActiveStage({ project: 'setupSDK' });
 		} else {
-			this.toggleActiveStage({ project: 'createApplication' });
+			this.toggleActiveStage({ project: 'createEndpoint' });
 		}
 	}
 
 	cancel() {
-		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.location.back();
+		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
 	}
 
 	onProjectOnboardingComplete() {
