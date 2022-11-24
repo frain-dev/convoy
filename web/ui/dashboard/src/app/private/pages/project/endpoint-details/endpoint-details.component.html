@@ -14,45 +14,60 @@
 	<span class="font-medium text-primary-100">{{ endpointDetails?.title || 'Endpoint' }}</span>
 </div>
 
-<convoy-card className="p-32px mb-20px">
-	<div class="flex justify-between items-center mb-24px">
-		<div class="flex items-center">
-			<h3 class="font-medium capitalize">{{ endpointDetails?.title }}</h3>
-			<div convoy-dropdown size="sm" position="left">
-				<button dropdownTrigger convoy-button size="sm" fill="text" class="px-10px ml-12px">
-					<svg width="16" height="16" class="fill-primary-100 rotate-90">
-						<use xlink:href="#arrow-right-icon"></use>
-					</svg>
-				</button>
 
-				<ul dropdownOptions>
-					<li convoy-dropdown-option class="border-b border-grey-20">
-						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + endpointDetails?.uid + '/edit'">
-							<svg width="16" height="16" class="mr-8px fill-primary-100">
-								<use xlink:href="#edit-icon"></use>
-							</svg>
-							Edit
-						</button>
-					</li>
-					<li convoy-dropdown-option>
-						<button convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="showDeleteModal = true">
-							<svg width="16" height="16" class="mr-8px fill-danger-100">
-								<use xlink:href="#delete-icon"></use>
-							</svg>
-							Delete
-						</button>
-					</li>
-				</ul>
+<convoy-card className="p-20px mb-20px">
+	<div class="flex justify-between items-center mb-24px border-b border-b-grey-20 pb-12px">
+		<ng-container *ngIf="!isLoadingEndpointDetails && endpointDetails">
+			<div class="flex items-center">
+				<h3 class="font-medium capitalize">{{ endpointDetails.title }}</h3>
+				<div convoy-dropdown position="left" class="ml-4px">
+					<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
+						<svg width="24" height="24" class="mr-8px fill-primary-100">
+							<use xlink:href="#angle-arrow-down-icon"></use>
+						</svg>
+					</button>
+
+					<ul dropdownOptions>
+						<li>
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./edit'" [relativeTo]="route">
+								<svg width="16" height="16" class="mr-8px fill-primary-100">
+									<use xlink:href="#edit-icon"></use>
+								</svg>
+								Edit
+							</button>
+						</li>
+						<li>
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="showDeleteModal = true">
+								<svg width="16" height="16" class="mr-8px fill-danger-100">
+									<use xlink:href="#delete-icon"></use>
+								</svg>
+								Delete
+							</button>
+						</li>
+					</ul>
+				</div>
+			</div>
+
+			<div class="flex justify-end items-center">
+				<button convoy-button fill="outline" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="mr-20px" (click)="sendTestEvent()">{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}</button>
+				<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails.uid)">View Events</button>
+				<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
+					Open Portal Link
+					<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
+				</button>
+			</div>
+		</ng-container>
+
+		<div class="flex justify-between w-full" *ngIf="!endpointDetails">
+			<convoy-skeleton-loader className="mt-10px w-100px h-20px"></convoy-skeleton-loader>
+
+			<div class="flex">
+				<convoy-skeleton-loader className="mt-10px w-80px h-20px mr-20px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="mt-10px w-80px h-20px mr-20px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="mt-10px w-80px h-20px"></convoy-skeleton-loader>
 			</div>
 		</div>
-		<div class="flex justify-end items-center" *ngIf="!isLoadingEndpointDetails && endpointDetails">
-			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="showAddEventModal = true">Send Event</button>
-			<button convoy-button fill="outline" size="sm" class="mr-20px" (click)="viewEndpointEvents(endpointDetails.uid)">View Events</button>
-			<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
-				Open Portal Link
-				<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
-			</button>
-		</div>
+
 	</div>
 
 	<!-- endpoint details overview  -->
@@ -93,7 +108,7 @@
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.support_email || '...no support email provided' }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.support_email || '-' }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SECRET</p>
@@ -146,9 +161,6 @@
 		<convoy-devices></convoy-devices>
 	</ng-container>
 </ng-container>
-
-<!-- send event form  -->
-<send-event *ngIf="showAddEventModal && endpointDetails" [endpointId]="endpointDetails.uid" (onAction)="$event.action == 'cancel' ? (showAddEventModal = false) : getEndpointDetails(endpointDetails.uid); showAddEventModal = false"></send-event>
 
 <!-- endpoint secret  -->
 <convoy-endpoint-secret *ngIf="showEndpointSecret && endpointDetails" [endpointDetails]="endpointDetails" (closeSecretModal)="showEndpointSecret = false"></convoy-endpoint-secret>

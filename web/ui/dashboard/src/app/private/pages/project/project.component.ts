@@ -32,12 +32,12 @@ export class ProjectComponent implements OnInit {
 			route: '/endpoints'
 		},
 		{
-			name: 'Portal Link',
+			name: 'Portal Links',
 			icon: 'portal',
 			route: '/portal-links'
 		},
 		{
-			name: 'Event Logs',
+			name: 'Events Log',
 			icon: 'logs',
 			route: '/event-logs'
 		}

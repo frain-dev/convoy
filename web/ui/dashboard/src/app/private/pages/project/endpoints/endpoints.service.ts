@@ -72,20 +72,4 @@ export class EndpointsService {
 			}
 		});
 	}
-
-	sendEvent(requestDetails: { body: any }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/events`,
-					body: requestDetails.body,
-					method: 'post'
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
 }

@@ -22,6 +22,7 @@ export class PrivateService {
 
 	urlFactory(level: 'org' | 'org_project'): string {
 		const orgId = this.getOrganisation().uid;
+
 		switch (level) {
 			case 'org':
 				return `/organisations/${orgId}`;

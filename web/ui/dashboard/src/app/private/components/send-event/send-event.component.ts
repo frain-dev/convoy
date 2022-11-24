@@ -39,21 +39,20 @@ export class SendEventComponent implements OnInit {
 	}
 
 	async sendNewEvent() {
-		if (this.sendEventForm.invalid) return this.sendEventForm.markAsTouched();
-
-		if (!this.convertStringToJson(this.sendEventForm.value.data)) return;
-		this.sendEventForm.value.data = this.convertStringToJson(this.sendEventForm.value.data);
-
-		this.isSendingNewEvent = true;
-		try {
-			const response = await this.endpointService.sendEvent({ body: this.sendEventForm.value });
-			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.sendEventForm.reset();
-			this.onAction.emit({ action: 'sentEvent' });
-			this.isSendingNewEvent = false;
-		} catch {
-			this.isSendingNewEvent = false;
-		}
+		// Considering the need for this component
+		// if (this.sendEventForm.invalid) return this.sendEventForm.markAsTouched();
+		// if (!this.convertStringToJson(this.sendEventForm.value.data)) return;
+		// this.sendEventForm.value.data = this.convertStringToJson(this.sendEventForm.value.data);
+		// this.isSendingNewEvent = true;
+		// try {
+		// 	const response = await this.endpointService.sendEvent({ body: this.sendEventForm.value });
+		// 	this.generalService.showNotification({ message: response.message, style: 'success' });
+		// 	this.sendEventForm.reset();
+		// 	this.onAction.emit({ action: 'sentEvent' });
+		// 	this.isSendingNewEvent = false;
+		// } catch {
+		// 	this.isSendingNewEvent = false;
+		// }
 	}
 
 	async getEndpoints() {
