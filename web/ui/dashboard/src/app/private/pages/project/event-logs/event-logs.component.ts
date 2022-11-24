@@ -156,8 +156,8 @@ export class EventLogsComponent implements OnInit {
 		} catch (error) {}
 	}
 
-	updateEndpointFilter(appId: string, isChecked: any) {
-		isChecked.target.checked ? (this.eventEndpoint = appId) : (this.eventEndpoint = undefined);
+	updateEndpointFilter(endpointId: string, isChecked: any) {
+		isChecked.target.checked ? (this.eventEndpoint = endpointId) : (this.eventEndpoint = undefined);
 		this.getEvents({ addToURL: true });
 	}
 
@@ -263,7 +263,7 @@ export class EventLogsComponent implements OnInit {
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
-			// to show app name or source name on events table header
+			// to show endpoint name or source name on events table header
 			if (this.displayedEvents && this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventLogsTableHead[1] = 'Source Name';
 
 			this.eventsDetailsItem = this.events?.content[0];
@@ -299,9 +299,5 @@ export class EventLogsComponent implements OnInit {
 			this.isLoadingSidebarDeliveries = false;
 			return error;
 		}
-	}
-
-	openDeliveriesTab(eventId: string) {
-		// this.getEventDeliveries.emit(eventId);
 	}
 }

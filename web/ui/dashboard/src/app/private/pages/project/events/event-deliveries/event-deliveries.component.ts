@@ -116,16 +116,20 @@ export class EventDeliveriesComponent implements OnInit {
 		const eventTypes: any = [];
 		const finalEventDels: any = [];
 		let filteredEventDeliveries: any = [];
+
 		const filteredEventDeliveriesByDate = this.generalService.setContentDisplayed(eventDeliveriesData);
+
 		eventDeliveriesData.forEach((item: any) => {
 			eventTypes.push(item.event_metadata.event_type);
 		});
 		const uniqueEvents = [...new Set(eventTypes)];
+
 		filteredEventDeliveriesByDate.forEach((eventDelivery: any) => {
 			uniqueEvents.forEach(eventType => {
 				const filteredDeliveriesByEventType = eventDelivery.content.filter((item: any) => item.event_metadata.event_type === eventType);
 				filteredEventDeliveries.push({ date: eventDelivery.date, event_type: eventType, eventDeliveries: filteredDeliveriesByEventType });
 			});
+
 			filteredEventDeliveries = filteredEventDeliveries.filter((item: any) => item.eventDeliveries.length !== 0);
 			const uniqueEventDels = filteredEventDeliveries.filter((eventDels: any) => eventDelivery.date === eventDels.date);
 			finalEventDels.push({ date: eventDelivery.date, content: uniqueEventDels });
