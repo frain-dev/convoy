@@ -212,8 +212,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	// pipeline definition
 	pipeline := mongo.Pipeline{
 		matchStage,
-		skipStage,
 		sortStage,
+		skipStage,
 		limitStage,
 		appStage,
 		sourceStage,
@@ -362,9 +362,10 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload m
 
 	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
 		f := datastore.SubscriptionFilter{
-			ID:     primitive.NewObjectID(),
-			UID:    uuid.NewString(),
-			Filter: payload,
+			ID:        primitive.NewObjectID(),
+			UID:       uuid.NewString(),
+			Filter:    payload,
+			DeletedAt: nil,
 		}
 
 		// insert the desired request payload
