@@ -372,6 +372,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 			})
 		}
 
+		endpoint.Description = req.Description
 		endpoint.TargetURL = req.URL
 		endpoint.RateLimit = req.RateLimit
 		endpoint.RateLimitDuration = duration.String()
@@ -412,7 +413,12 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
 	endpoints := m.GetEndpointsFromContext(r.Context())
 
-	var endpointResponse []datastore.DeprecatedEndpoint
+	endpointResponse := make([]datastore.DeprecatedEndpoint, 0)
+
+	if util.IsStringEmpty(endpoints[0].TargetURL) {
+		_ = render.Render(w, r, util.NewServerResponse("App endpoints fetched successfully", endpointResponse, http.StatusOK))
+		return
+	}
 
 	for _, endpoint := range endpoints {
 		resp := generateEndpointResponse(endpoint)

@@ -708,7 +708,12 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false)
+	endpoint.TargetURL = faker.New().Internet().URL()
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint, endpoint.GroupID)
+	require.NoError(s.T(), err)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
