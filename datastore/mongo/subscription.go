@@ -212,8 +212,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	// pipeline definition
 	pipeline := mongo.Pipeline{
 		matchStage,
-		skipStage,
 		sortStage,
+		skipStage,
 		limitStage,
 		appStage,
 		sourceStage,
