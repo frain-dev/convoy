@@ -4,6 +4,8 @@ import Markdoc from '@markdoc/markdoc';
 import axios from 'axios';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 
+type STEP = 'Setup Client' | 'Create Endpoint' | 'Send Event';
+
 @Component({
 	selector: 'sdk-documentation',
 	standalone: true,
@@ -21,9 +23,9 @@ export class SdkDocumentationComponent implements OnInit {
 		{ label: 'Golang', id: 'go' }
 	];
 	activeTab = 'js';
-	activeStep: 'Install and Configure' | 'Create Endpoint' | 'Send Event' = 'Install and Configure';
+	activeStep: STEP = 'Setup Client';
 	documentation: any;
-	steps: ['Install and Configure', 'Create Endpoint', 'Send Event'] = ['Install and Configure', 'Create Endpoint', 'Send Event'];
+	steps: ['Setup Client', 'Create Endpoint', 'Send Event'] = ['Setup Client', 'Create Endpoint', 'Send Event'];
 
 	constructor() {}
 
@@ -57,13 +59,13 @@ export class SdkDocumentationComponent implements OnInit {
 				break;
 		}
 
-		this.activeStep = 'Install and Configure';
+		this.activeStep = this.steps[0];
 	}
 
-	switchStep(activeTab: 'Install and Configure' | 'Create Endpoint' | 'Send Event') {
+	switchStep(activeTab: STEP) {
 		switch (activeTab) {
-			case 'Install and Configure':
-				this.activeStep = 'Install and Configure';
+			case 'Setup Client':
+				this.activeStep = this.steps[0];
 				this.renderDocumentation('/content/sdks/' + this.activeTab + '/Installation' + '.md');
 				break;
 			case 'Create Endpoint':

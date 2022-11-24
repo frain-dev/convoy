@@ -1,8 +1,8 @@
 <div class="sticky mt-32px">
 	<ul class="flex flex-row w-full mb-20px">
 		<li *ngFor="let tab of tabs" class="list-none mr-40px last-of-type:mr-0">
-			<button convoy-button  class="rounded-12px flex justify-center items-center !p-10px" texture="light" [ngClass]="{ '!border !border-primary-100': activeTab === tab.id }" (click)="switchTabs(tab.id)">
-				{{activeTab === tab.id}}<img [src]="'/assets/img/' + tab.id + '.png'" class="h-40px w-40px" alt="sdk icon" />
+			<button convoy-button class="rounded-12px flex justify-center items-center !p-10px" texture="light" [ngClass]="{ '!border-solid !border !border-primary-100': activeTab === tab.id }" (click)="switchTabs(tab.id)">
+				<img [src]="'/assets/img/' + tab.id + '.png'" class="h-40px w-40px" alt="sdk icon" />
 			</button>
 		</li>
 	</ul>
