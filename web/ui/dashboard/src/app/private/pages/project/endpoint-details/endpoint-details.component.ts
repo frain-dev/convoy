@@ -15,11 +15,27 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 
 @Component({
 	selector: 'convoy-endpoint-details',
 	standalone: true,
-	imports: [CommonModule, RouterModule, CardComponent, ButtonComponent, SkeletonLoaderComponent, CliKeysComponent, DevicesComponent, ModalComponent, SendEventComponent, DeleteModalComponent, CopyButtonComponent, EndpointSecretComponent],
+	imports: [
+		CommonModule,
+		RouterModule,
+		CardComponent,
+		ButtonComponent,
+		SkeletonLoaderComponent,
+		CliKeysComponent,
+		DevicesComponent,
+		ModalComponent,
+		SendEventComponent,
+		DeleteModalComponent,
+		CopyButtonComponent,
+		EndpointSecretComponent,
+		DropdownComponent,
+		DropdownOptionDirective
+	],
 	templateUrl: './endpoint-details.component.html',
 	styleUrls: ['./endpoint-details.component.scss']
 })
@@ -36,8 +52,9 @@ export class EndpointDetailsComponent implements OnInit {
 	screenWidth = window.innerWidth;
 	tabs: ['CLI Keys', 'devices'] = ['CLI Keys', 'devices'];
 	activeTab: 'CLI Keys' | 'devices' = 'CLI Keys';
+	isSendingTestEvent = false;
 
-	constructor(public privateService: PrivateService, private endpointDetailsService: EndpointDetailsService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
+	constructor(public privateService: PrivateService, private endpointDetailsService: EndpointDetailsService, public route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
 	async ngOnInit() {
 		this.isLoadingEndpointDetails = true;
@@ -87,5 +104,22 @@ export class EndpointDetailsComponent implements OnInit {
 
 	goBack() {
 		this.router.navigate(['../../endpoints'], { relativeTo: this.route });
+	}
+
+	async sendTestEvent() {
+		const testEvent = {
+			data: { data: 'test event from Convoy', convoy: 'https://getconvoy.io' },
+			endpoint_id: '8992422c-8348-4771-bac7-6951693c689d',
+			event_type: 'test.convoy'
+		};
+
+		this.isSendingTestEvent = true;
+		try {
+			const response = await this.endpointDetailsService.sendEvent({ body: testEvent });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.isSendingTestEvent = false;
+		} catch {
+			this.isSendingTestEvent = false;
+		}
 	}
 }
