@@ -270,6 +270,9 @@ components:
           items:
             type: string
           type: array
+        filter:
+          additionalProperties: true
+          type: object
       type: object
     datastore.Group:
       properties:
@@ -4037,6 +4040,72 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Toggles a subscription's status from active <-> inactive
+      tags:
+      - Subscriptions
+  /api/v1/projects/{projectID}/subscriptions/test_filter:
+    post:
+      description: This endpoint tests a subscription's filter
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: subscription id
+        in: path
+        name: subscriptionID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Test subscription filter
       tags:
       - Subscriptions
   /devices/{appID}:
