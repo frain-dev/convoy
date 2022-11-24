@@ -1,6 +1,18 @@
 {
 	"components": {
 		"schemas": {
+			"..Stub": {
+				"type": "object"
+			},
+			"..pagedResponse": {
+				"properties": {
+					"content": {},
+					"pagination": {
+						"$ref": "#/components/schemas/datastore.PaginationData"
+					}
+				},
+				"type": "object"
+			},
 			"auth.Role": {
 				"properties": {
 					"app": {
@@ -18,12 +30,15 @@
 			"datastore.APIKey": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"expires_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"hash": {
@@ -48,6 +63,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"user_id": {
@@ -400,6 +416,10 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"filter": {
+						"additionalProperties": true,
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -533,6 +553,7 @@
 						"type": "integer"
 					},
 					"next_send_time": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"num_trials": {
@@ -543,14 +564,6 @@
 						"type": "integer"
 					},
 					"strategy": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.OnPremStorage": {
-				"properties": {
-					"path": {
 						"type": "string"
 					}
 				},
@@ -701,26 +714,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.S3Storage": {
-				"properties": {
-					"access_key": {
-						"type": "string"
-					},
-					"bucket": {
-						"type": "string"
-					},
-					"endpoint": {
-						"type": "string"
-					},
-					"region": {
-						"type": "string"
-					},
-					"secret_key": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.Secret": {
 				"properties": {
 					"created_at": {
@@ -818,20 +811,6 @@
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.StoragePolicyConfiguration": {
-				"properties": {
-					"on_prem": {
-						"$ref": "#/components/schemas/datastore.OnPremStorage"
-					},
-					"s3": {
-						"$ref": "#/components/schemas/datastore.S3Storage"
-					},
-					"type": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -974,6 +953,18 @@
 				},
 				"type": "object"
 			},
+			"github.com_frain-dev_convoy_server.Stub": {
+				"type": "object"
+			},
+			"github.com_frain-dev_convoy_server.pagedResponse": {
+				"properties": {
+					"content": {},
+					"pagination": {
+						"$ref": "#/components/schemas/datastore.PaginationData"
+					}
+				},
+				"type": "object"
+			},
 			"httpheader.HTTPHeader": {
 				"additionalProperties": {
 					"items": {
@@ -1042,49 +1033,6 @@
 					},
 					"support_email": {
 						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.Configuration": {
-				"properties": {
-					"is_analytics_enabled": {
-						"type": "boolean"
-					},
-					"is_signup_enabled": {
-						"type": "boolean"
-					},
-					"storage_policy": {
-						"$ref": "#/components/schemas/datastore.StoragePolicyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"models.ConfigurationResponse": {
-				"properties": {
-					"api_version": {
-						"type": "string"
-					},
-					"created_at": {
-						"type": "integer"
-					},
-					"deleted_at": {
-						"type": "integer"
-					},
-					"is_analytics_enabled": {
-						"type": "boolean"
-					},
-					"is_signup_enabled": {
-						"type": "boolean"
-					},
-					"storage_policy": {
-						"$ref": "#/components/schemas/datastore.StoragePolicyConfiguration"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -1193,9 +1141,11 @@
 			"models.LoginUserResponse": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"email": {
@@ -1214,15 +1164,8 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"models.Organisation": {
-				"properties": {
-					"name": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1357,9 +1300,11 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"deleted_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"group_id": {
@@ -1387,6 +1332,7 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"description": "NextSendTime denotes the next time an Event will be published in\ncase it failed the first time",
 						"type": "integer"
 					},
 					"url": {
@@ -1497,18 +1443,6 @@
 				},
 				"type": "object"
 			},
-			"server.Stub": {
-				"type": "object"
-			},
-			"server.pagedResponse": {
-				"properties": {
-					"content": {},
-					"pagination": {
-						"$ref": "#/components/schemas/datastore.PaginationData"
-					}
-				},
-				"type": "object"
-			},
 			"util.ServerResponse": {
 				"properties": {
 					"data": {
@@ -1595,7 +1529,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/..pagedResponse"
 														},
 														{
 															"properties": {
@@ -1630,7 +1564,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -1652,7 +1586,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -1674,7 +1608,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -1756,7 +1690,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -1778,7 +1712,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -1800,7 +1734,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -1881,7 +1815,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -1903,7 +1837,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -1925,7 +1859,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -1974,7 +1908,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -1996,7 +1930,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2018,7 +1952,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2040,7 +1974,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2109,7 +2043,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2131,7 +2065,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2153,7 +2087,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2234,7 +2168,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2256,7 +2190,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2278,7 +2212,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2361,7 +2295,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -2396,7 +2330,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2418,7 +2352,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2440,7 +2374,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2521,7 +2455,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2543,7 +2477,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2565,7 +2499,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2623,7 +2557,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2645,7 +2579,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2667,7 +2601,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2689,7 +2623,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2767,7 +2701,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2789,7 +2723,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2811,7 +2745,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2901,7 +2835,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2923,7 +2857,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2945,7 +2879,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3028,7 +2962,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3050,7 +2984,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3072,7 +3006,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3162,7 +3096,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3184,7 +3118,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3206,7 +3140,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3273,7 +3207,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3295,7 +3229,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3317,7 +3251,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3339,7 +3273,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3426,7 +3360,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3448,7 +3382,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3470,7 +3404,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3569,7 +3503,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3591,7 +3525,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3613,7 +3547,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3702,7 +3636,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3724,7 +3658,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3746,7 +3680,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3864,7 +3798,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -3877,7 +3811,7 @@
 																			{
 																				"properties": {
 																					"data": {
-																						"$ref": "#/components/schemas/server.Stub"
+																						"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 																					}
 																				},
 																				"type": "object"
@@ -3911,7 +3845,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3933,7 +3867,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3955,7 +3889,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3998,7 +3932,7 @@
 							"schema": {
 								"allOf": [
 									{
-										"$ref": "#/components/schemas/server.Stub"
+										"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 									},
 									{
 										"properties": {
@@ -4031,7 +3965,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4053,7 +3987,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4075,7 +4009,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4097,7 +4031,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4196,7 +4130,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.Stub"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 														},
 														{
 															"properties": {
@@ -4228,7 +4162,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4250,7 +4184,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4272,7 +4206,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4315,7 +4249,7 @@
 							"schema": {
 								"allOf": [
 									{
-										"$ref": "#/components/schemas/server.Stub"
+										"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 									},
 									{
 										"properties": {
@@ -4348,7 +4282,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4370,7 +4304,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4392,7 +4326,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4414,7 +4348,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4479,7 +4413,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/server.Stub"
+																	"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 																}
 															},
 															"type": "object"
@@ -4506,7 +4440,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4528,7 +4462,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4550,7 +4484,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4633,7 +4567,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4655,7 +4589,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4677,7 +4611,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4766,7 +4700,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4788,7 +4722,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4810,7 +4744,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4875,7 +4809,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/server.Stub"
+																	"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 																}
 															},
 															"type": "object"
@@ -4902,7 +4836,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4924,7 +4858,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4946,7 +4880,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5053,7 +4987,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -5066,7 +5000,7 @@
 																			{
 																				"properties": {
 																					"data": {
-																						"$ref": "#/components/schemas/server.Stub"
+																						"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 																					}
 																				},
 																				"type": "object"
@@ -5100,7 +5034,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5122,7 +5056,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5144,7 +5078,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5210,7 +5144,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/server.Stub"
+																	"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 																}
 															},
 															"type": "object"
@@ -5237,7 +5171,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5259,7 +5193,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5281,7 +5215,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5346,7 +5280,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/server.Stub"
+																	"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 																}
 															},
 															"type": "object"
@@ -5373,7 +5307,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5395,7 +5329,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5417,7 +5351,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5482,7 +5416,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/server.Stub"
+																	"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 																}
 															},
 															"type": "object"
@@ -5509,7 +5443,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5531,7 +5465,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5553,7 +5487,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5645,7 +5579,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5667,7 +5601,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5689,7 +5623,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5764,7 +5698,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -5799,7 +5733,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5821,7 +5755,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5843,7 +5777,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5924,7 +5858,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5946,7 +5880,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -5968,7 +5902,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6026,7 +5960,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6048,7 +5982,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6070,7 +6004,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6092,7 +6026,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6170,7 +6104,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6192,7 +6126,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6214,7 +6148,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6304,7 +6238,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6326,7 +6260,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6348,7 +6282,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -6431,7 +6365,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/..pagedResponse"
 														},
 														{
 															"properties": {
@@ -6466,7 +6400,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6488,7 +6422,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6510,7 +6444,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6571,7 +6505,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/..pagedResponse"
 														},
 														{
 															"properties": {
@@ -6606,7 +6540,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6628,7 +6562,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6650,7 +6584,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6668,6 +6602,130 @@
 					}
 				],
 				"summary": "Creates a subscription",
+				"tags": [
+					"Subscriptions"
+				]
+			}
+		},
+		"/api/v1/projects/{projectID}/subscriptions/test_filter": {
+			"post": {
+				"description": "This endpoint tests a subscription's filter",
+				"parameters": [
+					{
+						"description": "Project id",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "subscription id",
+						"in": "path",
+						"name": "subscriptionID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/..Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/..Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/..Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/..Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Test subscription filter",
 				"tags": [
 					"Subscriptions"
 				]
@@ -6708,7 +6766,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6730,7 +6788,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6752,7 +6810,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6774,7 +6832,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6852,7 +6910,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6874,7 +6932,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6896,7 +6954,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6986,7 +7044,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7008,7 +7066,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7030,7 +7088,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7110,7 +7168,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7132,7 +7190,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7154,7 +7212,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7229,7 +7287,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/..pagedResponse"
 														},
 														{
 															"properties": {
@@ -7264,7 +7322,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7286,7 +7344,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7308,7 +7366,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7380,7 +7438,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7402,7 +7460,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7424,7 +7482,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7457,7 +7515,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7479,7 +7537,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7501,7 +7559,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7523,7 +7581,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7595,7 +7653,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7617,7 +7675,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7639,7 +7697,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7706,7 +7764,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7728,7 +7786,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7750,7 +7808,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7765,612 +7823,6 @@
 				"summary": "Refresh an access token",
 				"tags": [
 					"User"
-				]
-			}
-		},
-		"/ui/configuration": {
-			"get": {
-				"description": "This endpoint fetches configuration",
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/server.pagedResponse"
-														},
-														{
-															"properties": {
-																"content": {
-																	"items": {
-																		"$ref": "#/components/schemas/models.ConfigurationResponse"
-																	},
-																	"type": "array"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Fetch configuration",
-				"tags": [
-					"Configuration"
-				]
-			},
-			"post": {
-				"description": "This endpoint creates a configuration",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Configuration"
-							}
-						}
-					},
-					"description": "Configuration Details",
-					"required": true,
-					"x-originalParamName": "application"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.ConfigurationResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Create a configuration",
-				"tags": [
-					"Configuration"
-				]
-			},
-			"put": {
-				"description": "This endpoint updates configuration",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Configuration"
-							}
-						}
-					},
-					"description": "Configuration Details",
-					"required": true,
-					"x-originalParamName": "application"
-				},
-				"responses": {
-					"202": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.ConfigurationResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Accepted"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Update configuration",
-				"tags": [
-					"Configuration"
-				]
-			}
-		},
-		"/ui/organisations": {
-			"get": {
-				"description": "This endpoint fetches the organisations a user is part of",
-				"parameters": [
-					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
-						"in": "query",
-						"name": "sort",
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/server.pagedResponse"
-														},
-														{
-															"properties": {
-																"content": {
-																	"items": {
-																		"$ref": "#/components/schemas/datastore.Organisation"
-																	},
-																	"type": "array"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get organisations",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"post": {
-				"description": "This endpoint creates an organisation",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Organisation"
-							}
-						}
-					},
-					"description": "Organisation Details",
-					"required": true,
-					"x-originalParamName": "organisation"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Organisation"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Create an organisation",
-				"tags": [
-					"Organisation"
 				]
 			}
 		},
@@ -8420,7 +7872,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8442,7 +7894,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8464,7 +7916,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8486,7 +7938,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8504,359 +7956,6 @@
 					}
 				],
 				"summary": "Accept or decline an organisation invite",
-				"tags": [
-					"Organisation"
-				]
-			}
-		},
-		"/ui/organisations/{orgID}": {
-			"delete": {
-				"description": "This endpoint deletes an organisation",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Delete organisation",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"get": {
-				"description": "This endpoint fetches an organisation by its id",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Organisation"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Get an organisation",
-				"tags": [
-					"Organisation"
-				]
-			},
-			"put": {
-				"description": "This endpoint updates an organisation",
-				"parameters": [
-					{
-						"description": "organisation id",
-						"in": "path",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Organisation"
-							}
-						}
-					},
-					"description": "Organisation Details",
-					"required": true,
-					"x-originalParamName": "organisation"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Organisation"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Update an organisation",
 				"tags": [
 					"Organisation"
 				]
@@ -8921,7 +8020,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -8943,7 +8042,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -8965,7 +8064,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9046,7 +8145,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9068,7 +8167,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9090,7 +8189,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9148,7 +8247,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9170,7 +8269,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9192,7 +8291,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9214,7 +8313,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9292,7 +8391,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9314,7 +8413,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9336,7 +8435,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9426,7 +8525,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9448,7 +8547,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9470,7 +8569,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9559,7 +8658,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9581,7 +8680,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9603,7 +8702,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9679,7 +8778,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9701,7 +8800,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9723,7 +8822,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9745,7 +8844,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9806,7 +8905,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9828,7 +8927,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9850,7 +8949,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9872,7 +8971,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9945,7 +9044,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9967,7 +9066,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9989,7 +9088,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10011,7 +9110,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10091,7 +9190,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10113,7 +9212,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10135,7 +9234,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10193,7 +9292,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10215,7 +9314,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10237,7 +9336,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10259,7 +9358,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10334,7 +9433,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -10369,7 +9468,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10391,7 +9490,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10413,7 +9512,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10471,7 +9570,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10493,7 +9592,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10515,7 +9614,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10537,7 +9636,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10615,7 +9714,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10637,7 +9736,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10659,7 +9758,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10749,7 +9848,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10771,7 +9870,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10793,7 +9892,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10873,7 +9972,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10895,7 +9994,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10917,7 +10016,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11000,7 +10099,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -11035,7 +10134,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11057,7 +10156,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11079,7 +10178,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11160,7 +10259,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11182,7 +10281,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11204,7 +10303,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11284,7 +10383,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11306,7 +10405,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11328,7 +10427,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11406,7 +10505,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11428,7 +10527,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11450,7 +10549,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11508,7 +10607,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11530,7 +10629,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11552,7 +10651,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11574,7 +10673,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11646,7 +10745,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11668,7 +10767,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11690,7 +10789,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11768,7 +10867,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11790,7 +10889,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11812,7 +10911,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11878,7 +10977,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11900,7 +10999,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -11922,7 +11021,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12005,7 +11104,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12027,7 +11126,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12049,7 +11148,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12120,7 +11219,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12142,7 +11241,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12164,7 +11263,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12245,7 +11344,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12267,7 +11366,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12289,7 +11388,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -12372,7 +11471,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/server.pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -12407,7 +11506,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12429,7 +11528,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12451,7 +11550,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12532,7 +11631,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12554,7 +11653,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12576,7 +11675,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12634,7 +11733,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12656,7 +11755,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12678,7 +11777,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -12700,7 +11799,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
