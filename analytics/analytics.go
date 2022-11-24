@@ -9,9 +9,9 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	cm "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

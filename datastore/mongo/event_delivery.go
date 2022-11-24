@@ -372,8 +372,8 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 
 	pipeline := mongo.Pipeline{
 		matchStage,
-		skipStage,
 		sortStage,
+		skipStage,
 		limitStage,
 		endpointLookupStage,
 		unwindAppStage,

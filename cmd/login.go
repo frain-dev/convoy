@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const (
@@ -133,7 +133,7 @@ func addLoginCommand() *cobra.Command {
 
 			var response *socket.LoginResponse
 
-			dispatch, err := convoyNet.NewDispatcher(time.Second * 10, "")
+			dispatch, err := convoyNet.NewDispatcher(time.Second*10, "")
 			if err != nil {
 				return err
 			}

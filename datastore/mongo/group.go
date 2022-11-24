@@ -8,7 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/util"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/bson"

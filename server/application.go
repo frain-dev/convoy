@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
@@ -13,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -103,8 +104,8 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
 	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load apps")
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		log.FromContext(r.Context()).WithError(err).Error("failed to load apps")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
 

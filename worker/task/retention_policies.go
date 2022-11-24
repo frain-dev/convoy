@@ -12,9 +12,9 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	objectstore "github.com/frain-dev/convoy/datastore/object-store"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 )
 
 func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {

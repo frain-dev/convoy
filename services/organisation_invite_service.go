@@ -14,10 +14,11 @@ import (
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -47,7 +48,7 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 
 	err = newIV.Role.Validate("organisation member")
 	if err != nil {
-		log.WithError(err).Error("failed to validate organisation member invite role")
+		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member invite role")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
@@ -65,7 +66,7 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 
 	err = ois.orgInviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
-		log.WithError(err).Error("failed to create organisation member invite")
+		log.FromContext(ctx).WithError(err).Error("failed to create organisation member invite")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
 	}
 
@@ -80,7 +81,7 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.Context, org *datastore.Organisation, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	invites, paginationData, err := ois.orgInviteRepo.LoadOrganisationsInvitesPaged(ctx, org.UID, inviteStatus, pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load organisation invites")
+		log.FromContext(ctx).WithError(err).Error("failed to load organisation invites")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation invites"))
 	}
 
@@ -102,7 +103,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 
 	buf, err := json.Marshal(em)
 	if err != nil {
-		log.WithError(err).Error("failed to marshal notification payload")
+		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
 		return nil
 	}
 
@@ -113,7 +114,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 
 	err = ois.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		log.WithError(err).Error("failed to write new notification to the queue")
+		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
 	}
 
 	return nil
@@ -122,7 +123,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx context.Context, token string, accepted bool, newUser *models.User) error {
 	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByToken(ctx, token)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation member invite by token and email")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation member invite by token and email")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation member invite"))
 	}
 
@@ -139,7 +140,7 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 		iv.Status = datastore.InviteStatusDeclined
 		err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 		if err != nil {
-			log.WithError(err).Error("failed to update declined organisation invite")
+			log.FromContext(ctx).WithError(err).Error("failed to update declined organisation invite")
 			return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update declined organisation invite"))
 		}
 		return nil
@@ -153,14 +154,14 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 				return err
 			}
 		} else {
-			log.WithError(err).Error("failed to find user by email")
+			log.FromContext(ctx).WithError(err).Error("failed to find user by email")
 			return util.NewServiceError(http.StatusBadRequest, errors.New("failed to find user by email"))
 		}
 	}
 
 	org, err := ois.orgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation by id")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation by id")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by id"))
 	}
 
@@ -172,7 +173,7 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 	iv.Status = datastore.InviteStatusAccepted
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
-		log.WithError(err).Error("failed to update accepted organisation invite")
+		log.FromContext(ctx).WithError(err).Error("failed to update accepted organisation invite")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update accepted organisation invite"))
 	}
 
@@ -186,14 +187,14 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 
 	err := util.Validate(newUser)
 	if err != nil {
-		log.WithError(err).Error("failed to validate new user information")
+		log.FromContext(ctx).WithError(err).Error("failed to validate new user information")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	p := datastore.Password{Plaintext: newUser.Password}
 	err = p.GenerateHash()
 	if err != nil {
-		log.WithError(err).Error("failed to generate user password hash")
+		log.FromContext(ctx).WithError(err).Error("failed to generate user password hash")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
 	}
 
@@ -210,7 +211,7 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 
 	err = ois.userRepo.CreateUser(ctx, user)
 	if err != nil {
-		log.WithError(err).Error("failed to create user")
+		log.FromContext(ctx).WithError(err).Error("failed to create user")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create user"))
 	}
 
@@ -220,7 +221,7 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context, token string) (*datastore.User, *datastore.OrganisationInvite, error) {
 	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByToken(ctx, token)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation member invite by token and email")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation member invite by token and email")
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation member invite"))
 	}
 
@@ -239,14 +240,14 @@ func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context,
 func (ois *OrganisationInviteService) ResendOrganisationMemberInvite(ctx context.Context, inviteID string, org *datastore.Organisation, user *datastore.User, baseURL string) (*datastore.OrganisationInvite, error) {
 	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByID(ctx, inviteID)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation by invitee id")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation by invitee id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
 	}
 	iv.ExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 14)) // expires in 2 weeks
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
-		log.WithError(err).Error("failed to update organisation member invite")
+		log.FromContext(ctx).WithError(err).Error("failed to update organisation member invite")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation member invite"))
 	}
 
@@ -260,7 +261,7 @@ func (ois *OrganisationInviteService) ResendOrganisationMemberInvite(ctx context
 func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context.Context, inviteID string) (*datastore.OrganisationInvite, error) {
 	iv, err := ois.orgInviteRepo.FetchOrganisationInviteByID(ctx, inviteID)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch organisation by invitee id")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation by invitee id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
 	}
 
@@ -273,7 +274,7 @@ func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
-		log.WithError(err).Error("failed to update organisation member invite")
+		log.FromContext(ctx).WithError(err).Error("failed to update organisation member invite")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation member invite"))
 	}
 	return iv, nil

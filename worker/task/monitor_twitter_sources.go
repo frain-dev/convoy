@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"

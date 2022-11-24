@@ -10,10 +10,11 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+
 	"github.com/xdg-go/pbkdf2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -39,13 +40,13 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 
 	err := role.Validate("api key")
 	if err != nil {
-		log.WithError(err).Error("invalid api key role")
+		log.FromContext(ctx).WithError(err).Error("invalid api key role")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
 	group, err := ss.groupRepo.FetchGroupByID(ctx, newApiKey.Role.Group)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch group by id")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch group by id")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch group by id"))
 	}
 
@@ -63,7 +64,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		log.WithError(err).Error("failed to generate salt")
+		log.FromContext(ctx).WithError(err).Error("failed to generate salt")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
 	}
 
@@ -88,7 +89,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-		log.WithError(err).Error("failed to create api key")
+		log.FromContext(ctx).WithError(err).Error("failed to create api key")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
 	}
 
@@ -100,7 +101,7 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		log.WithError(err).Error("failed to generate salt")
+		log.FromContext(ctx).WithError(err).Error("failed to generate salt")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
 	}
 
@@ -129,7 +130,7 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-		log.WithError(err).Error("failed to create api key")
+		log.FromContext(ctx).WithError(err).Error("failed to create api key")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
 	}
 
@@ -143,7 +144,7 @@ func (ss *SecurityService) RevokePersonalAPIKey(ctx context.Context, uid string,
 
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch api key")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch api key")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
@@ -153,7 +154,7 @@ func (ss *SecurityService) RevokePersonalAPIKey(ctx context.Context, uid string,
 
 	err = ss.apiKeyRepo.RevokeAPIKeys(ctx, []string{uid})
 	if err != nil {
-		log.WithError(err).Error("failed to revoke api key")
+		log.FromContext(ctx).WithError(err).Error("failed to revoke api key")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
 	}
 
@@ -174,7 +175,7 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 	maskID, key := util.GenerateAPIKey()
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		log.WithError(err).Error("failed to generate salt")
+		log.FromContext(ctx).WithError(err).Error("failed to generate salt")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("something went wrong"))
 	}
 
@@ -203,7 +204,7 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-		log.WithError(err).Error("failed to create api key")
+		log.FromContext(ctx).WithError(err).Error("failed to create api key")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to create api key"))
 	}
 
@@ -217,7 +218,7 @@ func (ss *SecurityService) RevokeAPIKey(ctx context.Context, uid string) error {
 
 	err := ss.apiKeyRepo.RevokeAPIKeys(ctx, []string{uid})
 	if err != nil {
-		log.WithError(err).Error("failed to revoke api key")
+		log.FromContext(ctx).WithError(err).Error("failed to revoke api key")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
 	}
 	return nil
@@ -230,7 +231,7 @@ func (ss *SecurityService) GetAPIKeyByID(ctx context.Context, uid string) (*data
 
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch api key")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch api key")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
@@ -244,7 +245,7 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 
 	err := role.Validate("api key")
 	if err != nil {
-		log.WithError(err).Error("invalid api key role")
+		log.FromContext(ctx).WithError(err).Error("invalid api key role")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
@@ -255,14 +256,14 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)
 	if err != nil {
-		log.WithError(err).Error("failed to fetch api key")
+		log.FromContext(ctx).WithError(err).Error("failed to fetch api key")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
 	apiKey.Role = *role
 	err = ss.apiKeyRepo.UpdateAPIKey(ctx, apiKey)
 	if err != nil {
-		log.WithError(err).Error("failed to update api key")
+		log.FromContext(ctx).WithError(err).Error("failed to update api key")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update api key"))
 	}
 
@@ -272,7 +273,7 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 func (ss *SecurityService) GetAPIKeys(ctx context.Context, f *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	apiKeys, paginationData, err := ss.apiKeyRepo.LoadAPIKeysPaged(ctx, f, pageable)
 	if err != nil {
-		log.WithError(err).Error("failed to load api keys")
+		log.FromContext(ctx).WithError(err).Error("failed to load api keys")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load api keys"))
 	}
 

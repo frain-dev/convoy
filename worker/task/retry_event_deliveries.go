@@ -9,10 +9,10 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
-	log "github.com/sirupsen/logrus"
 )
 
 func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, store datastore.Store, eventQueue queue.Queuer) {

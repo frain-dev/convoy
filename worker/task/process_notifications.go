@@ -12,8 +12,9 @@ import (
 	"github.com/frain-dev/convoy/internal/email"
 	notification "github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
+
 	"github.com/slack-go/slack"
 )
 

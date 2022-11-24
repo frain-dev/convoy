@@ -8,7 +8,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/spf13/cobra"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func addSwitchCommand() *cobra.Command {
