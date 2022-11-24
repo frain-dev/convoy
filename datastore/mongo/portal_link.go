@@ -76,9 +76,7 @@ func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string
 
 func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	ctx = p.setCollectionInContext(ctx)
-	portalLinks := make([]datastore.PortalLink, 0)
-
-	filter := bson.M{"group_id": groupID}
+	filter := bson.M{"group_id": groupID, "deleted_at": nil}
 
 	matchStage := bson.D{
 		{Key: "$match",
@@ -114,19 +112,19 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 		},
 	}
 
-	sortAndLimitStages := []bson.D{
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: pageable.Sort}}}},
-		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
-		{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}},
-		{{Key: "$limit", Value: pageable.PerPage}},
-	}
+	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: pageable.PerPage}}
 
 	pipeline := mongo.Pipeline{
 		matchStage,
+		sortStage,
+		limitStage,
+		skipStage,
 		endpointStage,
 	}
 
-	pipeline = append(pipeline, sortAndLimitStages...)
+	portalLinks := make([]datastore.PortalLink, 0)
 	err := p.store.Aggregate(ctx, pipeline, &portalLinks, true)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
