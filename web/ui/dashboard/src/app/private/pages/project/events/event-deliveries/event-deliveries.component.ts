@@ -54,7 +54,7 @@ export class EventDeliveriesComponent implements OnInit {
 	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
 
-	constructor(private generalService: GeneralService, private eventsService: EventsService, private route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
 
 	ngAfterViewInit() {
 		if (!this.portalToken) {

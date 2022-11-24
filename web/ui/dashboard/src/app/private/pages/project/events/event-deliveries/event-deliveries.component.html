@@ -1,8 +1,24 @@
 <convoy-card>
 	<div class="flex justify-between mt-20px px-20px">
-		<h4 class="font-semibold">Event Deliveries</h4>
+		<div class="flex items-center">
+			<h4 class="font-semibold mr-6px">Event Deliveries</h4>
+			<convoy-tooltip size="sm" position="right" type="white">
+				<h4 class="mb-10px font-semibold text-12">Deliveries missing?</h4>
+				<p>
+					Your receiving endpoint possibly isn't subscribed for events,
+					<ng-container *ngIf="portalToken">reach out to provider</ng-container>
+					<ng-container *ngIf="!portalToken">
+						check
+						<span convoy-button fill="link" class="!inline-block text-12 !p-0" routerLink="../event-logs" [relativeTo]="route">Events Log</span>
+						or subscribe your endpoint to events
+						<span convoy-button fill="link" class="!inline-block text-12 !p-0" routerLink="../subscriptions/new" [relativeTo]="route">here</span>
+						.
+					</ng-container>
+				</p>
+			</convoy-tooltip>
+		</div>
+
 		<span class="text-grey-40 text-14 font-medium whitespace-nowrap" *ngIf="eventDeliveries">
-			{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? (eventDeliveries.pagination.prev ? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev : 1) : 0 }} -
 			{{
 				eventDeliveries && eventDeliveries.pagination.total < 20
 					? eventDeliveries.pagination.total
@@ -10,10 +26,13 @@
 					? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev + eventDeliveries.content.length
 					: eventDeliveries.pagination.perPage
 			}}
+			-
+			{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? (eventDeliveries.pagination.prev ? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev : 1) : 0 }}
 			<strong>of</strong>
 			{{ eventDeliveries.pagination.total || 0 }}
 		</span>
 	</div>
+
 	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
 		<div class="flex">
 			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #datePicker></convoy-date-picker>
