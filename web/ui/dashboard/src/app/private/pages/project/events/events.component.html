@@ -19,11 +19,9 @@
 		<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
 			<div emptyStateCTA>
 				<button convoy-button class="mt-22px" *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
-					<svg width="16" height="16" class="mr-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-						<use xlink:href="#add-icon"></use>
-					</svg>
-					{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Learn how to receive events' : 'Start sending events' }}
-					<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+					Learn how to
+					{{ privateService.activeProjectDetails?.type === 'incoming' ? ' receive' : ' send' }} events
+					<svg width="24" height="24" class="ml-8px fill-white-100">
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
 				</button>
@@ -93,8 +91,5 @@
 		</convoy-card>
 
 		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
-
 	</ng-container>
-
-	<send-event *ngIf="showAddEventModal" (onAction)="$event?.action == 'cancel' ? (showAddEventModal = false) : fetchEvents(); showAddEventModal = false"></send-event>
 </ng-container>

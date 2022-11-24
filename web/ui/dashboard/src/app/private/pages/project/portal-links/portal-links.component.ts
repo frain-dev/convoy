@@ -29,7 +29,7 @@ import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'r
 		FormsModule,
 		ButtonComponent,
 		DropdownComponent,
-        DropdownOptionDirective,
+		DropdownOptionDirective,
 		CardComponent,
 		TableLoaderModule,
 		TableComponent,
@@ -59,6 +59,7 @@ export class PortalLinksComponent implements OnInit {
 	activeLink?: PORTAL_LINK;
 	@ViewChild('linksEndpointFilter', { static: true }) linksEndpointFilter!: ElementRef;
 	linksEndpointFilter$!: Observable<ENDPOINT[]>;
+
 	constructor(public privateService: PrivateService, private router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService) {
 		this.route.queryParams.subscribe(params => (this.activeLink = this.portalLinks?.content.find(link => link.uid === params?.id)));
 	}
@@ -116,8 +117,8 @@ export class PortalLinksComponent implements OnInit {
 		).data.content;
 	}
 
-	updateEndpointFilter(endpointId: string, isChecked: any) {
-		isChecked.target.checked ? (this.linkEndpoint = endpointId) : (this.linkEndpoint = undefined);
+	updateEndpointFilter(endpointId: string) {
+		this.linkEndpoint = endpointId;
 		this.getPortalLinks();
 	}
 
