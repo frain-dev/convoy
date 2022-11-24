@@ -48,7 +48,9 @@
 			</div>
 
 			<div class="flex justify-end items-center">
-				<button convoy-button fill="outline" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="mr-20px" (click)="sendTestEvent()">{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}</button>
+				<button convoy-button fill="outline" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="mr-20px" (click)="sendTestEvent()">
+					{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}
+				</button>
 				<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
 					Open Portal Link
 					<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />

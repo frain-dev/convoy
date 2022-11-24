@@ -51,11 +51,6 @@
 							{{ subscription.updated_at | date }}
 						</td>
 						<td convoy-table-cell>
-							<div class="w-200px flex flex-wrap">
-								<convoy-tag type="grey" *ngFor="let eventType of subscription?.filter_config?.event_types; let i = index" className="mr-8px">{{ eventType }}</convoy-tag>
-							</div>
-						</td>
-						<td convoy-table-cell>
 							<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
 						</td>
 						<td convoy-table-cell class="contents" *ngIf="showCreateSubscription">

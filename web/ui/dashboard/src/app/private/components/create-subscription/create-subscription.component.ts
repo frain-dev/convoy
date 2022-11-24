@@ -39,7 +39,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	apps!: APP[];
 	sources!: SOURCE[];
 	endPoints: ENDPOINT[] = [];
-	eventTags: string[] = [];
 	showCreateAppModal = false;
 	showCreateSourceModal = false;
 	showCreateEndpointModal = false;
@@ -92,7 +91,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {
 				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
@@ -162,9 +160,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription() {
-		this.subscriptionForm.patchValue({
-			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
-		});
 
 		if (this.projectType === 'incoming' && this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
 		if (this.token && (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('app_id')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid)) {
@@ -199,33 +194,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	async onCreateNewApp(newApp: APP) {
 		this.subscriptionForm.patchValue({ app_id: newApp.uid });
 		this.onUpdateAppSelection();
-	}
-
-	removeEventTag(tag: string) {
-		this.eventTags = this.eventTags.filter(e => e !== tag);
-	}
-
-	addTag() {
-		const addTagInput = document.getElementById('tagInput');
-		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
-		addTagInput?.addEventListener('keydown', e => {
-			const key = e.keyCode || e.charCode;
-			if (key == 8) {
-				e.stopImmediatePropagation();
-				if (this.eventTags.length > 0 && !addTagInputValue?.value) this.eventTags.splice(-1);
-			}
-			if (e.which === 188 || e.key == ' ') {
-				if (this.eventTags.includes(addTagInputValue?.value)) {
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-				} else {
-					this.eventTags.push(addTagInputValue?.value);
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-				}
-				e.preventDefault();
-			}
-		});
 	}
 
 	focusInput() {

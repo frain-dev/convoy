@@ -17,7 +17,7 @@ type EVENT_PAGE_TABS = 'events' | 'event deliveries';
 export class AppComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
-	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status', ''];
+	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Status', ''];
 	token: string = this.route.snapshot.queryParams.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
@@ -106,10 +106,10 @@ export class AppComponent implements OnInit {
 
 	closeCreateSubscriptionModal() {
 		this.showCreateSubscriptionModal = false;
-		this.router.navigate(['/portal', { queryParams: { token: this.token } }]);
+		this.router.navigate(['/portal'], { relativeTo: this.route, queryParams: { token: this.token } });
 	}
 
 	onCreateSubscription() {
-		this.router.navigate(['/portal', { queryParams: { token: this.token } }]);
+		this.router.navigate(['/portal'], { relativeTo: this.route, queryParams: { token: this.token } });
 	}
 }
