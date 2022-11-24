@@ -29,7 +29,7 @@
 
 	<ng-container *ngIf="activeTab === 'subscriptions'">
 		<convoy-card className="rounded-tl-[0] rounded-tr-[0]">
-			<convoy-table-loader id="endpoints_loader" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
+			<convoy-table-loader id="endpoints_loader" class="block h-300px" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
 
 			<table convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
 				<thead convoy-table-head>

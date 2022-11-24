@@ -12,7 +12,7 @@
 
 <div class="flex items-center justify-between my-26px">
 	<div class="flex items-center">
-        <!-- not available yet  -->
+		<!-- not available yet  -->
 		<!-- <div class="flex items-center">
 			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
@@ -36,10 +36,11 @@
 					<input type="search" placeholder="Search endpoints here" #linksEndpointFilter class="w-full outline-none text-12" />
 				</div>
 
-				<ul class="min-h-[100px] px-10px pb-10px">
-					<li class="py-8px flex items-center justify-between border-b border-grey-10" *ngFor="let endpoint of linksEndpointFilter$ | async" convoy-dropdown-option>
-						<label class="text-12 block w-full" [for]="endpoint.uid">{{ endpoint.title }}</label>
-						<input type="checkbox" name="endpoint" [value]="endpoint.uid" [id]="endpoint.uid" [checked]="endpoint.uid === linkEndpoint" (change)="updateEndpointFilter(endpoint.uid, $event)" />
+				<ul class="min-h-[100px] pb-10px">
+					<li class="py-8px flex items-center justify-between border-b border-grey-10 px-10px" *ngFor="let endpoint of linksEndpointFilter$ | async" convoy-dropdown-option [ngClass]="{ 'bg-primary-500': endpoint.uid === linkEndpoint }">
+						<button convoy-button fill="text" class="text-12 text-black w-full !justify-start" (click)="updateEndpointFilter(endpoint.uid)">
+							{{ endpoint.title }}
+						</button>
 					</li>
 				</ul>
 
@@ -95,7 +96,7 @@
 	<convoy-card className="h-full min-h-[70vh] w-full max-w-[382px] min-w-[350px] ml-16px first-letter:border-l border-l-grey-10 transition-all duration-200 desktop:max-w-none desktop:border-none" *ngIf="activeLink?.uid">
 		<div class="flex items-center justify-between pt-16px px-16px mb-20px">
 			<h2 class="text-16 font-bold underline text-primary-100 flex items-center">
-				<a [href]="activeLink?.url" target="_blank">{{ activeLink?.name || 'Linkname' }}</a>
+				<a [href]="activeLink?.url" target="_blank">{{ activeLink?.name || '' }}</a>
 				<img src="/assets/img/arrow-up-right.svg" class="w-16px ml-4px" alt="link out" />
 			</h2>
 			<a class="w-32px h-32px flex items-center justify-center rounded-[6px] bg-primary-500" [routerLink]="['./']" [queryParams]="{}" tabindex="0">
@@ -107,10 +108,7 @@
 			<li convoy-list-item class="p-0" *ngFor="let endpoint of activeLink?.endpoints_metadata">
 				<div class="w-1/2 text-14 font-medium">{{ endpoint?.title }}</div>
 				<div class="w-1/2 flex justify-end">
-					<button convoy-button fill="text" size="sm" (click)="viewEndpoint(endpoint)">
-						View Endpoint
-						<img src="/assets/img/arrow-up-right.svg" class="w-16px ml-4px" alt="link out" />
-					</button>
+					<button convoy-button fill="link" size="sm" (click)="viewEndpoint(endpoint)">View Endpoint</button>
 				</div>
 			</li>
 		</ul>
