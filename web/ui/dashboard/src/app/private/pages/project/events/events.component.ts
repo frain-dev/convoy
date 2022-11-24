@@ -215,7 +215,7 @@ export class EventsComponent implements OnInit {
 	}
 
 	setUpEvents() {
-		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.showAddEventModal = true;
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') window.open('https://getconvoy.io/docs/getting-started/sending-webhook-example', '_blank');
 		if (this.privateService.activeProjectDetails?.type === 'incoming') window.open('https://getconvoy.io/docs/getting-started/receiving-webhook-example', '_blank');
 	}
 }

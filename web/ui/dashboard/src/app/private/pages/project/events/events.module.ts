@@ -14,7 +14,6 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
-import { SendEventComponent } from 'src/app/private/components/send-event/send-event.component';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
@@ -32,7 +31,6 @@ const routes: Routes = [{ path: '', component: EventsComponent }];
 		ChartComponent,
 		SkeletonLoaderComponent,
 		EmptyStateComponent,
-		SendEventComponent,
 		ModalComponent,
 		LoaderModule,
 		DatePickerComponent,
