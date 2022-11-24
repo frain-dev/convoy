@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -186,7 +187,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			return err
 		}
 
-		lo := a.logger.(*log.Logger)
+		lo := log.NewLogger(os.Stdout)
 		lo.SetPrefix("worker")
 
 		lvl, err := log.ParseLevel(cfg.Logger.Level)
@@ -245,7 +246,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
-		//start worker
+		// start worker
 		a.logger.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}

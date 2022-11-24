@@ -901,8 +901,12 @@ func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
 					m.logger.WithError(err).Error("Failed to generate status level")
 				}
 
-				m.logger.WithLogger().WithFields(logFields).Log(lvl, requestFields["requestURL"])
+				m.logger.WithFields(logFields).Log(lvl, requestFields["requestURL"])
 			}()
+
+			requestID := middleware.GetReqID(r.Context())
+			ctx := log.NewContext(r.Context(), m.logger, log.Fields{"request_id": requestID})
+			r = r.WithContext(ctx)
 
 			next.ServeHTTP(ww, r)
 		})

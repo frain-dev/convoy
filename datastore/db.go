@@ -6,8 +6,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	pager "github.com/gobeam/mongo-go-pagination"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

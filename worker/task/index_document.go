@@ -9,8 +9,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 )
 
 var ErrGroupIdFieldIsRequired = errors.New("group_id field should be a string")
