@@ -7,6 +7,7 @@ import { GithubStarComponent } from 'src/app/components/github-star/github-star.
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 
 const routes: Routes = [
 	{
@@ -84,6 +85,6 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [ProjectComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), ButtonComponent, GithubStarComponent, ListItemComponent, GithubStarComponent, TagComponent, TooltipComponent]
+	imports: [CommonModule, RouterModule.forChild(routes), ButtonComponent, GithubStarComponent, ListItemComponent, GithubStarComponent, TagComponent, TooltipComponent, SkeletonLoaderComponent]
 })
 export class ProjectModule {}
