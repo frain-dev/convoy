@@ -88,14 +88,13 @@
 		</ng-container>
 	</convoy-card>
 
-    <!-- hide cli and devices  -->
-	<!-- <ng-container *ngIf="activeTab === 'cli keys'">
+	<ng-container *ngIf="activeTab === 'cli keys'">
 		<convoy-cli-keys (cliError)="showCliError = $event"></convoy-cli-keys>
 	</ng-container>
 
 	<ng-container *ngIf="activeTab === 'devices'">
 		<convoy-devices></convoy-devices>
-	</ng-container> -->
+	</ng-container>
 
 	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
 		<div class="flex items-center justify-center">

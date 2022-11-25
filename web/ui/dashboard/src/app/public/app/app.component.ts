@@ -34,38 +34,31 @@ export class AppComponent implements OnInit {
 	isDeletingSubscription = false;
 	subscriptionId = this.route.snapshot.params.id;
 	showCreateSubscription = false;
+	showCliKeysAndDevices = false;
 	showSubscriptionError = false;
 	showCliError = false;
 	isCliAvailable: boolean = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
-	ngOnInit(): void {
+	ngOnInit() {
+
 		this.getSubscripions();
 		this.checkFlags();
 
+		if (this.route.snapshot.queryParams?.showCli) localStorage.setItem('CONVOY_APP__SHOW_CLI', this.route.snapshot.queryParams?.showCli);
 		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
-		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
 
-		switch (subscribeButtonState) {
-			case 'true':
-				this.showCreateSubscription = true;
-				this.tableHead.pop();
-				break;
-			case 'false':
-				this.showCreateSubscription = false;
-				break;
+        const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
+		subscribeButtonState ? (this.showCreateSubscription = JSON.parse(subscribeButtonState)) : (this.showCreateSubscription = false);
 
-			default:
-				this.showCreateSubscription = true;
-				break;
-		}
+		const showCliKeysAndDevices = localStorage.getItem('CONVOY_APP__SHOW_CLI');
+		showCliKeysAndDevices ? (this.showCliKeysAndDevices = JSON.parse(showCliKeysAndDevices)) : (this.showCliKeysAndDevices = false);
 	}
 
 	async checkFlags() {
 		this.isCliAvailable = await this.appService.getFlag('can_create_cli_api_key', this.token);
-        // hide cli and devices
-		// if (this.isCliAvailable) this.tabs.push('cli keys', 'devices');
+		if (this.isCliAvailable && this.showCliKeysAndDevices) this.tabs.push('cli keys', 'devices');
 	}
 
 	async getSubscripions() {
