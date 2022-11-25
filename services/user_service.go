@@ -72,9 +72,7 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 	return user, &token, nil
 }
 
-func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUser) (*datastore.User, *jwt.Token, error) {
-	var canRegister bool
-
+func (u *UserService) RegisterUser(ctx context.Context, baseURL string, data *models.RegisterUser) (*datastore.User, *jwt.Token, error) {
 	if err := util.Validate(data); err != nil {
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -85,12 +83,10 @@ func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUse
 	}
 
 	if config != nil {
-		canRegister = config.IsSignupEnabled
-	}
-
-	// registration is not allowed
-	if !canRegister {
-		return nil, nil, util.NewServiceError(http.StatusForbidden, errors.New("user registration is disabled"))
+		if !config.IsSignupEnabled {
+			// registration is not allowed
+			return nil, nil, util.NewServiceError(http.StatusForbidden, errors.New("user registration is disabled"))
+		}
 	}
 
 	p := datastore.Password{Plaintext: data.Password}
@@ -101,13 +97,15 @@ func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUse
 	}
 
 	user := &datastore.User{
-		UID:       uuid.NewString(),
-		FirstName: data.FirstName,
-		LastName:  data.LastName,
-		Email:     data.Email,
-		Password:  string(p.Hash),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:                        uuid.NewString(),
+		FirstName:                  data.FirstName,
+		LastName:                   data.LastName,
+		Email:                      data.Email,
+		Password:                   string(p.Hash),
+		EmailVerificationToken:     uuid.NewString(),
+		CreatedAt:                  primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:                  primitive.NewDateTimeFromTime(time.Now()),
+		EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2)),
 	}
 
 	err = u.userRepo.CreateUser(ctx, user)
@@ -131,6 +129,11 @@ func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUse
 	}
 
 	token, err := jwt.GenerateToken(user)
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	err = u.sendUserVerificationEmail(ctx, baseURL, user)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -191,6 +194,68 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 	return &token, nil
 }
 
+func (u *UserService) sendUserVerificationEmail(ctx context.Context, baseURL string, user *datastore.User) error {
+	em := email.Message{
+		Email:        user.Email,
+		Subject:      "Convoy Email Verification",
+		TemplateName: email.TemplateResetPassword,
+		Params: map[string]string{
+			"email_verification_url": fmt.Sprintf("%s/verify_email?token=%s", baseURL, user.EmailVerificationToken),
+			"recipient_name":         user.FirstName,
+			"expires_at":             user.ResetPasswordExpiresAt.Time().String(),
+		},
+	}
+
+	return u.queueEmail(ctx, &em)
+}
+
+func (u *UserService) queueEmail(ctx context.Context, em *email.Message) error {
+	buf, err := json.Marshal(em)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
+		return err
+	}
+
+	job := &queue.Job{
+		Payload: json.RawMessage(buf),
+		Delay:   0,
+	}
+
+	err = u.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
+		return err
+	}
+	return nil
+}
+
+func (u *UserService) VerifyEmail(ctx context.Context, token string) error {
+	user, err := u.userRepo.FindUserByEmailVerificationToken(ctx, token)
+	if err != nil {
+		if err == datastore.ErrUserNotFound {
+			return util.NewServiceError(http.StatusBadRequest, errors.New("invalid password reset token"))
+		}
+		return util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	now := primitive.NewDateTimeFromTime(time.Now())
+	if now > user.EmailVerificationExpiresAt {
+		return util.NewServiceError(http.StatusBadRequest, errors.New("password reset token has expired"))
+	}
+
+	user.EmailVerified = true
+	err = u.userRepo.UpdateUser(ctx, user)
+	if err != nil {
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, datastore.ErrDuplicateEmail) {
+			statusCode = http.StatusBadRequest
+		}
+		return util.NewServiceError(statusCode, err)
+	}
+
+	return nil
+}
+
 func (u *UserService) LogoutUser(token string) error {
 	jw, err := u.token()
 	if err != nil {
@@ -225,6 +290,10 @@ func (u *UserService) token() (*jwt.Jwt, error) {
 }
 
 func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, user *datastore.User) (*datastore.User, error) {
+	if !user.EmailVerified {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("email has not been verified"))
+	}
+
 	if err := util.Validate(data); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -319,23 +388,7 @@ func (u *UserService) sendPasswordResetEmail(ctx context.Context, baseURL string
 		},
 	}
 
-	buf, err := json.Marshal(em)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
-		return err
-	}
-
-	job := &queue.Job{
-		Payload: json.RawMessage(buf),
-		Delay:   0,
-	}
-
-	err = u.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
-		return err
-	}
-	return nil
+	return u.queueEmail(ctx, &em)
 }
 
 func (u *UserService) ResetPassword(ctx context.Context, token string, data *models.ResetPassword) (*datastore.User, error) {

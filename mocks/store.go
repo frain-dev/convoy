@@ -66,6 +66,21 @@ func (mr *MockStoreMockRecorder) Count(ctx, filter interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockStore)(nil).Count), ctx, filter)
 }
 
+// CountWithDeleted mocks base method.
+func (m *MockStore) CountWithDeleted(ctx context.Context, filter map[string]interface{}) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountWithDeleted", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountWithDeleted indicates an expected call of CountWithDeleted.
+func (mr *MockStoreMockRecorder) CountWithDeleted(ctx, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountWithDeleted", reflect.TypeOf((*MockStore)(nil).CountWithDeleted), ctx, filter)
+}
+
 // DeleteByID mocks base method.
 func (m *MockStore) DeleteByID(ctx context.Context, id string, hardDelete bool) error {
 	m.ctrl.T.Helper()

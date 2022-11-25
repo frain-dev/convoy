@@ -231,7 +231,7 @@ type Endpoint struct {
 	Description        string             `json:"description" bson:"description"`
 	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
 	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
-	AppID              string             `json:"-" bson:"app_id"` //Deprecated but necessary for backward compatibility
+	AppID              string             `json:"-" bson:"app_id"` // Deprecated but necessary for backward compatibility
 
 	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
@@ -427,7 +427,7 @@ type Event struct {
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
 	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
-	AppID            string                `json:"app_id,omitempty" bson:"app_id"` //Deprecated
+	AppID            string                `json:"app_id,omitempty" bson:"app_id"` // Deprecated
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
@@ -632,18 +632,21 @@ type Source struct {
 }
 
 type User struct {
-	ID                     primitive.ObjectID  `json:"-" bson:"_id"`
-	UID                    string              `json:"uid" bson:"uid"`
-	FirstName              string              `json:"first_name" bson:"first_name"`
-	LastName               string              `json:"last_name" bson:"last_name"`
-	Email                  string              `json:"email" bson:"email"`
-	Password               string              `json:"-" bson:"password"`
-	Role                   auth.Role           `json:"role" bson:"role"`
-	ResetPasswordToken     string              `json:"-" bson:"reset_password_token"`
-	CreatedAt              primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt              primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt              *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
-	ResetPasswordExpiresAt primitive.DateTime  `json:"reset_password_expires_at,omitempty" bson:"reset_password_expires_at,omitempty" swaggertype:"string"`
+	ID                         primitive.ObjectID  `json:"-" bson:"_id"`
+	UID                        string              `json:"uid" bson:"uid"`
+	FirstName                  string              `json:"first_name" bson:"first_name"`
+	LastName                   string              `json:"last_name" bson:"last_name"`
+	Email                      string              `json:"email" bson:"email"`
+	EmailVerified              bool                `json:"-" bson:"email_verified"`
+	Password                   string              `json:"-" bson:"password"`
+	Role                       auth.Role           `json:"role" bson:"role"`
+	ResetPasswordToken         string              `json:"-" bson:"reset_password_token"`
+	EmailVerificationToken     string              `json:"-" bson:"email_verification_token"`
+	CreatedAt                  primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt                  primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt                  *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	ResetPasswordExpiresAt     primitive.DateTime  `json:"reset_password_expires_at,omitempty" bson:"reset_password_expires_at,omitempty" swaggertype:"string"`
+	EmailVerificationExpiresAt primitive.DateTime  `json:"-" bson:"email_verification_expires_at,omitempty" swaggertype:"string"`
 }
 
 type RetryConfiguration struct {
@@ -816,7 +819,7 @@ type PortalLink struct {
 	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
 }
 
-//Deprecated
+// Deprecated
 type Application struct {
 	ID              primitive.ObjectID `json:"-" bson:"_id"`
 	UID             string             `json:"uid" bson:"uid"`
@@ -834,7 +837,7 @@ type Application struct {
 	Events int64 `json:"events,omitempty" bson:"-"`
 }
 
-//Deprecated
+// Deprecated
 type DeprecatedEndpoint struct {
 	UID                string   `json:"uid" bson:"uid"`
 	TargetURL          string   `json:"target_url" bson:"target_url"`

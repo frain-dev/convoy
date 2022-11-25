@@ -22,6 +22,7 @@ type TemplateName string
 
 const (
 	TemplateEndpointUpdate     TemplateName = "endpoint.update"
+	TemplateEmailVerification  TemplateName = "user.verification"
 	TemplateOrganisationInvite TemplateName = "organisation.invite"
 	TemplateResetPassword      TemplateName = "reset.password"
 	TemplateTwitterSource      TemplateName = "twitter.source"
@@ -34,7 +35,6 @@ func (t TemplateName) String() string {
 // Message represents a generic email message. It can be anything from
 // an organisation invite to a disabled endpoint email
 type Message struct {
-
 	// Email represents email recipient.
 	Email string `json:"email,omitempty"`
 

@@ -80,7 +80,7 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 	}
 
 	userService := createUserService(a)
-	user, token, err := userService.RegisterUser(r.Context(), &newUser)
+	user, token, err := userService.RegisterUser(r.Context(), m.GetHostFromContext(r.Context()), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -269,6 +269,26 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 
 	userService := createUserService(a)
 	err = userService.GeneratePasswordResetToken(r.Context(), baseUrl, &forgotPassword)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent succesfully", nil, http.StatusOK))
+}
+
+// VerifyEmail
+// @Summary Verify Email
+// @Description This endpoint verifies a user's email
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param email body models.ForgotPassword true "Forgot Password Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Router /ui/users/forgot-password [post]
+func (a *ApplicationHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	userService := createUserService(a)
+	err := userService.VerifyEmail(r.Context(), r.URL.Query().Get("token"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

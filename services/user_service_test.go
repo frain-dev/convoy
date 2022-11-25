@@ -5,6 +5,9 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -68,7 +71,6 @@ func TestUserService_LoginUser(t *testing.T) {
 				us, _ := u.userRepo.(*mocks.MockUserRepository)
 				p := &datastore.Password{Plaintext: "123456"}
 				err := p.GenerateHash()
-
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -109,7 +111,6 @@ func TestUserService_LoginUser(t *testing.T) {
 				us, _ := u.userRepo.(*mocks.MockUserRepository)
 				p := &datastore.Password{Plaintext: "123456"}
 				err := p.GenerateHash()
-
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -207,7 +208,7 @@ func TestService_RegisterUser(t *testing.T) {
 				configRepo, _ := u.configService.configRepo.(*mocks.MockConfigurationRepository)
 				orgRepo, _ := u.orgService.orgRepo.(*mocks.MockOrganisationRepository)
 				orgMemberRepo, _ := u.orgService.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-
+				queue, _ := u.queue.(*mocks.MockQueuer)
 				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{
 					UID:             "12345",
 					IsSignupEnabled: true,
@@ -217,6 +218,8 @@ func TestService_RegisterUser(t *testing.T) {
 
 				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 
@@ -261,7 +264,7 @@ func TestService_RegisterUser(t *testing.T) {
 				require.Nil(t, err)
 			}
 
-			user, token, err := u.RegisterUser(tc.args.ctx, tc.args.user)
+			user, token, err := u.RegisterUser(tc.args.ctx, "localhost", tc.args.user)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -281,7 +284,6 @@ func TestService_RegisterUser(t *testing.T) {
 			require.Equal(t, user.Email, tc.wantUser.Email)
 		})
 	}
-
 }
 
 func TestUserService_RefreshToken(t *testing.T) {
@@ -425,7 +427,6 @@ func TestUserService_LogoutUser(t *testing.T) {
 		wantErrCode int
 		wantErrMsg  string
 	}{
-
 		{
 			name: "should_logout_user",
 			args: args{
@@ -713,6 +714,164 @@ func TestUserService_UpdatePassword(t *testing.T) {
 
 			require.Nil(t, err)
 			require.True(t, isMatch)
+		})
+	}
+}
+
+func TestUserService_VerifyEmail(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		token string
+	}
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		dbFn        func(u *UserService)
+		args        args
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_verify_email",
+			dbFn: func(u *UserService) {
+				us, _ := u.userRepo.(*mocks.MockUserRepository)
+
+				user := &datastore.User{
+					UID:                        "abc",
+					EmailVerificationToken:     "12345",
+					EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)),
+				}
+
+				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
+					user,
+					nil,
+				)
+
+				u1 := *user
+				u1.EmailVerified = true
+				us.EXPECT().UpdateUser(gomock.Any(), &u1).Times(1).Return(nil)
+			},
+			args: args{
+				ctx:   ctx,
+				token: "12345",
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_find_user",
+			dbFn: func(u *UserService) {
+				us, _ := u.userRepo.(*mocks.MockUserRepository)
+
+				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
+					nil,
+					datastore.ErrUserNotFound,
+				)
+			},
+			args: args{
+				ctx:   ctx,
+				token: "12345",
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "invalid password reset token",
+		},
+		{
+			name: "should_fail_to_find_user",
+			dbFn: func(u *UserService) {
+				us, _ := u.userRepo.(*mocks.MockUserRepository)
+
+				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
+					nil,
+					errors.New("failed to find user"),
+				)
+			},
+			args: args{
+				ctx:   ctx,
+				token: "12345",
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusInternalServerError,
+			wantErrMsg:  "failed to find user",
+		},
+		{
+			name: "should_fail_to_update_user",
+			dbFn: func(u *UserService) {
+				us, _ := u.userRepo.(*mocks.MockUserRepository)
+
+				user := &datastore.User{
+					UID:                        "abc",
+					EmailVerificationToken:     "12345",
+					EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)),
+				}
+
+				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
+					user,
+					nil,
+				)
+
+				u1 := *user
+				u1.EmailVerified = true
+				us.EXPECT().UpdateUser(gomock.Any(), &u1).Times(1).Return(errors.New("failed to update user"))
+			},
+			args: args{
+				ctx:   ctx,
+				token: "12345",
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusInternalServerError,
+			wantErrMsg:  "failed to update user",
+		},
+		{
+			name: "should_fail_to_update_user",
+			dbFn: func(u *UserService) {
+				us, _ := u.userRepo.(*mocks.MockUserRepository)
+
+				user := &datastore.User{
+					UID:                        "abc",
+					EmailVerificationToken:     "12345",
+					EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)),
+				}
+
+				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
+					user,
+					nil,
+				)
+
+				u1 := *user
+				u1.EmailVerified = true
+				us.EXPECT().UpdateUser(gomock.Any(), &u1).Times(1).Return(datastore.ErrDuplicateEmail)
+			},
+			args: args{
+				ctx:   ctx,
+				token: "12345",
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "a user with this email already exists",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			u := provideUserService(ctrl, t)
+
+			if tc.dbFn != nil {
+				tc.dbFn(u)
+			}
+
+			err := u.VerifyEmail(tc.args.ctx, tc.args.token)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
 		})
 	}
 }

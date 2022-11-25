@@ -116,6 +116,20 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 	return user, nil
 }
 
+func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
+	ctx = u.setCollectionInContext(ctx)
+	user := &datastore.User{}
+
+	filter := bson.M{"email_verification_token": token}
+
+	err := u.store.FindOne(ctx, filter, nil, user)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return user, datastore.ErrUserNotFound
+	}
+
+	return user, nil
+}
+
 func (db *userRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.UserCollection)
 }
