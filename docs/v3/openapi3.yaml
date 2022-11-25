@@ -1010,83 +1010,6 @@ info:
   version: 0.1.12
 openapi: 3.0.3
 paths:
-  /api/v1/organisations:
-    get:
-      description: This endpoint fetches the organisations a user is part of, this
-        route can only be accessed with a personal api key
-      parameters:
-      - description: results per page
-        in: query
-        name: perPage
-        schema:
-          type: string
-      - description: page number
-        in: query
-        name: page
-        schema:
-          type: string
-      - description: sort order
-        in: query
-        name: sort
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      allOf:
-                      - $ref: '#/components/schemas/..pagedResponse'
-                      - properties:
-                          content:
-                            items:
-                              $ref: '#/components/schemas/datastore.Organisation'
-                            type: array
-                        type: object
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/..Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/..Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/..Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get organisations
-      tags:
-      - Organisation
   /api/v1/projects:
     get:
       description: This endpoint fetches groups
@@ -1124,7 +1047,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1135,7 +1058,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1146,7 +1069,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1191,7 +1114,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1202,7 +1125,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1213,7 +1136,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1240,7 +1163,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -1251,7 +1174,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1262,7 +1185,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1273,7 +1196,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1310,7 +1233,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1321,7 +1244,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1332,7 +1255,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1377,7 +1300,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1388,7 +1311,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1399,7 +1322,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1447,7 +1370,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse'
+                      - $ref: '#/components/schemas/..pagedResponse'
                       - properties:
                           content:
                             items:
@@ -1464,7 +1387,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1475,7 +1398,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1486,7 +1409,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1531,7 +1454,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1542,7 +1465,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1553,7 +1476,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1586,7 +1509,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -1597,7 +1520,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1608,7 +1531,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1619,7 +1542,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1662,7 +1585,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1673,7 +1596,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1684,7 +1607,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1735,7 +1658,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1746,7 +1669,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1757,7 +1680,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1803,7 +1726,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1814,7 +1737,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1825,7 +1748,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1876,7 +1799,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1887,7 +1810,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1898,7 +1821,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1937,7 +1860,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -1948,7 +1871,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1959,7 +1882,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1970,7 +1893,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2019,7 +1942,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2030,7 +1953,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2041,7 +1964,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2098,7 +2021,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2109,7 +2032,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2120,7 +2043,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2171,7 +2094,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2182,7 +2105,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2193,7 +2116,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2263,7 +2186,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse'
+                      - $ref: '#/components/schemas/..pagedResponse'
                       - properties:
                           content:
                             items:
@@ -2271,7 +2194,7 @@ paths:
                               - $ref: '#/components/schemas/datastore.EventDelivery'
                               - properties:
                                   data:
-                                    $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                                    $ref: '#/components/schemas/..Stub'
                                 type: object
                             type: array
                         type: object
@@ -2285,7 +2208,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2296,7 +2219,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2307,7 +2230,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2344,7 +2267,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                            $ref: '#/components/schemas/..Stub'
                         type: object
                   type: object
           description: OK
@@ -2356,7 +2279,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2367,7 +2290,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2378,7 +2301,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2424,7 +2347,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2435,7 +2358,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2446,7 +2369,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2496,7 +2419,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2507,7 +2430,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2518,7 +2441,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2555,7 +2478,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                            $ref: '#/components/schemas/..Stub'
                         type: object
                   type: object
           description: OK
@@ -2567,7 +2490,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2578,7 +2501,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2589,7 +2512,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2612,7 +2535,7 @@ paths:
           application/json:
             schema:
               allOf:
-              - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+              - $ref: '#/components/schemas/..Stub'
               - properties:
                   ids:
                     items:
@@ -2631,7 +2554,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -2642,7 +2565,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2653,7 +2576,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2664,7 +2587,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2723,7 +2646,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      - $ref: '#/components/schemas/..Stub'
                       - properties:
                           num:
                             type: integer
@@ -2738,7 +2661,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2749,7 +2672,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2760,7 +2683,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2783,7 +2706,7 @@ paths:
           application/json:
             schema:
               allOf:
-              - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+              - $ref: '#/components/schemas/..Stub'
               - properties:
                   ids:
                     items:
@@ -2802,7 +2725,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -2813,7 +2736,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2824,7 +2747,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2835,7 +2758,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2898,7 +2821,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse'
+                      - $ref: '#/components/schemas/..pagedResponse'
                       - properties:
                           content:
                             items:
@@ -2906,7 +2829,7 @@ paths:
                               - $ref: '#/components/schemas/datastore.Event'
                               - properties:
                                   data:
-                                    $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                                    $ref: '#/components/schemas/..Stub'
                                 type: object
                             type: array
                         type: object
@@ -2920,7 +2843,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2931,7 +2854,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2942,7 +2865,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2980,7 +2903,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                            $ref: '#/components/schemas/..Stub'
                         type: object
                   type: object
           description: OK
@@ -2992,7 +2915,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3003,7 +2926,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3014,7 +2937,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3051,7 +2974,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                            $ref: '#/components/schemas/..Stub'
                         type: object
                   type: object
           description: OK
@@ -3063,7 +2986,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3074,7 +2997,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3085,7 +3008,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3122,7 +3045,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                            $ref: '#/components/schemas/..Stub'
                         type: object
                   type: object
           description: OK
@@ -3134,7 +3057,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3145,7 +3068,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3156,7 +3079,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3209,7 +3132,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3220,7 +3143,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3231,7 +3154,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4438,7 +4361,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4449,7 +4372,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4460,7 +4383,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4505,7 +4428,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4516,7 +4439,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4527,7 +4450,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4560,7 +4483,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -4571,7 +4494,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4582,7 +4505,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4593,7 +4516,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4636,7 +4559,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4647,7 +4570,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4658,7 +4581,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4709,7 +4632,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4720,7 +4643,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4731,7 +4654,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4782,7 +4705,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4793,7 +4716,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4804,7 +4727,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4849,7 +4772,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -4860,7 +4783,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4871,7 +4794,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4882,7 +4805,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4917,7 +4840,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: OK
         "400":
@@ -4928,7 +4851,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4939,7 +4862,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4950,7 +4873,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4994,7 +4917,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5005,7 +4928,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5016,7 +4939,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5049,7 +4972,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: OK
         "400":
@@ -5060,7 +4983,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5071,7 +4994,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5082,7 +5005,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5124,7 +5047,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: OK
         "400":
@@ -5135,7 +5058,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5146,7 +5069,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5157,7 +5080,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5200,7 +5123,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse'
+                      - $ref: '#/components/schemas/..pagedResponse'
                       - properties:
                           content:
                             items:
@@ -5217,7 +5140,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5228,7 +5151,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5239,7 +5162,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5272,7 +5195,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -5283,7 +5206,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5294,7 +5217,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5305,7 +5228,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5348,7 +5271,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5359,7 +5282,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5370,7 +5293,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5421,7 +5344,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5432,7 +5355,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5443,7 +5366,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5487,7 +5410,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5498,7 +5421,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5509,7 +5432,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5557,7 +5480,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse'
+                      - $ref: '#/components/schemas/..pagedResponse'
                       - properties:
                           content:
                             items:
@@ -5574,7 +5497,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5585,7 +5508,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5596,7 +5519,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5642,7 +5565,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5653,7 +5576,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5664,7 +5587,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5708,7 +5631,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5719,7 +5642,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5730,7 +5653,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5773,7 +5696,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5784,7 +5707,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5795,7 +5718,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5828,7 +5751,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -5839,7 +5762,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5850,7 +5773,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5861,7 +5784,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -5901,7 +5824,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: OK
         "400":
@@ -5912,7 +5835,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -5923,7 +5846,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -5934,7 +5857,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -6177,7 +6100,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse'
+                      - $ref: '#/components/schemas/..pagedResponse'
                       - properties:
                           content:
                             items:
@@ -6194,7 +6117,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -6205,7 +6128,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -6216,7 +6139,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -6262,7 +6185,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -6273,7 +6196,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -6284,7 +6207,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -6317,7 +6240,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: OK
         "400":
@@ -6328,7 +6251,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Bad Request
         "401":
@@ -6339,7 +6262,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -6350,7 +6273,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
+                      $ref: '#/components/schemas/..Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -6513,7 +6436,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -6524,7 +6447,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -6535,7 +6458,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/..Stub'
+                      $ref: '#/components/schemas/github.com_frain-dev_convoy_server.Stub'
                   type: object
           description: Internal Server Error
       security:
