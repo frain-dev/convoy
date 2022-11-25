@@ -1610,6 +1610,21 @@ func (mr *MockUserRepositoryMockRecorder) FindUserByEmail(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByEmail", reflect.TypeOf((*MockUserRepository)(nil).FindUserByEmail), arg0, arg1)
 }
 
+// FindUserByEmailVerificationToken mocks base method.
+func (m *MockUserRepository) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByEmailVerificationToken", ctx, token)
+	ret0, _ := ret[0].(*datastore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByEmailVerificationToken indicates an expected call of FindUserByEmailVerificationToken.
+func (mr *MockUserRepositoryMockRecorder) FindUserByEmailVerificationToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByEmailVerificationToken", reflect.TypeOf((*MockUserRepository)(nil).FindUserByEmailVerificationToken), ctx, token)
+}
+
 // FindUserByID mocks base method.
 func (m *MockUserRepository) FindUserByID(arg0 context.Context, arg1 string) (*datastore.User, error) {
 	m.ctrl.T.Helper()
