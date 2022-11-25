@@ -72,7 +72,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		Tracer:            a.Tracer,
 		EventRepo:         cm.NewEventRepository(a.Store),
 		EventDeliveryRepo: cm.NewEventDeliveryRepository(a.Store),
-		AppRepo:           cm.NewApplicationRepo(a.Store),
+		EndpointRepo:      cm.NewEndpointRepo(a.Store),
 		GroupRepo:         cm.NewGroupRepo(a.Store),
 		ApiKeyRepo:        cm.NewApiKeyRepo(a.Store),
 		SubRepo:           cm.NewSubscriptionRepo(a.Store),
@@ -83,6 +83,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		UserRepo:          cm.NewUserRepo(a.Store),
 		ConfigRepo:        cm.NewConfigRepo(a.Store),
 		DeviceRepo:        cm.NewDeviceRepository(a.Store),
+		PortalLinkRepo:    cm.NewPortalLinkRepo(a.Store),
 	})
 
 	return &ApplicationHandler{
@@ -148,6 +149,24 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					projectSubRouter.Put("/", a.UpdateGroup)
 					projectSubRouter.Delete("/", a.DeleteGroup)
 
+					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
+						endpointSubRouter.Use(a.M.RateLimitByGroupID())
+
+						endpointSubRouter.Post("/", a.CreateEndpoint)
+						endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
+
+						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
+							e.Use(a.M.RequireEndpoint())
+							e.Use(a.M.RequireEndpointBelongsToGroup())
+
+							e.Get("/", a.GetEndpoint)
+							e.Put("/", a.UpdateEndpoint)
+							e.Delete("/", a.DeleteEndpoint)
+							e.Put("/expire_secret", a.ExpireSecret)
+						})
+
+					})
+
 					projectSubRouter.Route("/applications", func(appRouter chi.Router) {
 						appRouter.Use(a.M.RateLimitByGroupID())
 
@@ -183,13 +202,14 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						eventRouter.Use(a.M.RateLimitByGroupID())
 
 						// TODO(all): should the InstrumentPath change?
-						eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateAppEvent)
+						eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateEndpointEvent)
+						eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
 						eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 							eventSubRouter.Use(a.M.RequireEvent())
-							eventSubRouter.Get("/", a.GetAppEvent)
-							eventSubRouter.Put("/replay", a.ReplayAppEvent)
+							eventSubRouter.Get("/", a.GetEndpointEvent)
+							eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 						})
 					})
 
@@ -214,13 +234,12 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						})
 					})
 
-					//
 					projectSubRouter.Route("/security", func(securityRouter chi.Router) {
-						securityRouter.Route("/applications/{appID}/keys", func(securitySubRouter chi.Router) {
-							securitySubRouter.Use(a.M.RequireApp())
-							securitySubRouter.Use(a.M.RequireAppBelongsToGroup())
+						securityRouter.Route("/endpoints/{endpointID}/keys", func(securitySubRouter chi.Router) {
+							securitySubRouter.Use(a.M.RequireEndpoint())
+							securitySubRouter.Use(a.M.RequireEndpointBelongsToGroup())
 							securitySubRouter.Use(a.M.RequireBaseUrl())
-							securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
+							securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
 						})
 					})
 
@@ -244,6 +263,17 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
 						sourceRouter.Put("/{sourceID}", a.UpdateSource)
 						sourceRouter.Delete("/{sourceID}", a.DeleteSource)
+					})
+
+					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
+						portalLinkRouter.Use(a.M.RequireBaseUrl())
+
+						portalLinkRouter.Post("/", a.CreatePortalLink)
+						portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
+						portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
+						portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
+						portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
+
 					})
 				})
 			})
@@ -337,58 +367,43 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateGroup)
 						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteGroup)
 
-						groupSubRouter.Route("/apps", func(appRouter chi.Router) {
-							appRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
+						groupSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
+							endpointSubRouter.Post("/", a.CreateEndpoint)
+							endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
 
-							appRouter.Route("/", func(appSubRouter chi.Router) {
-								appSubRouter.Post("/", a.CreateApp)
-								appRouter.With(a.M.Pagination).Get("/", a.GetApps)
-							})
+							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
+								e.Use(a.M.RequireEndpoint())
 
-							appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-								appSubRouter.Use(a.M.RequireApp())
-								appSubRouter.Get("/", a.GetApp)
-								appSubRouter.Put("/", a.UpdateApp)
-								appSubRouter.Delete("/", a.DeleteApp)
+								e.Get("/", a.GetEndpoint)
+								e.Put("/", a.UpdateEndpoint)
+								e.Delete("/", a.DeleteEndpoint)
+								e.Put("/expire_secret", a.ExpireSecret)
 
-								appSubRouter.Route("/keys", func(keySubRouter chi.Router) {
+								e.Route("/keys", func(keySubRouter chi.Router) {
 									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
-									keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
-									keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
+									keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
+									keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
+									keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
 								})
 
-								appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-									endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
-									endpointAppSubRouter.Get("/", a.GetAppEndpoints)
-
-									endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-										e.Use(a.M.RequireAppEndpoint())
-
-										e.Get("/", a.GetAppEndpoint)
-										e.Put("/", a.UpdateAppEndpoint)
-										e.Delete("/", a.DeleteAppEndpoint)
-										e.Put("/expire_secret", a.ExpireSecret)
-
-									})
-								})
-
-								appSubRouter.Route("/devices", func(deviceRouter chi.Router) {
+								e.Route("/devices", func(deviceRouter chi.Router) {
 									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
 								})
 							})
+
 						})
 
 						groupSubRouter.Route("/events", func(eventRouter chi.Router) {
 							eventRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
-							eventRouter.Post("/", a.CreateAppEvent)
+							eventRouter.Post("/", a.CreateEndpointEvent)
+							eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
 							eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 								eventSubRouter.Use(a.M.RequireEvent())
-								eventSubRouter.Get("/", a.GetAppEvent)
-								eventSubRouter.Put("/replay", a.ReplayAppEvent)
+								eventSubRouter.Get("/", a.GetEndpointEvent)
+								eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 							})
 						})
 
@@ -441,6 +456,16 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							dashboardRouter.Get("/summary", a.GetDashboardSummary)
 							dashboardRouter.Get("/config", a.GetAllConfigDetails)
 						})
+
+						groupSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
+							portalLinkRouter.Use(a.M.RequireBaseUrl())
+
+							portalLinkRouter.Post("/", a.CreatePortalLink)
+							portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
+							portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
+							portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
+							portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
+						})
 					})
 				})
 			})
@@ -461,35 +486,31 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 	router.Route("/portal", func(portalRouter chi.Router) {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
-		portalRouter.Use(a.M.RequireAuth())
-		portalRouter.Use(a.M.RequireAppPortalApplication())
-		portalRouter.Use(a.M.RequireAppPortalPermission(auth.RoleAdmin))
+		portalRouter.Use(a.M.RequirePortalLink())
 
-		portalRouter.Route("/apps", func(appRouter chi.Router) {
-			appRouter.Get("/", a.GetApp)
+		portalRouter.Route("/endpoints", func(endpointRouter chi.Router) {
+			endpointRouter.Get("/", a.GetPortalLinkEndpoints)
+			endpointRouter.Post("/", a.CreatePortalLinkEndpoint)
 
-			appRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-				endpointAppSubRouter.Get("/", a.GetAppEndpoints)
-				endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
+			endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
+				endpointSubRouter.Use(a.M.RequireEndpoint())
+				endpointSubRouter.Use(a.M.RequirePortalLinkEndpoint())
+				endpointSubRouter.Use(a.M.RequireBaseUrl())
 
-				endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-					e.Use(a.M.RequireAppEndpoint())
-
-					e.Get("/", a.GetAppEndpoint)
-					e.Put("/", a.UpdateAppEndpoint)
-				})
+				endpointSubRouter.Get("/", a.GetEndpoint)
+				endpointSubRouter.Put("/", a.UpdateEndpoint)
+				endpointSubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/keys", a.CreateEndpointAPIKey)
+				endpointSubRouter.Put("/keys/{keyID}/revoke", a.RevokeEndpointAPIKey)
 			})
+		})
 
-			appRouter.Route("/keys", func(keySubRouter chi.Router) {
-				keySubRouter.Use(a.M.RequireBaseUrl())
-				keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateAppAPIKey)
-				keySubRouter.With(a.M.Pagination).Get("/", a.LoadAppAPIKeysPaged)
-				keySubRouter.Put("/{keyID}/revoke", a.RevokeAppAPIKey)
-			})
+		portalRouter.Route("/devices", func(deviceRouter chi.Router) {
+			deviceRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkDevices)
+		})
 
-			appRouter.Route("/devices", func(deviceRouter chi.Router) {
-				deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
-			})
+		portalRouter.Route("/keys", func(keySubRouter chi.Router) {
+			keySubRouter.Use(a.M.RequireBaseUrl())
+			keySubRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkKeys)
 		})
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
@@ -497,17 +518,18 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(a.M.RequireEvent())
-				eventSubRouter.Get("/", a.GetAppEvent)
-				eventSubRouter.Put("/replay", a.ReplayAppEvent)
+				eventSubRouter.Get("/", a.GetEndpointEvent)
+				eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 			})
 		})
 
-		portalRouter.Route("/subscriptions", func(subsriptionRouter chi.Router) {
-			subsriptionRouter.Post("/", a.CreateSubscription)
-			subsriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
-			subsriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
-			subsriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
-			subsriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
+		portalRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
+			subscriptionRouter.Post("/", a.CreateSubscription)
+			subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
+			subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+			subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+			subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+			subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
 		})
 
 		portalRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {

@@ -86,8 +86,8 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	})
 	require.NoError(r.T(), err)
 
-	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	//seed eventdelivery
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
@@ -152,8 +152,8 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	})
 	require.NoError(r.T(), err)
 
-	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, uuid.NewString(), event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	//seed eventdelivery
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt: time.Now().UTC(),
 	})
 	require.NoError(r.T(), err)
@@ -233,7 +233,7 @@ type applicationHandler struct {
 	store             datastore.Store
 }
 
-func seedEvent(store datastore.Store, appID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
+func seedEvent(store datastore.Store, endpointID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -242,7 +242,7 @@ func seedEvent(store datastore.Store, appID string, groupID string, uid, eventTy
 		UID:       uid,
 		EventType: datastore.EventType(eventType),
 		Data:      data,
-		AppID:     appID,
+		Endpoints: []string{endpointID},
 		GroupID:   groupID,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -258,7 +258,7 @@ func seedEvent(store datastore.Store, appID string, groupID string, uid, eventTy
 	return ev, nil
 }
 
-func seedEventDelivery(store datastore.Store, appID string, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(store datastore.Store, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -268,7 +268,6 @@ func seedEventDelivery(store datastore.Store, appID string, eventID string, endp
 		EventID:        eventID,
 		EndpointID:     endpointID,
 		Status:         status,
-		AppID:          appID,
 		SubscriptionID: subcriptionID,
 		GroupID:        groupID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),

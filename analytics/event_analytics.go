@@ -52,7 +52,6 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 		for _, group := range groups {
 			filter := &datastore.Filter{
 				Group:    group,
-				AppID:    "",
 				Pageable: datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Unix(0, 0).Unix(),

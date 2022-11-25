@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"testing"
 	"time"
 
@@ -23,68 +22,41 @@ func TestExpireSecret(t *testing.T) {
 		args    args
 		wantErr error
 		payload *Payload
-		dbFn    func(*mocks.MockApplicationRepository)
+		dbFn    func(*mocks.MockEndpointRepository)
 	}{
 		{
 			name: "should_expire_secret",
 			payload: &Payload{
-				AppID:      "123",
 				EndpointID: "abc",
 				SecretID:   "secret_1",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository) {
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").Times(1).Return(
-					&datastore.Application{
+			dbFn: func(a *mocks.MockEndpointRepository) {
+				a.EXPECT().FindEndpointByID(gomock.Any(), "abc").Times(1).Return(
+					&datastore.Endpoint{
 						UID:     "123",
 						GroupID: "group_1",
-						Endpoints: []datastore.Endpoint{
-							{
-								UID: "abc",
-								Secrets: []datastore.Secret{
-									{UID: "secret_1"},
-								},
-							},
+						Secrets: []datastore.Secret{
+							{UID: "secret_1"},
 						},
 					},
 					nil,
 				)
 
-				a.EXPECT().UpdateApplication(gomock.Any(), gomock.Any(), "group_1").Times(1).Return(nil)
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), "group_1").Times(1).Return(nil)
 			},
 			wantErr: nil,
 		},
-		{
-			name: "should_fail_to_find_app",
-			payload: &Payload{
-				AppID:      "123",
-				EndpointID: "abc",
-				SecretID:   "secret_1",
-			},
-			dbFn: func(a *mocks.MockApplicationRepository) {
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").Times(1).Return(
-					nil,
-					errors.New("failed"),
-				)
-			},
-			wantErr: &EndpointError{Err: errors.New("failed"), delay: defaultDelay},
-		},
+
 		{
 			name: "should_fail_to_find_endpoint",
 			payload: &Payload{
-				AppID:      "123",
 				EndpointID: "abc",
 				SecretID:   "secret_1",
 			},
-			dbFn: func(a *mocks.MockApplicationRepository) {
-				a.EXPECT().FindApplicationByID(gomock.Any(), "123").Times(1).Return(
-					&datastore.Application{
-						UID:     "123",
-						GroupID: "group_1",
-						Endpoints: []datastore.Endpoint{
-							{UID: "abcdd"},
-						},
-					},
+			dbFn: func(a *mocks.MockEndpointRepository) {
+				a.EXPECT().FindEndpointByID(gomock.Any(), "abc").Times(1).Return(
 					nil,
+					datastore.ErrEndpointNotFound,
 				)
 			},
 			wantErr: &EndpointError{Err: datastore.ErrEndpointNotFound, delay: defaultDelay},
@@ -95,13 +67,13 @@ func TestExpireSecret(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			appRepo := mocks.NewMockApplicationRepository(ctrl)
+			endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 
 			if tt.dbFn != nil {
-				tt.dbFn(appRepo)
+				tt.dbFn(endpointRepo)
 			}
 
-			fn := ExpireSecret(appRepo)
+			fn := ExpireSecret(endpointRepo)
 			buf, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 

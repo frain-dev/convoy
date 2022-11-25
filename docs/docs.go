@@ -27,14 +27,14 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/organisations": {
+        "/api/v1/endpoints": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches the organisations a user is part of, this route can only be accessed with a personal api key",
+                "description": "This endpoint fetches an endpoints",
                 "consumes": [
                     "application/json"
                 ],
@@ -42,577 +42,15 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Organisation"
+                    "Endpoints"
                 ],
-                "summary": "Get organisations",
+                "summary": "Get endpoints",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/server.pagedResponse"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "content": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "$ref": "#/definitions/datastore.Organisation"
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches groups",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Get groups",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group name",
-                        "name": "name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "organisation id",
-                        "name": "orgID",
+                        "description": "group id",
+                        "name": "groupId",
                         "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/datastore.Group"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint creates a group",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Create a group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organisation id",
-                        "name": "orgID",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "description": "Group Details",
-                        "name": "group",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Group"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Group"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects/{projectID}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches a group by its id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Get a group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Group"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates a group",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Update a group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Group Details",
-                        "name": "group",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Group"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Group"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint deletes a group using its id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Group"
-                ],
-                "summary": "Delete a group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
                         "required": true
                     }
                 ],
@@ -699,7 +137,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This fetches all applications",
+                "description": "This endpoint creates an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -709,7 +147,7 @@ const docTemplate = `{
                 "tags": [
                     "Application"
                 ],
-                "summary": "Get all applications",
+                "summary": "Create an endpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -718,29 +156,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "app title",
-                        "name": "q",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
+                        "description": "Endpoint Details",
+                        "name": "endpoint",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Endpoint"
+                        }
                     }
                 ],
                 "responses": {
@@ -832,14 +254,16 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
+            }
+        },
+        "/api/v1/endpoints/{endpointID}": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an application",
+                "description": "This endpoint fetches an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -847,25 +271,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Endpoints"
                 ],
-                "summary": "Create an application",
+                "summary": "Get endpoint",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
+                        "description": "group id",
+                        "name": "groupId",
+                        "in": "query",
                         "required": true
                     },
                     {
-                        "description": "Application Details",
-                        "name": "application",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Application"
-                        }
+                        "type": "string",
+                        "description": "endpoint id",
+                        "name": "endpointID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -951,7 +373,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an application by it's id",
+                "description": "This endpoint updates an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -959,9 +381,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Endpoints"
                 ],
-                "summary": "Get an application",
+                "summary": "Update an endpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -972,10 +394,19 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "application id",
-                        "name": "appID",
+                        "description": "endpoint id",
+                        "name": "endpointID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Endpoint Details",
+                        "name": "endpoint",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Endpoint"
+                        }
                     }
                 ],
                 "responses": {
@@ -1059,7 +490,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates an application",
+                "description": "This endpoint deletes an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -1067,9 +498,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Application"
+                    "Endpoints"
                 ],
-                "summary": "Update an application",
+                "summary": "Delete endpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -1080,19 +511,10 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "application id",
-                        "name": "appID",
+                        "description": "endpoint id",
+                        "name": "endpointID",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Application Details",
-                        "name": "application",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Application"
-                        }
                     }
                 ],
                 "responses": {
@@ -4053,14 +3475,16 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "put": {
+            }
+        },
+        "/api/v1/security/endpoints/{endpointID}/keys": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates a source",
+                "description": "This endpoint creates an api key that will be used by endpoint portal or the cli",
                 "consumes": [
                     "application/json"
                 ],
@@ -4070,12 +3494,12 @@ const docTemplate = `{
                 "tags": [
                     "Source"
                 ],
-                "summary": "Update a source",
+                "summary": "Create an api key for endpoint portal or the cli (API)",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
+                        "description": "Endpoint ID",
+                        "name": "endpointID",
                         "in": "path",
                         "required": true
                     },
@@ -7642,14 +7066,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/ui/organisations/{orgID}/invites/{inviteID}/cancel": {
-            "post": {
+        "/ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys/{keyID}/revoke": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint cancels an organization invite",
+                "description": "This endpoint revokes endpoint's an api key",
                 "consumes": [
                     "application/json"
                 ],
@@ -7659,7 +7083,7 @@ const docTemplate = `{
                 "tags": [
                     "Organisation"
                 ],
-                "summary": "cancel organization invite",
+                "summary": "Revoke an Endpoint's API Key",
                 "parameters": [
                     {
                         "type": "string",
@@ -7670,8 +7094,22 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "invite id",
-                        "name": "inviteID",
+                        "description": "Group id",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Endpoint id",
+                        "name": "endpointID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key id",
+                        "name": "keyID",
                         "in": "path",
                         "required": true
                     }
@@ -8695,14 +8133,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/ui/organisations/{orgID}/security/keys/{keyID}": {
+        "/ui/organisations/{orgID}/security/endpoints/{endpointID}/keys": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an api key by its id",
+                "description": "This endpoint fetches multiple api keys belonging to an endpoint",
                 "consumes": [
                     "application/json"
                 ],
@@ -8712,7 +8150,7 @@ const docTemplate = `{
                 "tags": [
                     "APIKey"
                 ],
-                "summary": "Get api key by id",
+                "summary": "Fetch multiple api keys belonging to an endpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -8723,8 +8161,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "API Key id",
-                        "name": "keyID",
+                        "description": "Endpoint ID",
+                        "name": "endpointID",
                         "in": "path",
                         "required": true
                     }
@@ -10025,7 +9463,7 @@ const docTemplate = `{
         "auth.Role": {
             "type": "object",
             "properties": {
-                "app": {
+                "endpoint": {
                     "type": "string"
                 },
                 "group": {
@@ -10095,47 +9533,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "header_value": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.Application": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "endpoints": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/datastore.Endpoint"
-                    }
-                },
-                "events": {
-                    "type": "integer"
-                },
-                "group_id": {
-                    "type": "string"
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "support_email": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -10218,13 +9615,13 @@ const docTemplate = `{
         "datastore.Device": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
                 "deleted_at": {
+                    "type": "string"
+                },
+                "endpoint_id": {
                     "type": "string"
                 },
                 "group_id": {
@@ -10250,9 +9647,6 @@ const docTemplate = `{
         "datastore.Endpoint": {
             "type": "object",
             "properties": {
-                "advanced_signatures": {
-                    "type": "boolean"
-                },
                 "authentication": {
                     "$ref": "#/definitions/datastore.EndpointAuthentication"
                 },
@@ -10265,7 +9659,19 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "events": {
+                    "type": "integer"
+                },
+                "group_id": {
+                    "type": "string"
+                },
                 "http_timeout": {
+                    "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "owner_id": {
                     "type": "string"
                 },
                 "rate_limit": {
@@ -10280,7 +9686,16 @@ const docTemplate = `{
                         "$ref": "#/definitions/datastore.Secret"
                     }
                 },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "support_email": {
+                    "type": "string"
+                },
                 "target_url": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 },
                 "uid": {
@@ -10305,12 +9720,6 @@ const docTemplate = `{
         "datastore.Event": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.Application"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -10323,6 +9732,12 @@ const docTemplate = `{
                 },
                 "deleted_at": {
                     "type": "string"
+                },
+                "endpoint_id": {
+                    "type": "string"
+                },
+                "endpoint_metadata": {
+                    "$ref": "#/definitions/datastore.Endpoint"
                 },
                 "event_type": {
                     "type": "string"
@@ -10358,12 +9773,6 @@ const docTemplate = `{
         "datastore.EventDelivery": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.Application"
-                },
                 "cli_metadata": {
                     "$ref": "#/definitions/datastore.CLIMetadata"
                 },
@@ -10517,7 +9926,7 @@ const docTemplate = `{
                 "messages_sent": {
                     "type": "integer"
                 },
-                "total_apps": {
+                "total_endpoints": {
                     "type": "integer"
                 }
             }
@@ -10746,29 +10155,6 @@ const docTemplate = `{
                 }
             }
         },
-        "datastore.Secret": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "expires_at": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "datastore.SignatureConfiguration": {
             "type": "object",
             "properties": {
@@ -10881,9 +10267,6 @@ const docTemplate = `{
                 "alert_config": {
                     "description": "subscription config",
                     "$ref": "#/definitions/datastore.AlertConfiguration"
-                },
-                "app_metadata": {
-                    "$ref": "#/definitions/datastore.Application"
                 },
                 "created_at": {
                     "type": "string"
@@ -11055,23 +10438,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Application": {
-            "type": "object",
-            "properties": {
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "support_email": {
-                    "type": "string"
-                }
-            }
-        },
         "models.Configuration": {
             "type": "object",
             "properties": {
@@ -11118,22 +10484,19 @@ const docTemplate = `{
         "models.Endpoint": {
             "type": "object",
             "properties": {
-                "advanced_signatures": {
-                    "type": "boolean"
-                },
                 "authentication": {
                     "$ref": "#/definitions/datastore.EndpointAuthentication"
                 },
                 "description": {
                     "type": "string"
                 },
-                "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "http_timeout": {
+                    "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "name": {
                     "type": "string"
                 },
                 "rate_limit": {
@@ -11145,6 +10508,12 @@ const docTemplate = `{
                 "secret": {
                     "type": "string"
                 },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "support_email": {
+                    "type": "string"
+                },
                 "url": {
                     "type": "string"
                 }
@@ -11153,9 +10522,6 @@ const docTemplate = `{
         "models.Event": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
                 "custom_headers": {
                     "type": "object",
                     "additionalProperties": {
@@ -11168,6 +10534,9 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "endpoint_id": {
+                    "type": "string"
                 },
                 "event_type": {
                     "type": "string"
@@ -11278,7 +10647,7 @@ const docTemplate = `{
         "models.PortalAPIKeyResponse": {
             "type": "object",
             "properties": {
-                "app_id": {
+                "endpoint_id": {
                     "type": "string"
                 },
                 "group_id": {
@@ -11429,9 +10798,6 @@ const docTemplate = `{
             "properties": {
                 "alert_config": {
                     "$ref": "#/definitions/datastore.AlertConfiguration"
-                },
-                "app_id": {
-                    "type": "string"
                 },
                 "disable_endpoint": {
                     "type": "boolean"

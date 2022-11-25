@@ -161,15 +161,15 @@ func (ss *SecurityService) RevokePersonalAPIKey(ctx context.Context, uid string,
 	return nil
 }
 
-func (ss *SecurityService) CreateAppAPIKey(ctx context.Context, d *models.CreateAppApiKey) (*datastore.APIKey, string, error) {
-	if d.App.GroupID != d.Group.UID {
-		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("app does not belong to group"))
+func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.CreateEndpointApiKey) (*datastore.APIKey, string, error) {
+	if d.Endpoint.GroupID != d.Group.UID {
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("endpoint does not belong to group"))
 	}
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: d.Group.UID,
-		App:   d.App.UID,
+		Type:     auth.RoleAdmin,
+		Group:    d.Group.UID,
+		Endpoint: d.Endpoint.UID,
 	}
 
 	maskID, key := util.GenerateAPIKey()

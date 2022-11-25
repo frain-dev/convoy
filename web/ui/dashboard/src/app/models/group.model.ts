@@ -22,7 +22,7 @@ export interface GROUP {
 	};
 	statistics?: {
 		messages_sent: number;
-		total_apps: number;
+		total_endpoints: number;
 	};
 	created_at: Date;
 	updated_at: Date;
@@ -48,8 +48,8 @@ export interface SOURCE {
 	provider_config?: { twitter: { crc_verified_at: Date } };
 	verifier: {
 		api_key: {
-			header: string;
-			key: string;
+			header_name: string;
+			header_value: string;
 		};
 		basic_auth: {
 			password: string;

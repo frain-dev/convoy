@@ -38,9 +38,6 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 
 	message.ID = primitive.NewObjectID()
 
-	if util.IsStringEmpty(message.ProviderID) {
-		message.ProviderID = message.AppID
-	}
 	if util.IsStringEmpty(message.UID) {
 		message.UID = uuid.New().String()
 	}
@@ -180,14 +177,10 @@ func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datas
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"created_at": getCreatedDateFilter(f.SearchParams), "deleted_at": nil}
+	filter := bson.M{"deleted_at": nil, "created_at": getCreatedDateFilter(f.SearchParams)}
 	d := bson.D{
 		{Key: "created_at", Value: getCreatedDateFilter(f.SearchParams)},
 		{Key: "deleted_at", Value: nil},
-	}
-
-	if !util.IsStringEmpty(f.AppID) {
-		filter["app_id"] = f.AppID
 	}
 
 	if !util.IsStringEmpty(f.Group.UID) {
@@ -195,9 +188,9 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		d = append(d, bson.E{Key: "group_id", Value: f.Group.UID})
 	}
 
-	if !util.IsStringEmpty(f.AppID) {
-		filter["app_id"] = f.AppID
-		d = append(d, bson.E{Key: "app_id", Value: f.AppID})
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoints"] = bson.M{"$in": f.EndpointIDs}
+		d = append(d, bson.E{Key: "endpoints", Value: bson.M{"$in": f.EndpointIDs}})
 	}
 
 	if !util.IsStringEmpty(f.SourceID) {
@@ -206,12 +199,12 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 	}
 
 	matchStage := bson.D{{Key: "$match", Value: d}}
-	appLookupStage := bson.D{
+	endpointLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: datastore.AppCollection},
-			{Key: "localField", Value: "app_id"},
+			{Key: "from", Value: datastore.EndpointCollection},
+			{Key: "localField", Value: "endpoints"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app_metadata"},
+			{Key: "as", Value: "endpoint_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -220,13 +213,13 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 							{Key: "title", Value: 1},
 							{Key: "group_id", Value: 1},
 							{Key: "support_email", Value: 1},
+							{Key: "target_url", Value: 1},
 						},
 					},
 				},
 			}},
 		}},
 	}
-	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$app_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	sourceLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
@@ -257,10 +250,9 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		sortStage,
 		limitStage,
 		skipStage,
-		appLookupStage,
+		endpointLookupStage,
 		sourceLookupStage,
 		unwindSourceStage,
-		unwindAppStage,
 	}
 
 	var events []datastore.Event

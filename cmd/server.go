@@ -199,7 +199,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		// register worker.
 		consumer := worker.NewConsumer(a.queue, lo)
 
-		appRepo := cm.NewApplicationRepo(a.store)
+		endpointRepo := cm.NewEndpointRepo(a.store)
 		eventRepo := cm.NewEventRepository(a.store)
 		eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
 		groupRepo := cm.NewGroupRepo(a.store)
@@ -208,7 +208,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		configRepo := cm.NewConfigRepo(a.store)
 
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-			appRepo,
+			endpointRepo,
 			eventDeliveryRepo,
 			groupRepo,
 			a.limiter,
@@ -216,7 +216,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-			appRepo,
+			endpointRepo,
 			eventRepo,
 			groupRepo,
 			eventDeliveryRepo,
@@ -239,7 +239,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
-			appRepo))
+			endpointRepo))
 
 		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))

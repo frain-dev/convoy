@@ -1,8 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -10,42 +13,72 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/render"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
-func createApplicationService(a *ApplicationHandler) *services.AppService {
-	appRepo := mongo.NewApplicationRepo(a.A.Store)
-	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
-
-	return services.NewAppService(
-		appRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
-	)
-}
-
-type pagedResponse struct {
-	Content    interface{}               `json:"content,omitempty"`
-	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
-}
-
-// GetApp
-// @Summary Get an application
-// @Description This endpoint fetches an application by it's id
+// CreateApp
+// @Summary Create an application
+// @Description This endpoint creates an application
 // @Tags Application
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
-// @Param appID path string true "application id"
+// @Param application body models.Application true "Application Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/applications/{appID} [get]
-func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("App fetched successfully",
-		*m.GetApplicationFromContext(r.Context()), http.StatusOK))
+// @Router /api/v1/projects/{projectID}/applications [post]
+func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
+	newApp := struct {
+		Name            string `json:"name" valid:"required~please provide your appName"`
+		SupportEmail    string `json:"support_email"`
+		IsDisabled      bool   `json:"is_disabled"`
+		SlackWebhookURl string `json:"slack_webhook_url"`
+	}{}
+
+	err := util.ReadJSON(r, &newApp)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := util.Validate(newApp); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	group := m.GetGroupFromContext(r.Context())
+	uid := uuid.New().String()
+	endpoint := &datastore.Endpoint{
+		UID:             uid,
+		GroupID:         group.UID,
+		Title:           newApp.Name,
+		SupportEmail:    newApp.SupportEmail,
+		SlackWebhookURL: newApp.SlackWebhookURl,
+		IsDisabled:      newApp.IsDisabled,
+		AppID:           uid,
+		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	err = endpointRepo.CreateEndpoint(r.Context(), endpoint, group.UID)
+	if err != nil {
+		msg := "failed to create application"
+		if err == datastore.ErrDuplicateEndpointName {
+			msg = fmt.Sprintf("%v: %s", datastore.ErrDuplicateEndpointName, endpoint.Title)
+		}
+		log.WithError(err).Error(msg)
+		_ = render.Render(w, r, util.NewErrorResponse(msg, http.StatusBadRequest))
+		return
+	}
+
+	app := generateAppResponse(endpoint)
+	_ = render.Render(w, r, util.NewServerResponse("App created successfully", app, http.StatusCreated))
 }
 
 // GetApps
@@ -64,51 +97,68 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications [get]
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
-	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	q := r.URL.Query().Get("q")
-	appService := createApplicationService(a)
+	pageable := m.GetPageableFromContext(r.Context())
 
-	apps, paginationData, err := appService.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
+	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	var appsResponse []datastore.Application
+	appResponseMap := make(map[string]*datastore.Application, 0)
+
+	for _, endpoint := range endpoints {
+		ap, ok := appResponseMap[endpoint.AppID]
+		endpointResp := generateEndpointResponse(endpoint)
+
+		if ok {
+			ap.Endpoints = append(ap.Endpoints, endpointResp)
+		} else {
+			ap := generateAppResponse(&endpoint)
+
+			if !util.IsStringEmpty(endpoint.TargetURL) {
+				ap.Endpoints = []datastore.DeprecatedEndpoint{endpointResp}
+			}
+
+			appResponseMap[endpoint.AppID] = ap
+		}
+	}
+
+	for _, app := range appResponseMap {
+		appsResponse = append(appsResponse, *app)
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("Apps fetched successfully",
-		pagedResponse{Content: &apps, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: &appsResponse, Pagination: &paginationData}, http.StatusOK))
 }
 
-// CreateApp
-// @Summary Create an application
-// @Description This endpoint creates an application
+// GetApp
+// @Summary Get an application
+// @Description This endpoint fetches an application by it's id
 // @Tags Application
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
-// @Param application body models.Application true "Application Details"
+// @Param appID path string true "application id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/applications [post]
-func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
-	var newApp models.Application
-	err := util.ReadJSON(r, &newApp)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
+// @Router /api/v1/projects/{projectID}/applications/{appID} [get]
+func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
+	endpoints := m.GetEndpointsFromContext(r.Context())
+	app := generateAppResponse(&endpoints[0])
+
+	for _, endpoint := range endpoints {
+		endpointResp := generateEndpointResponse(endpoint)
+		app.Endpoints = append(app.Endpoints, endpointResp)
 	}
 
-	group := m.GetGroupFromContext(r.Context())
-	appService := createApplicationService(a)
-	app, err := appService.CreateApp(r.Context(), &newApp, group)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("App created successfully", app, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("App fetched successfully", app, http.StatusOK))
 }
 
 // UpdateApp
@@ -125,21 +175,52 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID} [put]
 func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
-	var appUpdate models.UpdateApplication
+	endpoints := m.GetEndpointsFromContext(r.Context())
+	group := m.GetGroupFromContext(r.Context())
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+
+	appUpdate := struct {
+		Name            *string `json:"name" valid:"required~please provide your appName"`
+		SupportEmail    *string `json:"support_email" valid:"email~please provide a valid email"`
+		IsDisabled      *bool   `json:"is_disabled"`
+		SlackWebhookURL *string `json:"slack_webhook_url"`
+	}{}
+
 	err := util.ReadJSON(r, &appUpdate)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
-	appService := createApplicationService(a)
-
-	err = appService.UpdateApplication(r.Context(), &appUpdate, app)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+	if err := util.Validate(appUpdate); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+
+	for _, endpoint := range endpoints {
+		endpoint.Title = *appUpdate.Name
+
+		if appUpdate.IsDisabled != nil {
+			endpoint.IsDisabled = *appUpdate.IsDisabled
+		}
+
+		if appUpdate.SlackWebhookURL != nil {
+			endpoint.SlackWebhookURL = *appUpdate.SlackWebhookURL
+		}
+
+		if appUpdate.SupportEmail != nil {
+			endpoint.SupportEmail = *appUpdate.SupportEmail
+		}
+
+		err := endpointRepo.UpdateEndpoint(r.Context(), &endpoint, group.UID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
+	e := endpoints[0]
+	app := generateAppResponse(&e)
 
 	_ = render.Render(w, r, util.NewServerResponse("App updated successfully", app, http.StatusAccepted))
 }
@@ -157,14 +238,15 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID} [delete]
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
-	appService := createApplicationService(a)
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 
-	err := appService.DeleteApplication(r.Context(), app)
-	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to delete app - ")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
+	endpoints := m.GetEndpointsFromContext(r.Context())
+	for _, endpoint := range endpoints {
+		err := endpointRepo.DeleteEndpoint(r.Context(), &endpoint)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("App deleted successfully", nil, http.StatusOK))
@@ -184,23 +266,167 @@ func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints [post]
 func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
-	var e models.Endpoint
-	e, err := m.ParseEndpointFromBody(r)
+	group := m.GetGroupFromContext(r.Context())
+
+	endpoints := m.GetEndpointsFromContext(r.Context())
+	es := createEndpointService(a)
+
+	req := struct {
+		URL                string   `json:"url"`
+		Description        string   `json:"description"`
+		Events             []string `json:"events"`
+		AdvancedSignatures *bool    `json:"advanced_signatures"`
+		Secret             string   `json:"secret"`
+
+		HttpTimeout       string                            `json:"http_timeout"`
+		RateLimit         int                               `json:"rate_limit"`
+		RateLimitDuration string                            `json:"rate_limit_duration"`
+		Authentication    *datastore.EndpointAuthentication `json:"authentication"`
+	}{}
+
+	err := util.ReadJSON(r, &req)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
-	appService := createApplicationService(a)
-
-	endpoint, err := appService.CreateAppEndpoint(r.Context(), e, app)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+	if err := util.Validate(req); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("App endpoint created successfully", endpoint, http.StatusCreated))
+	var endpoint *datastore.Endpoint
+
+	appDetails := endpoints[0]
+	// At this stage, this is an existing app with an existing or
+	// multiple endpoints. We can go ahead to create a new endpoint
+	// combining the app details along with the details passed
+	// in the request.
+	if len(endpoints) > 1 || (len(endpoints) == 1 && !util.IsStringEmpty(endpoints[0].TargetURL)) {
+		e := models.Endpoint{
+			URL:                req.URL,
+			Secret:             req.Secret,
+			Description:        req.Description,
+			AdvancedSignatures: req.AdvancedSignatures,
+			Name:               appDetails.Title,
+			SupportEmail:       appDetails.SupportEmail,
+			IsDisabled:         appDetails.IsDisabled,
+			SlackWebhookURL:    appDetails.SlackWebhookURL,
+			HttpTimeout:        req.HttpTimeout,
+			RateLimit:          req.RateLimit,
+			RateLimitDuration:  req.RateLimitDuration,
+			Authentication:     req.Authentication,
+			AppID:              appDetails.AppID,
+		}
+
+		endpoint, err = es.CreateEndpoint(r.Context(), e, group.UID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	} else {
+		// This is a new app that was just created, so we should update the existing
+		// resource with the request details.
+		endpoint = &appDetails
+		url, err := util.CleanEndpoint(req.URL)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		req.URL = url
+		if req.RateLimit == 0 {
+			req.RateLimit = convoy.RATE_LIMIT
+		}
+
+		if util.IsStringEmpty(req.RateLimitDuration) {
+			req.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+		}
+
+		duration, err := time.ParseDuration(req.RateLimitDuration)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		if util.IsStringEmpty(req.Secret) {
+			sc, err := util.GenerateSecret()
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+				return
+			}
+
+			endpoint.Secrets = []datastore.Secret{
+				{
+					UID:       uuid.NewString(),
+					Value:     sc,
+					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				},
+			}
+		} else {
+			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
+				UID:       uuid.NewString(),
+				Value:     req.Secret,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			})
+		}
+
+		endpoint.Description = req.Description
+		endpoint.TargetURL = req.URL
+		endpoint.RateLimit = req.RateLimit
+		endpoint.RateLimitDuration = duration.String()
+		endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+		auth, err := services.ValidateEndpointAuthentication(req.Authentication)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		endpoint.Authentication = auth
+
+		endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+		err = endpointRepo.UpdateEndpoint(r.Context(), endpoint, group.UID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+	}
+
+	endpointResponse := generateEndpointResponse(*endpoint)
+	_ = render.Render(w, r, util.NewServerResponse("App endpoint created successfully", endpointResponse, http.StatusCreated))
+}
+
+// GetAppEndpoints
+// @Summary Get application endpoints
+// @Description This endpoint fetches an application's endpoints
+// @Tags Application Endpoints
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Param appID path string true "application id"
+// @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints [get]
+func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
+	endpoints := m.GetEndpointsFromContext(r.Context())
+
+	endpointResponse := make([]datastore.DeprecatedEndpoint, 0)
+
+	if util.IsStringEmpty(endpoints[0].TargetURL) {
+		_ = render.Render(w, r, util.NewServerResponse("App endpoints fetched successfully", endpointResponse, http.StatusOK))
+		return
+	}
+
+	for _, endpoint := range endpoints {
+		resp := generateEndpointResponse(endpoint)
+		endpointResponse = append(endpointResponse, resp)
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("App endpoints fetched successfully", endpointResponse, http.StatusOK))
 }
 
 // GetAppEndpoint
@@ -217,27 +443,11 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("App endpoint fetched successfully",
-		*m.GetApplicationEndpointFromContext(r.Context()), http.StatusOK))
-}
+	endpoint := m.GetEndpointFromContext(r.Context())
+	resp := generateEndpointResponse(*endpoint)
 
-// GetAppEndpoints
-// @Summary Get application endpoints
-// @Description This endpoint fetches an application's endpoints
-// @Tags Application Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project id"
-// @Param appID path string true "application id"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints [get]
-func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
+	_ = render.Render(w, r, util.NewServerResponse("App endpoint fetched successfully", resp, http.StatusOK))
 
-	app.Endpoints = m.FilterDeletedEndpoints(app.Endpoints)
-	_ = render.Render(w, r, util.NewServerResponse("App endpoints fetched successfully", app.Endpoints, http.StatusOK))
 }
 
 // UpdateAppEndpoint
@@ -255,24 +465,56 @@ func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [put]
 func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
-	var e models.Endpoint
-	e, err := m.ParseEndpointFromBody(r)
+	endpoint := m.GetEndpointFromContext(r.Context())
+	endpointService := createEndpointService(a)
+
+	req := struct {
+		URL                string   `json:"url"`
+		Description        string   `json:"description"`
+		Events             []string `json:"events"`
+		AdvancedSignatures *bool    `json:"advanced_signatures"`
+		Secret             string   `json:"secret"`
+
+		HttpTimeout       string                            `json:"http_timeout"`
+		RateLimit         int                               `json:"rate_limit"`
+		RateLimitDuration string                            `json:"rate_limit_duration"`
+		Authentication    *datastore.EndpointAuthentication `json:"authentication"`
+	}{}
+
+	err := util.ReadJSON(r, &req)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	app := m.GetApplicationFromContext(r.Context())
-	endPointId := chi.URLParam(r, "endpointID")
-	appService := createApplicationService(a)
-
-	endpoint, err := appService.UpdateAppEndpoint(r.Context(), e, endPointId, app)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+	if err := util.Validate(req); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Apps endpoint updated successfully", endpoint, http.StatusAccepted))
+	e := models.UpdateEndpoint{
+		URL:                req.URL,
+		Secret:             req.Secret,
+		Description:        req.Description,
+		AdvancedSignatures: req.AdvancedSignatures,
+		Name:               &endpoint.Title,
+		SupportEmail:       &endpoint.SupportEmail,
+		IsDisabled:         &endpoint.IsDisabled,
+		SlackWebhookURL:    &endpoint.SlackWebhookURL,
+		HttpTimeout:        req.HttpTimeout,
+		RateLimit:          req.RateLimit,
+		RateLimitDuration:  req.RateLimitDuration,
+		Authentication:     req.Authentication,
+	}
+
+	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	endpointResponse := generateEndpointResponse(*endpoint)
+	_ = render.Render(w, r, util.NewServerResponse("App endpoint updated successfully", endpointResponse, http.StatusAccepted))
 }
 
 // DeleteAppEndpoint
@@ -289,57 +531,43 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
-	app := m.GetApplicationFromContext(r.Context())
-	e := m.GetApplicationEndpointFromContext(r.Context())
-	appService := createApplicationService(a)
+	endpoint := m.GetEndpointFromContext(r.Context())
+	es := createEndpointService(a)
 
-	err := appService.DeleteAppEndpoint(r.Context(), e, app)
+	err := es.DeleteEndpoint(r.Context(), endpoint)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint deleted successfully", nil, http.StatusOK))
 }
 
-// ExpireSecret
-// @Summary Expire and generate new application endpoint secret
-// @Description This endpoint expires the current endpoint secret and generates a new one.
-// @Tags Application Endpoints
-// @Accept  json
-// @Produce  json
-// @Param groupId query string true "group id"
-// @Param appID path string true "application id"
-// @Param endpointID path string true "endpoint id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret [put]
-func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
-	var e *models.ExpireSecret
-	err := util.ReadJSON(r, &e)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
+func generateAppResponse(endpoint *datastore.Endpoint) *datastore.Application {
+	return &datastore.Application{
+		UID:             endpoint.AppID,
+		GroupID:         endpoint.GroupID,
+		Title:           endpoint.Title,
+		SupportEmail:    endpoint.SupportEmail,
+		SlackWebhookURL: endpoint.SlackWebhookURL,
+		IsDisabled:      endpoint.IsDisabled,
+		CreatedAt:       endpoint.CreatedAt,
+		UpdatedAt:       endpoint.UpdatedAt,
 	}
-
-	app := m.GetApplicationFromContext(r.Context())
-
-	as := createApplicationService(a)
-	app, err = as.ExpireSecret(r.Context(), e, chi.URLParam(r, "endpointID"), app)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("endpoint secret expired successfully",
-		app, http.StatusOK))
 }
 
-func (a *ApplicationHandler) GetPaginatedApps(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Apps fetched successfully",
-		pagedResponse{
-			Content:    *m.GetApplicationsFromContext(r.Context()),
-			Pagination: m.GetPaginationDataFromContext(r.Context()),
-		}, http.StatusOK))
+func generateEndpointResponse(endpoint datastore.Endpoint) datastore.DeprecatedEndpoint {
+	return datastore.DeprecatedEndpoint{
+		UID:                endpoint.UID,
+		TargetURL:          endpoint.TargetURL,
+		Description:        endpoint.Description,
+		Secrets:            endpoint.Secrets,
+		AdvancedSignatures: endpoint.AdvancedSignatures,
+		HttpTimeout:        endpoint.HttpTimeout,
+		RateLimit:          endpoint.RateLimit,
+		RateLimitDuration:  endpoint.RateLimitDuration,
+		Authentication:     endpoint.Authentication,
+		CreatedAt:          endpoint.CreatedAt,
+		UpdatedAt:          endpoint.UpdatedAt,
+	}
 }

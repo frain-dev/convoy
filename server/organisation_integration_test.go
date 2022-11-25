@@ -222,9 +222,9 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, org, s.DefaultUser, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
 
@@ -262,9 +262,9 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPI
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, org, s.DefaultUser, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
 

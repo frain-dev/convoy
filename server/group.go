@@ -15,14 +15,13 @@ import (
  
 func createGroupService(a *ApplicationHandler) *services.GroupService {
 	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
-	appRepo := mongo.NewApplicationRepo(a.A.Store)
 	groupRepo := mongo.NewGroupRepo(a.A.Store)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
 
 	return services.NewGroupService(
-		apiKeyRepo, appRepo, groupRepo,
-		eventRepo, eventDeliveryRepo, a.A.Limiter, a.A.Cache,
+		apiKeyRepo, groupRepo, eventRepo,
+		eventDeliveryRepo, a.A.Limiter, a.A.Cache,
 	)
 }
 

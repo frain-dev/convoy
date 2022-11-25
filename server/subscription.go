@@ -17,10 +17,10 @@ import (
 
 func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionService {
 	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
-	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	sourceRepo := mongo.NewSourceRepo(a.A.Store)
 
-	return services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
+	return services.NewSubscriptionService(subRepo, endpointRepo, sourceRepo)
 }
 
 // GetSubscriptions
@@ -39,11 +39,22 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
+	var endpoints []string
+
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
-	appID := m.GetAppIDFromContext(r)
+	endpointID := m.GetEndpointIDFromContext(r)
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
 
-	filter := &datastore.FilterBy{GroupID: group.UID, AppID: appID}
+	if !util.IsStringEmpty(endpointID) {
+		endpoints = []string{endpointID}
+	}
+
+	if len(endpointIDs) > 0 {
+		endpoints = endpointIDs
+	}
+
+	filter := &datastore.FilterBy{GroupID: group.UID, EndpointIDs: endpoints}
 
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
@@ -237,5 +248,5 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter valiadted successfully", isValid, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusCreated))
 }

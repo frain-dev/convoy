@@ -35,9 +35,18 @@
 				bg-[right_10px_top_15px]
 				min-h-[48px]
 				cursor-pointer
+				flex
+				items-center
+				flex-wrap
 			"
 		>
-			{{ selectedValue?.name || selectedValue }}
+			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue }}</span>
+			<ng-container *ngIf="multiple">
+				<div *ngFor="let option of selectedOptions" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
+					{{ option.name || option }}
+					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></button>
+				</div>
+			</ng-container>
 		</div>
 
 		<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="control.touched && control.invalid">
@@ -49,9 +58,17 @@
 	<div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
 		<ul>
 			<li class="text-14 text-grey-20">Select</li>
-			<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
-				<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
-			</li>
+			<ng-container *ngIf="multiple">
+				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
+					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+				</li>
+			</ng-container>
+
+			<ng-container *ngIf="!multiple">
+				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20" convoy-dropdown-option>
+					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+				</li>
+			</ng-container>
 		</ul>
 	</div>
 </div>

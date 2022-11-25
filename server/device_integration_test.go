@@ -71,17 +71,17 @@ func (d *DeviceIntegrationTestSuite) TearDownTest() {
 	metrics.Reset()
 }
 
-func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByAppID() {
+func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByEndpointID() {
 	expectedStatusCode := http.StatusOK
 
-	app, err := testdb.SeedApplication(d.ConvoyApp.A.Store, d.DefaultGroup, "", "", false)
+	endpoint, err := testdb.SeedEndpoint(d.ConvoyApp.A.Store, d.DefaultGroup, "", "", "", false)
 	require.NoError(d.T(), err)
 
 	// Just Before.
-	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultGroup, app.UID)
+	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultGroup, endpoint.UID)
 
 	// Arrange
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/apps/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, app.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, endpoint.UID)
 	req := createRequest(http.MethodGet, url, d.APIKey, nil)
 	err = d.AuthenticatorFn(req, d.Router)
 	require.NoError(d.T(), err)

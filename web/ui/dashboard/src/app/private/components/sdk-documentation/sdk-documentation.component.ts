@@ -4,6 +4,8 @@ import Markdoc from '@markdoc/markdoc';
 import axios from 'axios';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 
+type STEP = 'Setup Client' | 'Create Endpoint' | 'Send Event';
+
 @Component({
 	selector: 'sdk-documentation',
 	standalone: true,
@@ -17,13 +19,13 @@ export class SdkDocumentationComponent implements OnInit {
 		{ label: 'Javascript', id: 'js' },
 		{ label: 'Python', id: 'python' },
 		{ label: 'PHP', id: 'php' },
-		// { label: 'Ruby', id: 'ruby' },
+		{ label: 'Ruby', id: 'ruby' },
 		{ label: 'Golang', id: 'go' }
 	];
 	activeTab = 'js';
-	activeStep: 'Installation' | 'Setup Client' | 'Create Application' | 'Add Endpoint' | 'Create Subscription' | 'Send Event' = 'Installation';
+	activeStep: STEP = 'Setup Client';
 	documentation: any;
-	steps: ['Installation', 'Setup Client', 'Create Application', 'Add Endpoint', 'Create Subscription', 'Send Event'] = ['Installation', 'Setup Client', 'Create Application', 'Add Endpoint', 'Create Subscription', 'Send Event'];
+	steps: ['Setup Client', 'Create Endpoint', 'Send Event'] = ['Setup Client', 'Create Endpoint', 'Send Event'];
 
 	constructor() {}
 
@@ -57,30 +59,18 @@ export class SdkDocumentationComponent implements OnInit {
 				break;
 		}
 
-		this.activeStep = 'Installation';
+		this.activeStep = this.steps[0];
 	}
 
-	switchStep(activeTab: 'Installation' | 'Setup Client' | 'Create Application' | 'Add Endpoint' | 'Create Subscription' | 'Send Event') {
+	switchStep(activeTab: STEP) {
 		switch (activeTab) {
-			case 'Installation':
-				this.activeStep = 'Installation';
+			case 'Setup Client':
+				this.activeStep = this.steps[0];
 				this.renderDocumentation('/content/sdks/' + this.activeTab + '/Installation' + '.md');
 				break;
-			case 'Setup Client':
-				this.activeStep = 'Setup Client';
-				this.renderDocumentation('/content/sdks/' + this.activeTab + '/Setup Client' + '.md');
-				break;
-			case 'Create Application':
-				this.activeStep = 'Create Application';
-				this.renderDocumentation('/content/sdks/' + this.activeTab + '/Create Application' + '.md');
-				break;
-			case 'Add Endpoint':
-				this.activeStep = 'Add Endpoint';
+			case 'Create Endpoint':
+				this.activeStep = 'Create Endpoint';
 				this.renderDocumentation('/content/sdks/' + this.activeTab + '/Add Endpoint' + '.md');
-				break;
-			case 'Create Subscription':
-				this.activeStep = 'Create Subscription';
-				this.renderDocumentation('/content/sdks/' + this.activeTab + '/Create Subscription' + '.md');
 				break;
 			case 'Send Event':
 				this.activeStep = 'Send Event';

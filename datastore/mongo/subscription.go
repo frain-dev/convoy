@@ -8,7 +8,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -81,25 +80,26 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 
-	if !util.IsStringEmpty(f.AppID) {
+	if len(f.EndpointIDs) > 0 {
 		matchStage = bson.D{
 			{
 				Key: "$match",
 				Value: bson.D{
 					{Key: "group_id", Value: groupId},
-					{Key: "app_id", Value: f.AppID},
+					{Key: "endpoint_id", Value: bson.M{
+						"$in": f.EndpointIDs,
+					}},
 					{Key: "deleted_at", Value: nil},
 				},
 			},
 		}
 	}
 
-	appStage := bson.D{
-		{
-			Key: "$lookup",
+	endpointStage := bson.D{
+		{Key: "$lookup",
 			Value: bson.D{
-				{Key: "from", Value: "applications"},
-				{Key: "localField", Value: "app_id"},
+				{Key: "from", Value: "endpoints"},
+				{Key: "localField", Value: "endpoint_id"},
 				{Key: "foreignField", Value: "uid"},
 				{
 					Key: "pipeline",
@@ -112,17 +112,17 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 									{Key: "title", Value: 1},
 									{Key: "group_id", Value: 1},
 									{Key: "support_email", Value: 1},
-									{Key: "endpoints", Value: 1},
+									{Key: "target_url", Value: 1},
+									{Key: "secrets", Value: 1},
 								},
 							},
 						},
 					},
 				},
-				{Key: "as", Value: "app_metadata"},
+				{Key: "as", Value: "endpoint_metadata"},
 			},
 		},
 	}
-	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$app_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	sourceStage := bson.D{
 		{
@@ -155,55 +155,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		},
 	}
 	unwindSourceStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$source_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
-
-	endpointStage := bson.D{
-		{
-			Key: "$project",
-			Value: bson.D{
-				{Key: "_id", Value: 1},
-				{Key: "uid", Value: 1},
-				{Key: "name", Value: 1},
-				{Key: "type", Value: 1},
-				{Key: "status", Value: 1},
-				{Key: "app_id", Value: 1},
-				{Key: "group_id", Value: 1},
-				{Key: "source_id", Value: 1},
-				{Key: "endpoint_id", Value: 1},
-				{Key: "alert_config", Value: 1},
-				{Key: "retry_config", Value: 1},
-				{Key: "filter_config", Value: 1},
-				{Key: "created_at", Value: 1},
-				{Key: "updated_at", Value: 1},
-				{Key: "deleted_at", Value: 1},
-				{Key: "app_metadata", Value: 1},
-				{Key: "source_metadata", Value: 1},
-				{
-					Key: "endpoint_metadata",
-					Value: bson.D{
-						{
-							Key: "$filter",
-							Value: bson.D{
-								{Key: "input", Value: "$app_metadata.endpoints"},
-								{Key: "as", Value: "endpoint"},
-								{
-									Key: "cond",
-									Value: bson.D{
-										{
-											Key: "$eq",
-											Value: bson.A{
-												"$$endpoint.uid",
-												"$endpoint_id",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 	unwindEndpointStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$endpoint_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 	skipStage := bson.D{{Key: "$skip", Value: getSkip(pageable.Page, pageable.PerPage)}}
 	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
@@ -215,10 +166,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		sortStage,
 		skipStage,
 		limitStage,
-		appStage,
 		sourceStage,
 		endpointStage,
-		unwindAppStage,
 		unwindSourceStage,
 		unwindEndpointStage,
 	}
@@ -229,8 +178,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	}
 
 	filter := bson.M{"group_id": groupId}
-	if !util.IsStringEmpty(f.AppID) {
-		filter["app_id"] = f.AppID
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoint_id"] = bson.M{"$in": f.EndpointIDs}
 	}
 
 	count, err := s.store.Count(ctx, filter)
@@ -276,10 +225,10 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 	return subscription, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, appId string, eventType datastore.EventType) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, endpointID string, eventType datastore.EventType) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
-	filter := bson.M{"group_id": groupId, "app_id": appId, "filter_config.event_types": string(eventType)}
+	filter := bson.M{"group_id": groupId, "endpoint_id": endpointID, "filter_config.event_types": string(eventType)}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
@@ -290,21 +239,18 @@ func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, gro
 	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, groupId string, endpointID string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"app_id":   appID,
-		"group_id": groupId,
+		"endpoint_id": endpointID,
+		"group_id":    groupId,
 	}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, datastore.ErrSubscriptionNotFound
-	}
 
-	return subscriptions, nil
+	return subscriptions, err
 }
 
 func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {

@@ -120,7 +120,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 
 	lookupStage1 := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: datastore.AppCollection},
+			{Key: "from", Value: datastore.EndpointCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
@@ -132,7 +132,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 					},
 				},
 			}},
-			{Key: "as", Value: "group_apps"},
+			{Key: "as", Value: "group_endpoints"},
 		}},
 	}
 
@@ -159,7 +159,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			Key: "$project",
 			Value: bson.D{
 				{Key: "group_id", Value: "$uid"},
-				{Key: "total_apps", Value: bson.D{{Key: "$size", Value: "$group_apps"}}},
+				{Key: "total_endpoints", Value: bson.D{{Key: "$size", Value: "$group_endpoints"}}},
 				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
 			},
 		},
@@ -198,27 +198,27 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 			return err
 		}
 
-		var apps []datastore.Application
+		var endpoints []datastore.Endpoint
 
-		ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.AppCollection)
+		ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.EndpointCollection)
 		filter := bson.M{"group_id": uid}
-		err = db.store.FindAll(ctx, filter, nil, nil, &apps)
+		err = db.store.FindAll(ctx, filter, nil, nil, &endpoints)
 		if err != nil {
 			return err
 		}
 
-		for _, app := range apps {
-			err = db.deleteAppEvents(sessCtx, uid, updateAsDeleted)
+		for _, endpoint := range endpoints {
+			err = db.deleteEndpointEvents(sessCtx, endpoint.UID, updateAsDeleted)
 			if err != nil {
 				return err
 			}
 
-			err = db.deleteAppSubscriptions(sessCtx, uid, updateAsDeleted)
+			err = db.deleteEndpointSubscriptions(sessCtx, endpoint.UID, updateAsDeleted)
 			if err != nil {
 				return err
 			}
 
-			err = db.deleteApp(sessCtx, app.UID, updateAsDeleted)
+			err = db.deleteEndpoint(sessCtx, endpoint.UID, updateAsDeleted)
 			if err != nil {
 				return err
 			}
@@ -249,24 +249,24 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 	return groups, err
 }
 
-func (db *groupRepo) deleteAppEvents(ctx context.Context, groupId string, update bson.M) error {
+func (db *groupRepo) deleteEndpointEvents(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 
-	filter := bson.M{"group_id": groupId}
+	filter := bson.M{"endpoint_id": endpoint_id}
 	return db.store.UpdateMany(ctx, filter, update, true)
 }
 
-func (db *groupRepo) deleteApp(ctx context.Context, app_id string, update bson.M) error {
-	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.AppCollection)
+func (db *groupRepo) deleteEndpoint(ctx context.Context, endpoint_id string, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EndpointCollection)
 
-	filter := bson.M{"uid": app_id}
+	filter := bson.M{"uid": endpoint_id}
 	return db.store.UpdateMany(ctx, filter, update, true)
 }
 
-func (db *groupRepo) deleteAppSubscriptions(ctx context.Context, app_id string, update bson.M) error {
+func (db *groupRepo) deleteEndpointSubscriptions(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
 
-	filter := bson.M{"app_id": app_id}
+	filter := bson.M{"endpoint_id": endpoint_id}
 	err := db.store.UpdateMany(ctx, filter, update, true)
 
 	return err

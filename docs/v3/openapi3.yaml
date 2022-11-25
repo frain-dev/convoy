@@ -2,7 +2,7 @@ components:
   schemas:
     auth.Role:
       properties:
-        app:
+        endpoint:
           type: string
         group:
           type: string
@@ -48,33 +48,6 @@ components:
         header_name:
           type: string
         header_value:
-          type: string
-      type: object
-    datastore.Application:
-      properties:
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        endpoints:
-          items:
-            $ref: '#/components/schemas/datastore.Endpoint'
-          type: array
-        events:
-          type: integer
-        group_id:
-          type: string
-        is_disabled:
-          type: boolean
-        name:
-          type: string
-        slack_webhook_url:
-          type: string
-        support_email:
-          type: string
-        uid:
-          type: string
-        updated_at:
           type: string
       type: object
     datastore.BasicAuth:
@@ -128,11 +101,11 @@ components:
       type: object
     datastore.Device:
       properties:
-        app_id:
-          type: string
         created_at:
           type: string
         deleted_at:
+          type: string
+        endpoint_id:
           type: string
         group_id:
           type: string
@@ -149,8 +122,6 @@ components:
       type: object
     datastore.Endpoint:
       properties:
-        advanced_signatures:
-          type: boolean
         authentication:
           $ref: '#/components/schemas/datastore.EndpointAuthentication'
         created_at:
@@ -159,17 +130,29 @@ components:
           type: string
         description:
           type: string
+        events:
+          type: integer
+        group_id:
+          type: string
         http_timeout:
+          type: string
+        is_disabled:
+          type: boolean
+        owner_id:
           type: string
         rate_limit:
           type: integer
         rate_limit_duration:
           type: string
-        secrets:
-          items:
-            $ref: '#/components/schemas/datastore.Secret'
-          type: array
+        secret:
+          type: string
+        slack_webhook_url:
+          type: string
+        support_email:
+          type: string
         target_url:
+          type: string
+        title:
           type: string
         uid:
           type: string
@@ -185,10 +168,6 @@ components:
       type: object
     datastore.Event:
       properties:
-        app_id:
-          type: string
-        app_metadata:
-          $ref: '#/components/schemas/datastore.Application'
         created_at:
           type: string
         data:
@@ -200,6 +179,10 @@ components:
           type: array
         deleted_at:
           type: string
+        endpoint_id:
+          type: string
+        endpoint_metadata:
+          $ref: '#/components/schemas/datastore.Endpoint'
         event_type:
           type: string
         group_id:
@@ -227,10 +210,6 @@ components:
       type: object
     datastore.EventDelivery:
       properties:
-        app_id:
-          type: string
-        app_metadata:
-          $ref: '#/components/schemas/datastore.Application'
         cli_metadata:
           $ref: '#/components/schemas/datastore.CLIMetadata'
         created_at:
@@ -332,7 +311,7 @@ components:
       properties:
         messages_sent:
           type: integer
-        total_apps:
+        total_endpoints:
           type: integer
       type: object
     datastore.HMac:
@@ -483,21 +462,6 @@ components:
         secret_key:
           type: string
       type: object
-    datastore.Secret:
-      properties:
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        expires_at:
-          type: string
-        uid:
-          type: string
-        updated_at:
-          type: string
-        value:
-          type: string
-      type: object
     datastore.SignatureConfiguration:
       properties:
         header:
@@ -571,8 +535,6 @@ components:
       properties:
         alert_config:
           $ref: '#/components/schemas/datastore.AlertConfiguration'
-        app_metadata:
-          $ref: '#/components/schemas/datastore.Application'
         created_at:
           type: string
         deleted_at:
@@ -684,17 +646,6 @@ components:
         user_id:
           type: string
       type: object
-    models.Application:
-      properties:
-        is_disabled:
-          type: boolean
-        name:
-          type: string
-        slack_webhook_url:
-          type: string
-        support_email:
-          type: string
-      type: object
     models.Configuration:
       properties:
         is_analytics_enabled:
@@ -725,17 +676,15 @@ components:
       type: object
     models.Endpoint:
       properties:
-        advanced_signatures:
-          type: boolean
         authentication:
           $ref: '#/components/schemas/datastore.EndpointAuthentication'
         description:
           type: string
-        events:
-          items:
-            type: string
-          type: array
         http_timeout:
+          type: string
+        is_disabled:
+          type: boolean
+        name:
           type: string
         rate_limit:
           type: integer
@@ -743,13 +692,15 @@ components:
           type: string
         secret:
           type: string
+        slack_webhook_url:
+          type: string
+        support_email:
+          type: string
         url:
           type: string
       type: object
     models.Event:
       properties:
-        app_id:
-          type: string
         custom_headers:
           additionalProperties:
             type: string
@@ -761,6 +712,8 @@ components:
           items:
             type: integer
           type: array
+        endpoint_id:
+          type: string
         event_type:
           type: string
       type: object
@@ -831,7 +784,7 @@ components:
       type: object
     models.PortalAPIKeyResponse:
       properties:
-        app_id:
+        endpoint_id:
           type: string
         group_id:
           type: string
@@ -930,8 +883,6 @@ components:
       properties:
         alert_config:
           $ref: '#/components/schemas/datastore.AlertConfiguration'
-        app_id:
-          type: string
         disable_endpoint:
           type: boolean
         endpoint_id:
@@ -1029,95 +980,13 @@ info:
   version: 0.1.12
 openapi: 3.0.3
 paths:
-  /api/v1/organisations:
+  /api/v1/endpoints:
     get:
-      description: This endpoint fetches the organisations a user is part of, this
-        route can only be accessed with a personal api key
+      description: This endpoint fetches an endpoints
       parameters:
-      - description: results per page
+      - description: group id
         in: query
-        name: perPage
-        schema:
-          type: string
-      - description: page number
-        in: query
-        name: page
-        schema:
-          type: string
-      - description: sort order
-        in: query
-        name: sort
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
-                      - properties:
-                          content:
-                            items:
-                              $ref: '#/components/schemas/datastore.Organisation'
-                            type: array
-                        type: object
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get organisations
-      tags:
-      - Organisation
-  /api/v1/projects:
-    get:
-      description: This endpoint fetches groups
-      parameters:
-      - description: group name
-        in: query
-        name: name
-        schema:
-          type: string
-      - description: organisation id
-        in: query
-        name: orgID
+        name: groupId
         required: true
         schema:
           type: string
@@ -1131,7 +1000,7 @@ paths:
                 - properties:
                     data:
                       items:
-                        $ref: '#/components/schemas/datastore.Group'
+                        $ref: '#/components/schemas/datastore.Endpoint'
                       type: array
                   type: object
           description: OK
@@ -1170,292 +1039,25 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Get groups
+      summary: Get endpoints
       tags:
-      - Group
+      - Endpoints
     post:
-      description: This endpoint creates a group
-      parameters:
-      - description: Organisation id
-        in: query
-        name: orgID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Group'
-        description: Group Details
-        required: true
-        x-originalParamName: group
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.Group'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Create a group
-      tags:
-      - Group
-  /api/v1/projects/{projectID}:
-    delete:
-      description: This endpoint deletes a group using its id
-      parameters:
-      - description: Project id
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a group
-      tags:
-      - Group
-    get:
-      description: This endpoint fetches a group by its id
-      parameters:
-      - description: Project id
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.Group'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Get a group
-      tags:
-      - Group
-    put:
-      description: This endpoint updates a group
-      parameters:
-      - description: Project id
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.Group'
-        description: Group Details
-        required: true
-        x-originalParamName: group
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.Group'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Update a group
-      tags:
-      - Group
-  /api/v1/projects/{projectID}/applications:
-    get:
-      description: This fetches all applications
+      description: This endpoint creates an endpoint
       parameters:
       - description: results per page
         in: query
         name: perPage
         schema:
           type: string
-      - description: page number
-        in: query
-        name: page
-        schema:
-          type: string
-      - description: sort order
-        in: query
-        name: sort
-        schema:
-          type: string
-      - description: app title
-        in: query
-        name: q
-        schema:
-          type: string
-      - description: Project id
-        in: path
-        name: projectID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.Endpoint'
+        description: Endpoint Details
         required: true
-        schema:
-          type: string
+        x-originalParamName: endpoint
       responses:
         "200":
           content:
@@ -1510,11 +1112,12 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Get all applications
+      summary: Create an endpoint
       tags:
-      - Application
-    post:
-      description: This endpoint creates an application
+      - Application Endpoints
+  /api/v1/endpoints/{endpointID}:
+    delete:
+      description: This endpoint deletes an endpoint
       parameters:
       - description: Project id
         in: path
@@ -1935,12 +1538,6 @@ paths:
         required: true
         schema:
           type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        schema:
-          type: string
       - description: endpoint id
         in: path
         name: endpointID
@@ -1994,21 +1591,15 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Delete application endpoint
+      summary: Delete endpoint
       tags:
-      - Application Endpoints
+      - Endpoints
     get:
-      description: This endpoint fetches an application endpoint
+      description: This endpoint fetches an endpoint
       parameters:
       - description: Project id
         in: path
         name: projectID
-        required: true
-        schema:
-          type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         schema:
           type: string
@@ -2065,21 +1656,15 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Get application endpoint
+      summary: Get endpoint
       tags:
-      - Application Endpoints
+      - Endpoints
     put:
-      description: This endpoint updates an application endpoint
+      description: This endpoint updates an endpoint
       parameters:
       - description: Project id
         in: path
         name: projectID
-        required: true
-        schema:
-          type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         schema:
           type: string
@@ -2144,83 +1729,10 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Update an application endpoint
+      summary: Update an endpoint
       tags:
-      - Application Endpoints
-  /api/v1/projects/{projectID}/applications/{appID}/endpoints/{endpointID}/expire_secret:
-    put:
-      description: This endpoint expires the current endpoint secret and generates
-        a new one.
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        schema:
-          type: string
-      - description: application id
-        in: path
-        name: appID
-        required: true
-        schema:
-          type: string
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.Endpoint'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Expire and generate new application endpoint secret
-      tags:
-      - Application Endpoints
-  /api/v1/projects/{projectID}/eventdeliveries:
+      - Endpoints
+  /api/v1/eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
       parameters:
@@ -3183,20 +2695,14 @@ paths:
       summary: Replay app event
       tags:
       - Events
-  /api/v1/projects/{projectID}/security/applications/{appID}/keys:
+  /api/v1/security/endpoints/{endpointID}/keys:
     post:
-      description: This endpoint creates an api key that will be used by app portal
-        or the cli
+      description: This endpoint creates an api key that will be used by endpoint
+        portal or the cli
       parameters:
-      - description: Project id
+      - description: Endpoint ID
         in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      - description: application ID
-        in: path
-        name: appID
+        name: endpointID
         required: true
         schema:
           type: string
@@ -3255,7 +2761,7 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Create an api key for app portal or the cli (API)
+      summary: Create an api key for endpoint portal or the cli (API)
       tags:
       - APIKey
   /api/v1/projects/{projectID}/sources:
@@ -5332,10 +4838,10 @@ paths:
       - ApiKeyAuth: []
       summary: Create an api key for app portal or the cli (UI)
       tags:
-      - APIKey
-  /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys/{keyID}/revoke:
+      - Group
+  /ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys/{keyID}/revoke:
     put:
-      description: This endpoint revokes app's an api key
+      description: This endpoint revokes endpoint's an api key
       parameters:
       - description: Organisation id
         in: path
@@ -5349,9 +4855,9 @@ paths:
         required: true
         schema:
           type: string
-      - description: application id
+      - description: Endpoint id
         in: path
-        name: appID
+        name: endpointID
         required: true
         schema:
           type: string
@@ -5408,7 +4914,7 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Revoke an App's API Key
+      summary: Revoke an Endpoint's API Key
       tags:
       - APIKey
   /ui/organisations/{orgID}/invites:
@@ -5972,9 +5478,9 @@ paths:
       summary: Update an organisation's member
       tags:
       - Organisation
-  /ui/organisations/{orgID}/security/applications/{appID}/keys:
+  /ui/organisations/{orgID}/security/endpoints/{endpointID}/keys:
     get:
-      description: This endpoint fetches multiple api keys belonging to an app
+      description: This endpoint fetches multiple api keys belonging to an endpoint
       parameters:
       - description: Organisation id
         in: path
@@ -5982,9 +5488,9 @@ paths:
         required: true
         schema:
           type: string
-      - description: application ID
+      - description: Endpoint ID
         in: path
-        name: appID
+        name: endpointID
         required: true
         schema:
           type: string
@@ -6035,7 +5541,7 @@ paths:
           description: Internal Server Error
       security:
       - ApiKeyAuth: []
-      summary: Fetch multiple api keys belonging to an app
+      summary: Fetch multiple api keys belonging to an endpoint
       tags:
       - APIKey
   /ui/organisations/{orgID}/security/keys:

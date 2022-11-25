@@ -12,7 +12,7 @@ export class AppService {
 	getSubscriptions(token: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({ url: '/subscriptions', method: 'get', token });
+				const response = await this.http.request({ url: `/subscriptions?token=${token}`, method: 'get', token });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -23,7 +23,7 @@ export class AppService {
 	deleteSubscription(token: string, subscriptionId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({ url: `/subscriptions/${subscriptionId}`, method: 'delete', token });
+				const response = await this.http.request({ url: `/subscriptions/${subscriptionId}?token=${token}`, method: 'delete', token });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -49,7 +49,7 @@ export class AppService {
 			);
 
 			try {
-				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, token: token, hideNotification: true });
+				const response: any = await this.http.request({ url: `/flags?token=${token}`, method: 'post', body: { requests }, token: token, hideNotification: true });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -71,7 +71,7 @@ export class AppService {
 	getProjectDetails(token: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({ url: `/project`, method: 'get', token });
+				const response = await this.http.request({ url: `/project?token=${token}`, method: 'get', token });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

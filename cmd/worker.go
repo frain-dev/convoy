@@ -54,7 +54,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			// register worker.
 			consumer := worker.NewConsumer(a.queue, lo)
 
-			appRepo := cm.NewApplicationRepo(a.store)
+			endpointRepo := cm.NewEndpointRepo(a.store)
 			eventRepo := cm.NewEventRepository(a.store)
 			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
 			groupRepo := cm.NewGroupRepo(a.store)
@@ -63,7 +63,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			configRepo := cm.NewConfigRepo(a.store)
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-				appRepo,
+				endpointRepo,
 				eventDeliveryRepo,
 				groupRepo,
 				a.limiter,
@@ -71,7 +71,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.queue))
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-				appRepo,
+				endpointRepo,
 				eventRepo,
 				groupRepo,
 				eventDeliveryRepo,
@@ -94,7 +94,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.queue))
 
 			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
-				appRepo))
+				endpointRepo))
 
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))

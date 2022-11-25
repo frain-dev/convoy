@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
@@ -11,12 +12,13 @@ import { ButtonComponent } from '../button/button.component';
 })
 export class CopyButtonComponent implements OnInit {
 	@Input('text') textToCopy!: string;
+	@Input('notificationText') notificationText!: string;
 	@Input('size') size: 'sm' | 'md' = 'sm';
 	@Input('className') class!: string;
 	@Output('copyText') copy = new EventEmitter();
 	textCopied = false;
 
-	constructor() {}
+	constructor(private generalService: GeneralService) {}
 
 	ngOnInit(): void {}
 
@@ -35,5 +37,6 @@ export class CopyButtonComponent implements OnInit {
 			this.textCopied = false;
 		}, 2000);
 		document.body.removeChild(el);
+		if (this.notificationText) this.generalService.showNotification({ message: this.notificationText, style: 'info' });
 	}
 }
