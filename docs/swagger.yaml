@@ -1334,7 +1334,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/..pagedResponse'
+                  - $ref: '#/definitions/github.com_frain-dev_convoy_server.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -1349,7 +1349,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1358,7 +1358,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1367,7 +1367,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1409,7 +1409,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1418,7 +1418,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1427,7 +1427,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1460,7 +1460,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "400":
           description: Bad Request
@@ -1469,7 +1469,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1478,7 +1478,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1487,7 +1487,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1528,7 +1528,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1537,7 +1537,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1546,7 +1546,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1593,7 +1593,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1602,7 +1602,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1611,7 +1611,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1655,7 +1655,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1664,7 +1664,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1673,7 +1673,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1720,7 +1720,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1729,7 +1729,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1738,7 +1738,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1776,7 +1776,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "400":
           description: Bad Request
@@ -1785,7 +1785,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1794,7 +1794,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1803,7 +1803,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1849,7 +1849,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1858,7 +1858,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1867,7 +1867,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1919,7 +1919,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1928,7 +1928,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1937,7 +1937,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1985,7 +1985,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1994,7 +1994,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2003,7 +2003,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2213,7 +2213,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2222,7 +2222,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2231,7 +2231,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2278,7 +2278,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2287,7 +2287,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2296,7 +2296,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2980,7 +2980,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/github.com_frain-dev_convoy_server.pagedResponse'
+                  - $ref: '#/definitions/..pagedResponse'
                   - properties:
                       content:
                         items:
@@ -2995,7 +2995,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3004,7 +3004,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3013,7 +3013,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3055,7 +3055,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3064,7 +3064,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3073,7 +3073,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3106,7 +3106,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "400":
           description: Bad Request
@@ -3115,7 +3115,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3124,7 +3124,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3133,7 +3133,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3174,7 +3174,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3183,7 +3183,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3192,7 +3192,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3239,7 +3239,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3248,7 +3248,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3257,7 +3257,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3747,7 +3747,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/..pagedResponse'
+                  - $ref: '#/definitions/github.com_frain-dev_convoy_server.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -3762,7 +3762,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3771,7 +3771,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3780,7 +3780,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3818,7 +3818,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3827,7 +3827,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3836,7 +3836,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       summary: Login a user
       tags:
@@ -3856,7 +3856,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "400":
           description: Bad Request
@@ -3865,7 +3865,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3874,7 +3874,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3883,7 +3883,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3921,7 +3921,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3930,7 +3930,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3939,7 +3939,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       summary: Registers a user
       tags:
@@ -3975,7 +3975,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3984,7 +3984,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3993,7 +3993,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       summary: Refresh an access token
       tags:
@@ -4466,7 +4466,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "400":
           description: Bad Request
@@ -4475,7 +4475,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4484,7 +4484,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4493,7 +4493,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4535,7 +4535,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4544,7 +4544,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4553,7 +4553,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4586,7 +4586,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "400":
           description: Bad Request
@@ -4595,7 +4595,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4604,7 +4604,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4613,7 +4613,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4653,7 +4653,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "400":
           description: Bad Request
@@ -4662,7 +4662,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4671,7 +4671,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4680,7 +4680,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4721,7 +4721,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/..pagedResponse'
+                  - $ref: '#/definitions/github.com_frain-dev_convoy_server.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -4736,7 +4736,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4745,7 +4745,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4754,7 +4754,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4787,7 +4787,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "400":
           description: Bad Request
@@ -4796,7 +4796,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4805,7 +4805,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4814,7 +4814,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4855,7 +4855,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4864,7 +4864,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4873,7 +4873,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4920,7 +4920,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4929,7 +4929,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4938,7 +4938,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -5354,7 +5354,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "400":
           description: Bad Request
@@ -5363,7 +5363,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -5372,7 +5372,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -5381,7 +5381,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -5424,7 +5424,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -5433,7 +5433,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -5442,7 +5442,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -5479,7 +5479,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -5488,7 +5488,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -5497,7 +5497,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -5539,7 +5539,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -5548,7 +5548,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -5557,7 +5557,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -5794,7 +5794,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -5803,7 +5803,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -5812,7 +5812,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       summary: Send password reset token
       tags:
@@ -5853,7 +5853,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -5862,7 +5862,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -5871,7 +5871,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/..Stub'
+                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
               type: object
       summary: Reset user password
       tags:
@@ -5906,7 +5906,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "401":
           description: Unauthorized
@@ -5915,7 +5915,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -5924,7 +5924,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github.com_frain-dev_convoy_server.Stub'
+                  $ref: '#/definitions/..Stub'
               type: object
       security:
       - ApiKeyAuth: []

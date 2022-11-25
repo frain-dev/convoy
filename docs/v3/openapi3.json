@@ -2150,7 +2150,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/..pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -2185,7 +2185,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2207,7 +2207,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2229,7 +2229,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2310,7 +2310,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2332,7 +2332,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2354,7 +2354,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2412,7 +2412,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2434,7 +2434,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2456,7 +2456,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2478,7 +2478,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2556,7 +2556,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2578,7 +2578,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2600,7 +2600,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2690,7 +2690,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2712,7 +2712,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2734,7 +2734,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2817,7 +2817,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2839,7 +2839,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2861,7 +2861,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2951,7 +2951,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2973,7 +2973,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -2995,7 +2995,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3062,7 +3062,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3084,7 +3084,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3106,7 +3106,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3128,7 +3128,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3215,7 +3215,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3237,7 +3237,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3259,7 +3259,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3358,7 +3358,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3380,7 +3380,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3402,7 +3402,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3491,7 +3491,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3513,7 +3513,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -3535,7 +3535,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -4422,7 +4422,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4444,7 +4444,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4466,7 +4466,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4555,7 +4555,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4577,7 +4577,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -4599,7 +4599,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5553,7 +5553,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
+															"$ref": "#/components/schemas/..pagedResponse"
 														},
 														{
 															"properties": {
@@ -5588,7 +5588,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5610,7 +5610,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5632,7 +5632,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5713,7 +5713,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5735,7 +5735,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5757,7 +5757,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5815,7 +5815,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5837,7 +5837,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5859,7 +5859,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5881,7 +5881,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5959,7 +5959,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -5981,7 +5981,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6003,7 +6003,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6093,7 +6093,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6115,7 +6115,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -6137,7 +6137,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7142,7 +7142,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/..pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -7177,7 +7177,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7199,7 +7199,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7221,7 +7221,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7293,7 +7293,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7315,7 +7315,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7337,7 +7337,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7370,7 +7370,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7392,7 +7392,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7414,7 +7414,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7436,7 +7436,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7508,7 +7508,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7530,7 +7530,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7552,7 +7552,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7619,7 +7619,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7641,7 +7641,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7663,7 +7663,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -7727,7 +7727,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7749,7 +7749,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7771,7 +7771,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -7793,7 +7793,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8760,7 +8760,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8782,7 +8782,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8804,7 +8804,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8826,7 +8826,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8899,7 +8899,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8921,7 +8921,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8943,7 +8943,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -8965,7 +8965,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9045,7 +9045,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9067,7 +9067,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9089,7 +9089,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9147,7 +9147,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9169,7 +9169,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9191,7 +9191,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9213,7 +9213,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -9288,7 +9288,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/..pagedResponse"
+															"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.pagedResponse"
 														},
 														{
 															"properties": {
@@ -9323,7 +9323,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9345,7 +9345,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9367,7 +9367,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9425,7 +9425,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9447,7 +9447,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9469,7 +9469,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9491,7 +9491,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9569,7 +9569,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9591,7 +9591,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9613,7 +9613,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9703,7 +9703,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9725,7 +9725,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -9747,7 +9747,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10600,7 +10600,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10622,7 +10622,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10644,7 +10644,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10722,7 +10722,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10744,7 +10744,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10766,7 +10766,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10832,7 +10832,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10854,7 +10854,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10876,7 +10876,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
+													"$ref": "#/components/schemas/..Stub"
 												}
 											},
 											"type": "object"
@@ -10959,7 +10959,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -10981,7 +10981,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11003,7 +11003,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11074,7 +11074,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11096,7 +11096,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11118,7 +11118,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11199,7 +11199,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11221,7 +11221,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
@@ -11243,7 +11243,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/..Stub"
+													"$ref": "#/components/schemas/github.com_frain-dev_convoy_server.Stub"
 												}
 											},
 											"type": "object"
