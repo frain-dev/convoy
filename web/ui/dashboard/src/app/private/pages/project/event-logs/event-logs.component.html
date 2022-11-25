@@ -164,8 +164,8 @@
 
 					<div class="mt-30px italic w-full text-grey-20" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0">...no event deliveries for this event</div>
 
-					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0">
-						<li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['../events/event-deliveries/' + delivery.uid]" [relativeTo]="route" class="cursor-pointer flex !justify-start">
+					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0" class="-ml-10px">
+						<li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['../events/event-deliveries/' + delivery.uid]" [relativeTo]="route" class="cursor-pointer flex !justify-start mb-10px hover:bg-primary-500 p-10px rounded-4px transition-colors">
 							<div class="flex items-center">
 								<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
 									<use xlink:href="#cli-icon"></use>
