@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
@@ -94,7 +93,6 @@ func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.
 	configService := createConfigService(a)
 	config, err := configService.UpdateConfiguration(r.Context(), &newConfig)
 	if err != nil {
-		log.Println(err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

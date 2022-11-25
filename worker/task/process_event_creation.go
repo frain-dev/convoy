@@ -11,11 +11,12 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -25,6 +26,11 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 		err := json.Unmarshal(t.Payload(), &event)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
+		}
+
+		err = eventRepo.CreateEvent(ctx, &event)
+		if err != nil {
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		var group *datastore.Group
@@ -93,11 +99,6 @@ func ProcessEventCreation(appRepo datastore.ApplicationRepository, eventRepo dat
 		}
 
 		event.MatchedEndpoints = len(subscriptions)
-		err = eventRepo.CreateEvent(ctx, &event)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-
 		ec := &EventDeliveryConfig{group: group}
 
 		for _, s := range subscriptions {

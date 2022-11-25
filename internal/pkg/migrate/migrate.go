@@ -6,7 +6,8 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )

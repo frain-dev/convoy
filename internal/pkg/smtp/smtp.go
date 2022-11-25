@@ -6,8 +6,9 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	log "github.com/sirupsen/logrus"
+
 	"gopkg.in/gomail.v2"
 )
 

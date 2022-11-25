@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/frain-dev/convoy/config"

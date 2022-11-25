@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
@@ -69,7 +71,7 @@ func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 
 	apps, paginationData, err := appService.LoadApplicationsPaged(r.Context(), group.UID, q, pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load apps")
+		log.FromContext(r.Context()).WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
 		return
 	}
