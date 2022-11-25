@@ -52,7 +52,8 @@ func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.R
 	if ok := contains(redirectRoutes, resourcePrefix); ok {
 		forwardedPath := strings.Join(rElems[3:], "/")
 		redirectPrefix := fmt.Sprintf("/api/v1/projects/%s/", groupID)
-		redirectURL := redirectPrefix + forwardedPath
+		query := "?" + r.URL.RawQuery
+		redirectURL := redirectPrefix + forwardedPath + query
 
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	}
