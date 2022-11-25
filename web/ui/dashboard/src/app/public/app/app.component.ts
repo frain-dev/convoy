@@ -64,7 +64,8 @@ export class AppComponent implements OnInit {
 
 	async checkFlags() {
 		this.isCliAvailable = await this.appService.getFlag('can_create_cli_api_key', this.token);
-		if (this.isCliAvailable) this.tabs.push('cli keys', 'devices');
+        // hide cli and devices
+		// if (this.isCliAvailable) this.tabs.push('cli keys', 'devices');
 	}
 
 	async getSubscripions() {

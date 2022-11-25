@@ -1,5 +1,5 @@
 <convoy-page>
-	<h2 class="font-semibold mb-20px">App Portal</h2>
+	<!-- <h2 class="font-semibold mb-20px">App Portal</h2> -->
 
 	<convoy-card className="mt-24px">
 		<div class="flex items-center justify-center">
@@ -88,13 +88,14 @@
 		</ng-container>
 	</convoy-card>
 
-	<ng-container *ngIf="activeTab === 'cli keys'">
+    <!-- hide cli and devices  -->
+	<!-- <ng-container *ngIf="activeTab === 'cli keys'">
 		<convoy-cli-keys (cliError)="showCliError = $event"></convoy-cli-keys>
 	</ng-container>
 
 	<ng-container *ngIf="activeTab === 'devices'">
 		<convoy-devices></convoy-devices>
-	</ng-container>
+	</ng-container> -->
 
 	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
 		<div class="flex items-center justify-center">
