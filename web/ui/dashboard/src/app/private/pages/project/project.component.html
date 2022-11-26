@@ -11,9 +11,9 @@
 
 		<nav class="pl-8px pr-24px">
 			<convoy-skeleton-loader className="w-132px h-22px mb-20px" *ngIf="!projectDetails"></convoy-skeleton-loader>
-			<convoy-tag className="mb-20px w-full bg-primary-500 flex items-center" *ngIf="projectDetails">
-				{{ projectDetails.type }} project
-				<convoy-tooltip position="right" class="block ml-10px" size="sm" type="white">{{ projectDetails.type == 'incoming' ? 'This project is for recieving events' : 'This project is for sending out events' }}</convoy-tooltip>
+			<convoy-tag [className]="shouldShowFullSideBar ? 'bg-primary-500 mb-20px w-fit flex items-center' : '!bg-transparent justify-center mb-20px !w-full flex'" *ngIf="projectDetails">
+				<span *ngIf="shouldShowFullSideBar">{{ projectDetails.type }} project</span>
+				<convoy-tooltip position="right" class="block" [ngClass]="{'ml-10px': shouldShowFullSideBar}" size="sm" type="white">{{ projectDetails.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}</convoy-tooltip>
 			</convoy-tag>
 
 			<div *ngIf="!projectDetails">
