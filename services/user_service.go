@@ -290,7 +290,10 @@ func (u *UserService) token() (*jwt.Jwt, error) {
 }
 
 func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, user *datastore.User) (*datastore.User, error) {
+	fmt.Println("1111")
 	if !user.EmailVerified {
+		fmt.Println("222")
+
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("email has not been verified"))
 	}
 

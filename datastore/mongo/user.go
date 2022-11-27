@@ -88,6 +88,7 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 		primitive.E{Key: "last_name", Value: user.LastName},
 		primitive.E{Key: "email", Value: user.Email},
 		primitive.E{Key: "password", Value: user.Password},
+		primitive.E{Key: "email_verified", Value: user.EmailVerified},
 		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
 		primitive.E{Key: "reset_password_token", Value: user.ResetPasswordToken},
 		primitive.E{Key: "reset_password_expires_at", Value: user.ResetPasswordExpiresAt},

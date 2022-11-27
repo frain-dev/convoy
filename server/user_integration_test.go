@@ -93,12 +93,6 @@ func (u *UserIntegrationTestSuite) Test_LoginUser() {
 	require.Equal(u.T(), user.FirstName, response.FirstName)
 	require.Equal(u.T(), user.LastName, response.LastName)
 	require.Equal(u.T(), user.Email, response.Email)
-
-	dbUser, err := cm.NewUserRepo(u.ConvoyApp.A.Store).FindUserByID(context.Background(), response.UID)
-	require.NoError(u.T(), err)
-	require.False(u.T(), dbUser.EmailVerified)
-	require.NotEmpty(u.T(), dbUser.EmailVerificationToken)
-	require.NotEmpty(u.T(), dbUser.EmailVerificationExpiresAt)
 }
 
 func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
@@ -182,6 +176,12 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 	require.Equal(u.T(), r.FirstName, response.FirstName)
 	require.Equal(u.T(), r.LastName, response.LastName)
 	require.Equal(u.T(), r.Email, response.Email)
+
+	dbUser, err := cm.NewUserRepo(u.ConvoyApp.A.Store).FindUserByID(context.Background(), response.UID)
+	require.NoError(u.T(), err)
+	require.False(u.T(), dbUser.EmailVerified)
+	require.NotEmpty(u.T(), dbUser.EmailVerificationToken)
+	require.NotEmpty(u.T(), dbUser.EmailVerificationExpiresAt)
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
@@ -431,8 +431,8 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
 	user.EmailVerified = true
-
 	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+
 	err := userRepo.UpdateUser(context.Background(), user)
 	require.NoError(u.T(), err)
 
