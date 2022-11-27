@@ -198,9 +198,9 @@ func (u *UserService) sendUserVerificationEmail(ctx context.Context, baseURL str
 	em := email.Message{
 		Email:        user.Email,
 		Subject:      "Convoy Email Verification",
-		TemplateName: email.TemplateResetPassword,
+		TemplateName: email.TemplateEmailVerification,
 		Params: map[string]string{
-			"email_verification_url": fmt.Sprintf("%s/verify_email?token=%s", baseURL, user.EmailVerificationToken),
+			"email_verification_url": fmt.Sprintf("%s/ui/users/verify_email?token=%s", baseURL, user.EmailVerificationToken),
 			"recipient_name":         user.FirstName,
 			"expires_at":             user.ResetPasswordExpiresAt.Time().String(),
 		},

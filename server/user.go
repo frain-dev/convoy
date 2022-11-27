@@ -282,18 +282,20 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Param email body models.ForgotPassword true "Forgot Password Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Param token query true "Email verification token"
+// @Success 200 {object} util.ServerResponse{data=datastore.Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Router /ui/users/forgot-password [post]
 func (a *ApplicationHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	userService := createUserService(a)
+
 	err := userService.VerifyEmail(r.Context(), r.URL.Query().Get("token"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent succesfully", nil, http.StatusOK))
+
+	_ = render.Render(w, r, util.NewServerResponse("Email has been verified successfully", nil, http.StatusOK))
 }
 
 // ResetPassword

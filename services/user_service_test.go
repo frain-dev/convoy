@@ -516,7 +516,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 			name: "should_update_user",
 			args: args{
 				ctx:  ctx,
-				user: &datastore.User{UID: "123456"},
+				user: &datastore.User{UID: "123456", EmailVerified: true},
 				update: &models.UpdateUser{
 					FirstName: "update_user_test",
 					LastName:  "update_user_test",
@@ -533,12 +533,28 @@ func TestUserService_UpdateUser(t *testing.T) {
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
+		{
+			name: "should_error_for_use_email_not_verified",
+			args: args{
+				ctx:  ctx,
+				user: &datastore.User{UID: "123456", EmailVerified: false},
+				update: &models.UpdateUser{
+					FirstName: "update_user_test",
+					LastName:  "update_user_test",
+					Email:     "test@update.com",
+				},
+			},
+			dbFn:        func(u *UserService) {},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "email has not been verified",
+		},
 
 		{
 			name: "should_fail_to_update_user",
 			args: args{
 				ctx:  ctx,
-				user: &datastore.User{UID: "123456"},
+				user: &datastore.User{UID: "123456", EmailVerified: true},
 				update: &models.UpdateUser{
 					FirstName: "update_user_test",
 					LastName:  "update_user_test",
