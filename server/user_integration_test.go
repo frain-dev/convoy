@@ -430,6 +430,12 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
+	user.EmailVerified = true
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
+
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
 
@@ -459,7 +465,6 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 
-	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
 	dbUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 
 	require.Equal(u.T(), dbUser.UID, response.UID)
@@ -471,6 +476,12 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
+
+	user.EmailVerified = true
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -499,7 +510,6 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 
-	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
 	dbUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 
 	p := datastore.Password{Plaintext: newPassword, Hash: []byte(dbUser.Password)}
@@ -514,6 +524,12 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
+
+	user.EmailVerified = true
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -541,6 +557,12 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password(
 func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirmation() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
+
+	user.EmailVerified = true
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
