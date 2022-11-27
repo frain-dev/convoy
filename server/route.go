@@ -483,7 +483,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 	})
 
 	// App Portal API.
-	router.Route("/portal", func(portalRouter chi.Router) {
+	router.Route("/portal-api", func(portalRouter chi.Router) {
 		portalRouter.Use(a.M.JsonResponse)
 		portalRouter.Use(a.M.SetupCORS)
 		portalRouter.Use(a.M.RequirePortalLink())
