@@ -92,6 +92,8 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
 		primitive.E{Key: "reset_password_token", Value: user.ResetPasswordToken},
 		primitive.E{Key: "reset_password_expires_at", Value: user.ResetPasswordExpiresAt},
+		primitive.E{Key: "email_verification_token", Value: user.EmailVerificationToken},
+		primitive.E{Key: "email_verification_expires_at", Value: user.EmailVerificationExpiresAt},
 	}
 
 	err := u.store.UpdateByID(ctx, user.UID, bson.M{"$set": update})
