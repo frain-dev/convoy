@@ -67,10 +67,6 @@ export class SourcesComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.projectId + '/sources');
 	}
 
-	copyText(sourceName: string) {
-		this.generalService.showNotification({ message: `${sourceName} has been copied to clipboard`, style: 'info' });
-	}
-
 	isDateBefore(date1?: Date, date2?: Date): boolean {
 		if (date1 && date2) return date1 > date2;
 		return false;

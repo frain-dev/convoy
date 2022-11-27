@@ -32,7 +32,7 @@
 
 				<div convoy-dropdown size="xl" #organisationDropdown>
 					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
-						<convoy-badge *ngIf="organisations?.length" className="mr-8px" [text]="userOrganization.name"></convoy-badge>
+						<convoy-badge *ngIf="organisations?.length" className="mr-8px" [text]="userOrganization?.name || ''"></convoy-badge>
 
 						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 					</button>

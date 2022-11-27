@@ -5,7 +5,8 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 

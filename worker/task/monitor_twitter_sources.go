@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -19,7 +19,7 @@ import (
 func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(context.Context, *asynq.Task) error {
 	sourceRepo := mongo.NewSourceRepo(store)
 	subRepo := mongo.NewSubscriptionRepo(store)
-	appRepo := mongo.NewApplicationRepo(store)
+	endpointRepo := mongo.NewEndpointRepo(store)
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{Page: 1, PerPage: 100}
@@ -46,7 +46,7 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 					}
 
 					for _, s := range subscriptions {
-						app, err := appRepo.FindApplicationByID(ctx, s.AppID)
+						app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
 						if err != nil {
 							log.Error("Failed to load sources paged")
 							return err
@@ -67,9 +67,9 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 	}
 }
 
-func sendNotificationEmail(source datastore.Source, app *datastore.Application, q queue.Queuer) error {
+func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint, q queue.Queuer) error {
 	em := email.Message{
-		Email:        app.SupportEmail,
+		Email:        endpoint.SupportEmail,
 		Subject:      "Twitter Custom Source",
 		TemplateName: email.TemplateTwitterSource,
 		Params: map[string]string{

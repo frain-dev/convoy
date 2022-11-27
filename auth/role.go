@@ -7,9 +7,9 @@ import (
 // Role represents the permission a user is given, if the Type is RoleSuperUser,
 // Then the user will have access to everything regardless of the value of Group.
 type Role struct {
-	Type  RoleType `json:"type"`
-	Group string   `json:"group"`
-	App   string   `json:"app,omitempty"`
+	Type     RoleType `json:"type"`
+	Group    string   `json:"group"`
+	Endpoint string   `json:"endpoint,omitempty"`
 }
 
 type RoleType string
@@ -33,8 +33,8 @@ func (r *Role) HasGroup(groupID string) bool {
 	return r.Group == groupID
 }
 
-func (r *Role) HasApp(appID string) bool {
-	return r.App == appID
+func (r *Role) HasEndpoint(endpointID string) bool {
+	return r.Endpoint == endpointID
 }
 
 func (r RoleType) String() string {

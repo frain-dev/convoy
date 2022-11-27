@@ -11,10 +11,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 )
 
 type IsEnabledFunc func(r *http.Request) error
@@ -52,7 +52,7 @@ var Features = map[string]IsEnabledFunc{
 			return nil
 		}
 
-		var apiKey models.CreateAppApiKey
+		var apiKey models.CreateEndpointApiKey
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return err

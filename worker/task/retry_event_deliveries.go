@@ -9,10 +9,10 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
-	log "github.com/sirupsen/logrus"
 )
 
 func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, store datastore.Store, eventQueue queue.Queuer) {
@@ -69,7 +69,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", "", "", []datastore.EventDeliveryStatus{status}, searchParams, pageable)
+			deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable)
 			if err != nil {
 				log.WithError(err).Errorf("successfully fetched %d event deliveries, encountered error fetching page %d", count, pageable.Page)
 				close(deliveryChan)

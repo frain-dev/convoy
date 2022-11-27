@@ -17,6 +17,7 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 @NgModule({
 	declarations: [EventDeliveriesComponent],
@@ -43,7 +44,8 @@ import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.
 		TableComponent,
 		TimePickerComponent,
 		DatePickerComponent,
-		DropdownOptionDirective
+		DropdownOptionDirective,
+		TooltipComponent
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]

@@ -42,7 +42,7 @@
 						"styles": ["src/styles.scss"],
 						"scripts": [],
 						"preserveSymlinks": true,
-						"allowedCommonJsDependencies": ["prismjs"]
+						"allowedCommonJsDependencies": ["prismjs", "monaco-editor"]
 					},
 					"configurations": {
 						"production": {

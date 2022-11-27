@@ -27,9 +27,19 @@ export class ProjectComponent implements OnInit {
 			route: '/subscriptions'
 		},
 		{
-			name: 'Apps',
-			icon: 'apps',
-			route: '/apps'
+			name: 'Endpoints',
+			icon: 'endpoint',
+			route: '/endpoints'
+		},
+		{
+			name: 'Portal Links',
+			icon: 'portal',
+			route: '/portal-links'
+		},
+		{
+			name: 'Events Log',
+			icon: 'logs',
+			route: '/event-logs'
 		}
 	];
 	shouldShowFullSideBar = true;
@@ -56,6 +66,7 @@ export class ProjectComponent implements OnInit {
 			this.projectDetails = projectDetails.data;
 			localStorage.setItem('PROJECT_CONFIG', JSON.stringify(projectDetails.data?.config));
 			if (this.projectDetails.type === 'outgoing') this.sideBarItems.splice(1, 1);
+			if (this.projectDetails.type === 'incoming') this.sideBarItems.splice(4, 1);
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
@@ -83,5 +94,12 @@ export class ProjectComponent implements OnInit {
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
 		this.checkScreenSize();
+	}
+
+	isStrokeIcon(icon: string): boolean {
+		const menuIcons = ['subscriptions', 'portal', 'logs'];
+		const checkForStrokeIcon = menuIcons.some(menuIcon => icon.includes(menuIcon));
+
+		return checkForStrokeIcon;
 	}
 }

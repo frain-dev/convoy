@@ -3,7 +3,7 @@ package objectstore
 import (
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type OnPremClient struct {

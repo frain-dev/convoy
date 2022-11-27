@@ -10,10 +10,10 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {

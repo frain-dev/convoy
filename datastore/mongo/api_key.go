@@ -121,8 +121,8 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 		filter["role.group"] = f.GroupID
 	}
 
-	if !util.IsStringEmpty(f.AppID) {
-		filter["role.app"] = f.AppID
+	if !util.IsStringEmpty(f.EndpointID) {
+		filter["role.endpoint"] = f.EndpointID
 	}
 
 	if !util.IsStringEmpty(string(f.KeyType)) {
@@ -131,6 +131,10 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 
 	if !util.IsStringEmpty(f.UserID) {
 		filter["user_id"] = f.UserID
+	}
+
+	if len(f.EndpointIDs) > 0 {
+		filter["role.endpoint"] = bson.M{"$in": f.EndpointIDs}
 	}
 
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,

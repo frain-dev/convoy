@@ -8,11 +8,26 @@
 				<use xlink:href="#sidebar-icon-2"></use>
 			</svg>
 		</button>
+
 		<nav class="pl-8px pr-24px">
-			<ul>
+			<convoy-skeleton-loader className="w-132px h-22px mb-20px" *ngIf="!projectDetails"></convoy-skeleton-loader>
+			<convoy-tag [className]="shouldShowFullSideBar ? 'bg-primary-500 mb-20px w-fit flex items-center' : '!bg-transparent justify-center mb-20px !w-full flex'" *ngIf="projectDetails">
+				<span *ngIf="shouldShowFullSideBar">{{ projectDetails.type }} project</span>
+				<convoy-tooltip position="right" class="block" [ngClass]="{'ml-10px': shouldShowFullSideBar}" size="sm" type="white">{{ projectDetails.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}</convoy-tooltip>
+			</convoy-tag>
+
+			<div *ngIf="!projectDetails">
+				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
+			</div>
+
+			<ul *ngIf="projectDetails">
 				<li [class]="shouldShowFullSideBar ? 'w-182px' : 'w-66px'" *ngFor="let nav of sideBarItems" class="transition-all duration-200">
-					<a [routerLink]="'.' + nav.route" routerLinkActive="bg-primary-500 text-primary-100" #route="routerLinkActive" class="flex items-center text-grey-40 py-2 pl-6 my-2 rounded-8px transition-all duration-200">
-						<svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="nav.icon == 'subscriptions' ? (route.isActive ? 'stroke-primary-100' : 'stroke-grey-40') : route.isActive ? 'fill-primary-100' : 'fill-grey-40'" [id]="nav.icon">
+					<a [routerLink]="'.' + nav.route" routerLinkActive="bg-primary-500 text-primary-100" #route="routerLinkActive" class="flex items-center text-grey-40 py-2 pl-6 my-2 rounded-8px transition-all duration-200 font-bold">
+						<svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="isStrokeIcon(nav.icon) ? (route.isActive ? 'stroke-primary-100' : 'stroke-grey-40') : route.isActive ? 'fill-primary-100' : 'fill-grey-40'" [id]="nav.icon">
 							<use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
 						</svg>
 						<span class="font-medium text-14 transition-all duration-200" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">{{ nav.name }}</span>
@@ -20,7 +35,8 @@
 				</li>
 			</ul>
 		</nav>
-		<div class="mt-358px border-t border-t-grey-10 pt-16px">
+
+		<div class="mt-258px border-t border-t-grey-10 pt-16px">
 			<ul class="pl-8px pr-24px">
 				<li class="relative">
 					<button class="flex items-center text-grey-40 py-8px pl-24px my-8px rounded-8px transition-all duration-200 w-full" (click)="showHelpDropdown = !showHelpDropdown">
@@ -100,6 +116,7 @@
 			</ul>
 		</div>
 	</aside>
+
 	<div class="w-full">
 		<convoy-github-star></convoy-github-star>
 

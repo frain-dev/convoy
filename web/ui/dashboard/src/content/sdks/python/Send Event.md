@@ -1,10 +1,10 @@
 ### Sending an Event
 
-To send an event, you'll need the `uid` we created in the earlier section.
+To send an event, you'll need the `uid` of the endpoint we created in the earlier section.
 
 ```python[example]
 eventData = {
-    "app_id": appId,
+    "endpoint_id": endpointId,
     "event_type": "payment.success",
     "data": {
       "event": "payment.success",

@@ -30,9 +30,8 @@ export class OnboardingComponent implements OnInit {
 			currentStage: 'pending'
 		}
 	];
-	showCreateModal = false;
+	showCreateOrganisationModal = false;
 	creatingOrganisation = false;
-	isOrgCreated = false;
 	hasProjects: boolean = true;
 	isloading = false;
 	addOrganisationForm: FormGroup = this.formBuilder.group({
@@ -53,13 +52,13 @@ export class OnboardingComponent implements OnInit {
 			return;
 		}
 		this.creatingOrganisation = true;
+
 		try {
 			const response = await this.privateService.addOrganisation(this.addOrganisationForm.value);
-			this.generalService.showNotification({ style: 'success', message: response.message, type: 'modal' });
+			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.creatingOrganisation = false;
 			location.reload();
-			this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
-			this.showCreateModal = false;
+			this.showCreateOrganisationModal = false;
 		} catch {
 			this.creatingOrganisation = false;
 		}
@@ -72,8 +71,11 @@ export class OnboardingComponent implements OnInit {
 			const organisations = response.data.content;
 			if (organisations?.length) {
 				this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
+				this.isloading = false;
 				return this.getProjects();
 			}
+
+			this.showCreateOrganisationModal = true;
 			this.isloading = false;
 			return;
 		} catch (error) {
@@ -88,12 +90,15 @@ export class OnboardingComponent implements OnInit {
 			const projectsResponse = await this.privateService.getProjects();
 			const projects = projectsResponse.data;
 			this.isloading = false;
+
 			if (projects.length > 0) {
 				this.hasProjects = true;
-				this.router.navigateByUrl('/projects');
+				return this.router.navigateByUrl('/projects');
 			}
+
 			this.hasProjects = false;
 		} catch (error) {
+			this.hasProjects = false;
 			this.isloading = false;
 			return error;
 		}

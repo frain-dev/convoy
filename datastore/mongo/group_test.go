@@ -181,28 +181,28 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	err = groupRepo.CreateGroup(context.Background(), group2)
 	require.NoError(t, err)
 
-	app1 := &datastore.Application{
+	endpoint1 := &datastore.Endpoint{
 		UID:     uuid.NewString(),
 		GroupID: group1.UID,
 	}
 
-	app2 := &datastore.Application{
+	endpoint2 := &datastore.Endpoint{
 		UID:     uuid.NewString(),
 		GroupID: group2.UID,
 	}
 
-	appRepo := NewApplicationRepo(getStore(db))
-	appCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.AppCollection)
-	err = appRepo.CreateApplication(appCtx, app1, group1.UID)
+	endpointRepo := NewEndpointRepo(getStore(db))
+	endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+	err = endpointRepo.CreateEndpoint(endpointCtx, endpoint1, group1.UID)
 	require.NoError(t, err)
 
-	err = appRepo.CreateApplication(appCtx, app2, group2.UID)
+	err = endpointRepo.CreateEndpoint(endpointCtx, endpoint2, group2.UID)
 	require.NoError(t, err)
 
 	event := &datastore.Event{
-		UID:     uuid.NewString(),
-		GroupID: app1.GroupID,
-		AppID:   app1.UID,
+		UID:       uuid.NewString(),
+		GroupID:   endpoint1.GroupID,
+		Endpoints: []string{endpoint1.UID},
 	}
 
 	eventCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EventCollection)
@@ -213,15 +213,15 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
 	require.NoError(t, err)
 
-	require.Equal(t, *group1.Statistics, datastore.GroupStatistics{
+	require.Equal(t, datastore.GroupStatistics{
 		GroupID:      group1.UID,
 		MessagesSent: 1,
 		TotalApps:    1,
-	})
+	}, *group1.Statistics)
 
-	require.Equal(t, *group2.Statistics, datastore.GroupStatistics{
+	require.Equal(t, datastore.GroupStatistics{
 		GroupID:      group2.UID,
 		MessagesSent: 0,
 		TotalApps:    1,
-	})
+	}, *group2.Statistics)
 }

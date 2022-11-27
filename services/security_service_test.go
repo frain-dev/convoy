@@ -285,11 +285,11 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 	}
 }
 
-func TestSecurityService_CreateAppAPIKey(t *testing.T) {
+func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx       context.Context
-		newApiKey *models.CreateAppApiKey
+		newApiKey *models.CreateEndpointApiKey
 	}
 	tests := []struct {
 		name          string
@@ -303,24 +303,24 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 		wantErrMsg    string
 	}{
 		{
-			name: "should_create_app_portal_api_key",
+			name: "should_create_portal_api_key",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.CreateAppApiKey{
-					Group:   &datastore.Group{UID: "1234"},
-					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-					KeyType: datastore.AppPortalKey,
-					BaseUrl: "https://getconvoy.io",
-					Name:    "api-key-1",
+				newApiKey: &models.CreateEndpointApiKey{
+					Group:    &datastore.Group{UID: "1234"},
+					Endpoint: &datastore.Endpoint{UID: "abc", GroupID: "1234", Title: "test_endpoint"},
+					KeyType:  datastore.AppPortalKey,
+					BaseUrl:  "https://getconvoy.io",
+					Name:     "api-key-1",
 				},
 			},
 			wantAPIKey: &datastore.APIKey{
 				Name: "api-key-1",
 				Type: datastore.AppPortalKey,
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
-					App:   "abc",
+					Type:     auth.RoleAdmin,
+					Group:    "1234",
+					Endpoint: "abc",
 				},
 				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
 			},
@@ -332,14 +332,13 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 			verifyBaseUrl: true,
 			wantBaseUrl:   "?groupID=1234&appId=abc",
 		},
-
 		{
 			name: "should_create_cli_api_key",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.CreateAppApiKey{
+				newApiKey: &models.CreateEndpointApiKey{
 					Group:      &datastore.Group{UID: "1234"},
-					App:        &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
+					Endpoint:   &datastore.Endpoint{UID: "abc", GroupID: "1234", Title: "test_endpoint"},
 					KeyType:    datastore.CLIKey,
 					BaseUrl:    "https://getconvoy.io",
 					Name:       "api-key-1",
@@ -350,9 +349,9 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 				Name: "api-key-1",
 				Type: datastore.CLIKey,
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
-					App:   "abc",
+					Type:     auth.RoleAdmin,
+					Group:    "1234",
+					Endpoint: "abc",
 				},
 				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 7)),
 			},
@@ -362,28 +361,27 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 					Times(1).Return(nil)
 			},
 		},
-
 		{
-			name: "should_error_for_app_not_belong_to_group_api_key",
+			name: "should_error_for_endpoint_not_belong_to_group_api_key",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.CreateAppApiKey{
-					Group: &datastore.Group{UID: "1234"},
-					App:   &datastore.Application{GroupID: "12345"},
+				newApiKey: &models.CreateEndpointApiKey{
+					Group:    &datastore.Group{UID: "1234"},
+					Endpoint: &datastore.Endpoint{GroupID: "12345"},
 				},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "app does not belong to group",
+			wantErrMsg:  "endpoint does not belong to group",
 		},
 		{
 			name: "should_fail_to_create_app_portal_api_key",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.CreateAppApiKey{
-					Group:   &datastore.Group{UID: "1234"},
-					App:     &datastore.Application{UID: "abc", GroupID: "1234", Title: "test_app"},
-					BaseUrl: "https://getconvoy.io",
+				newApiKey: &models.CreateEndpointApiKey{
+					Group:    &datastore.Group{UID: "1234"},
+					Endpoint: &datastore.Endpoint{UID: "abc", GroupID: "1234", Title: "test_app"},
+					BaseUrl:  "https://getconvoy.io",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
@@ -406,7 +404,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			apiKey, keyString, err := ss.CreateAppAPIKey(tc.args.ctx, tc.args.newApiKey)
+			apiKey, keyString, err := ss.CreateEndpointAPIKey(tc.args.ctx, tc.args.newApiKey)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -426,7 +424,7 @@ func TestSecurityService_CreateAppAPIKey(t *testing.T) {
 			require.Empty(t, apiKey.DeletedAt)
 
 			if tc.verifyBaseUrl {
-				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.newApiKey.Group.UID, tc.args.newApiKey.App.UID))
+				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.newApiKey.Group.UID, tc.args.newApiKey.Endpoint.UID))
 			}
 
 			require.True(t, sameMinute(apiKey.ExpiresAt.Time(), tc.wantAPIKey.ExpiresAt.Time()))
@@ -631,9 +629,9 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:  auth.RoleAPI,
-							Group: "avs",
-							App:   "",
+							Type:     auth.RoleAPI,
+							Group:    "avs",
+							Endpoint: "",
 						},
 					}, nil)
 
@@ -740,9 +738,9 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:  auth.RoleAPI,
-							Group: "avs",
-							App:   "",
+							Type:     auth.RoleAPI,
+							Group:    "avs",
+							Endpoint: "",
 						},
 					}, nil)
 
@@ -818,17 +816,17 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 						{
 							UID: "ref",
 							Role: auth.Role{
-								Type:  auth.RoleAPI,
-								Group: "avs",
-								App:   "",
+								Type:     auth.RoleAPI,
+								Group:    "avs",
+								Endpoint: "",
 							},
 						},
 						{
 							UID: "abc",
 							Role: auth.Role{
-								Type:  auth.RoleAPI,
-								Group: "123",
-								App:   "",
+								Type:     auth.RoleAPI,
+								Group:    "123",
+								Endpoint: "",
 							},
 						},
 					},
@@ -845,17 +843,17 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				{
 					UID: "ref",
 					Role: auth.Role{
-						Type:  auth.RoleAPI,
-						Group: "avs",
-						App:   "",
+						Type:     auth.RoleAPI,
+						Group:    "avs",
+						Endpoint: "",
 					},
 				},
 				{
 					UID: "abc",
 					Role: auth.Role{
-						Type:  auth.RoleAPI,
-						Group: "123",
-						App:   "",
+						Type:     auth.RoleAPI,
+						Group:    "123",
+						Endpoint: "",
 					},
 				},
 			},

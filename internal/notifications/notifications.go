@@ -9,9 +9,9 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	log "github.com/sirupsen/logrus"
 )
 
 type NotificationType string
@@ -38,7 +38,6 @@ type SlackNotification struct {
 // NOTIFICATIONS
 
 func SendEndpointNotification(ctx context.Context,
-	app *datastore.Application,
 	endpoint *datastore.Endpoint,
 	group *datastore.Group,
 	status datastore.SubscriptionStatus,
@@ -50,11 +49,11 @@ func SendEndpointNotification(ctx context.Context,
 ) error {
 	var ns []*Notification
 
-	if !util.IsStringEmpty(app.SupportEmail) {
+	if !util.IsStringEmpty(endpoint.SupportEmail) {
 		ns = append(ns, &Notification{NotificationType: EmailNotificationType})
 	}
 
-	if !util.IsStringEmpty(app.SlackWebhookURL) {
+	if !util.IsStringEmpty(endpoint.SlackWebhookURL) {
 		ns = append(ns, &Notification{NotificationType: SlackNotificationType})
 	}
 
@@ -62,7 +61,7 @@ func SendEndpointNotification(ctx context.Context,
 		switch v.NotificationType {
 		case EmailNotificationType:
 			v.Payload = email.Message{
-				Email:        app.SupportEmail,
+				Email:        endpoint.SupportEmail,
 				Subject:      "Endpoint Status Update",
 				TemplateName: email.TemplateEndpointUpdate,
 				Params: map[string]string{
@@ -77,7 +76,7 @@ func SendEndpointNotification(ctx context.Context,
 
 		case SlackNotificationType:
 			payload := SlackNotification{
-				WebhookURL: app.SlackWebhookURL,
+				WebhookURL: endpoint.SlackWebhookURL,
 			}
 
 			var text string

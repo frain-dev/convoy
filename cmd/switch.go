@@ -8,12 +8,12 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/spf13/cobra"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func addSwitchCommand() *cobra.Command {
 	var appName string
-	var appId string
+	var endpointId string
 
 	cmd := &cobra.Command{
 		Use:               "switch",
@@ -30,65 +30,65 @@ func addSwitchCommand() *cobra.Command {
 				return errors.New("login with your cli token to be able to use the switch command")
 			}
 
-			if util.IsStringEmpty(appName) && util.IsStringEmpty(appId) {
+			if util.IsStringEmpty(appName) && util.IsStringEmpty(endpointId) {
 				return errors.New("one of app name or app id is required")
 			}
 
-			var application *Application
+			var endpoint *Endpoint
 			if !util.IsStringEmpty(appName) {
-				application = FindApplicationByName(c.Applications, appName)
-				if application == nil {
+				endpoint = FindEndpointByName(c.Endpoints, appName)
+				if endpoint == nil {
 					return fmt.Errorf("app with name: %s not found", appName)
 				}
 			}
 
-			if !util.IsStringEmpty(appId) {
-				application = FindApplicationById(c.Applications, appId)
-				if application == nil {
-					return fmt.Errorf("app with id: %s not found", appId)
+			if !util.IsStringEmpty(endpointId) {
+				endpoint = FindEndpointById(c.Endpoints, endpointId)
+				if endpoint == nil {
+					return fmt.Errorf("endpoint with id: %s not found", endpointId)
 				}
 			}
 
-			c.ActiveApplication = application.Name
-			c.ActiveDeviceID = application.DeviceID
-			c.ActiveApiKey = application.ApiKey
+			c.ActiveEndpoint = endpoint.Name
+			c.ActiveDeviceID = endpoint.DeviceID
+			c.ActiveApiKey = endpoint.ApiKey
 
 			err = c.WriteConfig()
 			if err != nil {
 				return err
 			}
 
-			log.Infof("%s is now the active application", c.ActiveApplication)
+			log.Infof("%s is now the active endpoint", c.ActiveEndpoint)
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&appName, "name", "", "Application Name")
-	cmd.Flags().StringVar(&appId, "id", "", "Application Id")
+	cmd.Flags().StringVar(&appName, "name", "", "Endpoint Name")
+	cmd.Flags().StringVar(&endpointId, "id", "", "Endpoint Id")
 
 	return cmd
 }
 
-func FindApplicationByName(applications []Application, appName string) *Application {
-	var app *Application
+func FindEndpointByName(endpoints []Endpoint, endpointName string) *Endpoint {
+	var endpoint *Endpoint
 
-	for _, app := range applications {
-		if strings.TrimSpace(strings.ToLower(app.Name)) == strings.TrimSpace(strings.ToLower(appName)) {
-			return &app
+	for _, endpoint := range endpoints {
+		if strings.TrimSpace(strings.ToLower(endpoint.Name)) == strings.TrimSpace(strings.ToLower(endpointName)) {
+			return &endpoint
 		}
 	}
 
-	return app
+	return endpoint
 }
 
-func FindApplicationById(applications []Application, appId string) *Application {
-	var app *Application
+func FindEndpointById(endpoints []Endpoint, endpointId string) *Endpoint {
+	var endpoint *Endpoint
 
-	for _, app := range applications {
-		if strings.TrimSpace(strings.ToLower(app.UID)) == strings.TrimSpace(strings.ToLower(appId)) {
-			return &app
+	for _, endpoint := range endpoints {
+		if strings.TrimSpace(strings.ToLower(endpoint.UID)) == strings.TrimSpace(strings.ToLower(endpointId)) {
+			return &endpoint
 		}
 	}
 
-	return app
+	return endpoint
 }
