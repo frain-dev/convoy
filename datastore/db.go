@@ -6,8 +6,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	pager "github.com/gobeam/mongo-go-pagination"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,7 +25,7 @@ const (
 	OrganisationCollection        = "organisations"
 	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
-	AppCollection                 = "applications"
+	EndpointCollection            = "endpoints"
 	EventCollection               = "events"
 	SourceCollection              = "sources"
 	UserCollection                = "users"
@@ -34,6 +35,7 @@ const (
 	EventDeliveryCollection       = "eventdeliveries"
 	APIKeyCollection              = "apiKeys"
 	DeviceCollection              = "devices"
+	PortalLinkCollection          = "portal_links"
 )
 
 const CollectionCtx CollectionKey = "collection"
@@ -524,8 +526,8 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return OrganisationInvitesCollection, nil
 	case "organisation_members":
 		return OrganisationMembersCollection, nil
-	case "applications":
-		return AppCollection, nil
+	case "endpoints":
+		return EndpointCollection, nil
 	case "events":
 		return EventCollection, nil
 	case "sources":
@@ -544,6 +546,10 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return FilterCollection, nil
 	case "data_migrations", nil:
 		return DataMigrationsCollection, nil
+	case "applications", nil:
+		return "applications", nil
+	case "portal_links":
+		return PortalLinkCollection, nil
 	default:
 		return "", ErrInvalidCollection
 	}

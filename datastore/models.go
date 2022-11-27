@@ -192,7 +192,7 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy: "60d",
+		Policy: "30d",
 	}
 )
 
@@ -216,45 +216,28 @@ const (
 	PendingSubscriptionStatus  SubscriptionStatus = "pending"
 )
 
-type Application struct {
-	ID              primitive.ObjectID `json:"-" bson:"_id"`
-	UID             string             `json:"uid" bson:"uid"`
-	GroupID         string             `json:"group_id" bson:"group_id"`
-	Title           string             `json:"name" bson:"title"`
-	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
-	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
-
-	Endpoints []Endpoint          `json:"endpoints,omitempty" bson:"endpoints"`
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
-
-	Events int64 `json:"events,omitempty" bson:"-"`
-}
-
-func (app *Application) FindEndpoint(id string) (*Endpoint, error) {
-	for i := range app.Endpoints {
-		endpoint := &app.Endpoints[i]
-		if endpoint.UID == id && endpoint.DeletedAt == nil {
-			return endpoint, nil
-		}
-	}
-	return nil, ErrEndpointNotFound
-}
-
 type SubscriptionStatus string
 
 type Endpoint struct {
-	UID                string   `json:"uid" bson:"uid"`
-	TargetURL          string   `json:"target_url" bson:"target_url"`
-	Description        string   `json:"description" bson:"description"`
-	Secret             string   `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
-	Secrets            []Secret `json:"secrets" bson:"secrets"`
-	AdvancedSignatures bool     `json:"advanced_signatures" bson:"advanced_signatures"`
+	ID                 primitive.ObjectID `json:"-" bson:"_id"`
+	UID                string             `json:"uid" bson:"uid"`
+	GroupID            string             `json:"group_id" bson:"group_id"`
+	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
+	TargetURL          string             `json:"target_url" bson:"target_url"`
+	Title              string             `json:"title" bson:"title"`
+	Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
+	Secrets            []Secret           `json:"secrets" bson:"secrets"`
+	AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
+	Description        string             `json:"description" bson:"description"`
+	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
+	AppID              string             `json:"-" bson:"app_id"` //Deprecated but necessary for backward compatibility
 
-	HttpTimeout       string                  `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                     `json:"rate_limit" bson:"rate_limit"`
+	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
+	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
+	Events      int64  `json:"events,omitempty" bson:"-"`
+	IsDisabled  bool   `json:"is_disabled,omitempty" bson:"is_disabled"`
+
 	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
 
@@ -361,7 +344,7 @@ type RetentionPolicyConfiguration struct {
 type GroupStatistics struct {
 	GroupID      string `json:"-" bson:"group_id"`
 	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
-	TotalApps    int64  `json:"total_apps" bson:"total_apps"`
+	TotalApps    int64  `json:"total_endpoints" bson:"total_endpoints"`
 }
 
 type GroupFilter struct {
@@ -402,7 +385,7 @@ func (g *GroupFilter) ToGenericMap() map[string]interface{} {
 
 func (o *Group) IsDeleted() bool { return o.DeletedAt != nil }
 
-func (o *Group) IsOwner(a *Application) bool { return o.UID == a.GroupID }
+func (o *Group) IsOwner(e *Endpoint) bool { return o.UID == e.GroupID }
 
 var (
 	ErrUserNotFound                  = errors.New("user not found")
@@ -411,11 +394,11 @@ var (
 	ErrGroupNotFound                 = errors.New("group not found")
 	ErrAPIKeyNotFound                = errors.New("api key not found")
 	ErrEndpointNotFound              = errors.New("endpoint not found")
-	ErrApplicationNotFound           = errors.New("application not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
-	ErrDuplicateAppName              = errors.New("an application with this name exists")
+	ErrPortalLinkNotFound            = errors.New("portal link not found")
+	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
@@ -443,17 +426,13 @@ type Event struct {
 	EventType        EventType          `json:"event_type" bson:"event_type"`
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
-	// ProviderID is a custom ID that can be used to reconcile this Event
-	// with your internal systems.
-	// This is optional
-	// If not provided, we will generate one for you
-	ProviderID string                `json:"provider_id,omitempty" bson:"provider_id"`
-	SourceID   string                `json:"source_id,omitempty" bson:"source_id"`
-	GroupID    string                `json:"group_id,omitempty" bson:"group_id"`
-	AppID      string                `json:"app_id,omitempty" bson:"app_id"`
-	Headers    httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	App        *Application          `json:"app_metadata,omitempty" bson:"-"`
-	Source     *Source               `json:"source_metadata,omitempty" bson:"-"`
+	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
+	AppID            string                `json:"app_id,omitempty" bson:"app_id"` //Deprecated
+	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
+	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
+	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
+	Source           *Source               `json:"source_metadata,omitempty" bson:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -509,8 +488,7 @@ type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
-	// NextSendTime denotes the next time an Event will be published in
-	// case it failed the first time
+
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
 
 	// NumTrials: number of times we have tried to deliver this Event to
@@ -568,7 +546,6 @@ type DeliveryAttempt struct {
 type EventDelivery struct {
 	ID             primitive.ObjectID    `json:"-" bson:"_id"`
 	UID            string                `json:"uid" bson:"uid"`
-	AppID          string                `json:"app_id,omitempty" bson:"app_id"`
 	GroupID        string                `json:"group_id,omitempty" bson:"group_id"`
 	EventID        string                `json:"event_id,omitempty" bson:"event_id"`
 	EndpointID     string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
@@ -576,9 +553,8 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
 
-	Endpoint *Endpoint    `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
-	Event    *Event       `json:"event_metadata,omitempty" bson:"event_metadata"`
-	App      *Application `json:"app_metadata,omitempty" bson:"app_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
+	Event    *Event    `json:"event_metadata,omitempty" bson:"event_metadata"`
 
 	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
 	Status           EventDeliveryStatus `json:"status" bson:"status"`
@@ -616,16 +592,14 @@ type Subscription struct {
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
 	Type       SubscriptionType   `json:"type" bson:"type"`
-	AppID      string             `json:"-" bson:"app_id"`
+	Status     SubscriptionStatus `json:"status" bson:"status"`
 	GroupID    string             `json:"-" bson:"group_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
-	Status     SubscriptionStatus `json:"status" bson:"status"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
 
-	Source   *Source      `json:"source_metadata" bson:"source_metadata,omitempty"`
-	Endpoint *Endpoint    `json:"endpoint_metadata" bson:"endpoint_metadata,omitempty"`
-	App      *Application `json:"app_metadata" bson:"app_metadata,omitempty"`
+	Source   *Source   `json:"source_metadata" bson:"source_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata" bson:"endpoint_metadata"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -777,7 +751,7 @@ type Device struct {
 	ID         primitive.ObjectID  `json:"-" bson:"_id"`
 	UID        string              `json:"uid" bson:"uid"`
 	GroupID    string              `json:"group_id,omitempty" bson:"group_id"`
-	AppID      string              `json:"app_id,omitempty" bson:"app_id"`
+	EndpointID string              `json:"endpoint_id,omitempty" bson:"endpoint_id"`
 	HostName   string              `json:"host_name,omitempty" bson:"host_name"`
 	Status     DeviceStatus        `json:"status,omitempty" bson:"status"`
 	LastSeenAt primitive.DateTime  `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
@@ -828,6 +802,57 @@ type OrganisationInvite struct {
 	DeletedAt      *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
+type PortalLink struct {
+	ID                primitive.ObjectID `json:"-" bson:"_id"`
+	UID               string             `json:"uid" bson:"uid"`
+	Name              string             `json:"name" bson:"name"`
+	GroupID           string             `json:"group_id" bson:"group_id"`
+	Token             string             `json:"-" bson:"token"`
+	Endpoints         []string           `json:"endpoints" bson:"endpoints"`
+	EndpointsMetadata []Endpoint         `json:"endpoints_metadata" bson:"endpoints_metadata"`
+
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+//Deprecated
+type Application struct {
+	ID              primitive.ObjectID `json:"-" bson:"_id"`
+	UID             string             `json:"uid" bson:"uid"`
+	GroupID         string             `json:"group_id" bson:"group_id"`
+	Title           string             `json:"name" bson:"title"`
+	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
+	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
+	IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
+
+	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" bson:"endpoints"`
+	CreatedAt primitive.DateTime   `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime   `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+
+	Events int64 `json:"events,omitempty" bson:"-"`
+}
+
+//Deprecated
+type DeprecatedEndpoint struct {
+	UID                string   `json:"uid" bson:"uid"`
+	TargetURL          string   `json:"target_url" bson:"target_url"`
+	Description        string   `json:"description" bson:"description"`
+	Secret             string   `json:"-" bson:"secret"`
+	Secrets            []Secret `json:"secrets" bson:"secrets"`
+	AdvancedSignatures bool     `json:"advanced_signatures" bson:"advanced_signatures"`
+
+	HttpTimeout       string                  `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                     `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
+
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+}
+
 type Password struct {
 	Plaintext string
 	Hash      []byte
@@ -861,12 +886,12 @@ type (
 	EventMap    map[string]*Event
 	SourceMap   map[string]*Source
 	DeviceMap   map[string]*Device
-	AppMap      map[string]*Application
 	EndpointMap map[string]*Endpoint
 )
 
 type SubscriptionFilter struct {
-	ID     primitive.ObjectID     `json:"-" bson:"_id"`
-	UID    string                 `json:"uid" bson:"uid"`
-	Filter map[string]interface{} `json:"filter" bson:"filter"`
+	ID        primitive.ObjectID     `json:"-" bson:"_id"`
+	UID       string                 `json:"uid" bson:"uid"`
+	Filter    map[string]interface{} `json:"filter" bson:"filter"`
+	DeletedAt *primitive.DateTime    `json:"deleted_at,omitempty" bson:"deleted_at"`
 }

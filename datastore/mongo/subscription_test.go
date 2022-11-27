@@ -18,7 +18,6 @@ func createSubscription() *datastore.Subscription {
 		UID:        uuid.NewString(),
 		Name:       "Subscription",
 		Type:       datastore.SubscriptionTypeAPI,
-		AppID:      "app-id-1",
 		GroupID:    "group-id-1",
 		SourceID:   "source-id-1",
 		EndpointID: "endpoint-id-1",
@@ -56,7 +55,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		}
 
 		if i == 0 {
-			subscription.AppID = "app-id-1"
+			subscription.EndpointID = "app-id-1"
 		}
 
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
@@ -67,10 +66,10 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		appId    string
-		pageData datastore.Pageable
-		expected Expected
+		name        string
+		EndpointIDs []string
+		pageData    datastore.Pageable
+		expected    Expected
 	}{
 		{
 			name:     "Load Subscriptions Paged - 10 records",
@@ -118,9 +117,9 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Subscriptions Paged with App ID - 1 record",
-			appId:    "app-id-1",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			name:        "Load Subscriptions Paged with Endpoint ID - 1 record",
+			EndpointIDs: []string{"app-id-1"},
+			pageData:    datastore.Pageable{Page: 1, PerPage: 3},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     1,
@@ -136,7 +135,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", &datastore.FilterBy{AppID: tc.appId}, tc.pageData)
+			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", &datastore.FilterBy{EndpointIDs: tc.EndpointIDs}, tc.pageData)
 
 			require.NoError(t, err)
 
@@ -215,7 +214,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 	require.Equal(t, sub.EndpointID, newSub.EndpointID)
 }
 
-func Test_FindSubscriptionByAppID(t *testing.T) {
+func Test_FindSubscriptionByEndpointID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
@@ -228,21 +227,20 @@ func Test_FindSubscriptionByAppID(t *testing.T) {
 			UID:        uuid.NewString(),
 			Name:       fmt.Sprintf("Subscription %d", i),
 			Type:       datastore.SubscriptionTypeAPI,
-			AppID:      "app-id-1",
+			EndpointID: "app-id-1",
 			GroupID:    "group-id-1",
 			SourceID:   uuid.NewString(),
-			EndpointID: uuid.NewString(),
 		}
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
 	}
 
 	// Fetch sub again
-	subs, err := subRepo.FindSubscriptionsByAppID(context.Background(), "group-id-1", "app-id-1")
+	subs, err := subRepo.FindSubscriptionsByEndpointID(context.Background(), "group-id-1", "app-id-1")
 	require.NoError(t, err)
 
 	for _, sub := range subs {
 		require.NotEmpty(t, sub.UID)
-		require.Equal(t, sub.AppID, "app-id-1")
+		require.Equal(t, sub.EndpointID, "app-id-1")
 		require.Equal(t, sub.GroupID, "group-id-1")
 	}
 }
@@ -304,7 +302,7 @@ func TestTestSubscriptionFilter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "equal with operator",
+			name: "equal with operator - number",
 			request: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 5,
@@ -320,7 +318,7 @@ func TestTestSubscriptionFilter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "equal with operator",
+			name: "equal with operator - string",
 			request: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": "tunde",
@@ -505,7 +503,6 @@ func TestTestSubscriptionFilter(t *testing.T) {
 				require.ErrorIs(t, err, tt.Err)
 			}
 
-			t.Log(tt.want, matched)
 			require.Equal(t, tt.want, matched)
 		})
 	}

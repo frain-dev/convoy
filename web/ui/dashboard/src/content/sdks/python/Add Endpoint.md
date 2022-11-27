@@ -1,6 +1,6 @@
-### Add Application Endpoint
+### Create Endpoint
 
-After creating an application, you'll need to add an endpoint to the application you just created. An endpoint represents a target URL to receive events.
+After setting up Convoy, you'll need to create an endpoint. An endpoint represents a target URL to receive events.
 
 ```python[example]
 endpointData = {
@@ -10,5 +10,5 @@ endpointData = {
     "events": ["*"],
   }
 
-(response, status) = convoy.endpoint.create(appId, {}, endpointData)
+(response, status) = convoy.endpoint.create({}, endpointData)
 ```

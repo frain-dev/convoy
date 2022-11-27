@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -74,6 +76,7 @@ func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.
 
 	cfg, err := c.configRepo.LoadConfiguration(ctx)
 	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to load configuration")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -91,6 +94,7 @@ func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.
 
 	err = c.configRepo.UpdateConfiguration(ctx, cfg)
 	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to update configuration")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -125,7 +125,7 @@ func (c *Client) pingHandler(appData string) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID, datastore.DeviceStatusOnline)
+	err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.EndpointID, c.Device.GroupID, datastore.DeviceStatusOnline)
 	if err != nil {
 		log.WithError(err).Error(ErrFailedToUpdateDevice.Error())
 		return ErrFailedToUpdateDevice
@@ -154,7 +154,7 @@ func (c *Client) GoOffline() {
 
 	c.Device.Status = datastore.DeviceStatusOffline
 
-	err := c.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.AppID, c.Device.GroupID)
+	err := c.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.EndpointID, c.Device.GroupID)
 	if err != nil {
 		log.WithError(err).Error("failed to update device status to offline")
 	}
@@ -221,7 +221,7 @@ func (c *Client) UpdateEventDeliveryStatus(id string) {
 }
 
 func (c *Client) ResendEventDeliveries(since time.Time, events chan *CLIEvent) {
-	eds, err := c.eventDeliveryRepo.FindDiscardedEventDeliveries(context.Background(), c.Device.AppID, c.deviceID,
+	eds, err := c.eventDeliveryRepo.FindDiscardedEventDeliveries(context.Background(), c.Device.EndpointID, c.deviceID,
 		datastore.SearchParams{CreatedAtStart: since.Unix(), CreatedAtEnd: time.Now().Unix()})
 	if err != nil {
 		log.WithError(err).Error("failed to find discarded event deliveries")
@@ -233,13 +233,13 @@ func (c *Client) ResendEventDeliveries(since time.Time, events chan *CLIEvent) {
 
 	for _, ed := range eds {
 		events <- &CLIEvent{
-			UID:       ed.UID,
-			Data:      ed.Metadata.Data,
-			Headers:   ed.Headers,
-			EventType: ed.CLIMetadata.EventType,
-			AppID:     ed.AppID,
-			DeviceID:  ed.DeviceID,
-			GroupID:   ed.GroupID,
+			UID:        ed.UID,
+			Data:       ed.Metadata.Data,
+			Headers:    ed.Headers,
+			EventType:  ed.CLIMetadata.EventType,
+			EndpointID: ed.EndpointID,
+			DeviceID:   ed.DeviceID,
+			GroupID:    ed.GroupID,
 		}
 	}
 }

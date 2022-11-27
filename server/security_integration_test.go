@@ -104,7 +104,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreatePersonalAPIKey() {
 	require.Equal(s.T(), apiKey.UID, apiKeyResponse.UID)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
+func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Switch to the native realm
@@ -116,7 +116,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -131,7 +131,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	bodyStr := `{"key_type":"app_portal"}`
 	body := serialize(bodyStr)
 
-	url := fmt.Sprintf("/api/v1/projects/%s/security/applications/%s/keys", s.DefaultGroup.UID, app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/security/endpoints/%s/keys", s.DefaultGroup.UID, endpoint.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
@@ -147,13 +147,13 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey() {
 	var apiKeyResponse models.PortalAPIKeyResponse
 	parseResponse(s.T(), w.Result(), &apiKeyResponse)
 	require.NotEmpty(s.T(), apiKeyResponse.Key)
-	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/app/%s?groupID=%s&appId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, app.UID))
+	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/endpoint/%s?groupID=%s&endpointId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, endpoint.UID))
 	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.AppPortalKey))
 	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
-	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)
+	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProjects() {
+func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_RedirectToProjects() {
 	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Switch to the native realm
@@ -165,7 +165,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProj
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -180,7 +180,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProj
 	bodyStr := `{"key_type":"cli"}`
 	body := serialize(bodyStr)
 
-	url := fmt.Sprintf("/api/v1/security/applications/%s/keys?groupID=%s", app.UID, s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/security/endpoints/%s/keys?groupID=%s", endpoint.UID, s.DefaultGroup.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
@@ -193,7 +193,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_RedirectToProj
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
+func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Switch to the native realm
@@ -205,7 +205,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -217,10 +217,10 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"key_type":"cli"}"`
-	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
+	bodyStr := `{"key_type":"cli"}`
+	body := serialize(bodyStr)
 
-	url := fmt.Sprintf("/api/v1/projects/%s/security/applications/%s/keys", s.DefaultGroup.UID, app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/security/endpoints/%s/keys", s.DefaultGroup.UID, endpoint.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
@@ -238,10 +238,10 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppCliAPIKey() {
 	require.NotEmpty(s.T(), apiKeyResponse.Key)
 	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.CLIKey))
 	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
-	require.Equal(s.T(), apiKeyResponse.AppID, app.UID)
+	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelongToGroup() {
+func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_EndpointDoesNotBelongToGroup() {
 	expectedStatusCode := http.StatusUnauthorized
 
 	// Switch to the native realm
@@ -253,7 +253,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelo
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -265,10 +265,10 @@ func (s *SecurityIntegrationTestSuite) Test_CreateAppPortalAPIKey_AppDoesNotBelo
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	bodyStr := `{"name":"default_api_key","role":{"type":"admin","group":"%s"},"key_type":"api_key","expires_at":"%s"}"`
+	bodyStr := `{"key_type":"cli"}"`
 	body := serialize(bodyStr, s.DefaultGroup.UID, time.Now().Add(time.Hour))
 
-	url := fmt.Sprintf("/api/v1/projects/%s/security/applications/%s/keys", s.DefaultGroup.UID, app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/security/endpoints/%s/keys", s.DefaultGroup.UID, endpoint.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
 	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
@@ -360,22 +360,22 @@ func (s *SecurityIntegrationTestSuite) Test_GetPersonalAPIKeys() {
 	require.Equal(s.T(), 2, len(apiKeyResponse))
 }
 
-func (s *SecurityIntegrationTestSuite) Test_GetAppAPIKeys() {
+func (s *SecurityIntegrationTestSuite) Test_GetEndpointAPIKeys() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
-		App:   app.UID,
+		Type:     auth.RoleAdmin,
+		Group:    s.DefaultGroup.UID,
+		Endpoint: endpoint.UID,
 	}
 
 	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", string(datastore.CLIKey), "")
 	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", string(datastore.AppPortalKey), "")
 
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/apps/%s/keys", s.DefaultOrg.UID, s.DefaultGroup.UID, app.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/keys", s.DefaultOrg.UID, s.DefaultGroup.UID, endpoint.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -394,21 +394,21 @@ func (s *SecurityIntegrationTestSuite) Test_GetAppAPIKeys() {
 	require.Equal(s.T(), 1, len(apiKeyResponse))
 }
 
-func (s *SecurityIntegrationTestSuite) Test_RevokeAppAPIKey() {
+func (s *SecurityIntegrationTestSuite) Test_RevokeEndpointAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedApplication(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
-		App:   app.UID,
+		Type:     auth.RoleAdmin,
+		Group:    s.DefaultGroup.UID,
+		Endpoint: endpoint.UID,
 	}
 
 	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", string(datastore.CLIKey), "")
 
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/apps/%s/keys/%s/revoke", s.DefaultOrg.UID, s.DefaultGroup.UID, app.UID, apiKey.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/keys/%s/revoke", s.DefaultOrg.UID, s.DefaultGroup.UID, endpoint.UID, apiKey.UID)
 	req := createRequest(http.MethodPut, url, "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)

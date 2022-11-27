@@ -23,7 +23,7 @@
 				<p class="my-16px text-16 text-grey-80 max-w-[95%]">
 					{{ step.description }}
 				</p>
-				<button convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : (showCreateModal = true)">
+				<button convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : (showCreateOrganisationModal = true)">
 					Get Started
 					<svg width="16" height="16" class="ml-8px fill-white-100">
 						<use xlink:href="#white-arrow-icon"></use>
@@ -34,26 +34,20 @@
 	</div>
 </div>
 
-<convoy-modal position="center" *ngIf="showCreateModal || isOrgCreated">
+<convoy-modal position="center" *ngIf="showCreateOrganisationModal">
 	<div class="p-40px" modalBody>
-		<ng-container *ngIf="!isOrgCreated">
-			<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
-			<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
-			<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
-				<convoy-input-field>
-					<label for="name" required="true" convoy-label>What's your bussiness name?</label>
-					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
-					<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
-				</convoy-input-field>
-				<div class="flex items-center justify-end w-full">
-					<button convoy-button type="button" fill="outline" class="hover:text-danger-100 hover:border-danger-100 transition-all duration-300 mr-24px" (click)="showCreateModal = false">Cancel</button>
-					<button convoy-button [disabled]="creatingOrganisation" class="self-stretch px-66px">Submit</button>
-				</div>
-			</form>
-		</ng-container>
-		<ng-container *ngIf="isOrgCreated">
-			<p class="text-center text-16 text-black font-bold mb-38px max-w-[240px] m-auto">Your organisation was created successfully!</p>
-			<img src="/assets/img/new-success.gif" loop="1" alt="Success gif" class="h-120px w-120px border-[12px] border-grey-10 rounded-[100%] m-auto mb-70px" />
-		</ng-container>
+		<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
+		<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
+		<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
+			<convoy-input-field>
+				<label for="name" required="true" convoy-label>What's your bussiness name?</label>
+				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
+				<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
+			</convoy-input-field>
+			<div class="flex items-center justify-end w-full">
+				<button convoy-button type="button" fill="outline" class="hover:text-danger-100 hover:border-danger-100 transition-all duration-300 mr-24px" (click)="showCreateOrganisationModal = false">Cancel</button>
+				<button convoy-button [disabled]="creatingOrganisation" class="self-stretch px-66px">Submit</button>
+			</div>
+		</form>
 	</div>
 </convoy-modal>

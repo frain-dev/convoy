@@ -1,4 +1,4 @@
-import { APP } from './app.model';
+import { ENDPOINT } from './endpoint.model';
 import { SOURCE } from './group.model';
 
 export interface SUBSCRIPTION {
@@ -10,11 +10,7 @@ export interface SUBSCRIPTION {
 	type: 'outgoing' | 'incoming';
 	uid: string;
 	updated_at: string;
-	endpoint_metadata: {
-		target_url: string;
-		secret: string;
-	};
-	app_metadata?: APP;
+	endpoint_metadata?: ENDPOINT;
 	alert_config?: { count: number; threshold: string };
 	retry_config?: { type: string; retry_count: number; duration: number };
 	source_metadata: SOURCE;

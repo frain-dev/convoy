@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 )
 
 type Response struct {

@@ -18,8 +18,8 @@ func Test_FilterBy(t *testing.T) {
 			name:     "complete_filter",
 			expected: "group_id:=uid-1 && created_at:[0..1] && app_id:=app-1",
 			filter: FilterBy{
-				AppID:   "app-1",
-				GroupID: "uid-1",
+				EndpointID: "app-1",
+				GroupID:    "uid-1",
 				SearchParams: SearchParams{
 					CreatedAtStart: 0,
 					CreatedAtEnd:   1,

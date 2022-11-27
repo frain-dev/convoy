@@ -1,10 +1,10 @@
 ### Sending an Event
 
-To send an event, you'll need the `uid` from the application we created earlier.
+To send an event, you'll need the `uid` from the endpoint we created earlier.
 
 ```php[example]
 $eventData = [
-    "app_id" => $appId,
+    "endpoint_id" => $endpointId,
     "event_type" => "payment.success",
     "data" => [
         "event" => "payment.success",

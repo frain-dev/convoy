@@ -128,9 +128,9 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:  auth.RoleSuperUser,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleSuperUser,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	}
 	status := datastore.InviteStatusAccepted
 	updatedAt := primitive.NewDateTimeFromTime(time.Now())

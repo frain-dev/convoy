@@ -50,12 +50,12 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 		},
 	}
 
-	appLookupStage := bson.D{
+	endpointLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: datastore.AppCollection},
-			{Key: "localField", Value: "app_id"},
+			{Key: "from", Value: datastore.EndpointCollection},
+			{Key: "localField", Value: "endpoint_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app"},
+			{Key: "as", Value: "endpoint"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -64,7 +64,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 							{Key: "title", Value: 1},
 							{Key: "group_id", Value: 1},
 							{Key: "support_email", Value: 1},
-							{Key: "endpoints", Value: 1},
+							{Key: "target_url", Value: 1},
 						},
 					},
 				},
@@ -120,8 +120,8 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			"event_metadata": bson.M{
 				"$first": "$event",
 			},
-			"app_metadata": bson.M{
-				"$first": "$app",
+			"endpoint_metadata": bson.M{
+				"$first": "$endpoint",
 			},
 		}},
 	}
@@ -131,20 +131,6 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			Key: "$set",
 			Value: bson.D{
 				{Key: "cli_metadata.host_name", Value: "$device_metadata.host_name"},
-				{Key: "endpoint_metadata", Value: bson.M{
-					"$first": bson.M{
-						"$filter": bson.M{
-							"input": "$app_metadata.endpoints",
-							"as":    "endpoint",
-							"cond": bson.M{
-								"$eq": bson.A{
-									"$$endpoint.uid",
-									"$endpoint_id",
-								},
-							},
-						},
-					},
-				}},
 			},
 		},
 	}
@@ -154,9 +140,8 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			Key: "$unset",
 			Value: []string{
 				"device",
-				"app",
+				"endpoint",
 				"event",
-				"app_metadata.endpoints",
 				"endpoint_metadata.secrets",
 				"endpoint_metadata.authentication",
 			},
@@ -165,7 +150,7 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 
 	pipeline := mongo.Pipeline{
 		matchStage,
-		appLookupStage,
+		endpointLookupStage,
 		eventLookupStage,
 		deviceLookupStage,
 		projectStage,
@@ -291,17 +276,17 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return db.store.UpdateOne(ctx, filter, update)
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	filter := getFilter(groupID, appID, eventID, status, searchParams)
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+	filter := getFilter(groupID, endpointIDs, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	matchStage := bson.D{{Key: "$match", Value: mToD(filter)}}
-	appLookupStage := bson.D{
+	endpointLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: datastore.AppCollection},
-			{Key: "localField", Value: "app_id"},
+			{Key: "from", Value: datastore.EndpointCollection},
+			{Key: "localField", Value: "endpoint_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app_metadata"},
+			{Key: "as", Value: "endpoint_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -310,14 +295,14 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 							{Key: "title", Value: 1},
 							{Key: "group_id", Value: 1},
 							{Key: "support_email", Value: 1},
-							{Key: "endpoints", Value: 1},
+							{Key: "target_url", Value: 1},
 						},
 					},
 				},
 			}},
 		}},
 	}
-	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$app_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
+	unwindAppStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$endpoint_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
 	eventLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
@@ -366,20 +351,6 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			Key: "$set",
 			Value: bson.D{
 				{Key: "cli_metadata.host_name", Value: "$device_metadata.host_name"},
-				{Key: "endpoint_metadata", Value: bson.M{
-					"$first": bson.M{
-						"$filter": bson.M{
-							"input": "$app_metadata.endpoints",
-							"as":    "endpoint",
-							"cond": bson.M{
-								"$eq": bson.A{
-									"$$endpoint.uid",
-									"$endpoint_id",
-								},
-							},
-						},
-					},
-				}},
 			},
 		},
 	}
@@ -401,10 +372,10 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 
 	pipeline := mongo.Pipeline{
 		matchStage,
-		skipStage,
 		sortStage,
+		skipStage,
 		limitStage,
-		appLookupStage,
+		endpointLookupStage,
 		unwindAppStage,
 		eventLookupStage,
 		unwindEventStage,
@@ -445,8 +416,8 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	return eventDeliveries, pagination, nil
 }
 
-func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
-	filter := getFilter(groupID, appID, eventID, status, searchParams)
+func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	filter := getFilter(groupID, endpointIDs, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	var count int64
@@ -480,14 +451,14 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 	return nil
 }
 
-func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
+func (db *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, endpointID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"app_id":     appId,
-		"device_id":  deviceId,
-		"status":     datastore.DiscardedEventStatus,
-		"created_at": getCreatedDateFilter(searchParams),
+		"endpoint_id": endpointID,
+		"device_id":   deviceId,
+		"status":      datastore.DiscardedEventStatus,
+		"created_at":  getCreatedDateFilter(searchParams),
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0)
@@ -504,19 +475,19 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EventDeliveryCollection)
 }
 
-func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
+func getFilter(groupID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
 
 	filter := bson.M{
 		"created_at": getCreatedDateFilter(searchParams),
 	}
 
-	hasAppFilter := !util.IsStringEmpty(appID)
+	hasEndpointFilter := len(endpointIDs) > 0
 	hasGroupFilter := !util.IsStringEmpty(groupID)
 	hasEventFilter := !util.IsStringEmpty(eventID)
 	hasStatusFilter := len(status) > 0
 
-	if hasAppFilter {
-		filter["app_id"] = appID
+	if hasEndpointFilter {
+		filter["endpoint_id"] = bson.M{"$in": endpointIDs}
 	}
 
 	if hasGroupFilter {

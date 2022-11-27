@@ -10,12 +10,11 @@ import (
 )
 
 type Payload struct {
-	AppID      string `json:"app_id"`
 	EndpointID string `json:"endpoint_id"`
 	SecretID   string `json:"secret_id"`
 }
 
-func ExpireSecret(a datastore.ApplicationRepository) func(ctx context.Context, t *asynq.Task) error {
+func ExpireSecret(a datastore.EndpointRepository) func(ctx context.Context, t *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var payload Payload
 		err := json.Unmarshal(t.Payload(), &payload)
@@ -23,12 +22,7 @@ func ExpireSecret(a datastore.ApplicationRepository) func(ctx context.Context, t
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		app, err := a.FindApplicationByID(ctx, payload.AppID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
-		}
-
-		endpoint, err := app.FindEndpoint(payload.EndpointID)
+		endpoint, err := a.FindEndpointByID(ctx, payload.EndpointID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -40,7 +34,7 @@ func ExpireSecret(a datastore.ApplicationRepository) func(ctx context.Context, t
 			}
 		}
 
-		err = a.UpdateApplication(ctx, app, app.GroupID)
+		err = a.UpdateEndpoint(ctx, endpoint, endpoint.GroupID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}

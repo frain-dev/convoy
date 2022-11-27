@@ -13,9 +13,9 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -54,10 +54,10 @@ type CLIEvent struct {
 	Data    json.RawMessage       `json:"data"`
 
 	// for filtering this event delivery
-	EventType string `json:"-"`
-	DeviceID  string `json:"-"`
-	AppID     string `json:"-"`
-	GroupID   string `json:"-"`
+	EventType  string `json:"-"`
+	DeviceID   string `json:"-"`
+	EndpointID string `json:"-"`
+	GroupID    string `json:"-"`
 }
 
 func NewHub() *Hub {
@@ -95,8 +95,8 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			if !util.IsStringEmpty(client.Device.AppID) {
-				if client.Device.AppID != ev.AppID {
+			if !util.IsStringEmpty(client.Device.EndpointID) {
+				if client.Device.EndpointID != ev.EndpointID {
 					continue
 				}
 			}
@@ -182,13 +182,13 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 		}
 
 		events <- &CLIEvent{
-			UID:       ed.UID,
-			Data:      dataBytes,
-			Headers:   ed.Headers,
-			EventType: ed.CLIMetadata.EventType,
-			AppID:     ed.AppID,
-			DeviceID:  ed.DeviceID,
-			GroupID:   ed.GroupID,
+			UID:        ed.UID,
+			Data:       dataBytes,
+			Headers:    ed.Headers,
+			EventType:  ed.CLIMetadata.EventType,
+			EndpointID: ed.EndpointID,
+			DeviceID:   ed.DeviceID,
+			GroupID:    ed.GroupID,
 		}
 	}
 }

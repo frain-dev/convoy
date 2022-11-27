@@ -95,10 +95,10 @@ func TestResendEventDeliveries(t *testing.T) {
 	c := provideClient(r, conn)
 
 	wantEd := datastore.EventDelivery{
-		UID:      "evd-1",
-		AppID:    "app-1",
-		GroupID:  "group-1",
-		DeviceID: "device-1",
+		UID:        "evd-1",
+		EndpointID: "endpoint-1",
+		GroupID:    "group-1",
+		DeviceID:   "device-1",
 		Headers: httpheader.HTTPHeader{
 			"key": []string{"value"},
 		},

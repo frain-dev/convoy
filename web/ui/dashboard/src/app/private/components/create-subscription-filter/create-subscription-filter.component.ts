@@ -6,6 +6,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSubscriptionService } from '../create-subscription/create-subscription.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { MonacoComponent } from '../monaco/monaco.component';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
 	selector: 'convoy-create-subscription-filter',
@@ -26,8 +27,9 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	});
 	isFilterTestPassed = false;
 	payload: any;
+	token: string = this.route.snapshot.queryParams.token;
 
-	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService) {}
+	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	ngOnInit() {
 		this.checkForExistingData();
@@ -38,7 +40,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		this.subscriptionFilterForm.value.request = this.convertStringToJson(this.requestEditor.getValue());
 		this.subscriptionFilterForm.value.schema = this.convertStringToJson(this.schemaEditor.getValue());
 		try {
-			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
+			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value, this.token);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
 			this.isFilterTestPassed = !!response.data;
