@@ -64,7 +64,7 @@ export class AppService {
 			const flags = apiFlagResponse.responses;
 			return !!flags.find(flag => flag.flagKey === flagKey)?.match;
 		} catch (error) {
-			return true;
+			return false;
 		}
 	}
 

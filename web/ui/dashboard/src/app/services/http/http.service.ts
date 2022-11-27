@@ -10,7 +10,7 @@ import { GeneralService } from '../general/general.service';
 })
 export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
-	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal`;
+	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
 
 	constructor(private router: Router, private generalService: GeneralService) {}
 
