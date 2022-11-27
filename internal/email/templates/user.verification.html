@@ -94,36 +94,12 @@
                                 <!-- <p>For any enquiry or complaint, kindly send an email to info@frain.dev</p> -->
                             </div>
                             <h3>Hi there,</h3>
-                            {{if eq .endpoint_status "active"}}
-                                <p>
-                                    Please note your endpoint has been enabled. See details:
-                                </p>
-                                <ul>
-                                    <li><strong>URL:</strong> {{.target_url}}</li>
-                                </ul>
-                                <p>
-                                    <strong>Important:</strong> Congrats! Your endpoint as been restored successfully. Please head over to your dashboard to retry
-                                    all failed and discarded events.
-                                </p>
-                            {{else}}
-                                <p>
-                                    Please note your endpoint has been disabled. See details:
-                                </p>
-                                <ul>
-                                    <li><strong>URL:</strong> {{.target_url}}</li>
-                                    {{if eq .response_body ""}}
-                                    <li><strong>Most recent failure message:</strong> {{ .failure_msg }}</li>
-                                    {{else}}
-                                    <li><strong>Endpoint Response Body:</strong> {{ .response_body }}</li>
-                                    <li><strong>Status code:</strong> {{ .status_code }}</li>
-                                    {{end}}
-                                </ul>
-                                <p>
-                                    <strong>Important:</strong> You're receiving this email because your endpoint has consecutively failed to receive events, and
-                                    needs to be checked. To re-activate your endpoint please head over to your dashboard and retry any failed event.
-                                </p>
-                            {{end}}
+                            <p>
+                            <h4> Welcome to Convoy!</h4>
+                            Please click the link below to verify your email:
+                            <p><a href={{ .email_verification_url }}>Verify Email</a></p>
 
+                            </p>
                             <p class="issue-text">
                                 For any enquiry or complaint, you can reply to this email.
                             </p>
