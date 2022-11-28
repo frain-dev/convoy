@@ -56,13 +56,13 @@ export class AppComponent implements OnInit {
 				break;
 
 			default:
-				this.showCreateSubscription = true;
+				this.showCreateSubscription = false;
 				break;
 		}
 	}
 
 	async checkFlags() {
-		this.isCliAvailable = await this.appService.getFlag('can_create_cli_api_key', this.token);
+		this.isCliAvailable = false;
 		if (this.isCliAvailable) this.tabs.push('cli keys', 'devices');
 	}
 
