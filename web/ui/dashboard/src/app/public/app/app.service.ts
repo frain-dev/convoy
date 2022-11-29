@@ -12,7 +12,18 @@ export class AppService {
 	getSubscriptions(token: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({ url: '/subscriptions', method: 'get', token });
+				const response = await this.http.request({ url: `/subscriptions`, method: 'get', token });
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getSubscription(token: string, subscriptionId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({ url: `/subscriptions/${subscriptionId}`, method: 'get', token });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

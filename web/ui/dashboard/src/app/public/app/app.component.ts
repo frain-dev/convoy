@@ -7,7 +7,7 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { AppService } from './app.service';
 import { CliKeysComponent } from 'src/app/private/pages/project/apps/app-details/cli-keys/cli-keys.component';
 
-type EVENT_PAGE_TABS = 'events' | 'event deliveries';
+type EVENT_PAGE_TABS = 'event deliveries';
 
 @Component({
 	selector: 'app-app',
@@ -19,10 +19,10 @@ export class AppComponent implements OnInit {
 	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
 	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status', ''];
 	token: string = this.route.snapshot.params.token;
-	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
-	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
+	subscriptions!: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
+	eventTabs: ['event deliveries'] = ['event deliveries'];
 	tabs: string[] = ['subscriptions'];
-	activeEventsTab: EVENT_PAGE_TABS = 'events';
+	activeEventsTab: EVENT_PAGE_TABS = 'event deliveries';
 	activeTab: string = 'subscriptions';
 	events!: { content: EVENT[]; pagination: PAGINATION };
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
@@ -38,18 +38,28 @@ export class AppComponent implements OnInit {
 	showSubscriptionError = false;
 	showCliError = false;
 	isCliAvailable: boolean = false;
+	subscriptionIdsString = '?';
+	subscriptionIds = this.route.snapshot.queryParams?.subscriptionID || [];
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {
+		// for subscription portal use
+		if (typeof this.subscriptionIds === 'string') this.subscriptionIds = [this.subscriptionIds];
+		if (this.subscriptionIds.length > 0) this.subscriptionIds?.forEach((id: string) => (this.subscriptionIdsString += 'subscriptionID=' + id + '&'));
+	}
 
 	ngOnInit() {
-
-		this.getSubscripions();
+		if (this.subscriptionIds.length > 0) {
+			this.subscriptions = { content: [] };
+			this.subscriptionIds.forEach(async (id: string) => this.subscriptions?.content.push(await this.getSubscripion(id)));
+		} else {
+			this.getSubscripions();
+		}
 		this.checkFlags();
 
 		if (this.route.snapshot.queryParams?.showCli) localStorage.setItem('CONVOY_APP__SHOW_CLI', this.route.snapshot.queryParams?.showCli);
 		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
 
-        const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
+		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
 		subscribeButtonState ? (this.showCreateSubscription = JSON.parse(subscribeButtonState)) : (this.showCreateSubscription = false);
 
 		const showCliKeysAndDevices = localStorage.getItem('CONVOY_APP__SHOW_CLI');
@@ -61,8 +71,20 @@ export class AppComponent implements OnInit {
 		if (this.isCliAvailable && this.showCliKeysAndDevices) this.tabs.push('cli keys', 'devices');
 	}
 
+	async getSubscripion(subscriptionId: string): Promise<SUBSCRIPTION> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const subscription = await this.appService.getSubscription(this.token, subscriptionId);
+				return resolve(subscription.data);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	async getSubscripions() {
 		this.isloadingSubscriptions = true;
+
 		try {
 			const subscriptions = await this.appService.getSubscriptions(this.token);
 			this.subscriptions = subscriptions.data;
@@ -81,11 +103,6 @@ export class AppComponent implements OnInit {
 
 	toggleEventsTab(tab: EVENT_PAGE_TABS) {
 		this.activeEventsTab = tab;
-	}
-
-	getEventDeliveries(eventId: string) {
-		this.eventDeliveryFilteredByEventId = eventId;
-		this.toggleEventsTab('event deliveries');
 	}
 
 	async deleteSubscription() {
