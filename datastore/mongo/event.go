@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -37,9 +38,6 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 
 	message.ID = primitive.NewObjectID()
 
-	if util.IsStringEmpty(message.ProviderID) {
-		message.ProviderID = message.AppID
-	}
 	if util.IsStringEmpty(message.UID) {
 		message.UID = uuid.New().String()
 	}
@@ -49,26 +47,18 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 
 func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (int64, error) {
 	ctx = db.setCollectionInContext(ctx)
-
-	filter := bson.M{
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
-	}
-
-	return db.store.Count(ctx, filter)
+	return db.store.Count(ctx, bson.M{"group_id": groupID})
 }
 
 func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
-		"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-		"document_status": datastore.DeletedDocumentStatus,
+		"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	f := bson.M{
-		"group_id":        filter.GroupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"group_id": filter.GroupID,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -93,7 +83,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
 		{Key: "group_id", Value: groupID},
-		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+		{Key: "deleted_at", Value: nil},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
 			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
@@ -187,29 +177,34 @@ func (db *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datas
 func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "created_at": getCreatedDateFilter(f.SearchParams)}
-	matchStage := bson.D{{Key: "$match", Value: bson.D{
-		{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+	filter := bson.M{"deleted_at": nil, "created_at": getCreatedDateFilter(f.SearchParams)}
+	d := bson.D{
 		{Key: "created_at", Value: getCreatedDateFilter(f.SearchParams)},
-		{Key: "group_id", Value: f.Group.UID},
-	}}}
+		{Key: "deleted_at", Value: nil},
+	}
 
-	if !util.IsStringEmpty(f.AppID) {
-		filter["app_id"] = f.AppID
-		matchStage[0].Value = append(matchStage[0].Value.(bson.D), primitive.E{Key: "app_id", Value: f.AppID})
+	if !util.IsStringEmpty(f.Group.UID) {
+		filter["group_id"] = f.Group.UID
+		d = append(d, bson.E{Key: "group_id", Value: f.Group.UID})
+	}
+
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoints"] = bson.M{"$in": f.EndpointIDs}
+		d = append(d, bson.E{Key: "endpoints", Value: bson.M{"$in": f.EndpointIDs}})
 	}
 
 	if !util.IsStringEmpty(f.SourceID) {
 		filter["source_id"] = f.SourceID
-		matchStage[0].Value = append(matchStage[0].Value.(bson.D), primitive.E{Key: "source_id", Value: f.SourceID})
+		d = append(d, bson.E{Key: "source_id", Value: f.SourceID})
 	}
 
-	appLookupStage := bson.D{
+	matchStage := bson.D{{Key: "$match", Value: d}}
+	endpointLookupStage := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: datastore.AppCollection},
-			{Key: "localField", Value: "app_id"},
+			{Key: "from", Value: datastore.EndpointCollection},
+			{Key: "localField", Value: "endpoints"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "app"},
+			{Key: "as", Value: "endpoint_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -218,6 +213,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 							{Key: "title", Value: 1},
 							{Key: "group_id", Value: 1},
 							{Key: "support_email", Value: 1},
+							{Key: "target_url", Value: 1},
 						},
 					},
 				},
@@ -230,7 +226,7 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			{Key: "from", Value: datastore.SourceCollection},
 			{Key: "localField", Value: "source_id"},
 			{Key: "foreignField", Value: "uid"},
-			{Key: "as", Value: "source"},
+			{Key: "as", Value: "source_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
 					{Key: "$project",
@@ -243,30 +239,20 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			}},
 		}},
 	}
+	unwindSourceStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$source_metadata"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
-	projectStage := bson.D{
-		{Key: "$addFields", Value: bson.M{
-			"source_metadata": bson.M{
-				"$first": "$source",
-			},
-			"app_metadata": bson.M{
-				"$first": "$app",
-			},
-		}},
-	}
-
-	unsetStage := bson.D{{Key: "$unset", Value: []string{"app", "source"}}}
+	skipStage := bson.D{{Key: "$skip", Value: getSkip(f.Pageable.Page, f.Pageable.PerPage)}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}}
+	limitStage := bson.D{{Key: "$limit", Value: f.Pageable.PerPage}}
 
 	pipeline := mongo.Pipeline{
 		matchStage,
-		appLookupStage,
+		sortStage,
+		limitStage,
+		skipStage,
+		endpointLookupStage,
 		sourceLookupStage,
-		projectStage,
-		unsetStage,
-		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
-		{{Key: "$sort", Value: bson.D{{Key: "_id", Value: 1}}}},
-		{{Key: "$skip", Value: getSkip(f.Pageable.Page, f.Pageable.PerPage)}},
-		{{Key: "$limit", Value: f.Pageable.PerPage}},
+		unwindSourceStage,
 	}
 
 	var events []datastore.Event

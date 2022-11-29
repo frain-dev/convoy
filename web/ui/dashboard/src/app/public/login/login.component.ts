@@ -34,12 +34,13 @@ export class LoginComponent implements OnInit {
 			const response: any = await this.loginService.login(this.loginForm.value);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 
-			// identify user
+            // identify user
 			analytics.identify(response.data.uid, {
 				first_name: response.data.first_name,
 				last_name: response.data.last_name,
 				email: response.data.email
 			});
+
 
 			// get previous location in localstorage
 			const lastLoacation = localStorage.getItem('CONVOY_LAST_AUTH_LOCATION');

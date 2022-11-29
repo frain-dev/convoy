@@ -16,14 +16,14 @@ import (
 )
 
 func provideRepo(ctrl *gomock.Controller) *Repo {
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 
 	return &Repo{
-		AppRepo:           appRepo,
+		EndpointRepo:      endpointRepo,
 		DeviceRepo:        deviceRepo,
 		SubscriptionRepo:  subRepo,
 		SourceRepo:        sourceRepo,
@@ -37,7 +37,7 @@ func TestHub_listen(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		group         *datastore.Group
-		app           *datastore.Application
+		endpoint      *datastore.Endpoint
 		listenRequest *ListenRequest
 	}
 	tests := []struct {
@@ -52,9 +52,9 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_listen_successfully",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -66,13 +66,12 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     lastSeen,
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: lastSeen,
 					},
 					nil,
 				)
@@ -88,25 +87,23 @@ func TestHub_listen(t *testing.T) {
 
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
 					Times(1).Return(&datastore.Subscription{}, nil)
-
 			},
 			want: &datastore.Device{
-				UID:            "device-id",
-				GroupID:        "1234",
-				AppID:          "abc",
-				HostName:       "",
-				Status:         datastore.DeviceStatusOnline,
-				DocumentStatus: datastore.ActiveDocumentStatus,
-				LastSeenAt:     lastSeen,
+				UID:        "device-id",
+				GroupID:    "1234",
+				EndpointID: "abc",
+				HostName:   "",
+				Status:     datastore.DeviceStatusOnline,
+				LastSeenAt: lastSeen,
 			},
 			wantErr: false,
 		},
 		{
 			name: "should_error_for_wrong_device_group_id",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -118,13 +115,12 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "2",
-						AppID:          "abc",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     lastSeen,
+						UID:        "device-id",
+						GroupID:    "2",
+						EndpointID: "abc",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: lastSeen,
 					},
 					nil,
 				)
@@ -136,9 +132,9 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_error_for_wrong_device_app_id",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -150,13 +146,12 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abcd",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     lastSeen,
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abcd",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: lastSeen,
 					},
 					nil,
 				)
@@ -168,9 +163,9 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_fail_to_find_device",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -189,9 +184,9 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_fail_to_find_source",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -203,13 +198,12 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     lastSeen,
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: lastSeen,
 					},
 					nil,
 				)
@@ -224,9 +218,9 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_error_for_wrong_source_group_id",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -238,13 +232,12 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     lastSeen,
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: lastSeen,
 					},
 					nil,
 				)
@@ -263,9 +256,9 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_fail_to_find_subscription",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -277,13 +270,12 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     lastSeen,
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: lastSeen,
 					},
 					nil,
 				)
@@ -305,9 +297,9 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_create_new_subscription_and_listen_successfully",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -319,12 +311,11 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
 					},
 					nil,
 				)
@@ -343,21 +334,20 @@ func TestHub_listen(t *testing.T) {
 				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(nil)
 			},
 			want: &datastore.Device{
-				UID:            "device-id",
-				GroupID:        "1234",
-				AppID:          "abc",
-				HostName:       "",
-				Status:         datastore.DeviceStatusOnline,
-				DocumentStatus: datastore.ActiveDocumentStatus,
+				UID:        "device-id",
+				GroupID:    "1234",
+				EndpointID: "abc",
+				HostName:   "",
+				Status:     datastore.DeviceStatusOnline,
 			},
 			wantErr: false,
 		},
 		{
 			name: "should_fail_to_create_new_subscription",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
 					DeviceID:   "device-id",
@@ -369,13 +359,12 @@ func TestHub_listen(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     lastSeen,
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: lastSeen,
 					},
 					nil,
 				)
@@ -393,13 +382,12 @@ func TestHub_listen(t *testing.T) {
 				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(errors.New("failed to create new subscription"))
 			},
 			want: &datastore.Device{
-				UID:            "device-id",
-				GroupID:        "1234",
-				AppID:          "abc",
-				HostName:       "",
-				Status:         datastore.DeviceStatusOnline,
-				DocumentStatus: datastore.ActiveDocumentStatus,
-				LastSeenAt:     lastSeen,
+				UID:        "device-id",
+				GroupID:    "1234",
+				EndpointID: "abc",
+				HostName:   "",
+				Status:     datastore.DeviceStatusOnline,
+				LastSeenAt: lastSeen,
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -417,7 +405,7 @@ func TestHub_listen(t *testing.T) {
 
 			h := NewHub()
 
-			device, err := listen(tt.args.ctx, tt.args.group, tt.args.app, tt.args.listenRequest, h, r)
+			device, err := listen(tt.args.ctx, tt.args.group, tt.args.endpoint, tt.args.listenRequest, h, r)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -437,10 +425,10 @@ func TestHub_login(t *testing.T) {
 	type args struct {
 		ctx          context.Context
 		group        *datastore.Group
-		app          *datastore.Application
+		endpoint     *datastore.Endpoint
 		loginRequest *LoginRequest
 	}
-	var tests = []struct {
+	tests := []struct {
 		name        string
 		args        args
 		dbFn        func(h *Repo)
@@ -453,9 +441,9 @@ func TestHub_login(t *testing.T) {
 		{
 			name: "should_create_new_device_and_login_successfully",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "",
@@ -468,19 +456,19 @@ func TestHub_login(t *testing.T) {
 				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			want: &datastore.Device{
-				GroupID:  "1234",
-				AppID:    "abc",
-				HostName: "hostname_1",
-				Status:   datastore.DeviceStatusOffline,
+				GroupID:    "1234",
+				EndpointID: "abc",
+				HostName:   "hostname_1",
+				Status:     datastore.DeviceStatusOffline,
 			},
 			wantErr: false,
 		},
 		{
 			name: "should_fail_to_create_new_device",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "",
@@ -499,9 +487,9 @@ func TestHub_login(t *testing.T) {
 		{
 			name: "should_login_with_existing_device_successfully",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "device-id",
@@ -511,31 +499,30 @@ func TestHub_login(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOffline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "hostname_1",
+						Status:     datastore.DeviceStatusOffline,
+						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 					},
 					nil,
 				)
 			},
 			want: &datastore.Device{
-				GroupID:  "1234",
-				AppID:    "abc",
-				HostName: "hostname_1",
-				Status:   datastore.DeviceStatusOffline,
+				GroupID:    "1234",
+				EndpointID: "abc",
+				HostName:   "hostname_1",
+				Status:     datastore.DeviceStatusOffline,
 			},
 			wantErr: false,
 		},
 		{
 			name: "should_fail_to_find_device",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "device-id",
@@ -547,9 +534,9 @@ func TestHub_login(t *testing.T) {
 					Return(nil, errors.New("failed to find device by id"))
 			},
 			want: &datastore.Device{
-				GroupID:  "1234",
-				AppID:    "abc",
-				HostName: "hostname_1",
+				GroupID:    "1234",
+				EndpointID: "abc",
+				HostName:   "hostname_1",
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -558,9 +545,9 @@ func TestHub_login(t *testing.T) {
 		{
 			name: "should_error_for_wrong_device_group_id",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "device-id",
@@ -570,13 +557,12 @@ func TestHub_login(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "123",
-						AppID:          "abc",
-						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+						UID:        "device-id",
+						GroupID:    "123",
+						EndpointID: "abc",
+						HostName:   "hostname_1",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 					},
 					nil,
 				)
@@ -588,9 +574,9 @@ func TestHub_login(t *testing.T) {
 		{
 			name: "should_error_for_wrong_device_app_id",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "device-id",
@@ -600,13 +586,12 @@ func TestHub_login(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abcd",
-						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abcd",
+						HostName:   "hostname_1",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 					},
 					nil,
 				)
@@ -618,9 +603,9 @@ func TestHub_login(t *testing.T) {
 		{
 			name: "should_login_with_existing_device_and_update_device_status_successfully",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "device-id",
@@ -630,39 +615,37 @@ func TestHub_login(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "hostname_1",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 					},
 					nil,
 				)
 				d.EXPECT().UpdateDevice(gomock.Any(), &datastore.Device{
-					UID:            "device-id",
-					GroupID:        "1234",
-					AppID:          "abc",
-					HostName:       "hostname_1",
-					Status:         datastore.DeviceStatusOffline,
-					DocumentStatus: datastore.ActiveDocumentStatus,
-					LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+					UID:        "device-id",
+					GroupID:    "1234",
+					EndpointID: "abc",
+					HostName:   "hostname_1",
+					Status:     datastore.DeviceStatusOffline,
+					LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 				}, "abc", "1234").Times(1).Return(nil)
 			},
 			want: &datastore.Device{
-				GroupID:  "1234",
-				AppID:    "abc",
-				HostName: "hostname_1",
+				GroupID:    "1234",
+				EndpointID: "abc",
+				HostName:   "hostname_1",
 			},
 			wantErr: false,
 		},
 		{
 			name: "should_fail_to_update_device_status",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "1234"},
-				app:   &datastore.Application{UID: "abc"},
+				ctx:      ctx,
+				group:    &datastore.Group{UID: "1234"},
+				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
 					DeviceID: "device-id",
@@ -672,24 +655,22 @@ func TestHub_login(t *testing.T) {
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
 					&datastore.Device{
-						UID:            "device-id",
-						GroupID:        "1234",
-						AppID:          "abc",
-						HostName:       "hostname_1",
-						Status:         datastore.DeviceStatusOnline,
-						DocumentStatus: datastore.ActiveDocumentStatus,
-						LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+						UID:        "device-id",
+						GroupID:    "1234",
+						EndpointID: "abc",
+						HostName:   "hostname_1",
+						Status:     datastore.DeviceStatusOnline,
+						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 					},
 					nil,
 				)
 				d.EXPECT().UpdateDevice(gomock.Any(), &datastore.Device{
-					UID:            "device-id",
-					GroupID:        "1234",
-					AppID:          "abc",
-					HostName:       "hostname_1",
-					Status:         datastore.DeviceStatusOffline,
-					DocumentStatus: datastore.ActiveDocumentStatus,
-					LastSeenAt:     primitive.NewDateTimeFromTime(time.Now()),
+					UID:        "device-id",
+					GroupID:    "1234",
+					EndpointID: "abc",
+					HostName:   "hostname_1",
+					Status:     datastore.DeviceStatusOffline,
+					LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
 				}, "abc", "1234").Times(1).Return(errors.New("failed to update device to online"))
 			},
 			wantErr:     true,
@@ -708,7 +689,7 @@ func TestHub_login(t *testing.T) {
 
 			h := NewHub()
 
-			device, err := login(tt.args.ctx, tt.args.group, tt.args.app, tt.args.loginRequest, h, r)
+			device, err := login(tt.args.ctx, tt.args.group, tt.args.endpoint, tt.args.loginRequest, h, r)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -718,11 +699,10 @@ func TestHub_login(t *testing.T) {
 
 			require.Nil(t, err)
 			require.NotEmpty(t, device.UID)
-			require.Equal(t, tt.want.AppID, device.AppID)
+			require.Equal(t, tt.want.EndpointID, device.EndpointID)
 			require.Equal(t, tt.want.GroupID, device.GroupID)
 			require.Equal(t, datastore.DeviceStatusOffline, device.Status)
 			require.Equal(t, tt.want.HostName, device.HostName)
-
 		})
 	}
 }

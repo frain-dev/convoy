@@ -27,13 +27,13 @@ export class EventsService {
 		});
 	}
 
-	getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; appId?: string; eventId: string; statusQuery: string; token?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; endpointId?: string; eventId: string; statusQuery: string; token?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
-						requestDetails.appId
-					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId || ''}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${
+						requestDetails.endpointId
+					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId || ''}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});
@@ -45,11 +45,11 @@ export class EventsService {
 		});
 	}
 
-	getApps(requestDetails: { pageNo: number; searchString?: string }): Promise<HTTP_RESPONSE> {
+	getEndpoints(requestDetails: { pageNo: number; searchString?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/apps?sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `${this.privateService.urlFactory('org_project')}/endpoints?sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
 					method: 'get'
 				});
 
@@ -124,13 +124,13 @@ export class EventsService {
 		});
 	}
 
-	batchRetryEvent(requestDetails: { eventId: string; pageNo: number; startDate: string; endDate: string; appId: string; statusQuery?: string; token?: string }): Promise<HTTP_RESPONSE> {
+	batchRetryEvent(requestDetails: { eventId: string; pageNo: number; startDate: string; endDate: string; endpointId: string; statusQuery?: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&appId=${
-						requestDetails.appId
-					}${requestDetails.statusQuery || ''}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
+						requestDetails.endDate
+					}&endpointId=${requestDetails.endpointId}${requestDetails.statusQuery || ''}`,
 					method: 'post',
 					body: null,
 					token: requestDetails.token
@@ -143,13 +143,13 @@ export class EventsService {
 		});
 	}
 
-	getRetryCount(requestDetails: { appId: string; eventId: string; pageNo: number; startDate: string; endDate: string; statusQuery: string; token?: string }): Promise<HTTP_RESPONSE> {
+	getRetryCount(requestDetails: { endpointId: string; eventId: string; pageNo: number; startDate: string; endDate: string; statusQuery: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
 					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
 						requestDetails.endDate
-					}&appId=${requestDetails.appId}${requestDetails.statusQuery || ''}`,
+					}&endpointId=${requestDetails.endpointId}${requestDetails.statusQuery || ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});

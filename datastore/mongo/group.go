@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/util"
+
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/bson"
@@ -46,21 +48,18 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
 	ctx = db.setCollectionInContext(ctx)
 	groups := make([]*datastore.Group, 0)
-	var filter primitive.M
-	if f.OrgID == "" {
-		filter = bson.M{
-			"document_status": datastore.ActiveDocumentStatus,
-		}
-	} else {
-		filter = bson.M{
-			"document_status": datastore.ActiveDocumentStatus,
-			"organisation_id": f.OrgID,
-		}
+
+	filter := bson.M{}
+
+	if !util.IsStringEmpty(f.OrgID) {
+		filter["organisation_id"] = f.OrgID
 	}
+
 	f = f.WithNamesTrimmed()
 	if len(f.Names) > 0 {
 		filter["name"] = bson.M{"$in": f.Names}
 	}
+
 	sort := bson.M{"created_at": 1}
 	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 
@@ -71,7 +70,8 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	ctx = db.setCollectionInContext(ctx)
 
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
-	update := bson.D{primitive.E{Key: "name", Value: o.Name},
+	update := bson.D{
+		primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
@@ -110,7 +110,8 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 	}
 
 	matchStage := bson.D{
-		{Key: "$match",
+		{
+			Key: "$match",
 			Value: bson.D{
 				{Key: "uid", Value: bson.M{"$in": ids}},
 			},
@@ -119,17 +120,19 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 
 	lookupStage1 := bson.D{
 		{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: datastore.AppCollection},
+			{Key: "from", Value: datastore.EndpointCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
-				bson.D{{
-					Key: "$match", Value: bson.D{
-						{Key: "document_status", Value: "Active"},
-					}},
+				bson.D{
+					{
+						Key: "$match", Value: bson.D{
+							{Key: "deleted_at", Value: nil},
+						},
+					},
 				},
 			}},
-			{Key: "as", Value: "group_apps"},
+			{Key: "as", Value: "group_endpoints"},
 		}},
 	}
 
@@ -139,10 +142,12 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
 			{Key: "pipeline", Value: mongo.Pipeline{
-				bson.D{{
-					Key: "$project", Value: bson.D{
-						{Key: "_id", Value: "$uid"},
-					}},
+				bson.D{
+					{
+						Key: "$project", Value: bson.D{
+							{Key: "_id", Value: "$uid"},
+						},
+					},
 				},
 			}},
 			{Key: "as", Value: "group_events"},
@@ -154,9 +159,10 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			Key: "$project",
 			Value: bson.D{
 				{Key: "group_id", Value: "$uid"},
-				{Key: "total_apps", Value: bson.D{{Key: "$size", Value: "$group_apps"}}},
+				{Key: "total_endpoints", Value: bson.D{{Key: "$size", Value: "$group_endpoints"}}},
 				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$group_events"}}},
-			}},
+			},
+		},
 	}
 	var stats []datastore.GroupStatistics
 
@@ -182,8 +188,7 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	ctx = db.setCollectionInContext(ctx)
 	updateAsDeleted := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -193,27 +198,27 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 			return err
 		}
 
-		var apps []datastore.Application
+		var endpoints []datastore.Endpoint
 
-		ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.AppCollection)
+		ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.EndpointCollection)
 		filter := bson.M{"group_id": uid}
-		err = db.store.FindAll(ctx, filter, nil, nil, &apps)
+		err = db.store.FindAll(ctx, filter, nil, nil, &endpoints)
 		if err != nil {
 			return err
 		}
 
-		for _, app := range apps {
-			err = db.deleteAppEvents(sessCtx, uid, updateAsDeleted)
+		for _, endpoint := range endpoints {
+			err = db.deleteEndpointEvents(sessCtx, endpoint.UID, updateAsDeleted)
 			if err != nil {
 				return err
 			}
 
-			err = db.deleteAppSubscriptions(sessCtx, uid, updateAsDeleted)
+			err = db.deleteEndpointSubscriptions(sessCtx, endpoint.UID, updateAsDeleted)
 			if err != nil {
 				return err
 			}
 
-			err = db.deleteApp(sessCtx, app.UID, updateAsDeleted)
+			err = db.deleteEndpoint(sessCtx, endpoint.UID, updateAsDeleted)
 			if err != nil {
 				return err
 			}
@@ -232,7 +237,6 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 		"uid": bson.M{
 			"$in": ids,
 		},
-		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	groups := make([]datastore.Group, 0)
@@ -245,24 +249,24 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 	return groups, err
 }
 
-func (db *groupRepo) deleteAppEvents(ctx context.Context, groupId string, update bson.M) error {
+func (db *groupRepo) deleteEndpointEvents(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 
-	filter := bson.M{"group_id": groupId}
+	filter := bson.M{"endpoint_id": endpoint_id}
 	return db.store.UpdateMany(ctx, filter, update, true)
 }
 
-func (db *groupRepo) deleteApp(ctx context.Context, app_id string, update bson.M) error {
-	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.AppCollection)
+func (db *groupRepo) deleteEndpoint(ctx context.Context, endpoint_id string, update bson.M) error {
+	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EndpointCollection)
 
-	filter := bson.M{"uid": app_id}
+	filter := bson.M{"uid": endpoint_id}
 	return db.store.UpdateMany(ctx, filter, update, true)
 }
 
-func (db *groupRepo) deleteAppSubscriptions(ctx context.Context, app_id string, update bson.M) error {
+func (db *groupRepo) deleteEndpointSubscriptions(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
 
-	filter := bson.M{"app_id": app_id}
+	filter := bson.M{"endpoint_id": endpoint_id}
 	err := db.store.UpdateMany(ctx, filter, update, true)
 
 	return err

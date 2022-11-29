@@ -43,9 +43,9 @@ type ConfigurationResponse struct {
 	ApiVersion         string                                `json:"api_version"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
 }
 
 type OrganisationInvite struct {
@@ -100,12 +100,12 @@ type CreateGroupResponse struct {
 }
 
 type PortalAPIKeyResponse struct {
-	Key     string    `json:"key"`
-	Role    auth.Role `json:"role"`
-	Url     string    `json:"url,omitempty"`
-	Type    string    `json:"key_type"`
-	AppID   string    `json:"app_id,omitempty"`
-	GroupID string    `json:"group_id,omitempty"`
+	Key        string    `json:"key"`
+	Role       auth.Role `json:"role"`
+	Url        string    `json:"url,omitempty"`
+	Type       string    `json:"key_type"`
+	EndpointID string    `json:"endpoint_id,omitempty"`
+	GroupID    string    `json:"group_id,omitempty"`
 }
 
 type SourceResponse struct {
@@ -120,9 +120,9 @@ type SourceResponse struct {
 	Provider       datastore.SourceProvider  `json:"provider"`
 	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
 }
 
 type LoginUser struct {
@@ -145,9 +145,9 @@ type LoginUserResponse struct {
 	Email     string `json:"email"`
 	Token     Token  `json:"token"`
 
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
 }
 
 type UserInviteTokenResponse struct {
@@ -168,18 +168,38 @@ type User struct {
 	Role      auth.Role `json:"role" bson:"role"`
 }
 
-type Application struct {
-	AppName         string `json:"name" bson:"name" valid:"required~please provide your appName"`
-	SupportEmail    string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled      bool   `json:"is_disabled"`
-	SlackWebhookURL string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+type Endpoint struct {
+	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
+	Secret             string `json:"secret" bson:"secret"`
+	OwnerID            string `json:"owner_id" bson:"owner_id"`
+	Description        string `json:"description" bson:"description"`
+	AdvancedSignatures *bool  `json:"advanced_signatures" bson:"advanced_signatures"`
+	Name               string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
+	SupportEmail       string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled         bool   `json:"is_disabled"`
+	SlackWebhookURL    string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+
+	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
+	AppID             string                            //Deprecated but necessary for backward compatibility
 }
 
-type UpdateApplication struct {
-	AppName         *string `json:"name" bson:"name" valid:"required~please provide your appName"`
-	SupportEmail    *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled      *bool   `json:"is_disabled"`
-	SlackWebhookURL *string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+type UpdateEndpoint struct {
+	URL                string  `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
+	Secret             string  `json:"secret" bson:"secret"`
+	Description        string  `json:"description" bson:"description"`
+	AdvancedSignatures *bool   `json:"advanced_signatures" bson:"advanced_signatures"`
+	Name               *string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
+	SupportEmail       *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
+	IsDisabled         *bool   `json:"is_disabled"`
+	SlackWebhookURL    *string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+
+	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
 
 type Source struct {
@@ -199,8 +219,19 @@ type UpdateSource struct {
 }
 
 type Event struct {
-	AppID     string `json:"app_id" bson:"app_id" valid:"required~please provide an app id"`
-	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+	EndpointID string `json:"endpoint_id"`
+	AppID      string `json:"app_id" bson:"app_id"`
+	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+
+	// Data is an arbitrary JSON value that gets sent as the body of the
+	// webhook to the endpoints
+	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
+	CustomHeaders map[string]string `json:"custom_headers"`
+}
+
+type FanoutEvent struct {
+	OwnerID   string `json:"owner_id" valid:"required~please provide an owner id"`
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -227,20 +258,6 @@ type MessageResponse struct {
 	Status int             `json:"status" bson:"status"`
 	Data   json.RawMessage `json:"data" bson:"data"`
 }
-
-type Endpoint struct {
-	URL                string   `json:"url" bson:"url"`
-	Description        string   `json:"description" bson:"description"`
-	Events             []string `json:"events" bson:"events"`
-	AdvancedSignatures *bool    `json:"advanced_signatures" bson:"advanced_signatures"`
-	Secret             string   `json:"secret" bson:"secret"`
-
-	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
-}
-
 type ExpireSecret struct {
 	Secret     string `json:"secret"`
 	Expiration int    `json:"expiration"`
@@ -260,8 +277,8 @@ type WebhookRequest struct {
 
 type Subscription struct {
 	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
-	AppID      string `json:"app_id" bson:"app_id" valid:"required~please provide a valid app id"`
 	SourceID   string `json:"source_id" bson:"source_id"`
+	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
 	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
 	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -316,11 +333,35 @@ type ResetPassword struct {
 	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
 }
 
-type CreateAppApiKey struct {
+type CreateEndpointApiKey struct {
 	Group      *datastore.Group
-	App        *datastore.Application
+	Endpoint   *datastore.Endpoint
 	Name       string `json:"name"`
 	BaseUrl    string
 	KeyType    datastore.KeyType `json:"key_type"`
 	Expiration int               `json:"expiration"`
+}
+
+type PortalLink struct {
+	Name      string   `json:"name" valid:"required~please provide the name field"`
+	Endpoints []string `json:"endpoints"`
+}
+
+type PortalLinkResponse struct {
+	UID               string               `json:"uid"`
+	Name              string               `json:"name"`
+	GroupID           string               `json:"group_id"`
+	Endpoints         []string             `json:"endpoints"`
+	EndpointCount     int                  `json:"endpoint_count"`
+	Token             string               `json:"token"`
+	EndpointsMetadata []datastore.Endpoint `json:"endpoints_metadata"`
+	URL               string               `json:"url"`
+	CreatedAt         primitive.DateTime   `json:"created_at,omitempty"`
+	UpdatedAt         primitive.DateTime   `json:"updated_at,omitempty"`
+	DeletedAt         primitive.DateTime   `json:"deleted_at,omitempty"`
+}
+
+type TestFilter struct {
+	Request map[string]interface{} `json:"request"`
+	Schema  map[string]interface{} `json:"schema"`
 }

@@ -46,7 +46,6 @@
 				</svg>
 				<span class="text-primary-100 font-medium text-16">Create new project</span>
 			</a>
-
 			<ng-container *ngFor="let project of projects">
 				<a [routerLink]="'/projects/' + project.uid" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
 					<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
@@ -64,13 +63,13 @@
 
 					<div class="flex items-center p-0">
 						<div class="py-2 px-6 text-12 font-medium w-1/2 whitespace-nowrap">
-							<span class="text-black mr-2">{{ project.statistics?.messages_sent }}</span>
+							<span class="text-black mr-2">{{ project.statistics?.messages_sent | number }}</span>
 							<span class="text-grey-40">Events {{ project.type === 'incoming' ? 'Received' : 'Sent' }}</span>
 						</div>
-						<div class="py-2 px-6 w-1/2 flex items-center justify-between border-l border-l-grey-10">
+						<div class="py-2 px-6 w-1/2 whitespace-nowrap flex items-center justify-between border-l border-l-grey-10">
 							<div class="text-12 font-medium">
-								<span class="text-black mr-2">{{ project.statistics?.total_apps }}</span>
-								<span class="text-grey-40">Apps</span>
+								<span class="text-black mr-2">{{ project.statistics?.total_endpoints | number }}</span>
+								<span class="text-grey-40">Endpoints</span>
 							</div>
 							<svg width="20" height="20" fill="#477db3">
 								<use xlink:href="#arrow-right-icon"></use>

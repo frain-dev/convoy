@@ -17,10 +17,10 @@ import (
 
 func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionService {
 	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
-	appRepo := mongo.NewApplicationRepo(a.A.Store)
+	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	sourceRepo := mongo.NewSourceRepo(a.A.Store)
 
-	return services.NewSubscriptionService(subRepo, appRepo, sourceRepo)
+	return services.NewSubscriptionService(subRepo, endpointRepo, sourceRepo)
 }
 
 // GetSubscriptions
@@ -39,11 +39,22 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
+	var endpoints []string
+
 	pageable := m.GetPageableFromContext(r.Context())
 	group := m.GetGroupFromContext(r.Context())
-	appID := m.GetAppIDFromContext(r)
+	endpointID := m.GetEndpointIDFromContext(r)
+	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
 
-	filter := &datastore.FilterBy{GroupID: group.UID, AppID: appID}
+	if !util.IsStringEmpty(endpointID) {
+		endpoints = []string{endpointID}
+	}
+
+	if len(endpointIDs) > 0 {
+		endpoints = endpointIDs
+	}
+
+	filter := &datastore.FilterBy{GroupID: group.UID, EndpointIDs: endpoints}
 
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
@@ -207,4 +218,35 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", sub, http.StatusAccepted))
+}
+
+// TestSubscriptionFilter
+// @Summary Test subscription filter
+// @Description This endpoint tests a subscription's filter
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Param projectID path string true "Project id"
+// @Param subscriptionID path string true "subscription id"
+// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
+func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
+	var test models.TestFilter
+	err := util.ReadJSON(r, &test)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	subService := createSubscriptionService(a)
+	isValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request, test.Schema)
+	if err != nil {
+		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusCreated))
 }

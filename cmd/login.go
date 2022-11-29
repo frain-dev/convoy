@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const (
@@ -25,11 +25,11 @@ const (
 )
 
 type Config struct {
-	Host                 string        `yaml:"host"`
-	ActiveDeviceID       string        `yaml:"active_device_id"`
-	ActiveApiKey         string        `yaml:"active_api_key"`
-	ActiveApplication    string        `yaml:"active_application"`
-	Applications         []Application `yaml:"applications"`
+	Host                 string     `yaml:"host"`
+	ActiveDeviceID       string     `yaml:"active_device_id"`
+	ActiveApiKey         string     `yaml:"active_api_key"`
+	ActiveEndpoint       string     `yaml:"active_endpoint"`
+	Endpoints            []Endpoint `yaml:"endpoints"`
 	path                 string
 	hasDefaultConfigFile bool
 	isNewApiKey          bool
@@ -89,7 +89,7 @@ func (c *Config) WriteConfig() error {
 	return nil
 }
 
-type Application struct {
+type Endpoint struct {
 	UID      string `yaml:"uid"`
 	Name     string `yaml:"name"`
 	ApiKey   string `yaml:"api_key"`
@@ -133,7 +133,7 @@ func addLoginCommand() *cobra.Command {
 
 			var response *socket.LoginResponse
 
-			dispatch, err := convoyNet.NewDispatcher(time.Second * 10, "")
+			dispatch, err := convoyNet.NewDispatcher(time.Second*10, "")
 			if err != nil {
 				return err
 			}
@@ -160,7 +160,7 @@ func addLoginCommand() *cobra.Command {
 
 			log.Info("Login Success!")
 			log.Infof("Project: %s", response.Group.Name)
-			log.Infof("Application: %s", response.App.Title)
+			log.Infof("Endpoint: %s", response.Endpoint.Title)
 			return nil
 		},
 	}
@@ -172,17 +172,17 @@ func addLoginCommand() *cobra.Command {
 }
 
 func WriteConfig(c *Config, response *socket.LoginResponse) error {
-	name := fmt.Sprintf("%s (%s)", response.App.Title, response.Group.Name)
-	c.ActiveApplication = name
+	name := fmt.Sprintf("%s (%s)", response.Endpoint.Title, response.Group.Name)
+	c.ActiveEndpoint = name
 	c.ActiveDeviceID = response.Device.UID
 
 	if c.hasDefaultConfigFile {
 		if c.isNewHost {
 			// if the host is different from the current host in the config file,
 			// the data in the config file is overwritten
-			c.Applications = []Application{
+			c.Endpoints = []Endpoint{
 				{
-					UID:      response.App.UID,
+					UID:      response.Endpoint.UID,
 					Name:     name,
 					ApiKey:   c.ActiveApiKey,
 					DeviceID: response.Device.UID,
@@ -191,14 +191,14 @@ func WriteConfig(c *Config, response *socket.LoginResponse) error {
 		}
 
 		if c.isNewApiKey {
-			if doesAppExist(c, response.App.UID) {
-				return fmt.Errorf("app with ID (%s) has been added already", response.App.UID)
+			if doesEndpointExist(c, response.Endpoint.UID) {
+				return fmt.Errorf("endpoint with ID (%s) has been added already", response.Endpoint.UID)
 			}
 
 			// If the api key provided is different from the active api key,
 			// we append the project returned to the list of projects within the config
-			c.Applications = append(c.Applications, Application{
-				UID:      response.App.UID,
+			c.Endpoints = append(c.Endpoints, Endpoint{
+				UID:      response.Endpoint.UID,
 				Name:     name,
 				ApiKey:   c.ActiveApiKey,
 				DeviceID: response.Device.UID,
@@ -210,9 +210,9 @@ func WriteConfig(c *Config, response *socket.LoginResponse) error {
 		if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
 			return err
 		}
-		c.Applications = []Application{
+		c.Endpoints = []Endpoint{
 			{
-				UID:      response.App.UID,
+				UID:      response.Endpoint.UID,
 				Name:     name,
 				ApiKey:   c.ActiveApiKey,
 				DeviceID: response.Device.UID,
@@ -242,7 +242,7 @@ func IsNewHost(currentHost, newHost string) bool {
 // The api key is considered new if it doesn't already
 // exist within the config file
 func IsNewApiKey(c *Config, apiKey string) bool {
-	for _, project := range c.Applications {
+	for _, project := range c.Endpoints {
 		if project.ApiKey == apiKey {
 			return false
 		}
@@ -254,7 +254,7 @@ func IsNewApiKey(c *Config, apiKey string) bool {
 func findDeviceID(c *Config) string {
 	var deviceID string
 
-	for _, app := range c.Applications {
+	for _, app := range c.Endpoints {
 		if app.ApiKey == c.ActiveApiKey {
 			return app.DeviceID
 		}
@@ -263,9 +263,9 @@ func findDeviceID(c *Config) string {
 	return deviceID
 }
 
-func doesAppExist(c *Config, appId string) bool {
-	for _, app := range c.Applications {
-		if app.UID == appId {
+func doesEndpointExist(c *Config, endpointId string) bool {
+	for _, endpoint := range c.Endpoints {
+		if endpoint.UID == endpointId {
 			return true
 		}
 	}

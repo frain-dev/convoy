@@ -15,12 +15,13 @@ import (
 	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -35,7 +36,7 @@ type SignatureValues struct {
 	Timestamp string
 }
 
-func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		Id := string(t.Payload())
 
@@ -46,12 +47,8 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		endpoint, err := appRepo.FindApplicationEndpointByID(context.Background(), ed.AppID, ed.EndpointID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
 
-		app, err := appRepo.FindApplicationByID(context.Background(), ed.AppID)
+		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
@@ -63,7 +60,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
-		g, err := groupRepo.FetchGroupByID(context.Background(), app.GroupID)
+		g, err := groupRepo.FetchGroupByID(context.Background(), endpoint.GroupID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -204,7 +201,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			}
 
 			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
+			err = notifications.SendEndpointNotification(context.Background(), endpoint, g, subscriptionStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -243,7 +240,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 				}
 
 				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), app, endpoint, g, subscriptionStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
+				err = notifications.SendEndpointNotification(context.Background(), endpoint, g, subscriptionStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
 				if err != nil {
 					log.WithError(err).Error("failed to send notification")
 				}
@@ -273,7 +270,7 @@ func newSignature(endpoint *datastore.Endpoint, g *datastore.Group, data json.Ra
 		}
 
 		for _, sc := range endpoint.Secrets {
-			if sc.DeletedAt == 0 {
+			if sc.DeletedAt == nil {
 				// the secret has not been expired
 				scheme.Secret = append(scheme.Secret, sc.Value)
 			}

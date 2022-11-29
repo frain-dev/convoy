@@ -56,10 +56,6 @@ export class SubscriptionsComponent implements OnInit {
 		if (action !== 'cancel') this.generalService.showNotification({ message: `Subscription has been ${action}d successfully`, style: 'success' });
 	}
 
-	copyText() {
-		this.generalService.showNotification({ message: `Endpoint secret has been copied to clipboard`, style: 'info' });
-	}
-
 	async deleteSubscripton() {
 		this.isDeletingSubscription = true;
 
@@ -82,5 +78,9 @@ export class SubscriptionsComponent implements OnInit {
 			return config;
 		}
 		return null;
+	}
+
+	getEndpointSecret(endpointSecrets: any) {
+		return endpointSecrets?.length === 1 ? endpointSecrets[0].value : endpointSecrets[endpointSecrets?.length - 1].value;
 	}
 }

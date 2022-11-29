@@ -25,9 +25,9 @@ type EventDeliveryRepository interface {
 	FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
-	CountEventDeliveries(context.Context, string, string, string, []EventDeliveryStatus, SearchParams) (int64, error)
+	CountEventDeliveries(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams) (int64, error)
 	DeleteGroupEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(context.Context, string, string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
 }
 
 type EventRepository interface {
@@ -77,21 +77,21 @@ type OrganisationMemberRepository interface {
 	FetchOrganisationMemberByUserID(ctx context.Context, userID string, organisationID string) (*OrganisationMember, error)
 }
 
-type ApplicationRepository interface {
-	CreateApplication(context.Context, *Application, string) error
-	LoadApplicationsPaged(context.Context, string, string, Pageable) ([]Application, PaginationData, error)
-	FindApplicationByID(context.Context, string) (*Application, error)
-	UpdateApplication(context.Context, *Application, string) error
-	DeleteApplication(context.Context, *Application) error
-	CountGroupApplications(ctx context.Context, groupID string) (int64, error)
-	DeleteGroupApps(context.Context, string) error
-	LoadApplicationsPagedByGroupId(context.Context, string, Pageable) ([]Application, PaginationData, error)
-	SearchApplicationsByGroupId(context.Context, string, SearchParams) ([]Application, error)
-	FindApplicationEndpointByID(context.Context, string, string) (*Endpoint, error)
-	CreateApplicationEndpoint(context.Context, string, string, *Endpoint) error
-	ExpireSecret(ctx context.Context, appID string, endpointID string, secrets []Secret) error
+type EndpointRepository interface {
+	CreateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
+	FindEndpointByID(çtx context.Context, id string) (*Endpoint, error)
+	FindEndpointsByID(ctx context.Context, ids []string) ([]Endpoint, error)
+	FindEndpointsByAppID(ctx context.Context, appID string) ([]Endpoint, error)
+	FindEndpointsByOwnerID(ctx context.Context, groupID string, ownerID string) ([]Endpoint, error)
+	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
+	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
+	CountGroupEndpoints(ctx context.Context, groupID string) (int64, error)
+	DeleteGroupEndpoints(context.Context, string) error
+	LoadEndpointsPaged(ctx context.Context, groupID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
+	LoadEndpointsPagedByGroupId(ctx context.Context, groupID string, pageable Pageable) ([]Endpoint, PaginationData, error)
+	SearchEndpointsByGroupId(ctx context.Context, groupID string, params SearchParams) ([]Endpoint, error)
+	ExpireSecret(ctx context.Context, groupID string, endpointID string, secrets []Secret) error
 }
-
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
 	UpdateSubscription(context.Context, string, *Subscription) error
@@ -100,9 +100,10 @@ type SubscriptionRepository interface {
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
-	FindSubscriptionsByAppID(ctx context.Context, groupId string, appID string) ([]Subscription, error)
+	FindSubscriptionsByEndpointID(ctx context.Context, groupId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, groupId string, deviceID string) (*Subscription, error)
 	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
+	TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error)
 }
 
 type SourceRepository interface {
@@ -137,4 +138,13 @@ type ConfigurationRepository interface {
 	CreateConfiguration(context.Context, *Configuration) error
 	LoadConfiguration(context.Context) (*Configuration, error)
 	UpdateConfiguration(context.Context, *Configuration) error
+}
+
+type PortalLinkRepository interface {
+	CreatePortalLink(context.Context, *PortalLink) error
+	UpdatePortalLink(ctx context.Context, groupID string, portal *PortalLink) error
+	FindPortalLinkByID(ctx context.Context, groupID string, id string) (*PortalLink, error)
+	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
+	LoadPortalLinksPaged(ctx context.Context, groupID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
+	RevokePortalLink(ctx context.Context, groupID string, id string) error
 }

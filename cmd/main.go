@@ -75,14 +75,13 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 	}
 
 	defaultUser := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      "default",
-		LastName:       "default",
-		Email:          "superuser@default.com",
-		Password:       string(p.Hash),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: "default",
+		LastName:  "default",
+		Email:     "superuser@default.com",
+		Password:  string(p.Hash),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = userRepo.CreateUser(ctx, defaultUser)

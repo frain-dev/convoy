@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/kelseyhightower/envconfig"
-	log "github.com/sirupsen/logrus"
 )
 
 const (

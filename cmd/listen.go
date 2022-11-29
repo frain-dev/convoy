@@ -16,15 +16,18 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 	convoyNet "github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
+
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
-var done chan interface{}
-var interrupt chan os.Signal
+var (
+	done      chan interface{}
+	interrupt chan os.Signal
+)
 
 const (
 	// Time allowed to write a message to the server.
@@ -103,7 +106,6 @@ func addListenCommand(a *app) *cobra.Command {
 				"Authorization": []string{"Bearer " + c.ActiveApiKey},
 				"Body":          []string{string(body)},
 			})
-
 			if err != nil {
 				if response != nil {
 					buf, e := io.ReadAll(response.Body)
@@ -131,7 +133,7 @@ func addListenCommand(a *app) *cobra.Command {
 				// Send a message to the server to resend unsuccessful events to the device
 				err := conn.WriteMessage(websocket.TextMessage, []byte(since))
 				if err != nil {
-					log.Println("an error occured sending 'since' message", err)
+					log.WithError(err).Errorln("an error occurred sending 'since' message")
 				}
 			}
 
@@ -142,7 +144,7 @@ func addListenCommand(a *app) *cobra.Command {
 				case <-ticker.C:
 					err := conn.SetWriteDeadline(time.Now().Add(writeWait))
 					if err != nil {
-						log.Println(err)
+						log.WithError(err).Errorln("failed to set write deadline")
 					}
 
 					if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -159,14 +161,14 @@ func addListenCommand(a *app) *cobra.Command {
 					// Send a message to set the device to offline
 					err := conn.WriteMessage(websocket.TextMessage, []byte("disconnect"))
 					if err != nil {
-						log.Println("Error during closing websocket:", err)
+						log.WithError(err).Errorln("error during closing websocket")
 						return
 					}
 
 					// Close our websocket connection
 					err = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 					if err != nil {
-						log.Println("Error during closing websocket:", err)
+						log.WithError(err).Errorln("error during closing websocket")
 						return
 					}
 

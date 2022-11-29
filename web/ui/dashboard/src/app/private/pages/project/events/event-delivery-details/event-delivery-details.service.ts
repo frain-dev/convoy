@@ -13,7 +13,7 @@ export class EventDeliveryDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}`,
+					url: `${token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}${token ? `?token=${token}` : ''}`,
 					method: 'get',
 					token
 				});
@@ -29,7 +29,7 @@ export class EventDeliveryDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}/deliveryattempts`,
+					url: `${token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${eventId}/deliveryattempts${token ? `?token=${token}` : ''}`,
 					method: 'get',
 					token
 				});
