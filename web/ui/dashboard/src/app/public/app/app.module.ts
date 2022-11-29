@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppComponent } from './app.component';
 import { RouterModule, Routes } from '@angular/router';
-import { EventModule } from 'src/app/private/pages/project/events/event/event.module';
 import { EventDeliveriesModule } from 'src/app/private/pages/project/events/event-deliveries/event-deliveries.module';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
@@ -33,7 +32,6 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		CommonModule,
 		RouterModule.forChild(routes),
 		StatusColorModule,
-		EventModule,
 		EventDeliveriesModule,
 		TableLoaderModule,
 		CreateSubscriptionModule,
@@ -52,8 +50,8 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		TableCellComponent,
 		TableHeadCellComponent,
 		TableComponent,
-        CliKeysComponent,
-        DevicesComponent
+		CliKeysComponent,
+		DevicesComponent
 	]
 })
 export class AppModule {}

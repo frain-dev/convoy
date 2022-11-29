@@ -23,6 +23,7 @@ import { SOURCE } from 'src/app/models/group.model';
 export class EventDeliveriesComponent implements OnInit {
 	@Output() pushEventDeliveries = new EventEmitter<any>();
 	@Input() eventDeliveryFilteredByEventId?: string;
+	@Input() subscriptionIds?: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Max Attempts', 'Time Created', '', ''];
@@ -127,7 +128,8 @@ export class EventDeliveriesComponent implements OnInit {
 				appId: this.eventDeliveriesApp || '',
 				statusQuery: eventDeliveryStatusFilterQuery || '',
 				token: this.appPortalToken,
-				sourceId: this.eventDeliveriesSource || ''
+				sourceId: this.eventDeliveriesSource || '',
+				portalSubs: this.subscriptionIds
 			});
 			return eventDeliveriesResponse;
 		} catch (error: any) {
