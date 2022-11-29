@@ -46,7 +46,6 @@ export class LoginComponent implements OnInit {
 			const lastLoacation = localStorage.getItem('CONVOY_LAST_AUTH_LOCATION');
 
 			lastLoacation ? (location.href = lastLoacation) : this.router.navigateByUrl('/');
-			this.disableLoginBtn = false;
 		} catch {
 			this.disableLoginBtn = false;
 		}
