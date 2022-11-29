@@ -38,7 +38,7 @@ export class AppComponent implements OnInit {
 	showSubscriptionError = false;
 	showCliError = false;
 	isCliAvailable: boolean = false;
-	subscriptionIdsString = '?';
+	subscriptionIdsString = '&';
 	subscriptionIds = this.route.snapshot.queryParams?.subscriptionID || [];
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {
