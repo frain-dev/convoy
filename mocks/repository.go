@@ -177,18 +177,18 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) CountDeliveriesByStatus(arg0,
 }
 
 // CountEventDeliveries mocks base method.
-func (m *MockEventDeliveryRepository) CountEventDeliveries(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams) (int64, error) {
+func (m *MockEventDeliveryRepository) CountEventDeliveries(arg0 context.Context, arg1, arg2, arg3 string, arg4 []string, arg5 []datastore.EventDeliveryStatus, arg6 datastore.SearchParams) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountEventDeliveries", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "CountEventDeliveries", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountEventDeliveries indicates an expected call of CountEventDeliveries.
-func (mr *MockEventDeliveryRepositoryMockRecorder) CountEventDeliveries(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) CountEventDeliveries(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountEventDeliveries), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountEventDeliveries), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 }
 
 // CreateEventDelivery mocks base method.
@@ -280,9 +280,9 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams, arg6 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1, arg2, arg3 string, arg4 []string, arg5 []datastore.EventDeliveryStatus, arg6 datastore.SearchParams, arg7 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].([]datastore.EventDelivery)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -290,9 +290,9 @@ func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Cont
 }
 
 // LoadEventDeliveriesPaged indicates an expected call of LoadEventDeliveriesPaged.
-func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
 // UpdateEventDeliveryWithAttempt mocks base method.

@@ -375,6 +375,13 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 		}
 	}
 
+	subs := make([]string, 0)
+	for _, s := range r.URL.Query()["subscriptionID"] {
+		if !util.IsStringEmpty(s) {
+			subs = append(subs, s)
+		}
+	}
+
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -382,12 +389,13 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:        m.GetGroupFromContext(r.Context()),
-		AppID:        m.GetAppIDFromContext(r),
-		EventID:      r.URL.Query().Get("eventId"),
-		Status:       status,
-		Pageable:     m.GetPageableFromContext(r.Context()),
-		SearchParams: searchParams,
+		Group:           m.GetGroupFromContext(r.Context()),
+		AppID:           m.GetAppIDFromContext(r),
+		EventID:         r.URL.Query().Get("eventId"),
+		Status:          status,
+		SubscriptionIDs: subs,
+		Pageable:        m.GetPageableFromContext(r.Context()),
+		SearchParams:    searchParams,
 	}
 
 	eventService := createEventService(a)

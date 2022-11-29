@@ -704,6 +704,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 					"123",
 					"abc",
 					"13429",
+					gomock.Any(),
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 1342,
@@ -773,6 +774,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 					"123",
 					"abc",
 					"13429",
+					gomock.Any(),
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 1342,
@@ -874,6 +876,7 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 					"123",
 					"abc",
 					"ref",
+					gomock.Any(),
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 13323,
@@ -904,6 +907,7 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 					"123",
 					"abc",
 					"ref",
+					gomock.Any(),
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 13323,
@@ -1357,6 +1361,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 					"123",
 					"abc",
 					"123",
+					gomock.Any(),
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 13323,
@@ -1463,7 +1468,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().
-					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,

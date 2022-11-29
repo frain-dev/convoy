@@ -160,8 +160,8 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return db.store.UpdateOne(ctx, filter, update)
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	filter := getFilter(groupID, appID, eventID, status, searchParams)
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID, appID, eventID string, subscriptionIDs []string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+	filter := getFilter(groupID, appID, eventID, subscriptionIDs, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	var eventDeliveries []datastore.EventDelivery
@@ -179,8 +179,8 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	return eventDeliveries, pagination, nil
 }
 
-func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID, appID, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
-	filter := getFilter(groupID, appID, eventID, status, searchParams)
+func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID, appID, eventID string, subscriptionIDs []string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	filter := getFilter(groupID, appID, eventID, subscriptionIDs, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	var count int64
@@ -241,7 +241,7 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EventDeliveryCollection)
 }
 
-func getFilter(groupID string, appID string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
+func getFilter(groupID string, appID string, eventID string, subscriptionIDs []string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
 
 	filter := bson.M{
 		"document_status": datastore.ActiveDocumentStatus,
@@ -267,6 +267,12 @@ func getFilter(groupID string, appID string, eventID string, status []datastore.
 
 	if hasStatusFilter {
 		filter["status"] = bson.M{"$in": status}
+	}
+
+	if len(subscriptionIDs) > 0 {
+		filter["subscription_id"] = map[string]interface{}{
+			"$in": subscriptionIDs,
+		}
 	}
 
 	return filter
