@@ -4,19 +4,19 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "Convoy is a fast and secure distributed webhooks service. This document contains datastore.s API specification.",
-        "title": "Convoy API Specification",
+        "description": "Convoy is a fast and secure webhooks proxy. This document contains datastore.s API specification.",
+        "title": "Convoy API Reference",
         "termsOfService": "https://getconvoy.io/terms",
         "contact": {
-            "name": "API Support",
+            "name": "Convoy Support",
             "url": "https://getconvoy.io/docs",
-            "email": "Info@frain.dev"
+            "email": "support@getconvoy.io"
         },
         "license": {
             "name": "Mozilla Public License 2.0",
             "url": "https://www.mozilla.org/en-US/MPL/2.0/"
         },
-        "version": "0.1.12"
+        "version": "0.8.0"
     },
     "host": "dashboard.getconvoy.io",
     "basePath": "/",
@@ -6527,20 +6527,8 @@
     },
     "tags": [
         {
-            "description": "User related APIs",
-            "name": "User"
-        },
-        {
-            "description": "Application related APIs",
-            "name": "Application"
-        },
-        {
-            "description": "Configuration related APIs",
-            "name": "Configuration"
-        },
-        {
-            "description": "Source related APIs",
-            "name": "Source"
+            "description": "Organisation related APIs",
+            "name": "Organisations"
         },
         {
             "description": "Subscription related APIs",
@@ -6548,31 +6536,31 @@
         },
         {
             "description": "Endpoint related APIs",
-            "name": "Application Endpoints"
+            "name": "Endpoints"
         },
         {
             "description": "Event related APIs",
             "name": "Events"
         },
         {
-            "description": "API Key related APIs",
-            "name": "APIKey"
+            "description": "Source related APIs",
+            "name": "Sources"
         },
         {
             "description": "EventDelivery related APIs",
-            "name": "EventDelivery"
+            "name": "EventDeliveries"
         },
         {
             "description": "Delivery Attempt related APIs",
             "name": "DeliveryAttempts"
         },
         {
-            "description": "Group related APIs",
-            "name": "Group"
+            "description": "Project related APIs",
+            "name": "Projects"
         },
         {
-            "description": "Organisation related APIs",
-            "name": "Organisation"
+            "description": "Portal Links related APIs",
+            "name": "PortalLinks"
         }
     ]
 }
