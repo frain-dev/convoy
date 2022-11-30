@@ -9,33 +9,6 @@ definitions:
       type:
         type: string
     type: object
-  datastore.APIKey:
-    properties:
-      created_at:
-        type: integer
-      deleted_at:
-        type: integer
-      expires_at:
-        type: integer
-      hash:
-        type: string
-      key_type:
-        type: string
-      mask_id:
-        type: string
-      name:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
-      salt:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: integer
-      user_id:
-        type: string
-    type: object
   datastore.AlertConfiguration:
     properties:
       count:
@@ -122,6 +95,8 @@ definitions:
     type: object
   datastore.Endpoint:
     properties:
+      advanced_signatures:
+        type: boolean
       authentication:
         $ref: '#/definitions/datastore.EndpointAuthentication'
       created_at:
@@ -144,8 +119,10 @@ definitions:
         type: integer
       rate_limit_duration:
         type: string
-      secret:
-        type: string
+      secrets:
+        items:
+          $ref: '#/definitions/datastore.Secret'
+        type: array
       slack_webhook_url:
         type: string
       support_email:
@@ -168,6 +145,9 @@ definitions:
     type: object
   datastore.Event:
     properties:
+      app_id:
+        description: Deprecated
+        type: string
       created_at:
         type: string
       data:
@@ -179,10 +159,14 @@ definitions:
         type: array
       deleted_at:
         type: string
-      endpoint_id:
-        type: string
       endpoint_metadata:
-        $ref: '#/definitions/datastore.Endpoint'
+        items:
+          $ref: '#/definitions/datastore.Endpoint'
+        type: array
+      endpoints:
+        items:
+          type: string
+        type: array
       event_type:
         type: string
       group_id:
@@ -192,13 +176,6 @@ definitions:
       matched_endpoints:
         description: TODO(all) remove this field
         type: integer
-      provider_id:
-        description: |-
-          ProviderID is a custom ID that can be used to reconcile this Event
-          with your internal systems.
-          This is optional
-          If not provided, we will generate one for you
-        type: string
       source_id:
         type: string
       source_metadata:
@@ -350,11 +327,6 @@ definitions:
       strategy:
         type: string
     type: object
-  datastore.OnPremStorage:
-    properties:
-      path:
-        type: string
-    type: object
   datastore.Organisation:
     properties:
       created_at:
@@ -367,46 +339,6 @@ definitions:
         type: string
       updated_at:
         type: string
-    type: object
-  datastore.OrganisationInvite:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      invitee_email:
-        type: string
-      organisation_id:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
-      status:
-        type: string
-      token:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  datastore.OrganisationMember:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      organisation_id:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
-      uid:
-        type: string
-      updated_at:
-        type: string
-      user_id:
-        type: string
-      user_metadata:
-        $ref: '#/definitions/datastore.UserMetadata'
     type: object
   datastore.PaginationData:
     properties:
@@ -449,17 +381,19 @@ definitions:
       type:
         type: string
     type: object
-  datastore.S3Storage:
+  datastore.Secret:
     properties:
-      access_key:
+      created_at:
         type: string
-      bucket:
+      deleted_at:
         type: string
-      endpoint:
+      expires_at:
         type: string
-      region:
+      uid:
         type: string
-      secret_key:
+      updated_at:
+        type: string
+      value:
         type: string
     type: object
   datastore.SignatureConfiguration:
@@ -513,15 +447,6 @@ definitions:
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
     type: object
-  datastore.StoragePolicyConfiguration:
-    properties:
-      on_prem:
-        $ref: '#/definitions/datastore.OnPremStorage'
-      s3:
-        $ref: '#/definitions/datastore.S3Storage'
-      type:
-        type: string
-    type: object
   datastore.StrategyConfiguration:
     properties:
       duration:
@@ -570,36 +495,6 @@ definitions:
       crc_verified_at:
         type: integer
     type: object
-  datastore.User:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      email:
-        type: string
-      first_name:
-        type: string
-      last_name:
-        type: string
-      reset_password_expires_at:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  datastore.UserMetadata:
-    properties:
-      email:
-        type: string
-      first_name:
-        type: string
-      last_name:
-        type: string
-    type: object
   datastore.VerifierConfig:
     properties:
       api_key:
@@ -628,55 +523,13 @@ definitions:
       role:
         $ref: '#/definitions/models.Role'
     type: object
-  models.APIKeyResponse:
-    properties:
-      created_at:
-        type: string
-      expires_at:
-        type: string
-      key:
-        type: string
-      key_type:
-        type: string
-      name:
-        type: string
-      role:
-        $ref: '#/definitions/models.Role'
-      uid:
-        type: string
-      user_id:
-        type: string
-    type: object
-  models.Configuration:
-    properties:
-      is_analytics_enabled:
-        type: boolean
-      is_signup_enabled:
-        type: boolean
-      storage_policy:
-        $ref: '#/definitions/datastore.StoragePolicyConfiguration'
-    type: object
-  models.ConfigurationResponse:
-    properties:
-      api_version:
-        type: string
-      created_at:
-        type: integer
-      deleted_at:
-        type: integer
-      is_analytics_enabled:
-        type: boolean
-      is_signup_enabled:
-        type: boolean
-      storage_policy:
-        $ref: '#/definitions/datastore.StoragePolicyConfiguration'
-      uid:
-        type: string
-      updated_at:
-        type: integer
-    type: object
   models.Endpoint:
     properties:
+      advanced_signatures:
+        type: boolean
+      appID:
+        description: Deprecated but necessary for backward compatibility
+        type: string
       authentication:
         $ref: '#/definitions/datastore.EndpointAuthentication'
       description:
@@ -686,6 +539,8 @@ definitions:
       is_disabled:
         type: boolean
       name:
+        type: string
+      owner_id:
         type: string
       rate_limit:
         type: integer
@@ -702,6 +557,8 @@ definitions:
     type: object
   models.Event:
     properties:
+      app_id:
+        type: string
       custom_headers:
         additionalProperties:
           type: string
@@ -716,11 +573,6 @@ definitions:
       endpoint_id:
         type: string
       event_type:
-        type: string
-    type: object
-  models.ForgotPassword:
-    properties:
-      email:
         type: string
     type: object
   models.Group:
@@ -738,51 +590,6 @@ definitions:
       type:
         type: string
     type: object
-  models.LoginUser:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    type: object
-  models.LoginUserResponse:
-    properties:
-      created_at:
-        type: integer
-      deleted_at:
-        type: integer
-      email:
-        type: string
-      first_name:
-        type: string
-      last_name:
-        type: string
-      token:
-        $ref: '#/definitions/models.Token'
-      uid:
-        type: string
-      updated_at:
-        type: integer
-    type: object
-  models.Organisation:
-    properties:
-      name:
-        type: string
-    type: object
-  models.OrganisationInvite:
-    properties:
-      invitee_email:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
-    type: object
-  models.PersonalAPIKey:
-    properties:
-      expiration:
-        type: integer
-      name:
-        type: string
-    type: object
   models.PortalAPIKeyResponse:
     properties:
       endpoint_id:
@@ -798,24 +605,42 @@ definitions:
       url:
         type: string
     type: object
-  models.RegisterUser:
+  models.PortalLink:
     properties:
-      email:
-        type: string
-      first_name:
-        type: string
-      last_name:
-        type: string
-      org_name:
-        type: string
-      password:
+      endpoints:
+        items:
+          type: string
+        type: array
+      name:
         type: string
     type: object
-  models.ResetPassword:
+  models.PortalLinkResponse:
     properties:
-      password:
+      created_at:
+        type: integer
+      deleted_at:
+        type: integer
+      endpoint_count:
+        type: integer
+      endpoints:
+        items:
+          type: string
+        type: array
+      endpoints_metadata:
+        items:
+          $ref: '#/definitions/datastore.Endpoint'
+        type: array
+      group_id:
         type: string
-      password_confirmation:
+      name:
+        type: string
+      token:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: integer
+      url:
         type: string
     type: object
   models.RetryConfiguration:
@@ -884,6 +709,9 @@ definitions:
     properties:
       alert_config:
         $ref: '#/definitions/datastore.AlertConfiguration'
+      app_id:
+        description: Deprecated but necessary for backward compatibility
+        type: string
       disable_endpoint:
         type: boolean
       endpoint_id:
@@ -898,49 +726,6 @@ definitions:
         $ref: '#/definitions/models.RetryConfiguration'
       source_id:
         type: string
-    type: object
-  models.Token:
-    properties:
-      access_token:
-        type: string
-      refresh_token:
-        type: string
-    type: object
-  models.UpdateOrganisationMember:
-    properties:
-      role:
-        $ref: '#/definitions/auth.Role'
-    type: object
-  models.UpdatePassword:
-    properties:
-      current_password:
-        type: string
-      password:
-        type: string
-      password_confirmation:
-        type: string
-    type: object
-  models.UpdateUser:
-    properties:
-      email:
-        type: string
-      first_name:
-        type: string
-      last_name:
-        type: string
-    type: object
-  models.User:
-    properties:
-      email:
-        type: string
-      first_name:
-        type: string
-      last_name:
-        type: string
-      password:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
     type: object
   server.Stub:
     type: object
@@ -976,15 +761,260 @@ info:
   title: Convoy API Specification
   version: 0.1.12
 paths:
-  /api/v1/endpoints:
+  /api/v1/organisations:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an endpoints
+      description: This endpoint fetches the organisations a user is part of, this
+        route can only be accessed with a personal api key
       parameters:
-      - description: group id
+      - description: results per page
         in: query
-        name: groupId
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/datastore.Organisation'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get organisations
+      tags:
+      - Organisation
+  /api/v1/projects:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches groups
+      parameters:
+      - description: group name
+        in: query
+        name: name
+        type: string
+      - description: organisation id
+        in: query
+        name: orgID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/datastore.Group'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get groups
+      tags:
+      - Group
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a group
+      parameters:
+      - description: Organisation id
+        in: query
+        name: orgID
+        required: true
+        type: string
+      - description: Group Details
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/models.Group'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a group
+      tags:
+      - Group
+  /api/v1/projects/{projectID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint deletes a group using its id
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a group
+      tags:
+      - Group
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches a group by its id
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
         required: true
         type: string
       produces:
@@ -1028,6 +1058,123 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
+      summary: Get a group
+      tags:
+      - Group
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates a group
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Group Details
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/models.Group'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a group
+      tags:
+      - Group
+  /api/v1/projects/{projectID}/endpoints:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an endpoints
+      parameters:
+      - description: Project id
+        in: query
+        name: projectID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/datastore.Endpoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
       summary: Get endpoints
       tags:
       - Endpoints
@@ -1036,9 +1183,10 @@ paths:
       - application/json
       description: This endpoint creates an endpoint
       parameters:
-      - description: results per page
+      - description: Project id
         in: query
-        name: perPage
+        name: projectID
+        required: true
         type: string
       - description: Endpoint Details
         in: body
@@ -1046,133 +1194,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.Endpoint'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/datastore.Application'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an endpoint
-      tags:
-      - Application Endpoints
-  /api/v1/endpoints/{endpointID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes an endpoint
-      parameters:
-      - description: group id
-        in: query
-        name: groupId
-        required: true
-        type: string
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        schema:
-          $ref: '#/definitions/models.Application'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Application'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete endpoint
-      tags:
-      - Endpoints
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an endpoint
-      parameters:
-      - description: Project id
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: endpoint id
-        in: path
-        name: endpointID
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -1214,22 +1235,18 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get application endpoint
+      summary: Create an endpoint
       tags:
       - Application Endpoints
-    put:
+  /api/v1/projects/{projectID}/endpoints/{endpointID}:
+    delete:
       consumes:
       - application/json
-      description: This endpoint updates an application endpoint
+      description: This endpoint deletes an endpoint
       parameters:
       - description: Project id
-        in: path
+        in: query
         name: projectID
-        required: true
-        type: string
-      - description: application id
-        in: path
-        name: appID
         required: true
         type: string
       - description: endpoint id
@@ -1237,12 +1254,65 @@ paths:
         name: endpointID
         required: true
         type: string
-      - description: Endpoint Details
-        in: body
-        name: endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete endpoint
+      tags:
+      - Endpoints
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches an endpoint
+      parameters:
+      - description: Project id
+        in: query
+        name: projectID
         required: true
-        schema:
-          $ref: '#/definitions/models.Endpoint'
+        type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1292,9 +1362,76 @@ paths:
       - application/json
       description: This endpoint updates an endpoint
       parameters:
-      - description: group id
+      - description: Project id
         in: query
-        name: groupId
+        name: projectID
+        required: true
+        type: string
+      - description: endpoint id
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      - description: Endpoint Details
+        in: body
+        name: endpoint
+        required: true
+        schema:
+          $ref: '#/definitions/models.Endpoint'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Endpoint'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update an endpoint
+      tags:
+      - Endpoints
+  /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint expires the current endpoint secret and generates
+        a new one.
+      parameters:
+      - description: Project id
+        in: query
+        name: projectID
         required: true
         type: string
       - description: endpoint id
@@ -1343,10 +1480,10 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Update an endpoint
+      summary: Expire and generate new application endpoint secret
       tags:
-      - Endpoints
-  /api/v1/eventdeliveries:
+      - Application Endpoints
+  /api/v1/projects/{projectID}/eventdeliveries:
     get:
       consumes:
       - application/json
@@ -2023,7 +2160,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint creates an app event
+      description: This endpoint creates an endpoint event
       parameters:
       - description: Project id
         in: path
@@ -2082,14 +2219,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create app event
+      summary: Create endpoint event
       tags:
       - Events
   /api/v1/projects/{projectID}/events/{eventID}:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an app event
+      description: This endpoint fetches an endpoint event
       parameters:
       - description: Project id
         in: path
@@ -2147,14 +2284,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get app event
+      summary: Get endpoint event
       tags:
       - Events
   /api/v1/projects/{projectID}/events/{eventID}/replay:
     put:
       consumes:
       - application/json
-      description: This endpoint replays an app event
+      description: This endpoint replays an endpoint event
       parameters:
       - description: Project id
         in: path
@@ -2212,38 +2349,43 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Replay app event
+      summary: Replay endpoint event
       tags:
       - Events
-  /api/v1/security/endpoints/{endpointID}/keys:
+  /api/v1/projects/{projectID}/events/fanout:
     post:
       consumes:
       - application/json
-      description: This endpoint creates an api key that will be used by endpoint
-        portal or the cli
+      description: This endpoint uses the owner_id to fan out an event to multiple
+        endpoints.
       parameters:
-      - description: Endpoint ID
+      - description: Project id
         in: path
-        name: endpointID
+        name: projectID
         required: true
         type: string
-      - description: APIKey details
+      - description: Event Details
         in: body
-        name: appAPIKey
+        name: event
         required: true
         schema:
-          $ref: '#/definitions/models.APIKey'
+          $ref: '#/definitions/models.Event'
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+                  allOf:
+                  - $ref: '#/definitions/datastore.Event'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
               type: object
         "400":
           description: Bad Request
@@ -2274,9 +2416,328 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create an api key for endpoint portal or the cli (API)
+      summary: Fan out an event to multiple endpoints.
       tags:
-      - APIKey
+      - Events
+  /api/v1/projects/{projectID}/portal-links:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches multiple portal links
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/models.PortalLinkResponse'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch multiple portal links
+      tags:
+      - PortalLink
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a portal link
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Portal Link Details
+        in: body
+        name: portallink
+        required: true
+        schema:
+          $ref: '#/definitions/models.PortalLink'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalLinkResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a portal link
+      tags:
+      - PortalLink
+  /api/v1/projects/{projectID}/portal-links/{portalLinkID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches a portal link by its id
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalLinkResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a portal link
+      tags:
+      - PortalLink
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates a portal link
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        type: string
+      - description: Portal Link Details
+        in: body
+        name: portallink
+        required: true
+        schema:
+          $ref: '#/definitions/models.PortalLink'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalLinkResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a portal link
+      tags:
+      - PortalLink
+  /api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint revokes a portal link
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Revoke Portal Link
+      tags:
+      - PortalLink
   /api/v1/projects/{projectID}/sources:
     get:
       consumes:
@@ -3044,195 +3505,29 @@ paths:
       summary: Test subscription filter
       tags:
       - Subscriptions
-  /devices/{appID}:
-    get:
+  /api/v1/security/endpoints/{endpointID}/keys:
+    post:
       consumes:
       - application/json
-      description: This endpoint fetches devices for an app
+      description: This endpoint creates an api key that will be used by endpoint
+        portal or the cli
       parameters:
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      - description: app id
+      - description: Project id
         in: path
-        name: appID
+        name: projectID
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/datastore.Device'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch devices for an app
-      tags:
-      - Source
-  /ui/auth/login:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint logs in a user
-      parameters:
-      - description: User Details
+      - description: endpoint ID
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      - description: APIKey details
         in: body
-        name: user
+        name: appAPIKey
         required: true
         schema:
-          $ref: '#/definitions/models.LoginUser'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.LoginUserResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Login a user
-      tags:
-      - User
-  /ui/auth/logout:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint logs out a user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Logs out a user
-      tags:
-      - User
-  /ui/auth/register:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint registers a new user
-      parameters:
-      - description: User Details
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.RegisterUser'
+          $ref: '#/definitions/models.APIKey'
       produces:
       - application/json
       responses:
@@ -3243,7 +3538,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.LoginUserResponse'
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
               type: object
         "400":
           description: Bad Request
@@ -3272,537 +3567,16 @@ paths:
                 data:
                   $ref: '#/definitions/server.Stub'
               type: object
-      summary: Registers a user
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for endpoint portal or the cli (API)
       tags:
-      - User
-  /ui/auth/token/refresh:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint refreshes an access token
-      parameters:
-      - description: Token Details
-        in: body
-        name: token
-        required: true
-        schema:
-          $ref: '#/definitions/models.Token'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.Token'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Refresh an access token
-      tags:
-      - User
-  /ui/configuration:
+      - APIKey
+  /portal/devices:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches configuration
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/models.ConfigurationResponse'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch configuration
-      tags:
-      - Configuration
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates a configuration
-      parameters:
-      - description: Configuration Details
-        in: body
-        name: application
-        required: true
-        schema:
-          $ref: '#/definitions/models.Configuration'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ConfigurationResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create a configuration
-      tags:
-      - Configuration
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates configuration
-      parameters:
-      - description: Configuration Details
-        in: body
-        name: application
-        required: true
-        schema:
-          $ref: '#/definitions/models.Configuration'
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: Accepted
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ConfigurationResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update configuration
-      tags:
-      - Configuration
-  /ui/organisations:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches the organisations a user is part of
-      parameters:
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/datastore.Organisation'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get organisations
-      tags:
-      - Organisation
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an organisation
-      parameters:
-      - description: Organisation Details
-        in: body
-        name: organisation
-        required: true
-        schema:
-          $ref: '#/definitions/models.Organisation'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Organisation'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an organisation
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes an organisation
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete organisation
-      tags:
-      - Organisation
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an organisation by its id
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Organisation'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get an organisation
-      tags:
-      - Organisation
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates an organisation
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: Organisation Details
-        in: body
-        name: organisation
-        required: true
-        schema:
-          $ref: '#/definitions/models.Organisation'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Organisation'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update an organisation
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/groups:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches groups
-      parameters:
-      - description: group name
-        in: query
-        name: name
-        type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
+      description: This endpoint fetches all portal link devices
       produces:
       - application/json
       responses:
@@ -3814,7 +3588,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/datastore.Group'
+                    $ref: '#/definitions/datastore.Device'
                   type: array
               type: object
         "400":
@@ -3844,146 +3618,14 @@ paths:
                 data:
                   $ref: '#/definitions/server.Stub'
               type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get groups - UI
+      summary: Get portal link devices
       tags:
-      - Group
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates a group
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: Group Details
-        in: body
-        name: group
-        required: true
-        schema:
-          $ref: '#/definitions/models.Group'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Group'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create a group - UI
-      tags:
-      - Group
-  /ui/organisations/{orgID}/groups/{groupID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes a group using its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a group - UI
-      tags:
-      - Group
+      - PortalLink Devices
+  /portal/endpoints:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches a group by its id
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
+      description: This endpoint fetches all portal link endpoints
       produces:
       - application/json
       responses:
@@ -3994,7 +3636,9 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Group'
+                  items:
+                    $ref: '#/definitions/datastore.Endpoint'
+                  type: array
               type: object
         "400":
           description: Bad Request
@@ -4023,103 +3667,72 @@ paths:
                 data:
                   $ref: '#/definitions/server.Stub'
               type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get a group - UI
+      summary: Get endpoints
       tags:
-      - Group
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates a group
-      parameters:
-      - description: group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: Group Details
-        in: body
-        name: group
-        required: true
-        schema:
-          $ref: '#/definitions/models.Group'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Group'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update a group - UI
-      tags:
-      - Group
-  /ui/organisations/{orgID}/groups/{groupID}/apps/{appID}/keys:
+      - PortalLink Endpoints
     post:
       consumes:
       - application/json
-      description: This endpoint creates an api key that will be used by app portal
-        or the cli
+      description: This endpoint creates an endpoint
       parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
+      - description: Endpoint Details
+        in: body
+        name: endpoint
         required: true
-        type: string
-      - description: Group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      - description: application ID
-        in: path
-        name: appID
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/models.Endpoint'
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.Endpoint'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Create an endpoint
+      tags:
+      - PortalLink Endpoints
+  /portal/keys:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches all portal link endpoints keys
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4154,1573 +3767,9 @@ paths:
                 data:
                   $ref: '#/definitions/server.Stub'
               type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for app portal or the cli (UI)
+      summary: Get portal link keys
       tags:
-      - Group
-  /ui/organisations/{orgID}/groups/{groupID}/endpoints/{endpointID}/keys/{keyID}/revoke:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint revokes endpoint's an api key
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: Group id
-        in: path
-        name: groupID
-        required: true
-        type: string
-      - description: Endpoint id
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      - description: API Key id
-        in: path
-        name: keyID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Revoke an Endpoint's API Key
-      tags:
-      - APIKey
-  /ui/organisations/{orgID}/invites:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint invites a user to join an organisation
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: Organisation Invite Details
-        in: body
-        name: invite
-        required: true
-        schema:
-          $ref: '#/definitions/models.OrganisationInvite'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Invite a user to join an organisation
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/invites/{inviteID}/cancel:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint cancels an organization invite
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: invite id
-        in: path
-        name: inviteID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.OrganisationInvite'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: cancel organization invite
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/invites/{inviteID}/resend:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint resends the organization invite to a user
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: invite id
-        in: path
-        name: inviteID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: resend organization invite
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/invites/pending:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches pending organisation invites
-      parameters:
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch pending organisation invites
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/members:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an organisation's members
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/datastore.OrganisationMember'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get organisation members
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/members/{memberID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes an organisation's member
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: organisation member id
-        in: path
-        name: memberID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete an organisation's member
-      tags:
-      - Organisation
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an organisation's member
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: organisation member id
-        in: path
-        name: memberID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.OrganisationMember'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get organisation member
-      tags:
-      - Organisation
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates an organisation's member
-      parameters:
-      - description: organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: organisation member id
-        in: path
-        name: memberID
-        required: true
-        type: string
-      - description: Organisation member Details
-        in: body
-        name: organisation_member
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateOrganisationMember'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Organisation'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update an organisation's member
-      tags:
-      - Organisation
-  /ui/organisations/{orgID}/security/endpoints/{endpointID}/keys:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches multiple api keys belonging to an endpoint
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: Endpoint ID
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch multiple api keys belonging to an endpoint
-      tags:
-      - APIKey
-  /ui/organisations/{orgID}/security/keys:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches multiple api keys
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: api key type
-        in: query
-        name: keyType
-        type: string
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/datastore.APIKey'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch multiple api keys
-      tags:
-      - APIKey
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an api key that will be used by the native
-        auth realm
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: API Key
-        in: body
-        name: apiKey
-        required: true
-        schema:
-          $ref: '#/definitions/models.APIKey'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.APIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key
-      tags:
-      - APIKey
-  /ui/organisations/{orgID}/security/keys/{keyID}:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches an api key by its id
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: API Key id
-        in: path
-        name: keyID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.APIKey'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Get api key by id
-      tags:
-      - APIKey
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates an api key
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: API Key id
-        in: path
-        name: keyID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.APIKey'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: update api key
-      tags:
-      - APIKey
-  /ui/organisations/{orgID}/security/keys/{keyID}/revoke:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint revokes an api key
-      parameters:
-      - description: Organisation id
-        in: path
-        name: orgID
-        required: true
-        type: string
-      - description: API Key id
-        in: path
-        name: keyID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Revoke API Key
-      tags:
-      - APIKey
-  /ui/organisations/process_invite:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint process a user's response to an organisation invite
-      parameters:
-      - description: invite token
-        in: query
-        name: token
-        required: true
-        type: string
-      - description: email
-        in: query
-        name: accepted
-        required: true
-        type: string
-      - description: User Details
-        in: body
-        name: user
-        schema:
-          $ref: '#/definitions/models.User'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Accept or decline an organisation invite
-      tags:
-      - Organisation
-  /ui/users/{userID}/password:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates a user's password
-      parameters:
-      - description: user id
-        in: path
-        name: userID
-        required: true
-        type: string
-      - description: Password Details
-        in: body
-        name: group
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdatePassword'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Updates a user's password
-      tags:
-      - User
-  /ui/users/{userID}/profile:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches a user
-      parameters:
-      - description: user id
-        in: path
-        name: userID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Gets a user
-      tags:
-      - User
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates a user
-      parameters:
-      - description: user id
-        in: path
-        name: userID
-        required: true
-        type: string
-      - description: User Details
-        in: body
-        name: group
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateUser'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Updates a user
-      tags:
-      - User
-  /ui/users/{userID}/security/personal_api_keys:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches multiple api keys
-      parameters:
-      - description: User id
-        in: path
-        name: userID
-        required: true
-        type: string
-      - description: api key type
-        in: query
-        name: keyType
-        type: string
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
-                  - properties:
-                      content:
-                        items:
-                          $ref: '#/definitions/datastore.APIKey'
-                        type: array
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Fetch multiple api keys
-      tags:
-      - APIKey
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates a personal api key that can be used to authenticate
-        to this user's context
-      parameters:
-      - description: User id
-        in: path
-        name: userID
-        required: true
-        type: string
-      - description: API Key
-        in: body
-        name: apiKey
-        required: true
-        schema:
-          $ref: '#/definitions/models.PersonalAPIKey'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.APIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create a personal api key
-      tags:
-      - APIKey
-  /ui/users/{userID}/security/personal_api_keys/{keyID}/revoke:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint revokes a personal api key
-      parameters:
-      - description: User id
-        in: path
-        name: userID
-        required: true
-        type: string
-      - description: API Key id
-        in: path
-        name: keyID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Revoke a Personal API Key
-      tags:
-      - APIKey
-  /ui/users/forgot-password:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint generates a password reset token
-      parameters:
-      - description: Forgot Password Details
-        in: body
-        name: email
-        required: true
-        schema:
-          $ref: '#/definitions/models.ForgotPassword'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Send password reset token
-      tags:
-      - User
-  /ui/users/reset-password:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint resets a users password
-      parameters:
-      - description: reset token
-        in: query
-        name: token
-        required: true
-        type: string
-      - description: Reset Password Details
-        in: body
-        name: password
-        required: true
-        schema:
-          $ref: '#/definitions/models.ResetPassword'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Reset user password
-      tags:
-      - User
-  /ui/users/token:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint finds a user by an invite token
-      parameters:
-      - description: invite token
-        in: query
-        name: token
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Find user by invite token
-      tags:
-      - Organisation
+      - PortalLink Keys
 schemes:
 - https
 securityDefinitions:
