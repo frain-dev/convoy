@@ -3542,7 +3542,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: application id
+      - description: subscription id
         in: path
         name: subscriptionID
         required: true
@@ -3744,12 +3744,6 @@ paths:
       - description: Project id
         in: path
         name: projectID
-        required: true
-        schema:
-          type: string
-      - description: subscription id
-        in: path
-        name: subscriptionID
         required: true
         schema:
           type: string

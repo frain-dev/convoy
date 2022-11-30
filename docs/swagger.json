@@ -4525,13 +4525,6 @@
                         "name": "projectID",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "subscription id",
-                        "name": "subscriptionID",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -4638,7 +4631,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "application id",
+                        "description": "subscription id",
                         "name": "subscriptionID",
                         "in": "path",
                         "required": true

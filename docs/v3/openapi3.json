@@ -6229,15 +6229,6 @@
 						"schema": {
 							"type": "string"
 						}
-					},
-					{
-						"description": "subscription id",
-						"in": "path",
-						"name": "subscriptionID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
 					}
 				],
 				"responses": {
@@ -6477,7 +6468,7 @@
 						}
 					},
 					{
-						"description": "application id",
+						"description": "subscription id",
 						"in": "path",
 						"name": "subscriptionID",
 						"required": true,
