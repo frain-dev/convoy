@@ -774,23 +774,6 @@
 				},
 				"type": "object"
 			},
-			"models.APIKey": {
-				"properties": {
-					"expires_at": {
-						"type": "string"
-					},
-					"key_type": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"role": {
-						"$ref": "#/components/schemas/models.Role"
-					}
-				},
-				"type": "object"
-			},
 			"models.Endpoint": {
 				"properties": {
 					"advanced_signatures": {
@@ -980,20 +963,6 @@
 					},
 					"retry_count": {
 						"type": "integer"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.Role": {
-				"properties": {
-					"app": {
-						"type": "string"
-					},
-					"group": {
-						"type": "string"
 					},
 					"type": {
 						"type": "string"
@@ -1294,13 +1263,13 @@
 				],
 				"summary": "Get organisations",
 				"tags": [
-					"Organisation"
+					"Organisations"
 				]
 			}
 		},
 		"/api/v1/projects": {
 			"get": {
-				"description": "This endpoint fetches groups",
+				"description": "This endpoint fetches projects",
 				"parameters": [
 					{
 						"description": "group name",
@@ -1418,13 +1387,13 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get groups",
+				"summary": "Get projects",
 				"tags": [
-					"Group"
+					"Projects"
 				]
 			},
 			"post": {
-				"description": "This endpoint creates a group",
+				"description": "This endpoint creates a project",
 				"parameters": [
 					{
 						"description": "Organisation id",
@@ -1543,15 +1512,15 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create a group",
+				"summary": "Create a project",
 				"tags": [
-					"Group"
+					"Projects"
 				]
 			}
 		},
 		"/api/v1/projects/{projectID}": {
 			"delete": {
-				"description": "This endpoint deletes a group using its id",
+				"description": "This endpoint deletes a project using its id",
 				"parameters": [
 					{
 						"description": "Project id",
@@ -1658,13 +1627,13 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Delete a group",
+				"summary": "Delete a project",
 				"tags": [
-					"Group"
+					"Projects"
 				]
 			},
 			"get": {
-				"description": "This endpoint fetches a group by its id",
+				"description": "This endpoint fetches a project by its id",
 				"parameters": [
 					{
 						"description": "Project id",
@@ -1771,13 +1740,13 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get a group",
+				"summary": "Get a project",
 				"tags": [
-					"Group"
+					"Projects"
 				]
 			},
 			"put": {
-				"description": "This endpoint updates a group",
+				"description": "This endpoint updates a project",
 				"parameters": [
 					{
 						"description": "Project id",
@@ -1896,9 +1865,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Update a group",
+				"summary": "Update a project",
 				"tags": [
-					"Group"
+					"Projects"
 				]
 			}
 		},
@@ -1908,7 +1877,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2024,7 +1993,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2141,7 +2110,7 @@
 				],
 				"summary": "Create an endpoint",
 				"tags": [
-					"Application Endpoints"
+					"Endpoints"
 				]
 			}
 		},
@@ -2151,7 +2120,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2273,7 +2242,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2395,7 +2364,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2531,7 +2500,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2645,7 +2614,7 @@
 				],
 				"summary": "Expire and generate new application endpoint secret",
 				"tags": [
-					"Application Endpoints"
+					"Endpoints"
 				]
 			}
 		},
@@ -2854,7 +2823,7 @@
 				],
 				"summary": "Get event deliveries",
 				"tags": [
-					"EventDelivery"
+					"EventDeliveries"
 				]
 			}
 		},
@@ -2996,7 +2965,7 @@
 				],
 				"summary": "Batch Resend app events",
 				"tags": [
-					"EventDelivery"
+					"EventDeliveries"
 				]
 			}
 		},
@@ -3171,7 +3140,7 @@
 				],
 				"summary": "Count affected eventDeliveries",
 				"tags": [
-					"EventDelivery"
+					"EventDeliveries"
 				]
 			}
 		},
@@ -3313,7 +3282,7 @@
 				],
 				"summary": "Force Resend app events",
 				"tags": [
-					"EventDelivery"
+					"EventDeliveries"
 				]
 			}
 		},
@@ -3449,7 +3418,7 @@
 				],
 				"summary": "Get event delivery",
 				"tags": [
-					"EventDelivery"
+					"EventDeliveries"
 				]
 			}
 		},
@@ -3845,7 +3814,7 @@
 				],
 				"summary": "Resend an app event",
 				"tags": [
-					"EventDelivery"
+					"EventDeliveries"
 				]
 			}
 		},
@@ -4745,7 +4714,7 @@
 				],
 				"summary": "Fetch multiple portal links",
 				"tags": [
-					"PortalLink"
+					"PortalLinks"
 				]
 			},
 			"post": {
@@ -4870,7 +4839,7 @@
 				],
 				"summary": "Create a portal link",
 				"tags": [
-					"PortalLink"
+					"PortalLinks"
 				]
 			}
 		},
@@ -4994,7 +4963,7 @@
 				],
 				"summary": "Get a portal link",
 				"tags": [
-					"PortalLink"
+					"PortalLinks"
 				]
 			},
 			"put": {
@@ -5128,7 +5097,7 @@
 				],
 				"summary": "Update a portal link",
 				"tags": [
-					"PortalLink"
+					"PortalLinks"
 				]
 			}
 		},
@@ -5252,7 +5221,7 @@
 				],
 				"summary": "Revoke Portal Link",
 				"tags": [
-					"PortalLink"
+					"PortalLinks"
 				]
 			}
 		},
@@ -5406,7 +5375,7 @@
 				],
 				"summary": "Fetch multiple sources",
 				"tags": [
-					"Source"
+					"Sources"
 				]
 			},
 			"post": {
@@ -5531,7 +5500,7 @@
 				],
 				"summary": "Create a source",
 				"tags": [
-					"Source"
+					"Sources"
 				]
 			}
 		},
@@ -5655,7 +5624,7 @@
 				],
 				"summary": "Delete source",
 				"tags": [
-					"Source"
+					"Sources"
 				]
 			},
 			"get": {
@@ -5777,7 +5746,7 @@
 				],
 				"summary": "Get a source",
 				"tags": [
-					"Source"
+					"Sources"
 				]
 			},
 			"put": {
@@ -5911,7 +5880,7 @@
 				],
 				"summary": "Update a source",
 				"tags": [
-					"Source"
+					"Sources"
 				]
 			}
 		},
@@ -6229,15 +6198,6 @@
 						"schema": {
 							"type": "string"
 						}
-					},
-					{
-						"description": "subscription id",
-						"in": "path",
-						"name": "subscriptionID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
 					}
 				],
 				"responses": {
@@ -6477,7 +6437,7 @@
 						}
 					},
 					{
-						"description": "application id",
+						"description": "subscription id",
 						"in": "path",
 						"name": "subscriptionID",
 						"required": true,
@@ -6845,142 +6805,6 @@
 				]
 			}
 		},
-		"/api/v1/security/endpoints/{endpointID}/keys": {
-			"post": {
-				"description": "This endpoint creates an api key that will be used by endpoint portal or the cli",
-				"parameters": [
-					{
-						"description": "Project id",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "endpoint ID",
-						"in": "path",
-						"name": "endpointID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.APIKey"
-							}
-						}
-					},
-					"description": "APIKey details",
-					"required": true,
-					"x-originalParamName": "appAPIKey"
-				},
-				"responses": {
-					"201": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.PortalAPIKeyResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Created"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/server.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Create an api key for endpoint portal or the cli (API)",
-				"tags": [
-					"APIKey"
-				]
-			}
-		},
 		"/portal/devices": {
 			"get": {
 				"description": "This endpoint fetches all portal link devices",
@@ -7079,7 +6903,7 @@
 				},
 				"summary": "Get portal link devices",
 				"tags": [
-					"PortalLink Devices"
+					"PortalLinks"
 				]
 			}
 		},
@@ -7181,7 +7005,7 @@
 				},
 				"summary": "Get endpoints",
 				"tags": [
-					"PortalLink Endpoints"
+					"PortalLinks"
 				]
 			},
 			"post": {
@@ -7290,7 +7114,7 @@
 				},
 				"summary": "Create an endpoint",
 				"tags": [
-					"PortalLink Endpoints"
+					"PortalLinks"
 				]
 			}
 		},
@@ -7389,7 +7213,7 @@
 				},
 				"summary": "Get portal link keys",
 				"tags": [
-					"PortalLink Keys"
+					"PortalLinks"
 				]
 			}
 		}

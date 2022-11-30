@@ -142,7 +142,7 @@ func (a *ApplicationHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Req
 // GetEventDelivery
 // @Summary Get event delivery
 // @Description This endpoint fetches an event delivery.
-// @Tags EventDelivery
+// @Tags EventDeliveries
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
@@ -159,7 +159,7 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // ResendEventDelivery
 // @Summary Resend an app event
 // @Description This endpoint resends an app event
-// @Tags EventDelivery
+// @Tags EventDeliveries
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -185,7 +185,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // BatchRetryEventDelivery
 // @Summary Batch Resend app events
 // @Description This endpoint resends multiple app events
-// @Tags EventDelivery
+// @Tags EventDeliveries
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
@@ -247,7 +247,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // CountAffectedEventDeliveries
 // @Summary Count affected eventDeliveries
 // @Description This endpoint counts app events that will be affected by a batch retry operation
-// @Tags EventDelivery
+// @Tags EventDeliveries
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
@@ -308,7 +308,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // ForceResendEventDeliveries
 // @Summary Force Resend app events
 // @Description This endpoint force resends multiple app events
-// @Tags EventDelivery
+// @Tags EventDeliveries
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
@@ -420,7 +420,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // GetEventDeliveriesPaged
 // @Summary Get event deliveries
 // @Description This endpoint fetch event deliveries.
-// @Tags EventDelivery
+// @Tags EventDeliveries
 // @Accept json
 // @Produce json
 // @Param appId query string false "application id"

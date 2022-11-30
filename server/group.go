@@ -26,9 +26,9 @@ func createGroupService(a *ApplicationHandler) *services.GroupService {
 }
 
 // GetGroup - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Get a group
-// @Description This endpoint fetches a group by its id
-// @Tags Group
+// @Summary Get a project
+// @Description This endpoint fetches a project by its id
+// @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -53,9 +53,9 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteGroup - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Delete a group
-// @Description This endpoint deletes a group using its id
-// @Tags Group
+// @Summary Delete a project
+// @Description This endpoint deletes a project using its id
+// @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -80,9 +80,9 @@ func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 }
 
 // CreateGroup - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Create a group
-// @Description This endpoint creates a group
-// @Tags Group
+// @Summary Create a project
+// @Description This endpoint creates a project
+// @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param orgID query string true "Organisation id"
@@ -120,9 +120,9 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 }
 
 // UpdateGroup - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Update a group
-// @Description This endpoint updates a group
-// @Tags Group
+// @Summary Update a project
+// @Description This endpoint updates a project
+// @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -154,9 +154,9 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 }
 
 // GetGroups - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Get groups
-// @Description This endpoint fetches groups
-// @Tags Group
+// @Summary Get projects
+// @Description This endpoint fetches projects
+// @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param name query string false "group name"

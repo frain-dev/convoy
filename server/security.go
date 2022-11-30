@@ -105,19 +105,6 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 
 func _() {}
 
-// CreateEndpointAPIKey
-// @Summary Create an api key for endpoint portal or the cli (API)
-// @Description This endpoint creates an api key that will be used by endpoint portal or the cli
-// @Tags APIKey
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project id"
-// @Param endpointID path string true "endpoint ID"
-// @Param appAPIKey body models.APIKey true "APIKey details"
-// @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/security/endpoints/{endpointID}/keys [post]
 func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
 	var keyType datastore.KeyType
 	var newApiKey models.CreateEndpointApiKey
