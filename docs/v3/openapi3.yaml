@@ -2953,6 +2953,81 @@ paths:
       summary: Revoke Portal Link
       tags:
       - PortalLink
+  /api/v1/projects/{projectID}/security/endpoints/{endpointID}/keys:
+    post:
+      description: This endpoint creates an api key that will be used by endpoint
+        portal or the cli
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: endpoint ID
+        in: path
+        name: endpointID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.APIKey'
+        description: APIKey details
+        required: true
+        x-originalParamName: appAPIKey
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.PortalAPIKeyResponse'
+                  type: object
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for endpoint portal or the cli (API)
+      tags:
+      - APIKey
   /api/v1/projects/{projectID}/sources:
     get:
       description: This endpoint fetches multiple sources
@@ -3797,81 +3872,6 @@ paths:
       summary: Test subscription filter
       tags:
       - Subscriptions
-  /api/v1/security/endpoints/{endpointID}/keys:
-    post:
-      description: This endpoint creates an api key that will be used by endpoint
-        portal or the cli
-      parameters:
-      - description: Project id
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      - description: endpoint ID
-        in: path
-        name: endpointID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.APIKey'
-        description: APIKey details
-        required: true
-        x-originalParamName: appAPIKey
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.PortalAPIKeyResponse'
-                  type: object
-          description: Created
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/server.Stub'
-                  type: object
-          description: Internal Server Error
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for endpoint portal or the cli (API)
-      tags:
-      - APIKey
   /portal/devices:
     get:
       description: This endpoint fetches all portal link devices

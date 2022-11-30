@@ -2738,6 +2738,73 @@ paths:
       summary: Revoke Portal Link
       tags:
       - PortalLink
+  /api/v1/projects/{projectID}/security/endpoints/{endpointID}/keys:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates an api key that will be used by endpoint
+        portal or the cli
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: endpoint ID
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      - description: APIKey details
+        in: body
+        name: appAPIKey
+        required: true
+        schema:
+          $ref: '#/definitions/models.APIKey'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalAPIKeyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an api key for endpoint portal or the cli (API)
+      tags:
+      - APIKey
   /api/v1/projects/{projectID}/sources:
     get:
       consumes:
@@ -3500,73 +3567,6 @@ paths:
       summary: Test subscription filter
       tags:
       - Subscriptions
-  /api/v1/security/endpoints/{endpointID}/keys:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an api key that will be used by endpoint
-        portal or the cli
-      parameters:
-      - description: Project id
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: endpoint ID
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      - description: APIKey details
-        in: body
-        name: appAPIKey
-        required: true
-        schema:
-          $ref: '#/definitions/models.APIKey'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for endpoint portal or the cli (API)
-      tags:
-      - APIKey
   /portal/devices:
     get:
       consumes:

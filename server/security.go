@@ -117,7 +117,7 @@ func _() {}
 // @Success 201 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/security/endpoints/{endpointID}/keys [post]
+// @Router /api/v1/projects/{projectID}/security/endpoints/{endpointID}/keys [post]
 func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
 	var keyType datastore.KeyType
 	var newApiKey models.CreateEndpointApiKey
