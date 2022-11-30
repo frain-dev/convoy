@@ -36,7 +36,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Organisation"
+                    "Organisations"
                 ],
                 "summary": "Get organisations",
                 "parameters": [
@@ -157,7 +157,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches groups",
+                "description": "This endpoint fetches projects",
                 "consumes": [
                     "application/json"
                 ],
@@ -165,9 +165,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Group"
+                    "Projects"
                 ],
-                "summary": "Get groups",
+                "summary": "Get projects",
                 "parameters": [
                     {
                         "type": "string",
@@ -267,7 +267,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates a group",
+                "description": "This endpoint creates a project",
                 "consumes": [
                     "application/json"
                 ],
@@ -275,9 +275,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Group"
+                    "Projects"
                 ],
-                "summary": "Create a group",
+                "summary": "Create a project",
                 "parameters": [
                     {
                         "type": "string",
@@ -379,7 +379,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches a group by its id",
+                "description": "This endpoint fetches a project by its id",
                 "consumes": [
                     "application/json"
                 ],
@@ -387,9 +387,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Group"
+                    "Projects"
                 ],
-                "summary": "Get a group",
+                "summary": "Get a project",
                 "parameters": [
                     {
                         "type": "string",
@@ -480,7 +480,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates a group",
+                "description": "This endpoint updates a project",
                 "consumes": [
                     "application/json"
                 ],
@@ -488,9 +488,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Group"
+                    "Projects"
                 ],
-                "summary": "Update a group",
+                "summary": "Update a project",
                 "parameters": [
                     {
                         "type": "string",
@@ -590,7 +590,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint deletes a group using its id",
+                "description": "This endpoint deletes a project using its id",
                 "consumes": [
                     "application/json"
                 ],
@@ -598,9 +598,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Group"
+                    "Projects"
                 ],
-                "summary": "Delete a group",
+                "summary": "Delete a project",
                 "parameters": [
                     {
                         "type": "string",
@@ -805,7 +805,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application Endpoints"
+                    "Endpoints"
                 ],
                 "summary": "Create an endpoint",
                 "parameters": [
@@ -1252,7 +1252,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Application Endpoints"
+                    "Endpoints"
                 ],
                 "summary": "Expire and generate new application endpoint secret",
                 "parameters": [
@@ -1362,7 +1362,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDelivery"
+                    "EventDeliveries"
                 ],
                 "summary": "Get event deliveries",
                 "parameters": [
@@ -1543,7 +1543,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDelivery"
+                    "EventDeliveries"
                 ],
                 "summary": "Batch Resend app events",
                 "parameters": [
@@ -1670,7 +1670,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDelivery"
+                    "EventDeliveries"
                 ],
                 "summary": "Count affected eventDeliveries",
                 "parameters": [
@@ -1821,7 +1821,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDelivery"
+                    "EventDeliveries"
                 ],
                 "summary": "Force Resend app events",
                 "parameters": [
@@ -1948,7 +1948,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDelivery"
+                    "EventDeliveries"
                 ],
                 "summary": "Get event delivery",
                 "parameters": [
@@ -2300,7 +2300,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDelivery"
+                    "EventDeliveries"
                 ],
                 "summary": "Resend an app event",
                 "parameters": [
@@ -3084,7 +3084,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink"
+                    "PortalLinks"
                 ],
                 "summary": "Fetch multiple portal links",
                 "parameters": [
@@ -3218,7 +3218,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink"
+                    "PortalLinks"
                 ],
                 "summary": "Create a portal link",
                 "parameters": [
@@ -3330,7 +3330,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink"
+                    "PortalLinks"
                 ],
                 "summary": "Get a portal link",
                 "parameters": [
@@ -3438,7 +3438,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink"
+                    "PortalLinks"
                 ],
                 "summary": "Update a portal link",
                 "parameters": [
@@ -3557,7 +3557,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink"
+                    "PortalLinks"
                 ],
                 "summary": "Revoke Portal Link",
                 "parameters": [
@@ -3652,125 +3652,6 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/security/endpoints/{endpointID}/keys": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint creates an api key that will be used by endpoint portal or the cli",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "APIKey"
-                ],
-                "summary": "Create an api key for endpoint portal or the cli (API)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "endpoint ID",
-                        "name": "endpointID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "APIKey details",
-                        "name": "appAPIKey",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.APIKey"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.PortalAPIKeyResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/projects/{projectID}/sources": {
             "get": {
                 "security": [
@@ -3786,7 +3667,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Source"
+                    "Sources"
                 ],
                 "summary": "Fetch multiple sources",
                 "parameters": [
@@ -3920,7 +3801,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Source"
+                    "Sources"
                 ],
                 "summary": "Create a source",
                 "parameters": [
@@ -4032,7 +3913,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Source"
+                    "Sources"
                 ],
                 "summary": "Get a source",
                 "parameters": [
@@ -4140,7 +4021,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Source"
+                    "Sources"
                 ],
                 "summary": "Update a source",
                 "parameters": [
@@ -4257,7 +4138,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Source"
+                    "Sources"
                 ],
                 "summary": "Delete source",
                 "parameters": [
@@ -5177,7 +5058,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink Devices"
+                    "PortalLinks"
                 ],
                 "summary": "Get portal link devices",
                 "responses": {
@@ -5269,7 +5150,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink Endpoints"
+                    "PortalLinks"
                 ],
                 "summary": "Get endpoints",
                 "responses": {
@@ -5359,7 +5240,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink Endpoints"
+                    "PortalLinks"
                 ],
                 "summary": "Create an endpoint",
                 "parameters": [
@@ -5459,7 +5340,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLink Keys"
+                    "PortalLinks"
                 ],
                 "summary": "Get portal link keys",
                 "responses": {
@@ -6314,23 +6195,6 @@
                 }
             }
         },
-        "models.APIKey": {
-            "type": "object",
-            "properties": {
-                "expires_at": {
-                    "type": "string"
-                },
-                "key_type": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/models.Role"
-                }
-            }
-        },
         "models.Endpoint": {
             "type": "object",
             "properties": {
@@ -6521,20 +6385,6 @@
                 },
                 "retry_count": {
                     "type": "integer"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Role": {
-            "type": "object",
-            "properties": {
-                "app": {
-                    "type": "string"
-                },
-                "group": {
-                    "type": "string"
                 },
                 "type": {
                     "type": "string"

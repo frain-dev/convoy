@@ -512,17 +512,6 @@ definitions:
         type: string
       type: array
     type: object
-  models.APIKey:
-    properties:
-      expires_at:
-        type: string
-      key_type:
-        type: string
-      name:
-        type: string
-      role:
-        $ref: '#/definitions/models.Role'
-    type: object
   models.Endpoint:
     properties:
       advanced_signatures:
@@ -651,15 +640,6 @@ definitions:
         type: integer
       retry_count:
         type: integer
-      type:
-        type: string
-    type: object
-  models.Role:
-    properties:
-      app:
-        type: string
-      group:
-        type: string
       type:
         type: string
     type: object
@@ -830,12 +810,12 @@ paths:
       - ApiKeyAuth: []
       summary: Get organisations
       tags:
-      - Organisation
+      - Organisations
   /api/v1/projects:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches groups
+      description: This endpoint fetches projects
       parameters:
       - description: group name
         in: query
@@ -889,13 +869,13 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get groups
+      summary: Get projects
       tags:
-      - Group
+      - Projects
     post:
       consumes:
       - application/json
-      description: This endpoint creates a group
+      description: This endpoint creates a project
       parameters:
       - description: Organisation id
         in: query
@@ -949,14 +929,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create a group
+      summary: Create a project
       tags:
-      - Group
+      - Projects
   /api/v1/projects/{projectID}:
     delete:
       consumes:
       - application/json
-      description: This endpoint deletes a group using its id
+      description: This endpoint deletes a project using its id
       parameters:
       - description: Project id
         in: path
@@ -1004,13 +984,13 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Delete a group
+      summary: Delete a project
       tags:
-      - Group
+      - Projects
     get:
       consumes:
       - application/json
-      description: This endpoint fetches a group by its id
+      description: This endpoint fetches a project by its id
       parameters:
       - description: Project id
         in: path
@@ -1058,13 +1038,13 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get a group
+      summary: Get a project
       tags:
-      - Group
+      - Projects
     put:
       consumes:
       - application/json
-      description: This endpoint updates a group
+      description: This endpoint updates a project
       parameters:
       - description: Project id
         in: path
@@ -1118,9 +1098,9 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Update a group
+      summary: Update a project
       tags:
-      - Group
+      - Projects
   /api/v1/projects/{projectID}/endpoints:
     get:
       consumes:
@@ -1237,7 +1217,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create an endpoint
       tags:
-      - Application Endpoints
+      - Endpoints
   /api/v1/projects/{projectID}/endpoints/{endpointID}:
     delete:
       consumes:
@@ -1482,7 +1462,7 @@ paths:
       - ApiKeyAuth: []
       summary: Expire and generate new application endpoint secret
       tags:
-      - Application Endpoints
+      - Endpoints
   /api/v1/projects/{projectID}/eventdeliveries:
     get:
       consumes:
@@ -1583,7 +1563,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get event deliveries
       tags:
-      - EventDelivery
+      - EventDeliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
     get:
       consumes:
@@ -1648,7 +1628,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get event delivery
       tags:
-      - EventDelivery
+      - EventDeliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       consumes:
@@ -1840,7 +1820,7 @@ paths:
       - ApiKeyAuth: []
       summary: Resend an app event
       tags:
-      - EventDelivery
+      - EventDeliveries
   /api/v1/projects/{projectID}/eventdeliveries/batchretry:
     post:
       consumes:
@@ -1908,7 +1888,7 @@ paths:
       - ApiKeyAuth: []
       summary: Batch Resend app events
       tags:
-      - EventDelivery
+      - EventDeliveries
   /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents:
     get:
       consumes:
@@ -1993,7 +1973,7 @@ paths:
       - ApiKeyAuth: []
       summary: Count affected eventDeliveries
       tags:
-      - EventDelivery
+      - EventDeliveries
   /api/v1/projects/{projectID}/eventdeliveries/forceresend:
     post:
       consumes:
@@ -2061,7 +2041,7 @@ paths:
       - ApiKeyAuth: []
       summary: Force Resend app events
       tags:
-      - EventDelivery
+      - EventDeliveries
   /api/v1/projects/{projectID}/events:
     get:
       consumes:
@@ -2492,7 +2472,7 @@ paths:
       - ApiKeyAuth: []
       summary: Fetch multiple portal links
       tags:
-      - PortalLink
+      - PortalLinks
     post:
       consumes:
       - application/json
@@ -2552,7 +2532,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create a portal link
       tags:
-      - PortalLink
+      - PortalLinks
   /api/v1/projects/{projectID}/portal-links/{portalLinkID}:
     get:
       consumes:
@@ -2612,7 +2592,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get a portal link
       tags:
-      - PortalLink
+      - PortalLinks
     put:
       consumes:
       - application/json
@@ -2677,7 +2657,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update a portal link
       tags:
-      - PortalLink
+      - PortalLinks
   /api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:
     put:
       consumes:
@@ -2737,74 +2717,7 @@ paths:
       - ApiKeyAuth: []
       summary: Revoke Portal Link
       tags:
-      - PortalLink
-  /api/v1/projects/{projectID}/security/endpoints/{endpointID}/keys:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an api key that will be used by endpoint
-        portal or the cli
-      parameters:
-      - description: Project id
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: endpoint ID
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      - description: APIKey details
-        in: body
-        name: appAPIKey
-        required: true
-        schema:
-          $ref: '#/definitions/models.APIKey'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create an api key for endpoint portal or the cli (API)
-      tags:
-      - APIKey
+      - PortalLinks
   /api/v1/projects/{projectID}/sources:
     get:
       consumes:
@@ -2878,7 +2791,7 @@ paths:
       - ApiKeyAuth: []
       summary: Fetch multiple sources
       tags:
-      - Source
+      - Sources
     post:
       consumes:
       - application/json
@@ -2938,7 +2851,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create a source
       tags:
-      - Source
+      - Sources
   /api/v1/projects/{projectID}/sources/{sourceID}:
     delete:
       consumes:
@@ -2998,7 +2911,7 @@ paths:
       - ApiKeyAuth: []
       summary: Delete source
       tags:
-      - Source
+      - Sources
     get:
       consumes:
       - application/json
@@ -3057,7 +2970,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get a source
       tags:
-      - Source
+      - Sources
     put:
       consumes:
       - application/json
@@ -3122,7 +3035,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update a source
       tags:
-      - Source
+      - Sources
   /api/v1/projects/{projectID}/subscriptions:
     get:
       consumes:
@@ -3615,7 +3528,7 @@ paths:
               type: object
       summary: Get portal link devices
       tags:
-      - PortalLink Devices
+      - PortalLinks
   /portal/endpoints:
     get:
       consumes:
@@ -3664,7 +3577,7 @@ paths:
               type: object
       summary: Get endpoints
       tags:
-      - PortalLink Endpoints
+      - PortalLinks
     post:
       consumes:
       - application/json
@@ -3717,7 +3630,7 @@ paths:
               type: object
       summary: Create an endpoint
       tags:
-      - PortalLink Endpoints
+      - PortalLinks
   /portal/keys:
     get:
       consumes:
@@ -3764,7 +3677,7 @@ paths:
               type: object
       summary: Get portal link keys
       tags:
-      - PortalLink Keys
+      - PortalLinks
 schemes:
 - https
 securityDefinitions:

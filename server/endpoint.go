@@ -32,7 +32,7 @@ type pagedResponse struct {
 // CreateEndpoint
 // @Summary Create an endpoint
 // @Description This endpoint creates an endpoint
-// @Tags Application Endpoints
+// @Tags Endpoints
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -169,7 +169,7 @@ func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reque
 // ExpireSecret
 // @Summary Expire and generate new application endpoint secret
 // @Description This endpoint expires the current endpoint secret and generates a new one.
-// @Tags Application Endpoints
+// @Tags Endpoints
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
