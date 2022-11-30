@@ -21,17 +21,6 @@ func createOrganisationService(a *ApplicationHandler) *services.OrganisationServ
 	return services.NewOrganisationService(orgRepo, orgMemberRepo)
 }
 
-// GetOrganisation
-// @Summary Get an organisation
-// @Description This endpoint fetches an organisation by its id
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Organisation}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID} [get]
 func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully",
 		m.GetOrganisationFromContext(r.Context()), http.StatusOK))
@@ -52,19 +41,6 @@ func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Router /api/v1/organisations [get]
 func _() {}
 
-// GetOrganisationsPaged
-// @Summary Get organisations
-// @Description This endpoint fetches the organisations a user is part of
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Organisation}}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations [get]
 func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
 	pageable := m.GetPageableFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
@@ -96,17 +72,6 @@ func (a *ApplicationHandler) GetUserOrganisations(w http.ResponseWriter, r *http
 		organisations, http.StatusOK))
 }
 
-// CreateOrganisation
-// @Summary Create an organisation
-// @Description This endpoint creates an organisation
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param organisation body models.Organisation true "Organisation Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Organisation}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations [post]
 func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newOrg models.Organisation
 	err := util.ReadJSON(r, &newOrg)
@@ -127,18 +92,6 @@ func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Organisation created successfully", organisation, http.StatusCreated))
 }
 
-// UpdateOrganisation
-// @Summary Update an organisation
-// @Description This endpoint updates an organisation
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Param organisation body models.Organisation true "Organisation Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Organisation}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID} [put]
 func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var orgUpdate models.Organisation
 	err := util.ReadJSON(r, &orgUpdate)
@@ -157,17 +110,6 @@ func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Organisation updated successfully", org, http.StatusAccepted))
 }
 
-// DeleteOrganisation
-// @Summary Delete organisation
-// @Description This endpoint deletes an organisation
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID} [delete]
 func (a *ApplicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
 	orgService := createOrganisationService(a)

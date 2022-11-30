@@ -64,6 +64,18 @@ func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
 }
 
+// CreateEndpointFanoutEvent
+// @Summary Fan out an event to multiple endpoints.
+// @Description This endpoint uses the owner_id to fan out an event to multiple endpoints.
+// @Tags Events
+// @Accept json
+// @Produce json
+// @Param projectID path string true "Project id"
+// @Param event body models.Event true "Event Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/events/fanout [post]
 func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
