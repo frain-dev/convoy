@@ -27,7 +27,7 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
-// @Param application body models.Application true "Application Details"
+// @Param application body datastore.Application true "Application Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -169,7 +169,7 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param projectID path string true "Project id"
 // @Param appID path string true "application id"
-// @Param application body models.Application true "Application Details"
+// @Param application body datastore.Application true "Application Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Application}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -252,9 +252,9 @@ func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("App deleted successfully", nil, http.StatusOK))
 }
 
-// CreateAppEndpoint
-// @Summary Create an application endpoint
-// @Description This endpoint creates an application endpoint
+// CreateEndpoint
+// @Summary Create an endpoint
+// @Description This endpoint creates an endpoint
 // @Tags Application Endpoints
 // @Accept  json
 // @Produce  json
@@ -399,10 +399,10 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint created successfully", endpointResponse, http.StatusCreated))
 }
 
-// GetAppEndpoints
-// @Summary Get application endpoints
-// @Description This endpoint fetches an application's endpoints
-// @Tags Application Endpoints
+// GetEndpoints
+// @Summary Get endpoints
+// @Description This endpoint fetches an endpoints
+// @Tags Endpoints
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -429,10 +429,10 @@ func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 	_ = render.Render(w, r, util.NewServerResponse("App endpoints fetched successfully", endpointResponse, http.StatusOK))
 }
 
-// GetAppEndpoint
-// @Summary Get application endpoint
-// @Description This endpoint fetches an application endpoint
-// @Tags Application Endpoints
+// GetEndpoint
+// @Summary Get endpoint
+// @Description This endpoint fetches an endpoint
+// @Tags Endpoints
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -450,10 +450,10 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 
 }
 
-// UpdateAppEndpoint
-// @Summary Update an application endpoint
-// @Description This endpoint updates an application endpoint
-// @Tags Application Endpoints
+// UpdateEndpoint
+// @Summary Update an endpoint
+// @Description This endpoint updates an endpoint
+// @Tags Endpoints
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -517,10 +517,10 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint updated successfully", endpointResponse, http.StatusAccepted))
 }
 
-// DeleteAppEndpoint
-// @Summary Delete application endpoint
-// @Description This endpoint deletes an application endpoint
-// @Tags Application Endpoints
+// DeleteEndpoint
+// @Summary Delete endpoint
+// @Description This endpoint deletes an endpoint
+// @Tags Endpoints
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
