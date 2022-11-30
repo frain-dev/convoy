@@ -1128,7 +1128,7 @@ paths:
       description: This endpoint fetches an endpoints
       parameters:
       - description: Project id
-        in: query
+        in: path
         name: projectID
         required: true
         type: string
@@ -1184,7 +1184,7 @@ paths:
       description: This endpoint creates an endpoint
       parameters:
       - description: Project id
-        in: query
+        in: path
         name: projectID
         required: true
         type: string
@@ -1245,7 +1245,7 @@ paths:
       description: This endpoint deletes an endpoint
       parameters:
       - description: Project id
-        in: query
+        in: path
         name: projectID
         required: true
         type: string
@@ -1304,7 +1304,7 @@ paths:
       description: This endpoint fetches an endpoint
       parameters:
       - description: Project id
-        in: query
+        in: path
         name: projectID
         required: true
         type: string
@@ -1363,7 +1363,7 @@ paths:
       description: This endpoint updates an endpoint
       parameters:
       - description: Project id
-        in: query
+        in: path
         name: projectID
         required: true
         type: string
@@ -1430,7 +1430,7 @@ paths:
         a new one.
       parameters:
       - description: Project id
-        in: query
+        in: path
         name: projectID
         required: true
         type: string

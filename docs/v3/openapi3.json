@@ -1908,7 +1908,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2024,7 +2024,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2151,7 +2151,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2273,7 +2273,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2395,7 +2395,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {
@@ -2531,7 +2531,7 @@
 				"parameters": [
 					{
 						"description": "Project id",
-						"in": "query",
+						"in": "path",
 						"name": "projectID",
 						"required": true,
 						"schema": {

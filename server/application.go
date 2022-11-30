@@ -188,19 +188,6 @@ func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("App deleted successfully", nil, http.StatusOK))
 }
 
-// CreateEndpoint
-// @Summary Create an endpoint
-// @Description This endpoint creates an endpoint
-// @Tags Application Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project id"
-// @Param appID path string true "application id"
-// @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints [post]
 func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
 
@@ -335,18 +322,6 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint created successfully", endpointResponse, http.StatusCreated))
 }
 
-// GetEndpoints
-// @Summary Get endpoints
-// @Description This endpoint fetches an endpoints
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project id"
-// @Param appID path string true "application id"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Request) {
 	endpoints := m.GetEndpointsFromContext(r.Context())
 
@@ -365,19 +340,6 @@ func (a *ApplicationHandler) GetAppEndpoints(w http.ResponseWriter, r *http.Requ
 	_ = render.Render(w, r, util.NewServerResponse("App endpoints fetched successfully", endpointResponse, http.StatusOK))
 }
 
-// GetEndpoint
-// @Summary Get endpoint
-// @Description This endpoint fetches an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project id"
-// @Param appID path string true "application id"
-// @Param endpointID path string true "endpoint id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	resp := generateEndpointResponse(*endpoint)
@@ -386,20 +348,6 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 
 }
 
-// UpdateEndpoint
-// @Summary Update an endpoint
-// @Description This endpoint updates an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project id"
-// @Param appID path string true "application id"
-// @Param endpointID path string true "endpoint id"
-// @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	endpointService := createEndpointService(a)
@@ -453,19 +401,6 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint updated successfully", endpointResponse, http.StatusAccepted))
 }
 
-// DeleteEndpoint
-// @Summary Delete endpoint
-// @Description This endpoint deletes an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project id"
-// @Param appID path string true "application id"
-// @Param endpointID path string true "endpoint id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	es := createEndpointService(a)

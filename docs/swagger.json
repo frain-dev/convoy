@@ -709,7 +709,7 @@
                         "type": "string",
                         "description": "Project id",
                         "name": "projectID",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -813,7 +813,7 @@
                         "type": "string",
                         "description": "Project id",
                         "name": "projectID",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -925,7 +925,7 @@
                         "type": "string",
                         "description": "Project id",
                         "name": "projectID",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -1033,7 +1033,7 @@
                         "type": "string",
                         "description": "Project id",
                         "name": "projectID",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -1150,7 +1150,7 @@
                         "type": "string",
                         "description": "Project id",
                         "name": "projectID",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -1260,7 +1260,7 @@
                         "type": "string",
                         "description": "Project id",
                         "name": "projectID",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
