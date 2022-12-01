@@ -1,0 +1,100 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/frain-dev/convoy/internal/pkg/server"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
+
+	cm "github.com/frain-dev/convoy/datastore/mongo"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/spf13/cobra"
+)
+
+func addDomainCommand(a *app) *cobra.Command {
+	var domainPort uint32
+	var logLevel string
+	var allowedRoutes = []string{
+		"ingest",
+	}
+
+	cmd := &cobra.Command{
+		Use:   "domain",
+		Short: "Start a server that forwards requests from a custom domain",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := config.Get()
+			if err != nil {
+				a.logger.WithError(err).Fatal("failed to load config")
+				return err
+			}
+
+			orgRepo := cm.NewOrgRepo(a.store)
+
+			lo := a.logger.(*log.Logger)
+			lo.SetPrefix("domain server")
+
+			lvl, err := log.ParseLevel(c.Logger.Level)
+			if err != nil {
+				return err
+			}
+			lo.SetLevel(lvl)
+
+			if c.Server.HTTP.SocketPort != 0 {
+				domainPort = c.Server.HTTP.DomainPort
+			}
+
+			s := server.NewServer(domainPort, func() {})
+
+			router := chi.NewRouter()
+			router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+
+				rElems := strings.Split(r.URL.Path, "/")
+				log.Printf("Host: %s, Parts: %+v", r.Host, rElems)
+
+				_, err := orgRepo.FetchOrganisationByCustomDomain(r.Context(), r.Host)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("Invalid domain", http.StatusBadRequest))
+					return
+				}
+
+				if ok := contains(allowedRoutes, rElems[1]); !ok {
+					_ = render.Render(w, r, util.NewErrorResponse("Cannot access this route using a custom domain", http.StatusBadRequest))
+					return
+				}
+
+				forwardedPath := strings.Join(rElems[1:], "/")
+				redirectURL := fmt.Sprintf("%s/%s?%s", c.Host, forwardedPath, r.URL.RawQuery)
+
+				log.Printf("Path: %s, URL: %s", forwardedPath, redirectURL)
+				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+			})
+
+			log.Infof("Domain server running on port %v", domainPort)
+
+			s.SetHandler(router)
+			s.Listen()
+
+			return nil
+		},
+	}
+
+	cmd.Flags().Uint32Var(&domainPort, "domain-port", 5009, "Domain server port")
+	cmd.Flags().StringVar(&logLevel, "log-level", "error", "Domain server log level")
+	return cmd
+}
+
+func contains(sl []string, name string) bool {
+	for _, value := range sl {
+		if ok := strings.HasPrefix(name, value); ok {
+			return true
+		}
+	}
+
+	return false
+}

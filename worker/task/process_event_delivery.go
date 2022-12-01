@@ -47,7 +47,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-
 		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
@@ -292,7 +291,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		Method:     resp.Method,
 		MsgID:      m.UID,
 		EndpointID: e.UID,
-		APIVersion: "2021-08-27",
+		APIVersion: convoy.GetVersion(),
 
 		IPAddress:        resp.IP,
 		ResponseHeader:   *responseHeader,

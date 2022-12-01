@@ -639,6 +639,21 @@ func (mr *MockOrganisationRepositoryMockRecorder) DeleteOrganisation(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).DeleteOrganisation), arg0, arg1)
 }
 
+// FetchOrganisationByCustomDomain mocks base method.
+func (m *MockOrganisationRepository) FetchOrganisationByCustomDomain(arg0 context.Context, arg1 string) (*datastore.Organisation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationByCustomDomain", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.Organisation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationByCustomDomain indicates an expected call of FetchOrganisationByCustomDomain.
+func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByCustomDomain(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByCustomDomain", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByCustomDomain), arg0, arg1)
+}
+
 // FetchOrganisationByID mocks base method.
 func (m *MockOrganisationRepository) FetchOrganisationByID(arg0 context.Context, arg1 string) (*datastore.Organisation, error) {
 	m.ctrl.T.Helper()

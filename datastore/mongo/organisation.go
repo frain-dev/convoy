@@ -82,6 +82,20 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datas
 	return org, err
 }
 
+func (db *orgRepo) FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
+	ctx = db.setCollectionInContext(ctx)
+	org := &datastore.Organisation{}
+
+	filter := bson.M{"custom_domain": domain}
+
+	err := db.store.FindOne(ctx, filter, nil, org)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return org, datastore.ErrOrgNotFound
+	}
+
+	return org, nil
+}
+
 func (db *orgRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.OrganisationCollection)
 }

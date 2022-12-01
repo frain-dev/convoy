@@ -56,6 +56,7 @@ type OrganisationRepository interface {
 	UpdateOrganisation(context.Context, *Organisation) error
 	DeleteOrganisation(context.Context, string) error
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
+	FetchOrganisationByCustomDomain(context.Context, string) (*Organisation, error)
 }
 
 type OrganisationInviteRepository interface {
