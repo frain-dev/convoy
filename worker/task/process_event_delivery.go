@@ -47,7 +47,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-
 		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
@@ -135,6 +134,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		if subscription.Status == datastore.InactiveSubscriptionStatus {
+			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.DiscardedEventStatus)
+			if err != nil {
+				log.WithError(err).Error("failed to update status of messages - ")
+				return &EndpointError{Err: err, delay: delayDuration}
+			}
+
 			log.Debugf("subscription %s is inactive, failing to send.", e.TargetURL)
 			return nil
 		}
