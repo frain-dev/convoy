@@ -79,7 +79,7 @@
 		<div></div>
 	</div>
 
-	<div class="grid grid-cols-5 mb-32px" *ngIf="!isLoadingDeliveryDetails">
+	<div class="grid grid-cols-5 mb-40px" *ngIf="!isLoadingDeliveryDetails">
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">HTTP STATUS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
@@ -110,14 +110,14 @@
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
 	</div>
 
-	<h3 class="font-semibold mb-8px">Attempts</h3>
+	<h3 class="font-semibold mb-8px">Event Delivery Attempts</h3>
 
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
 		<div class="flex justify-between items-center py-18px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<div>
-				<p class="text-14">
+				<p class="text-14 flex items-center">
 					Attempt {{ eventDeliveryAtempts.length - i }}
-					<span class="text-primary-100" *ngIf="deliveryAttempt?.http_status">({{ deliveryAttempt?.http_status }})</span>
+					<convoy-tag *ngIf="deliveryAttempt?.http_status" [type]="deliveryAttempt.error ? 'danger' : 'success'" className="ml-8px">{{ deliveryAttempt?.http_status }}</convoy-tag>
 				</p>
 				<p class="text-grey-40 text-10 mt-6px">Attempted At: {{ deliveryAttempt.updated_at | date: 'medium' }}</p>
 			</div>
