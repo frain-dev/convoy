@@ -114,7 +114,13 @@
 
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
 		<div class="flex justify-between items-center py-18px" (click)="selectedDeliveryAttempt = deliveryAttempt">
-			<p class="text-14">Retry Attempt Details {{ eventDeliveryAtempts.length - i }}</p>
+			<div>
+				<p class="text-14">
+					Attempt {{ eventDeliveryAtempts.length - i }}
+					<span class="text-primary-100" *ngIf="deliveryAttempt?.http_status">({{ deliveryAttempt?.http_status }})</span>
+				</p>
+				<p class="text-grey-40 text-10 mt-6px">Attempted At: {{ deliveryAttempt.updated_at | date: 'medium' }}</p>
+			</div>
 			<button convoy-button size="sm" fill="text" (click)="selectedDeliveryAttempt = deliveryAttempt">
 				Open Details
 				<img src="/assets/img/angle-arrow-right-primary.svg" class="ml-6px h-16px transition-all duration-300" [ngClass]="{ 'rotate-90': selectedDeliveryAttempt?.uid == deliveryAttempt.uid }" alt="link out" />
