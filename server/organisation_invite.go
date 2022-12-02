@@ -29,18 +29,6 @@ func CreateOrganisationInviteService(a *ApplicationHandler) *services.Organisati
 	)
 }
 
-// InviteUserToOrganisation
-// @Summary Invite a user to join an organisation
-// @Description This endpoint invites a user to join an organisation
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Param invite body models.OrganisationInvite true "Organisation Invite Details"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/invites [post]
 func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newIV models.OrganisationInvite
 	err := util.ReadJSON(r, &newIV)
@@ -64,20 +52,6 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 	_ = render.Render(w, r, util.NewServerResponse("invite created successfully", nil, http.StatusCreated))
 }
 
-// GetPendingOrganisationInvites
-// @Summary Fetch pending organisation invites
-// @Description This endpoint fetches pending organisation invites
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Param orgID path string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/invites/pending [get]
 func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
 	pageable := m.GetPageableFromContext(r.Context())
@@ -94,19 +68,6 @@ func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter
 		pagedResponse{Content: &invites, Pagination: &paginationData}, http.StatusOK))
 }
 
-// ProcessOrganisationMemberInvite
-// @Summary Accept or decline an organisation invite
-// @Description This endpoint process a user's response to an organisation invite
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param token query string true "invite token"
-// @Param accepted query string true "email"
-// @Param user body models.User false "User Details"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/process_invite [post]
 func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	accepted, err := strconv.ParseBool(r.URL.Query().Get("accepted"))
@@ -134,17 +95,6 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	_ = render.Render(w, r, util.NewServerResponse("invite processed successfully", nil, http.StatusOK))
 }
 
-// FindUserByInviteToken
-// @Summary Find user by invite token
-// @Description This endpoint finds a user by an invite token
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param token query string true "invite token"
-// @Success 200 {object} util.ServerResponse{data=datastore.User}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/users/token [get]
 func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	organisationInviteService := CreateOrganisationInviteService(a)
@@ -161,18 +111,6 @@ func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 	_ = render.Render(w, r, util.NewServerResponse("retrieved user", res, http.StatusOK))
 }
 
-// ResendOrganizationInvite
-// @Summary resend organization invite
-// @Description This endpoint resends the organization invite to a user
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Param inviteID path string true "invite id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/invites/{inviteID}/resend [post]
 func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
 	baseUrl := m.GetHostFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())
@@ -189,18 +127,6 @@ func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 	_ = render.Render(w, r, util.NewServerResponse("invite resent successfully", nil, http.StatusOK))
 }
 
-// CancelOrganizationInvite
-// @Summary cancel organization invite
-// @Description This endpoint cancels an organization invite
-// @Tags Organisation
-// @Accept  json
-// @Produce  json
-// @Param orgID path string true "organisation id"
-// @Param inviteID path string true "invite id"
-// @Success 200 {object} util.ServerResponse{data=datastore.OrganisationInvite}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/organisations/{orgID}/invites/{inviteID}/cancel [post]
 func (a *ApplicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
 	organisationInviteService := CreateOrganisationInviteService(a)
 

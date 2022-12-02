@@ -4,6 +4,7 @@ After setting up Convoy, you'll need to create an endpoint. An endpoint represen
 
 ```go[example]
 endpoint, err := c.Endpoints.Create(&Convoy.CreateEndpointRequest{
+    Name: "Endpoint name",
     URL: "http://localhost:8081",
     Description: "Some description",
 }, nil)
