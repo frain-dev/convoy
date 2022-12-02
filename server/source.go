@@ -24,7 +24,7 @@ func createSourceService(a *ApplicationHandler) *services.SourceService {
 // CreateSource
 // @Summary Create a source
 // @Description This endpoint creates a source
-// @Tags Source
+// @Tags Sources
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -57,7 +57,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // GetSourceByID
 // @Summary Get a source
 // @Description This endpoint fetches a source by its id
-// @Tags Source
+// @Tags Sources
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -85,7 +85,7 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 // UpdateSource
 // @Summary Update a source
 // @Description This endpoint updates a source
-// @Tags Source
+// @Tags Sources
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -127,7 +127,7 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // DeleteSource
 // @Summary Delete source
 // @Description This endpoint deletes a source
-// @Tags Source
+// @Tags Sources
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -158,7 +158,7 @@ func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // LoadSourcesPaged
 // @Summary Fetch multiple sources
 // @Description This endpoint fetches multiple sources
-// @Tags Source
+// @Tags Sources
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"

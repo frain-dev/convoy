@@ -74,9 +74,9 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		try {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId, this.portalToken);
 			const deliveries = response.data;
-			this.eventDeliveryAtempts = deliveries.sort((a: EVENT_DELIVERY_ATTEMPT, b: EVENT_DELIVERY_ATTEMPT) => new Date(a.updated_at).getDate() - new Date(b.updated_at).getDate());
-			this.selectedDeliveryAttempt = response.data[0];
-			this.eventDeliveryAtempt = response.data[response.data.length - 1];
+			this.eventDeliveryAtempts = deliveries.reverse();
+			this.selectedDeliveryAttempt = this.eventDeliveryAtempts[0];
+			this.eventDeliveryAtempt = this.eventDeliveryAtempts[this.eventDeliveryAtempts.length - 1];
 
 			this.isloadingDeliveryAttempts = false;
 		} catch (error) {
