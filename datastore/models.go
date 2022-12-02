@@ -637,7 +637,7 @@ type User struct {
 	FirstName                  string              `json:"first_name" bson:"first_name"`
 	LastName                   string              `json:"last_name" bson:"last_name"`
 	Email                      string              `json:"email" bson:"email"`
-	EmailVerified              bool                `json:"-" bson:"email_verified"`
+	EmailVerified              bool                `json:"email_verified" bson:"email_verified"`
 	Password                   string              `json:"-" bson:"password"`
 	Role                       auth.Role           `json:"role" bson:"role"`
 	ResetPasswordToken         string              `json:"-" bson:"reset_password_token"`
