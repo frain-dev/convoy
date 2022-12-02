@@ -115,7 +115,7 @@
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
 		<div class="flex justify-between items-center py-18px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<div>
-				<p class="text-14 flex items-center">
+				<p class="text-14 font-semibold flex items-center">
 					Attempt {{ eventDeliveryAtempts.length - i }}
 					<convoy-tag *ngIf="deliveryAttempt?.http_status" [type]="deliveryAttempt.error ? 'danger' : 'success'" className="ml-8px">{{ deliveryAttempt?.http_status }}</convoy-tag>
 				</p>
