@@ -206,22 +206,22 @@ func (s SignatureHeaderProvider) String() string {
 }
 
 type Configuration struct {
-	Auth            AuthConfiguration        `json:"auth,omitempty"`
-	Database        DatabaseConfiguration    `json:"database"`
-	Queue           QueueConfiguration       `json:"queue"`
-	Prometheus      PrometheusConfiguration  `json:"prometheus"`
-	Server          ServerConfiguration      `json:"server"`
-	MaxResponseSize uint64                   `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP            SMTPConfiguration        `json:"smtp"`
-	Environment     string                   `json:"env" envconfig:"CONVOY_ENV"`
-	MultipleTenants bool                     `json:"multiple_tenants"`
-	Logger          LoggerConfiguration      `json:"logger"`
-	Tracer          TracerConfiguration      `json:"tracer"`
-	Cache           CacheConfiguration       `json:"cache"`
-	Limiter         LimiterConfiguration     `json:"limiter"`
-	Host            string                   `json:"host" envconfig:"CONVOY_HOST"`
-	Search          SearchConfiguration      `json:"search"`
-	FeatureFlag     FeatureFlagConfiguration `json:"feature_flag"`
+	Auth               AuthConfiguration        `json:"auth,omitempty"`
+	Database           DatabaseConfiguration    `json:"database"`
+	Queue              QueueConfiguration       `json:"queue"`
+	Prometheus         PrometheusConfiguration  `json:"prometheus"`
+	Server             ServerConfiguration      `json:"server"`
+	MaxResponseSize    uint64                   `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP               SMTPConfiguration        `json:"smtp"`
+	Environment        string                   `json:"env" envconfig:"CONVOY_ENV"`
+	Logger             LoggerConfiguration      `json:"logger"`
+	Tracer             TracerConfiguration      `json:"tracer"`
+	Cache              CacheConfiguration       `json:"cache"`
+	Limiter            LimiterConfiguration     `json:"limiter"`
+	Host               string                   `json:"host" envconfig:"CONVOY_HOST"`
+	CustomDomainSuffix string                   `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	Search             SearchConfiguration      `json:"search"`
+	FeatureFlag        FeatureFlagConfiguration `json:"feature_flag"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called
