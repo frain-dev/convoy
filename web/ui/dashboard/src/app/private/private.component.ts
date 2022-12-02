@@ -17,6 +17,7 @@ export class PrivateComponent implements OnInit {
 	showOverlay = false;
 	showAddOrganisationModal = false;
 	showAddAnalytics = false;
+	isUserEmailVerified = false;
 	apiURL = this.generalService.apiURL();
 	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
@@ -38,6 +39,7 @@ export class PrivateComponent implements OnInit {
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
+		console.log(authDetails ? JSON.parse(authDetails) : false);
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 

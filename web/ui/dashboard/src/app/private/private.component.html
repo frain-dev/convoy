@@ -93,6 +93,8 @@
 
 	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 
+	<convoy-verify-email *ngIf="!isUserEmailVerified"></convoy-verify-email>
+
 	<router-outlet></router-outlet>
 </div>
 
