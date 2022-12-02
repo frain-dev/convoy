@@ -75,7 +75,7 @@
 				<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
 					<convoy-input-field>
 						<label for="rate-limit-duration" convoy-label>Duration</label>
-						<input type="number" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="duration" placeholder="e.g 5m" />
+						<input type="text" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="duration" placeholder="e.g 5m" />
 						<convoy-input-error *ngIf="projectForm.get('config.ratelimit.duration')?.touched && projectForm.get('config.ratelimit.duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
 					</convoy-input-field>
 					<convoy-input-field>
