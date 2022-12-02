@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -17,6 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
@@ -880,6 +879,81 @@ func TestUserService_VerifyEmail(t *testing.T) {
 			}
 
 			err := u.VerifyEmail(tc.args.ctx, tc.args.token)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
+				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				return
+			}
+
+			require.Nil(t, err)
+		})
+	}
+}
+
+func TestUserService_ResendEmailVerificationToken(t *testing.T) {
+	ctx := context.Background()
+	type args struct {
+		ctx     context.Context
+		baseURL string
+		user    *datastore.User
+	}
+	tests := []struct {
+		name        string
+		args        args
+		dbFn        func(u *UserService)
+		wantErr     bool
+		wantErrCode int
+		wantErrMsg  string
+	}{
+		{
+			name: "should_resend_verification_email",
+			args: args{
+				ctx:     ctx,
+				baseURL: "localhost",
+				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))},
+			},
+			dbFn: func(u *UserService) {
+				q, _ := u.queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_error_for_email_verifiied",
+			args: args{
+				ctx:     ctx,
+				baseURL: "localhost",
+				user:    &datastore.User{EmailVerified: true, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(-time.Hour))},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "user email already verified",
+		},
+		{
+			name: "should_error_for_previous_token_not_expired",
+			args: args{
+				ctx:     ctx,
+				baseURL: "localhost",
+				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(-time.Hour))},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "old verification token is still valid",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			u := provideUserService(ctrl, t)
+
+			if tc.dbFn != nil {
+				tc.dbFn(u)
+			}
+
+			err := u.ResendEmailVerificationToken(tc.args.ctx, tc.args.baseURL, tc.args.user)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

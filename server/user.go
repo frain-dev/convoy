@@ -97,6 +97,23 @@ func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Token refresh successful", token, http.StatusOK))
 }
 
+func (a *ApplicationHandler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	userService := createUserService(a)
+	err := userService.ResendEmailVerificationToken(r.Context(), m.GetHostFromContext(r.Context()), user)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("verification email sent successfully", nil, http.StatusOK))
+}
+
 func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	auth, err := m.GetAuthFromRequest(r)
 	if err != nil {
