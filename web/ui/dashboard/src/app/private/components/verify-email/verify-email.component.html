@@ -1,0 +1,11 @@
+<convoy-modal size="md" position="center">
+	<div class="px-30px py-40px">
+        <img src="assets/img/lock.svg" alt="lock icon">
+		<h3 class="font-bold mt-12px mb-20px">Verify Email</h3>
+		<p class="text-grey-40">Verify your email to start sending and recieving webhooks.</p>
+		<div class="flex mt-32px">
+			<button convoy-button>Complete Verification</button>
+			<button convoy-button fill="outline" class="ml-24px" (click)="closeModal.emit()">Maybe Later</button>
+		</div>
+	</div>
+</convoy-modal>
