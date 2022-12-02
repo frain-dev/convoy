@@ -202,6 +202,7 @@ func (u *UserService) sendUserVerificationEmail(ctx context.Context, baseURL str
 		Params: map[string]string{
 			"email_verification_url": fmt.Sprintf("%s/ui/users/verify_email?token=%s", baseURL, user.EmailVerificationToken),
 			"recipient_name":         user.FirstName,
+			"email":                  user.Email,
 			"expires_at":             user.ResetPasswordExpiresAt.Time().String(),
 		},
 	}

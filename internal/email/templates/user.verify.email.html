@@ -91,25 +91,26 @@
               />
             </div>
             <h4>Verify your email address</h4>
-            <p>Hi there,</p>
+            <p>Hi {{ .recipient_name }},</p>
             <p>
               Thank you for joining Convoy, please verify your email address by
               clicking the button below or using this link>>
               <a
-                href="https://playground.getconvoy.io
-                            projects/01868002-8a60-469d-859a-db3e7b7264bf/events"
+                href="{{ .email_verification_url }}"
                 target="_blank"
               >
-                https://playground.getconvoy.io
-                projects/01868002-8a60-469d-859a-db3e7b7264bf/events
+                  {{ .email_verification_url }}
               </a>
             </p>
-            <button>Verify Email</button>
+              <a
+                  href="{{ .email_verification_url }}"
+                  target="_blank"
+              > <button>Verify Email</button> </a>
           </div>
           <div class="footer">
             <p>
               This email was sent to
-              <a href="mailto:jaykay@gmail.com" target="_blank"
+              <a href="mailto:{{ .email }}" target="_blank"
                 >jaykay@gmail.com</a
               >. If you’d rather not receive this kind of email, you can
               <a href="" target="_blank">unsubscribe</a>
