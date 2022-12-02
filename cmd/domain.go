@@ -53,14 +53,16 @@ func addDomainCommand(a *app) *cobra.Command {
 
 			router := chi.NewRouter()
 			router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-
 				rElems := strings.Split(r.URL.Path, "/")
-				log.Printf("Host: %s, Parts: %+v", r.Host, rElems)
 
 				_, err := orgRepo.FetchOrganisationByCustomDomain(r.Context(), r.Host)
 				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse("Invalid domain", http.StatusBadRequest))
-					return
+					// custom domain is not found try the assigned domain
+					_, err = orgRepo.FetchOrganisationByAssignedDomain(r.Context(), r.Host)
+					if err != nil {
+						_ = render.Render(w, r, util.NewErrorResponse("Invalid domain", http.StatusBadRequest))
+						return
+					}
 				}
 
 				if ok := contains(allowedRoutes, rElems[1]); !ok {
@@ -71,7 +73,6 @@ func addDomainCommand(a *app) *cobra.Command {
 				forwardedPath := strings.Join(rElems[1:], "/")
 				redirectURL := fmt.Sprintf("%s/%s?%s", c.Host, forwardedPath, r.URL.RawQuery)
 
-				log.Printf("Path: %s, URL: %s", forwardedPath, redirectURL)
 				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 			})
 
