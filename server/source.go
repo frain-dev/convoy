@@ -49,8 +49,15 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	orgService := createOrganisationService(a)
+	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl)
+	sr := sourceResponse(source, baseUrl, org.CustomDomain)
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", sr, http.StatusCreated))
 }
 
@@ -76,8 +83,15 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	orgService := createOrganisationService(a)
+	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl)
+	sr := sourceResponse(source, baseUrl, org.CustomDomain)
 
 	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", sr, http.StatusOK))
 }
@@ -118,8 +132,15 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	orgService := createOrganisationService(a)
+	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl)
+	sr := sourceResponse(source, baseUrl, org.CustomDomain)
 
 	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", sr, http.StatusAccepted))
 }
@@ -187,15 +208,27 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 	sourcesResponse := []*models.SourceResponse{}
 	baseUrl := m.GetHostFromContext(r.Context())
 
+	orgService := createOrganisationService(a)
+	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	for _, source := range sources {
-		s := sourceResponse(&source, baseUrl)
+		s := sourceResponse(&source, baseUrl, org.CustomDomain)
 		sourcesResponse = append(sourcesResponse, s)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sourcesResponse, Pagination: &paginationData}, http.StatusOK))
 }
 
-func sourceResponse(s *datastore.Source, baseUrl string) *models.SourceResponse {
+func sourceResponse(s *datastore.Source, baseUrl string, customDomain string) *models.SourceResponse {
+	url := baseUrl
+	if len(customDomain) > 0 {
+		url = customDomain
+	}
+
 	return &models.SourceResponse{
 		UID:            s.UID,
 		MaskID:         s.MaskID,
@@ -204,7 +237,7 @@ func sourceResponse(s *datastore.Source, baseUrl string) *models.SourceResponse 
 		Type:           s.Type,
 		Provider:       s.Provider,
 		ProviderConfig: s.ProviderConfig,
-		URL:            fmt.Sprintf("%s/ingest/%s", baseUrl, s.MaskID),
+		URL:            fmt.Sprintf("%s/ingest/%s", url, s.MaskID),
 		IsDisabled:     s.IsDisabled,
 		Verifier:       s.Verifier,
 		CreatedAt:      s.CreatedAt,

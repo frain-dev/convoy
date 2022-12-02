@@ -28,7 +28,9 @@ type SourceIntegrationTestSuite struct {
 	DB           cm.Client
 	Router       http.Handler
 	ConvoyApp    *ApplicationHandler
+	DefaultOrg   *datastore.Organisation
 	DefaultGroup *datastore.Group
+	DefaultUser  *datastore.User
 	APIKey       string
 }
 
@@ -41,8 +43,16 @@ func (s *SourceIntegrationTestSuite) SetupSuite() {
 func (s *SourceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
+
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
 	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	// Seed Auth
 	role := auth.Role{
@@ -53,11 +63,12 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
 	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	// orgRepo := cm.NewOrgRepo(s.ConvoyApp.A.Store)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
