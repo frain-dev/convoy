@@ -75,7 +75,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Accept json
 // @Produce  json
 // @Param projectID path string true "Project id"
-// @Param subscriptionID path string true "application id"
+// @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -227,7 +227,6 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
