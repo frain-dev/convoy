@@ -141,6 +141,24 @@ func (u *UserService) RegisterUser(ctx context.Context, baseURL string, data *mo
 	return user, &token, nil
 }
 
+func (u *UserService) ResendEmailVerificationToken(ctx context.Context, baseURL string, user *datastore.User) error {
+	if user.EmailVerified {
+		return util.NewServiceError(http.StatusBadRequest, errors.New("user email already verified"))
+	}
+
+	now := primitive.NewDateTimeFromTime(time.Now())
+	if user.EmailVerificationExpiresAt < now {
+		return util.NewServiceError(http.StatusBadRequest, errors.New("old verification token is still valid"))
+	}
+
+	err := u.sendUserVerificationEmail(ctx, baseURL, user)
+	if err != nil {
+		return util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return nil
+}
+
 func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jwt.Token, error) {
 	if err := util.Validate(data); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)

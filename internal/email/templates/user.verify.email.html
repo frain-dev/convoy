@@ -95,7 +95,7 @@
             <p>Hi {{ .recipient_name }},</p>
             <p>
               Thank you for joining Convoy, please verify your email address by
-              clicking the button below or using this link>>
+              clicking the button below or using this link:
               <a
                 href="{{ .email_verification_url }}"
                 target="_blank"
@@ -113,12 +113,8 @@
             <p>
               This email was sent to
               <a href="mailto:{{ .email }}" target="_blank"
-                >jaykay@gmail.com</a
-              >. If you’d rather not receive this kind of email, you can
-              <a href="" target="_blank">unsubscribe</a>
-              or
-              <a href="" target="_blank">manage your email preferences</a>.
-            </p>
+                >{{ .email }}</a
+              >.
             <p>Convoy, 251 Little Falls Drive, Wilminton, DE, US. 19808</p>
 
             <table width="100%" border="0" cellspacing="0" cellpadding="0">

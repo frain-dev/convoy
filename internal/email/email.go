@@ -22,7 +22,7 @@ type TemplateName string
 
 const (
 	TemplateEndpointUpdate     TemplateName = "endpoint.update"
-	TemplateEmailVerification  TemplateName = "user.verification"
+	TemplateEmailVerification  TemplateName = "user.verify.email"
 	TemplateOrganisationInvite TemplateName = "organisation.invite"
 	TemplateResetPassword      TemplateName = "reset.password"
 	TemplateTwitterSource      TemplateName = "twitter.source"
