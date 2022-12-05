@@ -39,14 +39,15 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := &models.LoginUserResponse{
-		UID:       user.UID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		DeletedAt: user.DeletedAt,
+		UID:           user.UID,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		Token:         models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     user.UpdatedAt,
+		DeletedAt:     user.DeletedAt,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
@@ -217,7 +218,7 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 // @Param token query true "Email verification token"
 // @Success 200 {object} util.ServerResponse{data=datastore.Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Router /ui/users/forgot-password [post]
+// @Router /ui/users/forgot-password  [post]
 func (a *ApplicationHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	userService := createUserService(a)
 
