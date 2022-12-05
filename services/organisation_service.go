@@ -3,10 +3,14 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
@@ -31,12 +35,27 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
+	if len(newOrg.Name) == 0 {
+		log.FromContext(ctx).WithError(err).Error("organisation name is required")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("organisation name is required"))
+	}
+
 	org := &datastore.Organisation{
 		UID:       uuid.NewString(),
 		OwnerID:   user.UID,
 		Name:      newOrg.Name,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to load config")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation"))
+	}
+
+	if len(cfg.CustomDomainSuffix) > 0 {
+		org.AssignedDomain = fmt.Sprintf("%s.%s", uniuri.New(), cfg.CustomDomainSuffix)
 	}
 
 	err = os.orgRepo.CreateOrganisation(ctx, org)
@@ -56,11 +75,29 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 func (os *OrganisationService) UpdateOrganisation(ctx context.Context, org *datastore.Organisation, update *models.Organisation) (*datastore.Organisation, error) {
 	err := util.Validate(update)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate organisation update")
+		log.FromContext(ctx).WithError(err).Error("failed to validate organisation update - validate")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	org.Name = update.Name
+	if len(update.Name) > 0 {
+		org.Name = update.Name
+	}
+
+	if len(update.CustomDomain) > 0 {
+		u, err := url.Parse(update.CustomDomain)
+		if err != nil {
+			log.FromContext(ctx).WithError(err).Error("failed to validate hostname")
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+
+		if len(u.Host) == 0 {
+			log.FromContext(ctx).Error("failed to validate hostname - malformatted url")
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to validate hostname - malformatted url"))
+		}
+
+		org.CustomDomain = u.Host
+	}
+
 	err = os.orgRepo.UpdateOrganisation(ctx, org)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to to update organisation")

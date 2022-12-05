@@ -456,6 +456,17 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Options: options.Index().SetUnique(true),
 			},
 		},
+
+		datastore.OrganisationCollection: {
+			{
+				Keys: bson.D{
+					{Key: "custom_domain", Value: 1},
+					{Key: "assigned_domain", Value: 1},
+					{Key: "deleted_at", Value: 1},
+				},
+				Options: options.Index().SetUnique(true),
+			},
+		},
 	}
 
 	return compoundIndices

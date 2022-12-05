@@ -122,8 +122,8 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisa
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisationName() {
-	expectedStatusCode := http.StatusBadRequest
+func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_CustomDomain() {
+	expectedStatusCode := http.StatusAccepted
 
 	uid := uuid.NewString()
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.Store, uid, s.DefaultUser.UID, "new_org")
@@ -132,7 +132,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisa
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
 	require.NoError(s.T(), err)
 
-	body := strings.NewReader(`{"name":""}`)
+	body := strings.NewReader(`{"custom_domain":"http://abc.com"}`)
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
 	req := createRequest(http.MethodPut, url, "", body)
@@ -146,6 +146,13 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_EmptyOrganisa
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var organisation datastore.Organisation
+	parseResponse(s.T(), w.Result(), &organisation)
+
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "abc.com", organisation.CustomDomain)
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {

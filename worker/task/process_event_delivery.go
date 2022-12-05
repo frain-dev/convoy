@@ -297,7 +297,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		Method:     resp.Method,
 		MsgID:      m.UID,
 		EndpointID: e.UID,
-		APIVersion: "2021-08-27",
+		APIVersion: convoy.GetVersion(),
 
 		IPAddress:        resp.IP,
 		ResponseHeader:   *responseHeader,

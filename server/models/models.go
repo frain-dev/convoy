@@ -27,7 +27,8 @@ type UpdateGroup struct {
 }
 
 type Organisation struct {
-	Name string `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	Name         string `json:"name" bson:"name"`
+	CustomDomain string `json:"custom_domain" bson:"custom_domain"`
 }
 
 type Configuration struct {
