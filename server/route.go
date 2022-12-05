@@ -308,7 +308,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		uiRouter.Post("/users/forgot-password", a.ForgotPassword)
 		uiRouter.Post("/users/reset-password", a.ResetPassword)
 		uiRouter.Post("/users/verify_email", a.VerifyEmail)
-		uiRouter.Post("/users/resend_verification_email", a.VerifyEmail)
+		uiRouter.Post("/users/resend_verification_email", a.ResendVerificationEmail)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", a.LoginUser)
