@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Directive, ElementRef, EventEmitter, Host, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
-import { ScreenDirective } from '../screen/screen.directive';
+import { OverlayDirective } from '../overlay/overlay.directive';
 
 @Directive({
 	selector: '[convoy-dropdown-option], [convoy-dropdown-close]',
@@ -29,7 +29,7 @@ export class DropdownOptionDirective {
 @Component({
 	selector: 'convoy-dropdown, [convoy-dropdown]',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, DropdownContainerComponent, ScreenDirective, DropdownOptionDirective],
+	imports: [CommonModule, ButtonComponent, DropdownContainerComponent, OverlayDirective, DropdownOptionDirective],
 	templateUrl: './dropdown.component.html',
     styleUrls: ['./dropdown.component.scss'],
     changeDetection: ChangeDetectionStrategy.Default
