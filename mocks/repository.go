@@ -464,128 +464,128 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), arg0, arg1)
 }
 
-// MockGroupRepository is a mock of GroupRepository interface.
-type MockGroupRepository struct {
+// MockProjectRepository is a mock of ProjectRepository interface.
+type MockProjectRepository struct {
 	ctrl     *gomock.Controller
-	recorder *MockGroupRepositoryMockRecorder
+	recorder *MockProjectRepositoryMockRecorder
 }
 
-// MockGroupRepositoryMockRecorder is the mock recorder for MockGroupRepository.
-type MockGroupRepositoryMockRecorder struct {
-	mock *MockGroupRepository
+// MockProjectRepositoryMockRecorder is the mock recorder for MockProjectRepository.
+type MockProjectRepositoryMockRecorder struct {
+	mock *MockProjectRepository
 }
 
-// NewMockGroupRepository creates a new mock instance.
-func NewMockGroupRepository(ctrl *gomock.Controller) *MockGroupRepository {
-	mock := &MockGroupRepository{ctrl: ctrl}
-	mock.recorder = &MockGroupRepositoryMockRecorder{mock}
+// NewMockProjectRepository creates a new mock instance.
+func NewMockProjectRepository(ctrl *gomock.Controller) *MockProjectRepository {
+	mock := &MockProjectRepository{ctrl: ctrl}
+	mock.recorder = &MockProjectRepositoryMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockGroupRepository) EXPECT() *MockGroupRepositoryMockRecorder {
+func (m *MockProjectRepository) EXPECT() *MockProjectRepositoryMockRecorder {
 	return m.recorder
 }
 
-// CreateGroup mocks base method.
-func (m *MockGroupRepository) CreateGroup(arg0 context.Context, arg1 *datastore.Group) error {
+// CreateProject mocks base method.
+func (m *MockProjectRepository) CreateProject(arg0 context.Context, arg1 *datastore.Project) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateGroup", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateProject", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateGroup indicates an expected call of CreateGroup.
-func (mr *MockGroupRepositoryMockRecorder) CreateGroup(arg0, arg1 interface{}) *gomock.Call {
+// CreateProject indicates an expected call of CreateProject.
+func (mr *MockProjectRepositoryMockRecorder) CreateProject(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGroup", reflect.TypeOf((*MockGroupRepository)(nil).CreateGroup), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProject", reflect.TypeOf((*MockProjectRepository)(nil).CreateProject), arg0, arg1)
 }
 
-// DeleteGroup mocks base method.
-func (m *MockGroupRepository) DeleteGroup(ctx context.Context, uid string) error {
+// DeleteProject mocks base method.
+func (m *MockProjectRepository) DeleteProject(ctx context.Context, uid string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteGroup", ctx, uid)
+	ret := m.ctrl.Call(m, "DeleteProject", ctx, uid)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteGroup indicates an expected call of DeleteGroup.
-func (mr *MockGroupRepositoryMockRecorder) DeleteGroup(ctx, uid interface{}) *gomock.Call {
+// DeleteProject indicates an expected call of DeleteProject.
+func (mr *MockProjectRepositoryMockRecorder) DeleteProject(ctx, uid interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockGroupRepository)(nil).DeleteGroup), ctx, uid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockProjectRepository)(nil).DeleteProject), ctx, uid)
 }
 
-// FetchGroupByID mocks base method.
-func (m *MockGroupRepository) FetchGroupByID(arg0 context.Context, arg1 string) (*datastore.Group, error) {
+// FetchProjectByID mocks base method.
+func (m *MockProjectRepository) FetchProjectByID(arg0 context.Context, arg1 string) (*datastore.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchGroupByID", arg0, arg1)
-	ret0, _ := ret[0].(*datastore.Group)
+	ret := m.ctrl.Call(m, "FetchProjectByID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FetchGroupByID indicates an expected call of FetchGroupByID.
-func (mr *MockGroupRepositoryMockRecorder) FetchGroupByID(arg0, arg1 interface{}) *gomock.Call {
+// FetchProjectByID indicates an expected call of FetchProjectByID.
+func (mr *MockProjectRepositoryMockRecorder) FetchProjectByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchGroupByID", reflect.TypeOf((*MockGroupRepository)(nil).FetchGroupByID), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchProjectByID", reflect.TypeOf((*MockProjectRepository)(nil).FetchProjectByID), arg0, arg1)
 }
 
-// FetchGroupsByIDs mocks base method.
-func (m *MockGroupRepository) FetchGroupsByIDs(arg0 context.Context, arg1 []string) ([]datastore.Group, error) {
+// FetchProjectsByIDs mocks base method.
+func (m *MockProjectRepository) FetchProjectsByIDs(arg0 context.Context, arg1 []string) ([]datastore.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchGroupsByIDs", arg0, arg1)
-	ret0, _ := ret[0].([]datastore.Group)
+	ret := m.ctrl.Call(m, "FetchProjectsByIDs", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FetchGroupsByIDs indicates an expected call of FetchGroupsByIDs.
-func (mr *MockGroupRepositoryMockRecorder) FetchGroupsByIDs(arg0, arg1 interface{}) *gomock.Call {
+// FetchProjectsByIDs indicates an expected call of FetchProjectsByIDs.
+func (mr *MockProjectRepositoryMockRecorder) FetchProjectsByIDs(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchGroupsByIDs", reflect.TypeOf((*MockGroupRepository)(nil).FetchGroupsByIDs), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchProjectsByIDs", reflect.TypeOf((*MockProjectRepository)(nil).FetchProjectsByIDs), arg0, arg1)
 }
 
-// FillGroupsStatistics mocks base method.
-func (m *MockGroupRepository) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+// FillProjectsStatistics mocks base method.
+func (m *MockProjectRepository) FillProjectsStatistics(ctx context.Context, groups []*datastore.Project) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FillGroupsStatistics", ctx, groups)
+	ret := m.ctrl.Call(m, "FillProjectsStatistics", ctx, groups)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// FillGroupsStatistics indicates an expected call of FillGroupsStatistics.
-func (mr *MockGroupRepositoryMockRecorder) FillGroupsStatistics(ctx, groups interface{}) *gomock.Call {
+// FillProjectsStatistics indicates an expected call of FillProjectsStatistics.
+func (mr *MockProjectRepositoryMockRecorder) FillProjectsStatistics(ctx, groups interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillGroupsStatistics", reflect.TypeOf((*MockGroupRepository)(nil).FillGroupsStatistics), ctx, groups)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillProjectsStatistics", reflect.TypeOf((*MockProjectRepository)(nil).FillProjectsStatistics), ctx, groups)
 }
 
-// LoadGroups mocks base method.
-func (m *MockGroupRepository) LoadGroups(arg0 context.Context, arg1 *datastore.GroupFilter) ([]*datastore.Group, error) {
+// LoadProjects mocks base method.
+func (m *MockProjectRepository) LoadProjects(arg0 context.Context, arg1 *datastore.GroupFilter) ([]*datastore.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadGroups", arg0, arg1)
-	ret0, _ := ret[0].([]*datastore.Group)
+	ret := m.ctrl.Call(m, "LoadProjects", arg0, arg1)
+	ret0, _ := ret[0].([]*datastore.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// LoadGroups indicates an expected call of LoadGroups.
-func (mr *MockGroupRepositoryMockRecorder) LoadGroups(arg0, arg1 interface{}) *gomock.Call {
+// LoadProjects indicates an expected call of LoadProjects.
+func (mr *MockProjectRepositoryMockRecorder) LoadProjects(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadGroups", reflect.TypeOf((*MockGroupRepository)(nil).LoadGroups), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadProjects", reflect.TypeOf((*MockProjectRepository)(nil).LoadProjects), arg0, arg1)
 }
 
-// UpdateGroup mocks base method.
-func (m *MockGroupRepository) UpdateGroup(arg0 context.Context, arg1 *datastore.Group) error {
+// UpdateProject mocks base method.
+func (m *MockProjectRepository) UpdateProject(arg0 context.Context, arg1 *datastore.Project) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateGroup", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateProject", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateGroup indicates an expected call of UpdateGroup.
-func (mr *MockGroupRepositoryMockRecorder) UpdateGroup(arg0, arg1 interface{}) *gomock.Call {
+// UpdateProject indicates an expected call of UpdateProject.
+func (mr *MockProjectRepositoryMockRecorder) UpdateProject(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGroup", reflect.TypeOf((*MockGroupRepository)(nil).UpdateGroup), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProject", reflect.TypeOf((*MockProjectRepository)(nil).UpdateProject), arg0, arg1)
 }
 
 // MockOrganisationRepository is a mock of OrganisationRepository interface.

@@ -21,17 +21,17 @@ func Test_FetchGroupByID(t *testing.T) {
 
 	store := getStore(db)
 
-	groupRepo := NewGroupRepo(store)
+	projectRepo := NewProjectRepo(store)
 
-	newOrg := &datastore.Group{
+	newOrg := &datastore.Project{
 		Name: "Yet another group",
 		UID:  uuid.NewString(),
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+	require.NoError(t, projectRepo.CreateProject(context.Background(), newOrg))
 
 	// Fetch org again
-	org, err := groupRepo.FetchGroupByID(context.Background(), newOrg.UID)
+	org, err := projectRepo.FetchProjectByID(context.Background(), newOrg.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, org.UID, newOrg.UID)
@@ -47,12 +47,12 @@ func Test_CreateGroup(t *testing.T) {
 
 	tt := []struct {
 		name        string
-		groups      []datastore.Group
+		groups      []datastore.Project
 		isDuplicate bool
 	}{
 		{
 			name: "create group",
-			groups: []datastore.Group{
+			groups: []datastore.Project{
 				{
 					Name: "group 1",
 					UID:  uuid.NewString(),
@@ -62,7 +62,7 @@ func Test_CreateGroup(t *testing.T) {
 
 		{
 			name: "cannot create group with existing name",
-			groups: []datastore.Group{
+			groups: []datastore.Project{
 				{
 					Name:           "group 2",
 					OrganisationID: "123abc",
@@ -80,7 +80,7 @@ func Test_CreateGroup(t *testing.T) {
 
 		{
 			name: "can create group with existing name that has been deleted",
-			groups: []datastore.Group{
+			groups: []datastore.Project{
 				{
 					Name:           "group 3",
 					OrganisationID: "abc",
@@ -98,7 +98,7 @@ func Test_CreateGroup(t *testing.T) {
 		},
 		{
 			name: "can create group with existing name in a different organisation",
-			groups: []datastore.Group{
+			groups: []datastore.Project{
 				{
 					Name:           "group 4",
 					OrganisationID: uuid.NewString(),
@@ -117,27 +117,27 @@ func Test_CreateGroup(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			groupRepo := NewGroupRepo(store)
+			projectRepo := NewProjectRepo(store)
 
 			for i, group := range tc.groups {
-				newGroup := &datastore.Group{
+				newGroup := &datastore.Project{
 					Name:      group.Name,
 					UID:       group.UID,
 					DeletedAt: group.DeletedAt,
 				}
 
 				if i == 0 {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+					require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
 				}
 
 				if i > 0 && tc.isDuplicate {
-					err := groupRepo.CreateGroup(context.Background(), newGroup)
+					err := projectRepo.CreateProject(context.Background(), newGroup)
 					require.Error(t, err)
 					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
 				}
 
 				if i > 0 && !tc.isDuplicate {
-					require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+					require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
 				}
 			}
 		})
@@ -149,9 +149,9 @@ func Test_LoadGroups(t *testing.T) {
 	defer closeFn()
 	store := getStore(db)
 
-	orgRepo := NewGroupRepo(store)
+	orgRepo := NewProjectRepo(store)
 
-	orgs, err := orgRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
+	orgs, err := orgRepo.LoadProjects(context.Background(), &datastore.GroupFilter{})
 	require.NoError(t, err)
 
 	require.True(t, len(orgs) == 0)
@@ -163,22 +163,22 @@ func Test_FillGroupsStatistics(t *testing.T) {
 
 	store := getStore(db)
 
-	groupRepo := NewGroupRepo(store)
+	projectRepo := NewProjectRepo(store)
 
-	group1 := &datastore.Group{
+	group1 := &datastore.Project{
 		Name: "group1",
 		UID:  uuid.NewString(),
 	}
 
-	group2 := &datastore.Group{
+	group2 := &datastore.Project{
 		Name: "group2",
 		UID:  uuid.NewString(),
 	}
 
-	err := groupRepo.CreateGroup(context.Background(), group1)
+	err := projectRepo.CreateProject(context.Background(), group1)
 	require.NoError(t, err)
 
-	err = groupRepo.CreateGroup(context.Background(), group2)
+	err = projectRepo.CreateProject(context.Background(), group2)
 	require.NoError(t, err)
 
 	endpoint1 := &datastore.Endpoint{
@@ -209,8 +209,8 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	err = NewEventRepository(store).CreateEvent(eventCtx, event)
 	require.NoError(t, err)
 
-	groups := []*datastore.Group{group1, group2}
-	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
+	groups := []*datastore.Project{group1, group2}
+	err = projectRepo.FillProjectsStatistics(context.Background(), groups)
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.GroupStatistics{

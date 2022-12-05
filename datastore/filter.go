@@ -7,7 +7,7 @@ import (
 
 type Filter struct {
 	Query        string
-	Group        *Group
+	Project      *Project
 	EndpointID   string
 	EndpointIDs  []string
 	EventID      string

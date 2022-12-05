@@ -311,7 +311,7 @@ func (a *ApplicationHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Re
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {
 	return &models.PortalLinkResponse{
 		UID:               pl.UID,
-		GroupID:           pl.GroupID,
+		ProjectID:         pl.GroupID,
 		Name:              pl.Name,
 		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
 		Token:             pl.Token,

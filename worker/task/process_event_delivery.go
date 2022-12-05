@@ -36,7 +36,7 @@ type SignatureValues struct {
 	Timestamp string
 }
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		Id := string(t.Payload())
 
@@ -59,7 +59,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
-		g, err := groupRepo.FetchGroupByID(context.Background(), endpoint.GroupID)
+		g, err := projectRepo.FetchProjectByID(context.Background(), endpoint.GroupID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -265,7 +265,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 	}
 }
 
-func newSignature(endpoint *datastore.Endpoint, g *datastore.Group, data json.RawMessage) *signature.Signature {
+func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.RawMessage) *signature.Signature {
 	s := &signature.Signature{Advanced: endpoint.AdvancedSignatures, Payload: data}
 
 	for _, version := range g.Config.Signature.Versions {
@@ -313,7 +313,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 }
 
 type EventDeliveryConfig struct {
-	group        *datastore.Group
+	group        *datastore.Project
 	subscription *datastore.Subscription
 }
 

@@ -35,7 +35,7 @@ type DashboardIntegrationTestSuite struct {
 	AuthenticatorFn AuthenticatorFn
 	DefaultUser     *datastore.User
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultGroup    *datastore.Project
 }
 
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
@@ -57,8 +57,8 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	// Setup Default Project.
+	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,

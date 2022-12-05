@@ -31,7 +31,7 @@ type SecurityIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultGroup    *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -52,8 +52,8 @@ func (s *SecurityIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	// Setup Default Project.
+	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -119,8 +119,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultGroup.UID,
 	}
 
 	// Generate api key for this group, use the key to authenticate for this request later on
@@ -149,7 +149,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 	require.NotEmpty(s.T(), apiKeyResponse.Key)
 	require.Equal(s.T(), apiKeyResponse.Url, fmt.Sprintf("https://app.convoy.io/endpoint/%s?groupID=%s&endpointId=%s", apiKeyResponse.Key, s.DefaultGroup.UID, endpoint.UID))
 	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.AppPortalKey))
-	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
+	require.Equal(s.T(), apiKeyResponse.ProjectID, s.DefaultGroup.UID)
 	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
@@ -168,8 +168,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_RedirectT
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultGroup.UID,
 	}
 
 	// Generate api key for this group, use the key to authenticate for this request later on
@@ -208,8 +208,8 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultGroup.UID,
 	}
 
 	// Generate api key for this group, use the key to authenticate for this request later on
@@ -237,7 +237,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	parseResponse(s.T(), w.Result(), &apiKeyResponse)
 	require.NotEmpty(s.T(), apiKeyResponse.Key)
 	require.Equal(s.T(), apiKeyResponse.Type, string(datastore.CLIKey))
-	require.Equal(s.T(), apiKeyResponse.GroupID, s.DefaultGroup.UID)
+	require.Equal(s.T(), apiKeyResponse.ProjectID, s.DefaultGroup.UID)
 	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
@@ -253,11 +253,11 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_EndpointD
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", "", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Project{UID: uuid.NewString()}, uuid.NewString(), "test-app", "", true)
 
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultGroup.UID,
 	}
 
 	// Generate api key for this group, use the key to authenticate for this request later on
@@ -368,7 +368,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetEndpointAPIKeys() {
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    s.DefaultGroup.UID,
+		Project:  s.DefaultGroup.UID,
 		Endpoint: endpoint.UID,
 	}
 
@@ -402,7 +402,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeEndpointAPIKey() {
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    s.DefaultGroup.UID,
+		Project:  s.DefaultGroup.UID,
 		Endpoint: endpoint.UID,
 	}
 

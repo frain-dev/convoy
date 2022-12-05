@@ -73,7 +73,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		EventRepo:         cm.NewEventRepository(a.Store),
 		EventDeliveryRepo: cm.NewEventDeliveryRepository(a.Store),
 		EndpointRepo:      cm.NewEndpointRepo(a.Store),
-		GroupRepo:         cm.NewGroupRepo(a.Store),
+		ProjectRepo:       cm.NewProjectRepo(a.Store),
 		ApiKeyRepo:        cm.NewApiKeyRepo(a.Store),
 		SubRepo:           cm.NewSubscriptionRepo(a.Store),
 		SourceRepo:        cm.NewSourceRepo(a.Store),
@@ -133,21 +133,21 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					a.M.RequireOrganisation(),
 					a.M.RequireOrganisationMembership(),
 					a.M.RequireOrganisationMemberRole(auth.RoleSuperUser),
-				).Post("/", a.CreateGroup)
+				).Post("/", a.CreateProject)
 
 				projectRouter.With(
 					a.M.RequireAuthUserMetadata(),
 					a.M.RequireOrganisation(),
 					a.M.RequireOrganisationMembership(),
-				).Get("/", a.GetGroups)
+				).Get("/", a.GetProjects)
 
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
-					projectSubRouter.Use(a.M.RequireGroup())
+					projectSubRouter.Use(a.M.RequireProject())
 					projectSubRouter.Use(a.M.RequireGroupAccess())
 
-					projectSubRouter.With().Get("/", a.GetGroup)
-					projectSubRouter.Put("/", a.UpdateGroup)
-					projectSubRouter.Delete("/", a.DeleteGroup)
+					projectSubRouter.With().Get("/", a.GetProject)
+					projectSubRouter.Put("/", a.UpdateProject)
+					projectSubRouter.Delete("/", a.DeleteProject)
 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 						endpointSubRouter.Use(a.M.RateLimitByGroupID())
@@ -164,7 +164,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							e.Delete("/", a.DeleteEndpoint)
 							e.Put("/expire_secret", a.ExpireSecret)
 						})
-
 					})
 
 					projectSubRouter.Route("/applications", func(appRouter chi.Router) {
@@ -192,7 +191,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									e.Put("/", a.UpdateAppEndpoint)
 									e.Delete("/", a.DeleteAppEndpoint)
 									e.Put("/expire_secret", a.ExpireSecret)
-
 								})
 							})
 						})
@@ -273,7 +271,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
 						portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
 						portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
-
 					})
 				})
 			})
@@ -354,18 +351,18 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 				orgSubRouter.Route("/projects", func(groupRouter chi.Router) {
 					groupRouter.Route("/", func(orgSubRouter chi.Router) {
-						groupRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateGroup)
-						groupRouter.Get("/", a.GetGroups)
+						groupRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateProject)
+						groupRouter.Get("/", a.GetProjects)
 					})
 
 					groupRouter.Route("/{projectID}", func(groupSubRouter chi.Router) {
-						groupSubRouter.Use(a.M.RequireGroup())
+						groupSubRouter.Use(a.M.RequireProject())
 						groupSubRouter.Use(a.M.RateLimitByGroupID())
 						groupSubRouter.Use(a.M.RequireOrganisationGroupMember())
 
-						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", a.GetGroup)
-						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateGroup)
-						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteGroup)
+						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", a.GetProject)
+						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateProject)
+						groupSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteProject)
 
 						groupSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 							endpointSubRouter.Post("/", a.CreateEndpoint)
@@ -390,7 +387,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
 								})
 							})
-
 						})
 
 						groupSubRouter.Route("/events", func(eventRouter chi.Router) {
@@ -553,7 +549,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 			})
 		})
 
-		portalRouter.Get("/project", a.GetGroup)
+		portalRouter.Get("/project", a.GetProject)
 		portalRouter.Post("/flags", flipt.BatchEvaluate)
 	})
 

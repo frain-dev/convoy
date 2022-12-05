@@ -15,9 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var (
-	appCollection = "applications"
-)
+var appCollection = "applications"
 
 var Migrations = []*Migration{
 	{
@@ -82,7 +80,7 @@ var Migrations = []*Migration{
 
 			fn := func(sessCtx mongo.SessionContext) error {
 				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
-				var groups []*datastore.Group
+				var groups []*datastore.Project
 				err := store.FindAll(ctx, nil, nil, nil, &groups)
 				if err != nil {
 					return err
@@ -248,7 +246,7 @@ var Migrations = []*Migration{
 			fn := func(sessCtx mongo.SessionContext) error {
 				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
 
-				var groups []*datastore.Group
+				var groups []*datastore.Project
 				err := store.FindAll(ctx, nil, nil, nil, &groups)
 				if err != nil {
 					return err
@@ -261,7 +259,7 @@ var Migrations = []*Migration{
 						continue
 					}
 
-					config = &datastore.GroupConfig{
+					config = &datastore.ProjectConfig{
 						Signature:       datastore.GetDefaultSignatureConfig(),
 						Strategy:        &datastore.DefaultStrategyConfig,
 						RateLimit:       &datastore.DefaultRateLimitConfig,
@@ -291,7 +289,7 @@ var Migrations = []*Migration{
 			fn := func(sessCtx mongo.SessionContext) error {
 				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
 
-				var groups []*datastore.Group
+				var groups []*datastore.Project
 				err := store.FindAll(ctx, nil, nil, nil, &groups)
 				if err != nil {
 					return err
@@ -373,7 +371,6 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-
 				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, appCollection)
 
 				var apps []*datastore.Application
@@ -426,7 +423,7 @@ var Migrations = []*Migration{
 			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				var groups []*datastore.Group
+				var groups []*datastore.Project
 				err := store.FindAll(sessCtx, nil, nil, nil, &groups)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration 20221021100029_migrate_group_signature_config_to_versions UpdateByID")
@@ -482,7 +479,7 @@ var Migrations = []*Migration{
 			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				var groups []*datastore.Group
+				var groups []*datastore.Project
 				err := store.FindAll(sessCtx, nil, nil, nil, &groups)
 				if err != nil {
 					return err

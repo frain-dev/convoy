@@ -222,7 +222,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:       m.GetGroupFromContext(r.Context()),
+		Project:     m.GetGroupFromContext(r.Context()),
 		EndpointIDs: endpoints,
 		EventID:     r.URL.Query().Get("eventId"),
 		Status:      status,
@@ -288,7 +288,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 	}
 
 	f := &datastore.Filter{
-		Group:        m.GetGroupFromContext(r.Context()),
+		Project:      m.GetGroupFromContext(r.Context()),
 		EndpointIDs:  endpoints,
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
@@ -385,7 +385,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 
 	f := &datastore.Filter{
 		Query:        query,
-		Group:        group,
+		Project:      group,
 		EndpointID:   endpointID,
 		EndpointIDs:  endpoints,
 		SourceID:     m.GetSourceIDFromContext(r),
@@ -463,7 +463,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:        m.GetGroupFromContext(r.Context()),
+		Project:      m.GetGroupFromContext(r.Context()),
 		EventID:      r.URL.Query().Get("eventId"),
 		EndpointIDs:  endpoints,
 		Status:       status,

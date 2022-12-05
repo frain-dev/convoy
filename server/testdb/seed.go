@@ -23,7 +23,7 @@ import (
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
-func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID string, disabled bool) (*datastore.Endpoint, error) {
+func SeedEndpoint(store datastore.Store, g *datastore.Project, uid, title, ownerID string, disabled bool) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -55,7 +55,7 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(store datastore.Store, g *datastore.Group, count int) error {
+func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count int) error {
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Endpoint{
@@ -95,18 +95,18 @@ func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value stri
 	return &sc, nil
 }
 
-// seed default group
-func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, error) {
+// seed default project
+func SeedDefaultProject(store datastore.Store, orgID string) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
 
-	defaultGroup := &datastore.Group{
+	defaultGroup := &datastore.Project{
 		UID:            uuid.New().String(),
 		Name:           "default-group",
-		Type:           datastore.OutgoingGroup,
+		Type:           datastore.OutgoingProject,
 		OrganisationID: orgID,
-		Config: &datastore.GroupConfig{
+		Config: &datastore.ProjectConfig{
 			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.DefaultStrategyProvider,
 				Duration:   10,
@@ -133,10 +133,10 @@ func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, er
 	}
 
 	// Seed Data.
-	groupRepo := cm.NewGroupRepo(store)
-	err := groupRepo.CreateGroup(context.TODO(), defaultGroup)
+	projectRepo := cm.NewProjectRepo(store)
+	err := projectRepo.CreateProject(context.TODO(), defaultGroup)
 	if err != nil {
-		return &datastore.Group{}, err
+		return &datastore.Project{}, err
 	}
 
 	return defaultGroup, nil
@@ -292,11 +292,11 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 }
 
 // seed default group
-func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datastore.GroupType, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
-	g := &datastore.Group{
+	g := &datastore.Project{
 		UID:               uid,
 		Name:              name,
 		Type:              groupType,
@@ -309,10 +309,10 @@ func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datasto
 	}
 
 	// Seed Data.
-	groupRepo := cm.NewGroupRepo(store)
-	err := groupRepo.CreateGroup(context.TODO(), g)
+	projectRepo := cm.NewProjectRepo(store)
+	err := projectRepo.CreateProject(context.TODO(), g)
 	if err != nil {
-		return &datastore.Group{}, err
+		return &datastore.Project{}, err
 	}
 
 	return g, nil
@@ -427,7 +427,7 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 	return orgs, nil
 }
 
-func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
+func SeedSource(store datastore.Store, g *datastore.Project, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -471,9 +471,9 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 }
 
 func SeedSubscription(store datastore.Store,
-	g *datastore.Group,
+	g *datastore.Project,
 	uid string,
-	groupType datastore.GroupType,
+	groupType datastore.ProjectType,
 	source *datastore.Source,
 	endpoint *datastore.Endpoint,
 	retryConfig *datastore.RetryConfiguration,
@@ -563,7 +563,7 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 	return config, nil
 }
 
-func SeedDevice(store datastore.Store, g *datastore.Group, endpointID string) error {
+func SeedDevice(store datastore.Store, g *datastore.Project, endpointID string) error {
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
 		GroupID:    g.UID,
@@ -581,7 +581,7 @@ func SeedDevice(store datastore.Store, g *datastore.Group, endpointID string) er
 	return nil
 }
 
-func SeedPortalLink(store datastore.Store, g *datastore.Group, endpoints []string) (*datastore.PortalLink, error) {
+func SeedPortalLink(store datastore.Store, g *datastore.Project, endpoints []string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{
 		UID:       uuid.NewString(),
 		GroupID:   g.UID,
@@ -597,7 +597,6 @@ func SeedPortalLink(store datastore.Store, g *datastore.Group, endpoints []strin
 	}
 
 	return portalLink, nil
-
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have

@@ -9,20 +9,20 @@ import (
 )
 
 type EventAnalytics struct {
-	eventRepo  datastore.EventRepository
-	groupRepo  datastore.GroupRepository
-	orgRepo    datastore.OrganisationRepository
-	client     AnalyticsClient
-	instanceID string
+	eventRepo   datastore.EventRepository
+	projectRepo datastore.ProjectRepository
+	orgRepo     datastore.OrganisationRepository
+	client      AnalyticsClient
+	instanceID  string
 }
 
-func newEventAnalytics(eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *EventAnalytics {
+func newEventAnalytics(eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *EventAnalytics {
 	return &EventAnalytics{
-		eventRepo:  eventRepo,
-		groupRepo:  groupRepo,
-		orgRepo:    orgRepo,
-		client:     client,
-		instanceID: instanceID,
+		eventRepo:   eventRepo,
+		projectRepo: projectRepo,
+		orgRepo:     orgRepo,
+		client:      client,
+		instanceID:  instanceID,
 	}
 }
 
@@ -43,7 +43,7 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 
 	now := time.Now()
 	for _, org := range orgs {
-		groups, err := ea.groupRepo.LoadGroups(ctx, &datastore.GroupFilter{OrgID: org.UID})
+		groups, err := ea.projectRepo.LoadProjects(ctx, &datastore.GroupFilter{OrgID: org.UID})
 		if err != nil {
 			log.WithError(err).Error("failed to load organisation groups")
 			continue
@@ -51,7 +51,7 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 
 		for _, group := range groups {
 			filter := &datastore.Filter{
-				Group:    group,
+				Project:  group,
 				Pageable: datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Unix(0, 0).Unix(),

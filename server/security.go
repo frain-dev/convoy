@@ -20,10 +20,10 @@ import (
 )
 
 func createSecurityService(a *ApplicationHandler) *services.SecurityService {
-	groupRepo := mongo.NewGroupRepo(a.A.Store)
+	projectRepo := mongo.NewProjectRepo(a.A.Store)
 	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
 
-	return services.NewSecurityService(groupRepo, apiKeyRepo)
+	return services.NewSecurityService(projectRepo, apiKeyRepo)
 }
 
 func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 			Name: apiKey.Name,
 			Role: models.Role{
 				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Group,
+				Group: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -89,7 +89,7 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 			Name: apiKey.Name,
 			Role: models.Role{
 				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Group,
+				Group: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -143,7 +143,7 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 		newApiKey.Name = autoname.Generate(" ")
 	}
 
-	newApiKey.Group = group
+	newApiKey.Project = group
 	newApiKey.Endpoint = endpoint
 	newApiKey.BaseUrl = baseUrl
 	newApiKey.KeyType = keyType
@@ -156,14 +156,14 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 	}
 
 	if !util.IsStringEmpty(baseUrl) && newApiKey.KeyType == datastore.AppPortalKey {
-		baseUrl = fmt.Sprintf("%s/endpoint/%s?groupID=%s&endpointId=%s", baseUrl, key, newApiKey.Group.UID, newApiKey.Endpoint.UID)
+		baseUrl = fmt.Sprintf("%s/endpoint/%s?groupID=%s&endpointId=%s", baseUrl, key, newApiKey.Project.UID, newApiKey.Endpoint.UID)
 	}
 
 	resp := models.PortalAPIKeyResponse{
 		Key:        key,
 		Url:        baseUrl,
 		Role:       apiKey.Role,
-		GroupID:    group.UID,
+		ProjectID:  group.UID,
 		EndpointID: endpoint.UID,
 		Type:       string(apiKey.Type),
 	}
@@ -235,7 +235,7 @@ func (a *ApplicationHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http
 		return
 	}
 
-	if key.Role.Group != group.UID || key.Role.Endpoint != endpoint.UID {
+	if key.Role.Project != group.UID || key.Role.Endpoint != endpoint.UID {
 		_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
 		return
 	}

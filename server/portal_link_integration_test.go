@@ -33,7 +33,7 @@ type PortalLinkIntegrationTestSuite struct {
 	Router         http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultOrg     *datastore.Organisation
-	DefaultGroup   *datastore.Group
+	DefaultGroup   *datastore.Project
 	DefaultUser    *datastore.User
 	APIKey         string
 	PersonalAPIKey string
@@ -48,13 +48,13 @@ func (s *PortalLinkIntegrationTestSuite) SetupSuite() {
 func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	// Setup Default Project.
+	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
 
 	// Seed Auth
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultGroup.UID,
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
@@ -99,7 +99,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := cm.NewPortalLinkRepo(s.ConvoyApp.A.Store)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.GroupID, resp.UID)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
@@ -145,7 +145,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink(
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := cm.NewPortalLinkRepo(s.ConvoyApp.A.Store)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.GroupID, resp.UID)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
 
@@ -238,7 +238,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := cm.NewPortalLinkRepo(s.ConvoyApp.A.Store)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.GroupID, resp.UID)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
 
@@ -399,12 +399,12 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions
 
 	// seed subscriptions
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingProject, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 		require.NoError(s.T(), err)
 
 	}
 
-	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingProject, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, fmt.Sprintf("/portal-api/subscriptions?token=%s", portalLink.Token), "", nil)

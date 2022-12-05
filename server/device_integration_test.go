@@ -27,7 +27,7 @@ type DeviceIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultGroup    *datastore.Project
 	DefaultUser     *datastore.User
 	APIKey          string
 }
@@ -41,8 +41,8 @@ func (d *DeviceIntegrationTestSuite) SetupSuite() {
 func (d *DeviceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(d.T(), d.DB)
 
-	// Setup Default Group.
-	d.DefaultGroup, _ = testdb.SeedDefaultGroup(d.ConvoyApp.A.Store, "")
+	// Setup Default Project.
+	d.DefaultGroup, _ = testdb.SeedDefaultProject(d.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(d.ConvoyApp.A.Store)
 	require.NoError(d.T(), err)

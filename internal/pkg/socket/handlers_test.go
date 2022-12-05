@@ -36,7 +36,7 @@ func TestHub_listen(t *testing.T) {
 	lastSeen := primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute))
 	type args struct {
 		ctx           context.Context
-		group         *datastore.Group
+		group         *datastore.Project
 		endpoint      *datastore.Endpoint
 		listenRequest *ListenRequest
 	}
@@ -53,7 +53,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_listen_successfully",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				group:    &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -102,7 +102,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_error_for_wrong_device_group_id",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -133,7 +133,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_error_for_wrong_device_app_id",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -164,7 +164,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_fail_to_find_device",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -185,7 +185,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_fail_to_find_source",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				group:    &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -219,7 +219,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_error_for_wrong_source_group_id",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				group:    &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -257,7 +257,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_fail_to_find_subscription",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				group:    &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -298,7 +298,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_create_new_subscription_and_listen_successfully",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				group:    &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -346,7 +346,7 @@ func TestHub_listen(t *testing.T) {
 			name: "should_fail_to_create_new_subscription",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234", Type: datastore.IncomingGroup},
+				group:    &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
 					HostName:   "",
@@ -424,7 +424,7 @@ func TestHub_login(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		group        *datastore.Group
+		group        *datastore.Project
 		endpoint     *datastore.Endpoint
 		loginRequest *LoginRequest
 	}
@@ -442,7 +442,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_create_new_device_and_login_successfully",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
@@ -467,7 +467,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_fail_to_create_new_device",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
@@ -488,7 +488,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_login_with_existing_device_successfully",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
@@ -521,7 +521,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_fail_to_find_device",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
@@ -546,7 +546,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_error_for_wrong_device_group_id",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
@@ -575,7 +575,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_error_for_wrong_device_app_id",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
@@ -604,7 +604,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_login_with_existing_device_and_update_device_status_successfully",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
@@ -644,7 +644,7 @@ func TestHub_login(t *testing.T) {
 			name: "should_fail_to_update_device_status",
 			args: args{
 				ctx:      ctx,
-				group:    &datastore.Group{UID: "1234"},
+				group:    &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",

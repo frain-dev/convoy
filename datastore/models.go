@@ -62,7 +62,7 @@ type SearchParams struct {
 
 type (
 	StrategyProvider string
-	GroupType        string
+	ProjectType      string
 	SourceType       string
 	SourceProvider   string
 	VerifierType     string
@@ -123,8 +123,8 @@ func (e EncodingType) String() string {
 }
 
 const (
-	OutgoingGroup GroupType = "outgoing"
-	IncomingGroup GroupType = "incoming"
+	OutgoingProject ProjectType = "outgoing"
+	IncomingProject ProjectType = "incoming"
 )
 
 const (
@@ -231,7 +231,7 @@ type Endpoint struct {
 	Description        string             `json:"description" bson:"description"`
 	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
 	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
-	AppID              string             `json:"-" bson:"app_id"` //Deprecated but necessary for backward compatibility
+	AppID              string             `json:"-" bson:"app_id"` // Deprecated but necessary for backward compatibility
 
 	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
 	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
@@ -277,14 +277,14 @@ var (
 	ErrOrgMemberNotFound = errors.New("organisation member not found")
 )
 
-type Group struct {
+type Project struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
 	Name           string             `json:"name" bson:"name"`
 	LogoURL        string             `json:"logo_url" bson:"logo_url"`
 	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
-	Type           GroupType          `json:"type" bson:"type"`
-	Config         *GroupConfig       `json:"config" bson:"config"`
+	Type           ProjectType        `json:"type" bson:"type"`
+	Config         *ProjectConfig     `json:"config" bson:"config"`
 	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
@@ -301,7 +301,7 @@ type GroupMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
-type GroupConfig struct {
+type ProjectConfig struct {
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
@@ -383,9 +383,9 @@ func (g *GroupFilter) ToGenericMap() map[string]interface{} {
 	return m
 }
 
-func (o *Group) IsDeleted() bool { return o.DeletedAt != nil }
+func (o *Project) IsDeleted() bool { return o.DeletedAt != nil }
 
-func (o *Group) IsOwner(e *Endpoint) bool { return o.UID == e.GroupID }
+func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.GroupID }
 
 var (
 	ErrUserNotFound                  = errors.New("user not found")
@@ -427,7 +427,7 @@ type Event struct {
 	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
 
 	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
-	AppID            string                `json:"app_id,omitempty" bson:"app_id"` //Deprecated
+	AppID            string                `json:"app_id,omitempty" bson:"app_id"` // Deprecated
 	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`

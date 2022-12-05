@@ -17,7 +17,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
+func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
@@ -35,7 +35,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 		}
 
 		filter := &datastore.GroupFilter{}
-		groups, err := groupRepo.LoadGroups(context.Background(), filter)
+		groups, err := projectRepo.LoadProjects(context.Background(), filter)
 		if err != nil {
 			log.WithError(err).Error("failed to load groups.")
 			return err
@@ -52,7 +52,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 				expDate := time.Now().UTC().Add(-policy)
 				uri := instanceConfig.Database.Dsn
 				for _, collection := range collections {
-					err = ExportCollection(ctx, collection, uri, exportDir, expDate, objectStoreClient, g, eventRepo, eventDeliveriesRepo, groupRepo, searcher)
+					err = ExportCollection(ctx, collection, uri, exportDir, expDate, objectStoreClient, g, eventRepo, eventDeliveriesRepo, projectRepo, searcher)
 					if err != nil {
 						log.WithError(err).Errorf("Error exporting collection %v", collection)
 						return err
@@ -97,7 +97,7 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 	}
 }
 
-func GetArgsByCollection(collection string, uri string, exportDir string, expDate time.Time, group *datastore.Group) ([]string, string, error) {
+func GetArgsByCollection(collection string, uri string, exportDir string, expDate time.Time, group *datastore.Project) ([]string, string, error) {
 	switch collection {
 	case "events":
 		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
@@ -117,7 +117,7 @@ func GetArgsByCollection(collection string, uri string, exportDir string, expDat
 	}
 }
 
-func ExportCollection(ctx context.Context, collection string, uri string, exportDir string, expDate time.Time, objectStoreClient objectstore.ObjectStore, group *datastore.Group, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, searcher searcher.Searcher) error {
+func ExportCollection(ctx context.Context, collection string, uri string, exportDir string, expDate time.Time, objectStoreClient objectstore.ObjectStore, group *datastore.Project, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, searcher searcher.Searcher) error {
 	args, out, err := GetArgsByCollection(collection, uri, exportDir, expDate, group)
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 		} else {
 			group.Metadata.RetainedEvents += int(numDocs)
 		}
-		err = groupRepo.UpdateGroup(ctx, group)
+		err = projectRepo.UpdateProject(ctx, group)
 		if err != nil {
 			return err
 		}

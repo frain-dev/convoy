@@ -26,7 +26,7 @@ func NewSourceService(sourceRepo datastore.SourceRepository, cache cache.Cache) 
 	return &SourceService{sourceRepo: sourceRepo, cache: cache}
 }
 
-func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Source, g *datastore.Group) (*datastore.Source, error) {
+func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Source, g *datastore.Project) (*datastore.Source, error) {
 	if newSource.Provider.IsValid() {
 		if err := validateSourceForProvider(newSource); err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -95,7 +95,7 @@ func validateSourceForProvider(newSource *models.Source) error {
 	return nil
 }
 
-func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, sourceUpdate *models.UpdateSource, source *datastore.Source) (*datastore.Source, error) {
+func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Project, sourceUpdate *models.UpdateSource, source *datastore.Source) (*datastore.Source, error) {
 	if err := util.Validate(sourceUpdate); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -141,7 +141,7 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Group, so
 	return source, nil
 }
 
-func (s *SourceService) FindSourceByID(ctx context.Context, g *datastore.Group, id string) (*datastore.Source, error) {
+func (s *SourceService) FindSourceByID(ctx context.Context, g *datastore.Project, id string) (*datastore.Source, error) {
 	source, err := s.sourceRepo.FindSourceByID(ctx, g.UID, id)
 	if err != nil {
 		if err == datastore.ErrSourceNotFound {
@@ -167,7 +167,7 @@ func (s *SourceService) FindSourceByMaskID(ctx context.Context, maskID string) (
 	return source, nil
 }
 
-func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Group, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Project, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	sources, paginationData, err := s.sourceRepo.LoadSourcesPaged(ctx, g.UID, filter, pageable)
 	if err != nil {
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching sources"))
@@ -176,7 +176,7 @@ func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Group
 	return sources, paginationData, nil
 }
 
-func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Group, source *datastore.Source) error {
+func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Project, source *datastore.Source) error {
 	// ToDo: add check here to ensure the source doesn't have any existing subscriptions
 	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID)
 	if err != nil {

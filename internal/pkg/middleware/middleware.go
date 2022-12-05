@@ -62,7 +62,7 @@ type Middleware struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	endpointRepo      datastore.EndpointRepository
-	groupRepo         datastore.GroupRepository
+	projectRepo       datastore.ProjectRepository
 	apiKeyRepo        datastore.APIKeyRepository
 	subRepo           datastore.SubscriptionRepository
 	sourceRepo        datastore.SourceRepository
@@ -83,7 +83,7 @@ type CreateMiddleware struct {
 	EventRepo         datastore.EventRepository
 	EventDeliveryRepo datastore.EventDeliveryRepository
 	EndpointRepo      datastore.EndpointRepository
-	GroupRepo         datastore.GroupRepository
+	ProjectRepo       datastore.ProjectRepository
 	ApiKeyRepo        datastore.APIKeyRepository
 	SubRepo           datastore.SubscriptionRepository
 	SourceRepo        datastore.SourceRepository
@@ -105,7 +105,7 @@ func NewMiddleware(cs *CreateMiddleware) *Middleware {
 		eventRepo:         cs.EventRepo,
 		eventDeliveryRepo: cs.EventDeliveryRepo,
 		endpointRepo:      cs.EndpointRepo,
-		groupRepo:         cs.GroupRepo,
+		projectRepo:       cs.ProjectRepo,
 		apiKeyRepo:        cs.ApiKeyRepo,
 		subRepo:           cs.SubRepo,
 		sourceRepo:        cs.SourceRepo,
@@ -260,10 +260,10 @@ func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 				return
 			}
 
-			var group *datastore.Group
+			var group *datastore.Project
 			groupID := pLink.GroupID
 
-			groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
+			groupCacheKey := convoy.ProjectsCacheKey.Get(groupID).String()
 			err = m.cache.Get(r.Context(), groupCacheKey, &group)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -271,7 +271,7 @@ func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 			}
 
 			if group == nil {
-				group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
+				group, err = m.projectRepo.FetchProjectByID(r.Context(), groupID)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
 					return
@@ -403,7 +403,7 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 						return
 					}
 
-					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Group == group.UID {
+					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Project == group.UID {
 						r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
 						next.ServeHTTP(w, r)
 						return
@@ -415,7 +415,7 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 			}
 
 			// it's a project api key at this point
-			if authUser.Role.Type.Is(auth.RoleAdmin) && authUser.Role.Group == group.UID {
+			if authUser.Role.Type.Is(auth.RoleAdmin) && authUser.Role.Project == group.UID {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -487,7 +487,7 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 			}
 
 			group := GetGroupFromContext(r.Context())
-			if member.Role.Group == group.UID {
+			if member.Role.Project == group.UID {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -561,8 +561,8 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 	}
 }
 
-func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
-	groups, err := groupRepo.LoadGroups(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
+func (m *Middleware) GetDefaultProject(r *http.Request, projectRepo datastore.ProjectRepository) (*datastore.Project, error) {
+	groups, err := projectRepo.LoadProjects(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
 	if err != nil {
 		return nil, err
 	}
@@ -574,10 +574,10 @@ func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupR
 	return groups[0], err
 }
 
-func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var group *datastore.Group
+			var group *datastore.Project
 			var err error
 			var groupID string
 
@@ -599,12 +599,12 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 				authUser := GetAuthUserFromContext(r.Context())
 
 				if authUser.Credential.Type == auth.CredentialTypeAPIKey {
-					groupID = authUser.Role.Group
+					groupID = authUser.Role.Project
 				}
 			}
 
 			if !util.IsStringEmpty(groupID) {
-				groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
+				groupCacheKey := convoy.ProjectsCacheKey.Get(groupID).String()
 				err = m.cache.Get(r.Context(), groupCacheKey, &group)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -612,7 +612,7 @@ func (m *Middleware) RequireGroup() func(next http.Handler) http.Handler {
 				}
 
 				if group == nil {
-					group, err = m.groupRepo.FetchGroupByID(r.Context(), groupID)
+					group, err = m.projectRepo.FetchProjectByID(r.Context(), groupID)
 					if err != nil {
 						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
 						return
@@ -1181,12 +1181,12 @@ func GetEndpointsFromContext(ctx context.Context) []datastore.Endpoint {
 	return ctx.Value(endpointsCtx).([]datastore.Endpoint)
 }
 
-func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
+func setGroupInContext(ctx context.Context, group *datastore.Project) context.Context {
 	return context.WithValue(ctx, groupCtx, group)
 }
 
-func GetGroupFromContext(ctx context.Context) *datastore.Group {
-	return ctx.Value(groupCtx).(*datastore.Group)
+func GetGroupFromContext(ctx context.Context) *datastore.Project {
+	return ctx.Value(groupCtx).(*datastore.Project)
 }
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {

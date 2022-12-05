@@ -232,7 +232,7 @@ func sourceResponse(s *datastore.Source, baseUrl string, customDomain string) *m
 	return &models.SourceResponse{
 		UID:            s.UID,
 		MaskID:         s.MaskID,
-		GroupID:        s.GroupID,
+		ProjectID:      s.GroupID,
 		Name:           s.Name,
 		Type:           s.Type,
 		Provider:       s.Provider,

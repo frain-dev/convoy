@@ -38,7 +38,7 @@ func NewSubscriptionService(subRepo datastore.SubscriptionRepository, endpointRe
 	return &SubcriptionService{subRepo: subRepo, sourceRepo: sourceRepo, endpointRepo: endpointRepo}
 }
 
-func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *datastore.Group, newSubscription *models.Subscription) (*datastore.Subscription, error) {
+func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *datastore.Project, newSubscription *models.Subscription) (*datastore.Subscription, error) {
 	if err := util.Validate(newSubscription); err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrValidateSubscriptionError.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -54,7 +54,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("endpoint does not belong to group"))
 	}
 
-	if group.Type == datastore.IncomingGroup {
+	if group.Type == datastore.IncomingProject {
 		_, err = s.sourceRepo.FindSourceByID(ctx, group.UID, newSubscription.SourceID)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to find source by id")
@@ -285,7 +285,7 @@ func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testReq
 	return passed, nil
 }
 
-func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *datastore.Group, subscriptionId string, skipCache bool) (*datastore.Subscription, error) {
+func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *datastore.Project, subscriptionId string, skipCache bool) (*datastore.Subscription, error) {
 	sub, err := s.subRepo.FindSubscriptionByID(ctx, group.UID, subscriptionId)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
@@ -297,7 +297,7 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *da
 	}
 
 	// only incoming groups have sources
-	if group.Type == datastore.IncomingGroup && sub.SourceID != "" {
+	if group.Type == datastore.IncomingProject && sub.SourceID != "" {
 		source, err := s.sourceRepo.FindSourceByID(ctx, group.UID, sub.SourceID)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to find subscription source")
@@ -336,7 +336,6 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string) (*datastore.Endpoint, error) {
 	if !util.IsStringEmpty(appID) {
 		endpoints, err := s.endpointRepo.FindEndpointsByAppID(ctx, appID)
-
 		if err != nil {
 			return nil, err
 		}

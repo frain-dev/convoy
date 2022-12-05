@@ -18,7 +18,7 @@ import (
 func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	switch obj {
 	case "group":
-		g := v.(*datastore.Group)
+		g := v.(*datastore.Project)
 		if g.Config != nil {
 			for i := range g.Config.Signature.Versions {
 				v := &g.Config.Signature.Versions[i]
@@ -79,12 +79,12 @@ func provideEndpointService(ctrl *gomock.Controller) *EndpointService {
 func boolPtr(b bool) *bool {
 	return &b
 }
+
 func stringPtr(s string) *string {
 	return &s
 }
 
 func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
-
 	ctx := context.Background()
 
 	type args struct {
@@ -278,13 +278,13 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 
 func TestEndpointService_CreateEndpoint(t *testing.T) {
 	groupID := "1234567890"
-	group := &datastore.Group{UID: groupID}
+	group := &datastore.Project{UID: groupID}
 
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
 		e   models.Endpoint
-		g   *datastore.Group
+		g   *datastore.Project
 	}
 	tests := []struct {
 		name         string
@@ -524,7 +524,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
-
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -610,13 +609,13 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 
 func TestEndpointService_DeleteEndpoint(t *testing.T) {
 	groupID := "1234567890"
-	group := &datastore.Group{UID: groupID}
+	group := &datastore.Project{UID: groupID}
 
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
 		e   *datastore.Endpoint
-		g   *datastore.Group
+		g   *datastore.Project
 	}
 	tests := []struct {
 		name        string

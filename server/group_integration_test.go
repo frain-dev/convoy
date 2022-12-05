@@ -30,7 +30,7 @@ type GroupIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultGroup    *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -51,8 +51,8 @@ func (s *GroupIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
-	// Setup Default Group.
-	s.DefaultGroup, err = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	// Setup Default Project.
+	s.DefaultGroup, err = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 	require.NoError(s.T(), err)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
@@ -74,7 +74,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
 	require.NoError(s.T(), err)
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "test-app", "", false)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, group.UID, uuid.NewString(), "*", "", []byte("{}"))
@@ -91,7 +91,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var respGroup datastore.Group
+	var respGroup datastore.Project
 	parseResponse(s.T(), w.Result(), &respGroup)
 	require.Equal(s.T(), group.UID, respGroup.UID)
 	require.Equal(s.T(), datastore.GroupStatistics{
@@ -117,7 +117,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroupWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var respGroup datastore.Group
+	var respGroup datastore.Project
 	parseResponse(s.T(), w.Result(), &respGroup)
 
 	require.Equal(s.T(), s.DefaultGroup.UID, respGroup.UID)
@@ -169,7 +169,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "", datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "", datastore.OutgoingProject, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
@@ -183,8 +183,8 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
-	_, err = groupRepo.FetchGroupByID(context.Background(), group.UID)
+	projectRepo := cm.NewProjectRepo(s.ConvoyApp.A.Store)
+	_, err = projectRepo.FetchProjectByID(context.Background(), group.UID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
 
@@ -209,7 +209,7 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
 	groupID := uuid.NewString()
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -226,8 +226,8 @@ func (s *GroupIntegrationTestSuite) TestDeleteGroupWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
-	_, err = groupRepo.FetchGroupByID(context.Background(), groupID)
+	projectRepo := cm.NewProjectRepo(s.ConvoyApp.A.Store)
+	_, err = projectRepo.FetchProjectByID(context.Background(), groupID)
 	require.Equal(s.T(), datastore.ErrGroupNotFound, err)
 }
 
@@ -294,7 +294,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroup() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var respGroup models.CreateGroupResponse
+	var respGroup models.CreateProjectResponse
 	parseResponse(s.T(), w.Result(), &respGroup)
 	require.NotEmpty(s.T(), respGroup.Group.UID)
 	require.Equal(s.T(), 5000, respGroup.Group.RateLimit)
@@ -348,7 +348,7 @@ func (s *GroupIntegrationTestSuite) TestCreateGroupWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var respGroup models.CreateGroupResponse
+	var respGroup models.CreateProjectResponse
 	parseResponse(s.T(), w.Result(), &respGroup)
 	require.NotEmpty(s.T(), respGroup.Group.UID)
 	require.Equal(s.T(), 5000, respGroup.Group.RateLimit)
@@ -391,7 +391,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "test-group", datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", "test-group", datastore.OutgoingProject, nil)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)
@@ -423,8 +423,8 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroup() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	groupRepo := cm.NewGroupRepo(s.ConvoyApp.A.Store)
-	g, err := groupRepo.FetchGroupByID(context.Background(), group.UID)
+	projectRepo := cm.NewProjectRepo(s.ConvoyApp.A.Store)
+	g, err := projectRepo.FetchProjectByID(context.Background(), group.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "group_1", g.Name)
 }
@@ -434,7 +434,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey() {
 	groupID := uuid.NewString()
 
 	// Just Before.
-	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -452,7 +452,7 @@ func (s *GroupIntegrationTestSuite) TestUpdateGroupWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var respGroup datastore.Group
+	var respGroup datastore.Project
 	parseResponse(s.T(), w.Result(), &respGroup)
 
 	require.Equal(s.T(), groupID, respGroup.UID)
@@ -487,9 +487,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group3, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	group3, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -503,7 +503,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroups() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var groups []*datastore.Group
+	var groups []*datastore.Project
 	parseResponse(s.T(), w.Result(), &groups)
 	require.Equal(s.T(), 4, len(groups))
 
@@ -518,8 +518,8 @@ func (s *GroupIntegrationTestSuite) TestGetGroupsWithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	group2, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
@@ -535,7 +535,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroupsWithPersonalAPIKey() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var groups []*datastore.Group
+	var groups []*datastore.Project
 	parseResponse(s.T(), w.Result(), &groups)
 	require.Equal(s.T(), 3, len(groups))
 
@@ -549,9 +549,9 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
-	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-2", "", datastore.OutgoingGroup, nil)
-	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-3", "", datastore.OutgoingGroup, nil)
+	group1, _ := testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-2", "", datastore.OutgoingProject, nil)
+	_, _ = testdb.SeedGroup(s.ConvoyApp.A.Store, uuid.NewString(), "test-group-3", "", datastore.OutgoingProject, nil)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects?name=%s", s.DefaultOrg.UID, group1.Name)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -565,7 +565,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroups_FilterByName() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	var groups []*datastore.Group
+	var groups []*datastore.Project
 	parseResponse(s.T(), w.Result(), &groups)
 	require.Equal(s.T(), 1, len(groups))
 

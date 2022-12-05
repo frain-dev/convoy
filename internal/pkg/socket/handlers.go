@@ -35,7 +35,7 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	Device   *datastore.Device   `json:"device"`
-	Group    *datastore.Group    `json:"group"`
+	Project  *datastore.Project  `json:"project"`
 	Endpoint *datastore.Endpoint `json:"endpoint"`
 }
 
@@ -59,7 +59,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 	router.Route("/stream", func(streamRouter chi.Router) {
 		streamRouter.Use(
 			m.RequireAuth(),
-			m.RequireGroup(),
+			m.RequireProject(),
 			m.RequireAppID(),
 			// m.RequireAppPortalApplication(),
 		)
@@ -119,13 +119,13 @@ func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		lr := &LoginResponse{Device: device, Group: group, Endpoint: endpoint}
+		lr := &LoginResponse{Device: device, Project: group, Endpoint: endpoint}
 
 		respondWithData(w, http.StatusOK, lr)
 	})
 }
 
-func login(ctx context.Context, group *datastore.Group, endpoint *datastore.Endpoint, loginRequest *LoginRequest, h *Hub, repo *Repo) (*datastore.Device, error) {
+func login(ctx context.Context, group *datastore.Project, endpoint *datastore.Endpoint, loginRequest *LoginRequest, h *Hub, repo *Repo) (*datastore.Device, error) {
 	endpointID := ""
 	if endpoint != nil {
 		endpointID = endpoint.UID
@@ -203,7 +203,7 @@ func login(ctx context.Context, group *datastore.Group, endpoint *datastore.Endp
 	return device, nil
 }
 
-func listen(ctx context.Context, group *datastore.Group, endpoint *datastore.Endpoint, listenRequest *ListenRequest, h *Hub, r *Repo) (*datastore.Device, error) {
+func listen(ctx context.Context, group *datastore.Project, endpoint *datastore.Endpoint, listenRequest *ListenRequest, h *Hub, r *Repo) (*datastore.Device, error) {
 	endpointID := ""
 	if endpoint != nil {
 		endpointID = endpoint.UID
@@ -222,15 +222,15 @@ func listen(ctx context.Context, group *datastore.Group, endpoint *datastore.End
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
 	}
 
-	if group.Type == datastore.IncomingGroup && util.IsStringEmpty(listenRequest.SourceID) {
+	if group.Type == datastore.IncomingProject && util.IsStringEmpty(listenRequest.SourceID) {
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source is required for incoming projects"))
 	}
 
-	if group.Type == datastore.OutgoingGroup && !util.IsStringEmpty(listenRequest.SourceID) {
+	if group.Type == datastore.OutgoingProject && !util.IsStringEmpty(listenRequest.SourceID) {
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source should not be passed for outgoing projects"))
 	}
 
-	if group.Type == datastore.IncomingGroup && !util.IsStringEmpty(listenRequest.SourceID) {
+	if group.Type == datastore.IncomingProject && !util.IsStringEmpty(listenRequest.SourceID) {
 		source, err := r.SourceRepo.FindSourceByID(ctx, device.GroupID, listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")

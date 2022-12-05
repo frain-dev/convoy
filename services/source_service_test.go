@@ -26,7 +26,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 	type args struct {
 		ctx       context.Context
 		newSource *models.Source
-		group     *datastore.Group
+		group     *datastore.Project
 	}
 
 	tests := []struct {
@@ -55,7 +55,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSource: &datastore.Source{
 				Name: "Convoy-Prod",
@@ -88,7 +88,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSource: &datastore.Source{
 				Name:     "Convoy-Prod",
@@ -119,7 +119,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -139,7 +139,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -159,7 +159,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -175,7 +175,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 					Provider: datastore.GithubSourceProvider,
 					Verifier: datastore.VerifierConfig{HMac: nil},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -199,7 +199,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSource: &datastore.Source{
 				Name: "Convoy-Prod",
@@ -242,7 +242,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{
+				group: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -265,7 +265,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 						Type: datastore.HMacVerifier,
 					},
 				},
-				group: &datastore.Group{
+				group: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -313,7 +313,7 @@ func TestSourceService_UpdateSource(t *testing.T) {
 		ctx    context.Context
 		source *datastore.Source
 		update *models.UpdateSource
-		group  *datastore.Group
+		group  *datastore.Project
 	}
 
 	tests := []struct {
@@ -343,7 +343,7 @@ func TestSourceService_UpdateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSource: &datastore.Source{
 				Name: "Convoy-Prod",
@@ -382,7 +382,7 @@ func TestSourceService_UpdateSource(t *testing.T) {
 						},
 					},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -430,7 +430,7 @@ func TestSourceService_FindSourceByID(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		uid   string
-		group *datastore.Group
+		group *datastore.Project
 	}
 
 	tests := []struct {
@@ -447,7 +447,7 @@ func TestSourceService_FindSourceByID(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				uid:   "1234",
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSource: &datastore.Source{UID: "1234"},
 			dbFn: func(so *SourceService) {
@@ -461,7 +461,7 @@ func TestSourceService_FindSourceByID(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				uid:   "1234",
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -502,7 +502,7 @@ func TestSourceService_DeleteSource(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		source *datastore.Source
-		group  *datastore.Group
+		group  *datastore.Project
 	}
 
 	tests := []struct {
@@ -518,7 +518,7 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				source: &datastore.Source{UID: "12345", Provider: ""},
-				group:  &datastore.Group{UID: "12345"},
+				group:  &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -531,7 +531,7 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				source: &datastore.Source{UID: "12345", MaskID: "abcd", Provider: datastore.TwitterSourceProvider},
-				group:  &datastore.Group{UID: "12345"},
+				group:  &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -547,7 +547,7 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				source: &datastore.Source{UID: "12345", Provider: ""},
-				group:  &datastore.Group{UID: "12345"},
+				group:  &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -588,7 +588,7 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 
 	type args struct {
 		ctx      context.Context
-		group    *datastore.Group
+		group    *datastore.Project
 		pageable datastore.Pageable
 		filter   *datastore.SourceFilter
 	}
@@ -607,7 +607,7 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 			name: "should_load_sources",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -649,7 +649,7 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 			name: "should_fail_load_sources",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,

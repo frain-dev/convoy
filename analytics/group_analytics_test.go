@@ -9,33 +9,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func provideGroupAnalytics(ctrl *gomock.Controller) *GroupAnalytics {
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
+func provideProjectAnalytics(ctrl *gomock.Controller) *ProjectAnalytics {
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newGroupAnalytics(groupRepo, client, TestInstanceID)
+	return newProjectAnalytics(projectRepo, client, TestInstanceID)
 }
 
-func Test_TrackGroupAnalytics(t *testing.T) {
-
+func Test_TrackProjectAnalytics(t *testing.T) {
 	tests := []struct {
 		name    string
-		dbFn    func(ga *GroupAnalytics)
+		dbFn    func(ga *ProjectAnalytics)
 		wantErr bool
 	}{
 		{
-			name: "should_track_group_analytics",
-			dbFn: func(ga *GroupAnalytics) {
-				groupRepo := ga.groupRepo.(*mocks.MockGroupRepository)
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return(nil, nil)
+			name: "should_track_project_analytics",
+			dbFn: func(ga *ProjectAnalytics) {
+				projectRepo := ga.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).Return(nil, nil)
 			},
 		},
 
 		{
-			name: "should_fail_to_track_group_analytics",
-			dbFn: func(ga *GroupAnalytics) {
-				groupRepo := ga.groupRepo.(*mocks.MockGroupRepository)
-				groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed"))
+			name: "should_fail_to_track_project_analytics",
+			dbFn: func(ga *ProjectAnalytics) {
+				projectRepo := ga.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).Return(nil, errors.New("failed"))
 			},
 			wantErr: true,
 		},
@@ -46,7 +45,7 @@ func Test_TrackGroupAnalytics(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			ga := provideGroupAnalytics(ctrl)
+			ga := provideProjectAnalytics(ctrl)
 
 			if tc.dbFn != nil {
 				tc.dbFn(ga)

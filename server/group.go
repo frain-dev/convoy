@@ -13,46 +13,46 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createGroupService(a *ApplicationHandler) *services.GroupService {
+func createProjectService(a *ApplicationHandler) *services.ProjectService {
 	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
-	groupRepo := mongo.NewGroupRepo(a.A.Store)
+	projectRepo := mongo.NewProjectRepo(a.A.Store)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
 
-	return services.NewGroupService(
-		apiKeyRepo, groupRepo, eventRepo,
+	return services.NewProjectService(
+		apiKeyRepo, projectRepo, eventRepo,
 		eventDeliveryRepo, a.A.Limiter, a.A.Cache,
 	)
 }
 
-// GetGroup - this is a duplicate annotation for the api/v1 route of this handler
+// GetProject - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Get a project
 // @Description This endpoint fetches a project by its id
 // @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [get]
 func _() {}
 
-func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
-	groupService := createGroupService(a)
+	groupService := createProjectService(a)
 
-	err := groupService.FillGroupsStatistics(r.Context(), []*datastore.Group{group})
+	err := groupService.FillProjectStatistics(r.Context(), []*datastore.Project{group})
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Group fetched successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully",
 		group, http.StatusOK))
 }
 
-// DeleteGroup - this is a duplicate annotation for the api/v1 route of this handler
+// DeleteProject - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Delete a project
 // @Description This endpoint deletes a project using its id
 // @Tags Projects
@@ -65,36 +65,36 @@ func (a *ApplicationHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 // @Router /api/v1/projects/{projectID} [delete]
 func _() {}
 
-func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	group := m.GetGroupFromContext(r.Context())
-	groupService := createGroupService(a)
+	groupService := createProjectService(a)
 
-	err := groupService.DeleteGroup(r.Context(), group.UID)
+	err := groupService.DeleteProject(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Group deleted successfully",
+	_ = render.Render(w, r, util.NewServerResponse("Project deleted successfully",
 		nil, http.StatusOK))
 }
 
-// CreateGroup - this is a duplicate annotation for the api/v1 route of this handler
+// CreateProject - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Create a project
 // @Description This endpoint creates a project
 // @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param orgID query string true "Organisation id"
-// @Param group body models.Group true "Group Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Param group body models.Project true "Project Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects [post]
 func _() {}
 
-func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
-	var newGroup models.Group
+func (a *ApplicationHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
+	var newGroup models.Project
 	err := util.ReadJSON(r, &newGroup)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -103,38 +103,38 @@ func (a *ApplicationHandler) CreateGroup(w http.ResponseWriter, r *http.Request)
 
 	org := m.GetOrganisationFromContext(r.Context())
 	member := m.GetOrganisationMemberFromContext(r.Context())
-	groupService := createGroupService(a)
+	groupService := createProjectService(a)
 
-	group, apiKey, err := groupService.CreateGroup(r.Context(), &newGroup, org, member)
+	group, apiKey, err := groupService.CreateProject(r.Context(), &newGroup, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	resp := &models.CreateGroupResponse{
+	resp := &models.CreateProjectResponse{
 		APIKey: apiKey,
 		Group:  group,
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Group created successfully", resp, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
 }
 
-// UpdateGroup - this is a duplicate annotation for the api/v1 route of this handler
+// UpdateProject - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Update a project
 // @Description This endpoint updates a project
 // @Tags Projects
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
-// @Param group body models.Group true "Group Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Group}
+// @Param group body models.Project true "Project Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [put]
 func _() {}
 
-func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
-	var update models.UpdateGroup
+func (a *ApplicationHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
+	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -142,18 +142,18 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 	}
 
 	g := m.GetGroupFromContext(r.Context())
-	groupService := createGroupService(a)
+	groupService := createProjectService(a)
 
-	group, err := groupService.UpdateGroup(r.Context(), g, &update)
+	group, err := groupService.UpdateProject(r.Context(), g, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Group updated successfully", group, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", group, http.StatusAccepted))
 }
 
-// GetGroups - this is a duplicate annotation for the api/v1 route of this handler
+// GetProjects - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Get projects
 // @Description This endpoint fetches projects
 // @Tags Projects
@@ -161,21 +161,21 @@ func (a *ApplicationHandler) UpdateGroup(w http.ResponseWriter, r *http.Request)
 // @Produce  json
 // @Param name query string false "group name"
 // @Param orgID query string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Group}
+// @Success 200 {object} util.ServerResponse{data=[]datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects [get]
 func _() {}
 
-func (a *ApplicationHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
 	name := r.URL.Query().Get("name")
 
 	filter := &datastore.GroupFilter{OrgID: org.UID}
 	filter.Names = append(filter.Names, name)
-	groupService := createGroupService(a)
+	groupService := createProjectService(a)
 
-	groups, err := groupService.GetGroups(r.Context(), filter)
+	groups, err := groupService.GetProjects(r.Context(), filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

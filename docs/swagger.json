@@ -197,7 +197,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/datastore.Group"
+                                                "$ref": "#/definitions/datastore.Project"
                                             }
                                         }
                                     }
@@ -287,12 +287,12 @@
                         "required": true
                     },
                     {
-                        "description": "Group Details",
+                        "description": "Project Details",
                         "name": "group",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Group"
+                            "$ref": "#/definitions/models.Project"
                         }
                     }
                 ],
@@ -308,7 +308,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Group"
+                                            "$ref": "#/definitions/datastore.Project"
                                         }
                                     }
                                 }
@@ -411,7 +411,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Group"
+                                            "$ref": "#/definitions/datastore.Project"
                                         }
                                     }
                                 }
@@ -500,12 +500,12 @@
                         "required": true
                     },
                     {
-                        "description": "Group Details",
+                        "description": "Project Details",
                         "name": "group",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Group"
+                            "$ref": "#/definitions/models.Project"
                         }
                     }
                 ],
@@ -521,7 +521,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Group"
+                                            "$ref": "#/definitions/datastore.Project"
                                         }
                                     }
                                 }
@@ -5427,7 +5427,7 @@
                 "endpoint": {
                     "type": "string"
                 },
-                "group": {
+                "project": {
                     "type": "string"
                 },
                 "type": {
@@ -5767,80 +5767,6 @@
                 }
             }
         },
-        "datastore.Group": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/datastore.GroupConfig"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "metadata": {
-                    "$ref": "#/definitions/datastore.GroupMetadata"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "organisation_id": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "description": "TODO(subomi): refactor this into the Instance API.",
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
-                },
-                "statistics": {
-                    "$ref": "#/definitions/datastore.GroupStatistics"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.GroupConfig": {
-            "type": "object",
-            "properties": {
-                "disable_endpoint": {
-                    "type": "boolean"
-                },
-                "is_retention_policy_enabled": {
-                    "type": "boolean"
-                },
-                "max_payload_read_size": {
-                    "type": "integer"
-                },
-                "ratelimit": {
-                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
-                },
-                "replay_attacks": {
-                    "type": "boolean"
-                },
-                "retention_policy": {
-                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
-                },
-                "signature": {
-                    "$ref": "#/definitions/datastore.SignatureConfiguration"
-                },
-                "strategy": {
-                    "$ref": "#/definitions/datastore.StrategyConfiguration"
-                }
-            }
-        },
         "datastore.GroupMetadata": {
             "type": "object",
             "properties": {
@@ -5914,7 +5840,13 @@
         "datastore.Organisation": {
             "type": "object",
             "properties": {
+                "assigned_domain": {
+                    "type": "string"
+                },
                 "created_at": {
+                    "type": "string"
+                },
+                "custom_domain": {
                     "type": "string"
                 },
                 "deleted_at": {
@@ -5951,6 +5883,80 @@
                 },
                 "totalPage": {
                     "type": "integer"
+                }
+            }
+        },
+        "datastore.Project": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/datastore.ProjectConfig"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "$ref": "#/definitions/datastore.GroupMetadata"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organisation_id": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "description": "TODO(subomi): refactor this into the Instance API.",
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
+                "statistics": {
+                    "$ref": "#/definitions/datastore.GroupStatistics"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.ProjectConfig": {
+            "type": "object",
+            "properties": {
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
+                "is_retention_policy_enabled": {
+                    "type": "boolean"
+                },
+                "max_payload_read_size": {
+                    "type": "integer"
+                },
+                "ratelimit": {
+                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
+                },
+                "replay_attacks": {
+                    "type": "boolean"
+                },
+                "retention_policy": {
+                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
+                },
+                "signature": {
+                    "$ref": "#/definitions/datastore.SignatureConfiguration"
+                },
+                "strategy": {
+                    "$ref": "#/definitions/datastore.StrategyConfiguration"
                 }
             }
         },
@@ -6270,42 +6276,19 @@
                 }
             }
         },
-        "models.Group": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/datastore.GroupConfig"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "models.PortalAPIKeyResponse": {
             "type": "object",
             "properties": {
                 "endpoint_id": {
                     "type": "string"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "key": {
                     "type": "string"
                 },
                 "key_type": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 },
                 "role": {
@@ -6354,10 +6337,10 @@
                         "$ref": "#/definitions/datastore.Endpoint"
                     }
                 },
-                "group_id": {
+                "name": {
                     "type": "string"
                 },
-                "name": {
+                "project_id": {
                     "type": "string"
                 },
                 "token": {
@@ -6370,6 +6353,29 @@
                     "type": "integer"
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Project": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/datastore.ProjectConfig"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -6420,9 +6426,6 @@
                 "deleted_at": {
                     "type": "integer"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -6430,6 +6433,9 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 },
                 "provider": {

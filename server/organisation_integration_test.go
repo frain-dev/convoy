@@ -31,7 +31,7 @@ type OrganisationIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultGroup    *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -45,8 +45,8 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 	s.DB = getDB()
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	// Setup Default Project.
+	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -230,7 +230,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, org, s.DefaultUser, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
@@ -270,7 +270,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPI
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, org, s.DefaultUser, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)

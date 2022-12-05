@@ -4,7 +4,7 @@ definitions:
     properties:
       endpoint:
         type: string
-      group:
+      project:
         type: string
       type:
         type: string
@@ -230,55 +230,6 @@ definitions:
         additionalProperties: true
         type: object
     type: object
-  datastore.Group:
-    properties:
-      config:
-        $ref: '#/definitions/datastore.GroupConfig'
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      logo_url:
-        type: string
-      metadata:
-        $ref: '#/definitions/datastore.GroupMetadata'
-      name:
-        type: string
-      organisation_id:
-        type: string
-      rate_limit:
-        description: 'TODO(subomi): refactor this into the Instance API.'
-        type: integer
-      rate_limit_duration:
-        type: string
-      statistics:
-        $ref: '#/definitions/datastore.GroupStatistics'
-      type:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  datastore.GroupConfig:
-    properties:
-      disable_endpoint:
-        type: boolean
-      is_retention_policy_enabled:
-        type: boolean
-      max_payload_read_size:
-        type: integer
-      ratelimit:
-        $ref: '#/definitions/datastore.RateLimitConfiguration'
-      replay_attacks:
-        type: boolean
-      retention_policy:
-        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
-      signature:
-        $ref: '#/definitions/datastore.SignatureConfiguration'
-      strategy:
-        $ref: '#/definitions/datastore.StrategyConfiguration'
-    type: object
   datastore.GroupMetadata:
     properties:
       retained_events:
@@ -329,7 +280,11 @@ definitions:
     type: object
   datastore.Organisation:
     properties:
+      assigned_domain:
+        type: string
       created_at:
+        type: string
+      custom_domain:
         type: string
       deleted_at:
         type: string
@@ -354,6 +309,55 @@ definitions:
         type: integer
       totalPage:
         type: integer
+    type: object
+  datastore.Project:
+    properties:
+      config:
+        $ref: '#/definitions/datastore.ProjectConfig'
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      logo_url:
+        type: string
+      metadata:
+        $ref: '#/definitions/datastore.GroupMetadata'
+      name:
+        type: string
+      organisation_id:
+        type: string
+      rate_limit:
+        description: 'TODO(subomi): refactor this into the Instance API.'
+        type: integer
+      rate_limit_duration:
+        type: string
+      statistics:
+        $ref: '#/definitions/datastore.GroupStatistics'
+      type:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  datastore.ProjectConfig:
+    properties:
+      disable_endpoint:
+        type: boolean
+      is_retention_policy_enabled:
+        type: boolean
+      max_payload_read_size:
+        type: integer
+      ratelimit:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
+      replay_attacks:
+        type: boolean
+      retention_policy:
+        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
+      signature:
+        $ref: '#/definitions/datastore.SignatureConfiguration'
+      strategy:
+        $ref: '#/definitions/datastore.StrategyConfiguration'
     type: object
   datastore.ProviderConfig:
     properties:
@@ -564,30 +568,15 @@ definitions:
       event_type:
         type: string
     type: object
-  models.Group:
-    properties:
-      config:
-        $ref: '#/definitions/datastore.GroupConfig'
-      logo_url:
-        type: string
-      name:
-        type: string
-      rate_limit:
-        type: integer
-      rate_limit_duration:
-        type: string
-      type:
-        type: string
-    type: object
   models.PortalAPIKeyResponse:
     properties:
       endpoint_id:
         type: string
-      group_id:
-        type: string
       key:
         type: string
       key_type:
+        type: string
+      project_id:
         type: string
       role:
         $ref: '#/definitions/auth.Role'
@@ -619,9 +608,9 @@ definitions:
         items:
           $ref: '#/definitions/datastore.Endpoint'
         type: array
-      group_id:
-        type: string
       name:
+        type: string
+      project_id:
         type: string
       token:
         type: string
@@ -630,6 +619,21 @@ definitions:
       updated_at:
         type: integer
       url:
+        type: string
+    type: object
+  models.Project:
+    properties:
+      config:
+        $ref: '#/definitions/datastore.ProjectConfig'
+      logo_url:
+        type: string
+      name:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
+      type:
         type: string
     type: object
   models.RetryConfiguration:
@@ -662,13 +666,13 @@ definitions:
         type: integer
       deleted_at:
         type: integer
-      group_id:
-        type: string
       is_disabled:
         type: boolean
       mask_id:
         type: string
       name:
+        type: string
+      project_id:
         type: string
       provider:
         type: string
@@ -837,7 +841,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/datastore.Group'
+                    $ref: '#/definitions/datastore.Project'
                   type: array
               type: object
         "400":
@@ -882,12 +886,12 @@ paths:
         name: orgID
         required: true
         type: string
-      - description: Group Details
+      - description: Project Details
         in: body
         name: group
         required: true
         schema:
-          $ref: '#/definitions/models.Group'
+          $ref: '#/definitions/models.Project'
       produces:
       - application/json
       responses:
@@ -898,7 +902,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Group'
+                  $ref: '#/definitions/datastore.Project'
               type: object
         "400":
           description: Bad Request
@@ -1007,7 +1011,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Group'
+                  $ref: '#/definitions/datastore.Project'
               type: object
         "400":
           description: Bad Request
@@ -1051,12 +1055,12 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Group Details
+      - description: Project Details
         in: body
         name: group
         required: true
         schema:
-          $ref: '#/definitions/models.Group'
+          $ref: '#/definitions/models.Project'
       produces:
       - application/json
       responses:
@@ -1067,7 +1071,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Group'
+                  $ref: '#/definitions/datastore.Project'
               type: object
         "400":
           description: Bad Request

@@ -40,14 +40,14 @@ type EventRepository interface {
 	DeleteGroupEvents(context.Context, *EventFilter, bool) error
 }
 
-type GroupRepository interface {
-	LoadGroups(context.Context, *GroupFilter) ([]*Group, error)
-	CreateGroup(context.Context, *Group) error
-	UpdateGroup(context.Context, *Group) error
-	DeleteGroup(ctx context.Context, uid string) error
-	FetchGroupByID(context.Context, string) (*Group, error)
-	FetchGroupsByIDs(context.Context, []string) ([]Group, error)
-	FillGroupsStatistics(ctx context.Context, groups []*Group) error
+type ProjectRepository interface {
+	LoadProjects(context.Context, *GroupFilter) ([]*Project, error)
+	CreateProject(context.Context, *Project) error
+	UpdateProject(context.Context, *Project) error
+	DeleteProject(ctx context.Context, uid string) error
+	FetchProjectByID(context.Context, string) (*Project, error)
+	FetchProjectsByIDs(context.Context, []string) ([]Project, error)
+	FillProjectsStatistics(ctx context.Context, groups []*Project) error
 }
 
 type OrganisationRepository interface {

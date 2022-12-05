@@ -31,7 +31,7 @@ func NewPortalLinkService(portalLinkRepo datastore.PortalLinkRepository, endpoin
 	}
 }
 
-func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models.PortalLink, group *datastore.Group) (*datastore.PortalLink, error) {
+func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models.PortalLink, group *datastore.Project) (*datastore.PortalLink, error) {
 	if err := util.Validate(portal); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -62,7 +62,7 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 	return portalLink, nil
 }
 
-func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, group *datastore.Group, update *models.PortalLink, portalLink *datastore.PortalLink) (*datastore.PortalLink, error) {
+func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, group *datastore.Project, update *models.PortalLink, portalLink *datastore.PortalLink) (*datastore.PortalLink, error) {
 	if err := util.Validate(update); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -85,7 +85,7 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, group *datasto
 	return portalLink, nil
 }
 
-func (p *PortalLinkService) FindPortalLinkByID(ctx context.Context, group *datastore.Group, uid string) (*datastore.PortalLink, error) {
+func (p *PortalLinkService) FindPortalLinkByID(ctx context.Context, group *datastore.Project, uid string) (*datastore.PortalLink, error) {
 	portalLink, err := p.portalLinkRepo.FindPortalLinkByID(ctx, group.UID, uid)
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
@@ -98,7 +98,7 @@ func (p *PortalLinkService) FindPortalLinkByID(ctx context.Context, group *datas
 	return portalLink, nil
 }
 
-func (p *PortalLinkService) LoadPortalLinksPaged(ctx context.Context, group *datastore.Group, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+func (p *PortalLinkService) LoadPortalLinksPaged(ctx context.Context, group *datastore.Project, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	portalLinks, paginationData, err := p.portalLinkRepo.LoadPortalLinksPaged(ctx, group.UID, f, pageable)
 	if err != nil {
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching portal links"))
@@ -107,7 +107,7 @@ func (p *PortalLinkService) LoadPortalLinksPaged(ctx context.Context, group *dat
 	return portalLinks, paginationData, nil
 }
 
-func (p *PortalLinkService) RevokePortalLink(ctx context.Context, group *datastore.Group, portalLink *datastore.PortalLink) error {
+func (p *PortalLinkService) RevokePortalLink(ctx context.Context, group *datastore.Project, portalLink *datastore.PortalLink) error {
 	err := p.portalLinkRepo.RevokePortalLink(ctx, group.UID, portalLink.UID)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete portal link"))
@@ -116,7 +116,7 @@ func (p *PortalLinkService) RevokePortalLink(ctx context.Context, group *datasto
 	return nil
 }
 
-func (p *PortalLinkService) CreateEndpoint(ctx context.Context, group *datastore.Group, data models.Endpoint, portalLink *datastore.PortalLink) (*datastore.Endpoint, error) {
+func (p *PortalLinkService) CreateEndpoint(ctx context.Context, group *datastore.Project, data models.Endpoint, portalLink *datastore.PortalLink) (*datastore.Endpoint, error) {
 	endpoint, err := p.endpointService.CreateEndpoint(ctx, data, group.UID)
 	if err != nil {
 		return nil, err
@@ -129,7 +129,6 @@ func (p *PortalLinkService) CreateEndpoint(ctx context.Context, group *datastore
 	}
 
 	return endpoint, nil
-
 }
 
 func (p *PortalLinkService) GetPortalLinkEndpoints(ctx context.Context, portal *datastore.PortalLink) ([]datastore.Endpoint, error) {
@@ -141,7 +140,7 @@ func (p *PortalLinkService) GetPortalLinkEndpoints(ctx context.Context, portal *
 	return endpoints, err
 }
 
-func (p *PortalLinkService) findEndpoints(ctx context.Context, endpoints []string, group *datastore.Group) error {
+func (p *PortalLinkService) findEndpoints(ctx context.Context, endpoints []string, group *datastore.Project) error {
 	for _, e := range endpoints {
 		endpoint, err := p.endpointRepo.FindEndpointByID(ctx, e)
 		if errors.Is(err, datastore.ErrEndpointNotFound) {

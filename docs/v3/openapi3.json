@@ -6,7 +6,7 @@
 					"endpoint": {
 						"type": "string"
 					},
-					"group": {
+					"project": {
 						"type": "string"
 					},
 					"type": {
@@ -347,80 +347,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.Group": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.GroupConfig"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"metadata": {
-						"$ref": "#/components/schemas/datastore.GroupMetadata"
-					},
-					"name": {
-						"type": "string"
-					},
-					"organisation_id": {
-						"type": "string"
-					},
-					"rate_limit": {
-						"description": "TODO(subomi): refactor this into the Instance API.",
-						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
-					},
-					"statistics": {
-						"$ref": "#/components/schemas/datastore.GroupStatistics"
-					},
-					"type": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.GroupConfig": {
-				"properties": {
-					"disable_endpoint": {
-						"type": "boolean"
-					},
-					"is_retention_policy_enabled": {
-						"type": "boolean"
-					},
-					"max_payload_read_size": {
-						"type": "integer"
-					},
-					"ratelimit": {
-						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
-					},
-					"replay_attacks": {
-						"type": "boolean"
-					},
-					"retention_policy": {
-						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.GroupMetadata": {
 				"properties": {
 					"retained_events": {
@@ -493,7 +419,13 @@
 			},
 			"datastore.Organisation": {
 				"properties": {
+					"assigned_domain": {
+						"type": "string"
+					},
 					"created_at": {
+						"type": "string"
+					},
+					"custom_domain": {
 						"type": "string"
 					},
 					"deleted_at": {
@@ -530,6 +462,80 @@
 					},
 					"totalPage": {
 						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.Project": {
+				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/datastore.ProjectConfig"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"logo_url": {
+						"type": "string"
+					},
+					"metadata": {
+						"$ref": "#/components/schemas/datastore.GroupMetadata"
+					},
+					"name": {
+						"type": "string"
+					},
+					"organisation_id": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"description": "TODO(subomi): refactor this into the Instance API.",
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
+					"statistics": {
+						"$ref": "#/components/schemas/datastore.GroupStatistics"
+					},
+					"type": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.ProjectConfig": {
+				"properties": {
+					"disable_endpoint": {
+						"type": "boolean"
+					},
+					"is_retention_policy_enabled": {
+						"type": "boolean"
+					},
+					"max_payload_read_size": {
+						"type": "integer"
+					},
+					"ratelimit": {
+						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+					},
+					"replay_attacks": {
+						"type": "boolean"
+					},
+					"retention_policy": {
+						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
+					},
+					"signature": {
+						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
+					},
+					"strategy": {
+						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
 					}
 				},
 				"type": "object"
@@ -849,41 +855,18 @@
 				},
 				"type": "object"
 			},
-			"models.Group": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.GroupConfig"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"rate_limit": {
-						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"models.PortalAPIKeyResponse": {
 				"properties": {
 					"endpoint_id": {
-						"type": "string"
-					},
-					"group_id": {
 						"type": "string"
 					},
 					"key": {
 						"type": "string"
 					},
 					"key_type": {
+						"type": "string"
+					},
+					"project_id": {
 						"type": "string"
 					},
 					"role": {
@@ -932,10 +915,10 @@
 						},
 						"type": "array"
 					},
-					"group_id": {
+					"name": {
 						"type": "string"
 					},
-					"name": {
+					"project_id": {
 						"type": "string"
 					},
 					"token": {
@@ -948,6 +931,29 @@
 						"type": "integer"
 					},
 					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.Project": {
+				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/datastore.ProjectConfig"
+					},
+					"logo_url": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
+					"type": {
 						"type": "string"
 					}
 				},
@@ -998,9 +1004,6 @@
 					"deleted_at": {
 						"type": "integer"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -1008,6 +1011,9 @@
 						"type": "string"
 					},
 					"name": {
+						"type": "string"
+					},
+					"project_id": {
 						"type": "string"
 					},
 					"provider": {
@@ -1302,7 +1308,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/datastore.Group"
+														"$ref": "#/components/schemas/datastore.Project"
 													},
 													"type": "array"
 												}
@@ -1409,11 +1415,11 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Group"
+								"$ref": "#/components/schemas/models.Project"
 							}
 						}
 					},
-					"description": "Group Details",
+					"description": "Project Details",
 					"required": true,
 					"x-originalParamName": "group"
 				},
@@ -1429,7 +1435,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
+													"$ref": "#/components/schemas/datastore.Project"
 												}
 											},
 											"type": "object"
@@ -1657,7 +1663,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
+													"$ref": "#/components/schemas/datastore.Project"
 												}
 											},
 											"type": "object"
@@ -1762,11 +1768,11 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Group"
+								"$ref": "#/components/schemas/models.Project"
 							}
 						}
 					},
-					"description": "Group Details",
+					"description": "Project Details",
 					"required": true,
 					"x-originalParamName": "group"
 				},
@@ -1782,7 +1788,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
+													"$ref": "#/components/schemas/datastore.Project"
 												}
 											},
 											"type": "object"

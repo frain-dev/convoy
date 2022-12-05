@@ -5,10 +5,10 @@ import (
 )
 
 // Role represents the permission a user is given, if the Type is RoleSuperUser,
-// Then the user will have access to everything regardless of the value of Group.
+// Then the user will have access to everything regardless of the value of Project.
 type Role struct {
 	Type     RoleType `json:"type"`
-	Group    string   `json:"group"`
+	Project  string   `json:"project"`
 	Endpoint string   `json:"endpoint,omitempty"`
 }
 
@@ -30,7 +30,7 @@ func (r RoleType) IsValid() bool {
 }
 
 func (r *Role) HasGroup(groupID string) bool {
-	return r.Group == groupID
+	return r.Project == groupID
 }
 
 func (r *Role) HasEndpoint(endpointID string) bool {
@@ -51,7 +51,7 @@ func (r *Role) Validate(credType string) error {
 	}
 
 	// group will never be checked for superuser
-	if r.Group == "" && !r.Type.Is(RoleSuperUser) {
+	if r.Project == "" && !r.Type.Is(RoleSuperUser) {
 		return fmt.Errorf("please specify group for %s", credType)
 	}
 

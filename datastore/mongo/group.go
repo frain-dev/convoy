@@ -20,17 +20,17 @@ func isDuplicateNameIndex(err error) bool {
 	return strings.Contains(err.Error(), "name")
 }
 
-type groupRepo struct {
+type projectRepo struct {
 	store datastore.Store
 }
 
-func NewGroupRepo(store datastore.Store) datastore.GroupRepository {
-	return &groupRepo{
+func NewProjectRepo(store datastore.Store) datastore.ProjectRepository {
+	return &projectRepo{
 		store: store,
 	}
 }
 
-func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error {
+func (db *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	o.ID = primitive.NewObjectID()
@@ -45,9 +45,9 @@ func (db *groupRepo) CreateGroup(ctx context.Context, o *datastore.Group) error 
 	return err
 }
 
-func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Group, error) {
+func (db *projectRepo) LoadProjects(ctx context.Context, f *datastore.GroupFilter) ([]*datastore.Project, error) {
 	ctx = db.setCollectionInContext(ctx)
-	groups := make([]*datastore.Group, 0)
+	groups := make([]*datastore.Project, 0)
 
 	filter := bson.M{}
 
@@ -66,7 +66,7 @@ func (db *groupRepo) LoadGroups(ctx context.Context, f *datastore.GroupFilter) (
 	return groups, err
 }
 
-func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error {
+func (db *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
@@ -88,10 +88,10 @@ func (db *groupRepo) UpdateGroup(ctx context.Context, o *datastore.Group) error 
 	return err
 }
 
-func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.Group, error) {
+func (db *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	group := new(datastore.Group)
+	group := new(datastore.Project)
 
 	err := db.store.FindByID(ctx, id, nil, group)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -101,7 +101,7 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.
 	return group, err
 }
 
-func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+func (db *projectRepo) FillProjectsStatistics(ctx context.Context, groups []*datastore.Project) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	ids := make([]string, 0, len(groups))
@@ -184,7 +184,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 	return nil
 }
 
-func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
+func (db *projectRepo) DeleteProject(ctx context.Context, uid string) error {
 	ctx = db.setCollectionInContext(ctx)
 	updateAsDeleted := bson.M{
 		"$set": bson.M{
@@ -230,7 +230,7 @@ func (db *groupRepo) DeleteGroup(ctx context.Context, uid string) error {
 	return err
 }
 
-func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]datastore.Group, error) {
+func (db *projectRepo) FetchProjectsByIDs(ctx context.Context, ids []string) ([]datastore.Project, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -239,7 +239,7 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 		},
 	}
 
-	groups := make([]datastore.Group, 0)
+	groups := make([]datastore.Project, 0)
 	sort := bson.M{"created_at": 1}
 	err := db.store.FindAll(ctx, filter, sort, nil, &groups)
 	if err != nil {
@@ -249,21 +249,21 @@ func (db *groupRepo) FetchGroupsByIDs(ctx context.Context, ids []string) ([]data
 	return groups, err
 }
 
-func (db *groupRepo) deleteEndpointEvents(ctx context.Context, endpoint_id string, update bson.M) error {
+func (db *projectRepo) deleteEndpointEvents(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 
 	filter := bson.M{"endpoint_id": endpoint_id}
 	return db.store.UpdateMany(ctx, filter, update, true)
 }
 
-func (db *groupRepo) deleteEndpoint(ctx context.Context, endpoint_id string, update bson.M) error {
+func (db *projectRepo) deleteEndpoint(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EndpointCollection)
 
 	filter := bson.M{"uid": endpoint_id}
 	return db.store.UpdateMany(ctx, filter, update, true)
 }
 
-func (db *groupRepo) deleteEndpointSubscriptions(ctx context.Context, endpoint_id string, update bson.M) error {
+func (db *projectRepo) deleteEndpointSubscriptions(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
 
 	filter := bson.M{"endpoint_id": endpoint_id}
@@ -272,6 +272,6 @@ func (db *groupRepo) deleteEndpointSubscriptions(ctx context.Context, endpoint_i
 	return err
 }
 
-func (db *groupRepo) setCollectionInContext(ctx context.Context) context.Context {
+func (db *projectRepo) setCollectionInContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.GroupCollection)
 }

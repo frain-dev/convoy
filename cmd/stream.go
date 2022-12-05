@@ -32,7 +32,7 @@ func addStreamCommand(a *app) *cobra.Command {
 			sourceRepo := cm.NewSourceRepo(a.store)
 			subRepo := cm.NewSubscriptionRepo(a.store)
 			deviceRepo := cm.NewDeviceRepository(a.store)
-			groupRepo := cm.NewGroupRepo(a.store)
+			projectRepo := cm.NewProjectRepo(a.store)
 			apiKeyRepo := cm.NewApiKeyRepo(a.store)
 
 			// enable only the native auth realm
@@ -72,7 +72,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
 				EndpointRepo: endpointRepo,
-				GroupRepo:    groupRepo,
+				ProjectRepo:  projectRepo,
 				Cache:        a.cache,
 				Logger:       lo,
 			})

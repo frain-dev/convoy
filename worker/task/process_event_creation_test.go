@@ -23,7 +23,7 @@ import (
 type args struct {
 	endpointRepo      datastore.EndpointRepository
 	eventRepo         datastore.EventRepository
-	groupRepo         datastore.GroupRepository
+	projectRepo       datastore.ProjectRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	cache             cache.Cache
 	eventQueue        queue.Queuer
@@ -36,7 +36,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	cache := mocks.NewMockCache(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
 	search := mocks.NewMockSearcher(ctrl)
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
@@ -45,7 +45,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	return &args{
 		endpointRepo:      endpointRepo,
 		eventRepo:         eventRepo,
-		groupRepo:         groupRepo,
+		projectRepo:       projectRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		cache:             cache,
 		eventQueue:        queue,
@@ -79,13 +79,13 @@ func TestProcessEventCreated(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
-				var gr *datastore.Group
+				var gr *datastore.Project
 				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
 
-				group := &datastore.Group{
+				group := &datastore.Project{
 					UID:  "group-id-1",
-					Type: datastore.OutgoingGroup,
-					Config: &datastore.GroupConfig{
+					Type: datastore.OutgoingProject,
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       datastore.LinearStrategyProvider,
 							Duration:   10,
@@ -94,8 +94,8 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 
-				g, _ := args.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "group-id-1").Times(1).Return(
+				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "group-id-1").Times(1).Return(
 					group,
 					nil,
 				)
@@ -159,13 +159,13 @@ func TestProcessEventCreated(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
-				var gr *datastore.Group
+				var gr *datastore.Project
 				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
 
-				group := &datastore.Group{
+				group := &datastore.Project{
 					UID:  "group-id-1",
-					Type: datastore.OutgoingGroup,
-					Config: &datastore.GroupConfig{
+					Type: datastore.OutgoingProject,
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       datastore.LinearStrategyProvider,
 							Duration:   10,
@@ -174,8 +174,8 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 
-				g, _ := args.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "group-id-1").Times(1).Return(
+				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "group-id-1").Times(1).Return(
 					group,
 					nil,
 				)
@@ -230,13 +230,13 @@ func TestProcessEventCreated(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
-				var gr *datastore.Group
+				var gr *datastore.Project
 				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
 
-				group := &datastore.Group{
+				group := &datastore.Project{
 					UID:  "group-id-1",
-					Type: datastore.IncomingGroup,
-					Config: &datastore.GroupConfig{
+					Type: datastore.IncomingProject,
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       datastore.LinearStrategyProvider,
 							Duration:   10,
@@ -245,8 +245,8 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 
-				g, _ := args.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "group-id-1").Times(1).Return(
+				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "group-id-1").Times(1).Return(
 					group,
 					nil,
 				)
@@ -307,7 +307,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.groupRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search, args.deviceRepo)
+			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.search, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)
@@ -670,5 +670,4 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			}
 		})
 	}
-
 }

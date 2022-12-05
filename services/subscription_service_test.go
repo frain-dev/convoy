@@ -26,7 +26,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 
 	type args struct {
 		ctx             context.Context
-		group           *datastore.Group
+		group           *datastore.Project
 		newSubscription *models.Subscription
 	}
 
@@ -48,7 +48,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.OutgoingGroup},
+				group: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -81,7 +81,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.IncomingGroup},
+				group: &datastore.Project{UID: "12345", Type: datastore.IncomingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -124,7 +124,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.IncomingGroup},
+				group: &datastore.Project{UID: "12345", Type: datastore.IncomingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -159,7 +159,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -185,7 +185,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -216,7 +216,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -242,7 +242,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{
+				group: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -274,7 +274,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.OutgoingGroup},
+				group: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -340,7 +340,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 
 	type args struct {
 		ctx            context.Context
-		group          *datastore.Group
+		group          *datastore.Project
 		subscriptionId string
 		update         *models.UpdateSubscription
 	}
@@ -363,7 +363,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -393,7 +393,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{
+				group: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -586,7 +586,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 
 	type args struct {
 		ctx             context.Context
-		group           *datastore.Group
+		group           *datastore.Project
 		newSubscription *datastore.Subscription
 	}
 
@@ -608,7 +608,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(ss *SubcriptionService) {
 				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
@@ -627,7 +627,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{
+				group: &datastore.Project{
 					UID: "12345",
 				},
 			},

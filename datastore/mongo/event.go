@@ -183,9 +183,9 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		{Key: "deleted_at", Value: nil},
 	}
 
-	if !util.IsStringEmpty(f.Group.UID) {
-		filter["group_id"] = f.Group.UID
-		d = append(d, bson.E{Key: "group_id", Value: f.Group.UID})
+	if !util.IsStringEmpty(f.Project.UID) {
+		filter["group_id"] = f.Project.UID
+		d = append(d, bson.E{Key: "group_id", Value: f.Project.UID})
 	}
 
 	if len(f.EndpointIDs) > 0 {
@@ -207,7 +207,8 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			{Key: "as", Value: "endpoint_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "title", Value: 1},
@@ -229,7 +230,8 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			{Key: "as", Value: "source_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "name", Value: 1},

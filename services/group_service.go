@@ -20,19 +20,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type GroupService struct {
+type ProjectService struct {
 	apiKeyRepo        datastore.APIKeyRepository
-	groupRepo         datastore.GroupRepository
+	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	limiter           limiter.RateLimiter
 	cache             cache.Cache
 }
 
-func NewGroupService(apiKeyRepo datastore.APIKeyRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
-	return &GroupService{
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *ProjectService {
+	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
-		groupRepo:         groupRepo,
+		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		limiter:           limiter,
@@ -40,82 +40,82 @@ func NewGroupService(apiKeyRepo datastore.APIKeyRepository, groupRepo datastore.
 	}
 }
 
-func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Group, *models.APIKeyResponse, error) {
-	err := util.Validate(newGroup)
+func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.Project, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
+	err := util.Validate(newProject)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	groupName := newGroup.Name
+	projectName := newProject.Name
 
-	config := newGroup.Config
-	if newGroup.Config == nil {
-		config = &datastore.GroupConfig{}
+	config := newProject.Config
+	if newProject.Config == nil {
+		config = &datastore.ProjectConfig{}
 		config.Signature = datastore.GetDefaultSignatureConfig()
 		config.Strategy = &datastore.DefaultStrategyConfig
 		config.RateLimit = &datastore.DefaultRateLimitConfig
 		config.RetentionPolicy = &datastore.DefaultRetentionPolicy
 	} else {
-		if newGroup.Config.Signature == nil {
+		if newProject.Config.Signature == nil {
 			config.Signature = datastore.GetDefaultSignatureConfig()
 		}
 
-		checkSignatureVersions(newGroup.Config.Signature.Versions)
+		checkSignatureVersions(newProject.Config.Signature.Versions)
 
-		if newGroup.Config.Strategy == nil {
+		if newProject.Config.Strategy == nil {
 			config.Strategy = &datastore.DefaultStrategyConfig
 		}
 
-		if newGroup.Config.RateLimit == nil {
+		if newProject.Config.RateLimit == nil {
 			config.RateLimit = &datastore.DefaultRateLimitConfig
 		}
 
-		if newGroup.Config.RetentionPolicy == nil {
+		if newProject.Config.RetentionPolicy == nil {
 			config.RetentionPolicy = &datastore.DefaultRetentionPolicy
 		}
 
 	}
 
-	if newGroup.RateLimit == 0 {
-		newGroup.RateLimit = convoy.RATE_LIMIT
+	if newProject.RateLimit == 0 {
+		newProject.RateLimit = convoy.RATE_LIMIT
 	}
 
-	if util.IsStringEmpty(newGroup.RateLimitDuration) {
-		newGroup.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+	if util.IsStringEmpty(newProject.RateLimitDuration) {
+		newProject.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
-	group := &datastore.Group{
+	project := &datastore.Project{
 		UID:               uuid.New().String(),
-		Name:              groupName,
-		Type:              newGroup.Type,
+		Name:              projectName,
+		Type:              newProject.Type,
 		OrganisationID:    org.UID,
 		Config:            config,
-		LogoURL:           newGroup.LogoURL,
+		LogoURL:           newProject.LogoURL,
 		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		RateLimit:         newGroup.RateLimit,
-		RateLimitDuration: newGroup.RateLimitDuration,
+		RateLimit:         newProject.RateLimit,
+		RateLimitDuration: newProject.RateLimitDuration,
 	}
 
-	err = gs.groupRepo.CreateGroup(ctx, group)
+	err = gs.projectRepo.CreateProject(ctx, project)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create group")
+		log.FromContext(ctx).WithError(err).Error("failed to create project")
 		if err == datastore.ErrDuplicateGroupName {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create group"))
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create project"))
 	}
 
 	newAPIKey := &models.APIKey{
-		Name: fmt.Sprintf("%s's default key", group.Name),
+		Name: fmt.Sprintf("%s's default key", project.Name),
 		Role: models.Role{
 			Type:  auth.RoleAdmin,
-			Group: group.UID,
+			Group: project.UID,
 		},
 	}
 
-	apiKey, keyString, err := NewSecurityService(gs.groupRepo, gs.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
+	apiKey, keyString, err := NewSecurityService(gs.projectRepo, gs.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -125,7 +125,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 			Name: apiKey.Name,
 			Role: models.Role{
 				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Group,
+				Group: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -135,42 +135,42 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 		Key:       keyString,
 	}
 
-	return group, resp, nil
+	return project, resp, nil
 }
 
-func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.UpdateGroup) (*datastore.Group, error) {
+func (gs *ProjectService) UpdateProject(ctx context.Context, project *datastore.Project, update *models.UpdateProject) (*datastore.Project, error) {
 	err := util.Validate(update)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate group update")
+		log.FromContext(ctx).WithError(err).Error("failed to validate project update")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	if !util.IsStringEmpty(update.Name) {
-		group.Name = update.Name
+		project.Name = update.Name
 	}
 
 	if update.Config != nil {
-		group.Config = update.Config
-		checkSignatureVersions(group.Config.Signature.Versions)
+		project.Config = update.Config
+		checkSignatureVersions(project.Config.Signature.Versions)
 	}
 
 	if !util.IsStringEmpty(update.LogoURL) {
-		group.LogoURL = update.LogoURL
+		project.LogoURL = update.LogoURL
 	}
 
-	err = gs.groupRepo.UpdateGroup(ctx, group)
+	err = gs.projectRepo.UpdateProject(ctx, project)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to to update group")
+		log.FromContext(ctx).WithError(err).Error("failed to to update project")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	groupCacheKey := convoy.GroupsCacheKey.Get(group.UID).String()
-	err = gs.cache.Set(ctx, groupCacheKey, &group, time.Minute*5)
+	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
+	err = gs.cache.Set(ctx, projectCacheKey, &project, time.Minute*5)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	return group, nil
+	return project, nil
 }
 
 func checkSignatureVersions(versions []datastore.SignatureVersion) {
@@ -186,36 +186,36 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
-	groups, err := gs.groupRepo.LoadGroups(ctx, filter.WithNamesTrimmed())
+func (gs *ProjectService) GetProjects(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Project, error) {
+	projects, err := gs.projectRepo.LoadProjects(ctx, filter.WithNamesTrimmed())
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to load groups")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
+		log.FromContext(ctx).WithError(err).Error("failed to load projects")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching projects"))
 	}
 
-	err = gs.FillGroupsStatistics(ctx, groups)
+	err = gs.FillProjectStatistics(ctx, projects)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fill statistics of group ")
+		log.FromContext(ctx).WithError(err).Error("failed to fill statistics of project")
 	}
 
-	return groups, nil
+	return projects, nil
 }
 
-func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
-	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
+func (gs *ProjectService) FillProjectStatistics(ctx context.Context, groups []*datastore.Project) error {
+	err := gs.projectRepo.FillProjectsStatistics(ctx, groups)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to count group applications")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
+		log.FromContext(ctx).WithError(err).Error("failed to count project applications")
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project statistics"))
 	}
 
 	return nil
 }
 
-func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
-	err := gs.groupRepo.DeleteGroup(ctx, id)
+func (gs *ProjectService) DeleteProject(ctx context.Context, id string) error {
+	err := gs.projectRepo.DeleteProject(ctx, id)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to delete group")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))
+		log.FromContext(ctx).WithError(err).Error("failed to delete project")
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete project"))
 	}
 
 	return nil

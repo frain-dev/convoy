@@ -17,15 +17,15 @@ func Test_UpdateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(getStore(db))
+	projectRepo := NewProjectRepo(getStore(db))
 	endpointRepo := NewEndpointRepo(getStore(db))
 
-	newGroup := &datastore.Group{
+	newGroup := &datastore.Project{
 		Name: "Random new group",
 		UID:  uuid.NewString(),
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+	require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
 
 	endpoint := &datastore.Endpoint{
 		Title:   "Next application name",
@@ -50,15 +50,15 @@ func Test_CreateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	groupRepo := NewGroupRepo(getStore(db))
+	projectRepo := NewProjectRepo(getStore(db))
 	endpointRepo := NewEndpointRepo(getStore(db))
 
-	newOrg := &datastore.Group{
+	newOrg := &datastore.Project{
 		Name: "Random new group 2",
 		UID:  uuid.NewString(),
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newOrg))
+	require.NoError(t, projectRepo.CreateProject(context.Background(), newOrg))
 
 	endpoint := &datastore.Endpoint{
 		Title:   "Next application name",
@@ -95,13 +95,13 @@ func Test_FindEndpointByID(t *testing.T) {
 
 	require.True(t, errors.Is(err, datastore.ErrEndpointNotFound))
 
-	groupRepo := NewGroupRepo(getStore(db))
+	projectRepo := NewProjectRepo(getStore(db))
 
-	newGroup := &datastore.Group{
+	newGroup := &datastore.Project{
 		Name: "Yet another Random new group",
 	}
 
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), newGroup))
+	require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
 
 	endpoint := &datastore.Endpoint{
 		Title:   "Next endpoint name again",

@@ -49,7 +49,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	// seed group
-	groupConfig := &datastore.GroupConfig{
+	groupConfig := &datastore.ProjectConfig{
 		Signature: &datastore.SignatureConfiguration{
 			Header: "X-Convoy-Signature",
 			Versions: []datastore.SignatureVersion{
@@ -74,7 +74,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingProject, groupConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
@@ -86,7 +86,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	})
 	require.NoError(r.T(), err)
 
-	//seed eventdelivery
+	// seed eventdelivery
 	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt: time.Now().UTC().Add(-duration),
 	})
@@ -95,7 +95,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.groupRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
+	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -107,7 +107,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
 
 	// check the number of retained events on groups
-	g, err := r.ConvoyApp.groupRepo.FetchGroupByID(context.Background(), group.UID)
+	g, err := r.ConvoyApp.projectRepo.FetchProjectByID(context.Background(), group.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), g.Metadata.RetainedEvents, 1)
 }
@@ -118,7 +118,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	require.NoError(r.T(), err)
 
 	// seed group
-	groupConfig := &datastore.GroupConfig{
+	groupConfig := &datastore.ProjectConfig{
 		Signature: &datastore.SignatureConfiguration{
 			Header: "X-Convoy-Signature",
 			Versions: []datastore.SignatureVersion{
@@ -143,7 +143,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingProject, groupConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
@@ -152,7 +152,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	})
 	require.NoError(r.T(), err)
 
-	//seed eventdelivery
+	// seed eventdelivery
 	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt: time.Now().UTC(),
 	})
@@ -161,7 +161,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.groupRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
+	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -207,13 +207,13 @@ func buildApplication() *applicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	store := datastore.New(db.Database())
 
-	groupRepo := convoyMongo.NewGroupRepo(store)
+	projectRepo := convoyMongo.NewProjectRepo(store)
 	eventRepo := convoyMongo.NewEventRepository(store)
 	configRepo := convoyMongo.NewConfigRepo(store)
 	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
 
 	app := &applicationHandler{
-		groupRepo:         groupRepo,
+		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		configRepo:        configRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
@@ -225,7 +225,7 @@ func buildApplication() *applicationHandler {
 }
 
 type applicationHandler struct {
-	groupRepo         datastore.GroupRepository
+	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository

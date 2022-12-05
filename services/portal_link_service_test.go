@@ -26,7 +26,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		newPortalLink *models.PortalLink
-		group         *datastore.Group
+		group         *datastore.Project
 	}
 
 	tests := []struct {
@@ -46,7 +46,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
 				GroupID:   "12345",
@@ -77,7 +77,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -92,7 +92,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"123"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -145,7 +145,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 		ctx        context.Context
 		portalLink *datastore.PortalLink
 		update     *models.PortalLink
-		group      *datastore.Group
+		group      *datastore.Project
 	}
 
 	tests := []struct {
@@ -169,7 +169,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
 				UID:       "12345",
@@ -205,7 +205,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"1234"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -255,7 +255,7 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 
 	type args struct {
 		ctx   context.Context
-		group *datastore.Group
+		group *datastore.Project
 		uid   string
 	}
 
@@ -273,7 +273,7 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				uid:   "1234",
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
 				UID:       "1234",
@@ -296,7 +296,7 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				uid:   "1234",
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -341,7 +341,7 @@ func TestPortalLinkService_RevokePortalLink(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		portalLink *datastore.PortalLink
-		group      *datastore.Group
+		group      *datastore.Project
 	}
 
 	tests := []struct {
@@ -360,7 +360,7 @@ func TestPortalLinkService_RevokePortalLink(t *testing.T) {
 					UID:       "12345",
 					Endpoints: []string{"123"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -376,7 +376,7 @@ func TestPortalLinkService_RevokePortalLink(t *testing.T) {
 					UID:       "12345",
 					Endpoints: []string{"123"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -417,7 +417,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 
 	type args struct {
 		ctx      context.Context
-		group    *datastore.Group
+		group    *datastore.Project
 		filter   *datastore.FilterBy
 		pageable datastore.Pageable
 	}
@@ -436,7 +436,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 			name: "should_load_portal_links",
 			args: args{
 				ctx:    ctx,
-				group:  &datastore.Group{UID: "12345"},
+				group:  &datastore.Project{UID: "12345"},
 				filter: &datastore.FilterBy{},
 				pageable: datastore.Pageable{
 					Page:    1,
@@ -477,7 +477,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 			name: "should_fail_to_load_portal_links",
 			args: args{
 				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				group: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -526,7 +526,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		portalLink *datastore.PortalLink
-		group      *datastore.Group
+		group      *datastore.Project
 	}
 
 	tests := []struct {
@@ -546,7 +546,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 					UID:       "123",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{
+				group: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -573,7 +573,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 					UID:       "123",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{
+				group: &datastore.Project{
 					UID: "12345",
 				},
 			},

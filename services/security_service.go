@@ -20,12 +20,12 @@ import (
 )
 
 type SecurityService struct {
-	groupRepo  datastore.GroupRepository
-	apiKeyRepo datastore.APIKeyRepository
+	projectRepo datastore.ProjectRepository
+	apiKeyRepo  datastore.APIKeyRepository
 }
 
-func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
-	return &SecurityService{groupRepo: groupRepo, apiKeyRepo: apiKeyRepo}
+func NewSecurityService(projectRepo datastore.ProjectRepository, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
+	return &SecurityService{projectRepo: projectRepo, apiKeyRepo: apiKeyRepo}
 }
 
 func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
@@ -34,8 +34,8 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	}
 
 	role := &auth.Role{
-		Type:  newApiKey.Role.Type,
-		Group: newApiKey.Role.Group,
+		Type:    newApiKey.Role.Type,
+		Project: newApiKey.Role.Group,
 	}
 
 	err := role.Validate("api key")
@@ -44,7 +44,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	group, err := ss.groupRepo.FetchGroupByID(ctx, newApiKey.Role.Group)
+	group, err := ss.projectRepo.FetchProjectByID(ctx, newApiKey.Role.Group)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch group by id")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch group by id"))
@@ -162,13 +162,13 @@ func (ss *SecurityService) RevokePersonalAPIKey(ctx context.Context, uid string,
 }
 
 func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.CreateEndpointApiKey) (*datastore.APIKey, string, error) {
-	if d.Endpoint.GroupID != d.Group.UID {
+	if d.Endpoint.GroupID != d.Project.UID {
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("endpoint does not belong to group"))
 	}
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    d.Group.UID,
+		Project:  d.Project.UID,
 		Endpoint: d.Endpoint.UID,
 	}
 
@@ -249,7 +249,7 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	_, err = ss.groupRepo.FetchGroupByID(ctx, role.Group)
+	_, err = ss.projectRepo.FetchProjectByID(ctx, role.Project)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
 	}

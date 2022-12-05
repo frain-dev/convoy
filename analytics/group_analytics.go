@@ -6,22 +6,22 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-type GroupAnalytics struct {
-	groupRepo  datastore.GroupRepository
-	client     AnalyticsClient
-	instanceID string
+type ProjectAnalytics struct {
+	projectRepo datastore.ProjectRepository
+	client      AnalyticsClient
+	instanceID  string
 }
 
-func newGroupAnalytics(groupRepo datastore.GroupRepository, client AnalyticsClient, instanceID string) *GroupAnalytics {
-	return &GroupAnalytics{
-		groupRepo:  groupRepo,
-		client:     client,
-		instanceID: instanceID,
+func newProjectAnalytics(projectRepo datastore.ProjectRepository, client AnalyticsClient, instanceID string) *ProjectAnalytics {
+	return &ProjectAnalytics{
+		projectRepo: projectRepo,
+		client:      client,
+		instanceID:  instanceID,
 	}
 }
 
-func (g *GroupAnalytics) Track() error {
-	groups, err := g.groupRepo.LoadGroups(context.Background(), &datastore.GroupFilter{})
+func (g *ProjectAnalytics) Track() error {
+	groups, err := g.projectRepo.LoadProjects(context.Background(), &datastore.GroupFilter{})
 	if err != nil {
 		return err
 	}
@@ -29,6 +29,6 @@ func (g *GroupAnalytics) Track() error {
 	return g.client.Export(g.Name(), Event{"Count": len(groups), "instanceID": g.instanceID})
 }
 
-func (g *GroupAnalytics) Name() string {
+func (g *ProjectAnalytics) Name() string {
 	return DailyGroupCount
 }

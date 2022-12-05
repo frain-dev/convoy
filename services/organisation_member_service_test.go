@@ -45,7 +45,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
 					Type:     auth.RoleAdmin,
-					Group:    "123",
+					Project:  "123",
 					Endpoint: "abc",
 				},
 				user: &datastore.User{UID: "1234"},
@@ -60,7 +60,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				UserID:         "1234",
 				Role: auth.Role{
 					Type:     auth.RoleAdmin,
-					Group:    "123",
+					Project:  "123",
 					Endpoint: "abc",
 				},
 			},
@@ -87,7 +87,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
 					Type:     auth.RoleAdmin,
-					Group:    "123",
+					Project:  "123",
 					Endpoint: "abc",
 				},
 				user: &datastore.User{UID: "1234"},
@@ -155,13 +155,13 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					UserID:         "def",
 					Role: auth.Role{
 						Type:     auth.RoleAdmin,
-						Group:    "111",
+						Project:  "111",
 						Endpoint: "",
 					},
 				},
 				role: &auth.Role{
 					Type:     auth.RoleAPI,
-					Group:    "333",
+					Project:  "333",
 					Endpoint: "",
 				},
 			},
@@ -171,7 +171,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				UserID:         "def",
 				Role: auth.Role{
 					Type:     auth.RoleAPI,
-					Group:    "333",
+					Project:  "333",
 					Endpoint: "",
 				},
 			},
@@ -189,7 +189,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				organisationMember: &datastore.OrganisationMember{},
 				role: &auth.Role{
 					Type:     auth.RoleAPI,
-					Group:    "",
+					Project:  "",
 					Endpoint: "",
 				},
 			},
@@ -207,13 +207,13 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					UserID:         "def",
 					Role: auth.Role{
 						Type:     auth.RoleAdmin,
-						Group:    "111",
+						Project:  "111",
 						Endpoint: "",
 					},
 				},
 				role: &auth.Role{
 					Type:     auth.RoleAPI,
-					Group:    "333",
+					Project:  "333",
 					Endpoint: "",
 				},
 			},

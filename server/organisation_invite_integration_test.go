@@ -31,7 +31,7 @@ type OrganisationInviteIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultGroup    *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -45,8 +45,8 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 	s.DB = getDB()
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	// Setup Default Project.
+	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -165,14 +165,14 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 
 	_, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite1@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite2@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -209,7 +209,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, user.Email, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -236,7 +236,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, user.Email, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -260,7 +260,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "test@invite.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -286,7 +286,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "test@invite.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -312,7 +312,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "test@invite.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -339,7 +339,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, user.Email, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -373,7 +373,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -402,7 +402,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite1@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -424,7 +424,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
 func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite1@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
@@ -445,7 +445,6 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
 	var response datastore.OrganisationInvite
 	parseResponse(s.T(), w.Result(), &response)
 	require.Equal(s.T(), datastore.InviteStatusCancelled, response.Status)
-
 }
 
 func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {

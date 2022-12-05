@@ -26,7 +26,7 @@ type IngestIntegrationTestSuite struct {
 	DB           cm.Client
 	Router       http.Handler
 	ConvoyApp    *ApplicationHandler
-	DefaultGroup *datastore.Group
+	DefaultGroup *datastore.Project
 }
 
 func (i *IngestIntegrationTestSuite) SetupSuite() {
@@ -38,8 +38,8 @@ func (i *IngestIntegrationTestSuite) SetupSuite() {
 func (i *IngestIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(i.T(), i.DB)
 
-	// Setup Default Group.
-	i.DefaultGroup, _ = testdb.SeedDefaultGroup(i.ConvoyApp.A.Store, "")
+	// Setup Default Project.
+	i.DefaultGroup, _ = testdb.SeedDefaultProject(i.ConvoyApp.A.Store, "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")

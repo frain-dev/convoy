@@ -93,7 +93,6 @@ func TestRequirePermission_Basic(t *testing.T) {
 			if recorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
 			}
-
 		})
 	}
 }
@@ -164,7 +163,6 @@ func TestRequirePermission_Noop(t *testing.T) {
 			if recorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, recorder.Code)
 			}
-
 		})
 	}
 }
@@ -212,7 +210,7 @@ func TestRateLimitByGroup(t *testing.T) {
 
 			for i, code := range tt.respCodes {
 				req := httptest.NewRequest("POST", "/", nil)
-				req = req.Clone(context.WithValue(req.Context(), groupCtx, &datastore.Group{UID: tt.groupIDs[i]}))
+				req = req.Clone(context.WithValue(req.Context(), groupCtx, &datastore.Project{UID: tt.groupIDs[i]}))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				if respCode := recorder.Result().StatusCode; respCode != code {

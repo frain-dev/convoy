@@ -8,29 +8,29 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-type ActiveGroupAnalytics struct {
-	groupRepo  datastore.GroupRepository
-	eventRepo  datastore.EventRepository
-	orgRepo    datastore.OrganisationRepository
-	client     AnalyticsClient
-	instanceID string
+type ActiveProjectAnalytics struct {
+	projectRepo datastore.ProjectRepository
+	eventRepo   datastore.EventRepository
+	orgRepo     datastore.OrganisationRepository
+	client      AnalyticsClient
+	instanceID  string
 }
 
-func newActiveGroupAnalytics(groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *ActiveGroupAnalytics {
-	return &ActiveGroupAnalytics{
-		groupRepo:  groupRepo,
-		eventRepo:  eventRepo,
-		orgRepo:    orgRepo,
-		client:     client,
-		instanceID: instanceID,
+func newActiveProjectAnalytics(projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *ActiveProjectAnalytics {
+	return &ActiveProjectAnalytics{
+		projectRepo: projectRepo,
+		eventRepo:   eventRepo,
+		orgRepo:     orgRepo,
+		client:      client,
+		instanceID:  instanceID,
 	}
 }
 
-func (a *ActiveGroupAnalytics) Track() error {
+func (a *ActiveProjectAnalytics) Track() error {
 	return a.track(PerPage, Page, 0)
 }
 
-func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
+func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 	ctx := context.Background()
 	orgs, _, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, Page: page, Sort: -1})
 	if err != nil {
@@ -43,15 +43,15 @@ func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
 
 	now := time.Now()
 	for _, org := range orgs {
-		groups, err := a.groupRepo.LoadGroups(ctx, &datastore.GroupFilter{OrgID: org.UID})
+		projects, err := a.projectRepo.LoadProjects(ctx, &datastore.GroupFilter{OrgID: org.UID})
 		if err != nil {
-			log.WithError(err).Error("failed to load organisation groups")
+			log.WithError(err).Error("failed to load organisation projects")
 			continue
 		}
 
-		for _, group := range groups {
+		for _, project := range projects {
 			filter := &datastore.Filter{
-				Group:    group,
+				Project:  project,
 				Pageable: datastore.Pageable{Sort: -1, PerPage: 1, Page: 1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
@@ -76,6 +76,6 @@ func (a *ActiveGroupAnalytics) track(perPage, page, count int) error {
 	return a.track(perPage, page, count)
 }
 
-func (a *ActiveGroupAnalytics) Name() string {
+func (a *ActiveProjectAnalytics) Name() string {
 	return DailyActiveGroupCount
 }

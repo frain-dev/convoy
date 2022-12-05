@@ -35,7 +35,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		newMessage *models.Event
-		g          *datastore.Group
+		g          *datastore.Project
 	}
 	tests := []struct {
 		name        string
@@ -68,10 +68,10 @@ func TestEventService_CreateEvent(t *testing.T) {
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{
+				g: &datastore.Project{
 					UID:  "abc",
 					Name: "test_group",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   1000,
@@ -115,10 +115,10 @@ func TestEventService_CreateEvent(t *testing.T) {
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{
+				g: &datastore.Project{
 					UID:  "abc",
 					Name: "test_group",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "exponential",
 							Duration:   1000,
@@ -158,10 +158,10 @@ func TestEventService_CreateEvent(t *testing.T) {
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{
+				g: &datastore.Project{
 					UID:  "abc",
 					Name: "test_group",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   1000,
@@ -205,10 +205,10 @@ func TestEventService_CreateEvent(t *testing.T) {
 					Data:          bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 					CustomHeaders: map[string]string{"X-Test-Signature": "Test"},
 				},
-				g: &datastore.Group{
+				g: &datastore.Project{
 					UID:  "abc",
 					Name: "test_group",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   1000,
@@ -248,10 +248,10 @@ func TestEventService_CreateEvent(t *testing.T) {
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{
+				g: &datastore.Project{
 					UID:    "abc",
 					Name:   "test_group",
-					Config: &datastore.GroupConfig{},
+					Config: &datastore.ProjectConfig{},
 				},
 			},
 			wantErr:     true,
@@ -267,7 +267,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{},
+				g: &datastore.Project{},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -287,7 +287,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{},
+				g: &datastore.Project{},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -353,7 +353,7 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		newMessage *models.FanoutEvent
-		g          *datastore.Group
+		g          *datastore.Project
 	}
 
 	tests := []struct {
@@ -368,7 +368,6 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 		{
 			name: "should_create_fanout_event_for_multiple_endpoints",
 			dbFn: func(es *EventService) {
-
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return([]datastore.Endpoint{
@@ -397,10 +396,10 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 					EventType: "payment.created",
 					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{
+				g: &datastore.Project{
 					UID:  "abc",
 					Name: "test_group",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   1000,
@@ -435,7 +434,7 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 					EventType: "payment.created",
 					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Group{},
+				g: &datastore.Project{},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -478,7 +477,6 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 			require.Equal(t, m1, m2)
 		})
 	}
-
 }
 
 func TestEventService_GetEvent(t *testing.T) {
@@ -554,7 +552,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		event *datastore.Event
-		g     *datastore.Group
+		g     *datastore.Project
 	}
 	tests := []struct {
 		name        string
@@ -569,7 +567,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				event: &datastore.Event{UID: "123"},
-				g:     &datastore.Group{UID: "123", Name: "test_group"},
+				g:     &datastore.Project{UID: "123", Name: "test_group"},
 			},
 			dbFn: func(es *EventService) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -583,7 +581,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				event: &datastore.Event{UID: "123"},
-				g:     &datastore.Group{UID: "123", Name: "test_group"},
+				g:     &datastore.Project{UID: "123", Name: "test_group"},
 			},
 			dbFn: func(es *EventService) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -708,7 +706,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:       &datastore.Group{UID: "123"},
+					Project:     &datastore.Project{UID: "123"},
 					EndpointIDs: []string{"abc"},
 					EventID:     "13429",
 					Pageable: datastore.Pageable{
@@ -779,7 +777,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:       &datastore.Group{UID: "123"},
+					Project:     &datastore.Project{UID: "123"},
 					EndpointIDs: []string{"abc"},
 					EventID:     "13429",
 					Pageable: datastore.Pageable{
@@ -892,7 +890,7 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:       &datastore.Group{UID: "123"},
+					Project:     &datastore.Project{UID: "123"},
 					EndpointIDs: []string{"abc"},
 					EventID:     "ref",
 					Status:      []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
@@ -922,7 +920,7 @@ func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:       &datastore.Group{UID: "123"},
+					Project:     &datastore.Project{UID: "123"},
 					EndpointIDs: []string{"abc"},
 					EventID:     "ref",
 					Status:      []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
@@ -979,7 +977,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 	type args struct {
 		ctx context.Context
 		ids []string
-		g   *datastore.Group
+		g   *datastore.Project
 	}
 	tests := []struct {
 		name          string
@@ -996,7 +994,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				ids: []string{"oop", "ref"},
-				g:   &datastore.Group{UID: "123"},
+				g:   &datastore.Project{UID: "123"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1039,7 +1037,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				ids: []string{"ref", "oop"},
-				g:   &datastore.Group{UID: "123"},
+				g:   &datastore.Project{UID: "123"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1111,7 +1109,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
+					Project:    &datastore.Project{UID: "123"},
 					SourceID:   "bcv",
 					EndpointID: "abc",
 					Pageable: datastore.Pageable{
@@ -1129,7 +1127,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
 				f := &datastore.Filter{
 					Query:      "",
-					Group:      &datastore.Group{UID: "123"},
+					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					EventID:    "",
 					SourceID:   "bcv",
@@ -1147,14 +1145,17 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 				ed.EXPECT().LoadEventsPaged(gomock.Any(), f).
 					Times(1).
 					Return([]datastore.Event{
-						{UID: "1234",
+						{
+							UID:       "1234",
 							Endpoints: []string{"abc"},
 							EndpointMetadata: []*datastore.Endpoint{{
 								UID:          "abc",
 								Title:        "Title",
 								GroupID:      "123",
 								SupportEmail: "SupportEmail",
-							}}}}, datastore.PaginationData{
+							}},
+						},
+					}, datastore.PaginationData{
 						Total:     1,
 						Page:      1,
 						PerPage:   2,
@@ -1189,7 +1190,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
+					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					EventID:    "ref",
 					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
@@ -1256,7 +1257,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
+					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					Pageable: datastore.Pageable{
 						Page:    1,
@@ -1304,7 +1305,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
+					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					EventID:    "ref",
 					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
@@ -1371,7 +1372,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:       &datastore.Group{UID: "123"},
+					Project:     &datastore.Project{UID: "123"},
 					EndpointIDs: []string{"abc"},
 					EventID:     "123",
 					Pageable: datastore.Pageable{
@@ -1476,7 +1477,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Group:      &datastore.Group{UID: "123"},
+					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					EventID:    "ref",
 					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
@@ -1527,7 +1528,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		eventDelivery *datastore.EventDelivery
-		g             *datastore.Group
+		g             *datastore.Project
 	}
 	tests := []struct {
 		name       string
@@ -1556,7 +1557,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.FailureEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 		},
 		{
@@ -1567,7 +1568,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "event already sent",
@@ -1600,7 +1601,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		eventDelivery *datastore.EventDelivery
-		g             *datastore.Group
+		g             *datastore.Project
 	}
 	tests := []struct {
 		name       string
@@ -1629,7 +1630,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.FailureEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 		},
 		{
@@ -1640,7 +1641,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "event already sent",
@@ -1653,7 +1654,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.RetryEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "cannot resend event that did not fail previously",
@@ -1666,7 +1667,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.ProcessingEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "cannot resend event that did not fail previously",
@@ -1679,7 +1680,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.ScheduledEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "cannot resend event that did not fail previously",
@@ -1697,7 +1698,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.FailureEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "subscription not found",
@@ -1717,7 +1718,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.FailureEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "subscription is being re-activated",
@@ -1747,7 +1748,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.FailureEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 		},
 		{
@@ -1767,7 +1768,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.FailureEventStatus,
 				},
-				g: &datastore.Group{UID: "abc"},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update subscription status",
@@ -1800,7 +1801,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		eventDelivery *datastore.EventDelivery
-		g             *datastore.Group
+		g             *datastore.Project
 	}
 	tests := []struct {
 		name       string
@@ -1832,7 +1833,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Group{Name: "test_group"},
+				g: &datastore.Project{Name: "test_group"},
 			},
 		},
 		{
@@ -1848,7 +1849,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Group{Name: "test_group"},
+				g: &datastore.Project{Name: "test_group"},
 			},
 			wantErr:    true,
 			wantErrMsg: "subscription not found",
@@ -1868,7 +1869,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Group{Name: "test_group"},
+				g: &datastore.Project{Name: "test_group"},
 			},
 			wantErr:    true,
 			wantErrMsg: "force resend to an inactive or pending endpoint is not allowed",
@@ -1901,7 +1902,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		eventDelivery *datastore.EventDelivery
-		g             *datastore.Group
+		g             *datastore.Project
 	}
 	tests := []struct {
 		name       string
@@ -1915,7 +1916,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			args: args{
 				ctx:           ctx,
 				eventDelivery: &datastore.EventDelivery{UID: "123"},
-				g:             &datastore.Group{Name: "test_group"},
+				g:             &datastore.Project{Name: "test_group"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1932,7 +1933,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			args: args{
 				ctx:           ctx,
 				eventDelivery: &datastore.EventDelivery{UID: "123"},
-				g:             &datastore.Group{Name: "test_group"},
+				g:             &datastore.Project{Name: "test_group"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1947,7 +1948,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			args: args{
 				ctx:           ctx,
 				eventDelivery: &datastore.EventDelivery{UID: "123"},
-				g:             &datastore.Group{Name: "test_group"},
+				g:             &datastore.Project{Name: "test_group"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
