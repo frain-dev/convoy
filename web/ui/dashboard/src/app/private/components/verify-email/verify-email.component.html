@@ -6,7 +6,7 @@
 		<h3 class="font-bold mt-12px mb-20px">Verify Email</h3>
 		<p class="text-grey-40">Verify your email to start sending and receiving webhooks.</p>
 		<div class="flex mt-38px">
-			<button convoy-button>Complete Verification</button>
+			<button convoy-button [disabled]="isResendingEmail" (click)="resendVerificationEmail()">Resend Verification</button>
 			<button convoy-button fill="outline" class="ml-24px" (click)="closeModal.emit()">Maybe Later</button>
 		</div>
 	</div>

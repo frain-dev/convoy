@@ -27,6 +27,10 @@ const routes: Routes = [
 			{
 				path: 'accept-invite',
 				loadComponent: () => import('./accept-invite/accept-invite.component').then(mod => mod.AcceptInviteComponent)
+			},
+			{
+				path: 'verify-email',
+				loadComponent: () => import('./verify-email/verify-email.component').then(mod => mod.VerifyEmailComponent)
 			}
 		]
 	}
