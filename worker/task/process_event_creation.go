@@ -212,7 +212,9 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				return subscriptions, nil
 			}
 
-			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
+			subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
+
+			subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
 			if err != nil {
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
@@ -244,8 +246,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e datastore.Event, subRe
 		return nil, err
 	}
 
-	payload["event_type"] = e.EventType
-
 	for _, s := range subscriptions {
 		isMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter)
 		if err != nil {
@@ -258,6 +258,19 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e datastore.Event, subRe
 	}
 
 	return matched, nil
+}
+
+func matchSubscriptions(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {
+	var matched []datastore.Subscription
+	for _, sub := range subscriptions {
+		for _, ev := range sub.FilterConfig.EventTypes {
+			if ev == eventType || ev == "*" { // if this event type matches, or is *, add the subscription to matched
+				matched = append(matched, sub)
+			}
+		}
+	}
+
+	return matched
 }
 
 func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
