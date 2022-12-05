@@ -105,7 +105,7 @@ export class GeneralService {
 			const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
 			const contents = { date: itemDate, content: filteredItemDate };
 			displayedItems.push(contents);
-			displayedItems = displayedItems.sort((a: any, b: any) => new Date(b.date).getDate() - new Date(a.date).getDate());
+			displayedItems = displayedItems.sort((a: any, b: any) => Number(new Date(b.date)) - Number(new Date(a.date)));
 		});
 		return displayedItems;
 	}
