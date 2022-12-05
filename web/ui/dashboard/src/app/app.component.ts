@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import posthog from 'posthog-js';
+import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'app-root',
@@ -8,6 +9,6 @@ import posthog from 'posthog-js';
 })
 export class AppComponent {
 	constructor() {
-		posthog.init('phc_lPJnjN5hrM8Dh7kgujIccs2xnGL2lmRv6UdOmOTCqEc', { api_host: 'https://app.posthog.com' });
+		posthog.init(environment.posthog, { api_host: 'https://app.posthog.com', ui_host: 'https://dashboard.getconvoy.io' });
 	}
 }
