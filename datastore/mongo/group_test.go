@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_FetchGroupByID(t *testing.T) {
+func Test_FetchProjectByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
@@ -24,7 +24,7 @@ func Test_FetchGroupByID(t *testing.T) {
 	projectRepo := NewProjectRepo(store)
 
 	newOrg := &datastore.Project{
-		Name: "Yet another group",
+		Name: "Yet another project",
 		UID:  uuid.NewString(),
 	}
 
@@ -37,7 +37,7 @@ func Test_FetchGroupByID(t *testing.T) {
 	require.Equal(t, org.UID, newOrg.UID)
 }
 
-func Test_CreateGroup(t *testing.T) {
+func Test_CreateProject(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
@@ -47,30 +47,30 @@ func Test_CreateGroup(t *testing.T) {
 
 	tt := []struct {
 		name        string
-		groups      []datastore.Project
+		projects    []datastore.Project
 		isDuplicate bool
 	}{
 		{
-			name: "create group",
-			groups: []datastore.Project{
+			name: "create project",
+			projects: []datastore.Project{
 				{
-					Name: "group 1",
+					Name: "project 1",
 					UID:  uuid.NewString(),
 				},
 			},
 		},
 
 		{
-			name: "cannot create group with existing name",
-			groups: []datastore.Project{
+			name: "cannot create project with existing name",
+			projects: []datastore.Project{
 				{
-					Name:           "group 2",
+					Name:           "project 2",
 					OrganisationID: "123abc",
 					UID:            uuid.NewString(),
 				},
 
 				{
-					Name:           "group 2",
+					Name:           "project 2",
 					OrganisationID: "123abc",
 					UID:            uuid.NewString(),
 				},
@@ -79,17 +79,17 @@ func Test_CreateGroup(t *testing.T) {
 		},
 
 		{
-			name: "can create group with existing name that has been deleted",
-			groups: []datastore.Project{
+			name: "can create project with existing name that has been deleted",
+			projects: []datastore.Project{
 				{
-					Name:           "group 3",
+					Name:           "project 3",
 					OrganisationID: "abc",
 					UID:            uuid.NewString(),
 					DeletedAt:      &d,
 				},
 
 				{
-					Name:           "group 3",
+					Name:           "project 3",
 					OrganisationID: "abc",
 					DeletedAt:      nil,
 					UID:            uuid.NewString(),
@@ -97,16 +97,16 @@ func Test_CreateGroup(t *testing.T) {
 			},
 		},
 		{
-			name: "can create group with existing name in a different organisation",
-			groups: []datastore.Project{
+			name: "can create project with existing name in a different organisation",
+			projects: []datastore.Project{
 				{
-					Name:           "group 4",
+					Name:           "project 4",
 					OrganisationID: uuid.NewString(),
 					UID:            uuid.NewString(),
 				},
 
 				{
-					Name:           "group 4",
+					Name:           "project 4",
 					OrganisationID: uuid.NewString(),
 					UID:            uuid.NewString(),
 				},
@@ -119,45 +119,45 @@ func Test_CreateGroup(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			projectRepo := NewProjectRepo(store)
 
-			for i, group := range tc.groups {
-				newGroup := &datastore.Project{
-					Name:      group.Name,
-					UID:       group.UID,
-					DeletedAt: group.DeletedAt,
+			for i, project := range tc.projects {
+				newProject := &datastore.Project{
+					Name:      project.Name,
+					UID:       project.UID,
+					DeletedAt: project.DeletedAt,
 				}
 
 				if i == 0 {
-					require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
+					require.NoError(t, projectRepo.CreateProject(context.Background(), newProject))
 				}
 
 				if i > 0 && tc.isDuplicate {
-					err := projectRepo.CreateProject(context.Background(), newGroup)
+					err := projectRepo.CreateProject(context.Background(), newProject)
 					require.Error(t, err)
-					require.ErrorIs(t, err, datastore.ErrDuplicateGroupName)
+					require.ErrorIs(t, err, datastore.ErrDuplicateProjectName)
 				}
 
 				if i > 0 && !tc.isDuplicate {
-					require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
+					require.NoError(t, projectRepo.CreateProject(context.Background(), newProject))
 				}
 			}
 		})
 	}
 }
 
-func Test_LoadGroups(t *testing.T) {
+func Test_LoadProjects(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 	store := getStore(db)
 
 	orgRepo := NewProjectRepo(store)
 
-	orgs, err := orgRepo.LoadProjects(context.Background(), &datastore.GroupFilter{})
+	orgs, err := orgRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
 	require.NoError(t, err)
 
 	require.True(t, len(orgs) == 0)
 }
 
-func Test_FillGroupsStatistics(t *testing.T) {
+func Test_FillProjectStatistics(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
@@ -165,43 +165,43 @@ func Test_FillGroupsStatistics(t *testing.T) {
 
 	projectRepo := NewProjectRepo(store)
 
-	group1 := &datastore.Project{
-		Name: "group1",
+	project1 := &datastore.Project{
+		Name: "project1",
 		UID:  uuid.NewString(),
 	}
 
-	group2 := &datastore.Project{
-		Name: "group2",
+	project2 := &datastore.Project{
+		Name: "project2",
 		UID:  uuid.NewString(),
 	}
 
-	err := projectRepo.CreateProject(context.Background(), group1)
+	err := projectRepo.CreateProject(context.Background(), project1)
 	require.NoError(t, err)
 
-	err = projectRepo.CreateProject(context.Background(), group2)
+	err = projectRepo.CreateProject(context.Background(), project2)
 	require.NoError(t, err)
 
 	endpoint1 := &datastore.Endpoint{
-		UID:     uuid.NewString(),
-		GroupID: group1.UID,
+		UID:       uuid.NewString(),
+		ProjectID: project1.UID,
 	}
 
 	endpoint2 := &datastore.Endpoint{
-		UID:     uuid.NewString(),
-		GroupID: group2.UID,
+		UID:       uuid.NewString(),
+		ProjectID: project2.UID,
 	}
 
 	endpointRepo := NewEndpointRepo(getStore(db))
 	endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
-	err = endpointRepo.CreateEndpoint(endpointCtx, endpoint1, group1.UID)
+	err = endpointRepo.CreateEndpoint(endpointCtx, endpoint1, project1.UID)
 	require.NoError(t, err)
 
-	err = endpointRepo.CreateEndpoint(endpointCtx, endpoint2, group2.UID)
+	err = endpointRepo.CreateEndpoint(endpointCtx, endpoint2, project2.UID)
 	require.NoError(t, err)
 
 	event := &datastore.Event{
 		UID:       uuid.NewString(),
-		GroupID:   endpoint1.GroupID,
+		ProjectID: endpoint1.ProjectID,
 		Endpoints: []string{endpoint1.UID},
 	}
 
@@ -209,19 +209,19 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	err = NewEventRepository(store).CreateEvent(eventCtx, event)
 	require.NoError(t, err)
 
-	groups := []*datastore.Project{group1, group2}
-	err = projectRepo.FillProjectsStatistics(context.Background(), groups)
+	projects := []*datastore.Project{project1, project2}
+	err = projectRepo.FillProjectsStatistics(context.Background(), projects)
 	require.NoError(t, err)
 
-	require.Equal(t, datastore.GroupStatistics{
-		GroupID:      group1.UID,
+	require.Equal(t, datastore.ProjectStatistics{
+		ProjectID:    project1.UID,
 		MessagesSent: 1,
 		TotalApps:    1,
-	}, *group1.Statistics)
+	}, *project1.Statistics)
 
-	require.Equal(t, datastore.GroupStatistics{
-		GroupID:      group2.UID,
+	require.Equal(t, datastore.ProjectStatistics{
+		ProjectID:    project2.UID,
 		MessagesSent: 0,
 		TotalApps:    1,
-	}, *group2.Statistics)
+	}, *project2.Statistics)
 }

@@ -119,7 +119,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID:           "123",
+						ProjectID:         "123",
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 						Secrets: []datastore.Secret{
@@ -210,7 +210,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -306,7 +306,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-						GroupID:           "123",
+						ProjectID:         "123",
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
@@ -396,7 +396,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -487,7 +487,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -582,7 +582,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -673,7 +673,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -768,7 +768,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID:      "123",
+						ProjectID:    "123",
 						SupportEmail: "test@gmail.com",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
@@ -868,7 +868,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID:      "123",
+						ProjectID:    "123",
 						SupportEmail: "test@gmail.com",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
@@ -1021,7 +1021,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 	tt := []struct {
 		name                string
 		subscription        *datastore.Subscription
-		group               *datastore.Project
+		project             *datastore.Project
 		wantRetryConfig     *datastore.StrategyConfiguration
 		wantRateLimitConfig *datastore.RateLimitConfiguration
 		wantDisableEndpoint bool
@@ -1042,7 +1042,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 					return &b
 				}(true),
 			},
-			group: &datastore.Project{
+			project: &datastore.Project{
 				Config: &datastore.ProjectConfig{
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
@@ -1064,7 +1064,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 		{
 			name:         "Project Config is primary config",
 			subscription: &datastore.Subscription{},
-			group: &datastore.Project{
+			project: &datastore.Project{
 				Config: &datastore.ProjectConfig{
 					Strategy: &datastore.StrategyConfiguration{
 						Type:       datastore.ExponentialStrategyProvider,
@@ -1093,7 +1093,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			evConfig := &EventDeliveryConfig{subscription: tc.subscription, group: tc.group}
+			evConfig := &EventDeliveryConfig{subscription: tc.subscription, project: tc.project}
 
 			if tc.wantRetryConfig != nil {
 				rc, err := evConfig.retryConfig()

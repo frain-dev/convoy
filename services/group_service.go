@@ -100,7 +100,7 @@ func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	err = gs.projectRepo.CreateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create project")
-		if err == datastore.ErrDuplicateGroupName {
+		if err == datastore.ErrDuplicateProjectName {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
@@ -110,8 +110,8 @@ func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	newAPIKey := &models.APIKey{
 		Name: fmt.Sprintf("%s's default key", project.Name),
 		Role: models.Role{
-			Type:  auth.RoleAdmin,
-			Group: project.UID,
+			Type:    auth.RoleAdmin,
+			Project: project.UID,
 		},
 	}
 
@@ -124,8 +124,8 @@ func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		APIKey: models.APIKey{
 			Name: apiKey.Name,
 			Role: models.Role{
-				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Project,
+				Type:    apiKey.Role.Type,
+				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -186,7 +186,7 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func (gs *ProjectService) GetProjects(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Project, error) {
+func (gs *ProjectService) GetProjects(ctx context.Context, filter *datastore.ProjectFilter) ([]*datastore.Project, error) {
 	projects, err := gs.projectRepo.LoadProjects(ctx, filter.WithNamesTrimmed())
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load projects")
@@ -201,8 +201,8 @@ func (gs *ProjectService) GetProjects(ctx context.Context, filter *datastore.Gro
 	return projects, nil
 }
 
-func (gs *ProjectService) FillProjectStatistics(ctx context.Context, groups []*datastore.Project) error {
-	err := gs.projectRepo.FillProjectsStatistics(ctx, groups)
+func (gs *ProjectService) FillProjectStatistics(ctx context.Context, projects []*datastore.Project) error {
+	err := gs.projectRepo.FillProjectsStatistics(ctx, projects)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to count project applications")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project statistics"))

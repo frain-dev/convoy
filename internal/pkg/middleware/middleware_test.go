@@ -167,7 +167,7 @@ func TestRequirePermission_Noop(t *testing.T) {
 	}
 }
 
-func TestRateLimitByGroup(t *testing.T) {
+func TestRateLimitByProject(t *testing.T) {
 	m := &Middleware{
 		logger: log.NewLogger(os.Stdout),
 	}
@@ -176,7 +176,7 @@ func TestRateLimitByGroup(t *testing.T) {
 		name          string
 		requestsLimit int
 		windowLength  time.Duration
-		groupIDs      []string
+		projectIDs    []string
 		respCodes     []int
 	}
 	tests := []test{
@@ -184,21 +184,21 @@ func TestRateLimitByGroup(t *testing.T) {
 			name:          "no-block",
 			requestsLimit: 3,
 			windowLength:  2 * time.Second,
-			groupIDs:      []string{"a", "a"},
+			projectIDs:    []string{"a", "a"},
 			respCodes:     []int{200, 200},
 		},
 		{
-			name:          "block-same-group",
+			name:          "block-same-project",
 			requestsLimit: 2,
 			windowLength:  5 * time.Second,
-			groupIDs:      []string{"b", "b", "b"},
+			projectIDs:    []string{"b", "b", "b"},
 			respCodes:     []int{200, 200, 429},
 		},
 		{
-			name:          "no-block-different-group",
+			name:          "no-block-different-project",
 			requestsLimit: 1,
 			windowLength:  1 * time.Second,
-			groupIDs:      []string{"c", "d"},
+			projectIDs:    []string{"c", "d"},
 			respCodes:     []int{200, 200},
 		},
 	}
@@ -206,11 +206,11 @@ func TestRateLimitByGroup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			})
-			router := m.RateLimitByGroupWithParams(tt.requestsLimit, tt.windowLength)(h)
+			router := m.RateLimitByProjectWithParams(tt.requestsLimit, tt.windowLength)(h)
 
 			for i, code := range tt.respCodes {
 				req := httptest.NewRequest("POST", "/", nil)
-				req = req.Clone(context.WithValue(req.Context(), groupCtx, &datastore.Project{UID: tt.groupIDs[i]}))
+				req = req.Clone(context.WithValue(req.Context(), projectCtx, &datastore.Project{UID: tt.projectIDs[i]}))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				if respCode := recorder.Result().StatusCode; respCode != code {

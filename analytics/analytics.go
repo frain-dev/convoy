@@ -15,15 +15,15 @@ import (
 )
 
 const (
-	DailyEventCount        string = "Daily Event Count"
-	DailyOrganisationCount string = "Daily Organization Count"
-	DailyGroupCount        string = "Daily Project Count"
-	DailyActiveGroupCount  string = "Daily Active Project Count"
-	DailyUserCount         string = "Daily User Count"
-	MixPanelDevToken       string = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
-	MixPanelProdToken      string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
-	PerPage                int    = 50
-	Page                   int    = 1
+	DailyEventCount         string = "Daily Event Count"
+	DailyOrganisationCount  string = "Daily Organization Count"
+	DailyProjectCount       string = "Daily Project Count"
+	DailyActiveProjectCount string = "Daily Active Project Count"
+	DailyUserCount          string = "Daily User Count"
+	MixPanelDevToken        string = "YTAwYWI1ZWE3OTE2MzQwOWEwMjk4ZTA1NTNkNDQ0M2M="
+	MixPanelProdToken       string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
+	PerPage                 int    = 50
+	Page                    int    = 1
 )
 
 type Tracker interface {
@@ -116,11 +116,11 @@ func (a *Analytics) trackDailyAnalytics() {
 
 func (a *Analytics) RegisterTrackers() {
 	a.trackers = analyticsMap{
-		DailyEventCount:        newEventAnalytics(a.Repo.EventRepo, a.Repo.projectRepo, a.Repo.OrgRepo, a.client, a.instanceID),
-		DailyOrganisationCount: newOrganisationAnalytics(a.Repo.OrgRepo, a.client, a.instanceID),
-		DailyGroupCount:        newProjectAnalytics(a.Repo.projectRepo, a.client, a.instanceID),
-		DailyActiveGroupCount:  newActiveProjectAnalytics(a.Repo.projectRepo, a.Repo.EventRepo, a.Repo.OrgRepo, a.client, a.instanceID),
-		DailyUserCount:         newUserAnalytics(a.Repo.UserRepo, a.client, a.instanceID),
+		DailyEventCount:         newEventAnalytics(a.Repo.EventRepo, a.Repo.projectRepo, a.Repo.OrgRepo, a.client, a.instanceID),
+		DailyOrganisationCount:  newOrganisationAnalytics(a.Repo.OrgRepo, a.client, a.instanceID),
+		DailyProjectCount:       newProjectAnalytics(a.Repo.projectRepo, a.client, a.instanceID),
+		DailyActiveProjectCount: newActiveProjectAnalytics(a.Repo.projectRepo, a.Repo.EventRepo, a.Repo.OrgRepo, a.client, a.instanceID),
+		DailyUserCount:          newUserAnalytics(a.Repo.UserRepo, a.client, a.instanceID),
 	}
 }
 

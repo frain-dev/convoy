@@ -64,13 +64,13 @@ func TestProcessEventCreated(t *testing.T) {
 		wantDelay  time.Duration
 	}{
 		{
-			name: "should_process_event_for_outgoing_group",
+			name: "should_process_event_for_outgoing_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
 					UID:       uuid.NewString(),
 					EventType: "*",
 					SourceID:  "source-id-1",
-					GroupID:   "group-id-1",
+					ProjectID: "project-id-1",
 					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
 					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -80,10 +80,10 @@ func TestProcessEventCreated(t *testing.T) {
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
 				var gr *datastore.Project
-				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
+				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &gr).Times(1).Return(nil)
 
-				group := &datastore.Project{
-					UID:  "group-id-1",
+				project := &datastore.Project{
+					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
@@ -95,11 +95,11 @@ func TestProcessEventCreated(t *testing.T) {
 				}
 
 				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().FetchProjectByID(gomock.Any(), "group-id-1").Times(1).Return(
-					group,
+				g.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(
+					project,
 					nil,
 				)
-				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
+				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
 
 				mockCache.EXPECT().Get(gomock.Any(), "endpoints:endpoint-id-1", gomock.Any()).Times(1).Return(nil)
 
@@ -121,7 +121,7 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "group-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "project-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
@@ -143,13 +143,13 @@ func TestProcessEventCreated(t *testing.T) {
 		},
 
 		{
-			name: "should_process_event_for_outgoing_group_without_subscription",
+			name: "should_process_event_for_outgoing_project_without_subscription",
 			event: &CreateEvent{
 				Event: datastore.Event{
 					UID:       uuid.NewString(),
 					EventType: "*",
 					SourceID:  "source-id-1",
-					GroupID:   "group-id-1",
+					ProjectID: "project-id-1",
 					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
 					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -160,10 +160,10 @@ func TestProcessEventCreated(t *testing.T) {
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
 				var gr *datastore.Project
-				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
+				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &gr).Times(1).Return(nil)
 
-				group := &datastore.Project{
-					UID:  "group-id-1",
+				project := &datastore.Project{
+					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
@@ -175,11 +175,11 @@ func TestProcessEventCreated(t *testing.T) {
 				}
 
 				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().FetchProjectByID(gomock.Any(), "group-id-1").Times(1).Return(
-					group,
+				g.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(
+					project,
 					nil,
 				)
-				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
+				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
 
 				mockCache.EXPECT().Get(gomock.Any(), "endpoints:endpoint-id-1", gomock.Any()).Times(1).Return(nil)
 
@@ -192,7 +192,7 @@ func TestProcessEventCreated(t *testing.T) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{}
 
-				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "group-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "project-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
 
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
@@ -215,13 +215,13 @@ func TestProcessEventCreated(t *testing.T) {
 		},
 
 		{
-			name: "should_process_event_for_incoming_group",
+			name: "should_process_event_for_incoming_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
 					UID:       uuid.NewString(),
 					EventType: "*",
 					SourceID:  "source-id-1",
-					GroupID:   "group-id-1",
+					ProjectID: "project-id-1",
 					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
 					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -231,10 +231,10 @@ func TestProcessEventCreated(t *testing.T) {
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
 				var gr *datastore.Project
-				mockCache.EXPECT().Get(gomock.Any(), "groups:group-id-1", &gr).Times(1).Return(nil)
+				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &gr).Times(1).Return(nil)
 
-				group := &datastore.Project{
-					UID:  "group-id-1",
+				project := &datastore.Project{
+					UID:  "project-id-1",
 					Type: datastore.IncomingProject,
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
@@ -246,11 +246,11 @@ func TestProcessEventCreated(t *testing.T) {
 				}
 
 				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().FetchProjectByID(gomock.Any(), "group-id-1").Times(1).Return(
-					group,
+				g.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(
+					project,
 					nil,
 				)
-				mockCache.EXPECT().Set(gomock.Any(), "groups:group-id-1", group, 10*time.Minute).Times(1).Return(nil)
+				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
@@ -266,7 +266,7 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "group-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)

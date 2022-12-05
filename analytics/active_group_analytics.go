@@ -43,7 +43,7 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 
 	now := time.Now()
 	for _, org := range orgs {
-		projects, err := a.projectRepo.LoadProjects(ctx, &datastore.GroupFilter{OrgID: org.UID})
+		projects, err := a.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
 			log.WithError(err).Error("failed to load organisation projects")
 			continue
@@ -77,5 +77,5 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 }
 
 func (a *ActiveProjectAnalytics) Name() string {
-	return DailyActiveGroupCount
+	return DailyActiveProjectCount
 }

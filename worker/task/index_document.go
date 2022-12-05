@@ -13,8 +13,10 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-var ErrGroupIdFieldIsRequired = errors.New("group_id field should be a string")
-var ErrGroupIdFieldIsNotString = errors.New("group_id field does not exist on the document")
+var (
+	ErrProjectIdFieldIsRequired  = errors.New("project_id field should be a string")
+	ErrProjectIdFieldIsNotString = errors.New("project_id field does not exist on the document")
+)
 
 func SearchIndex(search searcher.Searcher) func(ctx context.Context, t *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
@@ -55,20 +57,20 @@ func SearchIndex(search searcher.Searcher) func(ctx context.Context, t *asynq.Ta
 		document["data"] = eventData
 		document["id"] = document["uid"]
 
-		if g, found := document["group_id"]; found {
-			if group_id, ok := g.(string); ok {
-				err = search.Index(group_id, document)
+		if g, found := document["project_id"]; found {
+			if project_id, ok := g.(string); ok {
+				err = search.Index(project_id, document)
 				if err != nil {
 					log.Errorf("[typesense] error indexing event: %s", err)
 					return &EndpointError{Err: err, delay: time.Second * 5}
 				}
 			} else {
-				log.Errorf("[typesense] error indexing event: %s", ErrGroupIdFieldIsNotString)
-				return &EndpointError{Err: ErrGroupIdFieldIsNotString, delay: time.Second * 1}
+				log.Errorf("[typesense] error indexing event: %s", ErrProjectIdFieldIsNotString)
+				return &EndpointError{Err: ErrProjectIdFieldIsNotString, delay: time.Second * 1}
 			}
 		} else {
-			log.Errorf("[typesense] error indexing event: %s", ErrGroupIdFieldIsRequired)
-			return &EndpointError{Err: ErrGroupIdFieldIsRequired, delay: time.Second * 1}
+			log.Errorf("[typesense] error indexing event: %s", ErrProjectIdFieldIsRequired)
+			return &EndpointError{Err: ErrProjectIdFieldIsRequired, delay: time.Second * 1}
 		}
 
 		return nil

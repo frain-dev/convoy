@@ -38,7 +38,7 @@ import (
 type contextKey string
 
 const (
-	groupCtx            contextKey = "group"
+	projectCtx          contextKey = "project"
 	appCtx              contextKey = "app"
 	orgCtx              contextKey = "organisation"
 	orgMemberCtx        contextKey = "organisation_member"
@@ -260,24 +260,24 @@ func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 				return
 			}
 
-			var group *datastore.Project
-			groupID := pLink.GroupID
+			var project *datastore.Project
+			projectID := pLink.ProjectID
 
-			groupCacheKey := convoy.ProjectsCacheKey.Get(groupID).String()
-			err = m.cache.Get(r.Context(), groupCacheKey, &group)
+			projectCacheKey := convoy.ProjectsCacheKey.Get(projectID).String()
+			err = m.cache.Get(r.Context(), projectCacheKey, &project)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
 			}
 
-			if group == nil {
-				group, err = m.projectRepo.FetchProjectByID(r.Context(), groupID)
+			if project == nil {
+				project, err = m.projectRepo.FetchProjectByID(r.Context(), projectID)
 				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch project by id", http.StatusNotFound))
 					return
 				}
 
-				err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+				err = m.cache.Set(r.Context(), projectCacheKey, &project, time.Minute*5)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 					return
@@ -286,7 +286,7 @@ func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 
 			r = r.WithContext(setPortalLinkInContext(r.Context(), pLink))
 			r = r.WithContext(setEndpointIDsInContext(r.Context(), pLink.Endpoints))
-			r = r.WithContext(setGroupInContext(r.Context(), group))
+			r = r.WithContext(setProjectInContext(r.Context(), project))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -386,24 +386,24 @@ func (m *Middleware) RequireAuthUserMetadata() func(next http.Handler) http.Hand
 	}
 }
 
-// RequireGroupAccess checks if the given authentication creds can access the group. It handles PATs as well
-func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
+// RequireProjectAccess checks if the given authentication creds can access the project. It handles PATs as well
+func (m *Middleware) RequireProjectAccess() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
-			group := GetGroupFromContext(r.Context())
+			project := GetProjectFromContext(r.Context())
 
 			if authUser.Metadata != nil { // this signals that a personal api key was used for authentication
 				user, _ := authUser.Metadata.(*datastore.User)
 				if user != nil {
-					member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, group.OrganisationID)
+					member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, project.OrganisationID)
 					if err != nil {
 						m.logger.WithError(err).Error("failed to fetch organisation member")
 						_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 						return
 					}
 
-					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Project == group.UID {
+					if member.Role.Type.Is(auth.RoleSuperUser) || member.Role.Project == project.UID {
 						r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
 						next.ServeHTTP(w, r)
 						return
@@ -415,7 +415,7 @@ func (m *Middleware) RequireGroupAccess() func(next http.Handler) http.Handler {
 			}
 
 			// it's a project api key at this point
-			if authUser.Role.Type.Is(auth.RoleAdmin) && authUser.Role.Project == group.UID {
+			if authUser.Role.Type.Is(auth.RoleAdmin) && authUser.Role.Project == project.UID {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -441,13 +441,13 @@ func (m *Middleware) RejectAppPortalKey() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequireEndpointBelongsToGroup() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireEndpointBelongsToProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			endpoint := GetEndpointFromContext(r.Context())
-			group := GetGroupFromContext(r.Context())
+			project := GetProjectFromContext(r.Context())
 
-			if endpoint.GroupID != group.UID {
+			if endpoint.ProjectID != project.UID {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
@@ -476,7 +476,7 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 	}
 }
 
-func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireOrganisationProjectMember() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			member := GetOrganisationMemberFromContext(r.Context())
@@ -486,8 +486,8 @@ func (m *Middleware) RequireOrganisationGroupMember() func(next http.Handler) ht
 				return
 			}
 
-			group := GetGroupFromContext(r.Context())
-			if member.Role.Project == group.UID {
+			project := GetProjectFromContext(r.Context())
+			if member.Role.Project == project.UID {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -562,62 +562,62 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 }
 
 func (m *Middleware) GetDefaultProject(r *http.Request, projectRepo datastore.ProjectRepository) (*datastore.Project, error) {
-	groups, err := projectRepo.LoadProjects(r.Context(), &datastore.GroupFilter{Names: []string{"default-group"}})
+	projects, err := projectRepo.LoadProjects(r.Context(), &datastore.ProjectFilter{Names: []string{"default-project"}})
 	if err != nil {
 		return nil, err
 	}
 
-	if !(len(groups) > 0) {
-		return nil, errors.New("no default group, please your config")
+	if !(len(projects) > 0) {
+		return nil, errors.New("no default project, please your config")
 	}
 
-	return groups[0], err
+	return projects[0], err
 }
 
 func (m *Middleware) RequireProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var group *datastore.Project
+			var project *datastore.Project
 			var err error
-			var groupID string
+			var projectID string
 
-			groupID = r.URL.Query().Get("groupId")
+			projectID = r.URL.Query().Get("groupId")
 
-			if util.IsStringEmpty(groupID) {
-				groupID = r.URL.Query().Get("groupID")
+			if util.IsStringEmpty(projectID) {
+				projectID = r.URL.Query().Get("groupID")
 			}
 
-			if util.IsStringEmpty(groupID) {
-				groupID = chi.URLParam(r, "projectID")
+			if util.IsStringEmpty(projectID) {
+				projectID = chi.URLParam(r, "projectID")
 			}
 
-			if util.IsStringEmpty(groupID) {
-				groupID = chi.URLParam(r, "groupID")
+			if util.IsStringEmpty(projectID) {
+				projectID = chi.URLParam(r, "groupID")
 			}
 
-			if util.IsStringEmpty(groupID) {
+			if util.IsStringEmpty(projectID) {
 				authUser := GetAuthUserFromContext(r.Context())
 
 				if authUser.Credential.Type == auth.CredentialTypeAPIKey {
-					groupID = authUser.Role.Project
+					projectID = authUser.Role.Project
 				}
 			}
 
-			if !util.IsStringEmpty(groupID) {
-				groupCacheKey := convoy.ProjectsCacheKey.Get(groupID).String()
-				err = m.cache.Get(r.Context(), groupCacheKey, &group)
+			if !util.IsStringEmpty(projectID) {
+				projectCacheKey := convoy.ProjectsCacheKey.Get(projectID).String()
+				err = m.cache.Get(r.Context(), projectCacheKey, &project)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 					return
 				}
 
-				if group == nil {
-					group, err = m.projectRepo.FetchProjectByID(r.Context(), groupID)
+				if project == nil {
+					project, err = m.projectRepo.FetchProjectByID(r.Context(), projectID)
 					if err != nil {
-						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch group by id", http.StatusNotFound))
+						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch project by id", http.StatusNotFound))
 						return
 					}
-					err = m.cache.Set(r.Context(), groupCacheKey, &group, time.Minute*5)
+					err = m.cache.Set(r.Context(), projectCacheKey, &project, time.Minute*5)
 					if err != nil {
 						_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 						return
@@ -625,7 +625,7 @@ func (m *Middleware) RequireProject() func(next http.Handler) http.Handler {
 				}
 			}
 
-			r = r.WithContext(setGroupInContext(r.Context(), group))
+			r = r.WithContext(setProjectInContext(r.Context(), project))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -715,14 +715,14 @@ func (m *Middleware) RequirePermission(role auth.RoleType) func(next http.Handle
 				return
 			}
 
-			group := GetGroupFromContext(r.Context())
-			if group == nil {
+			project := GetProjectFromContext(r.Context())
+			if project == nil {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
 				return
 			}
 
-			if !authUser.Role.HasGroup(group.UID) {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			if !authUser.Role.HasProject(project.UID) {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access project", http.StatusUnauthorized))
 				return
 			}
 
@@ -1000,27 +1000,27 @@ func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string,
 	return messagesSent, messages, nil
 }
 
-func (m *Middleware) RateLimitByGroupWithParams(requestLimit int, windowLength time.Duration) func(next http.Handler) http.Handler {
+func (m *Middleware) RateLimitByProjectWithParams(requestLimit int, windowLength time.Duration) func(next http.Handler) http.Handler {
 	return httprate.Limit(requestLimit, windowLength, httprate.WithKeyFuncs(func(req *http.Request) (string, error) {
-		return GetGroupFromContext(req.Context()).UID, nil
+		return GetProjectFromContext(req.Context()).UID, nil
 	}))
 }
 
-func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
+func (m *Middleware) RateLimitByProjectID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			group := GetGroupFromContext(r.Context())
+			project := GetProjectFromContext(r.Context())
 
 			var rateLimitDuration time.Duration
 			var err error
-			if util.IsStringEmpty(group.RateLimitDuration) {
+			if util.IsStringEmpty(project.RateLimitDuration) {
 				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
 					return
 				}
 			} else {
-				rateLimitDuration, err = time.ParseDuration(group.RateLimitDuration)
+				rateLimitDuration, err = time.ParseDuration(project.RateLimitDuration)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
 					return
@@ -1028,13 +1028,13 @@ func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 			}
 
 			var rateLimit int
-			if group.RateLimit == 0 {
+			if project.RateLimit == 0 {
 				rateLimit = convoy.RATE_LIMIT
 			} else {
-				rateLimit = group.RateLimit
+				rateLimit = project.RateLimit
 			}
 
-			res, err := m.limiter.Allow(r.Context(), group.UID, rateLimit, int(rateLimitDuration))
+			res, err := m.limiter.Allow(r.Context(), project.UID, rateLimit, int(rateLimitDuration))
 			if err != nil {
 				message := "an error occured while getting rate limit"
 				m.logger.WithError(err).Error(message)
@@ -1102,14 +1102,14 @@ func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireAppBelongsToProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			endpoints := GetEndpointsFromContext(r.Context())
 
-			group := GetGroupFromContext(r.Context())
+			project := GetProjectFromContext(r.Context())
 
-			if endpoints[0].GroupID != group.UID {
+			if endpoints[0].ProjectID != project.UID {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
@@ -1181,12 +1181,12 @@ func GetEndpointsFromContext(ctx context.Context) []datastore.Endpoint {
 	return ctx.Value(endpointsCtx).([]datastore.Endpoint)
 }
 
-func setGroupInContext(ctx context.Context, group *datastore.Project) context.Context {
-	return context.WithValue(ctx, groupCtx, group)
+func setProjectInContext(ctx context.Context, project *datastore.Project) context.Context {
+	return context.WithValue(ctx, projectCtx, project)
 }
 
-func GetGroupFromContext(ctx context.Context) *datastore.Project {
-	return ctx.Value(groupCtx).(*datastore.Project)
+func GetProjectFromContext(ctx context.Context) *datastore.Project {
+	return ctx.Value(projectCtx).(*datastore.Project)
 }
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {

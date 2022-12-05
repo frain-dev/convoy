@@ -51,7 +51,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 
 	source := &datastore.Source{
 		UID:       uuid.New().String(),
-		GroupID:   g.UID,
+		ProjectID: g.UID,
 		MaskID:    uniuri.NewLen(16),
 		Name:      newSource.Name,
 		Type:      newSource.Type,

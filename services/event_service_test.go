@@ -54,7 +54,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
-					GroupID:      "abc",
+					ProjectID:    "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -70,7 +70,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				},
 				g: &datastore.Project{
 					UID:  "abc",
-					Name: "test_group",
+					Name: "test_project",
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -88,7 +88,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
-				GroupID:          "abc",
+				ProjectID:        "abc",
 			},
 		},
 
@@ -100,7 +100,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
-					GroupID:      "abc",
+					ProjectID:    "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
@@ -117,7 +117,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				},
 				g: &datastore.Project{
 					UID:  "abc",
-					Name: "test_group",
+					Name: "test_project",
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "exponential",
@@ -132,7 +132,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
-				GroupID:          "abc",
+				ProjectID:        "abc",
 			},
 		},
 		{
@@ -143,7 +143,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
-					GroupID:      "abc",
+					ProjectID:    "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
@@ -160,7 +160,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				},
 				g: &datastore.Project{
 					UID:  "abc",
-					Name: "test_group",
+					Name: "test_project",
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -178,7 +178,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
-				GroupID:          "abc",
+				ProjectID:        "abc",
 			},
 		},
 		{
@@ -189,7 +189,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
-					GroupID:      "abc",
+					ProjectID:    "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 
@@ -207,7 +207,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				},
 				g: &datastore.Project{
 					UID:  "abc",
-					Name: "test_group",
+					Name: "test_project",
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -225,7 +225,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
-				GroupID:          "abc",
+				ProjectID:        "abc",
 				Headers:          httpheader.HTTPHeader{"X-Test-Signature": []string{"Test"}},
 			},
 		},
@@ -237,7 +237,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
-					GroupID:      "abc",
+					ProjectID:    "abc",
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 			},
@@ -250,7 +250,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 				},
 				g: &datastore.Project{
 					UID:    "abc",
-					Name:   "test_group",
+					Name:   "test_project",
 					Config: &datastore.ProjectConfig{},
 				},
 			},
@@ -307,7 +307,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an error occurred while creating event - invalid group",
+			wantErrMsg:  "an error occurred while creating event - invalid project",
 		},
 	}
 	for _, tc := range tests {
@@ -374,14 +374,14 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 					{
 						Title:        "test_app",
 						UID:          "123",
-						GroupID:      "abc",
+						ProjectID:    "abc",
 						SupportEmail: "test_app@gmail.com",
 					},
 
 					{
 						Title:        "test_app",
 						UID:          "12345",
-						GroupID:      "abc",
+						ProjectID:    "abc",
 						SupportEmail: "test_app@gmail.com",
 					},
 				}, nil)
@@ -398,7 +398,7 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 				},
 				g: &datastore.Project{
 					UID:  "abc",
-					Name: "test_group",
+					Name: "test_project",
 					Config: &datastore.ProjectConfig{
 						Strategy: &datastore.StrategyConfiguration{
 							Type:       "linear",
@@ -416,7 +416,7 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 				MatchedEndpoints: 0,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123", "12345"},
-				GroupID:          "abc",
+				ProjectID:        "abc",
 			},
 		},
 
@@ -567,7 +567,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				event: &datastore.Event{UID: "123"},
-				g:     &datastore.Project{UID: "123", Name: "test_group"},
+				g:     &datastore.Project{UID: "123", Name: "test_project"},
 			},
 			dbFn: func(es *EventService) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -581,7 +581,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				event: &datastore.Event{UID: "123"},
-				g:     &datastore.Project{UID: "123", Name: "test_group"},
+				g:     &datastore.Project{UID: "123", Name: "test_project"},
 			},
 			dbFn: func(es *EventService) {
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -1151,7 +1151,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 							EndpointMetadata: []*datastore.Endpoint{{
 								UID:          "abc",
 								Title:        "Title",
-								GroupID:      "123",
+								ProjectID:    "123",
 								SupportEmail: "SupportEmail",
 							}},
 						},
@@ -1171,7 +1171,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 					EndpointMetadata: []*datastore.Endpoint{{
 						UID:          "abc",
 						Title:        "Title",
-						GroupID:      "123",
+						ProjectID:    "123",
 						SupportEmail: "SupportEmail",
 					}},
 				},
@@ -1415,7 +1415,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						Endpoint: &datastore.Endpoint{
 							UID:          "1234",
 							Title:        "Title",
-							GroupID:      "123",
+							ProjectID:    "123",
 							SupportEmail: "SupportEmail",
 							TargetURL:    "http://localhost.com",
 							Secrets: []datastore.Secret{
@@ -1448,7 +1448,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 					Endpoint: &datastore.Endpoint{
 						UID:          "1234",
 						Title:        "Title",
-						GroupID:      "123",
+						ProjectID:    "123",
 						SupportEmail: "SupportEmail",
 						TargetURL:    "http://localhost.com",
 						Secrets: []datastore.Secret{
@@ -1833,7 +1833,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Project{Name: "test_group"},
+				g: &datastore.Project{Name: "test_project"},
 			},
 		},
 		{
@@ -1849,7 +1849,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Project{Name: "test_group"},
+				g: &datastore.Project{Name: "test_project"},
 			},
 			wantErr:    true,
 			wantErrMsg: "subscription not found",
@@ -1869,7 +1869,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Project{Name: "test_group"},
+				g: &datastore.Project{Name: "test_project"},
 			},
 			wantErr:    true,
 			wantErrMsg: "force resend to an inactive or pending endpoint is not allowed",
@@ -1916,7 +1916,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			args: args{
 				ctx:           ctx,
 				eventDelivery: &datastore.EventDelivery{UID: "123"},
-				g:             &datastore.Project{Name: "test_group"},
+				g:             &datastore.Project{Name: "test_project"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1933,7 +1933,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			args: args{
 				ctx:           ctx,
 				eventDelivery: &datastore.EventDelivery{UID: "123"},
-				g:             &datastore.Project{Name: "test_group"},
+				g:             &datastore.Project{Name: "test_project"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1948,7 +1948,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			args: args{
 				ctx:           ctx,
 				eventDelivery: &datastore.EventDelivery{UID: "123"},
-				g:             &datastore.Project{Name: "test_group"},
+				g:             &datastore.Project{Name: "test_project"},
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)

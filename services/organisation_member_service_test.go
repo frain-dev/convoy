@@ -78,7 +78,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify group for organisation member",
+			wantErrMsg:  "please specify project for organisation member",
 		},
 		{
 			name: "should_fail_to_create_organisation_member",
@@ -195,7 +195,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify group for organisation member",
+			wantErrMsg:  "please specify project for organisation member",
 		},
 		{
 			name: "should_update_organisation_member",

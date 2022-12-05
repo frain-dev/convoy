@@ -29,7 +29,7 @@ type ConfigurationIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Project
+	DefaultProject  *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -43,7 +43,7 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(c.T(), c.DB)
 
 	// Setup Default Project
-	c.DefaultGroup, _ = testdb.SeedDefaultProject(c.ConvoyApp.A.Store, "")
+	c.DefaultProject, _ = testdb.SeedDefaultProject(c.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(c.ConvoyApp.A.Store)
 	require.NoError(c.T(), err)

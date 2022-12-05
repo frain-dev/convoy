@@ -40,17 +40,17 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	sourceService := createSourceService(a)
-	source, err := sourceService.CreateSource(r.Context(), &newSource, group)
+	source, err := sourceService.CreateSource(r.Context(), &newSource, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -74,17 +74,17 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	sourceService := createSourceService(a)
-	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -117,23 +117,23 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	sourceService := createSourceService(a)
 
-	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	source, err = sourceService.UpdateSource(r.Context(), group, &sourceUpdate, source)
+	source, err = sourceService.UpdateSource(r.Context(), project, &sourceUpdate, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -158,16 +158,16 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	sourceService := createSourceService(a)
 
-	source, err := sourceService.FindSourceByID(r.Context(), group, chi.URLParam(r, "sourceID"))
+	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = sourceService.DeleteSource(r.Context(), group, source)
+	err = sourceService.DeleteSource(r.Context(), project, source)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -192,14 +192,14 @@ func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // @Router /api/v1/projects/{projectID}/sources [get]
 func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	f := &datastore.SourceFilter{
 		Type: r.URL.Query().Get("type"),
 	}
 
 	sourceService := createSourceService(a)
-	sources, paginationData, err := sourceService.LoadSourcesPaged(r.Context(), group, f, pageable)
+	sources, paginationData, err := sourceService.LoadSourcesPaged(r.Context(), project, f, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusInternalServerError))
 		return
@@ -209,7 +209,7 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 	baseUrl := m.GetHostFromContext(r.Context())
 
 	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), group.OrganisationID)
+	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -232,7 +232,7 @@ func sourceResponse(s *datastore.Source, baseUrl string, customDomain string) *m
 	return &models.SourceResponse{
 		UID:            s.UID,
 		MaskID:         s.MaskID,
-		ProjectID:      s.GroupID,
+		ProjectID:      s.ProjectID,
 		Name:           s.Name,
 		Type:           s.Type,
 		Provider:       s.Provider,

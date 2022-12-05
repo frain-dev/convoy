@@ -38,7 +38,7 @@ func NewSubscriptionService(subRepo datastore.SubscriptionRepository, endpointRe
 	return &SubcriptionService{subRepo: subRepo, sourceRepo: sourceRepo, endpointRepo: endpointRepo}
 }
 
-func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *datastore.Project, newSubscription *models.Subscription) (*datastore.Subscription, error) {
+func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *datastore.Project, newSubscription *models.Subscription) (*datastore.Subscription, error) {
 	if err := util.Validate(newSubscription); err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrValidateSubscriptionError.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -50,12 +50,12 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find endpoint by id"))
 	}
 
-	if endpoint.GroupID != group.UID {
-		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("endpoint does not belong to group"))
+	if endpoint.ProjectID != project.UID {
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("endpoint does not belong to project"))
 	}
 
-	if group.Type == datastore.IncomingProject {
-		_, err = s.sourceRepo.FindSourceByID(ctx, group.UID, newSubscription.SourceID)
+	if project.Type == datastore.IncomingProject {
+		_, err = s.sourceRepo.FindSourceByID(ctx, project.UID, newSubscription.SourceID)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to find source by id")
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source by id"))
@@ -68,7 +68,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 	}
 
 	subscription := &datastore.Subscription{
-		GroupID:    group.UID,
+		ProjectID:  project.UID,
 		UID:        uuid.New().String(),
 		Name:       newSubscription.Name,
 		Type:       datastore.SubscriptionTypeAPI,
@@ -109,7 +109,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 		}
 	}
 
-	err = s.subRepo.CreateSubscription(ctx, group.UID, subscription)
+	err = s.subRepo.CreateSubscription(ctx, project.UID, subscription)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrCreateSubscriptionError.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrCreateSubscriptionError)
@@ -118,13 +118,13 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, group *data
 	return subscription, nil
 }
 
-func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId string, subscriptionId string, update *models.UpdateSubscription) (*datastore.Subscription, error) {
+func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId string, subscriptionId string, update *models.UpdateSubscription) (*datastore.Subscription, error) {
 	if err := util.Validate(update); err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrValidateSubscriptionError.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	subscription, err := s.subRepo.FindSubscriptionByID(ctx, groupId, subscriptionId)
+	subscription, err := s.subRepo.FindSubscriptionByID(ctx, projectId, subscriptionId)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
@@ -229,7 +229,7 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 		subscription.DisableEndpoint = update.DisableEndpoint
 	}
 
-	err = s.subRepo.UpdateSubscription(ctx, groupId, subscription)
+	err = s.subRepo.UpdateSubscription(ctx, projectId, subscription)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrUpateSubscriptionError.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrUpateSubscriptionError)
@@ -238,8 +238,8 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, groupId str
 	return subscription, nil
 }
 
-func (s *SubcriptionService) ToggleSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string) (*datastore.Subscription, error) {
-	subscription, err := s.subRepo.FindSubscriptionByID(ctx, groupId, subscriptionId)
+func (s *SubcriptionService) ToggleSubscriptionStatus(ctx context.Context, projectId string, subscriptionId string) (*datastore.Subscription, error) {
+	subscription, err := s.subRepo.FindSubscriptionByID(ctx, projectId, subscriptionId)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
@@ -256,7 +256,7 @@ func (s *SubcriptionService) ToggleSubscriptionStatus(ctx context.Context, group
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown subscription status: %s", subscription.Status))
 	}
 
-	err = s.subRepo.UpdateSubscriptionStatus(ctx, groupId, subscription.UID, subscription.Status)
+	err = s.subRepo.UpdateSubscriptionStatus(ctx, projectId, subscription.UID, subscription.Status)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update subscription status")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update subscription status"))
@@ -265,8 +265,8 @@ func (s *SubcriptionService) ToggleSubscriptionStatus(ctx context.Context, group
 	return subscription, nil
 }
 
-func (s *SubcriptionService) DeleteSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription) error {
-	err := s.subRepo.DeleteSubscription(ctx, groupId, subscription)
+func (s *SubcriptionService) DeleteSubscription(ctx context.Context, projectId string, subscription *datastore.Subscription) error {
+	err := s.subRepo.DeleteSubscription(ctx, projectId, subscription)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrDeletedSubscriptionError.Error())
 		return util.NewServiceError(http.StatusBadRequest, ErrDeletedSubscriptionError)
@@ -285,8 +285,8 @@ func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testReq
 	return passed, nil
 }
 
-func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *datastore.Project, subscriptionId string, skipCache bool) (*datastore.Subscription, error) {
-	sub, err := s.subRepo.FindSubscriptionByID(ctx, group.UID, subscriptionId)
+func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, project *datastore.Project, subscriptionId string, skipCache bool) (*datastore.Subscription, error) {
+	sub, err := s.subRepo.FindSubscriptionByID(ctx, project.UID, subscriptionId)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusNotFound, ErrSubscriptionNotFound)
@@ -296,9 +296,9 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *da
 		return sub, nil
 	}
 
-	// only incoming groups have sources
-	if group.Type == datastore.IncomingProject && sub.SourceID != "" {
-		source, err := s.sourceRepo.FindSourceByID(ctx, group.UID, sub.SourceID)
+	// only incoming projects have sources
+	if project.Type == datastore.IncomingProject && sub.SourceID != "" {
+		source, err := s.sourceRepo.FindSourceByID(ctx, project.UID, sub.SourceID)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to find subscription source")
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find subscription source"))
@@ -320,7 +320,7 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, group *da
 }
 
 func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
-	subscriptions, paginatedData, err := s.subRepo.LoadSubscriptionsPaged(ctx, filter.GroupID, filter, pageable)
+	subscriptions, paginatedData, err := s.subRepo.LoadSubscriptionsPaged(ctx, filter.ProjectID, filter, pageable)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrCannotFetchSubcriptionsError.Error())
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, ErrCannotFetchSubcriptionsError)

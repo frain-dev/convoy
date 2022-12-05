@@ -42,7 +42,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	var endpoints []string
 
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointID := m.GetEndpointIDFromContext(r)
 	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
 
@@ -54,7 +54,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 		endpoints = endpointIDs
 	}
 
-	filter := &datastore.FilterBy{GroupID: group.UID, EndpointIDs: endpoints}
+	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpoints}
 
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
@@ -82,10 +82,10 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
 func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	subService := createSubscriptionService(a)
-	subscription, err := subService.FindSubscriptionByID(r.Context(), group, subId, false)
+	subscription, err := subService.FindSubscriptionByID(r.Context(), project, subId, false)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -107,7 +107,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [post]
 func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	var sub models.Subscription
 	err := util.ReadJSON(r, &sub)
@@ -117,7 +117,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	subService := createSubscriptionService(a)
-	subscription, err := subService.CreateSubscription(r.Context(), group, &sub)
+	subscription, err := subService.CreateSubscription(r.Context(), project, &sub)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -140,16 +140,16 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	subService := createSubscriptionService(a)
 
-	sub, err := subService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
+	sub, err := subService.FindSubscriptionByID(r.Context(), project, chi.URLParam(r, "subscriptionID"), true)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = subService.DeleteSubscription(r.Context(), group.UID, sub)
+	err = subService.DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -181,7 +181,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	subService := createSubscriptionService(a)
@@ -207,7 +207,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	subService := createSubscriptionService(a)

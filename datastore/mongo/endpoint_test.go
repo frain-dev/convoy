@@ -20,25 +20,25 @@ func Test_UpdateEndpoint(t *testing.T) {
 	projectRepo := NewProjectRepo(getStore(db))
 	endpointRepo := NewEndpointRepo(getStore(db))
 
-	newGroup := &datastore.Project{
-		Name: "Random new group",
+	newProject := &datastore.Project{
+		Name: "Random new project",
 		UID:  uuid.NewString(),
 	}
 
-	require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
+	require.NoError(t, projectRepo.CreateProject(context.Background(), newProject))
 
 	endpoint := &datastore.Endpoint{
-		Title:   "Next application name",
-		GroupID: newGroup.UID,
+		Title:     "Next application name",
+		ProjectID: newProject.UID,
 	}
 
-	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
+	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.ProjectID))
 
 	newTitle := "Newer name"
 
 	endpoint.Title = newTitle
 
-	require.NoError(t, endpointRepo.UpdateEndpoint(context.Background(), endpoint, endpoint.GroupID))
+	require.NoError(t, endpointRepo.UpdateEndpoint(context.Background(), endpoint, endpoint.ProjectID))
 
 	newApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID)
 	require.NoError(t, err)
@@ -54,19 +54,19 @@ func Test_CreateEndpoint(t *testing.T) {
 	endpointRepo := NewEndpointRepo(getStore(db))
 
 	newOrg := &datastore.Project{
-		Name: "Random new group 2",
+		Name: "Random new project 2",
 		UID:  uuid.NewString(),
 	}
 
 	require.NoError(t, projectRepo.CreateProject(context.Background(), newOrg))
 
 	endpoint := &datastore.Endpoint{
-		Title:   "Next application name",
-		GroupID: newOrg.UID,
-		UID:     uuid.NewString(),
+		Title:     "Next application name",
+		ProjectID: newOrg.UID,
+		UID:       uuid.NewString(),
 	}
 
-	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
+	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.ProjectID))
 }
 
 func Test_LoadEndpointsPaged(t *testing.T) {
@@ -97,17 +97,17 @@ func Test_FindEndpointByID(t *testing.T) {
 
 	projectRepo := NewProjectRepo(getStore(db))
 
-	newGroup := &datastore.Project{
-		Name: "Yet another Random new group",
+	newProject := &datastore.Project{
+		Name: "Yet another Random new project",
 	}
 
-	require.NoError(t, projectRepo.CreateProject(context.Background(), newGroup))
+	require.NoError(t, projectRepo.CreateProject(context.Background(), newProject))
 
 	endpoint := &datastore.Endpoint{
-		Title:   "Next endpoint name again",
-		GroupID: newGroup.UID,
-		UID:     uuid.NewString(),
+		Title:     "Next endpoint name again",
+		ProjectID: newProject.UID,
+		UID:       uuid.NewString(),
 	}
 
-	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.GroupID))
+	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.ProjectID))
 }

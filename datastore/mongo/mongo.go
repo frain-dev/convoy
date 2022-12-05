@@ -88,7 +88,7 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureIndex(datastore.OrganisationInvitesCollection, "uid", true, nil)
 	c.ensureIndex(datastore.OrganisationInvitesCollection, "token", true, nil)
 
-	c.ensureIndex(datastore.EndpointCollection, "group_id", false, nil)
+	c.ensureIndex(datastore.EndpointCollection, "project_id", false, nil)
 	c.ensureIndex(datastore.EndpointCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EndpointCollection, "owner_id", false, nil)
 
@@ -104,7 +104,7 @@ func (c *Client) ensureMongoIndices() {
 
 	c.ensureIndex(datastore.EventCollection, "uid", true, nil)
 	c.ensureIndex(datastore.EventCollection, "endpoints", false, nil)
-	c.ensureIndex(datastore.EventCollection, "group_id", false, nil)
+	c.ensureIndex(datastore.EventCollection, "project_id", false, nil)
 
 	c.ensureIndex(datastore.EventDeliveryCollection, "status", false, nil)
 
@@ -196,7 +196,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "created_at", Value: -1},
 					{Key: "deleted_at", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 				},
 			},
 
@@ -220,7 +220,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "created_at", Value: -1},
 					{Key: "deleted_at", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "endpoints", Value: 1},
 				},
 			},
@@ -229,7 +229,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "created_at", Value: -1},
 					{Key: "deleted_at", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "source_id", Value: 1},
 				},
 			},
@@ -247,7 +247,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "created_at", Value: -1},
 					{Key: "deleted_at", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "source_id", Value: 1},
 					{Key: "endpoints", Value: 1},
 				},
@@ -255,7 +255,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 
 			{
 				Keys: bson.D{
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "deleted_at", Value: 1},
 					{Key: "created_at", Value: -1},
 				},
@@ -308,7 +308,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "deleted_at", Value: 1},
 					{Key: "created_at", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "status", Value: 1},
 				},
 			},
@@ -324,7 +324,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 				Keys: bson.D{
 					{Key: "deleted_at", Value: 1},
 					{Key: "created_at", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 				},
 			},
 
@@ -333,7 +333,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "deleted_at", Value: 1},
 					{Key: "created_at", Value: -1},
 					{Key: "endpoint_id", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 				},
 			},
 
@@ -353,7 +353,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 		datastore.EndpointCollection: {
 			{
 				Keys: bson.D{
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "deleted_at", Value: 1},
 					{Key: "created_at", Value: 1},
 				},
@@ -403,7 +403,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "endpoint_id", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "host_name", Value: 1},
 					{Key: "deleted_at", Value: 1},
 				},
@@ -415,7 +415,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 			{
 				Keys: bson.D{
 					{Key: "uid", Value: 1},
-					{Key: "group_id", Value: 1},
+					{Key: "project_id", Value: 1},
 					{Key: "source_id", Value: 1},
 					{Key: "device_id", Value: 1},
 					{Key: "endpoint_id", Value: 1},
@@ -432,7 +432,7 @@ func compoundIndices() map[string][]mongo.IndexModel {
 					{Key: "user_id", Value: 1},
 					{Key: "key_type", Value: 1},
 					{Key: "role.app", Value: 1},
-					{Key: "role.group", Value: 1},
+					{Key: "role.project", Value: 1},
 					{Key: "deleted_at", Value: 1},
 				},
 				Options: options.Index().SetUnique(true),

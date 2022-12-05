@@ -23,10 +23,10 @@ import (
 
 type IngestIntegrationTestSuite struct {
 	suite.Suite
-	DB           cm.Client
-	Router       http.Handler
-	ConvoyApp    *ApplicationHandler
-	DefaultGroup *datastore.Project
+	DB             cm.Client
+	Router         http.Handler
+	ConvoyApp      *ApplicationHandler
+	DefaultProject *datastore.Project
 }
 
 func (i *IngestIntegrationTestSuite) SetupSuite() {
@@ -39,7 +39,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(i.T(), i.DB)
 
 	// Setup Default Project.
-	i.DefaultGroup, _ = testdb.SeedDefaultProject(i.ConvoyApp.A.Store, "")
+	i.DefaultProject, _ = testdb.SeedDefaultProject(i.ConvoyApp.A.Store, "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -86,7 +86,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NotHTTPSource() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "non-http", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "non-http", v)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/ingest/%s", maskID)
@@ -115,7 +115,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodHmac() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -151,7 +151,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadHmac() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -184,7 +184,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodAPIKey() {
 			HeaderValue: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -216,7 +216,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadAPIKey() {
 			HeaderValue: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -248,7 +248,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodBasicAuth() {
 			Password: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -280,7 +280,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadBasicAuth() {
 			Password: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -308,7 +308,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
 	v := &datastore.VerifierConfig{
 		Type: datastore.NoopVerifier,
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -335,7 +335,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestB
 	v := &datastore.VerifierConfig{
 		Type: datastore.NoopVerifier,
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultGroup, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.Store, i.DefaultProject, sourceID, maskID, "", v)
 
 	bodyStr := ``
 	body := serialize(bodyStr)

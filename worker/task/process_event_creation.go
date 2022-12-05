@@ -42,34 +42,34 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		var group *datastore.Project
+		var project *datastore.Project
 		var subscriptions []datastore.Subscription
 
-		groupCacheKey := convoy.ProjectsCacheKey.Get(event.GroupID).String()
-		err = cache.Get(ctx, groupCacheKey, &group)
+		projectCacheKey := convoy.ProjectsCacheKey.Get(event.ProjectID).String()
+		err = cache.Get(ctx, projectCacheKey, &project)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		if group == nil {
-			group, err = projectRepo.FetchProjectByID(ctx, event.GroupID)
+		if project == nil {
+			project, err = projectRepo.FetchProjectByID(ctx, event.ProjectID)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			err = cache.Set(ctx, groupCacheKey, group, 10*time.Minute)
+			err = cache.Set(ctx, projectCacheKey, project, 10*time.Minute)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 		}
 
-		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, group, &createEvent)
+		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, project, &createEvent)
 		if err != nil {
 			return err
 		}
 
 		event.MatchedEndpoints = len(subscriptions)
-		ec := &EventDeliveryConfig{group: group}
+		ec := &EventDeliveryConfig{project: project}
 
 		for _, s := range subscriptions {
 			ec.subscription = &s
@@ -109,7 +109,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				UID:            uuid.New().String(),
 				SubscriptionID: s.UID,
 				Metadata:       metadata,
-				GroupID:        group.UID,
+				ProjectID:      project.UID,
 				EventID:        event.UID,
 				EndpointID:     s.EndpointID,
 				DeviceID:       s.DeviceID,
@@ -167,12 +167,12 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 	}
 }
 
-func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache, subRepo datastore.SubscriptionRepository, group *datastore.Project, createEvent *CreateEvent) ([]datastore.Subscription, error) {
+func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache, subRepo datastore.SubscriptionRepository, project *datastore.Project, createEvent *CreateEvent) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error
 
 	event := createEvent.Event
-	if group.Type == datastore.OutgoingProject {
+	if project.Type == datastore.OutgoingProject {
 		for _, endpointID := range event.Endpoints {
 			var endpoint *datastore.Endpoint
 
@@ -195,14 +195,14 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				}
 			}
 
-			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, group.UID, endpoint.UID)
+			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 			if err != nil {
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 
 			if len(subs) == 0 && createEvent.CreateSubscription {
-				subs := generateSubscription(group, endpoint)
-				err := subRepo.CreateSubscription(ctx, group.UID, subs)
+				subs := generateSubscription(project, endpoint)
+				err := subRepo.CreateSubscription(ctx, project.UID, subs)
 				if err != nil {
 					log.Errorf("error creating subscription for endpoint %s", err)
 					return subscriptions, &EndpointError{Err: errors.New("error creating subscription for endpoint"), delay: 10 * time.Second}
@@ -220,8 +220,8 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			subscriptions = append(subscriptions, subs...)
 
 		}
-	} else if group.Type == datastore.IncomingProject {
-		subs, err := subRepo.FindSubscriptionsBySourceIDs(ctx, group.UID, event.SourceID)
+	} else if project.Type == datastore.IncomingProject {
+		subs, err := subRepo.FindSubscriptionsBySourceIDs(ctx, project.UID, event.SourceID)
 		if err != nil {
 			log.Errorf("error fetching subscriptions for this source %s", err)
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
@@ -269,7 +269,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 		return datastore.DiscardedEventStatus
 	} else {
 		if !util.IsStringEmpty(subscription.DeviceID) {
-			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.GroupID)
+			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.ProjectID)
 			if err != nil {
 				log.WithError(err).Error("an error occurred fetching the subscription's device")
 				return datastore.DiscardedEventStatus
@@ -284,9 +284,9 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 	return datastore.ScheduledEventStatus
 }
 
-func generateSubscription(group *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
+func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	return &datastore.Subscription{
-		GroupID:      group.UID,
+		ProjectID:    project.UID,
 		UID:          uuid.New().String(),
 		Name:         fmt.Sprintf("%s-subscription", endpoint.Title),
 		Type:         datastore.SubscriptionTypeAPI,

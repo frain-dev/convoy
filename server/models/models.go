@@ -67,9 +67,9 @@ type PersonalAPIKey struct {
 }
 
 type Role struct {
-	Type  auth.RoleType `json:"type"`
-	Group string        `json:"group"`
-	App   string        `json:"app,omitempty"`
+	Type    auth.RoleType `json:"type"`
+	Project string        `json:"project"`
+	App     string        `json:"app,omitempty"`
 }
 
 type UpdateOrganisationMember struct {
@@ -96,8 +96,8 @@ type APIKeyResponse struct {
 }
 
 type CreateProjectResponse struct {
-	APIKey *APIKeyResponse    `json:"api_key"`
-	Group  *datastore.Project `json:"group"`
+	APIKey  *APIKeyResponse    `json:"api_key"`
+	Project *datastore.Project `json:"project"`
 }
 
 type PortalAPIKeyResponse struct {

@@ -25,13 +25,13 @@ import (
 
 type SourceIntegrationTestSuite struct {
 	suite.Suite
-	DB           cm.Client
-	Router       http.Handler
-	ConvoyApp    *ApplicationHandler
-	DefaultOrg   *datastore.Organisation
-	DefaultGroup *datastore.Project
-	DefaultUser  *datastore.User
-	APIKey       string
+	DB             cm.Client
+	Router         http.Handler
+	ConvoyApp      *ApplicationHandler
+	DefaultOrg     *datastore.Organisation
+	DefaultProject *datastore.Project
+	DefaultUser    *datastore.User
+	APIKey         string
 }
 
 func (s *SourceIntegrationTestSuite) SetupSuite() {
@@ -52,12 +52,12 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	// Seed Auth
 	role := auth.Role{
 		Type:    auth.RoleAdmin,
-		Project: s.DefaultGroup.UID,
+		Project: s.DefaultProject.UID,
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
@@ -81,7 +81,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
 	sourceID := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -96,10 +96,10 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	sourceID := "123456789"
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -114,7 +114,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	parseResponse(s.T(), w.Result(), &source)
 
 	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
-	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
+	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
 	require.Equal(s.T(), source.Name, dbSource.Name)
@@ -127,11 +127,11 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
-		_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, "", "", "", nil)
+		_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, "", "", "", nil)
 	}
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -163,7 +163,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -199,7 +199,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/sources?groupID=%s", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/sources?groupID=%s", s.DefaultProject.UID)
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -226,7 +226,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -254,7 +254,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
 
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -273,10 +273,10 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	sourceID := uuid.New().String()
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "%s",
 		"type": "http",
@@ -307,7 +307,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	parseResponse(s.T(), w.Result(), &source)
 
 	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
-	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
+	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
 	require.Equal(s.T(), name, dbSource.Name)
@@ -318,10 +318,10 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	sourceID := uuid.New().String()
 
 	// Just Before.
-	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, sourceID, "", "", nil)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultGroup.UID, sourceID)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -333,7 +333,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Deep Assert.
 	sourceRepo := cm.NewSourceRepo(s.ConvoyApp.A.Store)
-	_, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultGroup.UID, sourceID)
+	_, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
 

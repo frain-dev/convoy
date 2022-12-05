@@ -52,7 +52,7 @@ func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	eventService := createEventService(a)
 
 	event, err := eventService.CreateEvent(r.Context(), &newMessage, g)
@@ -84,7 +84,7 @@ func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r 
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	eventService := createEventService(a)
 
 	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, g)
@@ -109,7 +109,7 @@ func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r 
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
 	eventService := createEventService(a)
 
@@ -172,7 +172,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 	eventService := createEventService(a)
 
-	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
+	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetProjectFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -222,7 +222,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Project:     m.GetGroupFromContext(r.Context()),
+		Project:     m.GetProjectFromContext(r.Context()),
 		EndpointIDs: endpoints,
 		EventID:     r.URL.Query().Get("eventId"),
 		Status:      status,
@@ -288,7 +288,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 	}
 
 	f := &datastore.Filter{
-		Project:      m.GetGroupFromContext(r.Context()),
+		Project:      m.GetProjectFromContext(r.Context()),
 		EndpointIDs:  endpoints,
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
@@ -327,7 +327,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 	}
 
 	eventService := createEventService(a)
-	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
+	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetProjectFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -370,7 +370,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	query := r.URL.Query().Get("query")
 	endpointID := m.GetEndpointIDFromContext(r)
 	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
@@ -385,7 +385,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 
 	f := &datastore.Filter{
 		Query:        query,
-		Project:      group,
+		Project:      project,
 		EndpointID:   endpointID,
 		EndpointIDs:  endpoints,
 		SourceID:     m.GetSourceIDFromContext(r),
@@ -463,7 +463,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Project:      m.GetGroupFromContext(r.Context()),
+		Project:      m.GetProjectFromContext(r.Context()),
 		EventID:      r.URL.Query().Get("eventId"),
 		EndpointIDs:  endpoints,
 		Status:       status,

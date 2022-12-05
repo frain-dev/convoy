@@ -48,8 +48,8 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		APIKey: models.APIKey{
 			Name: apiKey.Name,
 			Role: models.Role{
-				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Project,
+				Type:    apiKey.Role.Type,
+				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -88,8 +88,8 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 		APIKey: models.APIKey{
 			Name: apiKey.Name,
 			Role: models.Role{
-				Type:  apiKey.Role.Type,
-				Group: apiKey.Role.Project,
+				Type:    apiKey.Role.Type,
+				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -117,7 +117,7 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 		}
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpoint := m.GetEndpointFromContext(r.Context())
 	baseUrl := m.GetHostFromContext(r.Context())
 
@@ -143,7 +143,7 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 		newApiKey.Name = autoname.Generate(" ")
 	}
 
-	newApiKey.Project = group
+	newApiKey.Project = project
 	newApiKey.Endpoint = endpoint
 	newApiKey.BaseUrl = baseUrl
 	newApiKey.KeyType = keyType
@@ -156,14 +156,14 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 	}
 
 	if !util.IsStringEmpty(baseUrl) && newApiKey.KeyType == datastore.AppPortalKey {
-		baseUrl = fmt.Sprintf("%s/endpoint/%s?groupID=%s&endpointId=%s", baseUrl, key, newApiKey.Project.UID, newApiKey.Endpoint.UID)
+		baseUrl = fmt.Sprintf("%s/endpoint/%s?projectID=%s&endpointId=%s", baseUrl, key, newApiKey.Project.UID, newApiKey.Endpoint.UID)
 	}
 
 	resp := models.PortalAPIKeyResponse{
 		Key:        key,
 		Url:        baseUrl,
 		Role:       apiKey.Role,
-		ProjectID:  group.UID,
+		ProjectID:  project.UID,
 		EndpointID: endpoint.UID,
 		Type:       string(apiKey.Type),
 	}
@@ -172,12 +172,12 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 }
 
 func (a *ApplicationHandler) LoadEndpointAPIKeysPaged(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpoint := m.GetEndpointFromContext(r.Context())
 	pageable := m.GetPageableFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{
-		GroupID:    group.UID,
+		ProjectID:  project.UID,
 		EndpointID: endpoint.UID,
 		KeyType:    datastore.CLIKey,
 	}
@@ -226,7 +226,7 @@ func (a *ApplicationHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http
 
 func (a *ApplicationHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	securityService := createSecurityService(a)
 	key, err := securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
@@ -235,7 +235,7 @@ func (a *ApplicationHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http
 		return
 	}
 
-	if key.Role.Project != group.UID || key.Role.Endpoint != endpoint.UID {
+	if key.Role.Project != project.UID || key.Role.Endpoint != endpoint.UID {
 		_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
 		return
 	}

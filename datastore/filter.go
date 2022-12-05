@@ -23,7 +23,7 @@ type SourceFilter struct {
 }
 
 type ApiKeyFilter struct {
-	GroupID     string
+	ProjectID   string
 	EndpointID  string
 	EndpointIDs []string
 	UserID      string
@@ -33,7 +33,7 @@ type ApiKeyFilter struct {
 type FilterBy struct {
 	EndpointID   string
 	EndpointIDs  []string
-	GroupID      string
+	ProjectID    string
 	SourceID     string
 	SearchParams SearchParams
 }
@@ -41,7 +41,7 @@ type FilterBy struct {
 func (f *FilterBy) String() *string {
 	var s string
 	filterByBuilder := new(strings.Builder)
-	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", f.GroupID))
+	filterByBuilder.WriteString(fmt.Sprintf("group_id:=%s", f.ProjectID)) // TODO(daniel, RT): how to work around this?
 	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd))
 
 	if len(f.EndpointID) > 0 {

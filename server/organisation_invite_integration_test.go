@@ -31,7 +31,7 @@ type OrganisationInviteIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Project
+	DefaultProject  *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -46,7 +46,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Project.
-	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -82,7 +82,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation()
 	url := fmt.Sprintf("/ui/organisations/%s/invites", s.DefaultOrg.UID)
 
 	// TODO(daniel): when the generic mailer is integrated we have to mock it
-	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "group":"123"}}`)
+	body := strings.NewReader(`{"invitee_email":"test@invite.com","role":{"type":"api", "project":"123"}}`)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
@@ -124,7 +124,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_I
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/invites", s.DefaultOrg.UID)
 
-	body := strings.NewReader(`{"invitee_email":"test_invite.com",role":{"type":"api","group":"123"}}`)
+	body := strings.NewReader(`{"invitee_email":"test_invite.com",role":{"type":"api","project":"123"}}`)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
@@ -145,7 +145,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_E
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/invites", s.DefaultOrg.UID)
 
-	body := strings.NewReader(`{"invitee_email":"",role":{"type":"api","group":"123"}}`)
+	body := strings.NewReader(`{"invitee_email":"",role":{"type":"api","project":"123"}}`)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)

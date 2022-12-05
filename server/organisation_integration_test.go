@@ -31,7 +31,7 @@ type OrganisationIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Project
+	DefaultProject  *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -46,7 +46,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Project.
-	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)

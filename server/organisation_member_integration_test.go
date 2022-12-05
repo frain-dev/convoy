@@ -30,7 +30,7 @@ type OrganisationMemberIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Project
+	DefaultProject  *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -45,7 +45,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Project.
-	s.DefaultGroup, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -185,7 +185,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 
-	body := strings.NewReader(`{"role":{ "type":"api", "group":"123"}}`)
+	body := strings.NewReader(`{"role":{ "type":"api", "project":"123"}}`)
 	req := createRequest(http.MethodPut, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)

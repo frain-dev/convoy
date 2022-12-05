@@ -19,7 +19,7 @@ func createDeviceService(a *ApplicationHandler) *services.DeviceService {
 
 func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpoint := m.GetEndpointFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{
@@ -27,7 +27,7 @@ func (a *ApplicationHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.R
 	}
 
 	deviceService := createDeviceService(a)
-	devices, paginationData, err := deviceService.LoadDevicesPaged(r.Context(), group, f, pageable)
+	devices, paginationData, err := deviceService.LoadDevicesPaged(r.Context(), project, f, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching devices", http.StatusInternalServerError))
 		return

@@ -58,7 +58,7 @@ func NewEventService(
 
 func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event, g *datastore.Project) (*datastore.Event, error) {
 	if g == nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
 	}
 
 	if err := util.Validate(newMessage); err != nil {
@@ -95,7 +95,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 
 func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models.FanoutEvent, g *datastore.Project) (*datastore.Event, error) {
 	if g == nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid group"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
 	}
 
 	if err := util.Validate(newMessage); err != nil {
@@ -169,7 +169,7 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 		FilterBy: datastore.FilterBy{
 			EndpointID:   filter.EndpointID,
 			SourceID:     filter.SourceID,
-			GroupID:      filter.Project.UID,
+			ProjectID:    filter.Project.UID,
 			SearchParams: filter.SearchParams,
 		},
 		Pageable: filter.Pageable,
@@ -304,7 +304,7 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 	}
 
 	if sub.Status == datastore.InactiveSubscriptionStatus {
-		err = e.subRepo.UpdateSubscriptionStatus(context.Background(), eventDelivery.GroupID, eventDelivery.SubscriptionID, datastore.PendingSubscriptionStatus)
+		err = e.subRepo.UpdateSubscriptionStatus(context.Background(), eventDelivery.ProjectID, eventDelivery.SubscriptionID, datastore.PendingSubscriptionStatus)
 		if err != nil {
 			return errors.New("failed to update subscription status")
 		}
@@ -386,7 +386,7 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		Endpoints: endpointIDs,
-		GroupID:   g.UID,
+		ProjectID: g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

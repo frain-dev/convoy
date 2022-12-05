@@ -21,14 +21,14 @@ func newProjectAnalytics(projectRepo datastore.ProjectRepository, client Analyti
 }
 
 func (g *ProjectAnalytics) Track() error {
-	groups, err := g.projectRepo.LoadProjects(context.Background(), &datastore.GroupFilter{})
+	projects, err := g.projectRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
 	if err != nil {
 		return err
 	}
 
-	return g.client.Export(g.Name(), Event{"Count": len(groups), "instanceID": g.instanceID})
+	return g.client.Export(g.Name(), Event{"Count": len(projects), "instanceID": g.instanceID})
 }
 
 func (g *ProjectAnalytics) Name() string {
-	return DailyGroupCount
+	return DailyProjectCount
 }

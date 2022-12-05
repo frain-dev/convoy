@@ -34,7 +34,7 @@ func ExpireSecret(a datastore.EndpointRepository) func(ctx context.Context, t *a
 			}
 		}
 
-		err = a.UpdateEndpoint(ctx, endpoint, endpoint.GroupID)
+		err = a.UpdateEndpoint(ctx, endpoint, endpoint.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}

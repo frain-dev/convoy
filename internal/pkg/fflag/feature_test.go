@@ -134,7 +134,7 @@ func TestFeatureFlags_CLI(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			bodyStr := strings.NewReader(`{"key_type": "cli"}`)
-			request := httptest.NewRequest(http.MethodPost, "/?groupID=abc", bodyStr)
+			request := httptest.NewRequest(http.MethodPost, "/?projectID=abc", bodyStr)
 
 			fn.ServeHTTP(recorder, request)
 

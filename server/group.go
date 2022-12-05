@@ -39,17 +39,17 @@ func createProjectService(a *ApplicationHandler) *services.ProjectService {
 func _() {}
 
 func (a *ApplicationHandler) GetProject(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
-	groupService := createProjectService(a)
+	project := m.GetProjectFromContext(r.Context())
+	projectService := createProjectService(a)
 
-	err := groupService.FillProjectStatistics(r.Context(), []*datastore.Project{group})
+	err := projectService.FillProjectStatistics(r.Context(), []*datastore.Project{project})
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully",
-		group, http.StatusOK))
+		project, http.StatusOK))
 }
 
 // DeleteProject - this is a duplicate annotation for the api/v1 route of this handler
@@ -66,10 +66,10 @@ func (a *ApplicationHandler) GetProject(w http.ResponseWriter, r *http.Request) 
 func _() {}
 
 func (a *ApplicationHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
-	groupService := createProjectService(a)
+	project := m.GetProjectFromContext(r.Context())
+	projectService := createProjectService(a)
 
-	err := groupService.DeleteProject(r.Context(), group.UID)
+	err := projectService.DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -86,7 +86,7 @@ func (a *ApplicationHandler) DeleteProject(w http.ResponseWriter, r *http.Reques
 // @Accept  json
 // @Produce  json
 // @Param orgID query string true "Organisation id"
-// @Param group body models.Project true "Project Details"
+// @Param project body models.Project true "Project Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -94,8 +94,8 @@ func (a *ApplicationHandler) DeleteProject(w http.ResponseWriter, r *http.Reques
 func _() {}
 
 func (a *ApplicationHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
-	var newGroup models.Project
-	err := util.ReadJSON(r, &newGroup)
+	var newProject models.Project
+	err := util.ReadJSON(r, &newProject)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -103,17 +103,17 @@ func (a *ApplicationHandler) CreateProject(w http.ResponseWriter, r *http.Reques
 
 	org := m.GetOrganisationFromContext(r.Context())
 	member := m.GetOrganisationMemberFromContext(r.Context())
-	groupService := createProjectService(a)
+	projectService := createProjectService(a)
 
-	group, apiKey, err := groupService.CreateProject(r.Context(), &newGroup, org, member)
+	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	resp := &models.CreateProjectResponse{
-		APIKey: apiKey,
-		Group:  group,
+		APIKey:  apiKey,
+		Project: project,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
@@ -126,7 +126,7 @@ func (a *ApplicationHandler) CreateProject(w http.ResponseWriter, r *http.Reques
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
-// @Param group body models.Project true "Project Details"
+// @Param project body models.Project true "Project Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -141,16 +141,16 @@ func (a *ApplicationHandler) UpdateProject(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
-	groupService := createProjectService(a)
+	p := m.GetProjectFromContext(r.Context())
+	projectService := createProjectService(a)
 
-	group, err := groupService.UpdateProject(r.Context(), g, &update)
+	project, err := projectService.UpdateProject(r.Context(), p, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", group, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", project, http.StatusAccepted))
 }
 
 // GetProjects - this is a duplicate annotation for the api/v1 route of this handler
@@ -159,7 +159,7 @@ func (a *ApplicationHandler) UpdateProject(w http.ResponseWriter, r *http.Reques
 // @Tags Projects
 // @Accept  json
 // @Produce  json
-// @Param name query string false "group name"
+// @Param name query string false "Project name"
 // @Param orgID query string true "organisation id"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -171,15 +171,15 @@ func (a *ApplicationHandler) GetProjects(w http.ResponseWriter, r *http.Request)
 	org := m.GetOrganisationFromContext(r.Context())
 	name := r.URL.Query().Get("name")
 
-	filter := &datastore.GroupFilter{OrgID: org.UID}
+	filter := &datastore.ProjectFilter{OrgID: org.UID}
 	filter.Names = append(filter.Names, name)
-	groupService := createProjectService(a)
+	projectService := createProjectService(a)
 
-	groups, err := groupService.GetProjects(r.Context(), filter)
+	projects, err := projectService.GetProjects(r.Context(), filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Groups fetched successfully", groups, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", projects, http.StatusOK))
 }

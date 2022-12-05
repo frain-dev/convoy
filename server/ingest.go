@@ -23,7 +23,7 @@ import (
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
-	// s.AppService.CountGroupApplications()
+	// s.AppService.CountProjectApplications()
 	// 1. Retrieve mask ID
 	maskID := chi.URLParam(r, "maskID")
 
@@ -86,7 +86,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	projectRepo := mongo.NewProjectRepo(a.A.Store)
-	g, err := projectRepo.FetchProjectByID(r.Context(), source.GroupID)
+	g, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -129,7 +129,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		UID:       uuid.New().String(),
 		EventType: datastore.EventType(maskID),
 		SourceID:  source.UID,
-		GroupID:   source.GroupID,
+		ProjectID: source.ProjectID,
 		Data:      payload,
 		Headers:   httpheader.HTTPHeader(r.Header),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),

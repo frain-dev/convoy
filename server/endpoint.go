@@ -49,10 +49,10 @@ func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, group.UID)
+	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -90,12 +90,12 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 
-	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), group.UID, q, pageable)
+	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), project.UID, q, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
