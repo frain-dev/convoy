@@ -23,8 +23,8 @@ export class VerifyEmailComponent implements OnInit {
 		this.isResendingEmail = true;
 		try {
 			const response = await this.verifyEmailService.resendVerificationEmail();
+			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isResendingEmail = false;
-			console.log(response);
 		} catch {
 			this.isResendingEmail = false;
 		}

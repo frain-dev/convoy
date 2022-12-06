@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Injectable({
@@ -7,7 +8,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class VerifyEmailService {
 	constructor(private http: HttpService) {}
 
-	resendVerificationEmail() {
+	resendVerificationEmail(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
