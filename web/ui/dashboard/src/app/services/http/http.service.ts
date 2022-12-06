@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { environment } from 'src/environments/environment';
 import axios from 'axios';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from '../general/general.service';
 
 @Injectable({
@@ -11,8 +11,9 @@ import { GeneralService } from '../general/general.service';
 export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
+	portalToken = this.route.snapshot.queryParams?.token;
 
-	constructor(private router: Router, private generalService: GeneralService) {}
+	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
@@ -39,7 +40,8 @@ export class HttpService {
 						if (axios.isAxiosError(error)) {
 							const errorResponse: any = error.response;
 							let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
-							if (error.response?.status == 401 && this.router.url.split('/')[1] !== 'app') {
+
+							if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
 								// save previous location before session timeout
 								if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
 
@@ -75,7 +77,7 @@ export class HttpService {
 				);
 
 				const requestHeader = {
-					Authorization: requestDetails.token ? '' : `Bearer ${this.authDetails()?.token}`
+					Authorization: `Bearer ${this.portalToken || this.authDetails()?.token}`
 				};
 
 				// make request
