@@ -147,7 +147,7 @@ func (u *UserService) ResendEmailVerificationToken(ctx context.Context, baseURL 
 	}
 
 	now := primitive.NewDateTimeFromTime(time.Now())
-	if user.EmailVerificationExpiresAt < now {
+	if user.EmailVerificationExpiresAt > now {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("old verification token is still valid"))
 	}
 
