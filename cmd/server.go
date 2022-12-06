@@ -290,17 +290,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Host = host
 	}
 
-	// CONVOY_MULTIPLE_TENANTS
-	isMTSet := cmd.Flags().Changed("multi-tenant")
-	if isMTSet {
-		multipleTenants, err := cmd.Flags().GetBool("multi-tenant")
-		if err != nil {
-			return nil, err
-		}
-
-		c.MultipleTenants = multipleTenants
-	}
-
 	// CONVOY_REDIS_DSN
 	redis, err := cmd.Flags().GetString("redis")
 	if err != nil {
