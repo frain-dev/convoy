@@ -260,6 +260,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addLoginCommand())
 	cmd.AddCommand(addListAppsCommand())
 	cmd.AddCommand(addStreamCommand(app))
+	cmd.AddCommand(addDomainCommand(app))
 	cmd.AddCommand(addSwitchCommand())
 }
 
