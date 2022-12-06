@@ -112,7 +112,7 @@ func (a *ApplicationHandler) ResendVerificationEmail(w http.ResponseWriter, r *h
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("verification email sent successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("verification email resent successfully", nil, http.StatusOK))
 }
 
 func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
