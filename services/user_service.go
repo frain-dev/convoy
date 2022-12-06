@@ -151,7 +151,16 @@ func (u *UserService) ResendEmailVerificationToken(ctx context.Context, baseURL 
 		return util.NewServiceError(http.StatusBadRequest, errors.New("old verification token is still valid"))
 	}
 
-	err := u.sendUserVerificationEmail(ctx, baseURL, user)
+	user.EmailVerificationExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2))
+	user.EmailVerificationToken = uuid.NewString()
+
+	err := u.userRepo.UpdateUser(ctx, user)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to update user")
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update user"))
+	}
+
+	err = u.sendUserVerificationEmail(ctx, baseURL, user)
 	if err != nil {
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -221,7 +230,7 @@ func (u *UserService) sendUserVerificationEmail(ctx context.Context, baseURL str
 			"email_verification_url": fmt.Sprintf("%s/verify-email?token=%s", baseURL, user.EmailVerificationToken),
 			"recipient_name":         user.FirstName,
 			"email":                  user.Email,
-			"expires_at":             user.ResetPasswordExpiresAt.Time().String(),
+			"expires_at":             user.EmailVerificationExpiresAt.Time().String(),
 		},
 	}
 
@@ -259,7 +268,7 @@ func (u *UserService) VerifyEmail(ctx context.Context, token string) error {
 
 	now := primitive.NewDateTimeFromTime(time.Now())
 	if now > user.EmailVerificationExpiresAt {
-		return util.NewServiceError(http.StatusBadRequest, errors.New("password reset token has expired"))
+		return util.NewServiceError(http.StatusBadRequest, errors.New("email verification token has expired"))
 	}
 
 	user.EmailVerified = true
