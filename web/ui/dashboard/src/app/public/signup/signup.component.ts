@@ -28,9 +28,7 @@ export class SignupComponent implements OnInit {
 
 	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, public hubspotService: HubspotService) {}
 
-	ngOnInit(): void {
-		console.log(window.location.hostname);
-	}
+	ngOnInit(): void {}
 
 	async signup() {
 		if (this.signupForm.invalid) return this.signupForm.markAsTouched();
