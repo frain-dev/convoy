@@ -4,7 +4,7 @@ import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
 import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
-import { ScreenDirective } from '../screen/screen.directive';
+import { OverlayDirective } from '../overlay/overlay.directive';
 
 interface CALENDAR_DAY {
 	date: number;
@@ -17,7 +17,7 @@ interface CALENDAR_DAY {
 @Component({
 	selector: 'convoy-date-picker',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, ScreenDirective],
+	imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective],
 	templateUrl: './date-picker.component.html',
 	styleUrls: ['./date-picker.component.scss']
 })

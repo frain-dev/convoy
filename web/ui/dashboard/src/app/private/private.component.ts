@@ -17,6 +17,7 @@ export class PrivateComponent implements OnInit {
 	showOverlay = false;
 	showAddOrganisationModal = false;
 	showAddAnalytics = false;
+	showVerifyEmailModal = false;
 	apiURL = this.generalService.apiURL();
 	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
@@ -39,6 +40,11 @@ export class PrivateComponent implements OnInit {
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
+	}
+
+	get isEmailVerified(): boolean {
+		const authDetails = localStorage.getItem('CONVOY_AUTH');
+		return authDetails ? JSON.parse(authDetails)?.email_verified : false;
 	}
 
 	async getConfiguration() {
@@ -115,6 +121,6 @@ export class PrivateComponent implements OnInit {
 	get showHelpCard() {
 		const formUrls = ['apps/new', 'sources/new', 'subscriptions/new'];
 		const checkForCreateForms = formUrls.some(url => this.router.url.includes(url));
-		return this.router.url === '/projects' || this.router.url === '/projects/new' || checkForCreateForms;
+		return this.router.url === '/projects/new' || checkForCreateForms;
 	}
 }
