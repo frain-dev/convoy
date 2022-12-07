@@ -911,11 +911,14 @@ func TestUserService_ResendEmailVerificationToken(t *testing.T) {
 			args: args{
 				ctx:     ctx,
 				baseURL: "localhost",
-				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))},
+				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(-time.Hour))},
 			},
 			dbFn: func(u *UserService) {
 				q, _ := u.queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				us, _ := u.userRepo.(*mocks.MockUserRepository)
+				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -935,7 +938,7 @@ func TestUserService_ResendEmailVerificationToken(t *testing.T) {
 			args: args{
 				ctx:     ctx,
 				baseURL: "localhost",
-				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(-time.Hour))},
+				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
