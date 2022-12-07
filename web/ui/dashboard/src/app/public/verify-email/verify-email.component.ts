@@ -26,8 +26,7 @@ export class VerifyEmailComponent implements OnInit {
 	async verifyEmail() {
 		this.showError = false;
 		try {
-			const response = await this.verifyEmailService.verifyEmail(this.token);
-			console.log(response);
+			await this.verifyEmailService.verifyEmail(this.token);
 			this.loading = false;
 		} catch {
 			this.loading = false;
