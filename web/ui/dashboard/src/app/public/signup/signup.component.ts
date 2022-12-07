@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { HubspotService } from 'src/app/services/hubspot/hubspot.service';
 import { SignupService } from './signup.service';
 
 @Component({
@@ -25,7 +26,7 @@ export class SignupComponent implements OnInit {
 		org_name: ['', Validators.required]
 	});
 
-	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router) {}
+	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, public hubspotService: HubspotService) {}
 
 	ngOnInit(): void {}
 
@@ -36,6 +37,9 @@ export class SignupComponent implements OnInit {
 		try {
 			const response: any = await this.signupService.signup(this.signupForm.value);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+
+			if (window.location.hostname === 'dashboard.getconvoy.io') this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
+
 			this.isSignUpDone = true;
 			this.disableSignupBtn = false;
 		} catch {
