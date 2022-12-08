@@ -311,7 +311,15 @@
 	<script>
 		window.intercomSettings = {
 			api_base: 'https://api-iam.intercom.io',
-			app_id: 'a5br6kfe'
+			app_id: 'a5br6kfe',
+			hide_default_launcher:
+				// window.location.hostname !== 'dashboard.getconvoy.io' ||
+				window.location.pathname.includes('/portal?') ||
+				window.location.pathname.includes('/login') ||
+				window.location.pathname.includes('/signup') ||
+				window.location.pathname.includes('/forgot-password') ||
+				window.location.pathname.includes('/reset-password') ||
+				window.location.pathname.includes('/accept-invite')
 		};
 	</script>
 

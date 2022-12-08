@@ -12,32 +12,7 @@ export class HubspotService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const http = axios.create();
-				const requestHeader = {
-					Authorization: `Bearer ${environment.hubspot}`,
-					'Content-Type': 'application/json'
-				};
-
-				const { data, status } = await http.request({
-					method: 'post',
-					headers: requestHeader,
-					url: 'https://api.hubapi.com/contacts/v1/contact',
-					data: {
-						properties: [
-							{
-								property: 'email',
-								value: emailData.email
-							},
-							{
-								property: 'firstname',
-								value: emailData.firstname
-							},
-							{
-								property: 'lastname',
-								value: emailData.lastname
-							}
-						]
-					}
-				});
+				const { data } = await http.get(`https://faas-fra1-afec6ce7.doserverless.co/api/v1/web/fn-8f44e6aa-e5d6-4e31-b781-5080c050bb37/welcome-user/welcome-mail?email=${emailData.email}&firstname=${emailData.firstname}&lastname=${emailData.lastname}`);
 				resolve(data);
 			} catch (error) {
 				if (axios.isAxiosError(error)) {
