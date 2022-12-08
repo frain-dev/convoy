@@ -26,7 +26,7 @@ export class SignupComponent implements OnInit {
 		org_name: ['', Validators.required]
 	});
 
-	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, public hubspotService: HubspotService) {}
+	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, private hubspotService: HubspotService) {}
 
 	ngOnInit(): void {}
 
