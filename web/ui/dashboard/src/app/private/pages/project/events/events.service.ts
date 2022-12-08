@@ -95,7 +95,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventId}/resend`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/${requestDetails.eventId}/resend${requestDetails.token ? '?token=' + requestDetails.token : ''}`,
 					method: 'put',
 					token: requestDetails.token
 				});
@@ -111,7 +111,7 @@ export class EventsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/forceresend`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/forceresend${requestDetails.token ? '?token=' + requestDetails.token : ''}`,
 					method: 'post',
 					body: requestDetails.body,
 					token: requestDetails.token
@@ -130,7 +130,7 @@ export class EventsService {
 				const response = await this.http.request({
 					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?eventId=${requestDetails.eventId || ''}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
 						requestDetails.endDate
-					}&endpointId=${requestDetails.endpointId}${requestDetails.statusQuery || ''}`,
+					}&endpointId=${requestDetails.endpointId}${requestDetails.statusQuery || ''}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
 					method: 'post',
 					body: null,
 					token: requestDetails.token
@@ -149,7 +149,7 @@ export class EventsService {
 				const response = await this.http.request({
 					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${
 						requestDetails.endDate
-					}&endpointId=${requestDetails.endpointId}${requestDetails.statusQuery || ''}`,
+					}&endpointId=${requestDetails.endpointId}${requestDetails.statusQuery || ''}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});
