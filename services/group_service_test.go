@@ -763,7 +763,7 @@ func TestProjectService_GetProjects(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an error occurred while fetching Projects",
+			wantErrMsg:  "an error occurred while fetching projects",
 		},
 	}
 
