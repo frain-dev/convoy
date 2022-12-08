@@ -26,6 +26,9 @@ jobs:
           path: |
             web/ui/dashboard/dist
             !web/ui/dashboard/dist/**/*.md
+        env: 
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+
 
   analyze-tags:
     name: Analyze Tags

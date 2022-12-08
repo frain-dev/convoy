@@ -64,7 +64,11 @@
 									"with": "src/environments/environment.prod.ts"
 								}
 							],
-							"outputHashing": "all"
+							"outputHashing": "all",
+							"sourceMap": {
+								"scripts": true,
+								"hidden": true
+							}
 						},
 						"development": {
 							"buildOptimizer": false,
