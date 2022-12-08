@@ -298,6 +298,7 @@ export class EventDeliveriesComponent implements OnInit {
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
+
 		try {
 			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.portalToken });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
