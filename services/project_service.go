@@ -40,7 +40,7 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 	}
 }
 
-func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.Project, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
+func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.Project, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
 	err := util.Validate(newProject)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -97,7 +97,7 @@ func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		RateLimitDuration: newProject.RateLimitDuration,
 	}
 
-	err = gs.projectRepo.CreateProject(ctx, project)
+	err = ps.projectRepo.CreateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create project")
 		if err == datastore.ErrDuplicateProjectName {
@@ -115,7 +115,7 @@ func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		},
 	}
 
-	apiKey, keyString, err := NewSecurityService(gs.projectRepo, gs.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
+	apiKey, keyString, err := NewSecurityService(ps.projectRepo, ps.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -138,7 +138,7 @@ func (gs *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	return project, resp, nil
 }
 
-func (gs *ProjectService) UpdateProject(ctx context.Context, project *datastore.Project, update *models.UpdateProject) (*datastore.Project, error) {
+func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.Project, update *models.UpdateProject) (*datastore.Project, error) {
 	err := util.Validate(update)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to validate project update")
@@ -158,14 +158,14 @@ func (gs *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 		project.LogoURL = update.LogoURL
 	}
 
-	err = gs.projectRepo.UpdateProject(ctx, project)
+	err = ps.projectRepo.UpdateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to to update project")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
-	err = gs.cache.Set(ctx, projectCacheKey, &project, time.Minute*5)
+	err = ps.cache.Set(ctx, projectCacheKey, &project, time.Minute*5)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -186,14 +186,14 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func (gs *ProjectService) GetProjects(ctx context.Context, filter *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	projects, err := gs.projectRepo.LoadProjects(ctx, filter.WithNamesTrimmed())
+func (ps *ProjectService) GetProjects(ctx context.Context, filter *datastore.ProjectFilter) ([]*datastore.Project, error) {
+	projects, err := ps.projectRepo.LoadProjects(ctx, filter.WithNamesTrimmed())
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load projects")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching projects"))
 	}
 
-	err = gs.FillProjectStatistics(ctx, projects)
+	err = ps.FillProjectStatistics(ctx, projects)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fill statistics of project")
 	}
@@ -201,8 +201,8 @@ func (gs *ProjectService) GetProjects(ctx context.Context, filter *datastore.Pro
 	return projects, nil
 }
 
-func (gs *ProjectService) FillProjectStatistics(ctx context.Context, projects []*datastore.Project) error {
-	err := gs.projectRepo.FillProjectsStatistics(ctx, projects)
+func (ps *ProjectService) FillProjectStatistics(ctx context.Context, projects []*datastore.Project) error {
+	err := ps.projectRepo.FillProjectsStatistics(ctx, projects)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to count project applications")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project statistics"))
@@ -211,8 +211,8 @@ func (gs *ProjectService) FillProjectStatistics(ctx context.Context, projects []
 	return nil
 }
 
-func (gs *ProjectService) DeleteProject(ctx context.Context, id string) error {
-	err := gs.projectRepo.DeleteProject(ctx, id)
+func (ps *ProjectService) DeleteProject(ctx context.Context, id string) error {
+	err := ps.projectRepo.DeleteProject(ctx, id)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to delete project")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete project"))
