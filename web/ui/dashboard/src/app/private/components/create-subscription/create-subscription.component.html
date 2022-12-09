@@ -46,6 +46,18 @@
 			New Endpoint
 		</button>
 
+		<div class="mt-24px" *ngIf="projectType === 'outgoing' || token">
+			<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
+			<div (click)="focusInput()" class="w-full font-medium text-14 text-grey-100 border border-primary-500 outline-none rounded-4px bg-[#F7F9FC] pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
+				<div *ngFor="let tag of eventTags" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
+					{{ tag }}
+					<button convoy-button (click)="removeEventTag(tag)" fill="text" type="button" class="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></button>
+				</div>
+				<input type="text" id="tagInput" (input)="addTag()" required class="text-12 bg-[#F7F9FC] focus:outline-none focus:border-none" autocomplete="off" />
+			</div>
+			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
+		</div>
+
 		<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
 		<div class="grid grid-cols-2 gap-24px">
 			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
@@ -65,12 +77,12 @@
 
 			<p class="text-12 text-grey-60 max-w-[340px]">You can activate event filters by clicking on the setup filter button and specifying the configurations.</p>
 
-			<button convoy-button size="sm" fill="text" type="button" className="font-medium mt-18px">
+			<a convoy-button size="sm" fill="text" type="button" class="font-medium !justify-start mt-18px" href="https://getconvoy.io/docs/manual/subscriptions#subscription-filters" target="_blank" referrerpolicy="noreferrer">
 				Learn more about filters here
 				<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
 					<use xlink:href="#arrow-right-icon"></use>
 				</svg>
-			</button>
+			</a>
 		</div>
 
 		<div class="border border-grey-20 p-16px mt-20px">
