@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,7 +33,7 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
 	ctx = o.setCollectionInContext(ctx)
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
+	filter := bson.M{"deleted_at": nil}
 
 	if !util.IsStringEmpty(organisationID) {
 		filter["organisation_id"] = organisationID
@@ -42,7 +43,6 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 
 	pagination, err := o.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &members)
-
 	if err != nil {
 		return members, datastore.PaginationData{}, err
 	}
@@ -59,16 +59,18 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	ctx = o.setCollectionInContext(ctx)
 
 	matchStage1 := bson.D{
-		{Key: "$match",
+		{
+			Key: "$match",
 			Value: bson.D{
 				{Key: "user_id", Value: userID},
-				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
 
 	sortStage := bson.D{
-		{Key: "$sort",
+		{
+			Key: "$sort",
 			Value: bson.D{
 				{Key: "created_at", Value: pageable.Sort},
 			},
@@ -101,7 +103,8 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	}
 
 	replaceRootStage := bson.D{
-		{Key: "$replaceRoot",
+		{
+			Key: "$replaceRoot",
 			Value: bson.D{
 				{Key: "newRoot", Value: "$organisations"},
 			},
@@ -109,9 +112,10 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	}
 
 	matchStage2 := bson.D{
-		{Key: "$match",
+		{
+			Key: "$match",
 			Value: bson.D{
-				{Key: "document_status", Value: datastore.ActiveDocumentStatus},
+				{Key: "deleted_at", Value: nil},
 			},
 		},
 	}
@@ -144,8 +148,7 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 	ctx = o.setCollectionInContext(ctx)
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -169,7 +172,6 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, or
 	filter := bson.M{
 		"uid":             uid,
 		"organisation_id": orgID,
-		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	err := o.store.FindOne(ctx, filter, nil, member)
@@ -186,7 +188,6 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 	filter := bson.M{
 		"user_id":         userID,
 		"organisation_id": orgID,
-		"document_status": datastore.ActiveDocumentStatus,
 	}
 
 	member := new(datastore.OrganisationMember)
@@ -209,9 +210,11 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 	}
 
 	matchStage := bson.D{
-		{Key: "$match",
+		{
+			Key: "$match",
 			Value: bson.D{
-				{Key: "$and",
+				{
+					Key: "$and",
 					Value: []bson.D{
 						{{Key: "user_id", Value: bson.M{"$in": userIDs}}},
 						{{Key: "organisation_id", Value: bson.M{"$in": orgIDs}}},
@@ -240,7 +243,8 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 	}
 
 	replaceRootStage := bson.D{
-		{Key: "$replaceRoot",
+		{
+			Key: "$replaceRoot",
 			Value: bson.D{
 				{Key: "newRoot", Value: "$user_info"},
 			},
@@ -255,7 +259,8 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 				{Key: "first_name", Value: "$first_name"},
 				{Key: "last_name", Value: "$last_name"},
 				{Key: "email", Value: "$email"},
-			}},
+			},
+		},
 	}
 	var userMetadata []datastore.UserMetadata
 

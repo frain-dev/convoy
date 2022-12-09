@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
@@ -21,16 +20,6 @@ func createConfigService(a *ApplicationHandler) *services.ConfigService {
 	)
 }
 
-// LoadConfiguration
-// @Summary Fetch configuration
-// @Description This endpoint fetches configuration
-// @Tags Configuration
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.ConfigurationResponse}}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/configuration [get]
 func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
 	configService := createConfigService(a)
 	config, err := configService.LoadConfiguration(r.Context())
@@ -66,17 +55,6 @@ func (a *ApplicationHandler) LoadConfiguration(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("Configuration fetched successfully", configResponse, http.StatusOK))
 }
 
-// CreateConfiguration
-// @Summary Create a configuration
-// @Description This endpoint creates a configuration
-// @Tags Configuration
-// @Accept  json
-// @Produce  json
-// @Param application body models.Configuration true "Configuration Details"
-// @Success 200 {object} util.ServerResponse{data=models.ConfigurationResponse}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/configuration [post]
 func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
@@ -105,17 +83,6 @@ func (a *ApplicationHandler) CreateConfiguration(w http.ResponseWriter, r *http.
 	_ = render.Render(w, r, util.NewServerResponse("Configuration created successfully", c, http.StatusCreated))
 }
 
-// UpdateConfiguration
-// @Summary Update configuration
-// @Description This endpoint updates configuration
-// @Tags Configuration
-// @Accept  json
-// @Produce  json
-// @Param application body models.Configuration true "Configuration Details"
-// @Success 202 {object} util.ServerResponse{data=models.ConfigurationResponse}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /ui/configuration [put]
 func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
@@ -126,7 +93,6 @@ func (a *ApplicationHandler) UpdateConfiguration(w http.ResponseWriter, r *http.
 	configService := createConfigService(a)
 	config, err := configService.UpdateConfiguration(r.Context(), &newConfig)
 	if err != nil {
-		log.Println(err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

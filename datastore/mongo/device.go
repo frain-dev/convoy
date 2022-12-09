@@ -30,17 +30,16 @@ func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device)
 	return d.store.Save(ctx, device, nil)
 }
 
-func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device, appID, groupID string) error {
+func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device, endpointID, groupID string) error {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             device.UID,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      device.UID,
+		"group_id": groupID,
 	}
 
-	if !util.IsStringEmpty(appID) {
-		filter["app_id"] = appID
+	if !util.IsStringEmpty(endpointID) {
+		filter["endpoint_id"] = endpointID
 	}
 
 	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
@@ -57,17 +56,16 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	return d.store.UpdateOne(ctx, filter, update)
 }
 
-func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, appID, groupID string, status datastore.DeviceStatus) error {
+func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, endpointID, groupID string, status datastore.DeviceStatus) error {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             device.UID,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      device.UID,
+		"group_id": groupID,
 	}
 
-	if !util.IsStringEmpty(appID) {
-		filter["app_id"] = appID
+	if !util.IsStringEmpty(endpointID) {
+		filter["endpoint_id"] = endpointID
 	}
 
 	device.Status = status
@@ -81,33 +79,31 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	return d.store.UpdateOne(ctx, filter, update)
 }
 
-func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, appID, groupID string) error {
+func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, groupID string) error {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             uid,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      uid,
+		"group_id": groupID,
 	}
 
-	if !util.IsStringEmpty(appID) {
-		filter["app_id"] = appID
+	if !util.IsStringEmpty(endpointID) {
+		filter["endpoint_id"] = endpointID
 	}
 
 	return d.store.DeleteOne(ctx, filter, false)
 }
 
-func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*datastore.Device, error) {
+func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, groupID string) (*datastore.Device, error) {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":             uid,
-		"group_id":        groupID,
-		"document_status": datastore.ActiveDocumentStatus,
+		"uid":      uid,
+		"group_id": groupID,
 	}
 
-	if !util.IsStringEmpty(appID) {
-		filter["app_id"] = appID
+	if !util.IsStringEmpty(endpointID) {
+		filter["endpoint_id"] = endpointID
 	}
 
 	device := &datastore.Device{}
@@ -122,17 +118,16 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, appID, gro
 	return device, nil
 }
 
-func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, appID, groupID string) (*datastore.Device, error) {
+func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, groupID string) (*datastore.Device, error) {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"group_id":        groupID,
-		"host_name":       hostName,
-		"document_status": datastore.ActiveDocumentStatus,
+		"group_id":  groupID,
+		"host_name": hostName,
 	}
 
-	if !util.IsStringEmpty(appID) {
-		filter["app_id"] = appID
+	if !util.IsStringEmpty(endpointID) {
+		filter["endpoint_id"] = endpointID
 	}
 
 	device := &datastore.Device{}
@@ -152,15 +147,18 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *da
 
 	var devices []datastore.Device
 
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus, "group_id": groupID}
+	filter := bson.M{"deleted_at": nil, "group_id": groupID}
 
-	if !util.IsStringEmpty(f.AppID) {
-		filter["app_id"] = f.AppID
+	if !util.IsStringEmpty(f.EndpointID) {
+		filter["endpoint_id"] = f.EndpointID
+	}
+
+	if len(f.EndpointIDs) > 0 {
+		filter["endpoint_id"] = bson.M{"$in": f.EndpointIDs}
 	}
 
 	pagination, err := d.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &devices)
-
 	if err != nil {
 		return devices, datastore.PaginationData{}, err
 	}

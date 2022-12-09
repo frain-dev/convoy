@@ -74,7 +74,7 @@ export class TeamsComponent implements OnInit {
 		try {
 			const response = await this.teamService.getPendingTeamMembers({ pageNo: page });
 			this.pendingInvites = response.data;
-			response.data.content.length === 0 ? (this.noInvitesData = true) : (this.noInvitesData = false);
+			response.data.pagination.total > 0 ? (this.noInvitesData = false) : (this.noInvitesData = true);
 			this.isFetchingPendingInvites = false;
 		} catch {
 			this.isFetchingPendingInvites = false;

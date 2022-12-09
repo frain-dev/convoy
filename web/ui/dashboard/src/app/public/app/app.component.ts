@@ -5,7 +5,7 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { AppService } from './app.service';
-import { CliKeysComponent } from 'src/app/private/pages/project/apps/app-details/cli-keys/cli-keys.component';
+import { CliKeysComponent } from 'src/app/private/pages/project/endpoint-details/cli-keys/cli-keys.component';
 
 type EVENT_PAGE_TABS = 'events' | 'event deliveries';
 
@@ -17,8 +17,8 @@ type EVENT_PAGE_TABS = 'events' | 'event deliveries';
 export class AppComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
-	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Event Types', 'Status', ''];
-	token: string = this.route.snapshot.params.token;
+	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Status', ''];
+	token: string = this.route.snapshot.queryParams.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
 	tabs: string[] = ['subscriptions'];
@@ -43,26 +43,26 @@ export class AppComponent implements OnInit {
 	ngOnInit(): void {
 		this.getSubscripions();
 		this.checkFlags();
-
 		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
 		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
 
 		switch (subscribeButtonState) {
 			case 'true':
 				this.showCreateSubscription = true;
+				this.tableHead.pop();
 				break;
 			case 'false':
 				this.showCreateSubscription = false;
 				break;
 
 			default:
-				this.showCreateSubscription = true;
+				this.showCreateSubscription = false;
 				break;
 		}
 	}
 
 	async checkFlags() {
-		this.isCliAvailable = await this.appService.getFlag('can_create_cli_api_key', this.token);
+		this.isCliAvailable = false;
 		if (this.isCliAvailable) this.tabs.push('cli keys', 'devices');
 	}
 
@@ -106,10 +106,10 @@ export class AppComponent implements OnInit {
 
 	closeCreateSubscriptionModal() {
 		this.showCreateSubscriptionModal = false;
-		this.router.navigate(['/app', this.token]);
+		this.router.navigate(['/portal'], { relativeTo: this.route, queryParams: { token: this.token } });
 	}
 
 	onCreateSubscription() {
-		this.router.navigate(['/app', this.token]);
+		this.router.navigate(['/portal'], { relativeTo: this.route, queryParams: { token: this.token } });
 	}
 }

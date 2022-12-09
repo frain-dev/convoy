@@ -19,11 +19,9 @@
 		<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
 			<div emptyStateCTA>
 				<button convoy-button class="mt-22px" *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
-					<svg width="16" height="16" class="mr-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-						<use xlink:href="#add-icon"></use>
-					</svg>
-					{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Learn how to receive events' : 'Start sending events' }}
-					<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+					Learn how to
+					{{ privateService.activeProjectDetails?.type === 'incoming' ? ' receive' : ' send' }} events
+					<svg width="24" height="24" class="ml-8px fill-white-100">
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
 				</button>
@@ -35,24 +33,25 @@
 	<ng-container *ngIf="eventsFetched?.length">
 		<div class="py-24px flex items-center">
 			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-picker>
-			<convoy-dropdown size="sm" position="left" buttonSize="sm" buttonFill="outline" buttonClass="px-10px !border-primary-400 ml-16px">
-				<ng-container dropdownToggle>
+
+			<div convoy-dropdown size="sm" position="left">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px">
 					<span class="text-grey-60 mr-4px">Filter By:</span>
 					<span class="text-primary-100 capitalize">{{ dashboardFrequency }}</span>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px" />
-				</ng-container>
+				</button>
 
-				<ul>
-					<convoy-list-item *ngFor="let filterOption of filterOptions" [className]="dashboardFrequency == filterOption ? 'py-10px px-14px text-14 hover:bg-primary-500 capitalize bg-primary-500' : 'py-10px px-14px text-14 hover:bg-primary-500 capitalize'">
-						<button convoy-button color="grey" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData(); closeFilterOptions()" className="capitalize text-left w-full !justify-start">
+				<ul dropdownOptions>
+					<li convoy-dropdown-option convoy-list-item *ngFor="let filterOption of filterOptions" class="text-14" [active]="dashboardFrequency == filterOption ? 'true' : 'false'" [hasBorder]="true">
+						<button convoy-button color="grey" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData()" class="capitalize text-left w-full !justify-start">
 							{{ filterOption }}
 						</button>
-					</convoy-list-item>
+					</li>
 				</ul>
-			</convoy-dropdown>
+			</div>
 		</div>
 
-		<convoy-card className="relative">
+		<convoy-card className="relative mb-22px">
 			<ul class="flex flex-wrap items-center min-h-[76px] metrics">
 				<li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-grey-10 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
 					<img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
@@ -79,7 +78,7 @@
 					<div *ngIf="!isloadingDashboardData">
 						<div class="text-16 font-medium">{{ dashboardData.apps | number }}</div>
 						<div class="text-grey-40 text-14">
-							<span class="font-normal">App</span>
+							<span class="font-normal">Endpoint</span>
 							<span class="font-normal" *ngIf="dashboardData.apps > 1">s</span>
 						</div>
 					</div>
@@ -91,46 +90,6 @@
 			</div>
 		</convoy-card>
 
-		<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
-			<div class="flex items-center justify-center">
-				<ul class="w-full flex items-center pl-18px">
-					<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)" class="mr-24px !list-none last-of-type:mr-0">
-						<button class="py-16px px-6px flex items-center" [class]="activeTab === tab ? 'active' : ''">
-							<span class="text-14 text-left text-grey-60 font-semibold mobile:min-w-[80px] capitalize transition-all duration-300">{{ tab }}</span>
-						</button>
-					</li>
-
-					<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
-						<span *ngIf="events" [hidden]="activeTab !== 'events'">
-							{{ events && events.pagination.total > 0 ? (events.pagination.prev ? events.pagination.perPage * events.pagination.prev : 1) : 0 }} -
-							{{ events && events.pagination.total < 20 ? events.pagination.total : events.pagination.prev ? events.pagination.perPage * events.pagination.prev + events.content.length : events.pagination.perPage }}
-							<strong>of</strong>
-							{{ events.pagination.total || 0 }}
-						</span>
-						<span *ngIf="eventDeliveries" [hidden]="activeTab !== 'event deliveries'">
-							{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? (eventDeliveries.pagination.prev ? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev : 1) : 0 }} -
-							{{
-								eventDeliveries && eventDeliveries.pagination.total < 20
-									? eventDeliveries.pagination.total
-									: eventDeliveries.pagination.prev
-									? eventDeliveries.pagination.perPage * eventDeliveries.pagination.prev + eventDeliveries.content.length
-									: eventDeliveries.pagination.perPage
-							}}
-							<strong>of</strong>
-							{{ eventDeliveries.pagination.total || 0 }}
-						</span>
-					</div>
-				</ul>
-			</div>
-		</convoy-card>
-
-		<div [hidden]="activeTab !== 'events'">
-			<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)" (openApp)="openApp($event)" (openSource)="openSource($event)"></app-event>
-		</div>
-		<div [hidden]="activeTab !== 'event deliveries'">
-			<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
-		</div>
+		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 	</ng-container>
-
-	<send-event *ngIf="showAddEventModal" (onAction)="$event?.action == 'cancel' ? (showAddEventModal = false) : fetchEvents(); showAddEventModal = false"></send-event>
 </ng-container>

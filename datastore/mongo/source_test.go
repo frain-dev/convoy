@@ -201,7 +201,6 @@ func Test_LoadSourcesPaged(t *testing.T) {
 							Secret: "Paystack Secret",
 						},
 					},
-					DocumentStatus: datastore.ActiveDocumentStatus,
 				}
 				require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 			}
@@ -235,6 +234,5 @@ func generateSource(t *testing.T) *datastore.Source {
 				Secret: "Paystack Secret",
 			},
 		},
-		DocumentStatus: datastore.ActiveDocumentStatus,
 	}
 }

@@ -1,21 +1,12 @@
 <convoy-page>
-	<h2 class="font-semibold mb-20px">App Portal</h2>
+	<h2 class="font-semibold mb-20px" *ngIf="isCliAvailable">Portal</h2>
 
-	<convoy-card className="mt-24px">
-		<div class="flex items-center justify-center">
-			<ul class="w-full flex items-center">
-				<li *ngFor="let tab of tabs" (click)="toggleActiveTab(tab)">
-					<button
-						convoy-button
-						fill="clear"
-						color="grey"
-						[className]="
-							activeTab === tab
-								? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
-								: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
-						"
-					>
-						<span [class]="activeTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
+	<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
+        <div class="flex items-center justify-center">
+			<ul class="flex flex-row m-auto w-full mt-12px">
+				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
+						<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
 					</button>
 				</li>
 
@@ -25,9 +16,11 @@
 				</div>
 			</ul>
 		</div>
+	</convoy-card>
 
-		<ng-container *ngIf="activeTab === 'subscriptions'">
-			<convoy-table-loader id="endpoints_loader" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
+	<ng-container *ngIf="activeTab === 'subscriptions'">
+		<convoy-card className="rounded-tl-[0] rounded-tr-[0]">
+			<convoy-table-loader id="endpoints_loader" class="block h-300px" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
 
 			<table convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
 				<thead convoy-table-head>
@@ -37,10 +30,10 @@
 				<tbody>
 					<tr convoy-table-row *ngFor="let subscription of subscriptions?.content; let i = index">
 						<td convoy-table-cell class="pl-20px">
-							<div class="w-100px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.name }}</div>
+							<div class="overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.name }}</div>
 						</td>
 						<td convoy-table-cell>
-							<div class="w-200px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.endpoint_metadata.target_url }}</div>
+							<div class="w-200px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.endpoint_metadata?.target_url }}</div>
 						</td>
 						<td convoy-table-cell>
 							{{ subscription.created_at | date }}
@@ -49,45 +42,40 @@
 							{{ subscription.updated_at | date }}
 						</td>
 						<td convoy-table-cell>
-							<div class="flex flex-wrap">
-								<convoy-tag type="grey" *ngFor="let eventType of subscription?.filter_config?.event_types; let i = index" className="mr-8px">{{ eventType }}</convoy-tag>
-							</div>
-						</td>
-						<td convoy-table-cell>
 							<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
 						</td>
-						<td convoy-table-cell>
-							<convoy-dropdown buttonSize="sm" buttonFill="clear">
-								<ng-container dropdownToggle>
+						<td convoy-table-cell class="contents" *ngIf="showCreateSubscription">
+							<div convoy-dropdown>
+								<button dropdownTrigger convoy-button size="sm" fill="clear">
 									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
-								</ng-container>
-								<ul>
-									<convoy-list-item class="w-full" className="px-14px" [hover]="true">
-										<button convoy-button fill="text" (click)="subscription.active_menu = false; dropdownComponent.show = false" [routerLink]="'./subscriptions/' + subscription.uid">
+								</button>
+								<ul dropdownOptions>
+									<li convoy-list-item class="w-full" className="px-14px">
+										<button convoy-button fill="text" (click)="subscription.active_menu = false; dropdownComponent.show = false" [routerLink]="'./subscriptions/' + subscription.uid" [queryParams]="{ token: token }">
 											<svg width="17" height="16" class="mr-8px fill-primary-100">
 												<use xlink:href="#edit-icon"></use>
 											</svg>
 											Edit Subscription
 										</button>
-									</convoy-list-item>
-									<convoy-list-item className="px-14px" [hover]="true">
+									</li>
+									<li convoy-list-item>
 										<button convoy-button fill="text" color="danger" (click)="subscription.active_menu = false; activeSubscription = subscription; showDeleteSubscriptionModal = true; dropdownComponent.show = false">
 											<svg width="16" height="16" class="mr-8px fill-danger-100">
 												<use xlink:href="#delete-icon"></use>
 											</svg>
 											Delete Subscription
 										</button>
-									</convoy-list-item>
+									</li>
 								</ul>
-							</convoy-dropdown>
+							</div>
 						</td>
 					</tr>
 				</tbody>
 			</table>
 
-			<convoy-empty-state className="h-[20vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" heading="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
-		</ng-container>
-	</convoy-card>
+			<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
+		</convoy-card>
+	</ng-container>
 
 	<ng-container *ngIf="activeTab === 'cli keys'">
 		<convoy-cli-keys (cliError)="showCliError = $event"></convoy-cli-keys>
@@ -97,53 +85,14 @@
 		<convoy-devices></convoy-devices>
 	</ng-container>
 
-	<convoy-card className="mt-24px rounded-bl-[0px] rounded-br-[0px]">
-		<div class="flex items-center justify-center">
-			<ul class="w-full flex items-center">
-				<li *ngFor="let tab of eventTabs" (click)="toggleEventsTab(tab)">
-					<button
-						convoy-button
-						fill="clear"
-						color="grey"
-						[className]="
-							activeEventsTab === tab
-								? 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out border-b-primary-100'
-								: 'rounded-[0] py-16px px-18px border-b-[3px] border-transparent [border-bottom-style:solid] transition-all ease-in-out'
-						"
-					>
-						<span [class]="activeEventsTab === tab ? 'text-primary-100 capitalize text-14 font-semibold' : 'capitalize text-14'">{{ tab }}</span>
-					</button>
-				</li>
+	<div class="mb-24px"></div>
 
-				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px">
-					<span *ngIf="events" [hidden]="activeEventsTab !== 'events'">
-						{{ events && events.pagination.total > 0 ? 1 : 0 }} - {{ events && events.pagination.total < 20 ? events.pagination.total : events.content.length }}
-						<strong>of</strong>
-						{{ events.pagination.total || 0 }}
-					</span>
-					<span *ngIf="eventDeliveries" [hidden]="activeEventsTab !== 'event deliveries'">
-						{{ eventDeliveries && eventDeliveries.pagination.total > 0 ? 1 : 0 }} -
-						{{ eventDeliveries && eventDeliveries.pagination.total < 20 ? eventDeliveries.pagination.total : eventDeliveries.content.length }}
-						<strong>of</strong>
-						{{ eventDeliveries.pagination.total || 0 }}
-					</span>
-				</div>
-			</ul>
-		</div>
-	</convoy-card>
-
-	<div [hidden]="activeEventsTab !== 'events'">
-		<app-event (pushEvents)="events = $event" (getEventDeliveries)="getEventDeliveries($event)"></app-event>
-	</div>
-
-	<div [hidden]="activeEventsTab !== 'event deliveries'">
-		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
-	</div>
+	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
 </convoy-page>
 
-<convoy-modal size="lg" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
+<convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
 	<ng-container modalBody>
-		<app-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : onCreateSubscription()"></app-create-subscription>
+		<convoy-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : getSubscripions()"></convoy-create-subscription>
 	</ng-container>
 </convoy-modal>
 

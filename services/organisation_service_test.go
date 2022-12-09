@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
@@ -44,7 +45,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 				newOrg: &models.Organisation{Name: "new_org"},
 				user:   &datastore.User{UID: "1234"},
 			},
-			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234", DocumentStatus: datastore.ActiveDocumentStatus},
+			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234"},
 			dbFn: func(os *OrganisationService) {
 				a, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
@@ -64,7 +65,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "name:please provide a valid name",
+			wantErrMsg:  "organisation name is required",
 		},
 		{
 			name: "should_fail_to_create_organisation",
@@ -94,6 +95,9 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 				tt.dbFn(os)
 			}
 
+			err := config.LoadConfig("")
+			require.NoError(t, err)
+
 			org, err := os.CreateOrganisation(tt.args.ctx, tt.args.newOrg, tt.args.user)
 			if tt.wantErr {
 				require.NotNil(t, err)
@@ -102,7 +106,7 @@ func TestOrganisationService_CreateOrganisation(t *testing.T) {
 				return
 			}
 
-			require.Nil(t, err)
+			require.NoError(t, err)
 			stripVariableFields(t, "organisation", org)
 			require.Equal(t, tt.want, org)
 		})
@@ -127,10 +131,10 @@ func TestOrganisationService_UpdateOrganisation(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "should_update_organisation",
+			name: "should_update_organisation name",
 			args: args{
 				ctx:    ctx,
-				org:    &datastore.Organisation{UID: "abc", Name: "test_org"},
+				org:    &datastore.Organisation{UID: "abc", Name: "test_org", DeletedAt: nil},
 				update: &models.Organisation{Name: "test_update_org"},
 			},
 			dbFn: func(os *OrganisationService) {
@@ -142,14 +146,29 @@ func TestOrganisationService_UpdateOrganisation(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_validate_organisation",
+			name: "should_update_organisation custom domain",
 			args: args{
 				ctx:    ctx,
-				update: &models.Organisation{Name: ""},
+				org:    &datastore.Organisation{UID: "abc", Name: "test_org", DeletedAt: nil},
+				update: &models.Organisation{CustomDomain: "http://abc.com"},
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "name:please provide a valid name",
+			dbFn: func(os *OrganisationService) {
+				a, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
+				a.EXPECT().UpdateOrganisation(gomock.Any(),
+					&datastore.Organisation{
+						UID:          "abc",
+						Name:         "test_org",
+						CustomDomain: "abc.com",
+					}).
+					Times(1).Return(nil)
+			},
+			want: &datastore.Organisation{
+				UID:          "abc",
+				Name:         "test_org",
+				CustomDomain: "abc.com",
+				DeletedAt:    nil,
+			},
+			wantErr: false,
 		},
 		{
 			name: "should_fail_to_update_organisation",

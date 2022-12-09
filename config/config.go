@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/kelseyhightower/envconfig"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -65,6 +65,8 @@ type HTTPServerConfiguration struct {
 	Port        uint32 `json:"port" envconfig:"PORT"`
 	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
 	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
+	DomainPort  uint32 `json:"domain_port" envconfig:"DOMAIN_PORT"`
+	HttpProxy   string `json:"proxy" envconfig:"HTTP_PROXY"`
 }
 
 type QueueConfiguration struct {
@@ -204,22 +206,22 @@ func (s SignatureHeaderProvider) String() string {
 }
 
 type Configuration struct {
-	Auth            AuthConfiguration        `json:"auth,omitempty"`
-	Database        DatabaseConfiguration    `json:"database"`
-	Queue           QueueConfiguration       `json:"queue"`
-	Prometheus      PrometheusConfiguration  `json:"prometheus"`
-	Server          ServerConfiguration      `json:"server"`
-	MaxResponseSize uint64                   `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP            SMTPConfiguration        `json:"smtp"`
-	Environment     string                   `json:"env" envconfig:"CONVOY_ENV"`
-	MultipleTenants bool                     `json:"multiple_tenants"`
-	Logger          LoggerConfiguration      `json:"logger"`
-	Tracer          TracerConfiguration      `json:"tracer"`
-	Cache           CacheConfiguration       `json:"cache"`
-	Limiter         LimiterConfiguration     `json:"limiter"`
-	Host            string                   `json:"host" envconfig:"CONVOY_HOST"`
-	Search          SearchConfiguration      `json:"search"`
-	FeatureFlag     FeatureFlagConfiguration `json:"feature_flag"`
+	Auth               AuthConfiguration        `json:"auth,omitempty"`
+	Database           DatabaseConfiguration    `json:"database"`
+	Queue              QueueConfiguration       `json:"queue"`
+	Prometheus         PrometheusConfiguration  `json:"prometheus"`
+	Server             ServerConfiguration      `json:"server"`
+	MaxResponseSize    uint64                   `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP               SMTPConfiguration        `json:"smtp"`
+	Environment        string                   `json:"env" envconfig:"CONVOY_ENV"`
+	Logger             LoggerConfiguration      `json:"logger"`
+	Tracer             TracerConfiguration      `json:"tracer"`
+	Cache              CacheConfiguration       `json:"cache"`
+	Limiter            LimiterConfiguration     `json:"limiter"`
+	Host               string                   `json:"host" envconfig:"CONVOY_HOST"`
+	CustomDomainSuffix string                   `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	Search             SearchConfiguration      `json:"search"`
+	FeatureFlag        FeatureFlagConfiguration `json:"feature_flag"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

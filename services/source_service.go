@@ -50,16 +50,15 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	}
 
 	source := &datastore.Source{
-		UID:            uuid.New().String(),
-		GroupID:        g.UID,
-		MaskID:         uniuri.NewLen(16),
-		Name:           newSource.Name,
-		Type:           newSource.Type,
-		Provider:       newSource.Provider,
-		Verifier:       &newSource.Verifier,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		GroupID:   g.UID,
+		MaskID:    uniuri.NewLen(16),
+		Name:      newSource.Name,
+		Type:      newSource.Type,
+		Provider:  newSource.Provider,
+		Verifier:  &newSource.Verifier,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	if source.Provider == datastore.TwitterSourceProvider {

@@ -1,6 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
@@ -12,8 +11,6 @@ import { PrivateService } from './private.service';
 	styleUrls: ['./private.component.scss']
 })
 export class PrivateComponent implements OnInit {
-	@ViewChild('accountDropdown') dropdownComponent!: DropdownComponent;
-	@ViewChild('organisationDropdown') organisationDropdown!: DropdownComponent;
 	showDropdown = false;
 	showOrgDropdown = false;
 	showMoreDropdown = false;
@@ -23,7 +20,7 @@ export class PrivateComponent implements OnInit {
 	apiURL = this.generalService.apiURL();
 	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
-	userOrganization!: ORGANIZATION_DATA;
+	userOrganization?: ORGANIZATION_DATA;
 
 	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
@@ -55,8 +52,8 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations();
 			this.organisations = response.data.content;
-			this.checkForSelectedOrganisation();
 			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
+			this.checkForSelectedOrganisation();
 			return this.getProjects();
 		} catch (error) {
 			return error;
@@ -79,27 +76,36 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		this.router.url.includes('/get-started') ? location.replace('./projects') : location.reload();
+		location.replace('./projects');
 	}
 
 	checkForSelectedOrganisation() {
 		if (!this.organisations?.length) return;
 
 		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
-		if (!selectedOrganisation || selectedOrganisation === 'undefined') {
-			this.privateService.organisationDetails = this.organisations[0];
-			this.userOrganization = this.organisations[0];
-			localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+		if (!selectedOrganisation || selectedOrganisation === 'undefined') return this.updateOrganisationDetails();
+
+		const organisationDetails = JSON.parse(selectedOrganisation);
+		if (this.organisations.find(org => org.uid === organisationDetails.uid)) {
+			this.privateService.organisationDetails = organisationDetails;
+			this.userOrganization = organisationDetails;
 		} else {
-			this.privateService.organisationDetails = JSON.parse(selectedOrganisation);
-			this.userOrganization = JSON.parse(selectedOrganisation);
+			this.updateOrganisationDetails();
 		}
+	}
+
+	updateOrganisationDetails() {
+		if (!this.organisations?.length) return;
+
+		this.privateService.organisationDetails = this.organisations[0];
+		this.userOrganization = this.organisations[0];
+		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
 	}
 
 	closeAddOrganisationModal(event?: { action: 'created' | 'cancel' }) {
 		this.showAddOrganisationModal = false;
 		this.getOrganizations();
-		if (event?.action === 'created') this.selectOrganisation(this.userOrganization);
+		if (event?.action === 'created' && this.userOrganization) this.selectOrganisation(this.userOrganization);
 	}
 
 	get isProjectDetailsPage() {

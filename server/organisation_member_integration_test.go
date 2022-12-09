@@ -81,9 +81,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
 
@@ -134,9 +134,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 
 	// Arrange.
@@ -176,9 +176,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
 
@@ -214,9 +214,9 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: uuid.NewString(),
-		App:   "",
+		Type:     auth.RoleAdmin,
+		Group:    uuid.NewString(),
+		Endpoint: "",
 	})
 
 	// Arrange.
@@ -244,6 +244,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOw
 
 	orgMemberRepo := cm.NewOrgMemberRepo(s.ConvoyApp.A.Store)
 	member, err := orgMemberRepo.FetchOrganisationMemberByUserID(context.Background(), s.DefaultUser.UID, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
@@ -259,7 +260,6 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOw
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
 }
 
 func TestOrganisationMemberIntegrationTestSuite(t *testing.T) {

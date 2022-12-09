@@ -7,7 +7,6 @@ import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 
 interface LABELS {
 	date: string;
@@ -20,10 +19,9 @@ interface LABELS {
 	styleUrls: ['./events.component.scss']
 })
 export class EventsComponent implements OnInit {
-	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
-	activeTab: 'events' | 'event deliveries' = 'events';
+	activeTab: 'events' | 'event deliveries' = 'event deliveries';
 	showOverlay: boolean = false;
 	isloadingDashboardData: boolean = false;
 	showFilterDropdown: boolean = false;
@@ -49,11 +47,7 @@ export class EventsComponent implements OnInit {
 		await Promise.all([this.fetchDashboardData(), this.fetchEvents()]);
 		this.isloadingDashboardData = false;
 
-		this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
-	}
-
-	closeFilterOptions() {
-		this.dropdownComponent.show = false;
+		// this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
 	}
 
 	addTabToUrl() {
@@ -221,7 +215,7 @@ export class EventsComponent implements OnInit {
 	}
 
 	setUpEvents() {
-		if (this.privateService.activeProjectDetails?.type === 'outgoing') this.showAddEventModal = true;
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') window.open('https://getconvoy.io/docs/getting-started/sending-webhook-example', '_blank');
 		if (this.privateService.activeProjectDetails?.type === 'incoming') window.open('https://getconvoy.io/docs/getting-started/receiving-webhook-example', '_blank');
 	}
 }

@@ -3,8 +3,9 @@ package main
 import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/worker/task"
-	log "github.com/sirupsen/logrus"
+
 	"github.com/spf13/cobra"
 )
 

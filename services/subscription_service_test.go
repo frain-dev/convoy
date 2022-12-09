@@ -16,9 +16,9 @@ import (
 
 func provideSubsctiptionService(ctrl *gomock.Controller) *SubcriptionService {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
-	appRepo := mocks.NewMockApplicationRepository(ctrl)
+	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
-	return NewSubscriptionService(subRepo, appRepo, sourceRepo)
+	return NewSubscriptionService(subRepo, endpointRepo, sourceRepo)
 }
 
 func TestSubscription_CreateSubscription(t *testing.T) {
@@ -45,7 +45,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -54,7 +53,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
@@ -64,14 +62,11 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(nil)
 
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
-					&datastore.Application{
+					&datastore.Endpoint{
 						GroupID: "12345",
-						Endpoints: []datastore.Endpoint{
-							{UID: "endpoint-id-1"},
-						},
 					},
 					nil,
 				)
@@ -83,7 +78,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -92,7 +86,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
@@ -102,14 +95,11 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(nil)
 
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
-					&datastore.Application{
+					&datastore.Endpoint{
 						GroupID: "12345",
-						Endpoints: []datastore.Endpoint{
-							{UID: "endpoint-id-1"},
-						},
 					},
 					nil,
 				)
@@ -131,7 +121,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -140,19 +129,15 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
 			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
-					&datastore.Application{
+					&datastore.Endpoint{
 						GroupID: "12345",
-						Endpoints: []datastore.Endpoint{
-							{UID: "endpoint-id-1"},
-						},
 					},
 					nil,
 				)
@@ -166,12 +151,11 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantErrMsg:  "failed to find source by id",
 		},
 		{
-			name: "should_fail_to_find_application",
+			name: "should fail to find endpoint",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -180,26 +164,24 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
 			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find application by id",
+			wantErrMsg:  "failed to find endpoint by id",
 		},
 		{
-			name: "should_error_for_application_does_not_belong_to_group",
+			name: "should error for endpoint does not belong to group",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -208,34 +190,29 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
 			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
-					&datastore.Application{
+					&datastore.Endpoint{
 						GroupID: "abb",
-						Endpoints: []datastore.Endpoint{
-							{UID: "endpoint-id-1"},
-						},
 					},
 					nil,
 				)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "app does not belong to group",
+			wantErrMsg:  "endpoint does not belong to group",
 		},
 		{
-			name: "should_error_for_failed_to_find_endpoint",
+			name: "should error for failed to find endpoint",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -244,26 +221,17 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
 			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
-					Times(1).Return(
-					&datastore.Application{
-						GroupID: "12345",
-						Endpoints: []datastore.Endpoint{
-							{UID: "endpoint-id"},
-						},
-					},
-					nil,
-				)
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+					Times(1).Return(nil, errors.New("failed to find endpoint by id"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "endpoint not found",
+			wantErrMsg:  "failed to find endpoint by id",
 		},
 		{
 			name: "should fail to create subscription",
@@ -271,7 +239,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -285,14 +252,11 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(errors.New("failed"))
 
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
-					&datastore.Application{
+					&datastore.Endpoint{
 						GroupID: "12345",
-						Endpoints: []datastore.Endpoint{
-							{UID: "endpoint-id-1"},
-						},
 					},
 					nil,
 				)
@@ -307,7 +271,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				ctx: ctx,
 				newSubscription: &models.Subscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -316,7 +279,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 				FilterConfig: &datastore.FilterConfiguration{
@@ -329,14 +291,11 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(nil)
 
-				a, _ := ss.appRepo.(*mocks.MockApplicationRepository)
-				a.EXPECT().FindApplicationByID(gomock.Any(), "app-id-1").
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
-					&datastore.Application{
+					&datastore.Endpoint{
 						GroupID: "12345",
-						Endpoints: []datastore.Endpoint{
-							{UID: "endpoint-id-1"},
-						},
 					},
 					nil,
 				)
@@ -401,7 +360,6 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 				ctx: ctx,
 				update: &models.UpdateSubscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -410,7 +368,6 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
 				Type:       datastore.SubscriptionTypeAPI,
-				AppID:      "app-id-1",
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
@@ -433,7 +390,6 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 				ctx: ctx,
 				update: &models.UpdateSubscription{
 					Name:       "sub 1",
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -649,7 +605,6 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 				newSubscription: &datastore.Subscription{
 					Name:       "sub 1",
 					Type:       datastore.SubscriptionTypeAPI,
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
@@ -669,7 +624,6 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 				newSubscription: &datastore.Subscription{
 					Name:       "sub 1",
 					Type:       datastore.SubscriptionTypeAPI,
-					AppID:      "app-id-1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},

@@ -27,7 +27,6 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/go-chi/chi/v5"
@@ -44,6 +43,7 @@ const (
 	orgCtx              contextKey = "organisation"
 	orgMemberCtx        contextKey = "organisation_member"
 	endpointCtx         contextKey = "endpoint"
+	endpointsCtx        contextKey = "endpoints"
 	eventCtx            contextKey = "event"
 	eventDeliveryCtx    contextKey = "eventDelivery"
 	authLoginCtx        contextKey = "authLogin"
@@ -53,13 +53,15 @@ const (
 	pageDataCtx         contextKey = "pageData"
 	deliveryAttemptsCtx contextKey = "deliveryAttempts"
 	hostCtx             contextKey = "host"
-	appIdCtx            contextKey = "appId"
+	endpointIdCtx       contextKey = "endpointId"
+	endpointIdsCtx      contextKey = "endpointIds"
+	portalLinkCtx       contextKey = "portal_link"
 )
 
 type Middleware struct {
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	appRepo           datastore.ApplicationRepository
+	endpointRepo      datastore.EndpointRepository
 	groupRepo         datastore.GroupRepository
 	apiKeyRepo        datastore.APIKeyRepository
 	subRepo           datastore.SubscriptionRepository
@@ -70,6 +72,7 @@ type Middleware struct {
 	userRepo          datastore.UserRepository
 	configRepo        datastore.ConfigurationRepository
 	deviceRepo        datastore.DeviceRepository
+	portalLinkRepo    datastore.PortalLinkRepository
 	cache             cache.Cache
 	logger            log.StdLogger
 	limiter           limiter.RateLimiter
@@ -79,7 +82,7 @@ type Middleware struct {
 type CreateMiddleware struct {
 	EventRepo         datastore.EventRepository
 	EventDeliveryRepo datastore.EventDeliveryRepository
-	AppRepo           datastore.ApplicationRepository
+	EndpointRepo      datastore.EndpointRepository
 	GroupRepo         datastore.GroupRepository
 	ApiKeyRepo        datastore.APIKeyRepository
 	SubRepo           datastore.SubscriptionRepository
@@ -90,6 +93,7 @@ type CreateMiddleware struct {
 	UserRepo          datastore.UserRepository
 	ConfigRepo        datastore.ConfigurationRepository
 	DeviceRepo        datastore.DeviceRepository
+	PortalLinkRepo    datastore.PortalLinkRepository
 	Cache             cache.Cache
 	Logger            log.StdLogger
 	Limiter           limiter.RateLimiter
@@ -100,7 +104,7 @@ func NewMiddleware(cs *CreateMiddleware) *Middleware {
 	return &Middleware{
 		eventRepo:         cs.EventRepo,
 		eventDeliveryRepo: cs.EventDeliveryRepo,
-		appRepo:           cs.AppRepo,
+		endpointRepo:      cs.EndpointRepo,
 		groupRepo:         cs.GroupRepo,
 		apiKeyRepo:        cs.ApiKeyRepo,
 		subRepo:           cs.SubRepo,
@@ -111,6 +115,7 @@ func NewMiddleware(cs *CreateMiddleware) *Middleware {
 		userRepo:          cs.UserRepo,
 		configRepo:        cs.ConfigRepo,
 		deviceRepo:        cs.DeviceRepo,
+		portalLinkRepo:    cs.PortalLinkRepo,
 		cache:             cs.Cache,
 		logger:            cs.Logger,
 		limiter:           cs.Limiter,
@@ -180,27 +185,27 @@ func (m *Middleware) JsonResponse(next http.Handler) http.Handler {
 	})
 }
 
-func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			appID := chi.URLParam(r, "appID")
+			endpointID := chi.URLParam(r, "endpointID")
 
-			var app *datastore.Application
-			appCacheKey := convoy.ApplicationsCacheKey.Get(appID).String()
+			var endpoint *datastore.Endpoint
+			endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
 
-			event := "an error occurred while retrieving app details"
+			event := "an error occurred while retrieving endpoint details"
 			statusCode := http.StatusBadRequest
 
-			err := m.cache.Get(r.Context(), appCacheKey, &app)
+			err := m.cache.Get(r.Context(), endpointCacheKey, &endpoint)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 				return
 			}
 
-			if app == nil {
-				app, err = m.appRepo.FindApplicationByID(r.Context(), appID)
+			if endpoint == nil {
+				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID)
 				if err != nil {
-					if errors.Is(err, datastore.ErrApplicationNotFound) {
+					if errors.Is(err, datastore.ErrEndpointNotFound) {
 						event = err.Error()
 						statusCode = http.StatusNotFound
 					}
@@ -208,14 +213,14 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 					return
 				}
 
-				err = m.cache.Set(r.Context(), appCacheKey, &app, time.Second*1)
+				err = m.cache.Set(r.Context(), endpointCacheKey, &endpoint, time.Second*1)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
 					return
 				}
 			}
 
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
+			r = r.WithContext(setEndpointInContext(r.Context(), endpoint))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -226,9 +231,9 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
 
-			if !util.IsStringEmpty(authUser.Role.App) {
-				appID := authUser.Role.App
-				r = r.WithContext(setAppIDInContext(r.Context(), appID))
+			if !util.IsStringEmpty(authUser.Role.Endpoint) {
+				endpointID := authUser.Role.Endpoint
+				r = r.WithContext(setEndpointIDInContext(r.Context(), endpointID))
 			}
 
 			next.ServeHTTP(w, r)
@@ -236,16 +241,30 @@ func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.Handler {
+func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := r.URL.Query().Get("token")
+
+			pLink, err := m.portalLinkRepo.FindPortalLinkByToken(r.Context(), token)
+			if err != nil {
+				message := "an error occurred while retrieving portal link"
+				statusCode := http.StatusBadRequest
+
+				if errors.Is(err, datastore.ErrPortalLinkNotFound) {
+					message = "invalid token"
+					statusCode = http.StatusUnauthorized
+				}
+
+				_ = render.Render(w, r, util.NewErrorResponse(message, statusCode))
+				return
+			}
+
 			var group *datastore.Group
-			authUser := GetAuthUserFromContext(r.Context())
-			groupID := authUser.Role.Group
-			appID := authUser.Role.App
+			groupID := pLink.GroupID
 
 			groupCacheKey := convoy.GroupsCacheKey.Get(groupID).String()
-			err := m.cache.Get(r.Context(), groupCacheKey, &group)
+			err = m.cache.Get(r.Context(), groupCacheKey, &group)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
@@ -265,63 +284,29 @@ func (m *Middleware) RequireAppPortalApplication() func(next http.Handler) http.
 				}
 			}
 
-			app, err := m.appRepo.FindApplicationByID(r.Context(), appID)
-			if err != nil {
-
-				event := "an error occurred while retrieving app details"
-				statusCode := http.StatusBadRequest
-
-				if errors.Is(err, datastore.ErrApplicationNotFound) {
-					event = err.Error()
-					statusCode = http.StatusBadRequest
-				}
-
-				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
-				return
-			}
-
+			r = r.WithContext(setPortalLinkInContext(r.Context(), pLink))
+			r = r.WithContext(setEndpointIDsInContext(r.Context(), pLink.Endpoints))
 			r = r.WithContext(setGroupInContext(r.Context(), group))
-			r = r.WithContext(setApplicationInContext(r.Context(), app))
-			r = r.WithContext(setAppIDInContext(r.Context(), app.UID))
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next http.Handler) http.Handler {
+func (m *Middleware) RequirePortalLinkEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authUser := GetAuthUserFromContext(r.Context())
-			if authUser.Role.Type.Is(auth.RoleSuperUser) {
-				// superuser has access to everything
-				next.ServeHTTP(w, r)
-				return
-			}
+			portalLink := GetPortalLinkFromContext(r.Context())
+			endpoint := GetEndpointFromContext(r.Context())
 
-			if !authUser.Role.Type.Is(role) {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized role", http.StatusUnauthorized))
-				return
-			}
-
-			group := GetGroupFromContext(r.Context())
-			if group.Name == authUser.Role.Group || group.UID == authUser.Role.Group {
-				if !util.IsStringEmpty(authUser.Role.App) { // we're dealing with an app portal token at this point
-					app := GetApplicationFromContext(r.Context())
-
-					if app.Title == authUser.Role.App || app.UID == authUser.Role.App {
-						next.ServeHTTP(w, r)
-						return
-					}
-
-					_ = render.Render(w, r, util.NewErrorResponse("unauthorized access", http.StatusUnauthorized))
+			for _, e := range portalLink.Endpoints {
+				if endpoint.UID == e {
+					r = r.WithContext(setEndpointIDInContext(r.Context(), endpoint.UID))
+					next.ServeHTTP(w, r)
 					return
 				}
-
-				next.ServeHTTP(w, r)
-				return
 			}
 
-			_ = render.Render(w, r, util.NewErrorResponse("unauthorized to access group", http.StatusUnauthorized))
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		})
 	}
 }
@@ -329,49 +314,11 @@ func (m *Middleware) RequireAppPortalPermission(role auth.RoleType) func(next ht
 func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
 	activeEndpoints := make([]datastore.Endpoint, 0)
 	for _, endpoint := range endpoints {
-		if endpoint.DeletedAt == 0 {
+		if endpoint.DeletedAt == nil {
 			activeEndpoints = append(activeEndpoints, endpoint)
 		}
 	}
 	return activeEndpoints
-}
-
-func ParseEndpointFromBody(r *http.Request) (models.Endpoint, error) {
-	var e models.Endpoint
-	err := util.ReadJSON(r, &e)
-	if err != nil {
-		return e, err
-	}
-
-	description := e.Description
-	if util.IsStringEmpty(description) {
-		return e, errors.New("please provide a description")
-	}
-
-	e.URL, err = util.CleanEndpoint(e.URL)
-	if err != nil {
-		return e, err
-	}
-
-	return e, nil
-}
-
-func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			app := GetApplicationFromContext(r.Context())
-			endPointId := chi.URLParam(r, "endpointID")
-
-			endpoint, err := m.findEndpoint(&app.Endpoints, endPointId)
-			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-				return
-			}
-
-			r = r.WithContext(setApplicationEndpointInContext(r.Context(), endpoint))
-			next.ServeHTTP(w, r)
-		})
-	}
 }
 
 func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
@@ -483,7 +430,7 @@ func (m *Middleware) RejectAppPortalKey() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
-			if authUser.Role.App != "" {
+			if authUser.Role.Endpoint != "" {
 				// if authUser.Role.App is not empty, an app portal api key was used to authenticate
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
@@ -494,13 +441,13 @@ func (m *Middleware) RejectAppPortalKey() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireEndpointBelongsToGroup() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			app := GetApplicationFromContext(r.Context())
+			endpoint := GetEndpointFromContext(r.Context())
 			group := GetGroupFromContext(r.Context())
 
-			if app.GroupID != group.UID {
+			if endpoint.GroupID != group.UID {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
@@ -590,45 +537,6 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 				return
 			}
 
-			a, err := m.appRepo.FindApplicationByID(r.Context(), eventDelivery.AppID)
-			if err == nil {
-				app := &datastore.Application{
-					UID:          a.UID,
-					Title:        a.Title,
-					GroupID:      a.GroupID,
-					SupportEmail: a.SupportEmail,
-				}
-				eventDelivery.App = app
-			}
-
-			ev, err := m.eventRepo.FindEventByID(r.Context(), eventDelivery.EventID)
-			if err == nil {
-				event := &datastore.Event{
-					UID:       ev.UID,
-					EventType: ev.EventType,
-				}
-				eventDelivery.Event = event
-			}
-
-			en, err := m.appRepo.FindApplicationEndpointByID(r.Context(), eventDelivery.AppID, eventDelivery.EndpointID)
-			if err == nil {
-				endpoint := &datastore.Endpoint{
-					UID:               en.UID,
-					TargetURL:         en.TargetURL,
-					DocumentStatus:    en.DocumentStatus,
-					Secrets:           en.Secrets,
-					HttpTimeout:       en.HttpTimeout,
-					RateLimit:         en.RateLimit,
-					RateLimitDuration: en.RateLimitDuration,
-				}
-				eventDelivery.Endpoint = endpoint
-			}
-
-			device, err := m.deviceRepo.FetchDeviceByID(r.Context(), eventDelivery.DeviceID, a.UID, a.GroupID)
-			if err == nil {
-				eventDelivery.CLIMetadata.HostName = device.HostName
-			}
-
 			r = r.WithContext(setEventDeliveryInContext(r.Context(), eventDelivery))
 			next.ServeHTTP(w, r)
 		})
@@ -651,15 +559,6 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func (m *Middleware) findEndpoint(endpoints *[]datastore.Endpoint, id string) (*datastore.Endpoint, error) {
-	for _, endpoint := range *endpoints {
-		if endpoint.UID == id && endpoint.DeletedAt == 0 {
-			return &endpoint, nil
-		}
-	}
-	return nil, datastore.ErrEndpointNotFound
 }
 
 func (m *Middleware) GetDefaultGroup(r *http.Request, groupRepo datastore.GroupRepository) (*datastore.Group, error) {
@@ -949,8 +848,12 @@ func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
 					m.logger.WithError(err).Error("Failed to generate status level")
 				}
 
-				m.logger.WithLogger().WithFields(logFields).Log(lvl, requestFields["requestURL"])
+				m.logger.WithFields(logFields).Log(lvl, requestFields["requestURL"])
 			}()
+
+			requestID := middleware.GetReqID(r.Context())
+			ctx := log.NewContext(r.Context(), m.logger, log.Fields{"request_id": requestID})
+			r = r.WithContext(ctx)
 
 			next.ServeHTTP(ww, r)
 		})
@@ -984,7 +887,6 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	}
 
 	cfg, err := config.Get()
-
 	if err != nil {
 		return nil
 	}
@@ -1159,14 +1061,66 @@ func (m *Middleware) RateLimitByGroupID() func(next http.Handler) http.Handler {
 	}
 }
 
-func setApplicationInContext(ctx context.Context,
-	app *datastore.Application,
-) context.Context {
-	return context.WithValue(ctx, appCtx, app)
+func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			appID := chi.URLParam(r, "appID")
+
+			endpoints, err := m.endpointRepo.FindEndpointsByAppID(r.Context(), appID)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while retrieving app details", http.StatusBadRequest))
+				return
+			}
+
+			if len(endpoints) == 0 {
+				_ = render.Render(w, r, util.NewErrorResponse("application not found", http.StatusNotFound))
+				return
+			}
+
+			r = r.WithContext(setEndpointsInContext(r.Context(), endpoints))
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
-func GetApplicationFromContext(ctx context.Context) *datastore.Application {
-	return ctx.Value(appCtx).(*datastore.Application)
+func (m *Middleware) RequireAppEndpoint() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			endpoints := GetEndpointsFromContext(r.Context())
+			endPointId := chi.URLParam(r, "endpointID")
+
+			for _, endpoint := range endpoints {
+				if endpoint.UID == endPointId {
+					r = r.WithContext(setEndpointInContext(r.Context(), &endpoint))
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("endpoint not found", http.StatusBadRequest))
+		})
+	}
+}
+
+func (m *Middleware) RequireAppBelongsToGroup() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			endpoints := GetEndpointsFromContext(r.Context())
+
+			group := GetGroupFromContext(r.Context())
+
+			if endpoints[0].GroupID != group.UID {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func setEndpointIDInContext(ctx context.Context, endpointID string) context.Context {
+	return context.WithValue(ctx, endpointIdCtx, endpointID)
 }
 
 func setOrganisationInContext(ctx context.Context,
@@ -1209,18 +1163,22 @@ func GetEventDeliveryFromContext(ctx context.Context) *datastore.EventDelivery {
 	return ctx.Value(eventDeliveryCtx).(*datastore.EventDelivery)
 }
 
-func GetApplicationsFromContext(ctx context.Context) *[]datastore.Application {
-	return ctx.Value(appCtx).(*[]datastore.Application)
-}
-
-func setApplicationEndpointInContext(ctx context.Context,
+func setEndpointInContext(ctx context.Context,
 	endpoint *datastore.Endpoint,
 ) context.Context {
 	return context.WithValue(ctx, endpointCtx, endpoint)
 }
 
-func GetApplicationEndpointFromContext(ctx context.Context) *datastore.Endpoint {
+func GetEndpointFromContext(ctx context.Context) *datastore.Endpoint {
 	return ctx.Value(endpointCtx).(*datastore.Endpoint)
+}
+
+func setEndpointsInContext(ctx context.Context, endpoints []datastore.Endpoint) context.Context {
+	return context.WithValue(ctx, endpointsCtx, endpoints)
+}
+
+func GetEndpointsFromContext(ctx context.Context) []datastore.Endpoint {
+	return ctx.Value(endpointsCtx).([]datastore.Endpoint)
 }
 
 func setGroupInContext(ctx context.Context, group *datastore.Group) context.Context {
@@ -1243,9 +1201,7 @@ func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData
 	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
 }
 
-func setDeliveryAttemptInContext(ctx context.Context,
-	attempt *datastore.DeliveryAttempt,
-) context.Context {
+func setDeliveryAttemptInContext(ctx context.Context, attempt *datastore.DeliveryAttempt) context.Context {
 	return context.WithValue(ctx, deliveryAttemptsCtx, attempt)
 }
 
@@ -1291,20 +1247,38 @@ func GetHostFromContext(ctx context.Context) string {
 	return ctx.Value(hostCtx).(string)
 }
 
-func setAppIDInContext(ctx context.Context, appId string) context.Context {
-	return context.WithValue(ctx, appIdCtx, appId)
-}
-
-func GetAppIDFromContext(r *http.Request) string {
-	if appID, ok := r.Context().Value(appIdCtx).(string); ok {
-		return appID
+func GetEndpointIDFromContext(r *http.Request) string {
+	if endpointID, ok := r.Context().Value(endpointIdCtx).(string); ok {
+		return endpointID
 	}
 
-	return r.URL.Query().Get("appId")
+	return r.URL.Query().Get("endpointId")
 }
 
 func GetSourceIDFromContext(r *http.Request) string {
 	return r.URL.Query().Get("sourceId")
+}
+
+func setPortalLinkInContext(ctx context.Context, pl *datastore.PortalLink) context.Context {
+	return context.WithValue(ctx, portalLinkCtx, pl)
+}
+
+func GetPortalLinkFromContext(ctx context.Context) *datastore.PortalLink {
+	return ctx.Value(portalLinkCtx).(*datastore.PortalLink)
+}
+
+func setEndpointIDsInContext(ctx context.Context, endpointIDs []string) context.Context {
+	return context.WithValue(ctx, endpointIdsCtx, endpointIDs)
+}
+
+func GetEndpointIDsFromContext(ctx context.Context) []string {
+	var endpoints []string
+
+	if endpointIDs, ok := ctx.Value(endpointIdsCtx).([]string); ok {
+		return endpointIDs
+	}
+
+	return endpoints
 }
 
 func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {

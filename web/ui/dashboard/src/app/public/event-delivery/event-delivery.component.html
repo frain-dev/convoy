@@ -1,6 +1,6 @@
 <convoy-page>
 	<div class="text-12 font-medium flex items-center mb-24px uppercase">
-		<a [routerLink]="'/app/' + appPortalToken" class="font-medium cursor-pointer text-primary-100">Events</a>
+		<a [routerLink]="'/portal'" [queryParams]="{ token: portalToken }" class="font-medium cursor-pointer text-primary-100">Portal</a>
 		<svg width="16" height="16" class="mx-4px">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>

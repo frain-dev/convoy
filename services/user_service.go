@@ -14,11 +14,12 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -51,7 +52,6 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 
 	p := datastore.Password{Plaintext: data.Password, Hash: []byte(user.Password)}
 	match, err := p.Matches()
-
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -70,7 +70,6 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 	}
 
 	return user, &token, nil
-
 }
 
 func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUser) (*datastore.User, *jwt.Token, error) {
@@ -102,14 +101,13 @@ func (u *UserService) RegisterUser(ctx context.Context, data *models.RegisterUse
 	}
 
 	user := &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      data.FirstName,
-		LastName:       data.LastName,
-		Email:          data.Email,
-		Password:       string(p.Hash),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: data.FirstName,
+		LastName:  data.LastName,
+		Email:     data.Email,
+		Password:  string(p.Hash),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = u.userRepo.CreateUser(ctx, user)
@@ -151,7 +149,6 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 	}
 	isValid, err := jw.ValidateAccessToken(data.AccessToken)
 	if err != nil {
-
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			expiry := time.Unix(isValid.Expiry, 0)
 			gracePeriod := expiry.Add(time.Minute * 5)
@@ -192,7 +189,6 @@ func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jw
 	}
 
 	return &token, nil
-
 }
 
 func (u *UserService) LogoutUser(token string) error {
@@ -256,7 +252,6 @@ func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePas
 
 	p := datastore.Password{Plaintext: data.CurrentPassword, Hash: []byte(user.Password)}
 	match, err := p.Matches()
-
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -305,14 +300,14 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 	if err != nil {
 		return util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
 	}
-	err = u.sendPasswordResetEmail(baseURL, resetToken, user)
+	err = u.sendPasswordResetEmail(ctx, baseURL, resetToken, user)
 	if err != nil {
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	return nil
 }
 
-func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user *datastore.User) error {
+func (u *UserService) sendPasswordResetEmail(ctx context.Context, baseURL string, token string, user *datastore.User) error {
 	em := email.Message{
 		Email:        user.Email,
 		Subject:      "Convoy Password Reset",
@@ -326,7 +321,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 
 	buf, err := json.Marshal(em)
 	if err != nil {
-		log.WithError(err).Error("failed to marshal notification payload")
+		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
 		return err
 	}
 
@@ -337,7 +332,7 @@ func (u *UserService) sendPasswordResetEmail(baseURL string, token string, user 
 
 	err = u.queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		log.WithError(err).Error("failed to write new notification to the queue")
+		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
 		return err
 	}
 	return nil

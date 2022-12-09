@@ -29,13 +29,10 @@ func (db *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organi
 
 func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
-	filter := bson.M{"document_status": datastore.ActiveDocumentStatus}
-
 	var organisations []datastore.Organisation
 
-	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
+	pagination, err := db.store.FindMany(ctx, bson.M{}, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &organisations)
-
 	if err != nil {
 		return organisations, datastore.PaginationData{}, err
 	}
@@ -48,21 +45,20 @@ func (db *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organi
 	org.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 	update := bson.M{
 		"$set": bson.M{
-			"name":       org.Name,
-			"updated_at": org.UpdatedAt,
+			"name":          org.Name,
+			"updated_at":    org.UpdatedAt,
+			"custom_domain": org.CustomDomain,
 		},
 	}
 
-	err := db.store.UpdateOne(ctx, bson.M{"uid": org.UID}, update)
-	return err
+	return db.store.UpdateOne(ctx, bson.M{"uid": org.UID}, update)
 }
 
 func (db *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 	ctx = db.setCollectionInContext(ctx)
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at":      primitive.NewDateTimeFromTime(time.Now()),
-			"document_status": datastore.DeletedDocumentStatus,
+			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}
 
@@ -84,6 +80,34 @@ func (db *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datas
 	}
 
 	return org, err
+}
+
+func (db *orgRepo) FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
+	ctx = db.setCollectionInContext(ctx)
+	org := &datastore.Organisation{}
+
+	filter := bson.M{"assigned_domain": domain}
+
+	err := db.store.FindOne(ctx, filter, nil, org)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return org, datastore.ErrOrgNotFound
+	}
+
+	return org, nil
+}
+
+func (db *orgRepo) FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
+	ctx = db.setCollectionInContext(ctx)
+	org := &datastore.Organisation{}
+
+	filter := bson.M{"custom_domain": domain}
+
+	err := db.store.FindOne(ctx, filter, nil, org)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return org, datastore.ErrOrgNotFound
+	}
+
+	return org, nil
 }
 
 func (db *orgRepo) setCollectionInContext(ctx context.Context) context.Context {

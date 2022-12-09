@@ -16,18 +16,27 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	log "github.com/sirupsen/logrus"
 )
 
 type Dispatcher struct {
 	client *http.Client
 }
 
-func NewDispatcher(timeout time.Duration) *Dispatcher {
-	return &Dispatcher{
-		client: &http.Client{Timeout: timeout},
+func NewDispatcher(timeout time.Duration, httpProxy string) (*Dispatcher, error) {
+	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
+
+	if len(httpProxy) > 0 {
+		proxyUrl, err := url.Parse(httpProxy)
+		if err != nil {
+			return nil, err
+		}
+
+		d.client.Transport = &http.Transport{Proxy: http.ProxyURL(proxyUrl)}
 	}
+
+	return d, nil
 }
 
 func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, g *datastore.Group, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader) (*Response, error) {
