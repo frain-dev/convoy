@@ -21,59 +21,59 @@ var Migrations = []*Migration{
 	{
 		ID: "20220901162904_change_group_rate_limit_configuration",
 		Migrate: func(db *mongo.Database) error {
-			//type RTConfig struct {
-			//	Duration string `json:"duration"`
-			//}
-			//
-			//type Config struct {
-			//	RateLimit *RTConfig `json:"ratelimit"`
-			//}
-			//
-			//type Project struct {
-			//	UID    string  `json:"uid" bson:"uid"`
-			//	Config *Config `json:"config" bson:"config"`
-			//}
-			//
-			//store := datastore.New(db)
-			//
-			//fn := func(sessCtx mongo.SessionContext) error {
-			//	ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
-			//	var projects []*Project
-			//	err := store.FindAll(ctx, nil, nil, nil, &projects)
-			//	if err != nil {
-			//		return err
-			//	}
-			//
-			//	var newDuration uint64
-			//	for _, project := range projects {
-			//		if project.Config == nil || project.Config.RateLimit == nil {
-			//			continue
-			//		}
-			//
-			//		duration, err := time.ParseDuration(project.Config.RateLimit.Duration)
-			//		if err != nil {
-			//			// Set default when an error occurs.
-			//			newDuration = datastore.DefaultRateLimitConfig.Duration
-			//		} else {
-			//			newDuration = uint64(duration.Seconds())
-			//		}
-			//
-			//		update := bson.M{
-			//			"$set": bson.M{
-			//				"config.ratelimit.duration": newDuration,
-			//			},
-			//		}
-			//		err = store.UpdateByID(ctx, project.UID, update)
-			//		if err != nil {
-			//			log.WithError(err).Fatalf("Failed migration 20220901162904_change_group_rate_limit_configuration")
-			//			return err
-			//		}
-			//	}
+			type RTConfig struct {
+				Duration string `json:"duration"`
+			}
 
-			return nil
-			//}
+			type Config struct {
+				RateLimit *RTConfig `json:"ratelimit"`
+			}
 
-			// return store.WithTransaction(context.Background(), fn)
+			type Project struct {
+				UID    string  `json:"uid" bson:"uid"`
+				Config *Config `json:"config" bson:"config"`
+			}
+
+			store := datastore.New(db)
+
+			fn := func(sessCtx mongo.SessionContext) error {
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
+				var projects []*Project
+				err := store.FindAll(ctx, nil, nil, nil, &projects)
+				if err != nil {
+					return err
+				}
+
+				var newDuration uint64
+				for _, project := range projects {
+					if project.Config == nil || project.Config.RateLimit == nil {
+						continue
+					}
+
+					duration, err := time.ParseDuration(project.Config.RateLimit.Duration)
+					if err != nil {
+						// Set default when an error occurs.
+						newDuration = datastore.DefaultRateLimitConfig.Duration
+					} else {
+						newDuration = uint64(duration.Seconds())
+					}
+
+					update := bson.M{
+						"$set": bson.M{
+							"config.ratelimit.duration": newDuration,
+						},
+					}
+					err = store.UpdateByID(ctx, project.UID, update)
+					if err != nil {
+						log.WithError(err).Fatalf("Failed migration 20220901162904_change_group_rate_limit_configuration")
+						return err
+					}
+				}
+
+				return nil
+			}
+
+			return store.WithTransaction(context.Background(), fn)
 		},
 		Rollback: func(db *mongo.Database) error {
 			store := datastore.New(db)
@@ -98,7 +98,7 @@ var Migrations = []*Migration{
 					newDuration, err = time.ParseDuration(duration)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20220901162904_change_group_rate_limit_configuration ParseDuration")
-						// return err
+						return err
 					}
 
 					update := bson.M{
