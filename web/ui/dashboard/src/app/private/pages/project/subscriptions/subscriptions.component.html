@@ -11,7 +11,7 @@
 </div>
 
 <!-- subscriptions loader  -->
-<div class="min-h-[70vh]" *ngIf="isLoadindingSubscriptions">
+<div class="min-h-[70vh] mt-80px" *ngIf="isLoadindingSubscriptions">
 	<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptionsLoaders">
 		<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10 px-16px">
 			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
@@ -19,8 +19,7 @@
 		</div>
 		<div class="flex items-end justify-between pb-8px px-16px mt-8px" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
 			<div>
-				<div class="text-grey-40 text-10 mb-3">App</div>
-
+				<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[80px] mb-12px"></div>
 				<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[120px]"></div>
 			</div>
 			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[150px]"></div>
@@ -66,26 +65,26 @@
 					</div>
 				</div>
 
-				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.app_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
+				<div class="flex items-end justify-between pb-8px pl-16px mt-8px" *ngIf="subscription?.endpoint_metadata" [ngClass]="{ 'border-b border-b-grey-10': privateService.activeProjectDetails?.type === 'incoming' }">
 					<div class="w-full">
-						<div class="text-grey-40 text-10 mb-3">App</div>
-						<div class="text-12">{{ subscription?.app_metadata?.name }}</div>
+						<div class="text-grey-40 text-10 mb-12px">Endpoint</div>
+						<div class="text-12">{{ subscription?.endpoint_metadata?.title }}</div>
 					</div>
-					<div class="w-full">
+					<div class="w-full flex items-center">
 						<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis" [ngClass]="{ 'max-w-[158px]': activeSubscription?.uid }">
 							{{ subscription?.endpoint_metadata?.target_url }}
 						</div>
+						<convoy-copy-button [text]="subscription?.endpoint_metadata?.target_url || ''" size="md" notificationText="Endpoint URL has been copied to clipboard" className="ml-8px"></convoy-copy-button>
 					</div>
-					<div class="w-full" *ngIf="subscription?.endpoint_metadata">
+					<div class="w-full" *ngIf="subscription?.endpoint_metadata?.secrets?.length">
 						<div class="text-12 flex items-center whitespace-nowrap">
 							Endpoint Secret
-							<convoy-copy-button [text]="subscription.endpoint_metadata.secret" size="md" (copyText)="copyText()" className="ml-8px"></convoy-copy-button>
+							<convoy-copy-button [text]="getEndpointSecret(subscription.endpoint_metadata?.secrets) || ''" size="md" notificationText="Endpoint secret has been copied to clipboard" className="ml-8px"></convoy-copy-button>
 						</div>
 					</div>
-
 					<div class="flex items-center justify-end w-[50%]">
-						<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/apps/' + subscription.app_metadata?.uid">
-							<div class="whitespace-nowrap">Go to app</div>
+						<a class="mx-16px flex items-center text-12 text-primary-100 font-medium" [routerLink]="'/projects/' + projectId + '/endpoints/' + subscription.endpoint_metadata?.uid">
+							<div class="whitespace-nowrap">Go to endpoint</div>
 							<svg width="18" height="18" class="ml-2" fill="#477db3">
 								<use xlink:href="#arrow-right-icon"></use>
 							</svg>
@@ -95,7 +94,7 @@
 
 				<div class="flex items-end justify-between pb-8px ml-16px mt-8px" *ngIf="privateService.activeProjectDetails?.type === 'incoming' && subscription.source_metadata">
 					<div class="w-full">
-						<div class="text-grey-40 text-10 mb-10px">Source</div>
+						<div class="text-grey-40 text-10 mb-12px">Source</div>
 						<div class="text-12">{{ subscription.source_metadata.name }}</div>
 					</div>
 					<div class="w-full">
@@ -140,12 +139,6 @@
 					<div class="w-[50%] text-grey-40">Endpoint</div>
 					<div class="w-[50%] text-right text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
 				</li>
-				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.app_metadata">
-					<div class="w-[50%] text-grey-40">App Name</div>
-					<a [routerLink]="'/projects/' + projectId + '/apps/' + activeSubscription?.app_metadata?.uid" class="w-[50%] font-medium text-primary-100 text-right underline">
-						{{ activeSubscription?.app_metadata?.name }}
-					</a>
-				</li>
 				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.type === 'incoming'">
 					<div class="w-[50%] text-grey-40">Source</div>
 					<a [routerLink]="'/projects/' + projectId + '/sources'" [queryParams]="{ id: activeSubscription?.uid }" class="w-[50%] font-medium text-primary-100 text-right underline">
@@ -156,9 +149,9 @@
 					<div class="w-[50%] text-grey-40">Created At</div>
 					<div class="w-[50%] text-right">{{ activeSubscription?.created_at | date }}</div>
 				</li>
-				<li convoy-list-item class="text-14 font-normal py-16px px-24px items-start">
+
+				<li convoy-list-item class="text-14 font-normal py-16px px-24px items-start" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 					<div class="w-[40%] flex items-center text-primary-100 text-12 whitespace-nowrap">
-						<a rou></a>
 						Events Watched
 						<svg width="18" height="18" class="ml-2 fill-primary-100">
 							<use xlink:href="#arrow-right-icon"></use>
@@ -236,7 +229,7 @@
 
 <convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
 	<ng-container modalBody>
-		<app-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></app-create-subscription>
+		<convoy-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
 	</ng-container>
 </convoy-modal>
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>

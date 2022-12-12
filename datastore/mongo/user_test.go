@@ -29,11 +29,10 @@ func Test_CreateUser(t *testing.T) {
 			name: "create user",
 			users: []datastore.User{
 				{
-					UID:            uuid.NewString(),
-					FirstName:      "test",
-					LastName:       "test",
-					Email:          fmt.Sprintf("%s@test.com", uuid.NewString()),
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					UID:       uuid.NewString(),
+					FirstName: "test",
+					LastName:  "test",
+					Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
 				},
 			},
 		},
@@ -41,19 +40,17 @@ func Test_CreateUser(t *testing.T) {
 			name: "cannot create user with existing email",
 			users: []datastore.User{
 				{
-					UID:            uuid.NewString(),
-					FirstName:      "test",
-					LastName:       "test",
-					Email:          "test@test.com",
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					UID:       uuid.NewString(),
+					FirstName: "test",
+					LastName:  "test",
+					Email:     "test@test.com",
 				},
 
 				{
-					UID:            uuid.NewString(),
-					FirstName:      "test",
-					LastName:       "test",
-					Email:          "test@test.com",
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					UID:       uuid.NewString(),
+					FirstName: "test",
+					LastName:  "test",
+					Email:     "test@test.com",
 				},
 			},
 		},
@@ -65,11 +62,10 @@ func Test_CreateUser(t *testing.T) {
 
 			for i, user := range tc.users {
 				user := &datastore.User{
-					UID:            user.UID,
-					FirstName:      user.FirstName,
-					LastName:       user.LastName,
-					Email:          user.Email,
-					DocumentStatus: user.DocumentStatus,
+					UID:       user.UID,
+					FirstName: user.FirstName,
+					LastName:  user.LastName,
+					Email:     user.Email,
 				}
 
 				if i == 0 {
@@ -206,11 +202,10 @@ func Test_LoadUsersPaged(t *testing.T) {
 			userRepo := NewUserRepo(store)
 			for i := 0; i < tc.count; i++ {
 				user := &datastore.User{
-					UID:            uuid.NewString(),
-					FirstName:      "test",
-					LastName:       "test",
-					Email:          fmt.Sprintf("%s@test.com", uuid.NewString()),
-					DocumentStatus: datastore.ActiveDocumentStatus,
+					UID:       uuid.NewString(),
+					FirstName: "test",
+					LastName:  "test",
+					Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
 				}
 				require.NoError(t, userRepo.CreateUser(context.Background(), user))
 			}
@@ -252,15 +247,13 @@ func Test_UpdateUser(t *testing.T) {
 	require.Equal(t, firstName, newUser.FirstName)
 	require.Equal(t, lastName, newUser.LastName)
 	require.Equal(t, email, newUser.Email)
-
 }
 
 func generateUser(t *testing.T) *datastore.User {
 	return &datastore.User{
-		UID:            uuid.NewString(),
-		FirstName:      "test",
-		LastName:       "test",
-		Email:          fmt.Sprintf("%s@test.com", uuid.NewString()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.NewString(),
+		FirstName: "test",
+		LastName:  "test",
+		Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
 	}
 }

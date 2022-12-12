@@ -7,7 +7,7 @@ import { ActivatedRoute } from '@angular/router';
 	styleUrls: ['./event-delivery.component.scss']
 })
 export class EventDeliveryComponent implements OnInit {
-	appPortalToken = this.route.snapshot.params.token;
+	portalToken = this.route.snapshot.queryParams.token;
 
 	constructor(private route: ActivatedRoute) {}
 

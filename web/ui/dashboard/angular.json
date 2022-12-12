@@ -29,11 +29,20 @@
 						"polyfills": "src/polyfills.ts",
 						"tsConfig": "tsconfig.app.json",
 						"inlineStyleLanguage": "scss",
-						"assets": ["src/favicon.ico", "src/assets", "src/content"],
+						"assets": [
+							"src/favicon.ico",
+							"src/assets",
+							"src/content",
+							{
+								"glob": "**/*",
+								"input": "node_modules/monaco-editor",
+								"output": "assets/monaco-editor"
+							}
+						],
 						"styles": ["src/styles.scss"],
 						"scripts": [],
 						"preserveSymlinks": true,
-						"allowedCommonJsDependencies": ["prismjs"]
+						"allowedCommonJsDependencies": ["prismjs", "monaco-editor"]
 					},
 					"configurations": {
 						"production": {

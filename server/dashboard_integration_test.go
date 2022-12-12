@@ -81,19 +81,17 @@ func (s *DashboardIntegrationTestSuite) TearDownTest() {
 
 func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	ctx := context.Background()
-	application := &datastore.Application{
-		UID:            "abc",
-		GroupID:        s.DefaultGroup.UID,
-		Title:          "test-app",
-		SupportEmail:   "test@suport.com",
-		Endpoints:      []datastore.Endpoint{},
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+	endpoint := &datastore.Endpoint{
+		UID:          "abc",
+		GroupID:      s.DefaultGroup.UID,
+		Title:        "test-app",
+		SupportEmail: "test@suport.com",
+		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	appRepo := cm.NewApplicationRepo(s.ConvoyApp.A.Store)
-	err := appRepo.CreateApplication(ctx, application, application.GroupID)
+	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.GroupID)
 	require.NoError(s.T(), err)
 
 	events := []datastore.Event{
@@ -101,73 +99,61 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			UID:              uuid.New().String(),
 			EventType:        "*",
 			MatchedEndpoints: 1,
-			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
 			GroupID:          s.DefaultGroup.UID,
-			AppID:            application.UID,
+			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
 			EventType:        "*",
 			MatchedEndpoints: 1,
-			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
 			GroupID:          s.DefaultGroup.UID,
-			AppID:            application.UID,
+			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
 			EventType:        "*",
 			MatchedEndpoints: 1,
-			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
 			GroupID:          s.DefaultGroup.UID,
-			AppID:            application.UID,
+			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
 			EventType:        "*",
 			MatchedEndpoints: 1,
-			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
 			GroupID:          s.DefaultGroup.UID,
-			AppID:            application.UID,
+			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
 			EventType:        "*",
 			MatchedEndpoints: 1,
-			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
 			GroupID:          s.DefaultGroup.UID,
-			AppID:            application.UID,
+			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 		{
 			UID:              uuid.New().String(),
 			EventType:        "*",
 			MatchedEndpoints: 1,
-			ProviderID:       "provider_id",
 			Data:             json.RawMessage(`{"data":"12345"}`),
 			GroupID:          s.DefaultGroup.UID,
-			AppID:            application.UID,
+			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			DocumentStatus:   datastore.ActiveDocumentStatus,
 		},
 	}
 

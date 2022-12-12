@@ -22,6 +22,7 @@ export class PrivateService {
 
 	urlFactory(level: 'org' | 'org_project'): string {
 		const orgId = this.getOrganisation().uid;
+
 		switch (level) {
 			case 'org':
 				return `/organisations/${orgId}`;
@@ -96,7 +97,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const subscriptionsResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}`,
+					url: `${this.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}&perPage=20`,
 					method: 'get'
 				});
 
@@ -111,7 +112,7 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourcesResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/sources?groupId=${this.activeProjectDetails?.uid}&page=${requestDetails?.page}`,
+					url: `${this.urlFactory('org_project')}/sources?groupId=${this.activeProjectDetails?.uid}&page=${requestDetails?.page}&perPage=20`,
 					method: 'get'
 				});
 
@@ -236,7 +237,23 @@ export class PrivateService {
 			const flags = this.apiFlagResponse?.responses;
 			return !!flags.find(flag => flag.flagKey === flagKey)?.match;
 		} catch (error) {
-			return true;
+			return false;
 		}
+	}
+
+	getEndpoints(requestDetails?: { pageNo?: number; searchString?: string; token?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: requestDetails?.token ? '/endpoints' : this.urlFactory('org_project') + `/endpoints?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					method: 'get',
+					token: requestDetails?.token
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
 	}
 }

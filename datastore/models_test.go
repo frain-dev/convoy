@@ -10,6 +10,8 @@ import (
 )
 
 func TestGroup_IsDeleted(t *testing.T) {
+	d := primitive.DateTime(39487)
+	deletedAt := primitive.NewDateTimeFromTime(time.Now())
 
 	tt := []struct {
 		name      string
@@ -18,7 +20,7 @@ func TestGroup_IsDeleted(t *testing.T) {
 	}{
 		{
 			name:  "set deleted_at to zero",
-			group: &Group{UID: "123456", DeletedAt: 0},
+			group: &Group{UID: "123456", DeletedAt: nil},
 		},
 		{
 			name:  "skip deleted_at field",
@@ -26,12 +28,12 @@ func TestGroup_IsDeleted(t *testing.T) {
 		},
 		{
 			name:      "set deleted_at to random integer",
-			group:     &Group{UID: "123456", DeletedAt: 39487},
+			group:     &Group{UID: "123456", DeletedAt: &d},
 			isDeleted: true,
 		},
 		{
 			name:      "set deleted_at to current timestamp",
-			group:     &Group{UID: "123456", DeletedAt: primitive.NewDateTimeFromTime(time.Now())},
+			group:     &Group{UID: "123456", DeletedAt: &deletedAt},
 			isDeleted: true,
 		},
 	}
@@ -44,29 +46,28 @@ func TestGroup_IsDeleted(t *testing.T) {
 }
 
 func TestGroup_IsOwner(t *testing.T) {
-
 	tt := []struct {
-		name    string
-		group   *Group
-		app     *Application
-		isOwner bool
+		name     string
+		group    *Group
+		endpoint *Endpoint
+		isOwner  bool
 	}{
 		{
-			name:    "right owner",
-			group:   &Group{UID: "123456", DeletedAt: 0},
-			app:     &Application{GroupID: "123456"},
-			isOwner: true,
+			name:     "right owner",
+			group:    &Group{UID: "123456", DeletedAt: nil},
+			endpoint: &Endpoint{GroupID: "123456"},
+			isOwner:  true,
 		},
 		{
-			name:  "wrong owner",
-			group: &Group{UID: "123456", DeletedAt: 0},
-			app:   &Application{GroupID: "1234567"},
+			name:     "wrong owner",
+			group:    &Group{UID: "123456", DeletedAt: nil},
+			endpoint: &Endpoint{GroupID: "1234567"},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.isOwner, tc.group.IsOwner(tc.app))
+			require.Equal(t, tc.isOwner, tc.group.IsOwner(tc.endpoint))
 		})
 	}
 }

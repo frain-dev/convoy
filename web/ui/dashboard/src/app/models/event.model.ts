@@ -1,4 +1,4 @@
-import { APP, ENDPOINT } from './app.model';
+import { APP, ENDPOINT } from './endpoint.model';
 import { SOURCE } from './group.model';
 
 export interface EVENT {
@@ -11,6 +11,7 @@ export interface EVENT {
 	event_type: string;
 	data: any;
 	matched_endpoints: number;
+    endpoint_metadata: ENDPOINT[];
 	metadata?: {
 		interval_seconds: number;
 		next_send_time: Date;
@@ -49,11 +50,12 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	ip_address: string;
 	http_status: string;
 	api_version: string;
-	updated_at?: string;
+	updated_at: string;
 	created_at: string;
 	deleted_at?: number;
 	response_data?: string;
 	response_http_header: any;
 	request_http_header: any;
+    uid:string;
 	error?: string;
 }

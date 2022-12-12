@@ -7,8 +7,8 @@ import (
 
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
-	log "github.com/sirupsen/logrus"
 )
 
 var ErrInvalidEmailPayload = errors.New("invalid email payload")

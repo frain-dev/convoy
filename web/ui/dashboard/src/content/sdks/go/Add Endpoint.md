@@ -1,14 +1,15 @@
-### Add Application Endpoint
+### Create Endpoint
 
-After creating an application, you'll need to add an endpoint to the application you just created. An endpoint represents a target URL to receive events.
+After setting up Convoy, you'll need to create an endpoint. An endpoint represents a target URL to receive events.
 
 ```go[example]
-endpoint, err := c.Endpoints.Create(app.UID, &Convoy.CreateEndpointRequest{
+endpoint, err := c.Endpoints.Create(&Convoy.CreateEndpointRequest{
+    Name: "Endpoint name",
     URL: "http://localhost:8081",
     Description: "Some description",
 }, nil)
 
   if err != nil {
-      log.Fatal("failed to create app endpoint \n", err)
+      log.Fatal("failed to create endpoint \n", err)
   }
 ```

@@ -8,7 +8,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/migrate"
-	log "github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 )

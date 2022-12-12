@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -196,7 +198,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					DeletedAt: primitive.NewDateTimeFromTime(time.Now()),
+					DeletedAt: util.NewDateTime(),
 					ExpiresAt: 0,
 					CreatedAt: 0,
 				}, nil)
@@ -238,7 +240,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
 					ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Second * -10)),
-					DeletedAt: 0,
+					DeletedAt: nil,
 					CreatedAt: 0,
 				}, nil)
 			},

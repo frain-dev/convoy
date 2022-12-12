@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -84,16 +85,28 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	cfg, err := config.Get()
+	groupRepo := mongo.NewGroupRepo(a.A.Store)
+	g, err := groupRepo.FetchGroupByID(r.Context(), source.GroupID)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load config")
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	maxIngestSize := g.Config.MaxIngestSize
+	if maxIngestSize == 0 {
+		cfg, err := config.Get()
+		if err != nil {
+			a.A.Logger.WithError(err).Error("failed to load config")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+			return
+		}
+
+		maxIngestSize = cfg.MaxResponseSize
 	}
 
 	// 3.1 On Failure
 	// Return 400 Bad Request.
-	body := io.LimitReader(r.Body, int64(cfg.MaxResponseSize))
+	body := io.LimitReader(r.Body, int64(maxIngestSize))
 	payload, err := io.ReadAll(body)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -113,18 +126,21 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
 	event := &datastore.Event{
-		UID:            uuid.New().String(),
-		EventType:      datastore.EventType(maskID),
-		SourceID:       source.UID,
-		GroupID:        source.GroupID,
-		Data:           payload,
-		Headers:        httpheader.HTTPHeader(r.Header),
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		DocumentStatus: datastore.ActiveDocumentStatus,
+		UID:       uuid.New().String(),
+		EventType: datastore.EventType(maskID),
+		SourceID:  source.UID,
+		GroupID:   source.GroupID,
+		Data:      payload,
+		Headers:   httpheader.HTTPHeader(r.Header),
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	eventByte, err := json.Marshal(event)
+	createEvent := task.CreateEvent{
+		Event: *event,
+	}
+
+	eventByte, err := json.Marshal(createEvent)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

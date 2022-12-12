@@ -13,16 +13,15 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type GroupService struct {
 	apiKeyRepo        datastore.APIKeyRepository
-	appRepo           datastore.ApplicationRepository
 	groupRepo         datastore.GroupRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -30,10 +29,9 @@ type GroupService struct {
 	cache             cache.Cache
 }
 
-func NewGroupService(apiKeyRepo datastore.APIKeyRepository, appRepo datastore.ApplicationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
+func NewGroupService(apiKeyRepo datastore.APIKeyRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *GroupService {
 	return &GroupService{
 		apiKeyRepo:        apiKeyRepo,
-		appRepo:           appRepo,
 		groupRepo:         groupRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
@@ -97,12 +95,11 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
 		RateLimit:         newGroup.RateLimit,
 		RateLimitDuration: newGroup.RateLimitDuration,
-		DocumentStatus:    datastore.ActiveDocumentStatus,
 	}
 
 	err = gs.groupRepo.CreateGroup(ctx, group)
 	if err != nil {
-		log.WithError(err).Error("failed to create group")
+		log.FromContext(ctx).WithError(err).Error("failed to create group")
 		if err == datastore.ErrDuplicateGroupName {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -144,7 +141,7 @@ func (gs *GroupService) CreateGroup(ctx context.Context, newGroup *models.Group,
 func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group, update *models.UpdateGroup) (*datastore.Group, error) {
 	err := util.Validate(update)
 	if err != nil {
-		log.WithError(err).Error("failed to validate group update")
+		log.FromContext(ctx).WithError(err).Error("failed to validate group update")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
@@ -163,7 +160,7 @@ func (gs *GroupService) UpdateGroup(ctx context.Context, group *datastore.Group,
 
 	err = gs.groupRepo.UpdateGroup(ctx, group)
 	if err != nil {
-		log.WithError(err).Error("failed to to update group")
+		log.FromContext(ctx).WithError(err).Error("failed to to update group")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
@@ -192,13 +189,13 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFilter) ([]*datastore.Group, error) {
 	groups, err := gs.groupRepo.LoadGroups(ctx, filter.WithNamesTrimmed())
 	if err != nil {
-		log.WithError(err).Error("failed to load groups")
+		log.FromContext(ctx).WithError(err).Error("failed to load groups")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching Groups"))
 	}
 
 	err = gs.FillGroupsStatistics(ctx, groups)
 	if err != nil {
-		log.WithError(err).Error("failed to fill statistics of group ")
+		log.FromContext(ctx).WithError(err).Error("failed to fill statistics of group ")
 	}
 
 	return groups, nil
@@ -207,7 +204,7 @@ func (gs *GroupService) GetGroups(ctx context.Context, filter *datastore.GroupFi
 func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
 	err := gs.groupRepo.FillGroupsStatistics(ctx, groups)
 	if err != nil {
-		log.WithError(err).Error("failed to count group applications")
+		log.FromContext(ctx).WithError(err).Error("failed to count group applications")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count group statistics"))
 	}
 
@@ -217,7 +214,7 @@ func (gs *GroupService) FillGroupsStatistics(ctx context.Context, groups []*data
 func (gs *GroupService) DeleteGroup(ctx context.Context, id string) error {
 	err := gs.groupRepo.DeleteGroup(ctx, id)
 	if err != nil {
-		log.WithError(err).Error("failed to delete group")
+		log.FromContext(ctx).WithError(err).Error("failed to delete group")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete group"))
 	}
 

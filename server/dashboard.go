@@ -91,8 +91,8 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		return
 	}
 
-	appService := createApplicationService(a)
-	apps, err := appService.CountGroupApplications(r.Context(), group.UID)
+	endpointService := createEndpointService(a)
+	apps, err := endpointService.CountGroupEndpoints(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
