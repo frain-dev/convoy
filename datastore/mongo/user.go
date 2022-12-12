@@ -88,9 +88,12 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 		primitive.E{Key: "last_name", Value: user.LastName},
 		primitive.E{Key: "email", Value: user.Email},
 		primitive.E{Key: "password", Value: user.Password},
+		primitive.E{Key: "email_verified", Value: user.EmailVerified},
 		primitive.E{Key: "updated_at", Value: primitive.NewDateTimeFromTime(time.Now())},
 		primitive.E{Key: "reset_password_token", Value: user.ResetPasswordToken},
 		primitive.E{Key: "reset_password_expires_at", Value: user.ResetPasswordExpiresAt},
+		primitive.E{Key: "email_verification_token", Value: user.EmailVerificationToken},
+		primitive.E{Key: "email_verification_expires_at", Value: user.EmailVerificationExpiresAt},
 	}
 
 	err := u.store.UpdateByID(ctx, user.UID, bson.M{"$set": update})
@@ -107,6 +110,20 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 	user := &datastore.User{}
 
 	filter := bson.M{"reset_password_token": token}
+
+	err := u.store.FindOne(ctx, filter, nil, user)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return user, datastore.ErrUserNotFound
+	}
+
+	return user, nil
+}
+
+func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
+	ctx = u.setCollectionInContext(ctx)
+	user := &datastore.User{}
+
+	filter := bson.M{"email_verification_token": token}
 
 	err := u.store.FindOne(ctx, filter, nil, user)
 	if errors.Is(err, mongo.ErrNoDocuments) {

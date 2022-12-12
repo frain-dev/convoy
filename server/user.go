@@ -39,14 +39,15 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := &models.LoginUserResponse{
-		UID:       user.UID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		DeletedAt: user.DeletedAt,
+		UID:           user.UID,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		Token:         models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     user.UpdatedAt,
+		DeletedAt:     user.DeletedAt,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
@@ -60,7 +61,7 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 	}
 
 	userService := createUserService(a)
-	user, token, err := userService.RegisterUser(r.Context(), &newUser)
+	user, token, err := userService.RegisterUser(r.Context(), m.GetHostFromContext(r.Context()), &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -95,6 +96,23 @@ func (a *ApplicationHandler) RefreshToken(w http.ResponseWriter, r *http.Request
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Token refresh successful", token, http.StatusOK))
+}
+
+func (a *ApplicationHandler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
+	user, ok := getUser(r)
+	if !ok {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	userService := createUserService(a)
+	err := userService.ResendEmailVerificationToken(r.Context(), m.GetHostFromContext(r.Context()), user)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("verification email resent successfully", nil, http.StatusOK))
 }
 
 func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
@@ -191,6 +209,39 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent succesfully", nil, http.StatusOK))
 }
 
+// VerifyEmail
+// @Summary Verify Email
+// @Description This endpoint verifies a user's email
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param token query true "Email verification token"
+// @Success 200 {object} util.ServerResponse{data=datastore.Stub}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Router /ui/users/forgot-password  [post]
+func (a *ApplicationHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	userService := createUserService(a)
+
+	err := userService.VerifyEmail(r.Context(), r.URL.Query().Get("token"))
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Email has been verified successfully", nil, http.StatusOK))
+}
+
+// ResetPassword
+// @Summary Reset user password
+// @Description This endpoint resets a users password
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param token query string true "reset token"
+// @Param password body models.ResetPassword true "Reset Password Details"
+// @Success 200 {object} util.ServerResponse{data=datastore.User}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Router /ui/users/reset-password [post]
 func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	var resetPassword models.ResetPassword

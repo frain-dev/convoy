@@ -164,7 +164,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							e.Delete("/", a.DeleteEndpoint)
 							e.Put("/expire_secret", a.ExpireSecret)
 						})
-
 					})
 
 					projectSubRouter.Route("/applications", func(appRouter chi.Router) {
@@ -192,7 +191,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									e.Put("/", a.UpdateAppEndpoint)
 									e.Delete("/", a.DeleteAppEndpoint)
 									e.Put("/expire_secret", a.ExpireSecret)
-
 								})
 							})
 						})
@@ -273,7 +271,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
 						portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
 						portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
-
 					})
 				})
 			})
@@ -310,6 +307,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 		uiRouter.Post("/users/forgot-password", a.ForgotPassword)
 		uiRouter.Post("/users/reset-password", a.ResetPassword)
+		uiRouter.Post("/users/verify_email", a.VerifyEmail)
+		uiRouter.Post("/users/resend_verification_email", a.ResendVerificationEmail)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", a.LoginUser)
@@ -390,7 +389,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
 								})
 							})
-
 						})
 
 						groupSubRouter.Route("/events", func(eventRouter chi.Router) {

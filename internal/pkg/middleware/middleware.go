@@ -963,6 +963,7 @@ var guestRoutes = []string{
 	"/ui/users/token",
 	"/ui/users/forgot-password",
 	"/ui/users/reset-password",
+	"/ui/users/verify_email",
 	"/ui/auth/register",
 }
 

@@ -140,11 +140,12 @@ type RegisterUser struct {
 }
 
 type LoginUserResponse struct {
-	UID       string `json:"uid"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Token     Token  `json:"token"`
+	UID           string `json:"uid"`
+	FirstName     string `json:"first_name"`
+	LastName      string `json:"last_name"`
+	Email         string `json:"email"`
+	Token         Token  `json:"token"`
+	EmailVerified bool   `json:"email_verified"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
@@ -184,7 +185,7 @@ type Endpoint struct {
 	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
 	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
-	AppID             string                            //Deprecated but necessary for backward compatibility
+	AppID             string                            // Deprecated but necessary for backward compatibility
 }
 
 type UpdateEndpoint struct {
