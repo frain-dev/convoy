@@ -76,7 +76,7 @@ func (c *Client) Database() *mongo.Database {
 }
 
 func (c *Client) ensureMongoIndices() {
-	c.ensureIndex(datastore.GroupCollection, "uid", true, nil)
+	c.ensureIndex(datastore.ProjectsCollection, "uid", true, nil)
 	c.ensureIndex(datastore.FilterCollection, "uid", true, nil)
 
 	c.ensureIndex(datastore.OrganisationCollection, "uid", true, nil)
@@ -118,7 +118,7 @@ func (c *Client) ensureMongoIndices() {
 	c.ensureCompoundIndex(datastore.EndpointCollection)
 	c.ensureCompoundIndex(datastore.UserCollection)
 	c.ensureCompoundIndex(datastore.EventCollection)
-	c.ensureCompoundIndex(datastore.GroupCollection)
+	c.ensureCompoundIndex(datastore.ProjectsCollection)
 	c.ensureCompoundIndex(datastore.DeviceCollection)
 	c.ensureCompoundIndex(datastore.APIKeyCollection)
 	c.ensureCompoundIndex(datastore.SubscriptionCollection)
@@ -180,7 +180,7 @@ func (c *Client) ensureCompoundIndex(collectionName string) bool {
 
 func compoundIndices() map[string][]mongo.IndexModel {
 	compoundIndices := map[string][]mongo.IndexModel{
-		datastore.GroupCollection: {
+		datastore.ProjectsCollection: {
 			{
 				Keys: bson.D{
 					{Key: "organisation_id", Value: 1},

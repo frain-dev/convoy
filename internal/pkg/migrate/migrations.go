@@ -15,7 +15,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var appCollection = "applications"
+var (
+	appCollection    = "applications"
+	groupsCollection = "groups"
+)
 
 var Migrations = []*Migration{
 	{
@@ -37,7 +40,7 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
 				var projects []*Project
 				err := store.FindAll(ctx, nil, nil, nil, &projects)
 				if err != nil {
@@ -79,7 +82,7 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
 				var projects []*datastore.Project
 				err := store.FindAll(ctx, nil, nil, nil, &projects)
 				if err != nil {
@@ -244,7 +247,7 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
 
 				var projects []*datastore.Project
 				err := store.FindAll(ctx, nil, nil, nil, &projects)
@@ -287,7 +290,7 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
 
 				var projects []*datastore.Project
 				err := store.FindAll(ctx, nil, nil, nil, &projects)
@@ -420,7 +423,7 @@ var Migrations = []*Migration{
 		ID: "20221021100029_migrate_group_signature_config_to_versions",
 		Migrate: func(db *mongo.Database) error {
 			store := datastore.New(db)
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, groupsCollection)
 
 			fn := func(sessCtx mongo.SessionContext) error {
 				var projects []*datastore.Project
@@ -476,7 +479,7 @@ var Migrations = []*Migration{
 		},
 		Rollback: func(db *mongo.Database) error {
 			store := datastore.New(db)
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, groupsCollection)
 
 			fn := func(sessCtx mongo.SessionContext) error {
 				var projects []*datastore.Project
@@ -530,7 +533,7 @@ var Migrations = []*Migration{
 		Migrate: func(db *mongo.Database) error {
 			collectionList := []string{
 				datastore.ConfigCollection,
-				datastore.GroupCollection,
+				groupsCollection,
 				datastore.OrganisationCollection,
 				datastore.OrganisationInvitesCollection,
 				datastore.OrganisationMembersCollection,
@@ -573,7 +576,7 @@ var Migrations = []*Migration{
 		Rollback: func(db *mongo.Database) error {
 			collectionList := []string{
 				datastore.ConfigCollection,
-				datastore.GroupCollection,
+				groupsCollection,
 				datastore.OrganisationCollection,
 				datastore.OrganisationInvitesCollection,
 				datastore.OrganisationMembersCollection,
@@ -1002,7 +1005,6 @@ var Migrations = []*Migration{
 		Migrate: func(db *mongo.Database) error {
 			collectionList := []string{
 				datastore.ConfigCollection,
-				datastore.GroupCollection,
 				datastore.OrganisationCollection,
 				datastore.OrganisationInvitesCollection,
 				datastore.OrganisationMembersCollection,
@@ -1047,12 +1049,28 @@ var Migrations = []*Migration{
 				}
 			}
 
+			var projects []interface{}
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, "groups")
+			store := datastore.New(db)
+
+			err := store.FindAll(ctx, bson.M{}, nil, nil, &projects)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id find all groups")
+				return err
+			}
+
+			ctx = context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ProjectsCollection)
+			err = store.SaveMany(ctx, projects)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id save all projects")
+				return err
+			}
+
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
 			collectionList := []string{
 				datastore.ConfigCollection,
-				datastore.GroupCollection,
 				datastore.OrganisationCollection,
 				datastore.OrganisationInvitesCollection,
 				datastore.OrganisationMembersCollection,
@@ -1085,6 +1103,24 @@ var Migrations = []*Migration{
 					return err
 				}
 			}
+
+			var projects []interface{}
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ProjectsCollection)
+			store := datastore.New(db)
+
+			err := store.FindAll(ctx, bson.M{}, nil, nil, &projects)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id find all projects")
+				return err
+			}
+
+			ctx = context.WithValue(context.Background(), datastore.CollectionCtx, "groups")
+			err = store.SaveMany(ctx, projects)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id save all groups")
+				return err
+			}
+
 			return nil
 		},
 	},

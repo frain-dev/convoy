@@ -273,5 +273,5 @@ func (db *projectRepo) deleteEndpointSubscriptions(ctx context.Context, endpoint
 }
 
 func (db *projectRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, datastore.GroupCollection)
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.ProjectsCollection)
 }
