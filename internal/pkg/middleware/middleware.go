@@ -27,7 +27,6 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/policies"
 	"github.com/frain-dev/convoy/util"
 
@@ -41,7 +40,6 @@ type contextKey string
 
 const (
 	groupCtx            contextKey = "group"
-	appCtx              contextKey = "app"
 	orgCtx              contextKey = "organisation"
 	orgMemberCtx        contextKey = "organisation_member"
 	endpointCtx         contextKey = "endpoint"
