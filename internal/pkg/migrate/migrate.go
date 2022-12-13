@@ -62,11 +62,11 @@ type Options struct {
 	// CollectionName is the migration table.
 	CollectionName string
 
-	// ValidateUnknownMigrations will cause migrate to fail if there's unknown migration
+	// ValidateUnknownMigrations will cause migrate to fail if there are unknown migration
 	// IDs in the database
 	ValidateUnknownMigrations bool
 
-	// UseTransaction makes Gormigrate execute migrations inside a single transaction.
+	// UseTransaction executes migrations inside a single transaction.
 	UseTransaction bool
 }
 
@@ -115,7 +115,7 @@ func NewMigrator(c *mongo.Client, opts *Options, migrations []*Migration, i Init
 	}
 
 	if i == nil {
-		i = m.defaultinitSchema
+		i = m.defaultInitSchema
 	}
 
 	m.initSchema = i
@@ -131,7 +131,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 
 	var targetMigrationID string
 	if len(m.migrations) > 0 {
-		targetMigrationID = m.migrations[len(m.migrations)-1].ID
+		targetMigrationID = m.migrations[0].ID
 	}
 
 	return m.migrate(ctx, targetMigrationID)
@@ -253,15 +253,16 @@ func (m *Migrator) migrate(ctx context.Context, migrationID string) error {
 	}
 
 	if initializedSchema {
-		return m.commit()
+		log.Info("initialized migration schema")
 	}
 
 	for _, migration := range m.migrations {
 		if err := m.runMigration(ctx, migration); err != nil {
 			return err
 		}
+
 		if migrationID != "" && migration.ID == migrationID {
-			break
+			continue
 		}
 	}
 
@@ -321,9 +322,7 @@ func (m *Migrator) migrationRan(migration *Migration) (bool, error) {
 	store := datastore.New(m.db)
 	ctx := context.WithValue(context.Background(), datastore.CollectionCtx, m.opts.CollectionName)
 
-	filter := map[string]interface{}{
-		"id": migration.ID,
-	}
+	filter := map[string]interface{}{"id": migration.ID}
 
 	count, err := store.CountWithDeleted(ctx, filter)
 
@@ -443,7 +442,7 @@ func (m *Migrator) getLastRunMigration() (*Migration, error) {
 	return nil, ErrNoRunMigration
 }
 
-func (m *Migrator) defaultinitSchema(ctx context.Context, db *mongo.Database) (bool, error) {
+func (m *Migrator) defaultInitSchema(ctx context.Context, db *mongo.Database) (bool, error) {
 	// save the last schema if nothing dey.
 	filter := map[string]interface{}{}
 
@@ -456,7 +455,7 @@ func (m *Migrator) defaultinitSchema(ctx context.Context, db *mongo.Database) (b
 	}
 
 	if count == 0 {
-		err := m.insertMigration(ctx, m.migrations[len(m.migrations)-1].ID)
+		err := m.insertMigration(ctx, "schema_init")
 		if err != nil {
 			return false, err
 		}
