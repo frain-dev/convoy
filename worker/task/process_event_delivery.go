@@ -139,7 +139,7 @@ func ProcessEventDelivery(appRepo datastore.ApplicationRepository, eventDelivery
 			return nil
 		}
 
-		sig := newSignature(endpoint, g, ed.Metadata.Data)
+		sig := newSignature(endpoint, g, json.RawMessage(ed.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)
@@ -292,7 +292,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		Method:     resp.Method,
 		MsgID:      m.UID,
 		EndpointID: e.UID,
-		APIVersion: "2021-08-27",
+		APIVersion: convoy.GetVersion(),
 
 		IPAddress:        resp.IP,
 		ResponseHeader:   *responseHeader,
