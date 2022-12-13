@@ -140,11 +140,12 @@ type RegisterUser struct {
 }
 
 type LoginUserResponse struct {
-	UID       string `json:"uid"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Token     Token  `json:"token"`
+	UID           string `json:"uid"`
+	FirstName     string `json:"first_name"`
+	LastName      string `json:"last_name"`
+	Email         string `json:"email"`
+	Token         Token  `json:"token"`
+	EmailVerified bool   `json:"email_verified"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`

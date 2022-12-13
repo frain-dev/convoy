@@ -44,9 +44,9 @@
 	</ng-container>
 
 	<ng-container *ngIf="isSignUpDone">
-		<h1 class="font-bold text-20 mb-30px text-center">Thanks for signing up! 💻</h1>
+		<h1 class="font-bold text-20 mb-30px text-center">We just sent you a verification message 📬</h1>
 		<section class="max-w-[445px] mx-auto my-0 px-34px py-64px w-full bg-white-100 shadow-default rounded-8px flex items-center justify-center flex-col">
-			<p class="text-center text-16 text-grey-40 mb-48px">A verification link has been sent to your email address. Click the link to complete your account verification.</p>
+			<p class="text-center text-16 text-grey-40 mb-48px">Click on the link in the email to activate your newly created account to start sending and managing webhook events</p>
 			<img src="/assets/img/new-success.gif" loop="1" alt="Succes gif" class="h-150px mb-70px" />
 			<button convoy-button class="w-320px" (click)="router.navigateByUrl('/')">Done</button>
 		</section>

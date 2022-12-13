@@ -23,6 +23,7 @@
 
 # ui depencencies
 **/node_modules
+**/source-maps
 **/.angular/cache
 **/storybook-static
 
