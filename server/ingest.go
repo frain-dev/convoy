@@ -118,6 +118,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		SourceID:       source.UID,
 		GroupID:        source.GroupID,
 		Data:           payload,
+		Raw:            string(payload),
 		Headers:        httpheader.HTTPHeader(r.Header),
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
