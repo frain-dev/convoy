@@ -110,8 +110,7 @@ func TestMigrateTo(t *testing.T) {
 
 	err := m.MigrateTo(context.Background(), "201608301430")
 	assert.NoError(t, err)
-	assert.Equal(t, int64(2), tableCount(t, db, opts.CollectionName))
-
+	assert.Equal(t, int64(3), tableCount(t, db, opts.CollectionName))
 }
 
 func TestRollbackTo(t *testing.T) {
