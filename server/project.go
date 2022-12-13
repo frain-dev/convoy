@@ -69,11 +69,11 @@ func (a *ApplicationHandler) DeleteProject(w http.ResponseWriter, r *http.Reques
 	project := m.GetProjectFromContext(r.Context())
 	projectService := createProjectService(a)
 
-	//opts := &policies.GroupPolicyOpts{
+	//opts := &policies.ProjectPolicyOpts{
 	//	OrganisationRepo:       mongo.NewOrgRepo(a.A.Store),
 	//	OrganisationMemberRepo: mongo.NewOrgMemberRepo(a.A.Store),
 	//}
-	//gp := policies.NewGroupPolicy(opts)
+	//gp := policies.NewProjectPolicy(opts)
 	//if err := gp.Delete(r.Context(), group); err != nil {
 	//	_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 	//	return

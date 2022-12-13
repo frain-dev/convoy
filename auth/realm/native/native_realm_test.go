@@ -66,8 +66,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				APIKey: &datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:  auth.RoleAdmin,
-						Group: "paystack",
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
@@ -121,8 +121,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				APIKey: &datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
-						Type:  auth.RoleAdmin,
-						Group: "paystack",
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
 					},
 					Type:      datastore.PersonalKey,
 					UserID:    "1234",
