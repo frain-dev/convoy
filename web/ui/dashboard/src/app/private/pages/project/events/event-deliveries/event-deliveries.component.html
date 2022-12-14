@@ -250,7 +250,7 @@
 	</button>
 </div>
 
-<convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
+<div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
 	<div class="text-center py-30px" modalBody>
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
@@ -258,4 +258,4 @@
 		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
 		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
-</convoy-modal>
+</div>

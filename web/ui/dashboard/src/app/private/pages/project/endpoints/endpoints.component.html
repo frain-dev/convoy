@@ -115,8 +115,8 @@
 	</button>
 </div>
 
-<convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" [title]="showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint'" (closeModal)="cancel()">
+<div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" [title]="showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint'" (closeModal)="cancel()">
 	<ng-container modalBody>
 		<convoy-create-endpoint (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
 	</ng-container>
-</convoy-modal>
+</div>

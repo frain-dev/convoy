@@ -157,7 +157,7 @@
 	</ng-container>
 </form>
 
-<convoy-modal *ngIf="showNewSignatureModal" title="New Signature" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
+<div convoy-modal *ngIf="showNewSignatureModal" title="New Signature" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
 	<div modalBody>
 		<form [formGroup]="newSignatureForm">
 			<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
@@ -170,7 +170,7 @@
 			</div>
 		</form>
 	</div>
-</convoy-modal>
+</div>
 
 <convoy-token-modal *ngIf="showApiKey" title="Project Created Successfully" description="Your API Key has also been created. Please copy this key and save it somewhere safe." [token]="apiKey" (closeModal)="onAction.emit({ action: 'createProject', data: projectDetails })"></convoy-token-modal>
 
