@@ -95,8 +95,6 @@
 
 	<convoy-verify-email *ngIf="showVerifyEmailModal" (closeModal)="showVerifyEmailModal = false"></convoy-verify-email>
 
-	<div convoyOverlay *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true"></div>
-
 	<router-outlet></router-outlet>
 </div>
 

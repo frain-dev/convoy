@@ -1,4 +1,4 @@
-<div convoyOverlay [overlayHasBackdrop]="true" (onClick)="closeModal.emit()"></div>
+<div convoyOverlay [overlayHasBackdrop]="true" (click)="closeModal.emit()"></div>
 <div convoy-modal-dialog [id]="id" [position]="position" [size]="size">
 	<div *ngIf="title" class="px-20px pt-20px pb-16px border-b border-b-grey-10 bg-white-100 rounded-tr-16px rounded-tl-16px">
 		<div class="flex items-center justify-between" *ngIf="position !== 'full'">
