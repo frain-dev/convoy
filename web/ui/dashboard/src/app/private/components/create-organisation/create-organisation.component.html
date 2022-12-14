@@ -1,4 +1,5 @@
-<convoy-modal title="Add an organisation" (closeModal)="close()">
+
+<div convoy-modal title="Add an organisation" (closeModal)="close()">
 	<form modalBody [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
 		<convoy-input-field>
 			<label for="organisation" required="true" convoy-label>Organisation name</label>
@@ -10,4 +11,4 @@
 			<button convoy-button [disabled]="loading">{{ loading ? 'Adding Organisation' : 'Create Organisation' }}</button>
 		</div>
 	</form>
-</convoy-modal>
+</div>

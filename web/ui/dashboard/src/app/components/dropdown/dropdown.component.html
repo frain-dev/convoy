@@ -1,4 +1,4 @@
-<div convoyScreen *ngIf="show" (onClick)="show = false"></div>
+<div convoyOverlay *ngIf="show" (click)="show = false"></div>
 <div class="relative">
 	<div class="empty:hidden" #dropdownTriggerContainer>
 		<ng-content select="[dropdownTrigger]"></ng-content>
