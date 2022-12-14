@@ -134,13 +134,15 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.createProject(this.projectForm.value);
-			document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
+			const projectFormModal = document.getElementById('projectForm');
+			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success', type: this.privateService.activeProjectDetails?.uid ? 'modal' : 'alert' });
 			this.privateService.activeProjectDetails = response.data.group;
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.group;
+			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
 			this.showApiKey = true;
 		} catch (error) {
 			this.isCreatingProject = false;

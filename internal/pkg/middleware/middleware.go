@@ -27,6 +27,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/server/policies"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/go-chi/chi/v5"
@@ -39,7 +40,6 @@ type contextKey string
 
 const (
 	groupCtx            contextKey = "group"
-	appCtx              contextKey = "app"
 	orgCtx              contextKey = "organisation"
 	orgMemberCtx        contextKey = "organisation_member"
 	endpointCtx         contextKey = "endpoint"
@@ -655,7 +655,9 @@ func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			r = r.WithContext(setAuthUserInContext(r.Context(), authUser))
+			authCtx := context.WithValue(r.Context(), policies.AuthCtxKey, authUser)
+
+			r = r.WithContext(setAuthUserInContext(authCtx, authUser))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -963,6 +965,7 @@ var guestRoutes = []string{
 	"/ui/users/token",
 	"/ui/users/forgot-password",
 	"/ui/users/reset-password",
+	"/ui/users/verify_email",
 	"/ui/auth/register",
 }
 

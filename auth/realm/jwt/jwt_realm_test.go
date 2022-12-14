@@ -72,6 +72,12 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 					LastName:  "test",
 					Role:      auth.Role{Type: auth.RoleAdmin},
 				},
+				User: &datastore.User{
+					UID:       "123456",
+					FirstName: "test",
+					LastName:  "test",
+					Role:      auth.Role{Type: auth.RoleAdmin},
+				},
 				Role: auth.Role{Type: auth.RoleAdmin},
 			},
 		},

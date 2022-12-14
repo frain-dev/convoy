@@ -61,7 +61,7 @@
 					</ul>
 				</div>
 
-				<div convoy-dropdown size="lg" #accountDropdown>
+				<div convoy-dropdown size="lg" class="z-[12]" #accountDropdown>
 					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-12px px-20px rounded-8px h-36px">
 						<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 					</button>
@@ -93,10 +93,19 @@
 
 	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 
+	<convoy-verify-email *ngIf="showVerifyEmailModal" (closeModal)="showVerifyEmailModal = false"></convoy-verify-email>
+
+	<div convoyOverlay *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true"></div>
+
 	<router-outlet></router-outlet>
 </div>
 
 <div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-50" *ngIf="showHelpCard">
 	<img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
 	<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
+</div>
+
+<div class="fixed left-30px top-[85vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-10 hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true">
+	<img src="/assets/img/svg/lock_open.svg" alt="lock icon" class="w-24px h-24px mr-16px" />
+	<span class="text-warning-100 text-14 font-medium">Verify your email to access all Convoy features</span>
 </div>

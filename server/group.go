@@ -69,6 +69,16 @@ func (a *ApplicationHandler) DeleteGroup(w http.ResponseWriter, r *http.Request)
 	group := m.GetGroupFromContext(r.Context())
 	groupService := createGroupService(a)
 
+	//opts := &policies.GroupPolicyOpts{
+	//	OrganisationRepo:       mongo.NewOrgRepo(a.A.Store),
+	//	OrganisationMemberRepo: mongo.NewOrgMemberRepo(a.A.Store),
+	//}
+	//gp := policies.NewGroupPolicy(opts)
+	//if err := gp.Delete(r.Context(), group); err != nil {
+	//	_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+	//	return
+	//}
+
 	err := groupService.DeleteGroup(r.Context(), group.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
