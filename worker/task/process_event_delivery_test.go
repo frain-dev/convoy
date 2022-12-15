@@ -136,6 +136,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       0,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -227,6 +228,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       2,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -318,6 +320,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       2,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -413,6 +416,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       3,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -504,6 +508,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       3,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -600,6 +605,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -691,6 +697,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -787,6 +794,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,
@@ -888,6 +896,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
 							NumTrials:       4,
 							RetryLimit:      3,
 							IntervalSeconds: 20,

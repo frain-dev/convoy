@@ -100,6 +100,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				NumTrials:       0,
 				RetryLimit:      rc.RetryCount,
 				Data:            event.Data,
+				Raw:             event.Raw,
 				IntervalSeconds: rc.Duration,
 				Strategy:        rc.Type,
 				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),

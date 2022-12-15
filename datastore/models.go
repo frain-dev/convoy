@@ -437,6 +437,7 @@ type Event struct {
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data,omitempty" bson:"data"`
+	Raw  string          `json:"raw,omitempty" bson:"raw"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -487,6 +488,7 @@ const (
 type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
+	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`

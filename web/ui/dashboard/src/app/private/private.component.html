@@ -1,103 +1,108 @@
-<div class="bg-[#fafafe] min-h-screen overflow-y-auto pb-100px">
-	<header class="w-full bg-white-100 border-b border-b-grey-10">
-		<div class="flex items-center justify-between w-full max-w-[1376px] m-auto bg-white-100 px-32px py-12px">
-			<div class="flex items-center">
-				<a routerLink="/" rel="noreferrer">
-					<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
-				</a>
+<div class="bg-[#fafafe] min-h-screen overflow-y-auto flex flex-col justify-between">
+	<div class="">
+		<header class="w-full bg-white-100 border-b border-b-grey-10">
+			<div class="flex items-center justify-between w-full max-w-[1376px] m-auto bg-white-100 px-32px py-12px">
+				<div class="flex items-center">
+					<a routerLink="/" rel="noreferrer">
+						<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
+					</a>
 
-				<nav class="ml-130px desktop:ml-20px transition-all duration-200">
-					<ul class="flex items-center">
-						<li *ngIf="!organisations?.length || !projects?.length">
-							<a routerLink="/get-started" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Get Started</a>
-						</li>
-						<li *ngIf="organisations?.length && projects?.length">
-							<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
-						</li>
-						<li *ngIf="organisations?.length">
-							<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
-						</li>
-						<li *ngIf="organisations?.length">
-							<a routerLink="/settings" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Settings</a>
-						</li>
-					</ul>
-				</nav>
-			</div>
+					<nav class="ml-130px desktop:ml-20px transition-all duration-200">
+						<ul class="flex items-center">
+							<li *ngIf="!organisations?.length || !projects?.length">
+								<a routerLink="/get-started" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Get Started</a>
+							</li>
+							<li *ngIf="organisations?.length && projects?.length">
+								<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
+							</li>
+							<li *ngIf="organisations?.length">
+								<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
+							</li>
+							<li *ngIf="organisations?.length">
+								<a routerLink="/settings" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Settings</a>
+							</li>
+						</ul>
+					</nav>
+				</div>
 
-			<div class="flex items-center">
-				<a class="flex items-center mr-16px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-					<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
-				</a>
+				<div class="flex items-center">
+					<a class="flex items-center mr-16px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+						<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+						<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+					</a>
 
-				<div convoy-dropdown size="xl" #organisationDropdown>
-					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
-						<convoy-badge *ngIf="organisations?.length" className="mr-8px" [text]="userOrganization?.name || ''"></convoy-badge>
+					<div convoy-dropdown size="xl" #organisationDropdown>
+						<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
+							<convoy-badge *ngIf="organisations?.length" className="mr-8px" [text]="userOrganization?.name || ''"></convoy-badge>
 
-						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-					</button>
+							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+						</button>
 
-					<ul dropdownOptions>
-						<li convoy-dropdown-option class="font-semibold text-14 text-grey-40 px-32px pt-24px pb-16px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</li>
+						<ul dropdownOptions>
+							<li convoy-dropdown-option class="font-semibold text-14 text-grey-40 px-32px pt-24px pb-16px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</li>
 
-						<ul [hidden]="!organisations?.length">
-							<li convoy-dropdown-option *ngFor="let organisation of organisations">
-								<button convoy-button fill="text" class="justify-start px-30px py-12px w-full" (click)="selectOrganisation(organisation)">
-									<div class="flex justify-between items-center w-full">
-										<convoy-badge [text]="organisation.name"></convoy-badge>
+							<ul [hidden]="!organisations?.length">
+								<li convoy-dropdown-option *ngFor="let organisation of organisations">
+									<button convoy-button fill="text" class="justify-start px-30px py-12px w-full" (click)="selectOrganisation(organisation)">
+										<div class="flex justify-between items-center w-full">
+											<convoy-badge [text]="organisation.name"></convoy-badge>
 
-										<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
-									</div>
+											<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
+										</div>
+									</button>
+								</li>
+							</ul>
+
+							<li class="border-t border-t-grey-10">
+								<button convoy-dropdown-option convoy-button fill="text" class="px-30px py-16px" (click)="showAddOrganisationModal = true">
+									<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+									Add {{ organisations?.length ? 'another' : 'an' }} Organization
 								</button>
 							</li>
 						</ul>
+					</div>
 
-						<li class="border-t border-t-grey-10">
-							<button convoy-dropdown-option convoy-button fill="text" class="px-30px py-16px" (click)="showAddOrganisationModal = true">
-								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
-								Add {{ organisations?.length ? 'another' : 'an' }} Organization
-							</button>
-						</li>
-					</ul>
-				</div>
+					<div convoy-dropdown size="lg" class="z-[12]" #accountDropdown>
+						<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-12px px-20px rounded-8px h-36px">
+							<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+						</button>
 
-				<div convoy-dropdown size="lg" class="z-[12]" #accountDropdown>
-					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-12px px-20px rounded-8px h-36px">
-						<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-					</button>
-
-					<ul dropdownOptions>
-						<li class="border-b border-b-grey-10 px-24px py-16px">
-							<h3 class="capitalize font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
-							<p class="text-12 text-grey-40">{{ authDetails()?.email }}</p>
-						</li>
-						<li>
-							<ul>
-								<li class="py-8px">
-									<a convoy-dropdown-option routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
-								</li>
-							</ul>
-						</li>
-						<li class="border-t border-t-grey-10">
-							<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
-						</li>
-					</ul>
+						<ul dropdownOptions>
+							<li class="border-b border-b-grey-10 px-24px py-16px">
+								<h3 class="capitalize font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
+								<p class="text-12 text-grey-40">{{ authDetails()?.email }}</p>
+							</li>
+							<li>
+								<ul>
+									<li class="py-8px">
+										<a convoy-dropdown-option routerLink="/user-settings" class="text-14 pl-24px text-grey-40">My account</a>
+									</li>
+								</ul>
+							</li>
+							<li class="border-t border-t-grey-10">
+								<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-24px py-20px text-14" (click)="logout()">Logout</button>
+							</li>
+						</ul>
+					</div>
 				</div>
 			</div>
-		</div>
-	</header>
+		</header>
 
-	<convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
+		<convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
 
-	<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
+		<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 
-	<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
+		<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
 
-	<convoy-verify-email *ngIf="showVerifyEmailModal" (closeModal)="showVerifyEmailModal = false"></convoy-verify-email>
+		<convoy-verify-email *ngIf="showVerifyEmailModal" (closeModal)="showVerifyEmailModal = false"></convoy-verify-email>
 
-	<div convoyOverlay *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true"></div>
+		<div convoyOverlay *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true"></div>
 
-	<router-outlet></router-outlet>
+		<router-outlet></router-outlet>
+	</div>
+
+	<!-- Convoy version -->
+	<p class="text-center text-grey-20 pt-80px pb-20px">Convoy {{ convoyVersion }}</p>
 </div>
 
 <div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-50" *ngIf="showHelpCard">

@@ -144,7 +144,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		sig := newSignature(endpoint, p, ed.Metadata.Data)
+
+		sig := newSignature(endpoint, p, json.RawMessage(ed.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
 			log.Errorf("error occurred while generating hmac - %+v\n", err)

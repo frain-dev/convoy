@@ -1,3 +1,30 @@
+## 0.7.6
+
+-   [Bugfix] Preserve whitespaces in event payload #1223
+
+## 0.7.5
+
+-   [Enhancement] Filter event deliveries by subscriptions #1192
+-   [Bugfix] fix prism import error #1194
+-   [Bugfix] correctly use query string in app portal #1195
+
+## 0.7.4
+
+-   [Enhancement] hide cli keys and devices on app portal #1184
+-   [Bugfix] pass query params along in shim #1185
+
+## 0.7.3
+
+-   [Enhancement] Set app portal key expiration to 30 days #1170 #1171
+
+## 0.7.2
+
+-   [Bugfix] Fix Max response size CLI override #1098
+-   [Feature] Advanced Signatures Core Implementation #1053 #1100 #1103 #1104
+-   [Feature] Refactored Logging Implementation #1051
+-   [Bugfix] Update endpoint with custom authentication #1119 #1106 #1107 #1105
+-   [Enhancement] Add support for building alpine image #1108
+
 ## 0.7.1
 
 -   [Bugfix] Fix Max response size CLI override #1098

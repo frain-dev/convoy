@@ -130,6 +130,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		EventType: datastore.EventType(maskID),
 		SourceID:  source.UID,
 		ProjectID: source.ProjectID,
+		Raw:       string(payload),
 		Data:      payload,
 		Headers:   httpheader.HTTPHeader(r.Header),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
