@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -227,8 +228,8 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Success 200 {object} util.ServerResponse{data=boolean}
+// @Failure 400,401,500 {object} util.ServerResponse{data=stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
 func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
@@ -240,7 +241,17 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 	}
 
 	subService := createSubscriptionService(a)
-	isValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request, test.Schema)
+
+	request := test.Request.Body
+	filter := test.Schema.Body
+	if test.Request.Body == nil {
+		request = test.Request.Headers
+		filter = test.Schema.Headers
+	}
+
+	fmt.Printf("req: %+v, schema: %+v\n", test.Request, test.Schema)
+
+	isValid, err := subService.TestSubscriptionFilter(r.Context(), request, filter)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -887,13 +887,6 @@ func (p *Password) Matches() (bool, error) {
 	return true, err
 }
 
-type (
-	EventMap    map[string]*Event
-	SourceMap   map[string]*Source
-	DeviceMap   map[string]*Device
-	EndpointMap map[string]*Endpoint
-)
-
 type SubscriptionFilter struct {
 	ID        primitive.ObjectID     `json:"-" bson:"_id"`
 	UID       string                 `json:"uid" bson:"uid"`
