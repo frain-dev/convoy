@@ -189,7 +189,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
+// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -312,7 +312,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
+// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth

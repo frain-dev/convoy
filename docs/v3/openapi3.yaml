@@ -9,6 +9,12 @@ components:
         type:
           type: string
       type: object
+    config.SignatureHeaderProvider:
+      enum:
+      - X-Convoy-Signature
+      type: string
+      x-enum-varnames:
+      - DefaultSignatureHeader
     datastore.AlertConfiguration:
       properties:
         count:
@@ -87,12 +93,30 @@ components:
         last_seen_at:
           type: string
         status:
-          type: string
+          $ref: '#/components/schemas/datastore.DeviceStatus'
         uid:
           type: string
         updated_at:
           type: string
       type: object
+    datastore.DeviceStatus:
+      enum:
+      - offline
+      - online
+      - disabled
+      type: string
+      x-enum-varnames:
+      - DeviceStatusOffline
+      - DeviceStatusOnline
+      - DeviceStatusDisabled
+    datastore.EncodingType:
+      enum:
+      - base64
+      - hex
+      type: string
+      x-enum-varnames:
+      - Base64Encoding
+      - HexEncoding
     datastore.Endpoint:
       properties:
         advanced_signatures:
@@ -141,8 +165,14 @@ components:
         api_key:
           $ref: '#/components/schemas/datastore.ApiKey'
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.EndpointAuthenticationType'
       type: object
+    datastore.EndpointAuthenticationType:
+      enum:
+      - api_key
+      type: string
+      x-enum-varnames:
+      - APIKeyAuthentication
     datastore.Event:
       properties:
         app_id:
@@ -212,7 +242,7 @@ components:
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
         status:
-          type: string
+          $ref: '#/components/schemas/datastore.EventDeliveryStatus'
         subscription_id:
           type: string
         uid:
@@ -220,6 +250,22 @@ components:
         updated_at:
           type: string
       type: object
+    datastore.EventDeliveryStatus:
+      enum:
+      - Scheduled
+      - Processing
+      - Discarded
+      - Failure
+      - Success
+      - Retry
+      type: string
+      x-enum-varnames:
+      - ScheduledEventStatus
+      - ProcessingEventStatus
+      - DiscardedEventStatus
+      - FailureEventStatus
+      - SuccessEventStatus
+      - RetryEventStatus
     datastore.FilterConfiguration:
       properties:
         event_types:
@@ -254,7 +300,7 @@ components:
         statistics:
           $ref: '#/components/schemas/datastore.GroupStatistics'
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.GroupType'
         uid:
           type: string
         updated_at:
@@ -291,10 +337,18 @@ components:
         total_endpoints:
           type: integer
       type: object
+    datastore.GroupType:
+      enum:
+      - outgoing
+      - incoming
+      type: string
+      x-enum-varnames:
+      - OutgoingGroup
+      - IncomingGroup
     datastore.HMac:
       properties:
         encoding:
-          type: string
+          $ref: '#/components/schemas/datastore.EncodingType'
         hash:
           type: string
         header:
@@ -329,7 +383,11 @@ components:
       type: object
     datastore.Organisation:
       properties:
+        assigned_domain:
+          type: string
         created_at:
+          type: string
+        custom_domain:
           type: string
         deleted_at:
           type: string
@@ -399,7 +457,7 @@ components:
     datastore.SignatureConfiguration:
       properties:
         header:
-          type: string
+          $ref: '#/components/schemas/config.SignatureHeaderProvider'
         versions:
           items:
             $ref: '#/components/schemas/datastore.SignatureVersion'
@@ -410,7 +468,7 @@ components:
         created_at:
           type: string
         encoding:
-          type: string
+          $ref: '#/components/schemas/datastore.EncodingType'
         hash:
           type: string
         uid:
@@ -435,11 +493,11 @@ components:
         name:
           type: string
         provider:
-          type: string
+          $ref: '#/components/schemas/datastore.SourceProvider'
         provider_config:
           $ref: '#/components/schemas/datastore.ProviderConfig'
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.SourceType'
         uid:
           type: string
         updated_at:
@@ -447,6 +505,28 @@ components:
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
       type: object
+    datastore.SourceProvider:
+      enum:
+      - github
+      - twitter
+      - shopify
+      type: string
+      x-enum-varnames:
+      - GithubSourceProvider
+      - TwitterSourceProvider
+      - ShopifySourceProvider
+    datastore.SourceType:
+      enum:
+      - http
+      - rest_api
+      - pub_sub
+      - db_change_stream
+      type: string
+      x-enum-varnames:
+      - HTTPSource
+      - RestApiSource
+      - PubSubSource
+      - DBChangeStream
     datastore.StrategyConfiguration:
       properties:
         duration:
@@ -459,7 +539,9 @@ components:
     datastore.Subscription:
       properties:
         alert_config:
-          $ref: '#/components/schemas/datastore.AlertConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/datastore.AlertConfiguration'
+          description: subscription config
         created_at:
           type: string
         deleted_at:
@@ -481,18 +563,59 @@ components:
         source_metadata:
           $ref: '#/components/schemas/datastore.Source'
         status:
-          type: string
+          $ref: '#/components/schemas/datastore.SubscriptionStatus'
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.SubscriptionType'
         uid:
           type: string
         updated_at:
           type: string
       type: object
+    datastore.SubscriptionStatus:
+      enum:
+      - active
+      - inactive
+      - pending
+      type: string
+      x-enum-varnames:
+      - ActiveSubscriptionStatus
+      - InactiveSubscriptionStatus
+      - PendingSubscriptionStatus
+    datastore.SubscriptionType:
+      enum:
+      - cli
+      - api
+      type: string
+      x-enum-varnames:
+      - SubscriptionTypeCLI
+      - SubscriptionTypeAPI
     datastore.TwitterProviderConfig:
       properties:
         crc_verified_at:
           type: integer
+      type: object
+    datastore.User:
+      properties:
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        email:
+          type: string
+        email_verified:
+          type: boolean
+        first_name:
+          type: string
+        last_name:
+          type: string
+        reset_password_expires_at:
+          type: string
+        role:
+          $ref: '#/components/schemas/auth.Role'
+        uid:
+          type: string
+        updated_at:
+          type: string
       type: object
     datastore.VerifierConfig:
       properties:
@@ -503,8 +626,20 @@ components:
         hmac:
           $ref: '#/components/schemas/datastore.HMac'
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.VerifierType'
       type: object
+    datastore.VerifierType:
+      enum:
+      - noop
+      - hmac
+      - basic_auth
+      - api_key
+      type: string
+      x-enum-varnames:
+      - NoopVerifier
+      - HMacVerifier
+      - BasicAuthVerifier
+      - APIKeyVerifier
     httpheader.HTTPHeader:
       additionalProperties:
         items:
@@ -563,6 +698,15 @@ components:
         event_type:
           type: string
       type: object
+    models.FilterSchema:
+      properties:
+        body:
+          additionalProperties: true
+          type: object
+        headers:
+          additionalProperties: true
+          type: object
+      type: object
     models.Group:
       properties:
         config:
@@ -576,7 +720,7 @@ components:
         rate_limit_duration:
           type: string
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.GroupType'
       type: object
     models.PortalAPIKeyResponse:
       properties:
@@ -631,6 +775,13 @@ components:
         url:
           type: string
       type: object
+    models.ResetPassword:
+      properties:
+        password:
+          type: string
+        password_confirmation:
+          type: string
+      type: object
     models.RetryConfiguration:
       properties:
         duration:
@@ -649,9 +800,9 @@ components:
         name:
           type: string
         provider:
-          type: string
+          $ref: '#/components/schemas/datastore.SourceProvider'
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.SourceType'
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
       type: object
@@ -670,11 +821,11 @@ components:
         name:
           type: string
         provider:
-          type: string
+          $ref: '#/components/schemas/datastore.SourceProvider'
         provider_config:
           $ref: '#/components/schemas/datastore.ProviderConfig'
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.SourceType'
         uid:
           type: string
         updated_at:
@@ -705,6 +856,13 @@ components:
           $ref: '#/components/schemas/models.RetryConfiguration'
         source_id:
           type: string
+      type: object
+    models.TestFilter:
+      properties:
+        request:
+          $ref: '#/components/schemas/models.FilterSchema'
+        schema:
+          $ref: '#/components/schemas/models.FilterSchema'
       type: object
     server.Stub:
       type: object
@@ -1962,7 +2120,7 @@ paths:
                 type: object
         description: event delivery ids
         required: true
-        x-originalParamName: ids
+        x-originalParamName: deliveryIds
       responses:
         "200":
           content:
@@ -2133,7 +2291,7 @@ paths:
                 type: object
         description: event delivery ids
         required: true
-        x-originalParamName: ids
+        x-originalParamName: deliveryIds
       responses:
         "200":
           content:
@@ -3727,6 +3885,14 @@ paths:
         required: true
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.TestFilter'
+        description: Filter Details
+        required: true
+        x-originalParamName: filter
       responses:
         "200":
           content:
@@ -3736,7 +3902,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      type: boolean
                   type: object
           description: OK
         "400":
@@ -3992,6 +4158,130 @@ paths:
       summary: Get portal link keys
       tags:
       - PortalLinks
+  /ui/users/forgot-password:
+    post:
+      description: This endpoint verifies a user's email
+      parameters:
+      - description: Email verification token
+        in: query
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      summary: Verify Email
+      tags:
+      - User
+  /ui/users/reset-password:
+    post:
+      description: This endpoint resets a users password
+      parameters:
+      - description: reset token
+        in: query
+        name: token
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.ResetPassword'
+        description: Reset Password Details
+        required: true
+        x-originalParamName: password
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.User'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/server.Stub'
+                  type: object
+          description: Internal Server Error
+      summary: Reset user password
+      tags:
+      - User
 servers:
 - url: https://dashboard.getconvoy.io/
 tags:
