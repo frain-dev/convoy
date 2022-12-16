@@ -71,7 +71,7 @@ func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Param event body models.Event true "Event Details"
+// @Param event body models.FanoutEvent true "Event Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
