@@ -211,12 +211,12 @@ func GetDefaultSignatureConfig() *SignatureConfiguration {
 }
 
 const (
-	ActiveSubscriptionStatus   SubscriptionStatus = "active"
-	InactiveSubscriptionStatus SubscriptionStatus = "inactive"
-	PendingSubscriptionStatus  SubscriptionStatus = "pending"
+	ActiveEndpointStatus   EndpointStatus = "active"
+	InactiveEndpointStatus EndpointStatus = "inactive"
+	PendingEndpointStatus  EndpointStatus = "pending"
 )
 
-type SubscriptionStatus string
+type EndpointStatus string
 
 type Endpoint struct {
 	ID                 primitive.ObjectID `json:"-" bson:"_id"`
@@ -233,10 +233,11 @@ type Endpoint struct {
 	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
 	AppID              string             `json:"-" bson:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
-	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
-	Events      int64  `json:"events,omitempty" bson:"-"`
-	IsDisabled  bool   `json:"is_disabled,omitempty" bson:"is_disabled"`
+	HttpTimeout string         `json:"http_timeout" bson:"http_timeout"`
+	RateLimit   int            `json:"rate_limit" bson:"rate_limit"`
+	Events      int64          `json:"events,omitempty" bson:"-"`
+	IsDisabled  bool           `json:"is_disabled,omitempty" bson:"is_disabled"`
+	Status      EndpointStatus `json:"status" bson:"status"`
 
 	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
@@ -590,15 +591,15 @@ type APIKey struct {
 }
 
 type Subscription struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	Name       string             `json:"name" bson:"name"`
-	Type       SubscriptionType   `json:"type" bson:"type"`
-	Status     SubscriptionStatus `json:"status" bson:"status"`
-	GroupID    string             `json:"-" bson:"group_id"`
-	SourceID   string             `json:"-" bson:"source_id"`
-	EndpointID string             `json:"-" bson:"endpoint_id"`
-	DeviceID   string             `json:"device_id" bson:"device_id"`
+	ID   primitive.ObjectID `json:"-" bson:"_id"`
+	UID  string             `json:"uid" bson:"uid"`
+	Name string             `json:"name" bson:"name"`
+	Type SubscriptionType   `json:"type" bson:"type"`
+	// Status     SubscriptionStatus `json:"status" bson:"status"`
+	GroupID    string `json:"-" bson:"group_id"`
+	SourceID   string `json:"-" bson:"source_id"`
+	EndpointID string `json:"-" bson:"endpoint_id"`
+	DeviceID   string `json:"device_id" bson:"device_id"`
 
 	Source   *Source   `json:"source_metadata" bson:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" bson:"endpoint_metadata"`

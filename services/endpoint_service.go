@@ -12,11 +12,11 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -233,10 +233,6 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 		endpoint.HttpTimeout = e.HttpTimeout
 	}
 
-	if !util.IsStringEmpty(e.Secret) {
-		endpoint.Secret = e.Secret
-	}
-
 	auth, err := ValidateEndpointAuthentication(e.Authentication)
 	if err != nil {
 		return nil, err
@@ -318,6 +314,33 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	err = a.cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
 	if err != nil {
 		log.WithError(err).Error("failed to update app cache")
+	}
+
+	return endpoint, nil
+}
+
+func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, groupId string, subscriptionId string) (*datastore.Endpoint, error) {
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, subscriptionId)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
+	}
+
+	switch endpoint.Status {
+	case datastore.ActiveEndpointStatus:
+		endpoint.Status = datastore.InactiveEndpointStatus
+	case datastore.InactiveEndpointStatus:
+		endpoint.Status = datastore.ActiveEndpointStatus
+	case datastore.PendingEndpointStatus:
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("endpoint is in pending status"))
+	default:
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown endpoint status: %s", endpoint.Status))
+	}
+
+	err = s.endpointRepo.UpdateEndpointStatus(ctx, groupId, endpoint.UID, endpoint.Status)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to update endpoint status")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update endpoint status"))
 	}
 
 	return endpoint, nil

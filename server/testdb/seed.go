@@ -479,14 +479,9 @@ func SeedSubscription(store datastore.Store,
 	retryConfig *datastore.RetryConfiguration,
 	alertConfig *datastore.AlertConfiguration,
 	filterConfig *datastore.FilterConfiguration,
-	status datastore.SubscriptionStatus,
 ) (*datastore.Subscription, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
-	}
-
-	if status == "" {
-		status = datastore.ActiveSubscriptionStatus
 	}
 
 	subscription := &datastore.Subscription{
@@ -503,8 +498,6 @@ func SeedSubscription(store datastore.Store,
 
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-
-		Status: status,
 	}
 
 	subRepo := cm.NewSubscriptionRepo(store)

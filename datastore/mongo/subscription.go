@@ -96,7 +96,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	}
 
 	endpointStage := bson.D{
-		{Key: "$lookup",
+		{
+			Key: "$lookup",
 			Value: bson.D{
 				{Key: "from", Value: "endpoints"},
 				{Key: "localField", Value: "endpoint_id"},
@@ -283,7 +284,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, gro
 	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.SubscriptionStatus) error {
+func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.EndpointStatus) error {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{

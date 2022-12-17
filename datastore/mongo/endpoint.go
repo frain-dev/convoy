@@ -37,7 +37,6 @@ func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.
 }
 
 func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datastore.Endpoint, error) {
-
 	ctx = db.setCollectionInContext(ctx)
 	endpoint := &datastore.Endpoint{}
 
@@ -122,6 +121,21 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 	return db.store.UpdateByID(ctx, endpoint.UID, update)
 }
 
+func (db *endpointRepo) UpdateEndpointStatus(ctx context.Context, groupID, endpointID string, status datastore.EndpointStatus) error {
+	filter := bson.M{
+		"uid":      endpointID,
+		"group_id": groupID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"status": status,
+		},
+	}
+
+	return db.store.UpdateOne(ctx, filter, update)
+}
+
 func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint) error {
 	ctx = db.setCollectionInContext(ctx)
 
@@ -190,7 +204,6 @@ func (db *endpointRepo) LoadEndpointsPaged(ctx context.Context, groupID, q strin
 	var endpoints []datastore.Endpoint
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &endpoints)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -221,7 +234,6 @@ func (db *endpointRepo) LoadEndpointsPagedByGroupId(ctx context.Context, groupID
 	var endpoints []datastore.Endpoint
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &endpoints)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

@@ -409,7 +409,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingGroup
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, group, subscriptionId, group.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
@@ -450,7 +450,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingGroup
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, group, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, group, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, group, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", group.UID, subscriptionId)
@@ -483,7 +483,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 		// Just Before
 		endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 		source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
-		_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+		_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	}
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultGroup.UID)
@@ -508,7 +508,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
@@ -533,7 +533,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultGroup.UID, subscriptionId)
@@ -585,7 +585,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveS
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.ActiveSubscriptionStatus)
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
@@ -606,7 +606,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_ActiveS
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscriptionId, dbSub.UID)
-	require.Equal(s.T(), datastore.InactiveSubscriptionStatus, dbSub.Status)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_InactiveStatus() {
@@ -615,7 +614,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Inactiv
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.InactiveSubscriptionStatus)
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
@@ -636,7 +635,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Inactiv
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultGroup.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscriptionId, dbSub.UID)
-	require.Equal(s.T(), datastore.ActiveSubscriptionStatus, dbSub.Status)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_PendingStatus() {
@@ -645,7 +643,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Pending
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, datastore.PendingSubscriptionStatus)
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
@@ -665,7 +663,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_ToggleSubscriptionStatus_Unknown
 	// Just Before
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "random")
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, subscriptionId, datastore.OutgoingGroup, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)

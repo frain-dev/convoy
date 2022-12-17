@@ -72,7 +72,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.InactiveSubscriptionStatus,
+						Status: datastore.InactiveEndpointStatus,
 					}, nil)
 
 				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{Config: &datastore.GroupConfig{
@@ -128,7 +128,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -220,7 +220,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -312,7 +312,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -408,7 +408,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -500,7 +500,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -596,7 +596,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -688,7 +688,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -785,7 +785,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.ActiveSubscriptionStatus,
+						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
@@ -887,7 +887,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
-						Status: datastore.PendingSubscriptionStatus,
+						Status: datastore.PendingEndpointStatus,
 					}, nil)
 
 				m.EXPECT().
