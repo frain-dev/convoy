@@ -175,7 +175,7 @@ type Endpoint struct {
 	Secret             string `json:"secret" bson:"secret"`
 	OwnerID            string `json:"owner_id" bson:"owner_id"`
 	Description        string `json:"description" bson:"description"`
-	AdvancedSignatures *bool  `json:"advanced_signatures" bson:"advanced_signatures"`
+	AdvancedSignatures bool   `json:"advanced_signatures" bson:"advanced_signatures"`
 	Name               string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
 	SupportEmail       string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
 	IsDisabled         bool   `json:"is_disabled"`
