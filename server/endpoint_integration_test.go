@@ -568,7 +568,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus(
 	endpointId := "123456789"
 
 	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.InactiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointId, "", "", false, datastore.InactiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultGroup.UID, endpointId)
