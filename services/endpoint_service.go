@@ -319,8 +319,8 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	return endpoint, nil
 }
 
-func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, groupId string, subscriptionId string) (*datastore.Endpoint, error) {
-	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, subscriptionId)
+func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, groupId string, endpointId string) (*datastore.Endpoint, error) {
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointId)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)

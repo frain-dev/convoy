@@ -122,6 +122,8 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 }
 
 func (db *endpointRepo) UpdateEndpointStatus(ctx context.Context, groupID, endpointID string, status datastore.EndpointStatus) error {
+	ctx = db.setCollectionInContext(ctx)
+
 	filter := bson.M{
 		"uid":      endpointID,
 		"group_id": groupID,
