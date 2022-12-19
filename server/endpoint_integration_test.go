@@ -320,7 +320,6 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
 	endpointURL := faker.New().Internet().URL()
-	secret := faker.New().Lorem().Text(25)
 	supportEmail := "10xengineer@getconvoy.io"
 	isDisabled := randBool()
 	endpointID := uuid.New().String()
@@ -334,11 +333,10 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"description": "test endpoint",
-		"secret": "%s",
 		"url": "%s",
 		"support_email": "%s",
 		"is_disabled": %t
-	}`, title, secret, endpointURL, supportEmail, !isDisabled)
+	}`, title, endpointURL, supportEmail, !isDisabled)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -360,7 +358,6 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	require.Equal(s.T(), title, dbEndpoint.Title)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
 	require.Equal(s.T(), !isDisabled, dbEndpoint.IsDisabled)
-	require.Equal(s.T(), secret, dbEndpoint.Secret)
 	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
 }
 
