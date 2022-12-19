@@ -140,7 +140,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				return &EndpointError{Err: err, delay: delayDuration}
 			}
 
-			log.Debugf("subscription %s is inactive, failing to send.", e.TargetURL)
+			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
 			return nil
 		}
 

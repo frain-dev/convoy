@@ -76,7 +76,7 @@ func (s *GroupIntegrationTestSuite) TestGetGroup() {
 	// Just Before.
 	group, err := testdb.SeedGroup(s.ConvoyApp.A.Store, groupID, "", s.DefaultOrg.UID, datastore.OutgoingGroup, nil)
 	require.NoError(s.T(), err)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "test-app", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, group, uuid.NewString(), "test-app", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, group.UID, uuid.NewString(), "*", "", []byte("{}"))
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, group.UID)

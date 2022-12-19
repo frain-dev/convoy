@@ -162,6 +162,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							e.Get("/", a.GetEndpoint)
 							e.Put("/", a.UpdateEndpoint)
 							e.Delete("/", a.DeleteEndpoint)
+							e.Put("/toggle_status", a.ToggleEndpointStatus)
 							e.Put("/expire_secret", a.ExpireSecret)
 						})
 					})
@@ -376,6 +377,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 								e.Get("/", a.GetEndpoint)
 								e.Put("/", a.UpdateEndpoint)
 								e.Delete("/", a.DeleteEndpoint)
+								e.Put("/toggle_status", a.ToggleEndpointStatus)
 								e.Put("/expire_secret", a.ExpireSecret)
 
 								e.Route("/keys", func(keySubRouter chi.Router) {

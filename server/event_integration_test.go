@@ -72,7 +72,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", "", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
 	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, endpointID)
@@ -100,8 +100,8 @@ func (s *EventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoints() {
 	ownerID := uuid.NewString()
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", ownerID, false)
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", ownerID, false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", ownerID, false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", ownerID, false, datastore.ActiveEndpointStatus)
 
 	bodyStr := `{"owner_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, ownerID)
@@ -132,11 +132,11 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 	// Just Before.
 	// Create an Endpoint with an app ID
 	endpoint := &datastore.Endpoint{
-		UID:            endpointID,
-		Title:          fmt.Sprintf("TestEndpoint-%s", endpointID),
-		GroupID:        s.DefaultGroup.UID,
-		AppID:          appID,
-		IsDisabled:     false,
+		UID:        endpointID,
+		Title:      fmt.Sprintf("TestEndpoint-%s", endpointID),
+		GroupID:    s.DefaultGroup.UID,
+		AppID:      appID,
+		IsDisabled: false,
 	}
 
 	err := cm.NewEndpointRepo(s.ConvoyApp.A.Store).CreateEndpoint(context.TODO(), endpoint, s.DefaultGroup.UID)
@@ -167,7 +167,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disable
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", "", true)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", "", true, datastore.ActiveEndpointStatus)
 
 	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, endpointID)
@@ -187,7 +187,7 @@ func (s *EventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, s.DefaultGroup.UID, eventID, "*", "", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/%s", s.DefaultGroup.UID, eventID)
@@ -211,7 +211,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event_Redirec
 	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", "", false)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
 	body := serialize(bodyStr, endpointID)
@@ -231,7 +231,7 @@ func (s *EventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, s.DefaultGroup.UID, eventID, "*", "", []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/%s/replay", s.DefaultGroup.UID, eventID)
@@ -265,7 +265,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	eventDelivery, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, &datastore.Event{}, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries/%s", s.DefaultGroup.UID, eventDeliveryID)
@@ -289,7 +289,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery_Re
 	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, &datastore.Event{}, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
 
 	url := fmt.Sprintf("/api/v1/eventdeliveries/%s?groupID=%s", eventDeliveryID, s.DefaultGroup.UID)
@@ -323,8 +323,8 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
-	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	eventDelivery, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, &datastore.Event{}, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries/%s/resend", s.DefaultGroup.UID, eventDeliveryID)
@@ -349,7 +349,7 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
@@ -371,9 +371,9 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
-	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
@@ -401,9 +401,9 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	expectedMessage := "3 successful, 0 failed"
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
-	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{}, "")
+	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	e1, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
 	e2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
 	e3, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultGroup.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
@@ -435,11 +435,11 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	e1, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint1, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
 	e2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint1, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
 
-	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, eventID, "*", sourceID, []byte(`{}`))
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events?endpointId=%s&sourceId=%s", s.DefaultGroup.UID, endpoint1.UID, sourceID)
@@ -470,12 +470,12 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event1, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint1, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	d1, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event1, endpoint1, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 	d2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event1, endpoint1, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 
-	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false)
+	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event2, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint2, s.DefaultGroup.UID, uuid.NewString(), "*", "", []byte(`{}`))
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event2, endpoint2, s.DefaultGroup.UID, eventDeliveryID, datastore.FailureEventStatus, &datastore.Subscription{})
 

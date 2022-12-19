@@ -23,7 +23,7 @@ import (
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
-func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID string, disabled bool) (*datastore.Endpoint, error) {
+func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -42,6 +42,7 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID
 		GroupID:    g.UID,
 		OwnerID:    ownerID,
 		IsDisabled: disabled,
+		Status:     status,
 		AppID:      uid,
 	}
 
@@ -590,7 +591,6 @@ func SeedPortalLink(store datastore.Store, g *datastore.Group, endpoints []strin
 	}
 
 	return portalLink, nil
-
 }
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have

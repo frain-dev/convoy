@@ -116,7 +116,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -165,7 +165,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_RedirectT
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -205,7 +205,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -253,7 +253,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_EndpointD
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", "", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Group{UID: uuid.NewString()}, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:  auth.RoleAdmin,
@@ -364,7 +364,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetEndpointAPIKeys() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
@@ -398,7 +398,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeEndpointAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
