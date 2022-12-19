@@ -9,6 +9,6 @@ import { environment } from 'src/environments/environment';
 })
 export class AppComponent {
 	constructor() {
-		posthog.init(environment.posthog, { api_host: 'https://app.posthog.com', ui_host: 'https://dashboard.getconvoy.io' });
+		if (window.location.hostname === 'dashboard.getconvoy.io') posthog.init(environment.posthog, { api_host: 'https://app.posthog.com', ui_host: 'https://dashboard.getconvoy.io' });
 	}
 }

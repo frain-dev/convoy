@@ -17,7 +17,6 @@ import { SignupService } from './signup.service';
 export class SignupComponent implements OnInit {
 	showSignupPassword = false;
 	disableSignupBtn = false;
-	isSignUpDone = false;
 	signupForm: FormGroup = this.formBuilder.group({
 		email: ['', Validators.required],
 		first_name: ['', Validators.required],
@@ -38,9 +37,9 @@ export class SignupComponent implements OnInit {
 			const response: any = await this.signupService.signup(this.signupForm.value);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 
-			if (window.location.hostname === 'dashboard.getconvoy.io') this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
+			if (window.location.hostname === 'dashboard.getconvoy.io') await this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
 
-			this.isSignUpDone = true;
+			this.router.navigateByUrl('/');
 			this.disableSignupBtn = false;
 		} catch {
 			this.disableSignupBtn = false;
