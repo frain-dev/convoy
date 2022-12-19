@@ -22,6 +22,7 @@ export class PrivateComponent implements OnInit {
 	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
 	userOrganization?: ORGANIZATION_DATA;
+	convoyVersion: string = '';
 
 	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
@@ -50,7 +51,8 @@ export class PrivateComponent implements OnInit {
 	async getConfiguration() {
 		try {
 			const response = await this.privateService.getConfiguration();
-			if (response.data.length === 0 && !this.router.url.includes('app-portal')) this.showAddAnalytics = true;
+			this.convoyVersion = response.data[0].api_version;
+			if (response.data.length === 0 && !this.router.url.includes('portal')) this.showAddAnalytics = true;
 		} catch {}
 	}
 
