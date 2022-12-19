@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AccountService } from '../account.service';
 
@@ -21,7 +22,7 @@ export class ProfileSettingsComponent implements OnInit {
 		email: ['', Validators.compose([Validators.required, Validators.email])]
 	});
 
-	constructor(private formBuilder: FormBuilder, private router: Router, private accountService: AccountService, private generalService: GeneralService) {}
+	constructor(private formBuilder: FormBuilder, private router: Router, private accountService: AccountService, private privateService:PrivateService, private generalService: GeneralService) {}
 
 	ngOnInit() {
 		this.getAuthDetails();
@@ -41,7 +42,7 @@ export class ProfileSettingsComponent implements OnInit {
 		this.isFetchingUserDetails = true;
 
 		try {
-			const response = await this.accountService.getUserDetails({ userId: userId });
+			const response = await this.privateService.getUserDetails({ userId: userId });
 			this.userId = response.data?.uid;
 			this.editBasicInfoForm.patchValue({
 				first_name: response.data?.first_name,
