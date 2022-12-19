@@ -593,13 +593,13 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus(
 }
 
 func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus() {
-	subscriptionId := "123456789"
+	endpointId := "123456789"
 
 	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, uuid.NewString(), "", "", false, datastore.PendingEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, endpointId, "", "", false, datastore.PendingEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultGroup.UID, subscriptionId)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultGroup.UID, endpointId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
