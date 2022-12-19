@@ -79,12 +79,12 @@ func provideEndpointService(ctrl *gomock.Controller) *EndpointService {
 func boolPtr(b bool) *bool {
 	return &b
 }
+
 func stringPtr(s string) *string {
 	return &s
 }
 
 func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
-
 	ctx := context.Background()
 
 	type args struct {
@@ -476,7 +476,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("Endpoint2"),
 					Description:       "test_endpoint",
-					Secret:            "newly-generated-secret",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
 					RateLimitDuration: "1m",
@@ -487,7 +486,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Title:             "Endpoint2",
 				Description:       "test_endpoint",
-				Secret:            "newly-generated-secret",
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
 				RateLimitDuration: "1m0s",
@@ -524,7 +522,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
-
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
