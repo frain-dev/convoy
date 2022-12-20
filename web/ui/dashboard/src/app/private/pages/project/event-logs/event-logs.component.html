@@ -76,7 +76,13 @@
 			size="sm"
 			fill="outline"
 			class="ml-14px px-10px border-primary-400 h-36px whitespace-nowrap"
-			[disabled]="(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') && (eventEndpoint?.length == 0 || eventEndpoint == undefined) && eventsTimeFilterData.startTime == 'T00:00:00' && eventsTimeFilterData.endTime == 'T23:59:59'"
+			[disabled]="
+				(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') &&
+				(eventEndpoint?.length == 0 || eventEndpoint == undefined) &&
+				eventsTimeFilterData.startTime == 'T00:00:00' &&
+				eventsTimeFilterData.endTime == 'T23:59:59' &&
+				(eventSource?.length == 0 || eventSource == undefined)
+			"
 			(click)="fetchRetryCount(); showBatchRetryModal = true"
 		>
 			Batch Retry

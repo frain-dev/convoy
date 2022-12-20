@@ -317,6 +317,7 @@ export class EventLogsComponent implements OnInit {
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventEndpoint || '',
+				sourceId: this.eventSource || '',
 				token: this.portalToken
 			});
 
@@ -351,6 +352,7 @@ export class EventLogsComponent implements OnInit {
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventEndpoint || '',
+				sourceId: this.eventSource || '',
 				token: this.portalToken
 			});
 

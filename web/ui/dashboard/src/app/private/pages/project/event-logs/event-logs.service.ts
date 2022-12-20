@@ -45,12 +45,12 @@ export class EventLogsService {
 		});
 	}
 
-	getRetryCount(requestDetails: { endpointId: string; pageNo: number; startDate: string; endDate: string; token?: string }): Promise<HTTP_RESPONSE> {
+	getRetryCount(requestDetails: { endpointId: string; pageNo: number; startDate: string; endDate: string; sourceId?: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${
-						requestDetails.endpointId
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/events/countbatchreplayevents?page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${requestDetails.endpointId}${
+						requestDetails.sourceId ? '&sourceId=' + requestDetails.sourceId : ''
 					}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
 					method: 'get',
 					token: requestDetails.token
@@ -79,13 +79,13 @@ export class EventLogsService {
 		});
 	}
 
-	batchRetryEvent(requestDetails: { pageNo: number; startDate: string; endDate: string; endpointId: string; token?: string }): Promise<HTTP_RESPONSE> {
+	batchRetryEvent(requestDetails: { pageNo: number; startDate: string; endDate: string; endpointId: string; sourceId?: string; token?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${requestDetails.endpointId}${
-						requestDetails.token ? '&token=' + requestDetails.token : ''
-					}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/events/batchreplay?page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${requestDetails.endpointId}${
+						requestDetails.sourceId ? '&sourceId=' + requestDetails.sourceId : ''
+					}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
 					method: 'post',
 					body: null,
 					token: requestDetails.token
