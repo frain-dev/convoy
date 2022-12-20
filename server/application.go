@@ -198,7 +198,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		URL                string   `json:"url"`
 		Description        string   `json:"description"`
 		Events             []string `json:"events"`
-		AdvancedSignatures *bool    `json:"advanced_signatures"`
+		AdvancedSignatures bool     `json:"advanced_signatures"`
 		Secret             string   `json:"secret"`
 
 		HttpTimeout       string                            `json:"http_timeout"`

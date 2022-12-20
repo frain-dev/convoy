@@ -103,18 +103,19 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 
 	update := bson.M{
 		"$set": bson.M{
-			"title":             endpoint.Title,
-			"support_email":     endpoint.SupportEmail,
-			"is_disabled":       endpoint.IsDisabled,
-			"target_url":        endpoint.TargetURL,
-			"secret":            endpoint.Secret,
-			"secrets":           endpoint.Secrets,
-			"description":       endpoint.Description,
-			"slack_webhook_url": endpoint.SlackWebhookURL,
-			"http_timeout":      endpoint.HttpTimeout,
-			"rate_limit":        endpoint.RateLimit,
-			"authentication":    endpoint.Authentication,
-			"updated_at":        endpoint.UpdatedAt,
+			"title":               endpoint.Title,
+			"support_email":       endpoint.SupportEmail,
+			"is_disabled":         endpoint.IsDisabled,
+			"target_url":          endpoint.TargetURL,
+			"secret":              endpoint.Secret,
+			"secrets":             endpoint.Secrets,
+			"description":         endpoint.Description,
+			"slack_webhook_url":   endpoint.SlackWebhookURL,
+			"http_timeout":        endpoint.HttpTimeout,
+			"rate_limit":          endpoint.RateLimit,
+			"advanced_signatures": endpoint.AdvancedSignatures,
+			"authentication":      endpoint.Authentication,
+			"updated_at":          endpoint.UpdatedAt,
 		},
 	}
 
