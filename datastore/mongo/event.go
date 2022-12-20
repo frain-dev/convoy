@@ -288,6 +288,22 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 	return events, pagination, nil
 }
 
+func (db *eventRepo) CountEvents(ctx context.Context, f *datastore.Filter) (int64, error) {
+	ctx = db.setCollectionInContext(ctx)
+
+	filter := bson.M{"deleted_at": nil, "created_at": getCreatedDateFilter(f.SearchParams)}
+	if !util.IsStringEmpty(f.Project.UID) {
+		filter["project_id"] = f.Project.UID
+	}
+
+	c, err := db.store.Count(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return c, nil
+}
+
 func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {
 	return bson.M{"$gte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtStart, 0)), "$lte": primitive.NewDateTimeFromTime(time.Unix(searchParams.CreatedAtEnd, 0))}
 }

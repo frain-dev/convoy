@@ -155,6 +155,26 @@ func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, 
 	return nil
 }
 
+func (e *EventService) BatchReplayEvents(ctx context.Context, filter *datastore.Filter) (int, int, error) {
+	events, _, err := e.eventRepo.LoadEventsPaged(ctx, filter)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to fetch events")
+		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
+	}
+
+	failures := 0
+	for _, ev := range events {
+		err := e.ReplayEvent(ctx, &ev, filter.Project)
+		if err != nil {
+			failures++
+			log.FromContext(ctx).WithError(err).Error("an item in the batch replay failed")
+		}
+	}
+
+	successes := len(events) - failures
+	return successes, failures, nil
+}
+
 func (e *EventService) GetEvent(ctx context.Context, id string) (*datastore.Event, error) {
 	event, err := e.eventRepo.FindEventByID(ctx, id)
 	if err != nil {
@@ -219,6 +239,16 @@ func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *data
 
 	successes := len(deliveries) - failures
 	return successes, failures, nil
+}
+
+func (e *EventService) CountAffectedEvents(ctx context.Context, filter *datastore.Filter) (int64, error) {
+	count, err := e.eventRepo.CountEvents(ctx, filter)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("an error occurred while fetching event")
+		return 0, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
+	}
+
+	return count, nil
 }
 
 func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter *datastore.Filter) (int64, error) {
