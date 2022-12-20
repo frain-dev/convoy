@@ -126,8 +126,8 @@ func (db *endpointRepo) UpdateEndpointStatus(ctx context.Context, groupID, endpo
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":      endpointID,
-		"group_id": groupID,
+		"uid":        endpointID,
+		"project_id": groupID,
 	}
 
 	update := bson.M{
