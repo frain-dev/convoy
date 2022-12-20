@@ -26,7 +26,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 
 	type args struct {
 		ctx             context.Context
-		group           *datastore.Group
+		project         *datastore.Project
 		newSubscription *models.Subscription
 	}
 
@@ -40,7 +40,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 		wantErrMsg       string
 	}{
 		{
-			name: "should create subscription for outgoing group",
+			name: "should create subscription for outgoing project",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.Subscription{
@@ -48,7 +48,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.OutgoingGroup},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -66,14 +66,14 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
 					&datastore.Endpoint{
-						GroupID: "12345",
+						ProjectID: "12345",
 					},
 					nil,
 				)
 			},
 		},
 		{
-			name: "should create subscription for incoming group",
+			name: "should create subscription for incoming project",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.Subscription{
@@ -81,7 +81,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.IncomingGroup},
+				project: &datastore.Project{UID: "12345", Type: datastore.IncomingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -99,7 +99,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
 					&datastore.Endpoint{
-						GroupID: "12345",
+						ProjectID: "12345",
 					},
 					nil,
 				)
@@ -108,8 +108,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				sr.EXPECT().FindSourceByID(gomock.Any(), "12345", "source-id-1").
 					Times(1).Return(
 					&datastore.Source{
-						GroupID: "12345",
-						UID:     "abc",
+						ProjectID: "12345",
+						UID:       "abc",
 					},
 					nil,
 				)
@@ -124,7 +124,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.IncomingGroup},
+				project: &datastore.Project{UID: "12345", Type: datastore.IncomingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -137,7 +137,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
 					&datastore.Endpoint{
-						GroupID: "12345",
+						ProjectID: "12345",
 					},
 					nil,
 				)
@@ -159,7 +159,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -177,7 +177,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantErrMsg:  "failed to find endpoint by id",
 		},
 		{
-			name: "should error for endpoint does not belong to group",
+			name: "should error for endpoint does not belong to project",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.Subscription{
@@ -185,7 +185,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -198,14 +198,14 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
 					&datastore.Endpoint{
-						GroupID: "abb",
+						ProjectID: "abb",
 					},
 					nil,
 				)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "endpoint does not belong to group",
+			wantErrMsg:  "endpoint does not belong to project",
 		},
 		{
 			name: "should error for failed to find endpoint",
@@ -216,7 +216,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -242,7 +242,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -256,7 +256,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
 					&datastore.Endpoint{
-						GroupID: "12345",
+						ProjectID: "12345",
 					},
 					nil,
 				)
@@ -266,7 +266,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			wantErrMsg:  "failed to create subscription",
 		},
 		{
-			name: "create subscription for outgoing group - should set default event types array",
+			name: "create subscription for outgoing project - should set default event types array",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.Subscription{
@@ -274,7 +274,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345", Type: datastore.OutgoingGroup},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -295,7 +295,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
 					Times(1).Return(
 					&datastore.Endpoint{
-						GroupID: "12345",
+						ProjectID: "12345",
 					},
 					nil,
 				)
@@ -314,7 +314,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			subscription, err := ss.CreateSubscription(tc.args.ctx, tc.args.group, tc.args.newSubscription)
+			subscription, err := ss.CreateSubscription(tc.args.ctx, tc.args.project, tc.args.newSubscription)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -340,7 +340,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 
 	type args struct {
 		ctx            context.Context
-		group          *datastore.Group
+		project        *datastore.Project
 		subscriptionId string
 		update         *models.UpdateSubscription
 	}
@@ -363,7 +363,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -393,7 +393,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -423,7 +423,7 @@ func TestSubscription_UpdateSubscription(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			subscription, err := ss.UpdateSubscription(tc.args.ctx, tc.args.group.UID, tc.args.subscriptionId, tc.args.update)
+			subscription, err := ss.UpdateSubscription(tc.args.ctx, tc.args.project.UID, tc.args.subscriptionId, tc.args.update)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -462,7 +462,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			name: "should_load_subscriptions",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.FilterBy{GroupID: "12345"},
+				filter: &datastore.FilterBy{ProjectID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -502,7 +502,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			name: "should_fail_load_sources",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.FilterBy{GroupID: "12345"},
+				filter: &datastore.FilterBy{ProjectID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -523,7 +523,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 			name: "should_load_sources_empty_list",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.FilterBy{GroupID: "12345"},
+				filter: &datastore.FilterBy{ProjectID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -586,7 +586,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 
 	type args struct {
 		ctx             context.Context
-		group           *datastore.Group
+		project         *datastore.Project
 		newSubscription *datastore.Subscription
 	}
 
@@ -608,7 +608,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(ss *SubcriptionService) {
 				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
@@ -627,7 +627,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -654,7 +654,7 @@ func TestSubscription_DeleteSubscription(t *testing.T) {
 				tc.dbFn(ss)
 			}
 
-			err := ss.DeleteSubscription(tc.args.ctx, tc.args.group.UID, tc.args.newSubscription)
+			err := ss.DeleteSubscription(tc.args.ctx, tc.args.project.UID, tc.args.newSubscription)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

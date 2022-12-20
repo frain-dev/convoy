@@ -54,8 +54,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				newIV: &models.OrganisationInvite{
 					InviteeEmail: "test@example.com",
 					Role: auth.Role{
-						Type:  auth.RoleAdmin,
-						Group: "abc",
+						Type:    auth.RoleAdmin,
+						Project: "abc",
 					},
 				},
 				user:    &datastore.User{},
@@ -73,8 +73,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				OrganisationID: "123",
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "abc",
+					Type:    auth.RoleAdmin,
+					Project: "abc",
 				},
 				Status: datastore.InviteStatusPending,
 			},
@@ -88,8 +88,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				newIV: &models.OrganisationInvite{
 					InviteeEmail: "",
 					Role: auth.Role{
-						Type:  auth.RoleAdmin,
-						Group: "abc",
+						Type:    auth.RoleAdmin,
+						Project: "abc",
 					},
 				},
 				user:    &datastore.User{},
@@ -115,7 +115,7 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify group for organisation member",
+			wantErrMsg:  "please specify project for organisation member",
 		},
 		{
 			name: "should_fail_to_create_organisation_member_invite",
@@ -125,8 +125,8 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 				newIV: &models.OrganisationInvite{
 					InviteeEmail: "test@example.com",
 					Role: auth.Role{
-						Type:  auth.RoleAdmin,
-						Group: "abc",
+						Type:    auth.RoleAdmin,
+						Project: "abc",
 					},
 				},
 				user:    nil,
@@ -206,7 +206,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -219,7 +219,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:     auth.RoleAdmin,
-						Group:    "ref",
+						Project:  "ref",
 						Endpoint: "",
 					},
 				}).Times(1).Return(nil)
@@ -261,7 +261,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -290,7 +290,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -320,7 +320,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -367,7 +367,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -380,7 +380,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:     auth.RoleAdmin,
-						Group:    "ref",
+						Project:  "ref",
 						Endpoint: "",
 					},
 				}).Times(1).Return(nil)
@@ -406,7 +406,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -444,7 +444,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -457,7 +457,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:     auth.RoleAdmin,
-						Group:    "ref",
+						Project:  "ref",
 						Endpoint: "",
 					},
 				}).Times(1).Return(nil)
@@ -498,7 +498,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -536,7 +536,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -575,7 +575,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -611,7 +611,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -653,7 +653,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -701,7 +701,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					},
@@ -714,7 +714,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					InviteeEmail:   "test@email.com",
 					Role: auth.Role{
 						Type:     auth.RoleAdmin,
-						Group:    "ref",
+						Project:  "ref",
 						Endpoint: "",
 					},
 				}).Times(1).Return(errors.New("failed"))
@@ -1044,7 +1044,7 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 						InviteeEmail:   "test@example.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					}, nil)
@@ -1059,8 +1059,8 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 				OrganisationID: "123",
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "ref",
+					Type:    auth.RoleAdmin,
+					Project: "ref",
 				},
 				Status: datastore.InviteStatusPending,
 			},
@@ -1128,7 +1128,7 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 						InviteeEmail:   "test@example.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
-							Group:    "ref",
+							Project:  "ref",
 							Endpoint: "",
 						},
 					}, nil)
@@ -1142,7 +1142,7 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
 					Type:     auth.RoleAdmin,
-					Group:    "ref",
+					Project:  "ref",
 					Endpoint: "",
 				},
 			},

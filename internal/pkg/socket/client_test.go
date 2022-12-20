@@ -97,7 +97,7 @@ func TestResendEventDeliveries(t *testing.T) {
 	wantEd := datastore.EventDelivery{
 		UID:        "evd-1",
 		EndpointID: "endpoint-1",
-		GroupID:    "group-1",
+		ProjectID:  "project-1",
 		DeviceID:   "device-1",
 		Headers: httpheader.HTTPHeader{
 			"key": []string{"value"},
@@ -215,7 +215,6 @@ func TestPingHandler_FailedToSendPongMessage(t *testing.T) {
 }
 
 func TestProcessMessage(t *testing.T) {
-
 	type Args struct {
 		messageType int
 		message     []byte
@@ -288,7 +287,6 @@ func TestProcessMessage(t *testing.T) {
 }
 
 func TestParseTime(t *testing.T) {
-
 	type Args struct {
 		message  string
 		err      error

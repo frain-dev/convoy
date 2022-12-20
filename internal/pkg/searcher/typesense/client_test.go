@@ -353,7 +353,7 @@ func Test_Search(t *testing.T) {
 			pp, _, err := ts.Search(testCollection, &datastore.SearchFilter{
 				Query: tt.query,
 				FilterBy: datastore.FilterBy{
-					GroupID: "group-1",
+					ProjectID: "group-1",
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 0,
 						CreatedAtEnd:   10000000000,

@@ -51,10 +51,10 @@ func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, group.UID)
+	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -92,12 +92,12 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 
-	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), group.UID, q, pageable)
+	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), project.UID, q, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -214,11 +214,11 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
-	g := m.GetGroupFromContext(r.Context())
+	p := m.GetProjectFromContext(r.Context())
 	endpointID := chi.URLParam(r, "endpointID")
 
 	endpointService := createEndpointService(a)
-	endpoint, err := endpointService.ToggleEndpointStatus(r.Context(), g.UID, endpointID)
+	endpoint, err := endpointService.ToggleEndpointStatus(r.Context(), p.UID, endpointID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

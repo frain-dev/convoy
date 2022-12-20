@@ -33,7 +33,7 @@ func TestIndexDocument(t *testing.T) {
 				UID:       uuid.NewString(),
 				EventType: "*",
 				SourceID:  "source-id-1",
-				GroupID:   "group-id-1",
+				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -51,7 +51,7 @@ func TestIndexDocument(t *testing.T) {
 				UID:       uuid.NewString(),
 				EventType: "*",
 				SourceID:  "source-id-1",
-				GroupID:   "group-id-1",
+				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -67,12 +67,12 @@ func TestIndexDocument(t *testing.T) {
 			wantErrMsg: "[typesense]: 400 Bad Request",
 		},
 		{
-			name: "should_not_index_ducment_missing_group_id",
+			name: "should_not_index_ducment_missing_project_id",
 			event: &datastore.Event{
 				UID:       uuid.NewString(),
 				EventType: "*",
 				SourceID:  "source-id-1",
-				GroupID:   "group-id-1",
+				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -81,11 +81,11 @@ func TestIndexDocument(t *testing.T) {
 			dbFn: func(args *args) {
 				srh, _ := args.search.(*mocks.MockSearcher)
 				srh.EXPECT().Index(gomock.Any(), gomock.Any()).
-					Return(ErrGroupIdFieldIsRequired)
+					Return(ErrProjectIdFieldIsRequired)
 			},
 			wantErr:    true,
 			wantDelay:  time.Second * 5,
-			wantErrMsg: ErrGroupIdFieldIsRequired.Error(),
+			wantErrMsg: ErrProjectIdFieldIsRequired.Error(),
 		},
 	}
 	for _, tt := range tests {

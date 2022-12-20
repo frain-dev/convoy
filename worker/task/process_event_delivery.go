@@ -36,7 +36,7 @@ type SignatureValues struct {
 	Timestamp string
 }
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		Id := string(t.Payload())
 
@@ -52,14 +52,14 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		subscription, err := subRepo.FindSubscriptionByID(context.Background(), ed.GroupID, ed.SubscriptionID)
+		subscription, err := subRepo.FindSubscriptionByID(context.Background(), ed.ProjectID, ed.SubscriptionID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
-		g, err := groupRepo.FetchGroupByID(context.Background(), endpoint.GroupID)
+		p, err := projectRepo.FetchProjectByID(context.Background(), endpoint.ProjectID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -71,7 +71,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		ec := &EventDeliveryConfig{subscription: subscription, group: g}
+		ec := &EventDeliveryConfig{subscription: subscription, project: p}
 		rlc := ec.rateLimitConfig()
 
 		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
@@ -144,17 +144,17 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		sig := newSignature(endpoint, g, json.RawMessage(ed.Metadata.Raw))
+		sig := newSignature(endpoint, p, json.RawMessage(ed.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
-			log.Errorf("error occurred while generating hmac - %+v\n", err)
+			log.Errorf("error occurred while generating hmac - %+v", err)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.Payload, g, header, int64(cfg.MaxResponseSize), ed.Headers)
+		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.Payload, p, header, int64(cfg.MaxResponseSize), ed.Headers)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -200,13 +200,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		if done && e.Status == datastore.PendingEndpointStatus && ec.disableEndpoint() {
 			endpointStatus := datastore.ActiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(context.Background(), g.UID, e.UID, endpointStatus)
+			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
 			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), endpoint, g, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
+			err = notifications.SendEndpointNotification(context.Background(), endpoint, p, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -214,7 +214,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		if !done && e.Status == datastore.PendingEndpointStatus {
 			endpointStatus := datastore.InactiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(context.Background(), g.UID, e.UID, endpointStatus)
+			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -239,13 +239,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			if ec.disableEndpoint() && e.Status != datastore.PendingEndpointStatus {
 				endpointStatus := datastore.InactiveEndpointStatus
 
-				err := endpointRepo.UpdateEndpointStatus(context.Background(), g.UID, e.UID, endpointStatus)
+				err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
 				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), endpoint, g, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
+				err = notifications.SendEndpointNotification(context.Background(), endpoint, p, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
 				if err != nil {
 					log.WithError(err).Error("failed to send notification")
 				}
@@ -265,7 +265,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 	}
 }
 
-func newSignature(endpoint *datastore.Endpoint, g *datastore.Group, data json.RawMessage) *signature.Signature {
+func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.RawMessage) *signature.Signature {
 	s := &signature.Signature{Advanced: endpoint.AdvancedSignatures, Payload: data}
 
 	for _, version := range g.Config.Signature.Versions {
@@ -313,7 +313,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 }
 
 type EventDeliveryConfig struct {
-	group        *datastore.Group
+	project      *datastore.Project
 	subscription *datastore.Subscription
 }
 
@@ -333,7 +333,7 @@ func (ec *EventDeliveryConfig) disableEndpoint() bool {
 		return *ec.subscription.DisableEndpoint
 	}
 
-	return ec.group.Config.DisableEndpoint
+	return ec.project.Config.DisableEndpoint
 }
 
 func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
@@ -344,9 +344,9 @@ func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 		rc.RetryCount = ec.subscription.RetryConfig.RetryCount
 		rc.Type = ec.subscription.RetryConfig.Type
 	} else {
-		rc.Duration = ec.group.Config.Strategy.Duration
-		rc.RetryCount = ec.group.Config.Strategy.RetryCount
-		rc.Type = ec.group.Config.Strategy.Type
+		rc.Duration = ec.project.Config.Strategy.Duration
+		rc.RetryCount = ec.project.Config.Strategy.RetryCount
+		rc.Type = ec.project.Config.Strategy.Type
 	}
 
 	return rc, nil
@@ -359,8 +359,8 @@ func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 		rlc.Count = ec.subscription.RateLimitConfig.Count
 		rlc.Duration = ec.subscription.RateLimitConfig.Duration
 	} else {
-		rlc.Count = ec.group.Config.RateLimit.Count
-		rlc.Duration = ec.group.Config.RateLimit.Duration
+		rlc.Count = ec.project.Config.RateLimit.Count
+		rlc.Duration = ec.project.Config.RateLimit.Duration
 	}
 
 	return rlc

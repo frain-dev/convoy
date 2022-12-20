@@ -256,4 +256,18 @@ export class PrivateService {
 			}
 		});
 	}
+
+    getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/users/${requestDetails.userId}/profile`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

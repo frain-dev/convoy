@@ -1,4 +1,4 @@
-<convoy-modal position="full" [id]="'configureProjectForm'" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
+<div convoy-modal position="full" [id]="'configureProjectForm'" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
 	<div class="pt-40px pb-60px" modalBody>
 		<convoy-card className="p-30px" *ngIf="projectStage === 'setupSDK'">
 			<h2 class="font-semibold mb-8px">SDK installation</h2>
@@ -58,4 +58,4 @@
 
 		<convoy-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails?.uid" (onAction)="onProjectOnboardingComplete()"></convoy-create-subscription>
 	</div>
-</convoy-modal>
+</div>

@@ -9,20 +9,20 @@ import (
 )
 
 type EventAnalytics struct {
-	eventRepo  datastore.EventRepository
-	groupRepo  datastore.GroupRepository
-	orgRepo    datastore.OrganisationRepository
-	client     AnalyticsClient
-	instanceID string
+	eventRepo   datastore.EventRepository
+	projectRepo datastore.ProjectRepository
+	orgRepo     datastore.OrganisationRepository
+	client      AnalyticsClient
+	instanceID  string
 }
 
-func newEventAnalytics(eventRepo datastore.EventRepository, groupRepo datastore.GroupRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *EventAnalytics {
+func newEventAnalytics(eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, orgRepo datastore.OrganisationRepository, client AnalyticsClient, instanceID string) *EventAnalytics {
 	return &EventAnalytics{
-		eventRepo:  eventRepo,
-		groupRepo:  groupRepo,
-		orgRepo:    orgRepo,
-		client:     client,
-		instanceID: instanceID,
+		eventRepo:   eventRepo,
+		projectRepo: projectRepo,
+		orgRepo:     orgRepo,
+		client:      client,
+		instanceID:  instanceID,
 	}
 }
 
@@ -43,15 +43,15 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 
 	now := time.Now()
 	for _, org := range orgs {
-		groups, err := ea.groupRepo.LoadGroups(ctx, &datastore.GroupFilter{OrgID: org.UID})
+		projects, err := ea.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
-			log.WithError(err).Error("failed to load organisation groups")
+			log.WithError(err).Error("failed to load organisation projects")
 			continue
 		}
 
-		for _, group := range groups {
+		for _, project := range projects {
 			filter := &datastore.Filter{
-				Group:    group,
+				Project:  project,
 				Pageable: datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Unix(0, 0).Unix(),
@@ -65,7 +65,7 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 				continue
 			}
 
-			err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": group.Name, "Organization": org.Name, "instanceID": ea.instanceID})
+			err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": project.Name, "Organization": org.Name, "instanceID": ea.instanceID})
 			if err != nil {
 				log.WithError(err).Error("failed to load export metrics")
 				continue

@@ -39,7 +39,7 @@ type SlackNotification struct {
 
 func SendEndpointNotification(ctx context.Context,
 	endpoint *datastore.Endpoint,
-	group *datastore.Group,
+	project *datastore.Project,
 	status datastore.EndpointStatus,
 	q queue.Queuer,
 	failure bool,
@@ -65,7 +65,7 @@ func SendEndpointNotification(ctx context.Context,
 				Subject:      "Endpoint Status Update",
 				TemplateName: email.TemplateEndpointUpdate,
 				Params: map[string]string{
-					"logo_url":        group.LogoURL,
+					"logo_url":        project.LogoURL,
 					"target_url":      endpoint.TargetURL,
 					"failure_msg":     failureMsg,
 					"response_body":   responseBody,

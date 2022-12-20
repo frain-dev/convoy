@@ -35,7 +35,7 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	Device   *datastore.Device   `json:"device"`
-	Group    *datastore.Group    `json:"group"`
+	Project  *datastore.Project  `json:"project"`
 	Endpoint *datastore.Endpoint `json:"endpoint"`
 }
 
@@ -59,7 +59,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 	router.Route("/stream", func(streamRouter chi.Router) {
 		streamRouter.Use(
 			m.RequireAuth(),
-			m.RequireGroup(),
+			m.RequireProject(),
 			m.RequireAppID(),
 			// m.RequireAppPortalApplication(),
 		)
@@ -81,10 +81,10 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		group := m.GetGroupFromContext(r.Context())
+		project := m.GetProjectFromContext(r.Context())
 		app := m.GetEndpointFromContext(r.Context())
 
-		device, err := listen(r.Context(), group, app, listenRequest, hub, repo)
+		device, err := listen(r.Context(), project, app, listenRequest, hub, repo)
 		if err != nil {
 			respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 			return
@@ -110,22 +110,22 @@ func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		group := m.GetGroupFromContext(r.Context())
+		project := m.GetProjectFromContext(r.Context())
 		endpoint := m.GetEndpointFromContext(r.Context())
 
-		device, err := login(r.Context(), group, endpoint, loginRequest, hub, repo)
+		device, err := login(r.Context(), project, endpoint, loginRequest, hub, repo)
 		if err != nil {
 			respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 			return
 		}
 
-		lr := &LoginResponse{Device: device, Group: group, Endpoint: endpoint}
+		lr := &LoginResponse{Device: device, Project: project, Endpoint: endpoint}
 
 		respondWithData(w, http.StatusOK, lr)
 	})
 }
 
-func login(ctx context.Context, group *datastore.Group, endpoint *datastore.Endpoint, loginRequest *LoginRequest, h *Hub, repo *Repo) (*datastore.Device, error) {
+func login(ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint, loginRequest *LoginRequest, h *Hub, repo *Repo) (*datastore.Device, error) {
 	endpointID := ""
 	if endpoint != nil {
 		endpointID = endpoint.UID
@@ -134,13 +134,13 @@ func login(ctx context.Context, group *datastore.Group, endpoint *datastore.Endp
 	var device *datastore.Device
 	var err error
 	if !util.IsStringEmpty(loginRequest.DeviceID) {
-		device, err = repo.DeviceRepo.FetchDeviceByID(ctx, loginRequest.DeviceID, endpointID, group.UID)
+		device, err = repo.DeviceRepo.FetchDeviceByID(ctx, loginRequest.DeviceID, endpointID, project.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to find device by id")
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		if device.GroupID != group.UID {
+		if device.ProjectID != project.UID {
 			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this project"))
 		}
 
@@ -152,13 +152,13 @@ func login(ctx context.Context, group *datastore.Group, endpoint *datastore.Endp
 		// the device should only be set to online when we start listening for events
 		if device.Status == datastore.DeviceStatusOnline {
 			device.Status = datastore.DeviceStatusOffline
-			err = repo.DeviceRepo.UpdateDevice(ctx, device, device.EndpointID, device.GroupID)
+			err = repo.DeviceRepo.UpdateDevice(ctx, device, device.EndpointID, device.ProjectID)
 			if err != nil {
 				return nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
 		}
 	} else {
-		device, err = repo.DeviceRepo.FetchDeviceByHostName(ctx, loginRequest.HostName, endpointID, group.UID)
+		device, err = repo.DeviceRepo.FetchDeviceByHostName(ctx, loginRequest.HostName, endpointID, project.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to find device for this hostname, will create new device")
 		}
@@ -166,24 +166,24 @@ func login(ctx context.Context, group *datastore.Group, endpoint *datastore.Endp
 		if device != nil {
 			d := &datastore.Device{
 				EndpointID: endpointID,
-				GroupID:    group.UID,
+				ProjectID:  project.UID,
 				HostName:   loginRequest.HostName,
 			}
 
-			err = repo.DeviceRepo.UpdateDevice(ctx, d, endpointID, group.UID)
+			err = repo.DeviceRepo.UpdateDevice(ctx, d, endpointID, project.UID)
 			if err != nil {
 				log.WithError(err).Error("failed to update device")
 				return nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
 
 			device.HostName = d.HostName
-			device.GroupID = d.GroupID
+			device.ProjectID = d.ProjectID
 			device.EndpointID = d.EndpointID
 
 		} else {
 			device = &datastore.Device{
 				EndpointID: endpointID,
-				GroupID:    group.UID,
+				ProjectID:  project.UID,
 				UID:        uuid.NewString(),
 				HostName:   loginRequest.HostName,
 				Status:     datastore.DeviceStatusOffline,
@@ -203,18 +203,18 @@ func login(ctx context.Context, group *datastore.Group, endpoint *datastore.Endp
 	return device, nil
 }
 
-func listen(ctx context.Context, group *datastore.Group, endpoint *datastore.Endpoint, listenRequest *ListenRequest, h *Hub, r *Repo) (*datastore.Device, error) {
+func listen(ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint, listenRequest *ListenRequest, h *Hub, r *Repo) (*datastore.Device, error) {
 	endpointID := ""
 	if endpoint != nil {
 		endpointID = endpoint.UID
 	}
 
-	device, err := r.DeviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, endpointID, group.UID)
+	device, err := r.DeviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, endpointID, project.UID)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	if device.GroupID != group.UID {
+	if device.ProjectID != project.UID {
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this project"))
 	}
 
@@ -222,27 +222,27 @@ func listen(ctx context.Context, group *datastore.Group, endpoint *datastore.End
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
 	}
 
-	if group.Type == datastore.IncomingGroup && util.IsStringEmpty(listenRequest.SourceID) {
+	if project.Type == datastore.IncomingProject && util.IsStringEmpty(listenRequest.SourceID) {
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source is required for incoming projects"))
 	}
 
-	if group.Type == datastore.OutgoingGroup && !util.IsStringEmpty(listenRequest.SourceID) {
+	if project.Type == datastore.OutgoingProject && !util.IsStringEmpty(listenRequest.SourceID) {
 		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source should not be passed for outgoing projects"))
 	}
 
-	if group.Type == datastore.IncomingGroup && !util.IsStringEmpty(listenRequest.SourceID) {
-		source, err := r.SourceRepo.FindSourceByID(ctx, device.GroupID, listenRequest.SourceID)
+	if project.Type == datastore.IncomingProject && !util.IsStringEmpty(listenRequest.SourceID) {
+		source, err := r.SourceRepo.FindSourceByID(ctx, device.ProjectID, listenRequest.SourceID)
 		if err != nil {
 			log.WithError(err).Error("error retrieving source")
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		if source.GroupID != group.UID {
+		if source.ProjectID != project.UID {
 			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this source"))
 		}
 	}
 
-	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, group.UID, device.UID)
+	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, project.UID, device.UID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			s := &datastore.Subscription{
@@ -250,7 +250,7 @@ func listen(ctx context.Context, group *datastore.Group, endpoint *datastore.End
 				Name:         fmt.Sprintf("%s-subscription", device.HostName),
 				Type:         datastore.SubscriptionTypeCLI,
 				EndpointID:   endpointID,
-				GroupID:      group.UID,
+				ProjectID:    project.UID,
 				SourceID:     listenRequest.SourceID,
 				DeviceID:     device.UID,
 				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
@@ -258,7 +258,7 @@ func listen(ctx context.Context, group *datastore.Group, endpoint *datastore.End
 				UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 			}
 
-			err = r.SubscriptionRepo.CreateSubscription(ctx, group.UID, s)
+			err = r.SubscriptionRepo.CreateSubscription(ctx, project.UID, s)
 			if err != nil {
 				return nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
@@ -273,7 +273,7 @@ func listen(ctx context.Context, group *datastore.Group, endpoint *datastore.End
 	sub.FilterConfig = &datastore.FilterConfiguration{EventTypes: listenRequest.EventTypes}
 	sub.AlertConfig = &datastore.DefaultAlertConfig
 	sub.RetryConfig = &datastore.DefaultRetryConfig
-	err = r.SubscriptionRepo.UpdateSubscription(ctx, group.UID, sub)
+	err = r.SubscriptionRepo.UpdateSubscription(ctx, project.UID, sub)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}

@@ -35,7 +35,7 @@ type DashboardIntegrationTestSuite struct {
 	AuthenticatorFn AuthenticatorFn
 	DefaultUser     *datastore.User
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultProject  *datastore.Project
 }
 
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
@@ -57,8 +57,8 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	// Setup Default Project.
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -83,7 +83,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	ctx := context.Background()
 	endpoint := &datastore.Endpoint{
 		UID:          "abc",
-		GroupID:      s.DefaultGroup.UID,
+		ProjectID:    s.DefaultProject.UID,
 		Title:        "test-app",
 		SupportEmail: "test@suport.com",
 		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
@@ -91,7 +91,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	}
 
 	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.GroupID)
+	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
 
 	events := []datastore.Event{
@@ -100,7 +100,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			EventType:        "*",
 			MatchedEndpoints: 1,
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          s.DefaultGroup.UID,
+			ProjectID:        s.DefaultProject.UID,
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
@@ -110,7 +110,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			EventType:        "*",
 			MatchedEndpoints: 1,
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          s.DefaultGroup.UID,
+			ProjectID:        s.DefaultProject.UID,
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
@@ -120,7 +120,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			EventType:        "*",
 			MatchedEndpoints: 1,
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          s.DefaultGroup.UID,
+			ProjectID:        s.DefaultProject.UID,
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -130,7 +130,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			EventType:        "*",
 			MatchedEndpoints: 1,
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          s.DefaultGroup.UID,
+			ProjectID:        s.DefaultProject.UID,
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -140,7 +140,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			EventType:        "*",
 			MatchedEndpoints: 1,
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          s.DefaultGroup.UID,
+			ProjectID:        s.DefaultProject.UID,
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -150,7 +150,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			EventType:        "*",
 			MatchedEndpoints: 1,
 			Data:             json.RawMessage(`{"data":"12345"}`),
-			GroupID:          s.DefaultGroup.UID,
+			ProjectID:        s.DefaultProject.UID,
 			Endpoints:        []string{endpoint.UID},
 			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
@@ -164,7 +164,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	}
 
 	type urlQuery struct {
-		groupID   string
+		projectID string
 		startDate string
 		endDate   string
 		Type      string
@@ -181,7 +181,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   s.DefaultGroup.UID,
+				projectID: s.DefaultProject.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2021-01-30T00:00:00",
 				Type:      "yearly",
@@ -192,7 +192,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   s.DefaultGroup.UID,
+				projectID: s.DefaultProject.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "monthly",
@@ -203,7 +203,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   s.DefaultGroup.UID,
+				projectID: s.DefaultProject.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "weekly",
@@ -214,7 +214,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
 			urlQuery: urlQuery{
-				groupID:   s.DefaultGroup.UID,
+				projectID: s.DefaultProject.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "daily",
@@ -225,9 +225,9 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID: s.DefaultGroup.UID,
-				endDate: "2022-12-27T00:00:00",
-				Type:    "daily",
+				projectID: s.DefaultProject.UID,
+				endDate:   "2022-12-27T00:00:00",
+				Type:      "daily",
 			},
 		},
 		{
@@ -235,7 +235,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   s.DefaultGroup.UID,
+				projectID: s.DefaultProject.UID,
 				startDate: "2021-01-01",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "daily",
@@ -246,7 +246,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   s.DefaultGroup.UID,
+				projectID: s.DefaultProject.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2022-12-27T00:00:00",
 				Type:      "abc",
@@ -257,7 +257,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			method:     http.MethodGet,
 			statusCode: http.StatusBadRequest,
 			urlQuery: urlQuery{
-				groupID:   s.DefaultGroup.UID,
+				projectID: s.DefaultProject.UID,
 				startDate: "2021-01-01T00:00:00",
 				endDate:   "2020-12-27T00:00:00",
 				Type:      "daily",
@@ -274,7 +274,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
 			initRealmChain(t, apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
-			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.groupID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
+			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.projectID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
 			err = s.AuthenticatorFn(req, s.Router)
 			require.NoError(s.T(), err)
 

@@ -16,43 +16,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func provideGroupService(ctrl *gomock.Controller) *GroupService {
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
+func provideProjectService(ctrl *gomock.Controller) *ProjectService {
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewGroupService(apiKeyRepo, groupRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
+	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
 }
 
-func TestGroupService_CreateGroup(t *testing.T) {
+func TestProjectService_CreateProject(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx      context.Context
-		newGroup *models.Group
-		org      *datastore.Organisation
-		member   *datastore.OrganisationMember
+		ctx        context.Context
+		newProject *models.Project
+		org        *datastore.Organisation
+		member     *datastore.OrganisationMember
 	}
 	tests := []struct {
 		name        string
 		args        args
-		wantGroup   *datastore.Group
-		dbFn        func(gs *GroupService)
+		wantProject *datastore.Project
+		dbFn        func(gs *ProjectService)
 		wantErr     bool
 		wantErrCode int
 		wantErrMsg  string
 	}{
 		{
-			name: "should_create_outgoing_group",
+			name: "should_create_outgoing_project",
 			args: args{
 				ctx: ctx,
-				newGroup: &models.Group{
-					Name:              "test_group",
+				newProject: &models.Project{
+					Name:              "test_project",
 					Type:              "outgoing",
 					LogoURL:           "https://google.com",
 					RateLimit:         1000,
 					RateLimitDuration: "1m",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -76,24 +76,24 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
-			wantGroup: &datastore.Group{
-				Name:              "test_group",
+			wantProject: &datastore.Project{
+				Name:              "test_project",
 				Type:              "outgoing",
 				LogoURL:           "https://google.com",
 				RateLimit:         1000,
 				OrganisationID:    "1234",
 				RateLimitDuration: "1m",
-				Config: &datastore.GroupConfig{
+				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 					},
@@ -114,16 +114,16 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_create_incoming_group",
+			name: "should_create_incoming_project",
 			args: args{
 				ctx: ctx,
-				newGroup: &models.Group{
-					Name:              "test_group",
+				newProject: &models.Project{
+					Name:              "test_project",
 					Type:              "incoming",
 					LogoURL:           "https://google.com",
 					RateLimit:         1000,
 					RateLimitDuration: "1m",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -147,24 +147,24 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
-			wantGroup: &datastore.Group{
-				Name:              "test_group",
+			wantProject: &datastore.Project{
+				Name:              "test_project",
 				Type:              "incoming",
 				LogoURL:           "https://google.com",
 				OrganisationID:    "1234",
 				RateLimit:         1000,
 				RateLimitDuration: "1m",
-				Config: &datastore.GroupConfig{
+				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 					},
@@ -185,14 +185,14 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_create_incoming_group_with_defaults",
+			name: "should_create_incoming_project_with_defaults",
 			args: args{
 				ctx: ctx,
-				newGroup: &models.Group{
-					Name:    "test_group_1",
+				newProject: &models.Project{
+					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config:  &datastore.GroupConfig{},
+					Config:  &datastore.ProjectConfig{},
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -201,24 +201,24 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
-			wantGroup: &datastore.Group{
-				Name:              "test_group_1",
+			wantProject: &datastore.Project{
+				Name:              "test_project_1",
 				Type:              "incoming",
 				LogoURL:           "https://google.com",
 				OrganisationID:    "1234",
 				RateLimit:         5000,
 				RateLimitDuration: "1m",
-				Config: &datastore.GroupConfig{
+				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Versions: []datastore.SignatureVersion{
@@ -238,14 +238,14 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_create_outgoing_group_with_defaults",
+			name: "should_create_outgoing_project_with_defaults",
 			args: args{
 				ctx: ctx,
-				newGroup: &models.Group{
-					Name:    "test_group",
+				newProject: &models.Project{
+					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -258,24 +258,24 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
-			wantGroup: &datastore.Group{
-				Name:              "test_group",
+			wantProject: &datastore.Project{
+				Name:              "test_project",
 				Type:              "outgoing",
 				LogoURL:           "https://google.com",
 				RateLimit:         5000,
 				OrganisationID:    "1234",
 				RateLimitDuration: "1m",
-				Config: &datastore.GroupConfig{
+				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 					},
@@ -289,14 +289,14 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_create_group",
+			name: "should_fail_to_create_project",
 			args: args{
 				ctx: ctx,
-				newGroup: &models.Group{
-					Name:    "test_group",
+				newProject: &models.Project{
+					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -312,24 +312,24 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				org:    &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to create group",
+			wantErrMsg:  "failed to create project",
 		},
 		{
-			name: "should_fail_to_create_default_api_key_for_group",
+			name: "should_fail_to_create_default_api_key_for_project",
 			args: args{
 				ctx: ctx,
-				newGroup: &models.Group{
-					Name:    "test_group_1",
+				newProject: &models.Project{
+					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config:  &datastore.GroupConfig{},
+					Config:  &datastore.ProjectConfig{},
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -338,12 +338,12 @@ func TestGroupService_CreateGroup(t *testing.T) {
 					Role:           auth.Role{Type: auth.RoleSuperUser},
 				},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
-				a.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
@@ -353,14 +353,14 @@ func TestGroupService_CreateGroup(t *testing.T) {
 			wantErrMsg:  "failed to create api key",
 		},
 		{
-			name: "should_error_for_duplicate_group_name",
+			name: "should_error_for_duplicate_project_name",
 			args: args{
 				ctx: ctx,
-				newGroup: &models.Group{
-					Name:    "test_group",
+				newProject: &models.Project{
+					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -376,28 +376,28 @@ func TestGroupService_CreateGroup(t *testing.T) {
 				org:    &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().CreateGroup(gomock.Any(), gomock.Any()).
-					Times(1).Return(datastore.ErrDuplicateGroupName)
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
+					Times(1).Return(datastore.ErrDuplicateProjectName)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "a group with this name already exists",
+			wantErrMsg:  "a project with this name already exists",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideGroupService(ctrl)
+			gs := provideProjectService(ctrl)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(gs)
 			}
 
-			group, apiKey, err := gs.CreateGroup(tc.args.ctx, tc.args.newGroup, tc.args.org, tc.args.member)
+			project, apiKey, err := gs.CreateProject(tc.args.ctx, tc.args.newProject, tc.args.org, tc.args.member)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -407,53 +407,53 @@ func TestGroupService_CreateGroup(t *testing.T) {
 
 			// fmt.Println("eee", err.Error())
 			require.Nil(t, err)
-			require.NotEmpty(t, group.UID)
-			require.NotEmpty(t, group.ID)
-			require.NotEmpty(t, group.CreatedAt)
-			require.NotEmpty(t, group.UpdatedAt)
-			require.Empty(t, group.DeletedAt)
+			require.NotEmpty(t, project.UID)
+			require.NotEmpty(t, project.ID)
+			require.NotEmpty(t, project.CreatedAt)
+			require.NotEmpty(t, project.UpdatedAt)
+			require.Empty(t, project.DeletedAt)
 
-			require.Equal(t, group.Name+"'s default key", apiKey.Name)
-			require.Equal(t, group.UID, apiKey.Role.Group)
+			require.Equal(t, project.Name+"'s default key", apiKey.Name)
+			require.Equal(t, project.UID, apiKey.Role.Project)
 			require.Equal(t, auth.RoleAdmin, apiKey.Role.Type)
 			require.NotEmpty(t, apiKey.ExpiresAt)
 			require.NotEmpty(t, apiKey.UID)
 			require.NotEmpty(t, apiKey.Key)
 			require.NotEmpty(t, apiKey.CreatedAt)
 
-			stripVariableFields(t, "group", group)
-			require.Equal(t, tc.wantGroup, group)
+			stripVariableFields(t, "project", project)
+			require.Equal(t, tc.wantProject, project)
 		})
 	}
 }
 
-func TestGroupService_UpdateGroup(t *testing.T) {
+func TestProjectService_UpdateProject(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx    context.Context
-		group  *datastore.Group
-		update *models.UpdateGroup
+		ctx     context.Context
+		project *datastore.Project
+		update  *models.UpdateProject
 	}
 	tests := []struct {
 		name        string
 		args        args
 		wantErr     bool
-		wantGroup   *datastore.Group
-		dbFn        func(gs *GroupService)
+		wantProject *datastore.Project
+		dbFn        func(gs *ProjectService)
 		wantErrCode int
 		wantErrMsg  string
 	}{
 		{
-			name: "should_update_group",
+			name: "should_update_project",
 			args: args{
 				ctx: ctx,
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID:     "12345",
-					Name:    "test_group",
+					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -467,10 +467,10 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 						ReplayAttacks:   true,
 					},
 				},
-				update: &models.UpdateGroup{
-					Name:    "test_group",
+				update: &models.UpdateProject{
+					Name:    "test_project",
 					LogoURL: "https://google.com",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -485,12 +485,12 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					},
 				},
 			},
-			wantGroup: &datastore.Group{
+			wantProject: &datastore.Project{
 				UID:     "12345",
-				Name:    "test_group",
+				Name:    "test_project",
 				Type:    "incoming",
 				LogoURL: "https://google.com",
-				Config: &datastore.GroupConfig{
+				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 					},
@@ -504,9 +504,9 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					ReplayAttacks:   true,
 				},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().UpdateGroup(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := gs.cache.(*mocks.MockCache)
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
@@ -515,12 +515,12 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 		{
 			name: "should_error_for_empty_name",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
-				update: &models.UpdateGroup{
+				ctx:     ctx,
+				project: &datastore.Project{UID: "12345"},
+				update: &models.UpdateProject{
 					Name:    "",
 					LogoURL: "https://google.com",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -539,14 +539,14 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			wantErrMsg:  "name:please provide a valid name",
 		},
 		{
-			name: "should_fail_to_update_group",
+			name: "should_fail_to_update_project",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
-				update: &models.UpdateGroup{
-					Name:    "test_group",
+				ctx:     ctx,
+				project: &datastore.Project{UID: "12345"},
+				update: &models.UpdateProject{
+					Name:    "test_project",
 					LogoURL: "https://google.com",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
@@ -560,9 +560,9 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 					},
 				},
 			},
-			dbFn: func(gs *GroupService) {
-				a, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				a.EXPECT().UpdateGroup(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -573,14 +573,14 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideGroupService(ctrl)
+			gs := provideProjectService(ctrl)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(gs)
 			}
 
-			group, err := gs.UpdateGroup(tc.args.ctx, tc.args.group, tc.args.update)
+			project, err := gs.UpdateProject(tc.args.ctx, tc.args.project, tc.args.update)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -589,70 +589,70 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			c1 := tc.wantGroup.Config
-			c2 := group.Config
+			c1 := tc.wantProject.Config
+			c2 := project.Config
 
-			tc.wantGroup.Config = nil
-			group.Config = nil
-			require.Equal(t, tc.wantGroup, group)
+			tc.wantProject.Config = nil
+			project.Config = nil
+			require.Equal(t, tc.wantProject, project)
 			require.Equal(t, c1, c2)
 		})
 	}
 }
 
-func TestGroupService_GetGroups(t *testing.T) {
+func TestProjectService_GetProjects(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx    context.Context
-		filter *datastore.GroupFilter
+		filter *datastore.ProjectFilter
 	}
 	tests := []struct {
-		name        string
-		args        args
-		wantErr     bool
-		wantGroups  []*datastore.Group
-		dbFn        func(gs *GroupService)
-		wantErrCode int
-		wantErrMsg  string
+		name         string
+		args         args
+		wantErr      bool
+		wantProjects []*datastore.Project
+		dbFn         func(gs *ProjectService)
+		wantErrCode  int
+		wantErrMsg   string
 	}{
 		{
-			name: "should_get_groups",
+			name: "should_get_projects",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.GroupFilter{Names: []string{"default_group"}},
+				filter: &datastore.ProjectFilter{Names: []string{"default_project"}},
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().LoadGroups(gomock.Any(), &datastore.GroupFilter{Names: []string{"default_group"}}).
-					Times(1).Return([]*datastore.Group{
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
+					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
+					projects[0].Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					groups[1].Statistics = &datastore.GroupStatistics{
+					projects[1].Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 					return nil
 				})
 			},
-			wantGroups: []*datastore.Group{
+			wantProjects: []*datastore.Project{
 				{
 					UID: "123",
-					Statistics: &datastore.GroupStatistics{
+					Statistics: &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					},
 				},
 				{
 					UID: "abc",
-					Statistics: &datastore.GroupStatistics{
+					Statistics: &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					},
@@ -661,43 +661,43 @@ func TestGroupService_GetGroups(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_get_groups_trims-whitespaces-from-query",
+			name: "should_get_projects_trims-whitespaces-from-query",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.GroupFilter{Names: []string{" default_group "}},
+				filter: &datastore.ProjectFilter{Names: []string{" default_project "}},
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().LoadGroups(gomock.Any(), &datastore.GroupFilter{Names: []string{"default_group"}}).
-					Times(1).Return([]*datastore.Group{
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
+					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
+					projects[0].Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					groups[1].Statistics = &datastore.GroupStatistics{
+					projects[1].Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 					return nil
 				})
 			},
-			wantGroups: []*datastore.Group{
+			wantProjects: []*datastore.Project{
 				{
 					UID: "123",
-					Statistics: &datastore.GroupStatistics{
+					Statistics: &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					},
 				},
 				{
 					UID: "abc",
-					Statistics: &datastore.GroupStatistics{
+					Statistics: &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					},
@@ -706,43 +706,43 @@ func TestGroupService_GetGroups(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_get_groups_trims-whitespaces-from-query-retains-case",
+			name: "should_get_projects_trims-whitespaces-from-query-retains-case",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.GroupFilter{Names: []string{"  deFault_Group"}},
+				filter: &datastore.ProjectFilter{Names: []string{"  deFault_Project"}},
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().LoadGroups(gomock.Any(), &datastore.GroupFilter{Names: []string{"deFault_Group"}}).
-					Times(1).Return([]*datastore.Group{
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"deFault_Project"}}).
+					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
+					projects[0].Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					groups[1].Statistics = &datastore.GroupStatistics{
+					projects[1].Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 					return nil
 				})
 			},
-			wantGroups: []*datastore.Group{
+			wantProjects: []*datastore.Project{
 				{
 					UID: "123",
-					Statistics: &datastore.GroupStatistics{
+					Statistics: &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					},
 				},
 				{
 					UID: "abc",
-					Statistics: &datastore.GroupStatistics{
+					Statistics: &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					},
@@ -751,19 +751,19 @@ func TestGroupService_GetGroups(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_get_groups",
+			name: "should_fail_to_get_projects",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.GroupFilter{Names: []string{"default_group"}},
+				filter: &datastore.ProjectFilter{Names: []string{"default_project"}},
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().LoadGroups(gomock.Any(), &datastore.GroupFilter{Names: []string{"default_group"}}).
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an error occurred while fetching Groups",
+			wantErrMsg:  "an error occurred while fetching projects",
 		},
 	}
 
@@ -771,14 +771,14 @@ func TestGroupService_GetGroups(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideGroupService(ctrl)
+			gs := provideProjectService(ctrl)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(gs)
 			}
 
-			group, err := gs.GetGroups(tc.args.ctx, tc.args.filter)
+			projects, err := gs.GetProjects(tc.args.ctx, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -787,23 +787,23 @@ func TestGroupService_GetGroups(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.Equal(t, tc.wantGroups, group)
+			require.Equal(t, tc.wantProjects, projects)
 		})
 	}
 }
 
-func TestGroupService_FillGroupsStatistics(t *testing.T) {
+func TestProjectService_FillProjectStatistics(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
 		ctx context.Context
-		g   *datastore.Group
+		g   *datastore.Project
 	}
 	tests := []struct {
 		name        string
 		args        args
-		dbFn        func(gs *GroupService)
-		wantGroup   *datastore.Group
+		dbFn        func(gs *ProjectService)
+		wantProject *datastore.Project
 		wantErr     bool
 		wantErrCode int
 		wantErrMsg  string
@@ -812,21 +812,21 @@ func TestGroupService_FillGroupsStatistics(t *testing.T) {
 			name: "should_fill_statistics",
 			args: args{
 				ctx: ctx,
-				g:   &datastore.Group{UID: "1234"},
+				g:   &datastore.Project{UID: "1234"},
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
+					projects[0].Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 					return nil
 				})
 			},
-			wantGroup: &datastore.Group{
+			wantProject: &datastore.Project{
 				UID: "1234",
-				Statistics: &datastore.GroupStatistics{
+				Statistics: &datastore.ProjectStatistics{
 					MessagesSent: 1,
 					TotalApps:    1,
 				},
@@ -834,32 +834,32 @@ func TestGroupService_FillGroupsStatistics(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_fill_group_statistics",
+			name: "should_fail_to_fill_project_statistics",
 			args: args{
 				ctx: ctx,
-				g:   &datastore.Group{UID: "1234"},
+				g:   &datastore.Project{UID: "1234"},
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to count group statistics",
+			wantErrMsg:  "failed to count project statistics",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideGroupService(ctrl)
+			gs := provideProjectService(ctrl)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(gs)
 			}
 
-			err := gs.FillGroupsStatistics(tc.args.ctx, []*datastore.Group{tc.args.g})
+			err := gs.FillProjectStatistics(tc.args.ctx, []*datastore.Project{tc.args.g})
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -868,12 +868,12 @@ func TestGroupService_FillGroupsStatistics(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.Equal(t, tc.wantGroup, tc.args.g)
+			require.Equal(t, tc.wantProject, tc.args.g)
 		})
 	}
 }
 
-func TestGroupService_DeleteGroup(t *testing.T) {
+func TestProjectService_DeleteProject(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
@@ -883,49 +883,49 @@ func TestGroupService_DeleteGroup(t *testing.T) {
 		name        string
 		args        args
 		wantErr     bool
-		dbFn        func(gs *GroupService)
+		dbFn        func(gs *ProjectService)
 		wantErrCode int
 		wantErrMsg  string
 	}{
 		{
-			name: "should_delete_group",
+			name: "should_delete_project",
 			args: args{
 				ctx: ctx,
 				id:  "12345",
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().DeleteGroup(gomock.Any(), "12345").Times(1).Return(nil)
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().DeleteProject(gomock.Any(), "12345").Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_delete_group",
+			name: "should_fail_to_delete_project",
 			args: args{
 				ctx: ctx,
 				id:  "12345",
 			},
-			dbFn: func(gs *GroupService) {
-				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().DeleteGroup(gomock.Any(), "12345").Times(1).Return(errors.New("failed"))
+			dbFn: func(gs *ProjectService) {
+				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().DeleteProject(gomock.Any(), "12345").Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to delete group",
+			wantErrMsg:  "failed to delete project",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideGroupService(ctrl)
+			gs := provideProjectService(ctrl)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(gs)
 			}
 
-			err := gs.DeleteGroup(tc.args.ctx, tc.args.id)
+			err := gs.DeleteProject(tc.args.ctx, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

@@ -15,9 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	successBody = []byte("received webhook successfully")
-)
+var successBody = []byte("received webhook successfully")
 
 func TestDispatcher_SendRequest(t *testing.T) {
 	client := http.DefaultClient
@@ -30,7 +28,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 		method   string
 		jsonData json.RawMessage
 		headers  httpheader.HTTPHeader
-		group    *datastore.Group
+		project  *datastore.Project
 		hmac     string
 	}
 	tests := []struct {
@@ -46,9 +44,9 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				endpoint: "https://google.com",
 				method:   http.MethodPost,
 				jsonData: bytes.NewBufferString("testing").Bytes(),
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
@@ -91,11 +89,11 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				method:   http.MethodPost,
 				jsonData: bytes.NewBufferString("testing").Bytes(),
 				headers: map[string][]string{
-					"X-Test-Sig": []string{"abcdef"},
+					"X-Test-Sig": {"abcdef"},
 				},
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
@@ -138,9 +136,9 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				endpoint: "https://google.com",
 				method:   http.MethodPost,
 				jsonData: bytes.NewBufferString("testing").Bytes(),
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
@@ -182,9 +180,9 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				endpoint: "http://localhost:3234",
 				method:   http.MethodPost,
 				jsonData: bytes.NewBufferString("bossman").Bytes(),
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
@@ -215,9 +213,9 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				endpoint: "http://localhost:3234",
 				method:   http.MethodPost,
 				jsonData: bytes.NewBufferString("bossman").Bytes(),
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: configSignature,
 						},
@@ -244,9 +242,9 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				endpoint: "http://localhost:3234",
 				method:   http.MethodPost,
 				jsonData: bytes.NewBufferString("bossman").Bytes(),
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
-					Config: &datastore.GroupConfig{
+					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: config.SignatureHeaderProvider(""),
 						},
@@ -278,7 +276,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.group, tt.args.hmac, config.MaxResponseSize, tt.args.headers)
+			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.project, tt.args.hmac, config.MaxResponseSize, tt.args.headers)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)

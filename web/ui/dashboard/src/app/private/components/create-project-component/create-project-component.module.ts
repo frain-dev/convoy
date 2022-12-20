@@ -13,6 +13,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { CardComponent } from 'src/app/components/card/card.component';
+import { TokenModalComponent } from '../token-modal/token-modal.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
@@ -39,7 +40,8 @@ import { CardComponent } from 'src/app/components/card/card.component';
 		InputFieldDirective,
 		InputErrorComponent,
 		InputDirective,
-		LabelComponent
+		LabelComponent,
+        TokenModalComponent
 	],
 	exports: [CreateProjectComponent]
 })

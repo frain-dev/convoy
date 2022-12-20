@@ -31,9 +31,9 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	return err
 }
 
-func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, groupID string, portal *datastore.PortalLink) error {
+func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string, portal *datastore.PortalLink) error {
 	ctx = p.setCollectionInContext(ctx)
-	filter := bson.M{"uid": portal.UID, "group_id": portal.GroupID}
+	filter := bson.M{"uid": portal.UID, "project_id": portal.ProjectID}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -46,11 +46,11 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, groupID string, p
 	return p.store.UpdateOne(ctx, filter, update)
 }
 
-func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, groupID string, id string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, id string) (*datastore.PortalLink, error) {
 	ctx = p.setCollectionInContext(ctx)
 	portalLink := &datastore.PortalLink{}
 
-	filter := bson.M{"uid": id, "group_id": groupID}
+	filter := bson.M{"uid": id, "project_id": projectID}
 
 	err := p.store.FindOne(ctx, filter, nil, portalLink)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -74,14 +74,15 @@ func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string
 	return portalLink, err
 }
 
-func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	ctx = p.setCollectionInContext(ctx)
-	filter := bson.M{"group_id": groupID, "deleted_at": nil}
+	filter := bson.M{"project_id": projectID, "deleted_at": nil}
 
 	matchStage := bson.D{
-		{Key: "$match",
+		{
+			Key: "$match",
 			Value: bson.D{
-				{Key: "group_id", Value: groupID},
+				{Key: "project_id", Value: projectID},
 				{Key: "deleted_at", Value: nil},
 			},
 		},
@@ -91,9 +92,10 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 		filter["endpoints"] = f.EndpointID
 
 		matchStage = bson.D{
-			{Key: "$match",
+			{
+				Key: "$match",
 				Value: bson.D{
-					{Key: "group_id", Value: groupID},
+					{Key: "project_id", Value: projectID},
 					{Key: "endpoints", Value: f.EndpointID},
 					{Key: "deleted_at", Value: nil},
 				},
@@ -102,7 +104,8 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 	}
 
 	endpointStage := bson.D{
-		{Key: "$lookup",
+		{
+			Key: "$lookup",
 			Value: bson.D{
 				{Key: "from", Value: "endpoints"},
 				{Key: "localField", Value: "endpoints"},
@@ -147,10 +150,10 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, groupID strin
 	return portalLinks, pagination, nil
 }
 
-func (p *portalLinkRepo) DeletePortalLink(ctx context.Context, groupID string, id string) error {
+func (p *portalLinkRepo) DeletePortalLink(ctx context.Context, projectID string, id string) error {
 	ctx = p.setCollectionInContext(ctx)
 
-	filter := bson.M{"uid": id, "group_id": groupID}
+	filter := bson.M{"uid": id, "project_id": projectID}
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
@@ -160,10 +163,10 @@ func (p *portalLinkRepo) DeletePortalLink(ctx context.Context, groupID string, i
 	return p.store.UpdateOne(ctx, filter, update)
 }
 
-func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, groupID string, id string) error {
+func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID string, id string) error {
 	ctx = p.setCollectionInContext(ctx)
 
-	filter := bson.M{"uid": id, "group_id": groupID}
+	filter := bson.M{"uid": id, "project_id": projectID}
 	update := bson.M{
 		"$set": bson.M{
 			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),

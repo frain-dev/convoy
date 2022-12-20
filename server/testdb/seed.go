@@ -23,7 +23,7 @@ import (
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
-func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
+func SeedEndpoint(store datastore.Store, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -39,7 +39,7 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID
 	endpoint := &datastore.Endpoint{
 		UID:        uid,
 		Title:      title,
-		GroupID:    g.UID,
+		ProjectID:  g.UID,
 		OwnerID:    ownerID,
 		IsDisabled: disabled,
 		Status:     status,
@@ -56,19 +56,19 @@ func SeedEndpoint(store datastore.Store, g *datastore.Group, uid, title, ownerID
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(store datastore.Store, g *datastore.Group, count int) error {
+func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count int) error {
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Endpoint{
 			UID:        uid,
 			Title:      fmt.Sprintf("Test-%s", uid),
-			GroupID:    g.UID,
+			ProjectID:  g.UID,
 			IsDisabled: false,
 		}
 
 		// Seed Data.
 		appRepo := cm.NewEndpointRepo(store)
-		err := appRepo.CreateEndpoint(context.TODO(), app, app.GroupID)
+		err := appRepo.CreateEndpoint(context.TODO(), app, app.ProjectID)
 		if err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value stri
 
 	// Seed Data.
 	endpointRepo := cm.NewEndpointRepo(store)
-	err := endpointRepo.UpdateEndpoint(context.TODO(), e, e.GroupID)
+	err := endpointRepo.UpdateEndpoint(context.TODO(), e, e.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,18 +96,18 @@ func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value stri
 	return &sc, nil
 }
 
-// seed default group
-func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, error) {
+// seed default project
+func SeedDefaultProject(store datastore.Store, orgID string) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
 
-	defaultGroup := &datastore.Group{
+	defaultProject := &datastore.Project{
 		UID:            uuid.New().String(),
-		Name:           "default-group",
-		Type:           datastore.OutgoingGroup,
+		Name:           "default-project",
+		Type:           datastore.OutgoingProject,
 		OrganisationID: orgID,
-		Config: &datastore.GroupConfig{
+		Config: &datastore.ProjectConfig{
 			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.DefaultStrategyProvider,
 				Duration:   10,
@@ -134,13 +134,13 @@ func SeedDefaultGroup(store datastore.Store, orgID string) (*datastore.Group, er
 	}
 
 	// Seed Data.
-	groupRepo := cm.NewGroupRepo(store)
-	err := groupRepo.CreateGroup(context.TODO(), defaultGroup)
+	projectRepo := cm.NewProjectRepo(store)
+	err := projectRepo.CreateProject(context.TODO(), defaultProject)
 	if err != nil {
-		return &datastore.Group{}, err
+		return &datastore.Project{}, err
 	}
 
-	return defaultGroup, nil
+	return defaultProject, nil
 }
 
 const DefaultUserPassword = "password"
@@ -292,15 +292,15 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 	return apiKey, key, nil
 }
 
-// seed default group
-func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datastore.GroupType, cfg *datastore.GroupConfig) (*datastore.Group, error) {
+// seed default project
+func SeedProject(store datastore.Store, uid, name, orgID string, projectType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
-	g := &datastore.Group{
+	g := &datastore.Project{
 		UID:               uid,
 		Name:              name,
-		Type:              groupType,
+		Type:              projectType,
 		Config:            cfg,
 		OrganisationID:    orgID,
 		RateLimit:         convoy.RATE_LIMIT,
@@ -310,17 +310,17 @@ func SeedGroup(store datastore.Store, uid, name, orgID string, groupType datasto
 	}
 
 	// Seed Data.
-	groupRepo := cm.NewGroupRepo(store)
-	err := groupRepo.CreateGroup(context.TODO(), g)
+	projectRepo := cm.NewProjectRepo(store)
+	err := projectRepo.CreateProject(context.TODO(), g)
 	if err != nil {
-		return &datastore.Group{}, err
+		return &datastore.Project{}, err
 	}
 
 	return g, nil
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, groupID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
+func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, projectID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -330,7 +330,7 @@ func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, groupID stri
 		EventType: datastore.EventType(eventType),
 		Data:      data,
 		Endpoints: []string{endpoint.UID},
-		GroupID:   groupID,
+		ProjectID: projectID,
 		SourceID:  sourceID,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -347,7 +347,7 @@ func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, groupID stri
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(store datastore.Store, event *datastore.Event, endpoint *datastore.Endpoint, groupID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(store datastore.Store, event *datastore.Event, endpoint *datastore.Endpoint, projectID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -358,7 +358,7 @@ func SeedEventDelivery(store datastore.Store, event *datastore.Event, endpoint *
 		EndpointID:     endpoint.UID,
 		Status:         status,
 		SubscriptionID: subcription.UID,
-		GroupID:        groupID,
+		ProjectID:      projectID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -428,7 +428,7 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 	return orgs, nil
 }
 
-func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
+func SeedSource(store datastore.Store, g *datastore.Project, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -453,12 +453,12 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 	}
 
 	source := &datastore.Source{
-		UID:      uid,
-		GroupID:  g.UID,
-		MaskID:   maskID,
-		Name:     "Convoy-Prod",
-		Type:     datastore.SourceType(ds),
-		Verifier: v,
+		UID:       uid,
+		ProjectID: g.UID,
+		MaskID:    maskID,
+		Name:      "Convoy-Prod",
+		Type:      datastore.SourceType(ds),
+		Verifier:  v,
 	}
 
 	// Seed Data
@@ -472,9 +472,9 @@ func SeedSource(store datastore.Store, g *datastore.Group, uid, maskID, ds strin
 }
 
 func SeedSubscription(store datastore.Store,
-	g *datastore.Group,
+	g *datastore.Project,
 	uid string,
-	groupType datastore.GroupType,
+	projectType datastore.ProjectType,
 	source *datastore.Source,
 	endpoint *datastore.Endpoint,
 	retryConfig *datastore.RetryConfiguration,
@@ -487,7 +487,7 @@ func SeedSubscription(store datastore.Store,
 
 	subscription := &datastore.Subscription{
 		UID:        uid,
-		GroupID:    g.UID,
+		ProjectID:  g.UID,
 		Name:       "",
 		Type:       datastore.SubscriptionTypeAPI,
 		SourceID:   source.UID,
@@ -557,10 +557,10 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 	return config, nil
 }
 
-func SeedDevice(store datastore.Store, g *datastore.Group, endpointID string) error {
+func SeedDevice(store datastore.Store, g *datastore.Project, endpointID string) error {
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
-		GroupID:    g.UID,
+		ProjectID:  g.UID,
 		EndpointID: endpointID,
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
@@ -575,10 +575,10 @@ func SeedDevice(store datastore.Store, g *datastore.Group, endpointID string) er
 	return nil
 }
 
-func SeedPortalLink(store datastore.Store, g *datastore.Group, endpoints []string) (*datastore.PortalLink, error) {
+func SeedPortalLink(store datastore.Store, g *datastore.Project, endpoints []string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{
 		UID:       uuid.NewString(),
-		GroupID:   g.UID,
+		ProjectID: g.UID,
 		Name:      fmt.Sprintf("TestPortalLink-%s", uuid.NewString()),
 		Token:     uuid.NewString(),
 		Endpoints: endpoints,

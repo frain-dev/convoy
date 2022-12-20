@@ -19,7 +19,7 @@ var authUser = &auth.AuthenticatedUser{
 		Password: "default",
 		APIKey:   "",
 	},
-	Role: auth.Role{Type: auth.RoleSuperUser, Group: ""},
+	Role: auth.Role{Type: auth.RoleSuperUser, Project: ""},
 }
 
 func (n NoopRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {

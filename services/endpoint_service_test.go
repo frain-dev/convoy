@@ -17,8 +17,8 @@ import (
 
 func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	switch obj {
-	case "group":
-		g := v.(*datastore.Group)
+	case "project":
+		g := v.(*datastore.Project)
 		if g.Config != nil {
 			for i := range g.Config.Signature.Versions {
 				v := &g.Config.Signature.Versions[i]
@@ -277,14 +277,14 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 }
 
 func TestEndpointService_CreateEndpoint(t *testing.T) {
-	groupID := "1234567890"
-	group := &datastore.Group{UID: groupID}
+	projectID := "1234567890"
+	project := &datastore.Project{UID: projectID}
 
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
 		e   models.Endpoint
-		g   *datastore.Group
+		g   *datastore.Project
 	}
 	tests := []struct {
 		name         string
@@ -308,7 +308,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 					URL:             "https://google.com",
 					Description:     "test_endpoint",
 				},
-				g: group,
+				g: project,
 			},
 			dbFn: func(app *EndpointService) {
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
@@ -322,7 +322,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				SupportEmail:    "endpoint@test.com",
 				IsDisabled:      false,
 				SlackWebhookURL: "https://google.com",
-				GroupID:         group.UID,
+				ProjectID:       project.UID,
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
 				},
@@ -352,7 +352,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 						},
 					},
 				},
-				g: group,
+				g: project,
 			},
 			dbFn: func(app *EndpointService) {
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
@@ -362,8 +362,8 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
-				GroupID: group.UID,
-				Title:   "endpoint",
+				ProjectID: project.UID,
+				Title:     "endpoint",
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
 				},
@@ -393,7 +393,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 					URL:               "https://google.com",
 					Description:       "test_endpoint",
 				},
-				g: group,
+				g: project,
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -411,7 +411,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 					URL:               "https://google.com",
 					Description:       "test_endpoint",
 				},
-				g: group,
+				g: project,
 			},
 			dbFn: func(app *EndpointService) {
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
@@ -606,14 +606,14 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 }
 
 func TestEndpointService_DeleteEndpoint(t *testing.T) {
-	groupID := "1234567890"
-	group := &datastore.Group{UID: groupID}
+	projectID := "1234567890"
+	project := &datastore.Project{UID: projectID}
 
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
 		e   *datastore.Endpoint
-		g   *datastore.Group
+		g   *datastore.Project
 	}
 	tests := []struct {
 		name        string
@@ -629,7 +629,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e:   &datastore.Endpoint{UID: "endpoint2"},
-				g:   group,
+				g:   project,
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
@@ -645,7 +645,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				e:   &datastore.Endpoint{UID: "endpoint2"},
-				g:   group,
+				g:   project,
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
@@ -705,8 +705,8 @@ func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
 					Expiration: 10,
 				},
 				endpoint: &datastore.Endpoint{
-					UID:     "abc",
-					GroupID: "1234",
+					UID:       "abc",
+					ProjectID: "1234",
 					Secrets: []datastore.Secret{
 						{
 							UID:   "1234",

@@ -181,7 +181,7 @@
 	></convoy-empty-state>
 </convoy-page>
 
-<convoy-modal position="full" title="Add Team Member" (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
+<div convoy-modal position="full" title="Add Team Member" (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
 	<ng-container modalBody>
 		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
 			<convoy-card className="p-24px mt-24px">
@@ -202,7 +202,7 @@
 			</div>
 		</form>
 	</ng-container>
-</convoy-modal>
+</div>
 
 <app-delete-modal
 	*ngIf="showDeactivateModal || showCancelInviteModal"

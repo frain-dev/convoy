@@ -34,7 +34,7 @@ type ApplicationIntegrationTestSuite struct {
 	Router         http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultOrg     *datastore.Organisation
-	DefaultGroup   *datastore.Group
+	DefaultProject *datastore.Project
 	DefaultUser    *datastore.User
 	APIKey         string
 	PersonalAPIKey string
@@ -57,13 +57,13 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	// Setup Default Project.
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
 
 	// Seed Auth
 	role := auth.Role{
-		Type:  auth.RoleAdmin,
-		Group: s.DefaultGroup.UID,
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultProject.UID,
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
@@ -89,7 +89,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -105,10 +105,10 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -134,10 +134,10 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -164,10 +164,10 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultGroup, totalApps)
+	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultProject, totalApps)
 
 	// Arrange.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -189,10 +189,10 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPer
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultGroup, totalApps)
+	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultProject, totalApps)
 
 	// Arrange.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
 	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -217,7 +217,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s"
 	}`, appTitle)
@@ -246,7 +246,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppWithPersonalAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
 	body := serialize(`{"name": "%s"}`, appTitle)
 	req := createRequest(http.MethodPost, url, s.PersonalAPIKey, body)
 	w := httptest.NewRecorder()
@@ -272,7 +272,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NoName() {
 	expectedStatusCode := http.StatusBadRequest
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s"
 	}`, appTitle)
@@ -292,10 +292,10 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	plainBody := ""
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
@@ -316,10 +316,10 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", isDisabled, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", isDisabled, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	body := serialize(`{
 		"name": "%s",
 		"support_email": "%s",
@@ -355,10 +355,10 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", isDisabled, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", isDisabled, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	body := serialize(`{
 		"name": "%s",
 		"support_email": "%s",
@@ -391,10 +391,10 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -415,10 +415,10 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
 	req := createRequest(http.MethodDelete, url, s.PersonalAPIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -442,10 +442,10 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
@@ -480,10 +480,10 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
@@ -525,10 +525,10 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint_With_Custom_Aut
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultGroup.UID, appID, endpoint.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, endpoint.UID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"description": "default endpoint",
@@ -570,10 +570,10 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToP
 	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/applications/%s/endpoints?groupID=%s", appID, s.DefaultGroup.UID)
+	url := fmt.Sprintf("/api/v1/applications/%s/endpoints?groupID=%s", appID, s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
@@ -605,10 +605,10 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPI
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"secret": "%s",
@@ -644,10 +644,10 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultGroup.UID, appID, endpoint.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, endpoint.UID)
 	plainBody := fmt.Sprintf(`{
 		"url": "%s",
 		"events": %s,
@@ -678,10 +678,10 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultGroup.UID, appID, endpoint.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, endpoint.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -707,15 +707,15 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 	endpoint.TargetURL = faker.New().Internet().URL()
 	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
 
-	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint, endpoint.GroupID)
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultGroup.UID, appID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -740,11 +740,11 @@ func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEndpointSecret(s.ConvoyApp.A.Store, app, secret)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s/expire_secret", s.DefaultGroup.UID, appID, app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s/expire_secret", s.DefaultProject.UID, appID, app.UID)
 	plainBody := fmt.Sprintf(`{
 		"expiration": %d
 	}`, expiration)
@@ -773,10 +773,10 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultGroup, appID, "", "", false, datastore.ActiveEndpointStatus)
+	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultGroup.UID, appID, app.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, app.UID)
 	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
