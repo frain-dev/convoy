@@ -227,9 +227,9 @@
 	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
 ></convoy-empty-state>
 
-<convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
+<div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
 	<ng-container modalBody>
 		<convoy-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
 	</ng-container>
-</convoy-modal>
+</div>
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>

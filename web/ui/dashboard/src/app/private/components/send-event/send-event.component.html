@@ -1,5 +1,5 @@
 <!-- send event modal  -->
-<convoy-modal title="Send Event" (closeModal)="cancel()">
+<div convoy-modal title="Send Event" (closeModal)="cancel()">
 	<ng-container modalBody>
 		<form [formGroup]="sendEventForm">
 			<convoy-select
@@ -62,4 +62,4 @@
 			<button convoy-button [disabled]="isSendingNewEvent" (click)="sendNewEvent()">{{ isSendingNewEvent ? 'Sending Event..' : 'Send Event' }}</button>
 		</div>
 	</ng-container>
-</convoy-modal>
+</div>

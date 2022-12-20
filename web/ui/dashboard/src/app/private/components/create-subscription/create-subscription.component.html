@@ -146,16 +146,16 @@
 	<button convoy-button size="sm" class="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</button>
 </div>
 
-<convoy-modal size="lg" [title]="showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'" *ngIf="showCreateSourceModal || showCreateEndpointModal" (closeModal)="showCreateSourceModal = false; showCreateEndpointModal = false">
+<div convoy-modal size="lg" [title]="showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'" *ngIf="showCreateSourceModal || showCreateEndpointModal" (closeModal)="showCreateSourceModal = false; showCreateEndpointModal = false">
 	<div modalBody>
 		<convoy-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action === 'close' ? (showCreateSourceModal = false) : onCreateSource($event.data); showCreateSourceModal = false"></convoy-create-source>
 		<convoy-create-endpoint *ngIf="showCreateEndpointModal" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false"></convoy-create-endpoint>
 	</div>
-</convoy-modal>
+</div>
 
-<convoy-modal position="full" [title]="action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter'" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
+<div convoy-modal position="full" [title]="action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter'" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
 	<div class="max-w-[1312px] m-auto">
 		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
 	</div>
-</convoy-modal>
+</div>
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="onAction.emit({ action: 'cancel' })" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
