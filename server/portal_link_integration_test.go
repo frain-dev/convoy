@@ -399,12 +399,12 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions
 
 	// seed subscriptions
 	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingGroup, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+		_, err = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingProject, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 		require.NoError(s.T(), err)
 
 	}
 
-	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingGroup, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingProject, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	require.NoError(s.T(), err)
 
 	req := createRequest(http.MethodGet, fmt.Sprintf("/portal-api/subscriptions?token=%s", portalLink.Token), "", nil)

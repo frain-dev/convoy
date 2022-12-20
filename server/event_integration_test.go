@@ -134,7 +134,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 	endpoint := &datastore.Endpoint{
 		UID:        endpointID,
 		Title:      fmt.Sprintf("TestEndpoint-%s", endpointID),
-		GroupID:    s.DefaultProject.UID,
+		ProjectID:  s.DefaultProject.UID,
 		AppID:      appID,
 		IsDisabled: false,
 	}
@@ -324,7 +324,7 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 
 	// Just Before.
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
-	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	eventDelivery, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, &datastore.Event{}, endpoint, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries/%s/resend", s.DefaultProject.UID, eventDeliveryID)
@@ -373,7 +373,7 @@ func (s *EventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filt
 	// Just Before.
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, s.DefaultProject.UID, uuid.NewString(), "*", "", []byte(`{}`))
-	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
@@ -403,7 +403,7 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	// Just Before.
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	event, _ := testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, s.DefaultProject.UID, uuid.NewString(), "*", "", []byte(`{}`))
-	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingGroup, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	subscription, _ := testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	e1, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultProject.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
 	e2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultProject.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)
 	e3, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.Store, event, endpoint, s.DefaultProject.UID, uuid.NewString(), datastore.SuccessEventStatus, subscription)

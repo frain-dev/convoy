@@ -540,7 +540,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() 
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultGroup.UID, endpointId)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -568,7 +568,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus(
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultGroup.UID, endpointId)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -596,7 +596,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus()
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, endpointId, "", "", false, datastore.PendingEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultGroup.UID, endpointId)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -614,7 +614,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus()
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, endpointID, "", "", false, datastore.EndpointStatus("abc"))
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultGroup.UID, endpointID)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointID)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
