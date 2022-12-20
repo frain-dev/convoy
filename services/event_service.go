@@ -43,6 +43,7 @@ type EventService struct {
 }
 
 type createEvent struct {
+	Raw           string
 	Data          json.RawMessage
 	EventType     string
 	EndpointID    string
@@ -82,6 +83,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		Data:          newMessage.Data,
 		EventType:     newMessage.EventType,
 		EndpointID:    newMessage.EndpointID,
+		Raw:           string(newMessage.Data),
 		CustomHeaders: newMessage.CustomHeaders,
 	}
 
@@ -114,6 +116,7 @@ func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models
 	createEvent := &createEvent{
 		Data:          newMessage.Data,
 		EventType:     newMessage.EventType,
+		Raw:           string(newMessage.Data),
 		CustomHeaders: newMessage.CustomHeaders,
 	}
 
@@ -382,6 +385,7 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 		UID:       uuid.New().String(),
 		EventType: datastore.EventType(newMessage.EventType),
 		Data:      newMessage.Data,
+		Raw:       newMessage.Raw,
 		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),

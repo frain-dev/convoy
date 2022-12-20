@@ -86,6 +86,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			wantEvent: &datastore.Event{
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
+				Raw:              `{"name":"convoy"}`,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				ProjectID:        "abc",
@@ -130,6 +131,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			wantEvent: &datastore.Event{
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
+				Raw:              `{"name":"convoy"}`,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				ProjectID:        "abc",
@@ -176,6 +178,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			wantEvent: &datastore.Event{
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
+				Raw:              `{"name":"convoy"}`,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				ProjectID:        "abc",
@@ -223,6 +226,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			wantEvent: &datastore.Event{
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
+				Raw:              `{"name":"convoy"}`,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123"},
 				ProjectID:        "abc",
@@ -414,6 +418,7 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 			wantEvent: &datastore.Event{
 				EventType:        datastore.EventType("payment.created"),
 				MatchedEndpoints: 0,
+				Raw:              `{"name":"convoy"}`,
 				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				Endpoints:        []string{"123", "12345"},
 				ProjectID:        "abc",
