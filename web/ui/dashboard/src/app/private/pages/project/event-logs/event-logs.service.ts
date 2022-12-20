@@ -27,7 +27,7 @@ export class EventLogsService {
 		});
 	}
 
-    getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; endpointId?: string; eventId: string; statusQuery: string; token?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; endpointId?: string; eventId: string; statusQuery: string; token?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -35,6 +35,59 @@ export class EventLogsService {
 						requestDetails.endpointId
 					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId || ''}`,
 					method: 'get',
+					token: requestDetails.token
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getRetryCount(requestDetails: { endpointId: string; pageNo: number; startDate: string; endDate: string; token?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/countbatchretryevents?page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${
+						requestDetails.endpointId
+					}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
+					method: 'get',
+					token: requestDetails.token
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	retryEvent(requestDetails: { eventId: string; token?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org_project')}/events/${requestDetails.eventId}/replay`,
+					method: 'put',
+					token: requestDetails.token
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	batchRetryEvent(requestDetails: { pageNo: number; startDate: string; endDate: string; endpointId: string; token?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries/batchretry?page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${requestDetails.endpointId}${
+						requestDetails.token ? '&token=' + requestDetails.token : ''
+					}`,
+					method: 'post',
+					body: null,
 					token: requestDetails.token
 				});
 

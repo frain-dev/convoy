@@ -25,6 +25,7 @@ import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -48,14 +49,15 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 		TableCellComponent,
 		TimePickerComponent,
 		DatePickerComponent,
-		DropdownComponent
+		DropdownComponent,
+		ModalComponent
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Time Created', ''];
+	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Time Created', '', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
@@ -84,6 +86,10 @@ export class EventLogsComponent implements OnInit {
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
 	isLoadingSidebarDeliveries = false;
+	showBatchRetryModal = false;
+	fetchingCount = false;
+	isRetrying = false;
+	batchRetryCount: any;
 
 	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
 
@@ -297,6 +303,63 @@ export class EventLogsComponent implements OnInit {
 			return;
 		} catch (error) {
 			this.isLoadingSidebarDeliveries = false;
+			return error;
+		}
+	}
+
+	async fetchRetryCount() {
+		const { startDate, endDate } = this.setDateForFilter(this.eventsDateFilterFromURL);
+		const page = this.route.snapshot.queryParams.page || 1;
+		this.fetchingCount = true;
+		try {
+			const response = await this.eventsLogService.getRetryCount({
+				pageNo: page,
+				startDate: startDate,
+				endDate: endDate,
+				endpointId: this.eventEndpoint || '',
+				token: this.portalToken
+			});
+
+			this.batchRetryCount = response.data.num;
+			this.fetchingCount = false;
+			this.showBatchRetryModal = true;
+		} catch (error) {
+			this.fetchingCount = false;
+		}
+	}
+
+	async retryEvent(requestDetails: { e: any; index: number; eventId: string }) {
+		requestDetails.e.stopPropagation();
+
+		try {
+			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId, token: this.portalToken });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.getEvents();
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async batchRetryEvent() {
+		const { startDate, endDate } = this.setDateForFilter(this.eventsDateFilterFromURL);
+		const page = this.route.snapshot.queryParams.page || 1;
+		this.isRetrying = true;
+
+		try {
+			const response = await this.eventsLogService.batchRetryEvent({
+				pageNo: page || 1,
+				startDate: startDate,
+				endDate: endDate,
+				endpointId: this.eventEndpoint || '',
+				token: this.portalToken
+			});
+
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.getEvents();
+			this.showBatchRetryModal = false;
+			this.isRetrying = false;
+		} catch (error) {
+			this.isRetrying = false;
 			return error;
 		}
 	}
