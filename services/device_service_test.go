@@ -23,7 +23,7 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 
 	type args struct {
 		ctx      context.Context
-		group    *datastore.Group
+		project  *datastore.Project
 		filter   *datastore.ApiKeyFilter
 		pageable datastore.Pageable
 	}
@@ -41,9 +41,9 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 		{
 			name: "should_load_devices",
 			args: args{
-				ctx:    ctx,
-				group:  &datastore.Group{UID: "12345"},
-				filter: &datastore.ApiKeyFilter{EndpointID: ""},
+				ctx:     ctx,
+				project: &datastore.Project{UID: "12345"},
+				filter:  &datastore.ApiKeyFilter{EndpointID: ""},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -83,8 +83,8 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 		{
 			name: "should_fail_to_load_devices",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				ctx:     ctx,
+				project: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -113,7 +113,7 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 				tc.dbFn(ds)
 			}
 
-			devices, paginationData, err := ds.LoadDevicesPaged(tc.args.ctx, tc.args.group, tc.args.filter, tc.args.pageable)
+			devices, paginationData, err := ds.LoadDevicesPaged(tc.args.ctx, tc.args.project, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

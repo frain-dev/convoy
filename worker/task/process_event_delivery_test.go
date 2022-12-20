@@ -26,7 +26,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		cfgPath       string
 		expectedError error
 		msg           *datastore.EventDelivery
-		dbFn          func(*mocks.MockEndpointRepository, *mocks.MockGroupRepository, *mocks.MockEventDeliveryRepository, *mocks.MockRateLimiter, *mocks.MockSubscriptionRepository, *mocks.MockQueuer)
+		dbFn          func(*mocks.MockEndpointRepository, *mocks.MockProjectRepository, *mocks.MockEventDeliveryRepository, *mocks.MockRateLimiter, *mocks.MockSubscriptionRepository, *mocks.MockQueuer)
 		nFn           func() func()
 	}{
 		{
@@ -36,13 +36,13 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{RetryConfig: &datastore.DefaultRetryConfig}, nil)
 
-				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{}, nil)
+				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{}, nil)
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
@@ -64,7 +64,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
@@ -75,7 +75,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.InactiveSubscriptionStatus,
 					}, nil)
 
-				o.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{Config: &datastore.GroupConfig{
+				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{Config: &datastore.ProjectConfig{
 					RateLimit: &datastore.DefaultRateLimitConfig,
 					Strategy:  &datastore.DefaultStrategyConfig,
 				}}, nil)
@@ -116,10 +116,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID:           "123",
+						ProjectID:         "123",
 						RateLimit:         10,
 						RateLimitDuration: "1m",
 						Secrets: []datastore.Secret{
@@ -157,10 +157,10 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: "X-Convoy-Signature",
 								Versions: []datastore.SignatureVersion{
@@ -208,10 +208,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -249,10 +249,10 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
@@ -300,7 +300,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						Secrets: []datastore.Secret{
@@ -308,7 +308,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						RateLimitDuration: "1m",
-						GroupID:           "123",
+						ProjectID:         "123",
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{
@@ -345,10 +345,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
@@ -396,10 +396,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -437,10 +437,10 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
@@ -488,10 +488,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -533,10 +533,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
@@ -584,10 +584,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -625,10 +625,10 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
@@ -676,10 +676,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID: "123",
+						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -721,10 +721,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
@@ -772,10 +772,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID:      "123",
+						ProjectID:    "123",
 						SupportEmail: "test@gmail.com",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
@@ -818,10 +818,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
@@ -873,10 +873,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockGroupRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						GroupID:      "123",
+						ProjectID:    "123",
 						SupportEmail: "test@gmail.com",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
@@ -920,10 +920,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				o.EXPECT().
-					FetchGroupByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Group{
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
 						LogoURL: "",
-						Config: &datastore.GroupConfig{
+						Config: &datastore.ProjectConfig{
 							Signature: &datastore.SignatureConfiguration{
 								Header: "X-Convoy-Signature",
 								Versions: []datastore.SignatureVersion{
@@ -974,7 +974,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			groupRepo := mocks.NewMockGroupRepository(ctrl)
+			projectRepo := mocks.NewMockProjectRepository(ctrl)
 			endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
@@ -1005,10 +1005,10 @@ func TestProcessEventDelivery(t *testing.T) {
 			}
 
 			if tc.dbFn != nil {
-				tc.dbFn(endpointRepo, groupRepo, msgRepo, rateLimiter, subRepo, q)
+				tc.dbFn(endpointRepo, projectRepo, msgRepo, rateLimiter, subRepo, q)
 			}
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, groupRepo, rateLimiter, subRepo, q)
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, rateLimiter, subRepo, q)
 
 			payload := json.RawMessage(tc.msg.UID)
 
@@ -1030,7 +1030,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 	tt := []struct {
 		name                string
 		subscription        *datastore.Subscription
-		group               *datastore.Group
+		project             *datastore.Project
 		wantRetryConfig     *datastore.StrategyConfiguration
 		wantRateLimitConfig *datastore.RateLimitConfiguration
 		wantDisableEndpoint bool
@@ -1051,8 +1051,8 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 					return &b
 				}(true),
 			},
-			group: &datastore.Group{
-				Config: &datastore.GroupConfig{
+			project: &datastore.Project{
+				Config: &datastore.ProjectConfig{
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					DisableEndpoint: false,
@@ -1071,10 +1071,10 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 		},
 
 		{
-			name:         "Group Config is primary config",
+			name:         "Project Config is primary config",
 			subscription: &datastore.Subscription{},
-			group: &datastore.Group{
-				Config: &datastore.GroupConfig{
+			project: &datastore.Project{
+				Config: &datastore.ProjectConfig{
 					Strategy: &datastore.StrategyConfiguration{
 						Type:       datastore.ExponentialStrategyProvider,
 						Duration:   3,
@@ -1102,7 +1102,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			evConfig := &EventDeliveryConfig{subscription: tc.subscription, group: tc.group}
+			evConfig := &EventDeliveryConfig{subscription: tc.subscription, project: tc.project}
 
 			if tc.wantRetryConfig != nil {
 				rc, err := evConfig.retryConfig()

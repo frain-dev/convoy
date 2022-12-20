@@ -8,7 +8,7 @@
                     "password": "abc",
                     "role": {
                         "type": "admin",
-                        "groups": ""
+                        "project": ""
                     }
                 }
             ]

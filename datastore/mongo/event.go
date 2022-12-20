@@ -45,12 +45,12 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 	return db.store.Save(ctx, message, nil)
 }
 
-func (db *eventRepo) CountGroupMessages(ctx context.Context, groupID string) (int64, error) {
+func (db *eventRepo) CountProjectMessages(ctx context.Context, projectID string) (int64, error) {
 	ctx = db.setCollectionInContext(ctx)
-	return db.store.Count(ctx, bson.M{"group_id": groupID})
+	return db.store.Count(ctx, bson.M{"project_id": projectID})
 }
 
-func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
+func (db *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
@@ -58,7 +58,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.Ev
 	}
 
 	f := bson.M{
-		"group_id": filter.GroupID,
+		"project_id": filter.ProjectID,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -72,7 +72,7 @@ func (db *eventRepo) DeleteGroupEvents(ctx context.Context, filter *datastore.Ev
 	return nil
 }
 
-func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
+func (db *eventRepo) LoadEventIntervals(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	start := searchParams.CreatedAtStart
@@ -82,7 +82,7 @@ func (db *eventRepo) LoadEventIntervals(ctx context.Context, groupID string, sea
 	}
 
 	matchStage := bson.D{{Key: "$match", Value: bson.D{
-		{Key: "group_id", Value: groupID},
+		{Key: "project_id", Value: projectID},
 		{Key: "deleted_at", Value: nil},
 		{Key: "created_at", Value: bson.D{
 			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
@@ -183,9 +183,9 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		{Key: "deleted_at", Value: nil},
 	}
 
-	if !util.IsStringEmpty(f.Group.UID) {
-		filter["group_id"] = f.Group.UID
-		d = append(d, bson.E{Key: "group_id", Value: f.Group.UID})
+	if !util.IsStringEmpty(f.Project.UID) {
+		filter["project_id"] = f.Project.UID
+		d = append(d, bson.E{Key: "project_id", Value: f.Project.UID})
 	}
 
 	if len(f.EndpointIDs) > 0 {
@@ -207,11 +207,12 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			{Key: "as", Value: "endpoint_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "title", Value: 1},
-							{Key: "group_id", Value: 1},
+							{Key: "project_id", Value: 1},
 							{Key: "support_email", Value: 1},
 							{Key: "target_url", Value: 1},
 						},
@@ -229,7 +230,8 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 			{Key: "as", Value: "source_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "name", Value: 1},

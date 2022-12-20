@@ -39,7 +39,7 @@ type SlackNotification struct {
 
 func SendEndpointNotification(ctx context.Context,
 	endpoint *datastore.Endpoint,
-	group *datastore.Group,
+	group *datastore.Project,
 	status datastore.SubscriptionStatus,
 	q queue.Queuer,
 	failure bool,

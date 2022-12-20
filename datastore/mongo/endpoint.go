@@ -25,7 +25,7 @@ func NewEndpointRepo(store datastore.Store) datastore.EndpointRepository {
 	}
 }
 
-func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
+func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	endpoint.ID = primitive.NewObjectID()
@@ -37,7 +37,6 @@ func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.
 }
 
 func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datastore.Endpoint, error) {
-
 	ctx = db.setCollectionInContext(ctx)
 	endpoint := &datastore.Endpoint{}
 
@@ -83,11 +82,11 @@ func (db *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string) ([]
 	return endpoints, nil
 }
 
-func (db *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, groupID string, ownerID string) ([]datastore.Endpoint, error) {
+func (db *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	endpoints := make([]datastore.Endpoint, 0)
-	filter := bson.M{"group_id": groupID, "owner_id": ownerID}
+	filter := bson.M{"project_id": projectID, "owner_id": ownerID}
 
 	err := db.store.FindAll(ctx, filter, nil, nil, &endpoints)
 	if err != nil {
@@ -97,7 +96,7 @@ func (db *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, groupID stri
 	return endpoints, nil
 }
 
-func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, groupID string) error {
+func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
@@ -149,20 +148,20 @@ func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.
 	return err
 }
 
-func (db *endpointRepo) CountGroupEndpoints(ctx context.Context, groupID string) (int64, error) {
+func (db *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"group_id": groupID}
+	filter := bson.M{"project_id": projectID}
 
 	count, err := db.store.Count(ctx, filter)
 	if err != nil {
-		log.WithError(err).Errorf("failed to count endpoints in group %s", groupID)
+		log.WithError(err).Errorf("failed to count endpoints in project %s", projectID)
 		return 0, err
 	}
 	return count, nil
 }
 
-func (db *endpointRepo) DeleteGroupEndpoints(ctx context.Context, groupID string) error {
+func (db *endpointRepo) DeleteProjectEndpoints(ctx context.Context, projectID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
@@ -171,15 +170,15 @@ func (db *endpointRepo) DeleteGroupEndpoints(ctx context.Context, groupID string
 		},
 	}
 
-	return db.store.UpdateMany(ctx, bson.M{"group_id": groupID}, bson.M{"$set": update}, false)
+	return db.store.UpdateMany(ctx, bson.M{"project_id": projectID}, bson.M{"$set": update}, false)
 }
 
-func (db *endpointRepo) LoadEndpointsPaged(ctx context.Context, groupID, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+func (db *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectID, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 	filter := make(bson.M)
 
-	if !util.IsStringEmpty(groupID) {
-		filter["group_id"] = groupID
+	if !util.IsStringEmpty(projectID) {
+		filter["project_id"] = projectID
 	}
 
 	if !util.IsStringEmpty(q) {
@@ -191,7 +190,6 @@ func (db *endpointRepo) LoadEndpointsPaged(ctx context.Context, groupID, q strin
 	var endpoints []datastore.Endpoint
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &endpoints)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -214,15 +212,14 @@ func (db *endpointRepo) LoadEndpointsPaged(ctx context.Context, groupID, q strin
 	return endpoints, pagination, nil
 }
 
-func (db *endpointRepo) LoadEndpointsPagedByGroupId(ctx context.Context, groupID string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+func (db *endpointRepo) LoadEndpointsPagedByProjectId(ctx context.Context, projectID string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
 	ctx = db.setCollectionInContext(ctx)
 
-	filter := bson.M{"group_id": groupID}
+	filter := bson.M{"project_id": projectID}
 
 	var endpoints []datastore.Endpoint
 	pagination, err := db.store.FindMany(ctx, filter, nil, nil,
 		int64(pageable.Page), int64(pageable.PerPage), &endpoints)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -245,7 +242,7 @@ func (db *endpointRepo) LoadEndpointsPagedByGroupId(ctx context.Context, groupID
 	return endpoints, pagination, nil
 }
 
-func (db *endpointRepo) SearchEndpointsByGroupId(ctx context.Context, groupId string, searchParams datastore.SearchParams) ([]datastore.Endpoint, error) {
+func (db *endpointRepo) SearchEndpointsByProjectId(ctx context.Context, projectID string, searchParams datastore.SearchParams) ([]datastore.Endpoint, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	start := searchParams.CreatedAtStart
@@ -255,7 +252,7 @@ func (db *endpointRepo) SearchEndpointsByGroupId(ctx context.Context, groupId st
 	}
 
 	filter := bson.M{
-		"group_id": groupId,
+		"project_id": projectID,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(start, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(end, 0)),
@@ -283,12 +280,12 @@ func (db *endpointRepo) SearchEndpointsByGroupId(ctx context.Context, groupId st
 	return endpoints, nil
 }
 
-func (db *endpointRepo) ExpireSecret(ctx context.Context, groupID, endpointID string, secrets []datastore.Secret) error {
+func (db *endpointRepo) ExpireSecret(ctx context.Context, projectID, endpointID string, secrets []datastore.Secret) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":      endpointID,
-		"group_id": groupID,
+		"uid":        endpointID,
+		"project_id": projectID,
 	}
 
 	update := bson.M{

@@ -7,25 +7,25 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-type GroupPolicy struct {
-	opts *GroupPolicyOpts
+type ProjectPolicy struct {
+	opts *ProjectPolicyOpts
 }
 
-type GroupPolicyOpts struct {
+type ProjectPolicyOpts struct {
 	OrganisationRepo       datastore.OrganisationRepository
 	OrganisationMemberRepo datastore.OrganisationMemberRepository
 }
 
-func NewGroupPolicy(opts *GroupPolicyOpts) *GroupPolicy {
-	return &GroupPolicy{
+func NewProjectPolicy(opts *ProjectPolicyOpts) *ProjectPolicy {
+	return &ProjectPolicy{
 		opts: opts,
 	}
 }
 
-func (gp *GroupPolicy) Get(ctx context.Context, group *datastore.Group) error {
+func (pp *ProjectPolicy) Get(ctx context.Context, project *datastore.Project) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
-	org, err := gp.opts.OrganisationRepo.FetchOrganisationByID(ctx, group.OrganisationID)
+	org, err := pp.opts.OrganisationRepo.FetchOrganisationByID(ctx, project.OrganisationID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -34,7 +34,7 @@ func (gp *GroupPolicy) Get(ctx context.Context, group *datastore.Group) error {
 	if ok {
 		// Personal Access Tokens
 		if apiKey.Type == datastore.PersonalKey {
-			_, err := gp.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
+			_, err := pp.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
 			if err != nil {
 				return ErrNotAllowed
 			}
@@ -43,7 +43,7 @@ func (gp *GroupPolicy) Get(ctx context.Context, group *datastore.Group) error {
 		}
 
 		// API Key
-		if apiKey.Role.Group != group.UID {
+		if apiKey.Role.Project != project.UID {
 			return ErrNotAllowed
 		}
 
@@ -52,20 +52,20 @@ func (gp *GroupPolicy) Get(ctx context.Context, group *datastore.Group) error {
 
 	// JWT Access.
 	opts := &OrganisationPolicyOpts{
-		OrganisationMemberRepo: gp.opts.OrganisationMemberRepo,
+		OrganisationMemberRepo: pp.opts.OrganisationMemberRepo,
 	}
 	orgPolicy := OrganisationPolicy{opts}
 	return orgPolicy.Get(ctx, org)
 }
 
-func (gp *GroupPolicy) Create(ctx context.Context, org *datastore.Organisation) error {
+func (pp *ProjectPolicy) Create(ctx context.Context, org *datastore.Organisation) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
 	if ok {
 		// Personal Access Tokens.
 		if apiKey.Type == datastore.PersonalKey {
-			_, err := gp.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
+			_, err := pp.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
 			if err != nil {
 				return ErrNotAllowed
 			}
@@ -79,16 +79,16 @@ func (gp *GroupPolicy) Create(ctx context.Context, org *datastore.Organisation) 
 
 	// JWT Access
 	opts := &OrganisationPolicyOpts{
-		OrganisationMemberRepo: gp.opts.OrganisationMemberRepo,
+		OrganisationMemberRepo: pp.opts.OrganisationMemberRepo,
 	}
 	orgPolicy := OrganisationPolicy{opts}
 	return orgPolicy.Get(ctx, org)
 }
 
-func (gp *GroupPolicy) Update(ctx context.Context, group *datastore.Group) error {
-	return gp.Get(ctx, group)
+func (pp *ProjectPolicy) Update(ctx context.Context, project *datastore.Project) error {
+	return pp.Get(ctx, project)
 }
 
-func (gp *GroupPolicy) Delete(ctx context.Context, group *datastore.Group) error {
-	return gp.Get(ctx, group)
+func (pp *ProjectPolicy) Delete(ctx context.Context, project *datastore.Project) error {
+	return pp.Get(ctx, project)
 }

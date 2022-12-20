@@ -78,7 +78,7 @@ const (
 	EmailProcessor         TaskName = "EmailProcessor"
 	ExpireSecretsProcessor TaskName = "ExpireSecretsProcessor"
 	EndpointsCacheKey      CacheKey = "endpoints"
-	GroupsCacheKey         CacheKey = "groups"
+	ProjectsCacheKey       CacheKey = "projects"
 	TokenCacheKey          CacheKey = "tokens"
 	SourceCacheKey         CacheKey = "sources"
 )

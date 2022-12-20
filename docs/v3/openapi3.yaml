@@ -4,7 +4,7 @@ components:
       properties:
         endpoint:
           type: string
-        group:
+        project:
           type: string
         type:
           type: string
@@ -80,11 +80,11 @@ components:
           type: string
         endpoint_id:
           type: string
-        group_id:
-          type: string
         host_name:
           type: string
         last_seen_at:
+          type: string
+        project_id:
           type: string
         status:
           type: string
@@ -107,13 +107,13 @@ components:
           type: string
         events:
           type: integer
-        group_id:
-          type: string
         http_timeout:
           type: string
         is_disabled:
           type: boolean
         owner_id:
+          type: string
+        project_id:
           type: string
         rate_limit:
           type: integer
@@ -169,13 +169,13 @@ components:
           type: array
         event_type:
           type: string
-        group_id:
-          type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         matched_endpoints:
           description: TODO(all) remove this field
           type: integer
+        project_id:
+          type: string
         source_id:
           type: string
         source_metadata:
@@ -205,12 +205,12 @@ components:
           type: string
         event_metadata:
           $ref: '#/components/schemas/datastore.Event'
-        group_id:
-          type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
+        project_id:
+          type: string
         status:
           type: string
         subscription_id:
@@ -229,67 +229,6 @@ components:
         filter:
           additionalProperties: true
           type: object
-      type: object
-    datastore.Group:
-      properties:
-        config:
-          $ref: '#/components/schemas/datastore.GroupConfig'
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        logo_url:
-          type: string
-        metadata:
-          $ref: '#/components/schemas/datastore.GroupMetadata'
-        name:
-          type: string
-        organisation_id:
-          type: string
-        rate_limit:
-          description: 'TODO(subomi): refactor this into the Instance API.'
-          type: integer
-        rate_limit_duration:
-          type: string
-        statistics:
-          $ref: '#/components/schemas/datastore.GroupStatistics'
-        type:
-          type: string
-        uid:
-          type: string
-        updated_at:
-          type: string
-      type: object
-    datastore.GroupConfig:
-      properties:
-        disable_endpoint:
-          type: boolean
-        is_retention_policy_enabled:
-          type: boolean
-        max_payload_read_size:
-          type: integer
-        ratelimit:
-          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
-        replay_attacks:
-          type: boolean
-        retention_policy:
-          $ref: '#/components/schemas/datastore.RetentionPolicyConfiguration'
-        signature:
-          $ref: '#/components/schemas/datastore.SignatureConfiguration'
-        strategy:
-          $ref: '#/components/schemas/datastore.StrategyConfiguration'
-      type: object
-    datastore.GroupMetadata:
-      properties:
-        retained_events:
-          type: integer
-      type: object
-    datastore.GroupStatistics:
-      properties:
-        messages_sent:
-          type: integer
-        total_endpoints:
-          type: integer
       type: object
     datastore.HMac:
       properties:
@@ -329,7 +268,11 @@ components:
       type: object
     datastore.Organisation:
       properties:
+        assigned_domain:
+          type: string
         created_at:
+          type: string
+        custom_domain:
           type: string
         deleted_at:
           type: string
@@ -353,6 +296,67 @@ components:
         total:
           type: integer
         totalPage:
+          type: integer
+      type: object
+    datastore.Project:
+      properties:
+        config:
+          $ref: '#/components/schemas/datastore.ProjectConfig'
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        logo_url:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/datastore.ProjectMetadata'
+        name:
+          type: string
+        organisation_id:
+          type: string
+        rate_limit:
+          description: 'TODO(subomi): refactor this into the Instance API.'
+          type: integer
+        rate_limit_duration:
+          type: string
+        statistics:
+          $ref: '#/components/schemas/datastore.ProjectStatistics'
+        type:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    datastore.ProjectConfig:
+      properties:
+        disable_endpoint:
+          type: boolean
+        is_retention_policy_enabled:
+          type: boolean
+        max_payload_read_size:
+          type: integer
+        ratelimit:
+          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
+        replay_attacks:
+          type: boolean
+        retention_policy:
+          $ref: '#/components/schemas/datastore.RetentionPolicyConfiguration'
+        signature:
+          $ref: '#/components/schemas/datastore.SignatureConfiguration'
+        strategy:
+          $ref: '#/components/schemas/datastore.StrategyConfiguration'
+      type: object
+    datastore.ProjectMetadata:
+      properties:
+        retained_events:
+          type: integer
+      type: object
+    datastore.ProjectStatistics:
+      properties:
+        messages_sent:
+          type: integer
+        total_endpoints:
           type: integer
       type: object
     datastore.ProviderConfig:
@@ -426,13 +430,13 @@ components:
           items:
             type: string
           type: array
-        group_id:
-          type: string
         is_disabled:
           type: boolean
         mask_id:
           type: string
         name:
+          type: string
+        project_id:
           type: string
         provider:
           type: string
@@ -563,30 +567,15 @@ components:
         event_type:
           type: string
       type: object
-    models.Group:
-      properties:
-        config:
-          $ref: '#/components/schemas/datastore.GroupConfig'
-        logo_url:
-          type: string
-        name:
-          type: string
-        rate_limit:
-          type: integer
-        rate_limit_duration:
-          type: string
-        type:
-          type: string
-      type: object
     models.PortalAPIKeyResponse:
       properties:
         endpoint_id:
           type: string
-        group_id:
-          type: string
         key:
           type: string
         key_type:
+          type: string
+        project_id:
           type: string
         role:
           $ref: '#/components/schemas/auth.Role'
@@ -618,9 +607,9 @@ components:
           items:
             $ref: '#/components/schemas/datastore.Endpoint'
           type: array
-        group_id:
-          type: string
         name:
+          type: string
+        project_id:
           type: string
         token:
           type: string
@@ -629,6 +618,21 @@ components:
         updated_at:
           type: integer
         url:
+          type: string
+      type: object
+    models.Project:
+      properties:
+        config:
+          $ref: '#/components/schemas/datastore.ProjectConfig'
+        logo_url:
+          type: string
+        name:
+          type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
+        type:
           type: string
       type: object
     models.RetryConfiguration:
@@ -661,13 +665,13 @@ components:
           type: integer
         deleted_at:
           type: integer
-        group_id:
-          type: string
         is_disabled:
           type: boolean
         mask_id:
           type: string
         name:
+          type: string
+        project_id:
           type: string
         provider:
           type: string
@@ -826,7 +830,7 @@ paths:
     get:
       description: This endpoint fetches projects
       parameters:
-      - description: group name
+      - description: Project name
         in: query
         name: name
         schema:
@@ -847,7 +851,7 @@ paths:
                 - properties:
                     data:
                       items:
-                        $ref: '#/components/schemas/datastore.Group'
+                        $ref: '#/components/schemas/datastore.Project'
                       type: array
                   type: object
           description: OK
@@ -902,10 +906,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.Group'
-        description: Group Details
+              $ref: '#/components/schemas/models.Project'
+        description: Project Details
         required: true
-        x-originalParamName: group
+        x-originalParamName: project
       responses:
         "200":
           content:
@@ -915,7 +919,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/datastore.Group'
+                      $ref: '#/components/schemas/datastore.Project'
                   type: object
           description: OK
         "400":
@@ -1034,7 +1038,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/datastore.Group'
+                      $ref: '#/components/schemas/datastore.Project'
                   type: object
           description: OK
         "400":
@@ -1088,10 +1092,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.Group'
-        description: Group Details
+              $ref: '#/components/schemas/models.Project'
+        description: Project Details
         required: true
-        x-originalParamName: group
+        x-originalParamName: project
       responses:
         "200":
           content:
@@ -1101,7 +1105,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/datastore.Group'
+                      $ref: '#/components/schemas/datastore.Project'
                   type: object
           description: OK
         "400":

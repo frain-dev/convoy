@@ -24,7 +24,7 @@ func Test_CreateSource(t *testing.T) {
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, source.UID, newSource.UID)
@@ -41,14 +41,14 @@ func Test_FindSourceByID(t *testing.T) {
 	sourceRepo := NewSourceRepo(store)
 	source := generateSource(t)
 
-	_, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
+	_, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, source.UID, newSource.UID)
@@ -88,9 +88,9 @@ func Test_UpdateSource(t *testing.T) {
 	name := "Convoy-Dev"
 	source.Name = name
 
-	require.NoError(t, sourceRepo.UpdateSource(context.Background(), source.GroupID, source))
+	require.NoError(t, sourceRepo.UpdateSource(context.Background(), source.ProjectID, source))
 
-	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, name, newSource.Name)
@@ -106,12 +106,12 @@ func Test_DeleteSource(t *testing.T) {
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	_, err := sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
+	_, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
-	require.NoError(t, sourceRepo.DeleteSourceByID(context.Background(), source.GroupID, source.UID))
+	require.NoError(t, sourceRepo.DeleteSourceByID(context.Background(), source.ProjectID, source.UID))
 
-	_, err = sourceRepo.FindSourceByID(context.Background(), source.GroupID, source.UID)
+	_, err = sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
@@ -184,15 +184,15 @@ func Test_LoadSourcesPaged(t *testing.T) {
 
 			store := getStore(db)
 			sourceRepo := NewSourceRepo(store)
-			groupId := uuid.NewString()
+			projectId := uuid.NewString()
 
 			for i := 0; i < tc.count; i++ {
 				source := &datastore.Source{
-					UID:     uuid.NewString(),
-					GroupID: groupId,
-					Name:    "Convoy-Prod",
-					MaskID:  uniuri.NewLen(16),
-					Type:    datastore.HTTPSource,
+					UID:       uuid.NewString(),
+					ProjectID: projectId,
+					Name:      "Convoy-Prod",
+					MaskID:    uniuri.NewLen(16),
+					Type:      datastore.HTTPSource,
 					Verifier: &datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
 						HMac: &datastore.HMac{
@@ -205,7 +205,7 @@ func Test_LoadSourcesPaged(t *testing.T) {
 				require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 			}
 
-			_, pageable, err := sourceRepo.LoadSourcesPaged(context.Background(), groupId, &datastore.SourceFilter{}, tc.pageData)
+			_, pageable, err := sourceRepo.LoadSourcesPaged(context.Background(), projectId, &datastore.SourceFilter{}, tc.pageData)
 
 			require.NoError(t, err)
 
@@ -221,11 +221,11 @@ func Test_LoadSourcesPaged(t *testing.T) {
 
 func generateSource(t *testing.T) *datastore.Source {
 	return &datastore.Source{
-		UID:     uuid.NewString(),
-		GroupID: uuid.NewString(),
-		Name:    "Convoy-Prod",
-		MaskID:  uniuri.NewLen(16),
-		Type:    datastore.HTTPSource,
+		UID:       uuid.NewString(),
+		ProjectID: uuid.NewString(),
+		Name:      "Convoy-Prod",
+		MaskID:    uniuri.NewLen(16),
+		Type:      datastore.HTTPSource,
 		Verifier: &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
 			HMac: &datastore.HMac{

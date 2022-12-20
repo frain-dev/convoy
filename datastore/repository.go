@@ -26,7 +26,7 @@ type EventDeliveryRepository interface {
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 	CountEventDeliveries(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams) (int64, error)
-	DeleteGroupEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
+	DeleteProjectEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
 }
 
@@ -35,19 +35,19 @@ type EventRepository interface {
 	LoadEventIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
 	FindEventByID(ctx context.Context, id string) (*Event, error)
 	FindEventsByIDs(context.Context, []string) ([]Event, error)
-	CountGroupMessages(ctx context.Context, groupID string) (int64, error)
+	CountProjectMessages(ctx context.Context, projectID string) (int64, error)
 	LoadEventsPaged(context.Context, *Filter) ([]Event, PaginationData, error)
-	DeleteGroupEvents(context.Context, *EventFilter, bool) error
+	DeleteProjectEvents(context.Context, *EventFilter, bool) error
 }
 
-type GroupRepository interface {
-	LoadGroups(context.Context, *GroupFilter) ([]*Group, error)
-	CreateGroup(context.Context, *Group) error
-	UpdateGroup(context.Context, *Group) error
-	DeleteGroup(ctx context.Context, uid string) error
-	FetchGroupByID(context.Context, string) (*Group, error)
-	FetchGroupsByIDs(context.Context, []string) ([]Group, error)
-	FillGroupsStatistics(ctx context.Context, groups []*Group) error
+type ProjectRepository interface {
+	LoadProjects(context.Context, *ProjectFilter) ([]*Project, error)
+	CreateProject(context.Context, *Project) error
+	UpdateProject(context.Context, *Project) error
+	DeleteProject(ctx context.Context, uid string) error
+	FetchProjectByID(context.Context, string) (*Project, error)
+	FetchProjectsByIDs(context.Context, []string) ([]Project, error)
+	FillProjectsStatistics(ctx context.Context, projects []*Project) error
 }
 
 type OrganisationRepository interface {
@@ -80,19 +80,19 @@ type OrganisationMemberRepository interface {
 }
 
 type EndpointRepository interface {
-	CreateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
+	CreateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	FindEndpointByID(çtx context.Context, id string) (*Endpoint, error)
 	FindEndpointsByID(ctx context.Context, ids []string) ([]Endpoint, error)
 	FindEndpointsByAppID(ctx context.Context, appID string) ([]Endpoint, error)
-	FindEndpointsByOwnerID(ctx context.Context, groupID string, ownerID string) ([]Endpoint, error)
-	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, groupID string) error
+	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
+	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
-	CountGroupEndpoints(ctx context.Context, groupID string) (int64, error)
-	DeleteGroupEndpoints(context.Context, string) error
-	LoadEndpointsPaged(ctx context.Context, groupID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
-	LoadEndpointsPagedByGroupId(ctx context.Context, groupID string, pageable Pageable) ([]Endpoint, PaginationData, error)
-	SearchEndpointsByGroupId(ctx context.Context, groupID string, params SearchParams) ([]Endpoint, error)
-	ExpireSecret(ctx context.Context, groupID string, endpointID string, secrets []Secret) error
+	CountProjectEndpoints(ctx context.Context, projectID string) (int64, error)
+	DeleteProjectEndpoints(context.Context, string) error
+	LoadEndpointsPaged(ctx context.Context, projectID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
+	LoadEndpointsPagedByProjectId(ctx context.Context, projectID string, pageable Pageable) ([]Endpoint, PaginationData, error)
+	SearchEndpointsByProjectId(ctx context.Context, projectID string, params SearchParams) ([]Endpoint, error)
+	ExpireSecret(ctx context.Context, projectID string, endpointID string, secrets []Secret) error
 }
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
@@ -102,29 +102,29 @@ type SubscriptionRepository interface {
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
-	FindSubscriptionsByEndpointID(ctx context.Context, groupId string, endpointID string) ([]Subscription, error)
-	FindSubscriptionByDeviceID(ctx context.Context, groupId string, deviceID string) (*Subscription, error)
+	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
+	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string) (*Subscription, error)
 	UpdateSubscriptionStatus(context.Context, string, string, SubscriptionStatus) error
 	TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error)
 }
 
 type SourceRepository interface {
 	CreateSource(context.Context, *Source) error
-	UpdateSource(ctx context.Context, groupID string, source *Source) error
-	FindSourceByID(ctx context.Context, groupID string, id string) (*Source, error)
+	UpdateSource(ctx context.Context, projectID string, source *Source) error
+	FindSourceByID(ctx context.Context, projectID string, id string) (*Source, error)
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
-	DeleteSourceByID(ctx context.Context, groupID string, id string) error
-	LoadSourcesPaged(ctx context.Context, groupID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+	DeleteSourceByID(ctx context.Context, projectID string, id string) error
+	LoadSourcesPaged(ctx context.Context, projectID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
 }
 
 type DeviceRepository interface {
 	CreateDevice(ctx context.Context, device *Device) error
-	UpdateDevice(ctx context.Context, device *Device, appID, groupID string) error
-	UpdateDeviceLastSeen(ctx context.Context, device *Device, appID, groupID string, status DeviceStatus) error
-	DeleteDevice(ctx context.Context, uid string, appID, groupID string) error
-	FetchDeviceByID(ctx context.Context, uid string, appID, groupID string) (*Device, error)
-	FetchDeviceByHostName(ctx context.Context, hostName string, appID, groupID string) (*Device, error)
-	LoadDevicesPaged(ctx context.Context, groupID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
+	UpdateDevice(ctx context.Context, device *Device, appID, projectID string) error
+	UpdateDeviceLastSeen(ctx context.Context, device *Device, appID, projectID string, status DeviceStatus) error
+	DeleteDevice(ctx context.Context, uid string, appID, projectID string) error
+	FetchDeviceByID(ctx context.Context, uid string, appID, projectID string) (*Device, error)
+	FetchDeviceByHostName(ctx context.Context, hostName string, appID, projectID string) (*Device, error)
+	LoadDevicesPaged(ctx context.Context, projectID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
 }
 
 type UserRepository interface {
@@ -145,9 +145,9 @@ type ConfigurationRepository interface {
 
 type PortalLinkRepository interface {
 	CreatePortalLink(context.Context, *PortalLink) error
-	UpdatePortalLink(ctx context.Context, groupID string, portal *PortalLink) error
-	FindPortalLinkByID(ctx context.Context, groupID string, id string) (*PortalLink, error)
+	UpdatePortalLink(ctx context.Context, projectID string, portal *PortalLink) error
+	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
-	LoadPortalLinksPaged(ctx context.Context, groupID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
-	RevokePortalLink(ctx context.Context, groupID string, id string) error
+	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
+	RevokePortalLink(ctx context.Context, projectID string, id string) error
 }

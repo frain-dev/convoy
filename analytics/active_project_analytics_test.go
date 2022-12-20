@@ -10,30 +10,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func provideActiveGroupAnalytics(ctrl *gomock.Controller) *ActiveGroupAnalytics {
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
+func provideActiveProjectAnalytics(ctrl *gomock.Controller) *ActiveProjectAnalytics {
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	client := NewNoopAnalyticsClient()
 
-	return newActiveGroupAnalytics(groupRepo, eventRepo, orgRepo, client, TestInstanceID)
+	return newActiveProjectAnalytics(projectRepo, eventRepo, orgRepo, client, TestInstanceID)
 }
 
-func Test_TrackActiveGroupAnalytics(t *testing.T) {
+func Test_TrackActiveProjectAnalytics(t *testing.T) {
 	tests := []struct {
 		name    string
-		dbFn    func(ga *ActiveGroupAnalytics)
+		dbFn    func(ga *ActiveProjectAnalytics)
 		wantErr bool
 	}{
 		{
-			name: "should_track_active_group_analytics",
-			dbFn: func(ga *ActiveGroupAnalytics) {
-				groupRepo := ga.groupRepo.(*mocks.MockGroupRepository)
+			name: "should_track_active_project_analytics",
+			dbFn: func(ga *ActiveProjectAnalytics) {
+				projectRepo := ga.projectRepo.(*mocks.MockProjectRepository)
 				eventRepo := ga.eventRepo.(*mocks.MockEventRepository)
 				orgRepo := ga.orgRepo.(*mocks.MockOrganisationRepository)
 				gomock.InOrder(
 					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return([]datastore.Organisation{{UID: "123"}}, datastore.PaginationData{}, nil),
-					groupRepo.EXPECT().LoadGroups(gomock.Any(), gomock.Any()).Return([]*datastore.Group{{UID: "123456", Name: "test"}}, nil),
+					projectRepo.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).Return([]*datastore.Project{{UID: "123456", Name: "test"}}, nil),
 					eventRepo.EXPECT().LoadEventsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
 					orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, nil),
 				)
@@ -41,8 +41,8 @@ func Test_TrackActiveGroupAnalytics(t *testing.T) {
 		},
 
 		{
-			name: "should_fail_to_track_active_group_analytics",
-			dbFn: func(ga *ActiveGroupAnalytics) {
+			name: "should_fail_to_track_active_project_analytics",
+			dbFn: func(ga *ActiveProjectAnalytics) {
 				orgRepo := ga.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().LoadOrganisationsPaged(gomock.Any(), gomock.Any()).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
@@ -55,7 +55,7 @@ func Test_TrackActiveGroupAnalytics(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			ga := provideActiveGroupAnalytics(ctrl)
+			ga := provideActiveProjectAnalytics(ctrl)
 
 			if tc.dbFn != nil {
 				tc.dbFn(ga)

@@ -31,7 +31,7 @@ func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.R
 		authUser := middleware.GetAuthUserFromContext(r.Context())
 
 		if authUser.Credential.Type == auth.CredentialTypeAPIKey {
-			groupID = authUser.Role.Group
+			groupID = authUser.Role.Project
 		}
 	}
 

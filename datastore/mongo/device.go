@@ -30,12 +30,12 @@ func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device)
 	return d.store.Save(ctx, device, nil)
 }
 
-func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device, endpointID, groupID string) error {
+func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device, endpointID, projectID string) error {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":      device.UID,
-		"group_id": groupID,
+		"uid":        device.UID,
+		"project_id": projectID,
 	}
 
 	if !util.IsStringEmpty(endpointID) {
@@ -56,12 +56,12 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	return d.store.UpdateOne(ctx, filter, update)
 }
 
-func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, endpointID, groupID string, status datastore.DeviceStatus) error {
+func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, endpointID, projectID string, status datastore.DeviceStatus) error {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":      device.UID,
-		"group_id": groupID,
+		"uid":        device.UID,
+		"project_id": projectID,
 	}
 
 	if !util.IsStringEmpty(endpointID) {
@@ -79,12 +79,12 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	return d.store.UpdateOne(ctx, filter, update)
 }
 
-func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, groupID string) error {
+func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, projectID string) error {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":      uid,
-		"group_id": groupID,
+		"uid":        uid,
+		"project_id": projectID,
 	}
 
 	if !util.IsStringEmpty(endpointID) {
@@ -94,12 +94,12 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, g
 	return d.store.DeleteOne(ctx, filter, false)
 }
 
-func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, groupID string) (*datastore.Device, error) {
+func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, projectID string) (*datastore.Device, error) {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"uid":      uid,
-		"group_id": groupID,
+		"uid":        uid,
+		"project_id": projectID,
 	}
 
 	if !util.IsStringEmpty(endpointID) {
@@ -118,12 +118,12 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID
 	return device, nil
 }
 
-func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, groupID string) (*datastore.Device, error) {
+func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, projectID string) (*datastore.Device, error) {
 	ctx = d.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"group_id":  groupID,
-		"host_name": hostName,
+		"project_id": projectID,
+		"host_name":  hostName,
 	}
 
 	if !util.IsStringEmpty(endpointID) {
@@ -142,12 +142,12 @@ func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string,
 	return device, nil
 }
 
-func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, groupID string, f *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
+func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, f *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
 	ctx = d.setCollectionInContext(ctx)
 
 	var devices []datastore.Device
 
-	filter := bson.M{"deleted_at": nil, "group_id": groupID}
+	filter := bson.M{"deleted_at": nil, "project_id": projectID}
 
 	if !util.IsStringEmpty(f.EndpointID) {
 		filter["endpoint_id"] = f.EndpointID
