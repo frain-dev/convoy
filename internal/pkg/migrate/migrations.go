@@ -1059,11 +1059,13 @@ var Migrations = []*Migration{
 				return err
 			}
 
-			ctx = context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ProjectsCollection)
-			err = store.SaveMany(ctx, projects)
-			if err != nil {
-				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id save all projects")
-				return err
+			if len(projects) > 0 {
+				ctx = context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ProjectsCollection)
+				err = store.SaveMany(ctx, projects)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id save all projects")
+					return err
+				}
 			}
 
 			return nil
