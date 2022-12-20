@@ -1,55 +1,45 @@
 <div class="min-h-screen flex flex-col items-center justify-center w-full">
 	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
-	<ng-container *ngIf="!isSignUpDone">
-		<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
-			<!-- We don't have this component or need it yet. Temporary hold; it might be used here. -->
-			<!-- <div class="bg-primary-500 mb-20px border border-primary-100 border-dashed rounded-8px py-10px px-16px flex">
+	<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
+		<!-- We don't have this component or need it yet. Temporary hold; it might be used here. -->
+		<!-- <div class="bg-primary-500 mb-20px border border-primary-100 border-dashed rounded-8px py-10px px-16px flex">
              <img src="/assets/img/ideas.svg" alt="idea" class="mr-8px" />
              <div class="text-12">Please note that our cloud platform is in private beta.</div>
          </div> -->
 
-			<form [formGroup]="signupForm" (ngSubmit)="signup()" class="flex flex-wrap justify-between">
-				<convoy-input-field>
-					<label for="org_name" convoy-label required="true">Business Name</label>
-					<input id="org_name" convoy-input autocomplete="org_name" formControlName="org_name" placeholder="Convoy" />
-					<convoy-input-error *ngIf="signupForm.get('org_name')?.touched && signupForm.get('org_name')?.invalid">Please enter your business name</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="email" convoy-label required="true">Email</label>
-					<input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="super@default.com" />
-					<convoy-input-error *ngIf="signupForm.get('email')?.touched && signupForm.get('email')?.invalid">Please enter your email</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="first_name" convoy-label required="true">First Name</label>
-					<input id="first_name" convoy-input autocomplete="first_name" formControlName="first_name" placeholder="John" />
-					<convoy-input-error *ngIf="signupForm.get('first_name')?.touched && signupForm.get('first_name')?.invalid">Please enter your first name</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="last_name" convoy-label required="true">Last Name</label>
-					<input id="last_name" convoy-input autocomplete="last_name" formControlName="last_name" placeholder="Doe" />
-					<convoy-input-error *ngIf="signupForm.get('last_name')?.touched && signupForm.get('last_name')?.invalid">Please enter your last name</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="new-password" convoy-label required="true">Password</label>
-					<input type="password" id="new-password" convoy-input autocomplete="new-password" formControlName="password" />
-					<convoy-input-error *ngIf="signupForm.get('password')?.touched && signupForm.get('password')?.invalid">Password is required</convoy-input-error>
-				</convoy-input-field>
+		<form [formGroup]="signupForm" (ngSubmit)="signup()" class="flex flex-wrap justify-between">
+			<convoy-input-field>
+				<label for="org_name" convoy-label required="true">Business Name</label>
+				<input id="org_name" convoy-input autocomplete="org_name" formControlName="org_name" placeholder="Convoy" />
+				<convoy-input-error *ngIf="signupForm.get('org_name')?.touched && signupForm.get('org_name')?.invalid">Please enter your business name</convoy-input-error>
+			</convoy-input-field>
+			<convoy-input-field>
+				<label for="email" convoy-label required="true">Email</label>
+				<input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="super@default.com" />
+				<convoy-input-error *ngIf="signupForm.get('email')?.touched && signupForm.get('email')?.invalid">Please enter your email</convoy-input-error>
+			</convoy-input-field>
+			<convoy-input-field>
+				<label for="first_name" convoy-label required="true">First Name</label>
+				<input id="first_name" convoy-input autocomplete="first_name" formControlName="first_name" placeholder="John" />
+				<convoy-input-error *ngIf="signupForm.get('first_name')?.touched && signupForm.get('first_name')?.invalid">Please enter your first name</convoy-input-error>
+			</convoy-input-field>
+			<convoy-input-field>
+				<label for="last_name" convoy-label required="true">Last Name</label>
+				<input id="last_name" convoy-input autocomplete="last_name" formControlName="last_name" placeholder="Doe" />
+				<convoy-input-error *ngIf="signupForm.get('last_name')?.touched && signupForm.get('last_name')?.invalid">Please enter your last name</convoy-input-error>
+			</convoy-input-field>
+			<convoy-input-field>
+				<label for="new-password" convoy-label required="true">Password</label>
+				<input type="password" id="new-password" convoy-input autocomplete="new-password" formControlName="password" />
+				<convoy-input-error *ngIf="signupForm.get('password')?.touched && signupForm.get('password')?.invalid">Password is required</convoy-input-error>
+			</convoy-input-field>
 
-				<button convoy-button [disabled]="disableSignupBtn" size="lg" class="w-full">
-					<span class="text-14" *ngIf="!disableSignupBtn">Signup</span>
-					<img *ngIf="disableSignupBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
-				</button>
-			</form>
-		</section>
-	</ng-container>
+			<button convoy-button [disabled]="disableSignupBtn" size="lg" class="w-full">
+				<span class="text-14" *ngIf="!disableSignupBtn">Signup</span>
+				<img *ngIf="disableSignupBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
+			</button>
+		</form>
+	</section>
 
-	<ng-container *ngIf="isSignUpDone">
-		<h1 class="font-bold text-20 mb-30px text-center">We just sent you a verification message 📬</h1>
-		<section class="max-w-[445px] mx-auto my-0 px-34px py-64px w-full bg-white-100 shadow-default rounded-8px flex items-center justify-center flex-col">
-			<p class="text-center text-16 text-grey-40 mb-48px">Click on the link in the email to activate your newly created account to start sending and managing webhook events</p>
-			<img src="/assets/img/new-success.gif" loop="1" alt="Succes gif" class="h-150px mb-70px" />
-			<button convoy-button class="w-320px" (click)="router.navigateByUrl('/')">Done</button>
-		</section>
-	</ng-container>
 	<button convoy-button fill="link" class="mt-34px w-full" (click)="router.navigateByUrl('/login')" size="sm">Log in if you already have an account</button>
 </div>
