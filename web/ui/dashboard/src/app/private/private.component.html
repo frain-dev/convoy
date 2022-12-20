@@ -104,12 +104,12 @@
 	<p class="text-center text-grey-20 pt-80px pb-20px">Convoy {{ convoyVersion }}</p>
 </div>
 
-<div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-50" *ngIf="showHelpCard">
+<div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-10" *ngIf="showHelpCard">
 	<img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
 	<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
 </div>
 
-<div class="fixed left-30px top-[85vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-10 hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true">
+<div class="fixed left-30px top-[90vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-[5] hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true">
 	<img src="/assets/img/svg/lock_open.svg" alt="lock icon" class="w-24px h-24px mr-16px" />
 	<span class="text-warning-100 text-14 font-medium">Please remember to verify your email.</span>
 </div>

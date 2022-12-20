@@ -1,5 +1,5 @@
 <div class="flex pt-0 pb-0 w-full max-w-[1440px] m-auto">
-	<aside class="w-fit pt-10 border-r border-r-grey-10 relative ml-56px z-10">
+	<aside class="w-fit pt-10 border-r border-r-grey-10 relative ml-56px">
 		<button convoy-button color="transparent" class="px-0 py-0 border border-grey-10 bg-white-100 rounded-100px w-32px h-32px absolute top-8px -right-16px" [disabled]="screenWidth < 1150" (click)="shouldShowFullSideBar = !shouldShowFullSideBar">
 			<svg width="12" height="12" class="fill-primary-100 transition-all duration-200" [class]="shouldShowFullSideBar ? 'hidden' : 'block'">
 				<use xlink:href="#sidebar-icon"></use>
