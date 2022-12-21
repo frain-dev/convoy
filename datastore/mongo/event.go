@@ -296,6 +296,10 @@ func (db *eventRepo) CountEvents(ctx context.Context, f *datastore.Filter) (int6
 		filter["project_id"] = f.Project.UID
 	}
 
+	if !util.IsStringEmpty(f.SourceID) {
+		filter["source_id"] = f.SourceID
+	}
+
 	c, err := db.store.Count(ctx, filter)
 	if err != nil {
 		return 0, err
