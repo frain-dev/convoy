@@ -32,11 +32,14 @@ export class CreateSubscriptionComponent implements OnInit {
 		}),
 		filter_config: this.formBuilder.group({
 			event_types: [null],
-			filter: [null]
+			filter: this.formBuilder.group({
+				headers: [null],
+				body: [null]
+			})
 		})
 	});
 	endpoints!: ENDPOINT[];
-    eventTags: string[] = [];
+	eventTags: string[] = [];
 	apps!: APP[];
 	sources!: SOURCE[];
 	endPoints: ENDPOINT[] = [];
@@ -92,7 +95,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-            response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
+			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {
 				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
@@ -162,7 +165,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription() {
-        this.subscriptionForm.patchValue({
+		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
 
@@ -200,7 +203,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ app_id: newApp.uid });
 		this.onUpdateAppSelection();
 	}
-
 
 	removeEventTag(tag: string) {
 		this.eventTags = this.eventTags.filter(e => e !== tag);
@@ -263,9 +265,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	getFilterSchema(schema: any) {
-		this.subscriptionForm.patchValue({
-			filter_config: { filter: schema }
-		});
+		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
+		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
+
 		this.showFilterForm = false;
 	}
 }

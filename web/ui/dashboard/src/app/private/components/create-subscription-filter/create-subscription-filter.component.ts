@@ -16,12 +16,12 @@ import { ActivatedRoute } from '@angular/router';
 	styleUrls: ['./create-subscription-filter.component.scss']
 })
 export class CreateSubscriptionFilterComponent implements OnInit {
-	@ViewChild('requestEditor') requestEditor!: MonacoComponent;
 	@ViewChild('requestHeaderEditor') requestHeaderEditor!: MonacoComponent;
 	@ViewChild('headerSchemaEditor') headerSchemaEditor!: MonacoComponent;
+	@ViewChild('requestEditor') requestEditor!: MonacoComponent;
 	@ViewChild('schemaEditor') schemaEditor!: MonacoComponent;
 	@Input('action') action: 'update' | 'create' = 'create';
-	@Input('schema') schema!: string;
+	@Input('schema') schema?: any;
 	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
 	tabs: ['body', 'header'] = ['body', 'header'];
 	activeTab: 'body' | 'header' = 'body';
@@ -31,6 +31,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	});
 	isFilterTestPassed = false;
 	payload: any;
+	header: any;
 	token: string = this.route.snapshot.queryParams.token;
 
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private route: ActivatedRoute) {}
@@ -43,10 +44,20 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		this.activeTab = tab;
 	}
 
-	async testFilter() {
+	async testFilter(filterType: 'body' | 'header') {
 		this.isFilterTestPassed = false;
-		this.subscriptionFilterForm.value.request = this.convertStringToJson(this.requestEditor.getValue());
-		this.subscriptionFilterForm.value.schema = this.convertStringToJson(this.schemaEditor.getValue());
+		if (filterType === 'body') {
+			this.subscriptionFilterForm.patchValue({
+				request: this.convertStringToJson(this.requestEditor.getValue()),
+				schema: this.convertStringToJson(this.schemaEditor.getValue())
+			});
+		} else {
+			this.subscriptionFilterForm.patchValue({
+				request: this.convertStringToJson(this.requestHeaderEditor.getValue()),
+				schema: this.convertStringToJson(this.headerSchemaEditor.getValue())
+			});
+		}
+
 		try {
 			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value, this.token);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
@@ -58,12 +69,16 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		}
 	}
 
-	async setSubscriptionFilter() {
-		await this.testFilter();
+	async setSubscriptionFilter(filterType: 'body' | 'header') {
+		await this.testFilter(filterType);
 
 		if (this.isFilterTestPassed) {
-			localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
-			const filter = this.convertStringToJson(this.schemaEditor.getValue());
+			if (filterType === 'body') localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
+			if (filterType === 'header') localStorage.setItem('EVENT_HEADERS', this.requestHeaderEditor.getValue());
+			const filter = {
+				bodySchema: this.schemaEditor?.getValue() ? this.convertStringToJson(this.schemaEditor?.getValue()) : null,
+				headerSchema: this.headerSchemaEditor?.getValue() ? this.convertStringToJson(this.headerSchemaEditor?.getValue()) : null
+			};
 			this.filterSchema.emit(filter);
 		}
 	}
@@ -80,6 +95,8 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 
 	checkForExistingData() {
 		const eventData = localStorage.getItem('EVENT_DATA');
+		const eventHeaders = localStorage.getItem('EVENT_HEADERS');
 		if (eventData && eventData !== 'undefined') this.payload = JSON.parse(eventData);
+		if (eventHeaders && eventHeaders !== 'undefined') this.header = JSON.parse(eventHeaders);
 	}
 }
