@@ -110,7 +110,7 @@
 			<div class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium" *ngIf="eventDeliveryFilteredByEventId">
 				Event Filtered
 				<button class="ml-4px">
-					<img class="w-14px" src="assets/img/close-icon.svg" alt="close icon" (click)="eventDeliveryFilteredByEventId = ''; getEventDeliveries()" />
+					<img class="w-14px" src="assets/img/close-icon.svg" alt="close icon" (click)="clearFilters('eventId')" />
 				</button>
 			</div>
 

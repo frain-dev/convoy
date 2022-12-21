@@ -365,4 +365,8 @@ export class EventLogsComponent implements OnInit {
 			return error;
 		}
 	}
+
+	viewEventDeliveries(eventId: string) {
+		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventId: eventId } });
+	}
 }

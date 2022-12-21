@@ -87,7 +87,7 @@
 
 	<div class="mb-24px"></div>
 
-	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
+	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 </convoy-page>
 
 <div convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
