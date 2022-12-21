@@ -36,6 +36,7 @@ type EventRepository interface {
 	FindEventByID(ctx context.Context, id string) (*Event, error)
 	FindEventsByIDs(context.Context, []string) ([]Event, error)
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)
+	CountEvents(ctx context.Context, f *Filter) (int64, error)
 	LoadEventsPaged(context.Context, *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(context.Context, *EventFilter, bool) error
 }

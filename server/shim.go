@@ -21,22 +21,22 @@ var redirectRoutes = []string{
 }
 
 func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.Request) {
-	groupID := r.URL.Query().Get("groupId")
+	projectID := r.URL.Query().Get("projectID")
 
-	if util.IsStringEmpty(groupID) {
-		groupID = r.URL.Query().Get("groupID")
+	if util.IsStringEmpty(projectID) {
+		projectID = r.URL.Query().Get("projectID")
 	}
 
-	if util.IsStringEmpty(groupID) {
+	if util.IsStringEmpty(projectID) {
 		authUser := middleware.GetAuthUserFromContext(r.Context())
 
 		if authUser.Credential.Type == auth.CredentialTypeAPIKey {
-			groupID = authUser.Role.Project
+			projectID = authUser.Role.Project
 		}
 	}
 
-	if util.IsStringEmpty(groupID) {
-		_ = render.Render(w, r, util.NewErrorResponse("groupID query is missing", http.StatusBadRequest))
+	if util.IsStringEmpty(projectID) {
+		_ = render.Render(w, r, util.NewErrorResponse("projectID query is missing", http.StatusBadRequest))
 		return
 	}
 
@@ -51,7 +51,7 @@ func (a *ApplicationHandler) RedirectToProjects(w http.ResponseWriter, r *http.R
 
 	if ok := contains(redirectRoutes, resourcePrefix); ok {
 		forwardedPath := strings.Join(rElems[3:], "/")
-		redirectURL := fmt.Sprintf("/api/v1/projects/%s/%s?%s", groupID, forwardedPath, r.URL.RawQuery)
+		redirectURL := fmt.Sprintf("/api/v1/projects/%s/%s?%s", projectID, forwardedPath, r.URL.RawQuery)
 
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	}
