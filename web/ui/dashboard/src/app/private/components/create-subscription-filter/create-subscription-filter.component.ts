@@ -17,10 +17,14 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class CreateSubscriptionFilterComponent implements OnInit {
 	@ViewChild('requestEditor') requestEditor!: MonacoComponent;
+	@ViewChild('requestHeaderEditor') requestHeaderEditor!: MonacoComponent;
+	@ViewChild('headerSchemaEditor') headerSchemaEditor!: MonacoComponent;
 	@ViewChild('schemaEditor') schemaEditor!: MonacoComponent;
 	@Input('action') action: 'update' | 'create' = 'create';
 	@Input('schema') schema!: string;
 	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
+	tabs: ['body', 'header'] = ['body', 'header'];
+	activeTab: 'body' | 'header' = 'body';
 	subscriptionFilterForm: FormGroup = this.formBuilder.group({
 		request: [null],
 		schema: [null]
@@ -33,6 +37,10 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 
 	ngOnInit() {
 		this.checkForExistingData();
+	}
+
+	toggleActiveTab(tab: 'body' | 'header') {
+		this.activeTab = tab;
 	}
 
 	async testFilter() {
