@@ -171,9 +171,16 @@ export class EventLogsComponent implements OnInit {
 		this.getEvents({ addToURL: true });
 	}
 
-	getCodeSnippetString() {
-		if (!this.eventsDetailsItem?.data) return 'No event data was sent';
-		return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+	getCodeSnippetString(type: 'res_data' | 'header') {
+		if (type === 'res_data') {
+			if (!this.eventsDetailsItem?.data) return 'No event data was sent';
+			return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		}
+		if (type === 'header') {
+			if (!this.eventsDetailsItem?.headers) return 'No event header was sent';
+			return JSON.stringify(this.eventsDetailsItem?.headers, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		}
+		return '';
 	}
 
 	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
