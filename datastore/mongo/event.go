@@ -188,6 +188,10 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		d = append(d, bson.E{Key: "project_id", Value: f.Project.UID})
 	}
 
+	if !util.IsStringEmpty(f.EndpointID) {
+		f.EndpointIDs = append(f.EndpointIDs, f.EndpointID)
+	}
+
 	if len(f.EndpointIDs) > 0 {
 		filter["endpoints"] = bson.M{"$in": f.EndpointIDs}
 		d = append(d, bson.E{Key: "endpoints", Value: bson.M{"$in": f.EndpointIDs}})
@@ -298,6 +302,10 @@ func (db *eventRepo) CountEvents(ctx context.Context, f *datastore.Filter) (int6
 
 	if !util.IsStringEmpty(f.SourceID) {
 		filter["source_id"] = f.SourceID
+	}
+
+	if !util.IsStringEmpty(f.EndpointID) {
+		filter["endpoints"] = f.EndpointID
 	}
 
 	c, err := db.store.Count(ctx, filter)

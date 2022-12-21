@@ -154,6 +154,7 @@ func (a *ApplicationHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Re
 			Sort:    -1,
 		},
 		SourceID:     r.URL.Query().Get("sourceId"),
+		EndpointID:   r.URL.Query().Get("endpointId"),
 		SearchParams: searchParams,
 	}
 
@@ -198,6 +199,7 @@ func (a *ApplicationHandler) CountAffectedEvents(w http.ResponseWriter, r *http.
 			Sort:    -1,
 		},
 		SourceID:     r.URL.Query().Get("sourceId"),
+		EndpointID:   r.URL.Query().Get("endpointId"),
 		SearchParams: searchParams,
 	}
 
