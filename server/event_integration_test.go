@@ -132,11 +132,11 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 	// Just Before.
 	// Create an Endpoint with an app ID
 	endpoint := &datastore.Endpoint{
-		UID:        endpointID,
-		Title:      fmt.Sprintf("TestEndpoint-%s", endpointID),
-		ProjectID:  s.DefaultProject.UID,
-		AppID:      appID,
-		IsDisabled: false,
+		UID:       endpointID,
+		Title:     fmt.Sprintf("TestEndpoint-%s", endpointID),
+		ProjectID: s.DefaultProject.UID,
+		AppID:     appID,
+		Status:    datastore.ActiveEndpointStatus,
 	}
 
 	err := cm.NewEndpointRepo(s.ConvoyApp.A.Store).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
