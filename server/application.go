@@ -426,6 +426,7 @@ func generateAppResponse(endpoint *datastore.Endpoint) *datastore.Application {
 		Title:           endpoint.Title,
 		SupportEmail:    endpoint.SupportEmail,
 		SlackWebhookURL: endpoint.SlackWebhookURL,
+		IsDisabled:      endpoint.IsDisabled,
 		CreatedAt:       endpoint.CreatedAt,
 		UpdatedAt:       endpoint.UpdatedAt,
 	}
