@@ -328,6 +328,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         5000,
+				Status:            datastore.ActiveEndpointStatus,
 				RateLimitDuration: "1m0s",
 			},
 			wantErr: false,
@@ -369,6 +370,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
+				Status:            datastore.ActiveEndpointStatus,
 				RateLimitDuration: "1m0s",
 				Authentication: &datastore.EndpointAuthentication{
 					Type: datastore.APIKeyAuthentication,
