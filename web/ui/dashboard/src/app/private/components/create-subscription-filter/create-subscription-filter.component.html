@@ -1,9 +1,5 @@
 <convoy-card className="p-24px mt-40px">
-	<div class="mb-24px">
-		<h2 class="font-semibold mb-8px">Setup Filter</h2>
-		<h4>Provide your filter specifications</h4>
-	</div>
-	<ul class="flex flex-row justify-center mb-24px w-full border-b-[.5px] border-grey-20">
+	<ul class="flex flex-row justify-center w-full border-b-[.5px] border-grey-20">
 		<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
 			<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
 				<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>

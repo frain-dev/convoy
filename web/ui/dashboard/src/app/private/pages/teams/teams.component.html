@@ -9,7 +9,7 @@
 			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 				<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
-				<button convoy-button *ngIf="searchString && searchString.length > 0" class="transition-all duration-200" (click)="searchTeam({ searchInput: $event })">
+				<button convoy-button fill="clear" *ngIf="searchString && searchString.length > 0" class="transition-all duration-200 !p-0" (click)="searchTeam({ searchInput: $event })">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</button>
 			</form>

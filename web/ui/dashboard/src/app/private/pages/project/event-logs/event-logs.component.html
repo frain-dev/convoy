@@ -12,9 +12,17 @@
 
 <div class="flex py-24px items-center justify-between">
 	<div class="flex">
-		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" [ngClass]="{ active: eventsSearchString != undefined && eventsSearchString != '' }">
+		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-			<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="getEvents({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
+			<input
+				type="search"
+				placeholder="Search events"
+				[(ngModel)]="eventsSearchString"
+				(change)="getEvents({ addToURL: true, page: 1 })"
+				[ngModelOptions]="{ standalone: true }"
+				class="w-full text-grey-40 text-14 outline-none bg-transparent"
+				[ngClass]="{ 'bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }"
+			/>
 			<button>
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
@@ -168,7 +176,7 @@
 				<ng-container *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
 					<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
-                    <div class="mb-20px"></div>
+					<div class="mb-20px"></div>
 					<prism language="json" [code]="getCodeSnippetString('header')" title="Header"></prism>
 
 					<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
