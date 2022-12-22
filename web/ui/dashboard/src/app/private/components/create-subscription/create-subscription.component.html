@@ -86,7 +86,7 @@
 		</div>
 
 		<div class="border border-grey-20 p-16px mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations" className="w-full justify-between !mb-0"></convoy-toggle>
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig; onToggleMoreConfig()" label="Add more configurations" className="w-full justify-between !mb-0"></convoy-toggle>
 			<div class="transition-all ease-in-out duration-300" [class]="enableMoreConfig ? 'h-full' : 'max-h-0 overflow-hidden'">
 				<h2 class="font-semibold flex items-center mb-20px mt-30px">
 					Retry Logic
@@ -97,16 +97,29 @@
 				</h2>
 
 				<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
-					<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism" (selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"></convoy-select>
+					<convoy-input-field>
+						<convoy-select
+							[options]="retryLogicTypes"
+							name="type"
+							formControlName="type"
+							label="Mechanism"
+							placeholder="Select mechanism"
+							(selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"
+							errorMessage="Select retry mechanism"
+						></convoy-select>
+					</convoy-input-field>
 					<convoy-input-field>
 						<label for="retry-logic-duration" convoy-label>Duration</label>
-						<input type="text" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" />
-						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter new subscription name</convoy-input-error>
+						<div class="relative">
+							<input type="number" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3" />
+							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+						</div>
+						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter wait duration before retry</convoy-input-error>
 					</convoy-input-field>
 					<convoy-input-field>
 						<label for="retry-logic-count" convoy-label>Limit</label>
-						<input type="text" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
-						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">Enter new subscription name</convoy-input-error>
+						<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
+						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">Enter max retry limit</convoy-input-error>
 					</convoy-input-field>
 				</div>
 
@@ -117,13 +130,16 @@
 				<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
 					<convoy-input-field>
 						<label for="alert-config-time" convoy-label>Time</label>
-						<input type="text" id="alert-config-time" convoy-input autocomplete="alert-config-time" formControlName="threshold" placeholder="e.g 1h" />
-						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.threshold')?.touched && subscriptionForm.get('alert_config.threshold')?.invalid">Enter new subscription error alert threshold</convoy-input-error>
+						<div class="relative">
+							<input type="number" id="alert-config-time" convoy-input autocomplete="alert-config-time" formControlName="threshold" placeholder="e.g 30" />
+							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+						</div>
+						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.threshold')?.touched && subscriptionForm.get('alert_config.threshold')?.invalid">Enter error alert threshold</convoy-input-error>
 					</convoy-input-field>
 					<convoy-input-field>
 						<label for="alert-config-count" convoy-label>Limit</label>
 						<input type="number" id="alert-config-count" convoy-input autocomplete="alert-config-count" formControlName="count" placeholder="e.g 5" />
-						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.count')?.touched && subscriptionForm.get('alert_config.count')?.invalid">Enter new subscription error alert limit</convoy-input-error>
+						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.count')?.touched && subscriptionForm.get('alert_config.count')?.invalid">Enter error alert limit</convoy-input-error>
 					</convoy-input-field>
 				</div>
 			</div>
