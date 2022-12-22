@@ -67,22 +67,21 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	}
 
 	endpoint := &datastore.Endpoint{
-		UID:               uuid.New().String(),
-		ProjectID:         projectID,
-		OwnerID:           e.OwnerID,
-		Title:             e.Name,
-		SupportEmail:      e.SupportEmail,
-		SlackWebhookURL:   e.SlackWebhookURL,
-		IsDisabled:        e.IsDisabled,
-		TargetURL:         e.URL,
-		Description:       e.Description,
-		RateLimit:         e.RateLimit,
-		HttpTimeout:       e.HttpTimeout,
-    AdvancedSignatures: e.AdvancedSignatures,
-		AppID:             e.AppID,
-		RateLimitDuration: duration.String(),
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UID:                uuid.New().String(),
+		ProjectID:          projectID,
+		OwnerID:            e.OwnerID,
+		Title:              e.Name,
+		SupportEmail:       e.SupportEmail,
+		SlackWebhookURL:    e.SlackWebhookURL,
+		TargetURL:          e.URL,
+		Description:        e.Description,
+		RateLimit:          e.RateLimit,
+		HttpTimeout:        e.HttpTimeout,
+		AdvancedSignatures: e.AdvancedSignatures,
+		AppID:              e.AppID,
+		RateLimitDuration:  duration.String(),
+		CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	if util.IsStringEmpty(endpoint.AppID) {
@@ -203,10 +202,6 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 
 	if e.SupportEmail != nil {
 		endpoint.SupportEmail = *e.SupportEmail
-	}
-
-	if e.IsDisabled != nil {
-		endpoint.IsDisabled = *e.IsDisabled
 	}
 
 	if e.SlackWebhookURL != nil {

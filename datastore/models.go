@@ -225,7 +225,6 @@ type Endpoint struct {
 	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
 	TargetURL          string             `json:"target_url" bson:"target_url"`
 	Title              string             `json:"title" bson:"title"`
-	Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
 	Secrets            []Secret           `json:"secrets" bson:"secrets"`
 	AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
 	Description        string             `json:"description" bson:"description"`
@@ -236,7 +235,6 @@ type Endpoint struct {
 	HttpTimeout string         `json:"http_timeout" bson:"http_timeout"`
 	RateLimit   int            `json:"rate_limit" bson:"rate_limit"`
 	Events      int64          `json:"events,omitempty" bson:"-"`
-	IsDisabled  bool           `json:"is_disabled,omitempty" bson:"is_disabled"`
 	Status      EndpointStatus `json:"status" bson:"status"`
 
 	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
@@ -591,15 +589,14 @@ type APIKey struct {
 }
 
 type Subscription struct {
-	ID   primitive.ObjectID `json:"-" bson:"_id"`
-	UID  string             `json:"uid" bson:"uid"`
-	Name string             `json:"name" bson:"name"`
-	Type SubscriptionType   `json:"type" bson:"type"`
-	// Status     SubscriptionStatus `json:"status" bson:"status"`
-	ProjectID  string `json:"-" bson:"project_id"`
-	SourceID   string `json:"-" bson:"source_id"`
-	EndpointID string `json:"-" bson:"endpoint_id"`
-	DeviceID   string `json:"device_id" bson:"device_id"`
+	ID         primitive.ObjectID `json:"-" bson:"_id"`
+	UID        string             `json:"uid" bson:"uid"`
+	Name       string             `json:"name" bson:"name"`
+	Type       SubscriptionType   `json:"type" bson:"type"`
+	ProjectID  string             `json:"-" bson:"project_id"`
+	SourceID   string             `json:"-" bson:"source_id"`
+	EndpointID string             `json:"-" bson:"endpoint_id"`
+	DeviceID   string             `json:"device_id" bson:"device_id"`
 
 	Source   *Source   `json:"source_metadata" bson:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" bson:"endpoint_metadata"`

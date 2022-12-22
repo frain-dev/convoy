@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/frain-dev/convoy/datastore"
+	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/google/uuid"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -1104,20 +1104,89 @@ var Migrations = []*Migration{
 				}
 			}
 
-			var projects []interface{}
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ProjectsCollection)
-			store := datastore.New(db)
-
-			err := store.FindAll(ctx, bson.M{}, nil, nil, &projects)
+			err := db.Collection(datastore.ProjectsCollection).Drop(context.Background())
 			if err != nil {
-				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id find all projects")
+				log.WithError(err).Fatalf("Failed to drop projects collection")
 				return err
 			}
 
-			ctx = context.WithValue(context.Background(), datastore.CollectionCtx, "groups")
-			err = store.SaveMany(ctx, projects)
+			return nil
+		},
+	},
+
+	{
+		ID: "20221221112519_subscription_status_to_endpoint_status",
+		Migrate: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			subscriptionCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.SubscriptionCollection)
+
+			type Subscription struct {
+				ProjectID  string `bson:"project_id"`
+				EndpointID string `bson:"endpoint_id"`
+				Status     string `bson:"status"`
+			}
+
+			type Endpoint struct {
+				UID        string `bson:"uid"`
+				IsDisabled bool   `bson:"is_disabled"`
+			}
+
+			var subscriptions []*Subscription
+
+			err := store.FindAll(subscriptionCtx, nil, nil, nil, &subscriptions)
 			if err != nil {
-				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id save all groups")
+				log.WithError(err).Fatalf("20221221112519_subscription_status_to_endpoint_status Failed to find subscriptions")
+				return err
+			}
+
+			for _, s := range subscriptions {
+				var endpointStatus datastore.EndpointStatus
+
+				switch s.Status {
+				case "active":
+					var e Endpoint
+					endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+					err := store.FindByID(endpointCtx, s.EndpointID, nil, &e)
+					if err != nil {
+						log.WithError(err).Fatalf("20221221112519_subscription_status_to_endpoint_status Failed to find endpoint")
+						return err
+					}
+
+					if e.IsDisabled {
+						endpointStatus = datastore.InactiveEndpointStatus
+					} else {
+						endpointStatus = datastore.ActiveEndpointStatus
+					}
+				case "inactive":
+					endpointStatus = datastore.InactiveEndpointStatus
+				case "pending":
+					endpointStatus = datastore.PendingEndpointStatus
+				default:
+					endpointStatus = datastore.ActiveEndpointStatus
+				}
+
+				err = cm.NewEndpointRepo(store).UpdateEndpointStatus(context.Background(), s.ProjectID, s.EndpointID, endpointStatus)
+				if err != nil {
+					log.WithError(err).Fatalf("20221221112519_subscription_status_to_endpoint_status Failed to update endpoint status")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			store := datastore.New(db)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
+
+			update := bson.M{
+				"$unset": bson.M{
+					"status": "",
+				},
+			}
+
+			err := store.UpdateMany(ctx, bson.M{}, update, true)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed rollback migration 20221221112519_subscription_status_to_endpoint_status UpdateMany")
 				return err
 			}
 
