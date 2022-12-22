@@ -26,7 +26,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	tabs: ['body', 'header'] = ['body', 'header'];
 	activeTab: 'body' | 'header' = 'body';
 	subscriptionFilterForm: FormGroup = this.formBuilder.group({
-		filter: this.formBuilder.group({
+		request: this.formBuilder.group({
 			header: [null],
 			body: [null]
 		}),
@@ -53,7 +53,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	async testFilter() {
 		this.isFilterTestPassed = false;
 		this.subscriptionFilterForm.patchValue({
-			filter: {
+			request: {
 				header: this.requestHeaderEditor?.getValue() ? this.convertStringToJson(this.requestHeaderEditor.getValue()) : null,
 				body: this.requestEditor?.getValue() ? this.convertStringToJson(this.requestEditor.getValue()) : null
 			},
