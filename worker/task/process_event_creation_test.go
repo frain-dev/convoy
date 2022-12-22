@@ -334,7 +334,6 @@ func TestProcessEventCreated(t *testing.T) {
 						UID:        "456",
 						EndpointID: "endpoint-id-1",
 						Type:       datastore.SubscriptionTypeAPI,
-						Status:     datastore.ActiveSubscriptionStatus,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
 						},
