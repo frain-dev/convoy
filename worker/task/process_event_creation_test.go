@@ -122,7 +122,7 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "project-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
@@ -269,7 +269,7 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
@@ -343,7 +343,7 @@ func TestProcessEventCreated(t *testing.T) {
 					},
 				}
 				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
@@ -416,19 +416,19 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{"person.age": 10},
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{"person.age": 10}},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{},
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{}},
 					},
 				},
 			},
@@ -450,20 +450,20 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{"person.age": 10},
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{"person.age": 10}},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{"person.age": 5},
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{"person.age": 5}},
 					},
 				},
 			},
@@ -482,24 +482,24 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$eq": 10,
-							},
+							}},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{"person.age": 5},
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{"person.age": 5}},
 					},
 				},
 			},
@@ -518,23 +518,23 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{"person.age": 10},
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{"person.age": 10}},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$neq": 10,
-							},
+							}},
 						},
 					},
 				},
@@ -554,27 +554,27 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$gte": 10,
-							},
+							}},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$gt": 10,
-							},
+							}},
 						},
 					},
 				},
@@ -594,26 +594,26 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$lte": 10,
-							},
+							}},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$lt": 10,
-							},
+							}},
 						},
 					},
 				},
@@ -636,37 +636,37 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$in": []int{10, 1},
-							},
+							}},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$in": []int{10, 1},
-							},
+							}},
 						},
 					},
 				},
 				{
 					UID: "12345",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"person.age": map[string]interface{}{
 								"$gt": 10,
-							},
+							}},
 						},
 					},
 				},
@@ -686,28 +686,28 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"event.action": map[string]interface{}{
 								"$nin": []string{"update", "delete"},
-							},
+							}},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: map[string]interface{}{
+						Filter: datastore.FilterSchema{Body: map[string]interface{}{
 							"event.action": map[string]interface{}{
 								"$nin": []string{"read", "delete"},
 							},
-						},
+						}},
 					},
 				},
 			},
