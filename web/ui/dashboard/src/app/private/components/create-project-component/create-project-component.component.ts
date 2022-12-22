@@ -32,7 +32,7 @@ export class CreateProjectComponent implements OnInit {
 			retention_policy: this.formBuilder.group({
 				policy: ['30d']
 			}),
-			disable_endpoint: [null],
+			disable_endpoint: [true],
 			is_retention_policy_enabled: [true]
 		}),
 		type: [null, Validators.required]
@@ -89,6 +89,37 @@ export class CreateProjectComponent implements OnInit {
 		if (this.action === 'create') {
 			event.target.checked ? this.addVersion() : this.projectForm.get('config.signature.versions')?.reset();
 		}
+
+		const strategyControls = Object.keys((this.projectForm.get('config.strategy') as FormGroup).controls);
+		const signatureControls = Object.keys((this.projectForm.get('config.signature') as FormGroup).controls);
+		const ratelimitControls = Object.keys((this.projectForm.get('config.ratelimit') as FormGroup).controls);
+		const retentionPolicyControls = Object.keys((this.projectForm.get('config.retention_policy') as FormGroup).controls);
+
+		if (this.enableMoreConfig) {
+			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.setValidators(Validators.required));
+			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.updateValueAndValidity());
+
+			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.setValidators(Validators.required));
+			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.updateValueAndValidity());
+
+			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.setValidators(Validators.required));
+			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.updateValueAndValidity());
+
+			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.setValidators(Validators.required));
+			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.updateValueAndValidity());
+		} else {
+			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.removeValidators(Validators.required));
+			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.updateValueAndValidity());
+
+			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.removeValidators(Validators.required));
+			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.updateValueAndValidity());
+
+			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.removeValidators(Validators.required));
+			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.updateValueAndValidity());
+
+			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.removeValidators(Validators.required));
+			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.updateValueAndValidity());
+		}
 	}
 
 	async getProjectDetails() {
@@ -121,12 +152,17 @@ export class CreateProjectComponent implements OnInit {
 
 	async createProject() {
 		if (this.enableMoreConfig) {
-			if (this.newSignatureForm.invalid) return this.newSignatureForm.markAllAsTouched();
+			if (this.newSignatureForm.invalid) {
+				this.newSignatureForm.markAllAsTouched();
+				this.projectForm.markAllAsTouched();
+				return;
+			}
+
 			this.versions.at(0).patchValue(this.newSignatureForm.value);
 			this.checkProjectConfig();
 		}
 
-		if (this.enableMoreConfig && this.projectForm.invalid) return this.projectForm.markAllAsTouched();
+		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
 
 		if (!this.enableMoreConfig) delete this.projectForm.value.config;
 
@@ -138,7 +174,6 @@ export class CreateProjectComponent implements OnInit {
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
-			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success', type: this.privateService.activeProjectDetails?.uid ? 'modal' : 'alert' });
 			this.privateService.activeProjectDetails = response.data.group;
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
@@ -183,22 +218,6 @@ export class CreateProjectComponent implements OnInit {
 		configKeys.forEach(configKey => {
 			const configKeyValues = configDetails[configKey] ? Object.values(configDetails[configKey]) : [];
 			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
-
-			if (configKey === 'strategy' && configDetails?.strategy?.retry_count) {
-				this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
-			}
-
-			if (configKey === 'ratelimit' && configDetails?.ratelimit?.count) {
-				this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
-			}
-
-			if (configKey === 'ratelimit' && configDetails?.ratelimit?.duration) {
-				this.projectForm.value.config.ratelimit.duration = this.getTimeValue(configDetails.ratelimit.duration);
-			}
-
-			if (configKey === 'strategy' && configDetails?.strategy?.duration) {
-				this.projectForm.value.config.strategy.duration = this.getTimeValue(configDetails.strategy.duration);
-			}
 		});
 
 		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;

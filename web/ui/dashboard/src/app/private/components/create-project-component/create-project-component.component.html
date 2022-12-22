@@ -12,7 +12,7 @@
 			<label for="project-name" convoy-label>Project Id</label>
 			<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
 				<span class="text-16 text-grey-60 font-normal">{{ projectDetails?.uid }}</span>
-				<convoy-copy-button [text]="projectDetails?.uid || ''"  notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
+				<convoy-copy-button [text]="projectDetails?.uid || ''" notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
 			</div>
 		</ng-container>
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
@@ -25,79 +25,99 @@
 			<span>Please select a project type</span>
 		</div>
 
-		<div class="flex">
+		<!-- <div class="flex">
 			<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="toggleMoreConfig($event)" [isChecked]="enableMoreConfig"></convoy-toggle>
-		</div>
+		</div> -->
 
-		<div [hidden]="!enableMoreConfig">
-			<div formGroupName="config">
-				<h3 class="mt-24px mb-16px font-semibold flex items-center">
-					Signature Details
-					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
-				</h3>
-				<div formGroupName="signature" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
-					<convoy-input-field>
-						<label for="header" required="true" convoy-label>Header</label>
-						<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="X-Convoy-Signature" />
-						<convoy-input-error *ngIf="projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid">Enter header for project requests</convoy-input-error>
-					</convoy-input-field>
+		<div class="border border-grey-20 p-16px mt-20px">
+			<convoy-toggle label="Add more configurations" (onChange)="toggleMoreConfig($event)" [isChecked]="enableMoreConfig" className="w-full justify-between !mb-0"></convoy-toggle>
 
-					<ng-container [formGroup]="newSignatureForm" *ngIf="action === 'create'">
-						<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
-						<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
-					</ng-container>
-				</div>
+			<div [hidden]="!enableMoreConfig">
+				<div formGroupName="config">
+					<h3 class="mt-24px mb-16px font-semibold flex items-center">
+						Signature Details
+						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+					</h3>
+					<div formGroupName="signature" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
+						<convoy-input-field>
+							<label for="header" required="true" convoy-label>Header</label>
+							<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="X-Convoy-Signature" />
+							<convoy-input-error *ngIf="projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid">Enter header for project requests</convoy-input-error>
+						</convoy-input-field>
 
-				<h3 class="mt-48px mb-16px flex items-center font-semibold">
-					Retry Logic
-					<convoy-tooltip size="sm" position="right" class="ml-4px">
-						These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry attempt.
-					</convoy-tooltip>
-				</h3>
-				<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
-					<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism" (selectedOption)="projectForm.get('config.strategy')?.patchValue({ type: $event })"></convoy-select>
-					<convoy-input-field>
-						<label for="retry-logic-duration" convoy-label>Duration</label>
-						<input type="text" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" />
-						<convoy-input-error *ngIf="projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid">Please enter your retry logic duration</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="retry-logic-count" convoy-label>Limit</label>
-						<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
-						<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
-					</convoy-input-field>
-				</div>
+						<ng-container [formGroup]="newSignatureForm" *ngIf="action === 'create'">
+							<convoy-select
+								className="mb-24px"
+								label="Encoding"
+								name="encoding"
+								formControlName="encoding"
+								[options]="encodings"
+								errorMessage="Select encoding type"
+								[required]="true"
+								(selectedOption)="newSignatureForm.patchValue({ encoding: $event })"
+							></convoy-select>
+							<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
+						</ng-container>
+					</div>
 
-				<h3 class="mt-24px mb-16px flex items-center font-semibold">
-					Rate Limit Parameters
-					<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
-				</h3>
-				<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
-					<convoy-input-field>
-						<label for="rate-limit-duration" convoy-label>Duration</label>
-						<input type="text" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="duration" placeholder="e.g 5m" />
-						<convoy-input-error *ngIf="projectForm.get('config.ratelimit.duration')?.touched && projectForm.get('config.ratelimit.duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="rate-limit-count" convoy-label>Limit</label>
-						<input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="count" placeholder="e.g 10" />
-						<convoy-input-error *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">Please enter a rate limit</convoy-input-error>
-					</convoy-input-field>
-				</div>
+					<h3 class="mt-48px mb-16px flex items-center font-semibold">
+						Retry Logic
+						<convoy-tooltip size="sm" position="right" class="ml-4px">
+							These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry
+							attempt.
+						</convoy-tooltip>
+					</h3>
+					<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
+						<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism" (selectedOption)="projectForm.get('config.strategy')?.patchValue({ type: $event })"></convoy-select>
+						<convoy-input-field>
+							<label for="retry-logic-duration" convoy-label>Duration</label>
+							<div class="relative">
+								<input type="number" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 30" />
+								<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+							</div>
+							<convoy-input-error *ngIf="projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid">Please enter your retry logic duration</convoy-input-error>
+						</convoy-input-field>
+						<convoy-input-field>
+							<label for="retry-logic-count" convoy-label>Limit</label>
+							<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
+							<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
+						</convoy-input-field>
+					</div>
 
-				<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
-				<div class="grid grid-cols-2 gap-24px">
-					<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
-					<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
-				</div>
+					<h3 class="mt-24px mb-16px flex items-center font-semibold">
+						Rate Limit Parameters
+						<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
+					</h3>
+					<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
+						<convoy-input-field>
+							<label for="rate-limit-duration" convoy-label>Duration</label>
+							<div class="relative">
+								<input type="number" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="duration" placeholder="e.g 50" />
+								<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+							</div>
+							<convoy-input-error *ngIf="projectForm.get('config.ratelimit.duration')?.touched && projectForm.get('config.ratelimit.duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
+						</convoy-input-field>
+						<convoy-input-field>
+							<label for="rate-limit-count" convoy-label>Limit</label>
+							<input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="count" placeholder="e.g 10" />
+							<convoy-input-error *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">Please enter a rate limit</convoy-input-error>
+						</convoy-input-field>
+					</div>
 
-				<h3 class="mt-48px mb-16px font-semibold">Data Rentention</h3>
-				<div formGroupName="retention_policy">
-					<convoy-input-field>
-						<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
-						<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
-						<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
-					</convoy-input-field>
+					<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
+					<div class="grid grid-cols-2 gap-24px">
+						<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
+						<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
+					</div>
+
+					<h3 class="mt-48px mb-16px font-semibold">Data Rentention</h3>
+					<div formGroupName="retention_policy">
+						<convoy-input-field>
+							<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
+							<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
+							<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
+						</convoy-input-field>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -172,6 +192,13 @@
 	</div>
 </div>
 
-<convoy-token-modal *ngIf="showApiKey" title="Project Created Successfully" description="Your API Key has also been created. Please copy this key and save it somewhere safe." [token]="apiKey" notificationText="API key has been copied to your clipboard." (closeModal)="onAction.emit({ action: 'createProject', data: projectDetails })"></convoy-token-modal>
+<convoy-token-modal
+	*ngIf="showApiKey"
+	title="Project Created Successfully"
+	description="Your API Key has also been created. Please copy this key and save it somewhere safe."
+	[token]="apiKey"
+	notificationText="API key has been copied to your clipboard."
+	(closeModal)="onAction.emit({ action: 'createProject', data: projectDetails })"
+></convoy-token-modal>
 
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="router.navigateByUrl('/')" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
