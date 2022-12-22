@@ -87,6 +87,7 @@
 
 		<div class="border border-grey-20 p-16px mt-20px">
 			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig; onToggleMoreConfig()" label="Add more configurations" className="w-full justify-between !mb-0"></convoy-toggle>
+
 			<div class="transition-all ease-in-out duration-300" [class]="enableMoreConfig ? 'h-full' : 'max-h-0 overflow-hidden'">
 				<h2 class="font-semibold flex items-center mb-20px mt-30px">
 					Retry Logic
