@@ -37,13 +37,12 @@ func SeedEndpoint(store datastore.Store, g *datastore.Project, uid, title, owner
 	}
 
 	endpoint := &datastore.Endpoint{
-		UID:        uid,
-		Title:      title,
-		ProjectID:  g.UID,
-		OwnerID:    ownerID,
-		IsDisabled: disabled,
-		Status:     status,
-		AppID:      uid,
+		UID:       uid,
+		Title:     title,
+		ProjectID: g.UID,
+		OwnerID:   ownerID,
+		Status:    status,
+		AppID:     uid,
 	}
 
 	// Seed Data.
@@ -60,10 +59,9 @@ func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count in
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Endpoint{
-			UID:        uid,
-			Title:      fmt.Sprintf("Test-%s", uid),
-			ProjectID:  g.UID,
-			IsDisabled: false,
+			UID:       uid,
+			Title:     fmt.Sprintf("Test-%s", uid),
+			ProjectID: g.UID,
 		}
 
 		// Seed Data.

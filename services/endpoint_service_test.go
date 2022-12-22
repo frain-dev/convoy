@@ -320,7 +320,6 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Title:           "endpoint",
 				SupportEmail:    "endpoint@test.com",
-				IsDisabled:      false,
 				SlackWebhookURL: "https://google.com",
 				ProjectID:       project.UID,
 				Secrets: []datastore.Secret{
