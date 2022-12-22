@@ -26,8 +26,14 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	tabs: ['body', 'header'] = ['body', 'header'];
 	activeTab: 'body' | 'header' = 'body';
 	subscriptionFilterForm: FormGroup = this.formBuilder.group({
-		request: [null],
-		schema: [null]
+		filter: this.formBuilder.group({
+			header: [null],
+			body: [null]
+		}),
+		schema: this.formBuilder.group({
+			header: [null],
+			body: [null]
+		})
 	});
 	isFilterTestPassed = false;
 	payload: any;
@@ -44,19 +50,18 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		this.activeTab = tab;
 	}
 
-	async testFilter(filterType: 'body' | 'header') {
+	async testFilter() {
 		this.isFilterTestPassed = false;
-		if (filterType === 'body') {
-			this.subscriptionFilterForm.patchValue({
-				request: this.convertStringToJson(this.requestEditor.getValue()),
-				schema: this.convertStringToJson(this.schemaEditor.getValue())
-			});
-		} else {
-			this.subscriptionFilterForm.patchValue({
-				request: this.convertStringToJson(this.requestHeaderEditor.getValue()),
-				schema: this.convertStringToJson(this.headerSchemaEditor.getValue())
-			});
-		}
+		this.subscriptionFilterForm.patchValue({
+			filter: {
+				header: this.requestHeaderEditor?.getValue() ? this.convertStringToJson(this.requestHeaderEditor.getValue()) : null,
+				body: this.requestEditor?.getValue() ? this.convertStringToJson(this.requestEditor.getValue()) : null
+			},
+			schema: {
+				header: this.headerSchemaEditor?.getValue() ? this.convertStringToJson(this.headerSchemaEditor.getValue()) : null,
+				body: this.schemaEditor?.getValue() ? this.convertStringToJson(this.schemaEditor.getValue()) : null
+			}
+		});
 
 		try {
 			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value, this.token);
@@ -69,12 +74,12 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		}
 	}
 
-	async setSubscriptionFilter(filterType: 'body' | 'header') {
-		await this.testFilter(filterType);
+	async setSubscriptionFilter() {
+		await this.testFilter();
 
 		if (this.isFilterTestPassed) {
-			if (filterType === 'body') localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
-			if (filterType === 'header') localStorage.setItem('EVENT_HEADERS', this.requestHeaderEditor.getValue());
+			if (this.requestEditor?.getValue()) localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
+			if (this.requestHeaderEditor?.getValue()) localStorage.setItem('EVENT_HEADERS', this.requestHeaderEditor.getValue());
 			const filter = {
 				bodySchema: this.schemaEditor?.getValue() ? this.convertStringToJson(this.schemaEditor?.getValue()) : null,
 				headerSchema: this.headerSchemaEditor?.getValue() ? this.convertStringToJson(this.headerSchemaEditor?.getValue()) : null
