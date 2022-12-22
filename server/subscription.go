@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -243,16 +242,7 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 
 	subService := createSubscriptionService(a)
 
-	request := test.Request.Body
-	filter := test.Schema.Body
-	if test.Request.Body == nil {
-		request = test.Request.Headers
-		filter = test.Schema.Headers
-	}
-
-	fmt.Printf("req: %+v, schema: %+v\n", test.Request, test.Schema)
-
-	isValid, err := subService.TestSubscriptionFilter(r.Context(), request, filter)
+	isValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request, test.Schema)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

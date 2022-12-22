@@ -98,8 +98,8 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 		subscription.FilterConfig.EventTypes = []string{"*"}
 	}
 
-	if len(subscription.FilterConfig.Filter) == 0 {
-		subscription.FilterConfig.Filter = map[string]interface{}{}
+	if len(subscription.FilterConfig.Filter.Body) == 0 && len(subscription.FilterConfig.Filter.Headers) == 0 {
+		subscription.FilterConfig.Filter = datastore.FilterSchema{}
 	} else {
 		// validate that the filter is a json string
 		_, err := json.Marshal(subscription.FilterConfig.Filter)
@@ -200,7 +200,7 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 			subscription.FilterConfig.EventTypes = update.FilterConfig.EventTypes
 		}
 
-		if len(update.FilterConfig.Filter) > 0 {
+		if len(update.FilterConfig.Filter.Body) > 0 || len(update.FilterConfig.Filter.Headers) > 0 {
 			// validate that the filter is a json string
 			_, err := json.Marshal(update.FilterConfig.Filter)
 			if err != nil {

@@ -9,6 +9,12 @@ definitions:
       type:
         type: string
     type: object
+  config.SignatureHeaderProvider:
+    enum:
+    - X-Convoy-Signature
+    type: string
+    x-enum-varnames:
+    - DefaultSignatureHeader
   datastore.AlertConfiguration:
     properties:
       count:
@@ -87,12 +93,30 @@ definitions:
       project_id:
         type: string
       status:
-        type: string
+        $ref: '#/definitions/datastore.DeviceStatus'
       uid:
         type: string
       updated_at:
         type: string
     type: object
+  datastore.DeviceStatus:
+    enum:
+    - offline
+    - online
+    - disabled
+    type: string
+    x-enum-varnames:
+    - DeviceStatusOffline
+    - DeviceStatusOnline
+    - DeviceStatusDisabled
+  datastore.EncodingType:
+    enum:
+    - base64
+    - hex
+    type: string
+    x-enum-varnames:
+    - Base64Encoding
+    - HexEncoding
   datastore.Endpoint:
     properties:
       advanced_signatures:
@@ -141,8 +165,14 @@ definitions:
       api_key:
         $ref: '#/definitions/datastore.ApiKey'
       type:
-        type: string
+        $ref: '#/definitions/datastore.EndpointAuthenticationType'
     type: object
+  datastore.EndpointAuthenticationType:
+    enum:
+    - api_key
+    type: string
+    x-enum-varnames:
+    - APIKeyAuthentication
   datastore.Event:
     properties:
       app_id:
@@ -175,6 +205,8 @@ definitions:
         description: TODO(all) remove this field
         type: integer
       project_id:
+        type: string
+      raw:
         type: string
       source_id:
         type: string
@@ -212,7 +244,7 @@ definitions:
       project_id:
         type: string
       status:
-        type: string
+        $ref: '#/definitions/datastore.EventDeliveryStatus'
       subscription_id:
         type: string
       uid:
@@ -220,6 +252,22 @@ definitions:
       updated_at:
         type: string
     type: object
+  datastore.EventDeliveryStatus:
+    enum:
+    - Scheduled
+    - Processing
+    - Discarded
+    - Failure
+    - Success
+    - Retry
+    type: string
+    x-enum-varnames:
+    - ScheduledEventStatus
+    - ProcessingEventStatus
+    - DiscardedEventStatus
+    - FailureEventStatus
+    - SuccessEventStatus
+    - RetryEventStatus
   datastore.FilterConfiguration:
     properties:
       event_types:
@@ -227,13 +275,21 @@ definitions:
           type: string
         type: array
       filter:
+        $ref: '#/definitions/datastore.FilterSchema'
+    type: object
+  datastore.FilterSchema:
+    properties:
+      body:
+        additionalProperties: true
+        type: object
+      headers:
         additionalProperties: true
         type: object
     type: object
   datastore.HMac:
     properties:
       encoding:
-        type: string
+        $ref: '#/definitions/datastore.EncodingType'
       hash:
         type: string
       header:
@@ -261,6 +317,8 @@ definitions:
           NumTrials: number of times we have tried to deliver this Event to
           an application
         type: integer
+      raw:
+        type: string
       retry_limit:
         type: integer
       strategy:
@@ -322,7 +380,7 @@ definitions:
       statistics:
         $ref: '#/definitions/datastore.ProjectStatistics'
       type:
-        type: string
+        $ref: '#/definitions/datastore.ProjectType'
       uid:
         type: string
       updated_at:
@@ -359,6 +417,14 @@ definitions:
       total_endpoints:
         type: integer
     type: object
+  datastore.ProjectType:
+    enum:
+    - outgoing
+    - incoming
+    type: string
+    x-enum-varnames:
+    - OutgoingProject
+    - IncomingProject
   datastore.ProviderConfig:
     properties:
       twitter:
@@ -403,7 +469,7 @@ definitions:
   datastore.SignatureConfiguration:
     properties:
       header:
-        type: string
+        $ref: '#/definitions/config.SignatureHeaderProvider'
       versions:
         items:
           $ref: '#/definitions/datastore.SignatureVersion'
@@ -414,7 +480,7 @@ definitions:
       created_at:
         type: string
       encoding:
-        type: string
+        $ref: '#/definitions/datastore.EncodingType'
       hash:
         type: string
       uid:
@@ -439,11 +505,11 @@ definitions:
       project_id:
         type: string
       provider:
-        type: string
+        $ref: '#/definitions/datastore.SourceProvider'
       provider_config:
         $ref: '#/definitions/datastore.ProviderConfig'
       type:
-        type: string
+        $ref: '#/definitions/datastore.SourceType'
       uid:
         type: string
       updated_at:
@@ -451,6 +517,28 @@ definitions:
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
     type: object
+  datastore.SourceProvider:
+    enum:
+    - github
+    - twitter
+    - shopify
+    type: string
+    x-enum-varnames:
+    - GithubSourceProvider
+    - TwitterSourceProvider
+    - ShopifySourceProvider
+  datastore.SourceType:
+    enum:
+    - http
+    - rest_api
+    - pub_sub
+    - db_change_stream
+    type: string
+    x-enum-varnames:
+    - HTTPSource
+    - RestApiSource
+    - PubSubSource
+    - DBChangeStream
   datastore.StrategyConfiguration:
     properties:
       duration:
@@ -463,7 +551,8 @@ definitions:
   datastore.Subscription:
     properties:
       alert_config:
-        $ref: '#/definitions/datastore.AlertConfiguration'
+        allOf:
+        - $ref: '#/definitions/datastore.AlertConfiguration'
         description: subscription config
       created_at:
         type: string
@@ -486,18 +575,59 @@ definitions:
       source_metadata:
         $ref: '#/definitions/datastore.Source'
       status:
-        type: string
+        $ref: '#/definitions/datastore.SubscriptionStatus'
       type:
-        type: string
+        $ref: '#/definitions/datastore.SubscriptionType'
       uid:
         type: string
       updated_at:
         type: string
     type: object
+  datastore.SubscriptionStatus:
+    enum:
+    - active
+    - inactive
+    - pending
+    type: string
+    x-enum-varnames:
+    - ActiveSubscriptionStatus
+    - InactiveSubscriptionStatus
+    - PendingSubscriptionStatus
+  datastore.SubscriptionType:
+    enum:
+    - cli
+    - api
+    type: string
+    x-enum-varnames:
+    - SubscriptionTypeCLI
+    - SubscriptionTypeAPI
   datastore.TwitterProviderConfig:
     properties:
       crc_verified_at:
         type: integer
+    type: object
+  datastore.User:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      first_name:
+        type: string
+      last_name:
+        type: string
+      reset_password_expires_at:
+        type: string
+      role:
+        $ref: '#/definitions/auth.Role'
+      uid:
+        type: string
+      updated_at:
+        type: string
     type: object
   datastore.VerifierConfig:
     properties:
@@ -508,8 +638,20 @@ definitions:
       hmac:
         $ref: '#/definitions/datastore.HMac'
       type:
-        type: string
+        $ref: '#/definitions/datastore.VerifierType'
     type: object
+  datastore.VerifierType:
+    enum:
+    - noop
+    - hmac
+    - basic_auth
+    - api_key
+    type: string
+    x-enum-varnames:
+    - NoopVerifier
+    - HMacVerifier
+    - BasicAuthVerifier
+    - APIKeyVerifier
   httpheader.HTTPHeader:
     additionalProperties:
       items:
@@ -566,6 +708,24 @@ definitions:
       endpoint_id:
         type: string
       event_type:
+        type: string
+    type: object
+  models.FanoutEvent:
+    properties:
+      custom_headers:
+        additionalProperties:
+          type: string
+        type: object
+      data:
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
+        items:
+          type: integer
+        type: array
+      event_type:
+        type: string
+      owner_id:
         type: string
     type: object
   models.PortalAPIKeyResponse:
@@ -634,6 +794,13 @@ definitions:
       rate_limit_duration:
         type: string
       type:
+        $ref: '#/definitions/datastore.ProjectType'
+    type: object
+  models.ResetPassword:
+    properties:
+      password:
+        type: string
+      password_confirmation:
         type: string
     type: object
   models.RetryConfiguration:
@@ -654,9 +821,9 @@ definitions:
       name:
         type: string
       provider:
-        type: string
+        $ref: '#/definitions/datastore.SourceProvider'
       type:
-        type: string
+        $ref: '#/definitions/datastore.SourceType'
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
     type: object
@@ -675,11 +842,11 @@ definitions:
       project_id:
         type: string
       provider:
-        type: string
+        $ref: '#/definitions/datastore.SourceProvider'
       provider_config:
         $ref: '#/definitions/datastore.ProviderConfig'
       type:
-        type: string
+        $ref: '#/definitions/datastore.SourceType'
       uid:
         type: string
       updated_at:
@@ -710,6 +877,15 @@ definitions:
         $ref: '#/definitions/models.RetryConfiguration'
       source_id:
         type: string
+    type: object
+  models.TestFilter:
+    properties:
+      request:
+        additionalProperties: true
+        type: object
+      schema:
+        additionalProperties: true
+        type: object
     type: object
   server.Stub:
     type: object
@@ -1838,7 +2014,7 @@ paths:
         type: string
       - description: event delivery ids
         in: body
-        name: ids
+        name: deliveryIds
         required: true
         schema:
           allOf:
@@ -1991,7 +2167,7 @@ paths:
         type: string
       - description: event delivery ids
         in: body
-        name: ids
+        name: deliveryIds
         required: true
         schema:
           allOf:
@@ -2336,6 +2512,151 @@ paths:
       summary: Replay endpoint event
       tags:
       - Events
+  /api/v1/projects/{projectID}/events/batchreplay:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint replays multiple events
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: start date
+        in: query
+        name: startDate
+        type: string
+      - description: end date
+        in: query
+        name: endDate
+        type: string
+      - description: Source id
+        in: query
+        name: source
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/datastore.Event'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/server.Stub'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Replays multiple endpoint events
+      tags:
+      - Events
+  /api/v1/projects/{projectID}/events/countbatchreplayevents:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint counts events that will be affected by a batch replay
+        operation
+      parameters:
+      - description: Project id
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: start date
+        in: query
+        name: startDate
+        type: string
+      - description: end date
+        in: query
+        name: endDate
+        type: string
+      - description: Source id
+        in: query
+        name: source
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/server.Stub'
+                  - properties:
+                      num:
+                        type: integer
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Counts affected events
+      tags:
+      - Events
   /api/v1/projects/{projectID}/events/fanout:
     post:
       consumes:
@@ -2353,7 +2674,7 @@ paths:
         name: event
         required: true
         schema:
-          $ref: '#/definitions/models.Event'
+          $ref: '#/definitions/models.FanoutEvent'
       produces:
       - application/json
       responses:
@@ -3440,6 +3761,12 @@ paths:
         name: projectID
         required: true
         type: string
+      - description: Filter Details
+        in: body
+        name: filter
+        required: true
+        schema:
+          $ref: '#/definitions/models.TestFilter'
       produces:
       - application/json
       responses:
@@ -3450,7 +3777,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  type: boolean
               type: object
         "400":
           description: Bad Request
@@ -3682,6 +4009,118 @@ paths:
       summary: Get portal link keys
       tags:
       - PortalLinks
+  /ui/users/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint verifies a user's email
+      parameters:
+      - description: Email verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Verify Email
+      tags:
+      - User
+  /ui/users/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint resets a users password
+      parameters:
+      - description: reset token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: Reset Password Details
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/models.ResetPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/server.Stub'
+              type: object
+      summary: Reset user password
+      tags:
+      - User
 schemes:
 - https
 securityDefinitions:

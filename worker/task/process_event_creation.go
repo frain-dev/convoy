@@ -250,9 +250,16 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e datastore.Event, subRe
 	}
 
 	for _, s := range subscriptions {
-		isMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter)
+		isMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body)
 		if err != nil {
 			return nil, err
+		}
+
+		if !isMatched {
+			isMatched, err = subRepo.TestSubscriptionFilter(ctx, e.GetRawHeaders(), s.FilterConfig.Filter.Headers)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if isMatched {
