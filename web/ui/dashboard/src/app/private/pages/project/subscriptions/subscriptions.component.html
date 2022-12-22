@@ -53,7 +53,6 @@
 						<h4 class="pl-16px font-medium text-14">
 							{{ subscription.name }}
 						</h4>
-						<convoy-tag [type]="subscription.status | statuscolor" className="ml-4px">{{ subscription.status }}</convoy-tag>
 					</div>
 					<div class="flex items-center">
 						<a class="pr-4 text-primary-100 text-12 flex items-center" routerLink="./" [queryParams]="{ id: subscription.uid }">
