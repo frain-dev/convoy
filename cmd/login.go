@@ -82,7 +82,7 @@ func (c *Config) WriteConfig() error {
 		return err
 	}
 
-	if err := os.WriteFile(c.path, []byte(d), 0644); err != nil {
+	if err := os.WriteFile(c.path, []byte(d), 0o644); err != nil {
 		return err
 	}
 
@@ -159,7 +159,7 @@ func addLoginCommand() *cobra.Command {
 			}
 
 			log.Info("Login Success!")
-			log.Infof("Project: %s", response.Group.Name)
+			log.Infof("Project: %s", response.Project.Name)
 			log.Infof("Endpoint: %s", response.Endpoint.Title)
 			return nil
 		},
@@ -172,7 +172,7 @@ func addLoginCommand() *cobra.Command {
 }
 
 func WriteConfig(c *Config, response *socket.LoginResponse) error {
-	name := fmt.Sprintf("%s (%s)", response.Endpoint.Title, response.Group.Name)
+	name := fmt.Sprintf("%s (%s)", response.Endpoint.Title, response.Project.Name)
 	c.ActiveEndpoint = name
 	c.ActiveDeviceID = response.Device.UID
 
@@ -207,7 +207,7 @@ func WriteConfig(c *Config, response *socket.LoginResponse) error {
 
 	} else {
 		// Make sure the directory holding our config exists
-		if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(c.path), 0o755); err != nil {
 			return err
 		}
 		c.Endpoints = []Endpoint{

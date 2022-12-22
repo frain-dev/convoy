@@ -26,7 +26,7 @@ func Test_CreateDevice(t *testing.T) {
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
-		GroupID:    uuid.NewString(),
+		ProjectID:  uuid.NewString(),
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
@@ -37,12 +37,12 @@ func Test_CreateDevice(t *testing.T) {
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.GroupID)
+	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
 	require.Equal(t, device.UID, d.UID)
 	require.Equal(t, device.EndpointID, d.EndpointID)
-	require.Equal(t, device.GroupID, d.GroupID)
+	require.Equal(t, device.ProjectID, d.ProjectID)
 }
 
 func Test_UpdateDevice(t *testing.T) {
@@ -54,7 +54,7 @@ func Test_UpdateDevice(t *testing.T) {
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
-		GroupID:    uuid.NewString(),
+		ProjectID:  uuid.NewString(),
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
@@ -66,15 +66,15 @@ func Test_UpdateDevice(t *testing.T) {
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
 	device.Status = datastore.DeviceStatusOffline
-	err := deviceRepo.UpdateDevice(context.Background(), device, device.EndpointID, device.GroupID)
+	err := deviceRepo.UpdateDevice(context.Background(), device, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
-	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.GroupID)
+	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
 	require.Equal(t, device.UID, d.UID)
 	require.Equal(t, device.EndpointID, d.EndpointID)
-	require.Equal(t, device.GroupID, d.GroupID)
+	require.Equal(t, device.ProjectID, d.ProjectID)
 	require.Equal(t, datastore.DeviceStatusOffline, d.Status)
 }
 
@@ -87,7 +87,7 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
-		GroupID:    uuid.NewString(),
+		ProjectID:  uuid.NewString(),
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
@@ -98,15 +98,15 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	err := deviceRepo.UpdateDeviceLastSeen(context.Background(), device, device.EndpointID, device.GroupID, datastore.DeviceStatusOffline)
+	err := deviceRepo.UpdateDeviceLastSeen(context.Background(), device, device.EndpointID, device.ProjectID, datastore.DeviceStatusOffline)
 	require.NoError(t, err)
 
-	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.GroupID)
+	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
 	require.Equal(t, device.UID, d.UID)
 	require.Equal(t, device.EndpointID, d.EndpointID)
-	require.Equal(t, device.GroupID, d.GroupID)
+	require.Equal(t, device.ProjectID, d.ProjectID)
 	require.Equal(t, device.LastSeenAt, d.LastSeenAt)
 	require.Equal(t, datastore.DeviceStatusOffline, d.Status)
 }
@@ -120,7 +120,7 @@ func Test_DeleteDevice(t *testing.T) {
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
-		GroupID:    uuid.NewString(),
+		ProjectID:  uuid.NewString(),
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
@@ -131,10 +131,10 @@ func Test_DeleteDevice(t *testing.T) {
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	err := deviceRepo.DeleteDevice(context.Background(), device.UID, device.EndpointID, device.GroupID)
+	err := deviceRepo.DeleteDevice(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
-	_, err = deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.GroupID)
+	_, err = deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.Equal(t, datastore.ErrDeviceNotFound, err)
 }
 
@@ -147,7 +147,7 @@ func Test_FetchDeviceByID(t *testing.T) {
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
-		GroupID:    uuid.NewString(),
+		ProjectID:  uuid.NewString(),
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
@@ -158,7 +158,7 @@ func Test_FetchDeviceByID(t *testing.T) {
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 
-	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.GroupID)
+	d, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 	require.Equal(t, device, d)
 }
@@ -169,19 +169,19 @@ func Test_LoadDevicesPaged(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		pageData datastore.Pageable
-		count    int
-		groupID  string
-		filter   *datastore.ApiKeyFilter
-		expected Expected
+		name      string
+		pageData  datastore.Pageable
+		count     int
+		projectID string
+		filter    *datastore.ApiKeyFilter
+		expected  Expected
 	}{
 		{
-			name:     "Load Devices Paged - 10 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
-			count:    10,
-			groupID:  uuid.NewString(),
-			filter:   &datastore.ApiKeyFilter{EndpointID: ""},
+			name:      "Load Devices Paged - 10 records",
+			pageData:  datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
+			count:     10,
+			projectID: uuid.NewString(),
+			filter:    &datastore.ApiKeyFilter{EndpointID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     10,
@@ -195,11 +195,11 @@ func Test_LoadDevicesPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Devices Paged - 12 records",
-			pageData: datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
-			count:    12,
-			groupID:  uuid.NewString(),
-			filter:   &datastore.ApiKeyFilter{EndpointID: ""},
+			name:      "Load Devices Paged - 12 records",
+			pageData:  datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
+			count:     12,
+			projectID: uuid.NewString(),
+			filter:    &datastore.ApiKeyFilter{EndpointID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     12,
@@ -213,11 +213,11 @@ func Test_LoadDevicesPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Devices Paged - 5 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
-			count:    5,
-			groupID:  uuid.NewString(),
-			filter:   &datastore.ApiKeyFilter{EndpointID: ""},
+			name:      "Load Devices Paged - 5 records",
+			pageData:  datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
+			count:     5,
+			projectID: uuid.NewString(),
+			filter:    &datastore.ApiKeyFilter{EndpointID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     5,
@@ -231,11 +231,11 @@ func Test_LoadDevicesPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Devices Paged - 1 record",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
-			count:    1,
-			groupID:  uuid.NewString(),
-			filter:   &datastore.ApiKeyFilter{EndpointID: uuid.NewString()},
+			name:      "Load Devices Paged - 1 record",
+			pageData:  datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
+			count:     1,
+			projectID: uuid.NewString(),
+			filter:    &datastore.ApiKeyFilter{EndpointID: uuid.NewString()},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     1,
@@ -260,7 +260,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			for i := 0; i < tc.count; i++ {
 				device := &datastore.Device{
 					UID:        uuid.NewString(),
-					GroupID:    tc.groupID,
+					ProjectID:  tc.projectID,
 					EndpointID: uuid.NewString(),
 					HostName:   "",
 					Status:     datastore.DeviceStatusOnline,
@@ -273,7 +273,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 				require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
 			}
 
-			_, pageable, err := deviceRepo.LoadDevicesPaged(context.Background(), tc.groupID, tc.filter, tc.pageData)
+			_, pageable, err := deviceRepo.LoadDevicesPaged(context.Background(), tc.projectID, tc.filter, tc.pageData)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expected.paginationData.Total, pageable.Total)

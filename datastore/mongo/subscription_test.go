@@ -18,7 +18,7 @@ func createSubscription() *datastore.Subscription {
 		UID:        uuid.NewString(),
 		Name:       "Subscription",
 		Type:       datastore.SubscriptionTypeAPI,
-		GroupID:    "group-id-1",
+		ProjectID:  "project-id-1",
 		SourceID:   "source-id-1",
 		EndpointID: "endpoint-id-1",
 		AlertConfig: &datastore.AlertConfiguration{
@@ -49,7 +49,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 			UID:        uuid.NewString(),
 			Name:       fmt.Sprintf("Subscription %d", i),
 			Type:       datastore.SubscriptionTypeAPI,
-			GroupID:    "group-id-1",
+			ProjectID:  "project-id-1",
 			SourceID:   uuid.NewString(),
 			EndpointID: uuid.NewString(),
 		}
@@ -58,7 +58,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 			subscription.EndpointID = "app-id-1"
 		}
 
-		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
+		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.ProjectID, subscription))
 	}
 
 	type Expected struct {
@@ -135,7 +135,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "group-id-1", &datastore.FilterBy{EndpointIDs: tc.EndpointIDs}, tc.pageData)
+			_, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), "project-id-1", &datastore.FilterBy{EndpointIDs: tc.EndpointIDs}, tc.pageData)
 
 			require.NoError(t, err)
 
@@ -158,14 +158,14 @@ func Test_DeleteSubscription(t *testing.T) {
 	subRepo := NewSubscriptionRepo(store)
 	newSub := createSubscription()
 
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.ProjectID, newSub))
 
 	// delete the sub
-	err := subRepo.DeleteSubscription(context.Background(), newSub.GroupID, newSub)
+	err := subRepo.DeleteSubscription(context.Background(), newSub.ProjectID, newSub)
 	require.NoError(t, err)
 
 	// Fetch sub again
-	_, err = subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	_, err = subRepo.FindSubscriptionByID(context.Background(), newSub.ProjectID, newSub.UID)
 	require.Error(t, err)
 	require.EqualError(t, err, datastore.ErrSubscriptionNotFound.Error())
 }
@@ -179,9 +179,9 @@ func Test_CreateSubscription(t *testing.T) {
 	subRepo := NewSubscriptionRepo(store)
 	newSub := createSubscription()
 
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.ProjectID, newSub))
 
-	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.ProjectID, newSub.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, sub.UID, newSub.UID)
@@ -199,14 +199,14 @@ func Test_FindSubscriptionByID(t *testing.T) {
 	newSub := createSubscription()
 
 	// Fetch sub again
-	_, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	_, err := subRepo.FindSubscriptionByID(context.Background(), newSub.ProjectID, newSub.UID)
 	require.Error(t, err)
 	require.EqualError(t, err, datastore.ErrSubscriptionNotFound.Error())
 
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.GroupID, newSub))
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub.ProjectID, newSub))
 
 	// Fetch sub again
-	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.GroupID, newSub.UID)
+	sub, err := subRepo.FindSubscriptionByID(context.Background(), newSub.ProjectID, newSub.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, sub.UID, newSub.UID)
@@ -228,20 +228,20 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 			Name:       fmt.Sprintf("Subscription %d", i),
 			Type:       datastore.SubscriptionTypeAPI,
 			EndpointID: "app-id-1",
-			GroupID:    "group-id-1",
+			ProjectID:  "project-id-1",
 			SourceID:   uuid.NewString(),
 		}
-		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
+		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.ProjectID, subscription))
 	}
 
 	// Fetch sub again
-	subs, err := subRepo.FindSubscriptionsByEndpointID(context.Background(), "group-id-1", "app-id-1")
+	subs, err := subRepo.FindSubscriptionsByEndpointID(context.Background(), "project-id-1", "app-id-1")
 	require.NoError(t, err)
 
 	for _, sub := range subs {
 		require.NotEmpty(t, sub.UID)
 		require.Equal(t, sub.EndpointID, "app-id-1")
-		require.Equal(t, sub.GroupID, "group-id-1")
+		require.Equal(t, sub.ProjectID, "project-id-1")
 	}
 }
 
@@ -253,22 +253,22 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	subRepo := NewSubscriptionRepo(store)
 
 	subscription := &datastore.Subscription{
-		UID:      uuid.NewString(),
-		Name:     "test_subscription",
-		Type:     datastore.SubscriptionTypeAPI,
-		SourceID: "source-id-1",
-		DeviceID: "device-id-1",
-		GroupID:  "group-id-1",
+		UID:       uuid.NewString(),
+		Name:      "test_subscription",
+		Type:      datastore.SubscriptionTypeAPI,
+		SourceID:  "source-id-1",
+		DeviceID:  "device-id-1",
+		ProjectID: "project-id-1",
 	}
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.GroupID, subscription))
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.ProjectID, subscription))
 
 	// Fetch sub again
-	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "group-id-1", "device-id-1")
+	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "project-id-1", "device-id-1")
 	require.NoError(t, err)
 
 	require.NotEmpty(t, sub.UID)
 	require.Equal(t, sub.DeviceID, "device-id-1")
-	require.Equal(t, sub.GroupID, "group-id-1")
+	require.Equal(t, sub.ProjectID, "project-id-1")
 	require.Equal(t, sub.SourceID, "source-id-1")
 }
 
@@ -497,7 +497,6 @@ func TestTestSubscriptionFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			matched, err := subRepo.TestSubscriptionFilter(context.Background(), tt.request, tt.schema)
 			if tt.wantErr {
 				require.ErrorIs(t, err, tt.Err)

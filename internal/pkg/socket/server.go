@@ -57,7 +57,7 @@ type CLIEvent struct {
 	EventType  string `json:"-"`
 	DeviceID   string `json:"-"`
 	EndpointID string `json:"-"`
-	GroupID    string `json:"-"`
+	ProjectID  string `json:"-"`
 }
 
 func NewHub() *Hub {
@@ -91,7 +91,7 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			if client.Device.GroupID != ev.GroupID {
+			if client.Device.ProjectID != ev.ProjectID {
 				continue
 			}
 
@@ -188,7 +188,7 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 			EventType:  ed.CLIMetadata.EventType,
 			EndpointID: ed.EndpointID,
 			DeviceID:   ed.DeviceID,
-			GroupID:    ed.GroupID,
+			ProjectID:  ed.ProjectID,
 		}
 	}
 }

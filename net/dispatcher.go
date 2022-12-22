@@ -39,9 +39,9 @@ func NewDispatcher(timeout time.Duration, httpProxy string) (*Dispatcher, error)
 	return d, nil
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, g *datastore.Group, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, project *datastore.Project, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader) (*Response, error) {
 	r := &Response{}
-	signatureHeader := g.Config.Signature.Header.String()
+	signatureHeader := project.Config.Signature.Header.String()
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
 		log.WithError(err).Error("Dispatcher invalid arguments")

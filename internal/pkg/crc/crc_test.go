@@ -35,8 +35,8 @@ func Test_TwitterCrc_HandleRequest(t *testing.T) {
 				return w, req
 			},
 			source: &datastore.Source{
-				UID:     "123",
-				GroupID: "abc",
+				UID:       "123",
+				ProjectID: "abc",
 				ProviderConfig: &datastore.ProviderConfig{
 					Twitter: &datastore.TwitterProviderConfig{},
 				},

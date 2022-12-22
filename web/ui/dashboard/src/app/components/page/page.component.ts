@@ -11,7 +11,7 @@ import { Component, Input, OnInit } from '@angular/core';
 export class PageComponent implements OnInit {
 	@Input('size') size: 'sm' | 'md' | 'lg' = 'lg';
 	@Input('className') class!: string;
-	types = { sm: 'max-w-[848px] bg-white-100 border border-grey-10 rounded-8px mt-10', lg: 'max-w-[1374px] px-8 pb-8 pt-16', md: 'max-w-[1161px] bg-white-100 border border-grey-10 rounded-8px mt-10' };
+	types = { sm: 'max-w-[848px] bg-white-100 rounded-8px mt-10', lg: 'max-w-[1374px] px-8 pb-8 pt-16', md: 'max-w-[1161px] bg-white-100 rounded-8px mt-10' };
 
 	constructor() {}
 

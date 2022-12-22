@@ -18,16 +18,17 @@ export class PrivateComponent implements OnInit {
 	showAddOrganisationModal = false;
 	showAddAnalytics = false;
 	showVerifyEmailModal = false;
+	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
 	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
 	userOrganization?: ORGANIZATION_DATA;
+	convoyVersion: string = '';
 
 	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
 	async ngOnInit() {
-		this.getConfiguration();
-		await this.getOrganizations();
+		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
 	}
 
 	async logout() {
@@ -42,15 +43,11 @@ export class PrivateComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-	get isEmailVerified(): boolean {
-		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		return authDetails ? JSON.parse(authDetails)?.email_verified : false;
-	}
-
 	async getConfiguration() {
 		try {
 			const response = await this.privateService.getConfiguration();
-			if (response.data.length === 0 && !this.router.url.includes('app-portal')) this.showAddAnalytics = true;
+			this.convoyVersion = response.data[0].api_version;
+			if (response.data.length === 0 && !this.router.url.includes('portal')) this.showAddAnalytics = true;
 		} catch {}
 	}
 
@@ -72,6 +69,16 @@ export class PrivateComponent implements OnInit {
 			this.projects = projectsResponse.data;
 			if (this.projects?.length === 0) return this.router.navigateByUrl('/get-started');
 			return;
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async getUserDetails() {
+		try {
+			const response = await this.privateService.getUserDetails({ userId: this.authDetails()?.uid });
+			const userDetails = response.data;
+			this.isEmailVerified = userDetails?.email_verified;
 		} catch (error) {
 			return error;
 		}

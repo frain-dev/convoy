@@ -20,12 +20,12 @@ import (
 )
 
 type SecurityService struct {
-	groupRepo  datastore.GroupRepository
-	apiKeyRepo datastore.APIKeyRepository
+	projectRepo datastore.ProjectRepository
+	apiKeyRepo  datastore.APIKeyRepository
 }
 
-func NewSecurityService(groupRepo datastore.GroupRepository, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
-	return &SecurityService{groupRepo: groupRepo, apiKeyRepo: apiKeyRepo}
+func NewSecurityService(projectRepo datastore.ProjectRepository, apiKeyRepo datastore.APIKeyRepository) *SecurityService {
+	return &SecurityService{projectRepo: projectRepo, apiKeyRepo: apiKeyRepo}
 }
 
 func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
@@ -34,8 +34,8 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	}
 
 	role := &auth.Role{
-		Type:  newApiKey.Role.Type,
-		Group: newApiKey.Role.Group,
+		Type:    newApiKey.Role.Type,
+		Project: newApiKey.Role.Project,
 	}
 
 	err := role.Validate("api key")
@@ -44,20 +44,20 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	group, err := ss.groupRepo.FetchGroupByID(ctx, newApiKey.Role.Group)
+	project, err := ss.projectRepo.FetchProjectByID(ctx, newApiKey.Role.Project)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fetch group by id")
-		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch group by id"))
+		log.FromContext(ctx).WithError(err).Error("failed to fetch project by id")
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch project by id"))
 	}
 
-	// does the group belong to the member's organisation?
-	if group.OrganisationID != member.OrganisationID {
-		return nil, "", util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
+	// does the project belong to the member's organisation?
+	if project.OrganisationID != member.OrganisationID {
+		return nil, "", util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access project"))
 	}
 
-	// does the organisation member have access to this group they're trying to create an api key for?
-	if !member.Role.Type.Is(auth.RoleSuperUser) && !member.Role.HasGroup(group.UID) {
-		return nil, "", util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access group"))
+	// does the organisation member have access to this project they're trying to create an api key for?
+	if !member.Role.Type.Is(auth.RoleSuperUser) && !member.Role.HasProject(project.UID) {
+		return nil, "", util.NewServiceError(http.StatusUnauthorized, errors.New("unauthorized to access project"))
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -162,13 +162,13 @@ func (ss *SecurityService) RevokePersonalAPIKey(ctx context.Context, uid string,
 }
 
 func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.CreateEndpointApiKey) (*datastore.APIKey, string, error) {
-	if d.Endpoint.GroupID != d.Group.UID {
-		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("endpoint does not belong to group"))
+	if d.Endpoint.ProjectID != d.Project.UID {
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("endpoint does not belong to project"))
 	}
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    d.Group.UID,
+		Project:  d.Project.UID,
 		Endpoint: d.Endpoint.UID,
 	}
 
@@ -249,9 +249,9 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	_, err = ss.groupRepo.FetchGroupByID(ctx, role.Group)
+	_, err = ss.projectRepo.FetchProjectByID(ctx, role.Project)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid group"))
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid project"))
 	}
 
 	apiKey, err := ss.apiKeyRepo.FindAPIKeyByID(ctx, uid)

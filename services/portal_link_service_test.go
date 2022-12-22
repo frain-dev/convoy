@@ -26,7 +26,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		newPortalLink *models.PortalLink
-		group         *datastore.Group
+		project       *datastore.Project
 	}
 
 	tests := []struct {
@@ -46,10 +46,10 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
-				GroupID:   "12345",
+				ProjectID: "12345",
 				Endpoints: []string{"123", "1234"},
 			},
 			dbFn: func(pl *PortalLinkService) {
@@ -58,13 +58,13 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:     "123",
-					GroupID: "12345",
+					UID:       "123",
+					ProjectID: "12345",
 				}, nil)
 
 				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:     "1234",
-					GroupID: "12345",
+					UID:       "1234",
+					ProjectID: "12345",
 				}, nil)
 			},
 		},
@@ -77,7 +77,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{},
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -92,7 +92,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"123"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -100,8 +100,8 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:     "123",
-					GroupID: "12345",
+					UID:       "123",
+					ProjectID: "12345",
 				}, nil)
 			},
 			wantErr:     true,
@@ -121,7 +121,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			portalLink, err := pl.CreatePortalLink(tc.args.ctx, tc.args.newPortalLink, tc.args.group)
+			portalLink, err := pl.CreatePortalLink(tc.args.ctx, tc.args.newPortalLink, tc.args.project)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -132,7 +132,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 			require.Nil(t, err)
 			require.NotEmpty(t, portalLink.UID)
 
-			require.Equal(t, portalLink.GroupID, tc.wantPortalLink.GroupID)
+			require.Equal(t, portalLink.ProjectID, tc.wantPortalLink.ProjectID)
 			require.Equal(t, portalLink.Endpoints, tc.wantPortalLink.Endpoints)
 		})
 	}
@@ -145,7 +145,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 		ctx        context.Context
 		portalLink *datastore.PortalLink
 		update     *models.PortalLink
-		group      *datastore.Group
+		project    *datastore.Project
 	}
 
 	tests := []struct {
@@ -169,7 +169,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
 				UID:       "12345",
@@ -182,13 +182,13 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:     "123",
-					GroupID: "12345",
+					UID:       "123",
+					ProjectID: "12345",
 				}, nil)
 
 				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:     "1234",
-					GroupID: "12345",
+					UID:       "1234",
+					ProjectID: "12345",
 				}, nil)
 			},
 		},
@@ -205,7 +205,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 					Name:      "test_portal_link",
 					Endpoints: []string{"1234"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -213,8 +213,8 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:     "1234",
-					GroupID: "12345",
+					UID:       "1234",
+					ProjectID: "12345",
 				}, nil)
 			},
 			wantErr:     true,
@@ -234,7 +234,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			portalLink, err := pl.UpdatePortalLink(tc.args.ctx, tc.args.group, tc.args.update, tc.args.portalLink)
+			portalLink, err := pl.UpdatePortalLink(tc.args.ctx, tc.args.project, tc.args.update, tc.args.portalLink)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -254,9 +254,9 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx   context.Context
-		group *datastore.Group
-		uid   string
+		ctx     context.Context
+		project *datastore.Project
+		uid     string
 	}
 
 	tests := []struct {
@@ -271,9 +271,9 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 		{
 			name: "should_find_portal_link_by_id",
 			args: args{
-				ctx:   ctx,
-				uid:   "1234",
-				group: &datastore.Group{UID: "12345"},
+				ctx:     ctx,
+				uid:     "1234",
+				project: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
 				UID:       "1234",
@@ -294,9 +294,9 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 		{
 			name: "should_fail_to_find_portal_link_by_id",
 			args: args{
-				ctx:   ctx,
-				uid:   "1234",
-				group: &datastore.Group{UID: "12345"},
+				ctx:     ctx,
+				uid:     "1234",
+				project: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -319,7 +319,7 @@ func TestPortalLinkService_FindPortalLinkByID(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			portalLink, err := pl.FindPortalLinkByID(tc.args.ctx, tc.args.group, tc.args.uid)
+			portalLink, err := pl.FindPortalLinkByID(tc.args.ctx, tc.args.project, tc.args.uid)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -341,7 +341,7 @@ func TestPortalLinkService_RevokePortalLink(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		portalLink *datastore.PortalLink
-		group      *datastore.Group
+		project    *datastore.Project
 	}
 
 	tests := []struct {
@@ -360,7 +360,7 @@ func TestPortalLinkService_RevokePortalLink(t *testing.T) {
 					UID:       "12345",
 					Endpoints: []string{"123"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -376,7 +376,7 @@ func TestPortalLinkService_RevokePortalLink(t *testing.T) {
 					UID:       "12345",
 					Endpoints: []string{"123"},
 				},
-				group: &datastore.Group{UID: "12345"},
+				project: &datastore.Project{UID: "12345"},
 			},
 			dbFn: func(pl *PortalLinkService) {
 				p, _ := pl.portalLinkRepo.(*mocks.MockPortalLinkRepository)
@@ -399,7 +399,7 @@ func TestPortalLinkService_RevokePortalLink(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			err := pl.RevokePortalLink(tc.args.ctx, tc.args.group, tc.args.portalLink)
+			err := pl.RevokePortalLink(tc.args.ctx, tc.args.project, tc.args.portalLink)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -417,7 +417,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 
 	type args struct {
 		ctx      context.Context
-		group    *datastore.Group
+		project  *datastore.Project
 		filter   *datastore.FilterBy
 		pageable datastore.Pageable
 	}
@@ -435,9 +435,9 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 		{
 			name: "should_load_portal_links",
 			args: args{
-				ctx:    ctx,
-				group:  &datastore.Group{UID: "12345"},
-				filter: &datastore.FilterBy{},
+				ctx:     ctx,
+				project: &datastore.Project{UID: "12345"},
+				filter:  &datastore.FilterBy{},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -476,8 +476,8 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 		{
 			name: "should_fail_to_load_portal_links",
 			args: args{
-				ctx:   ctx,
-				group: &datastore.Group{UID: "12345"},
+				ctx:     ctx,
+				project: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
 					Page:    1,
 					PerPage: 10,
@@ -506,7 +506,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			portalLinks, paginationData, err := pl.LoadPortalLinksPaged(tc.args.ctx, tc.args.group, tc.args.filter, tc.args.pageable)
+			portalLinks, paginationData, err := pl.LoadPortalLinksPaged(tc.args.ctx, tc.args.project, tc.args.filter, tc.args.pageable)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -526,7 +526,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		portalLink *datastore.PortalLink
-		group      *datastore.Group
+		project    *datastore.Project
 	}
 
 	tests := []struct {
@@ -546,7 +546,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 					UID:       "123",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
 				},
 			},
@@ -573,7 +573,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 					UID:       "123",
 					Endpoints: []string{"123", "1234"},
 				},
-				group: &datastore.Group{
+				project: &datastore.Project{
 					UID: "12345",
 				},
 			},

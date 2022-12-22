@@ -58,11 +58,12 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			{Key: "as", Value: "endpoint"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "title", Value: 1},
-							{Key: "group_id", Value: 1},
+							{Key: "project_id", Value: 1},
 							{Key: "support_email", Value: 1},
 							{Key: "target_url", Value: 1},
 						},
@@ -80,7 +81,8 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			{Key: "as", Value: "event"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "event_type", Value: 1},
@@ -97,10 +99,12 @@ func (db *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, uid stri
 			{Key: "localField", Value: "device_id"},
 			{Key: "foreignField", Value: "uid"},
 			{Key: "as", Value: "device"},
-			{Key: "pipeline",
+			{
+				Key: "pipeline",
 				Value: bson.A{
 					bson.D{
-						{Key: "$project",
+						{
+							Key: "$project",
 							Value: bson.D{
 								{Key: "uid", Value: 1},
 								{Key: "host_name", Value: 1},
@@ -276,8 +280,8 @@ func (db *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context,
 	return db.store.UpdateOne(ctx, filter, update)
 }
 
-func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, groupID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	filter := getFilter(groupID, endpointIDs, eventID, status, searchParams)
+func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+	filter := getFilter(projectID, endpointIDs, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	matchStage := bson.D{{Key: "$match", Value: mToD(filter)}}
@@ -289,11 +293,12 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			{Key: "as", Value: "endpoint_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "title", Value: 1},
-							{Key: "group_id", Value: 1},
+							{Key: "project_id", Value: 1},
 							{Key: "support_email", Value: 1},
 							{Key: "target_url", Value: 1},
 						},
@@ -312,7 +317,8 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			{Key: "as", Value: "event_metadata"},
 			{Key: "pipeline", Value: bson.A{
 				bson.D{
-					{Key: "$project",
+					{
+						Key: "$project",
 						Value: bson.D{
 							{Key: "uid", Value: 1},
 							{Key: "event_type", Value: 1},
@@ -330,10 +336,12 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 			{Key: "localField", Value: "device_id"},
 			{Key: "foreignField", Value: "uid"},
 			{Key: "as", Value: "device_metadata"},
-			{Key: "pipeline",
+			{
+				Key: "pipeline",
 				Value: bson.A{
 					bson.D{
-						{Key: "$project",
+						{
+							Key: "$project",
 							Value: bson.D{
 								{Key: "uid", Value: 1},
 								{Key: "host_name", Value: 1},
@@ -416,8 +424,8 @@ func (db *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, group
 	return eventDeliveries, pagination, nil
 }
 
-func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
-	filter := getFilter(groupID, endpointIDs, eventID, status, searchParams)
+func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) (int64, error) {
+	filter := getFilter(projectID, endpointIDs, eventID, status, searchParams)
 	ctx = db.setCollectionInContext(ctx)
 
 	var count int64
@@ -429,7 +437,7 @@ func (db *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, groupID s
 	return count, nil
 }
 
-func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
+func (db *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	update := bson.M{
@@ -437,7 +445,7 @@ func (db *eventDeliveryRepo) DeleteGroupEventDeliveries(ctx context.Context, fil
 	}
 
 	f := bson.M{
-		"group_id": filter.GroupID,
+		"project_id": filter.ProjectID,
 		"created_at": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtStart, 0)),
 			"$lte": primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAtEnd, 0)),
@@ -475,14 +483,13 @@ func (db *eventDeliveryRepo) setCollectionInContext(ctx context.Context) context
 	return context.WithValue(ctx, datastore.CollectionCtx, datastore.EventDeliveryCollection)
 }
 
-func getFilter(groupID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
-
+func getFilter(projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, searchParams datastore.SearchParams) bson.M {
 	filter := bson.M{
 		"created_at": getCreatedDateFilter(searchParams),
 	}
 
 	hasEndpointFilter := len(endpointIDs) > 0
-	hasGroupFilter := !util.IsStringEmpty(groupID)
+	hasProjectFilter := !util.IsStringEmpty(projectID)
 	hasEventFilter := !util.IsStringEmpty(eventID)
 	hasStatusFilter := len(status) > 0
 
@@ -490,8 +497,8 @@ func getFilter(groupID string, endpointIDs []string, eventID string, status []da
 		filter["endpoint_id"] = bson.M{"$in": endpointIDs}
 	}
 
-	if hasGroupFilter {
-		filter["group_id"] = groupID
+	if hasProjectFilter {
+		filter["project_id"] = projectID
 	}
 
 	if hasEventFilter {

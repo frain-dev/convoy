@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	appCollection = "applications"
+	appCollection    = "applications"
+	groupsCollection = "groups"
 )
 
 var Migrations = []*Migration{
@@ -31,7 +32,7 @@ var Migrations = []*Migration{
 				RateLimit *RTConfig `json:"ratelimit"`
 			}
 
-			type Group struct {
+			type Project struct {
 				UID    string  `json:"uid" bson:"uid"`
 				Config *Config `json:"config" bson:"config"`
 			}
@@ -39,20 +40,20 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
-				var groups []*Group
-				err := store.FindAll(ctx, nil, nil, nil, &groups)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
+				var projects []*Project
+				err := store.FindAll(ctx, nil, nil, nil, &projects)
 				if err != nil {
 					return err
 				}
 
 				var newDuration uint64
-				for _, group := range groups {
-					if group.Config == nil || group.Config.RateLimit == nil {
+				for _, project := range projects {
+					if project.Config == nil || project.Config.RateLimit == nil {
 						continue
 					}
 
-					duration, err := time.ParseDuration(group.Config.RateLimit.Duration)
+					duration, err := time.ParseDuration(project.Config.RateLimit.Duration)
 					if err != nil {
 						// Set default when an error occurs.
 						newDuration = datastore.DefaultRateLimitConfig.Duration
@@ -65,7 +66,7 @@ var Migrations = []*Migration{
 							"config.ratelimit.duration": newDuration,
 						},
 					}
-					err = store.UpdateByID(ctx, group.UID, update)
+					err = store.UpdateByID(ctx, project.UID, update)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20220901162904_change_group_rate_limit_configuration")
 						return err
@@ -81,26 +82,26 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
-				var groups []*datastore.Group
-				err := store.FindAll(ctx, nil, nil, nil, &groups)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
+				var projects []*datastore.Project
+				err := store.FindAll(ctx, nil, nil, nil, &projects)
 				if err != nil {
 					return err
 				}
 
 				log.Printf("%+v\n", 1)
 				var newDuration time.Duration
-				for _, group := range groups {
+				for _, project := range projects {
 
-					if group.Config == nil || group.Config.RateLimit == nil {
+					if project.Config == nil || project.Config.RateLimit == nil {
 						continue
 					}
 
-					duration := fmt.Sprintf("%ds", group.Config.RateLimit.Duration)
+					duration := fmt.Sprintf("%ds", project.Config.RateLimit.Duration)
 					newDuration, err = time.ParseDuration(duration)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20220901162904_change_group_rate_limit_configuration ParseDuration")
-						// return err
+						return err
 					}
 
 					update := bson.M{
@@ -108,7 +109,7 @@ var Migrations = []*Migration{
 							"config.ratelimit.duration": newDuration,
 						},
 					}
-					err = store.UpdateByID(ctx, group.UID, update)
+					err = store.UpdateByID(ctx, project.UID, update)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20220901162904_change_group_rate_limit_configuration rollback")
 						return err
@@ -246,22 +247,22 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
 
-				var groups []*datastore.Group
-				err := store.FindAll(ctx, nil, nil, nil, &groups)
+				var projects []*datastore.Project
+				err := store.FindAll(ctx, nil, nil, nil, &projects)
 				if err != nil {
 					return err
 				}
 
-				for _, group := range groups {
-					config := group.Config
+				for _, project := range projects {
+					config := project.Config
 
 					if config != nil {
 						continue
 					}
 
-					config = &datastore.GroupConfig{
+					config = &datastore.ProjectConfig{
 						Signature:       datastore.GetDefaultSignatureConfig(),
 						Strategy:        &datastore.DefaultStrategyConfig,
 						RateLimit:       &datastore.DefaultRateLimitConfig,
@@ -273,7 +274,7 @@ var Migrations = []*Migration{
 							"config": config,
 						},
 					}
-					err = store.UpdateByID(ctx, group.UID, update)
+					err = store.UpdateByID(ctx, project.UID, update)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20220919100029_add_default_group_configuration")
 						return err
@@ -289,16 +290,16 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, datastore.GroupCollection)
+				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, groupsCollection)
 
-				var groups []*datastore.Group
-				err := store.FindAll(ctx, nil, nil, nil, &groups)
+				var projects []*datastore.Project
+				err := store.FindAll(ctx, nil, nil, nil, &projects)
 				if err != nil {
 					return err
 				}
 
-				for _, group := range groups {
-					config := group.Config
+				for _, project := range projects {
+					config := project.Config
 
 					if config == nil {
 						continue
@@ -310,7 +311,7 @@ var Migrations = []*Migration{
 						},
 					}
 
-					err = store.UpdateByID(ctx, group.UID, update)
+					err = store.UpdateByID(ctx, project.UID, update)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20220919100029_add_default_group_configuration rollback")
 						return err
@@ -373,7 +374,6 @@ var Migrations = []*Migration{
 			store := datastore.New(db)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-
 				ctx := context.WithValue(sessCtx, datastore.CollectionCtx, appCollection)
 
 				var apps []*datastore.Application
@@ -423,25 +423,25 @@ var Migrations = []*Migration{
 		ID: "20221021100029_migrate_group_signature_config_to_versions",
 		Migrate: func(db *mongo.Database) error {
 			store := datastore.New(db)
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, groupsCollection)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				var groups []*datastore.Group
-				err := store.FindAll(sessCtx, nil, nil, nil, &groups)
+				var projects []*datastore.Project
+				err := store.FindAll(sessCtx, nil, nil, nil, &projects)
 				if err != nil {
 					log.WithError(err).Fatalf("Failed migration 20221021100029_migrate_group_signature_config_to_versions UpdateByID")
 					return err
 				}
 
-				for _, group := range groups {
-					if len(group.Config.Signature.Versions) > 0 {
+				for _, project := range projects {
+					if len(project.Config.Signature.Versions) > 0 {
 						continue
 					}
 
-					group.Config.Signature.Versions = []datastore.SignatureVersion{
+					project.Config.Signature.Versions = []datastore.SignatureVersion{
 						{
 							UID:       uuid.NewString(),
-							Hash:      group.Config.Signature.Hash,
+							Hash:      project.Config.Signature.Hash,
 							Encoding:  datastore.HexEncoding,
 							CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 						},
@@ -449,11 +449,11 @@ var Migrations = []*Migration{
 
 					update := bson.M{
 						"$set": bson.M{
-							"config": group.Config,
+							"config": project.Config,
 						},
 					}
 
-					err = store.UpdateByID(sessCtx, group.UID, update)
+					err = store.UpdateByID(sessCtx, project.UID, update)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20221021100029_migrate_group_signature_config_to_versions UpdateByID")
 						return err
@@ -479,30 +479,30 @@ var Migrations = []*Migration{
 		},
 		Rollback: func(db *mongo.Database) error {
 			store := datastore.New(db)
-			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.GroupCollection)
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, groupsCollection)
 
 			fn := func(sessCtx mongo.SessionContext) error {
-				var groups []*datastore.Group
-				err := store.FindAll(sessCtx, nil, nil, nil, &groups)
+				var projects []*datastore.Project
+				err := store.FindAll(sessCtx, nil, nil, nil, &projects)
 				if err != nil {
 					return err
 				}
 
-				for _, group := range groups {
-					if len(group.Config.Signature.Versions) == 0 {
+				for _, project := range projects {
+					if len(project.Config.Signature.Versions) == 0 {
 						continue
 					}
 
-					group.Config.Signature.Hash = group.Config.Signature.Versions[0].Hash
-					group.Config.Signature.Versions = nil
+					project.Config.Signature.Hash = project.Config.Signature.Versions[0].Hash
+					project.Config.Signature.Versions = nil
 
 					update := bson.M{
 						"$set": bson.M{
-							"config": group.Config,
+							"config": project.Config,
 						},
 					}
 
-					err = store.UpdateByID(sessCtx, group.UID, update)
+					err = store.UpdateByID(sessCtx, project.UID, update)
 					if err != nil {
 						log.WithError(err).Fatalf("Failed migration 20221021100029_migrate_group_signature_config_to_versions rollback")
 						return err
@@ -533,7 +533,7 @@ var Migrations = []*Migration{
 		Migrate: func(db *mongo.Database) error {
 			collectionList := []string{
 				datastore.ConfigCollection,
-				datastore.GroupCollection,
+				groupsCollection,
 				datastore.OrganisationCollection,
 				datastore.OrganisationInvitesCollection,
 				datastore.OrganisationMembersCollection,
@@ -576,7 +576,7 @@ var Migrations = []*Migration{
 		Rollback: func(db *mongo.Database) error {
 			collectionList := []string{
 				datastore.ConfigCollection,
-				datastore.GroupCollection,
+				groupsCollection,
 				datastore.OrganisationCollection,
 				datastore.OrganisationInvitesCollection,
 				datastore.OrganisationMembersCollection,
@@ -690,7 +690,7 @@ var Migrations = []*Migration{
 			type Role struct {
 				Type   string   `json:"type"`
 				Apps   []string `json:"apps"`
-				Groups []string `json:"groups"`
+				Groups []string `json:"groups"` // Won't change this to Projects, will affect migration
 			}
 
 			type Key struct {
@@ -839,7 +839,7 @@ var Migrations = []*Migration{
 						endpoint := &datastore.Endpoint{
 							ID:                 primitive.NewObjectID(),
 							UID:                e.UID,
-							GroupID:            app.GroupID,
+							ProjectID:          app.ProjectID,
 							TargetURL:          e.TargetURL,
 							Title:              app.Title,
 							SupportEmail:       app.SupportEmail,
@@ -862,7 +862,7 @@ var Migrations = []*Migration{
 					endpoint := &datastore.Endpoint{
 						ID:              primitive.NewObjectID(),
 						UID:             app.UID,
-						GroupID:         app.GroupID,
+						ProjectID:       app.ProjectID,
 						Title:           app.Title,
 						SupportEmail:    app.SupportEmail,
 						SlackWebhookURL: app.SlackWebhookURL,
@@ -986,7 +986,7 @@ var Migrations = []*Migration{
 	{
 		ID: "20221123174732_drop_devices_collection",
 		Migrate: func(db *mongo.Database) error {
-			// We need to drop the devices collection to succesfully
+			// We need to drop the devices collection to successfully
 			// rebuild the indexes scoped to the endpointID
 			err := db.Collection(datastore.DeviceCollection).Drop(context.Background())
 			if err != nil {
@@ -996,6 +996,133 @@ var Migrations = []*Migration{
 			return nil
 		},
 		Rollback: func(db *mongo.Database) error {
+			return nil
+		},
+	},
+
+	{
+		ID: "20221206102519_migrate_group_id_to_project_id",
+		Migrate: func(db *mongo.Database) error {
+			collectionList := []string{
+				datastore.ConfigCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.EndpointCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.FilterCollection,
+				datastore.DataMigrationsCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+				datastore.PortalLinkCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				items := bson.D{
+					{Key: "group_id", Value: "project_id"},
+				}
+
+				// migrate roles
+				switch collectionKey {
+				case datastore.APIKeyCollection,
+					datastore.UserCollection,
+					datastore.OrganisationMembersCollection,
+					datastore.OrganisationInvitesCollection:
+					items = append(items, bson.E{Key: "role.group", Value: "role.project"})
+				}
+
+				update := bson.M{
+					"$rename": items,
+				}
+
+				err := store.UpdateMany(ctx, bson.M{}, update, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id UpdateMany")
+					return err
+				}
+			}
+
+			var projects []interface{}
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, "groups")
+			store := datastore.New(db)
+
+			err := store.FindAll(ctx, bson.M{}, nil, nil, &projects)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id find all groups")
+				return err
+			}
+
+			if len(projects) > 0 {
+				ctx = context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ProjectsCollection)
+				err = store.SaveMany(ctx, projects)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id save all projects")
+					return err
+				}
+			}
+
+			return nil
+		},
+		Rollback: func(db *mongo.Database) error {
+			collectionList := []string{
+				datastore.ConfigCollection,
+				datastore.OrganisationCollection,
+				datastore.OrganisationInvitesCollection,
+				datastore.OrganisationMembersCollection,
+				datastore.EndpointCollection,
+				datastore.EventCollection,
+				datastore.SourceCollection,
+				datastore.UserCollection,
+				datastore.SubscriptionCollection,
+				datastore.FilterCollection,
+				datastore.DataMigrationsCollection,
+				datastore.EventDeliveryCollection,
+				datastore.APIKeyCollection,
+				datastore.DeviceCollection,
+				datastore.PortalLinkCollection,
+			}
+
+			for _, collectionKey := range collectionList {
+				store := datastore.New(db)
+				ctx := context.WithValue(context.Background(), datastore.CollectionCtx, collectionKey)
+
+				update := bson.M{
+					"$rename": bson.D{
+						{Key: "group_id", Value: "project_id"},
+					},
+				}
+
+				err := store.UpdateMany(ctx, bson.M{}, update, true)
+				if err != nil {
+					log.WithError(err).Fatalf("Failed rollback migration 20221206102519_migrate_group_id_to_project_id UpdateMany")
+					return err
+				}
+			}
+
+			var projects []interface{}
+			ctx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.ProjectsCollection)
+			store := datastore.New(db)
+
+			err := store.FindAll(ctx, bson.M{}, nil, nil, &projects)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id find all projects")
+				return err
+			}
+
+			ctx = context.WithValue(context.Background(), datastore.CollectionCtx, "groups")
+			err = store.SaveMany(ctx, projects)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed migration 20221206102519_migrate_group_id_to_project_id save all groups")
+				return err
+			}
+
 			return nil
 		},
 	},

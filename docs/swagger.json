@@ -171,7 +171,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "group name",
+                        "description": "Project name",
                         "name": "name",
                         "in": "query"
                     },
@@ -197,7 +197,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/datastore.Group"
+                                                "$ref": "#/definitions/datastore.Project"
                                             }
                                         }
                                     }
@@ -287,12 +287,12 @@
                         "required": true
                     },
                     {
-                        "description": "Group Details",
-                        "name": "group",
+                        "description": "Project Details",
+                        "name": "project",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Group"
+                            "$ref": "#/definitions/models.Project"
                         }
                     }
                 ],
@@ -308,7 +308,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Group"
+                                            "$ref": "#/definitions/datastore.Project"
                                         }
                                     }
                                 }
@@ -411,7 +411,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Group"
+                                            "$ref": "#/definitions/datastore.Project"
                                         }
                                     }
                                 }
@@ -500,12 +500,12 @@
                         "required": true
                     },
                     {
-                        "description": "Group Details",
-                        "name": "group",
+                        "description": "Project Details",
+                        "name": "project",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Group"
+                            "$ref": "#/definitions/models.Project"
                         }
                     }
                 ],
@@ -521,7 +521,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Group"
+                                            "$ref": "#/definitions/datastore.Project"
                                         }
                                     }
                                 }
@@ -1556,7 +1556,7 @@
                     },
                     {
                         "description": "event delivery ids",
-                        "name": "deliveryIds",
+                        "name": "ids",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -1834,7 +1834,7 @@
                     },
                     {
                         "description": "event delivery ids",
-                        "name": "deliveryIds",
+                        "name": "ids",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -4525,15 +4525,6 @@
                         "name": "projectID",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Filter Details",
-                        "name": "filter",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.TestFilter"
-                        }
                     }
                 ],
                 "responses": {
@@ -4548,7 +4539,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "boolean"
+                                            "$ref": "#/definitions/server.Stub"
                                         }
                                     }
                                 }
@@ -5427,211 +5418,6 @@
                     }
                 }
             }
-        },
-        "/ui/users/forgot-password": {
-            "post": {
-                "description": "This endpoint verifies a user's email",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Verify Email",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Email verification token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/ui/users/reset-password": {
-            "post": {
-                "description": "This endpoint resets a users password",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Reset user password",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "reset token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "description": "Reset Password Details",
-                        "name": "password",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ResetPassword"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.User"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -5641,22 +5427,13 @@
                 "endpoint": {
                     "type": "string"
                 },
-                "group": {
+                "project": {
                     "type": "string"
                 },
                 "type": {
                     "type": "string"
                 }
             }
-        },
-        "config.SignatureHeaderProvider": {
-            "type": "string",
-            "enum": [
-                "X-Convoy-Signature"
-            ],
-            "x-enum-varnames": [
-                "DefaultSignatureHeader"
-            ]
         },
         "datastore.AlertConfiguration": {
             "type": "object",
@@ -5767,17 +5544,17 @@
                 "endpoint_id": {
                     "type": "string"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "host_name": {
                     "type": "string"
                 },
                 "last_seen_at": {
                     "type": "string"
                 },
+                "project_id": {
+                    "type": "string"
+                },
                 "status": {
-                    "$ref": "#/definitions/datastore.DeviceStatus"
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"
@@ -5786,30 +5563,6 @@
                     "type": "string"
                 }
             }
-        },
-        "datastore.DeviceStatus": {
-            "type": "string",
-            "enum": [
-                "offline",
-                "online",
-                "disabled"
-            ],
-            "x-enum-varnames": [
-                "DeviceStatusOffline",
-                "DeviceStatusOnline",
-                "DeviceStatusDisabled"
-            ]
-        },
-        "datastore.EncodingType": {
-            "type": "string",
-            "enum": [
-                "base64",
-                "hex"
-            ],
-            "x-enum-varnames": [
-                "Base64Encoding",
-                "HexEncoding"
-            ]
         },
         "datastore.Endpoint": {
             "type": "object",
@@ -5832,9 +5585,6 @@
                 "events": {
                     "type": "integer"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "http_timeout": {
                     "type": "string"
                 },
@@ -5842,6 +5592,9 @@
                     "type": "boolean"
                 },
                 "owner_id": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 },
                 "rate_limit": {
@@ -5883,18 +5636,9 @@
                     "$ref": "#/definitions/datastore.ApiKey"
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.EndpointAuthenticationType"
+                    "type": "string"
                 }
             }
-        },
-        "datastore.EndpointAuthenticationType": {
-            "type": "string",
-            "enum": [
-                "api_key"
-            ],
-            "x-enum-varnames": [
-                "APIKeyAuthentication"
-            ]
         },
         "datastore.Event": {
             "type": "object",
@@ -5931,15 +5675,15 @@
                 "event_type": {
                     "type": "string"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "headers": {
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "matched_endpoints": {
                     "description": "TODO(all) remove this field",
                     "type": "integer"
+                },
+                "project_id": {
+                    "type": "string"
                 },
                 "source_id": {
                     "type": "string"
@@ -5985,17 +5729,17 @@
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "headers": {
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
                 },
+                "project_id": {
+                    "type": "string"
+                },
                 "status": {
-                    "$ref": "#/definitions/datastore.EventDeliveryStatus"
+                    "type": "string"
                 },
                 "subscription_id": {
                     "type": "string"
@@ -6007,25 +5751,6 @@
                     "type": "string"
                 }
             }
-        },
-        "datastore.EventDeliveryStatus": {
-            "type": "string",
-            "enum": [
-                "Scheduled",
-                "Processing",
-                "Discarded",
-                "Failure",
-                "Success",
-                "Retry"
-            ],
-            "x-enum-varnames": [
-                "ScheduledEventStatus",
-                "ProcessingEventStatus",
-                "DiscardedEventStatus",
-                "FailureEventStatus",
-                "SuccessEventStatus",
-                "RetryEventStatus"
-            ]
         },
         "datastore.FilterConfiguration": {
             "type": "object",
@@ -6042,115 +5767,11 @@
                 }
             }
         },
-        "datastore.Group": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/datastore.GroupConfig"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "metadata": {
-                    "$ref": "#/definitions/datastore.GroupMetadata"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "organisation_id": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "description": "TODO(subomi): refactor this into the Instance API.",
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
-                },
-                "statistics": {
-                    "$ref": "#/definitions/datastore.GroupStatistics"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.GroupType"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.GroupConfig": {
-            "type": "object",
-            "properties": {
-                "disable_endpoint": {
-                    "type": "boolean"
-                },
-                "is_retention_policy_enabled": {
-                    "type": "boolean"
-                },
-                "max_payload_read_size": {
-                    "type": "integer"
-                },
-                "ratelimit": {
-                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
-                },
-                "replay_attacks": {
-                    "type": "boolean"
-                },
-                "retention_policy": {
-                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
-                },
-                "signature": {
-                    "$ref": "#/definitions/datastore.SignatureConfiguration"
-                },
-                "strategy": {
-                    "$ref": "#/definitions/datastore.StrategyConfiguration"
-                }
-            }
-        },
-        "datastore.GroupMetadata": {
-            "type": "object",
-            "properties": {
-                "retained_events": {
-                    "type": "integer"
-                }
-            }
-        },
-        "datastore.GroupStatistics": {
-            "type": "object",
-            "properties": {
-                "messages_sent": {
-                    "type": "integer"
-                },
-                "total_endpoints": {
-                    "type": "integer"
-                }
-            }
-        },
-        "datastore.GroupType": {
-            "type": "string",
-            "enum": [
-                "outgoing",
-                "incoming"
-            ],
-            "x-enum-varnames": [
-                "OutgoingGroup",
-                "IncomingGroup"
-            ]
-        },
         "datastore.HMac": {
             "type": "object",
             "properties": {
                 "encoding": {
-                    "$ref": "#/definitions/datastore.EncodingType"
+                    "type": "string"
                 },
                 "hash": {
                     "type": "string"
@@ -6246,6 +5867,99 @@
                 }
             }
         },
+        "datastore.Project": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/datastore.ProjectConfig"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "$ref": "#/definitions/datastore.ProjectMetadata"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organisation_id": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "description": "TODO(subomi): refactor this into the Instance API.",
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
+                "statistics": {
+                    "$ref": "#/definitions/datastore.ProjectStatistics"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.ProjectConfig": {
+            "type": "object",
+            "properties": {
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
+                "is_retention_policy_enabled": {
+                    "type": "boolean"
+                },
+                "max_payload_read_size": {
+                    "type": "integer"
+                },
+                "ratelimit": {
+                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
+                },
+                "replay_attacks": {
+                    "type": "boolean"
+                },
+                "retention_policy": {
+                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
+                },
+                "signature": {
+                    "$ref": "#/definitions/datastore.SignatureConfiguration"
+                },
+                "strategy": {
+                    "$ref": "#/definitions/datastore.StrategyConfiguration"
+                }
+            }
+        },
+        "datastore.ProjectMetadata": {
+            "type": "object",
+            "properties": {
+                "retained_events": {
+                    "type": "integer"
+                }
+            }
+        },
+        "datastore.ProjectStatistics": {
+            "type": "object",
+            "properties": {
+                "messages_sent": {
+                    "type": "integer"
+                },
+                "total_endpoints": {
+                    "type": "integer"
+                }
+            }
+        },
         "datastore.ProviderConfig": {
             "type": "object",
             "properties": {
@@ -6314,7 +6028,7 @@
             "type": "object",
             "properties": {
                 "header": {
-                    "$ref": "#/definitions/config.SignatureHeaderProvider"
+                    "type": "string"
                 },
                 "versions": {
                     "type": "array",
@@ -6331,7 +6045,7 @@
                     "type": "string"
                 },
                 "encoding": {
-                    "$ref": "#/definitions/datastore.EncodingType"
+                    "type": "string"
                 },
                 "hash": {
                     "type": "string"
@@ -6356,9 +6070,6 @@
                         "type": "string"
                     }
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -6368,14 +6079,17 @@
                 "name": {
                     "type": "string"
                 },
+                "project_id": {
+                    "type": "string"
+                },
                 "provider": {
-                    "$ref": "#/definitions/datastore.SourceProvider"
+                    "type": "string"
                 },
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.SourceType"
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"
@@ -6387,34 +6101,6 @@
                     "$ref": "#/definitions/datastore.VerifierConfig"
                 }
             }
-        },
-        "datastore.SourceProvider": {
-            "type": "string",
-            "enum": [
-                "github",
-                "twitter",
-                "shopify"
-            ],
-            "x-enum-varnames": [
-                "GithubSourceProvider",
-                "TwitterSourceProvider",
-                "ShopifySourceProvider"
-            ]
-        },
-        "datastore.SourceType": {
-            "type": "string",
-            "enum": [
-                "http",
-                "rest_api",
-                "pub_sub",
-                "db_change_stream"
-            ],
-            "x-enum-varnames": [
-                "HTTPSource",
-                "RestApiSource",
-                "PubSubSource",
-                "DBChangeStream"
-            ]
         },
         "datastore.StrategyConfiguration": {
             "type": "object",
@@ -6435,11 +6121,7 @@
             "properties": {
                 "alert_config": {
                     "description": "subscription config",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/datastore.AlertConfiguration"
-                        }
-                    ]
+                    "$ref": "#/definitions/datastore.AlertConfiguration"
                 },
                 "created_at": {
                     "type": "string"
@@ -6472,10 +6154,10 @@
                     "$ref": "#/definitions/datastore.Source"
                 },
                 "status": {
-                    "$ref": "#/definitions/datastore.SubscriptionStatus"
+                    "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.SubscriptionType"
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"
@@ -6484,71 +6166,12 @@
                     "type": "string"
                 }
             }
-        },
-        "datastore.SubscriptionStatus": {
-            "type": "string",
-            "enum": [
-                "active",
-                "inactive",
-                "pending"
-            ],
-            "x-enum-varnames": [
-                "ActiveSubscriptionStatus",
-                "InactiveSubscriptionStatus",
-                "PendingSubscriptionStatus"
-            ]
-        },
-        "datastore.SubscriptionType": {
-            "type": "string",
-            "enum": [
-                "cli",
-                "api"
-            ],
-            "x-enum-varnames": [
-                "SubscriptionTypeCLI",
-                "SubscriptionTypeAPI"
-            ]
         },
         "datastore.TwitterProviderConfig": {
             "type": "object",
             "properties": {
                 "crc_verified_at": {
                     "type": "integer"
-                }
-            }
-        },
-        "datastore.User": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "email_verified": {
-                    "type": "boolean"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "reset_password_expires_at": {
-                    "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/auth.Role"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -6565,24 +6188,9 @@
                     "$ref": "#/definitions/datastore.HMac"
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.VerifierType"
+                    "type": "string"
                 }
             }
-        },
-        "datastore.VerifierType": {
-            "type": "string",
-            "enum": [
-                "noop",
-                "hmac",
-                "basic_auth",
-                "api_key"
-            ],
-            "x-enum-varnames": [
-                "NoopVerifier",
-                "HMacVerifier",
-                "BasicAuthVerifier",
-                "APIKeyVerifier"
-            ]
         },
         "httpheader.HTTPHeader": {
             "type": "object",
@@ -6668,55 +6276,19 @@
                 }
             }
         },
-        "models.FilterSchema": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "headers": {
-                    "type": "object",
-                    "additionalProperties": true
-                }
-            }
-        },
-        "models.Group": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/datastore.GroupConfig"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.GroupType"
-                }
-            }
-        },
         "models.PortalAPIKeyResponse": {
             "type": "object",
             "properties": {
                 "endpoint_id": {
                     "type": "string"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "key": {
                     "type": "string"
                 },
                 "key_type": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 },
                 "role": {
@@ -6765,10 +6337,10 @@
                         "$ref": "#/definitions/datastore.Endpoint"
                     }
                 },
-                "group_id": {
+                "name": {
                     "type": "string"
                 },
-                "name": {
+                "project_id": {
                     "type": "string"
                 },
                 "token": {
@@ -6785,13 +6357,25 @@
                 }
             }
         },
-        "models.ResetPassword": {
+        "models.Project": {
             "type": "object",
             "properties": {
-                "password": {
+                "config": {
+                    "$ref": "#/definitions/datastore.ProjectConfig"
+                },
+                "logo_url": {
                     "type": "string"
                 },
-                "password_confirmation": {
+                "name": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -6823,10 +6407,10 @@
                     "type": "string"
                 },
                 "provider": {
-                    "$ref": "#/definitions/datastore.SourceProvider"
+                    "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.SourceType"
+                    "type": "string"
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
@@ -6842,9 +6426,6 @@
                 "deleted_at": {
                     "type": "integer"
                 },
-                "group_id": {
-                    "type": "string"
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -6854,14 +6435,17 @@
                 "name": {
                     "type": "string"
                 },
+                "project_id": {
+                    "type": "string"
+                },
                 "provider": {
-                    "$ref": "#/definitions/datastore.SourceProvider"
+                    "type": "string"
                 },
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.SourceType"
+                    "type": "string"
                 },
                 "uid": {
                     "type": "string"
@@ -6907,17 +6491,6 @@
                 },
                 "source_id": {
                     "type": "string"
-                }
-            }
-        },
-        "models.TestFilter": {
-            "type": "object",
-            "properties": {
-                "request": {
-                    "$ref": "#/definitions/models.FilterSchema"
-                },
-                "schema": {
-                    "$ref": "#/definitions/models.FilterSchema"
                 }
             }
         },

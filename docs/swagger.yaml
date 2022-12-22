@@ -4,17 +4,11 @@ definitions:
     properties:
       endpoint:
         type: string
-      group:
+      project:
         type: string
       type:
         type: string
     type: object
-  config.SignatureHeaderProvider:
-    enum:
-    - X-Convoy-Signature
-    type: string
-    x-enum-varnames:
-    - DefaultSignatureHeader
   datastore.AlertConfiguration:
     properties:
       count:
@@ -86,37 +80,19 @@ definitions:
         type: string
       endpoint_id:
         type: string
-      group_id:
-        type: string
       host_name:
         type: string
       last_seen_at:
         type: string
+      project_id:
+        type: string
       status:
-        $ref: '#/definitions/datastore.DeviceStatus'
+        type: string
       uid:
         type: string
       updated_at:
         type: string
     type: object
-  datastore.DeviceStatus:
-    enum:
-    - offline
-    - online
-    - disabled
-    type: string
-    x-enum-varnames:
-    - DeviceStatusOffline
-    - DeviceStatusOnline
-    - DeviceStatusDisabled
-  datastore.EncodingType:
-    enum:
-    - base64
-    - hex
-    type: string
-    x-enum-varnames:
-    - Base64Encoding
-    - HexEncoding
   datastore.Endpoint:
     properties:
       advanced_signatures:
@@ -131,13 +107,13 @@ definitions:
         type: string
       events:
         type: integer
-      group_id:
-        type: string
       http_timeout:
         type: string
       is_disabled:
         type: boolean
       owner_id:
+        type: string
+      project_id:
         type: string
       rate_limit:
         type: integer
@@ -165,14 +141,8 @@ definitions:
       api_key:
         $ref: '#/definitions/datastore.ApiKey'
       type:
-        $ref: '#/definitions/datastore.EndpointAuthenticationType'
+        type: string
     type: object
-  datastore.EndpointAuthenticationType:
-    enum:
-    - api_key
-    type: string
-    x-enum-varnames:
-    - APIKeyAuthentication
   datastore.Event:
     properties:
       app_id:
@@ -199,13 +169,13 @@ definitions:
         type: array
       event_type:
         type: string
-      group_id:
-        type: string
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
       matched_endpoints:
         description: TODO(all) remove this field
         type: integer
+      project_id:
+        type: string
       source_id:
         type: string
       source_metadata:
@@ -235,14 +205,14 @@ definitions:
         type: string
       event_metadata:
         $ref: '#/definitions/datastore.Event'
-      group_id:
-        type: string
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
       metadata:
         $ref: '#/definitions/datastore.Metadata'
+      project_id:
+        type: string
       status:
-        $ref: '#/definitions/datastore.EventDeliveryStatus'
+        type: string
       subscription_id:
         type: string
       uid:
@@ -250,22 +220,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  datastore.EventDeliveryStatus:
-    enum:
-    - Scheduled
-    - Processing
-    - Discarded
-    - Failure
-    - Success
-    - Retry
-    type: string
-    x-enum-varnames:
-    - ScheduledEventStatus
-    - ProcessingEventStatus
-    - DiscardedEventStatus
-    - FailureEventStatus
-    - SuccessEventStatus
-    - RetryEventStatus
   datastore.FilterConfiguration:
     properties:
       event_types:
@@ -276,79 +230,10 @@ definitions:
         additionalProperties: true
         type: object
     type: object
-  datastore.Group:
-    properties:
-      config:
-        $ref: '#/definitions/datastore.GroupConfig'
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      logo_url:
-        type: string
-      metadata:
-        $ref: '#/definitions/datastore.GroupMetadata'
-      name:
-        type: string
-      organisation_id:
-        type: string
-      rate_limit:
-        description: 'TODO(subomi): refactor this into the Instance API.'
-        type: integer
-      rate_limit_duration:
-        type: string
-      statistics:
-        $ref: '#/definitions/datastore.GroupStatistics'
-      type:
-        $ref: '#/definitions/datastore.GroupType'
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  datastore.GroupConfig:
-    properties:
-      disable_endpoint:
-        type: boolean
-      is_retention_policy_enabled:
-        type: boolean
-      max_payload_read_size:
-        type: integer
-      ratelimit:
-        $ref: '#/definitions/datastore.RateLimitConfiguration'
-      replay_attacks:
-        type: boolean
-      retention_policy:
-        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
-      signature:
-        $ref: '#/definitions/datastore.SignatureConfiguration'
-      strategy:
-        $ref: '#/definitions/datastore.StrategyConfiguration'
-    type: object
-  datastore.GroupMetadata:
-    properties:
-      retained_events:
-        type: integer
-    type: object
-  datastore.GroupStatistics:
-    properties:
-      messages_sent:
-        type: integer
-      total_endpoints:
-        type: integer
-    type: object
-  datastore.GroupType:
-    enum:
-    - outgoing
-    - incoming
-    type: string
-    x-enum-varnames:
-    - OutgoingGroup
-    - IncomingGroup
   datastore.HMac:
     properties:
       encoding:
-        $ref: '#/definitions/datastore.EncodingType'
+        type: string
       hash:
         type: string
       header:
@@ -413,6 +298,67 @@ definitions:
       totalPage:
         type: integer
     type: object
+  datastore.Project:
+    properties:
+      config:
+        $ref: '#/definitions/datastore.ProjectConfig'
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      logo_url:
+        type: string
+      metadata:
+        $ref: '#/definitions/datastore.ProjectMetadata'
+      name:
+        type: string
+      organisation_id:
+        type: string
+      rate_limit:
+        description: 'TODO(subomi): refactor this into the Instance API.'
+        type: integer
+      rate_limit_duration:
+        type: string
+      statistics:
+        $ref: '#/definitions/datastore.ProjectStatistics'
+      type:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  datastore.ProjectConfig:
+    properties:
+      disable_endpoint:
+        type: boolean
+      is_retention_policy_enabled:
+        type: boolean
+      max_payload_read_size:
+        type: integer
+      ratelimit:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
+      replay_attacks:
+        type: boolean
+      retention_policy:
+        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
+      signature:
+        $ref: '#/definitions/datastore.SignatureConfiguration'
+      strategy:
+        $ref: '#/definitions/datastore.StrategyConfiguration'
+    type: object
+  datastore.ProjectMetadata:
+    properties:
+      retained_events:
+        type: integer
+    type: object
+  datastore.ProjectStatistics:
+    properties:
+      messages_sent:
+        type: integer
+      total_endpoints:
+        type: integer
+    type: object
   datastore.ProviderConfig:
     properties:
       twitter:
@@ -457,7 +403,7 @@ definitions:
   datastore.SignatureConfiguration:
     properties:
       header:
-        $ref: '#/definitions/config.SignatureHeaderProvider'
+        type: string
       versions:
         items:
           $ref: '#/definitions/datastore.SignatureVersion'
@@ -468,7 +414,7 @@ definitions:
       created_at:
         type: string
       encoding:
-        $ref: '#/definitions/datastore.EncodingType'
+        type: string
       hash:
         type: string
       uid:
@@ -484,20 +430,20 @@ definitions:
         items:
           type: string
         type: array
-      group_id:
-        type: string
       is_disabled:
         type: boolean
       mask_id:
         type: string
       name:
         type: string
+      project_id:
+        type: string
       provider:
-        $ref: '#/definitions/datastore.SourceProvider'
+        type: string
       provider_config:
         $ref: '#/definitions/datastore.ProviderConfig'
       type:
-        $ref: '#/definitions/datastore.SourceType'
+        type: string
       uid:
         type: string
       updated_at:
@@ -505,28 +451,6 @@ definitions:
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
     type: object
-  datastore.SourceProvider:
-    enum:
-    - github
-    - twitter
-    - shopify
-    type: string
-    x-enum-varnames:
-    - GithubSourceProvider
-    - TwitterSourceProvider
-    - ShopifySourceProvider
-  datastore.SourceType:
-    enum:
-    - http
-    - rest_api
-    - pub_sub
-    - db_change_stream
-    type: string
-    x-enum-varnames:
-    - HTTPSource
-    - RestApiSource
-    - PubSubSource
-    - DBChangeStream
   datastore.StrategyConfiguration:
     properties:
       duration:
@@ -539,8 +463,7 @@ definitions:
   datastore.Subscription:
     properties:
       alert_config:
-        allOf:
-        - $ref: '#/definitions/datastore.AlertConfiguration'
+        $ref: '#/definitions/datastore.AlertConfiguration'
         description: subscription config
       created_at:
         type: string
@@ -563,59 +486,18 @@ definitions:
       source_metadata:
         $ref: '#/definitions/datastore.Source'
       status:
-        $ref: '#/definitions/datastore.SubscriptionStatus'
+        type: string
       type:
-        $ref: '#/definitions/datastore.SubscriptionType'
+        type: string
       uid:
         type: string
       updated_at:
         type: string
     type: object
-  datastore.SubscriptionStatus:
-    enum:
-    - active
-    - inactive
-    - pending
-    type: string
-    x-enum-varnames:
-    - ActiveSubscriptionStatus
-    - InactiveSubscriptionStatus
-    - PendingSubscriptionStatus
-  datastore.SubscriptionType:
-    enum:
-    - cli
-    - api
-    type: string
-    x-enum-varnames:
-    - SubscriptionTypeCLI
-    - SubscriptionTypeAPI
   datastore.TwitterProviderConfig:
     properties:
       crc_verified_at:
         type: integer
-    type: object
-  datastore.User:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      email:
-        type: string
-      email_verified:
-        type: boolean
-      first_name:
-        type: string
-      last_name:
-        type: string
-      reset_password_expires_at:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
-      uid:
-        type: string
-      updated_at:
-        type: string
     type: object
   datastore.VerifierConfig:
     properties:
@@ -626,20 +508,8 @@ definitions:
       hmac:
         $ref: '#/definitions/datastore.HMac'
       type:
-        $ref: '#/definitions/datastore.VerifierType'
+        type: string
     type: object
-  datastore.VerifierType:
-    enum:
-    - noop
-    - hmac
-    - basic_auth
-    - api_key
-    type: string
-    x-enum-varnames:
-    - NoopVerifier
-    - HMacVerifier
-    - BasicAuthVerifier
-    - APIKeyVerifier
   httpheader.HTTPHeader:
     additionalProperties:
       items:
@@ -698,39 +568,15 @@ definitions:
       event_type:
         type: string
     type: object
-  models.FilterSchema:
-    properties:
-      body:
-        additionalProperties: true
-        type: object
-      headers:
-        additionalProperties: true
-        type: object
-    type: object
-  models.Group:
-    properties:
-      config:
-        $ref: '#/definitions/datastore.GroupConfig'
-      logo_url:
-        type: string
-      name:
-        type: string
-      rate_limit:
-        type: integer
-      rate_limit_duration:
-        type: string
-      type:
-        $ref: '#/definitions/datastore.GroupType'
-    type: object
   models.PortalAPIKeyResponse:
     properties:
       endpoint_id:
         type: string
-      group_id:
-        type: string
       key:
         type: string
       key_type:
+        type: string
+      project_id:
         type: string
       role:
         $ref: '#/definitions/auth.Role'
@@ -762,9 +608,9 @@ definitions:
         items:
           $ref: '#/definitions/datastore.Endpoint'
         type: array
-      group_id:
-        type: string
       name:
+        type: string
+      project_id:
         type: string
       token:
         type: string
@@ -775,11 +621,19 @@ definitions:
       url:
         type: string
     type: object
-  models.ResetPassword:
+  models.Project:
     properties:
-      password:
+      config:
+        $ref: '#/definitions/datastore.ProjectConfig'
+      logo_url:
         type: string
-      password_confirmation:
+      name:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
+      type:
         type: string
     type: object
   models.RetryConfiguration:
@@ -800,9 +654,9 @@ definitions:
       name:
         type: string
       provider:
-        $ref: '#/definitions/datastore.SourceProvider'
+        type: string
       type:
-        $ref: '#/definitions/datastore.SourceType'
+        type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
     type: object
@@ -812,20 +666,20 @@ definitions:
         type: integer
       deleted_at:
         type: integer
-      group_id:
-        type: string
       is_disabled:
         type: boolean
       mask_id:
         type: string
       name:
         type: string
+      project_id:
+        type: string
       provider:
-        $ref: '#/definitions/datastore.SourceProvider'
+        type: string
       provider_config:
         $ref: '#/definitions/datastore.ProviderConfig'
       type:
-        $ref: '#/definitions/datastore.SourceType'
+        type: string
       uid:
         type: string
       updated_at:
@@ -856,13 +710,6 @@ definitions:
         $ref: '#/definitions/models.RetryConfiguration'
       source_id:
         type: string
-    type: object
-  models.TestFilter:
-    properties:
-      request:
-        $ref: '#/definitions/models.FilterSchema'
-      schema:
-        $ref: '#/definitions/models.FilterSchema'
     type: object
   server.Stub:
     type: object
@@ -974,7 +821,7 @@ paths:
       - application/json
       description: This endpoint fetches projects
       parameters:
-      - description: group name
+      - description: Project name
         in: query
         name: name
         type: string
@@ -994,7 +841,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/datastore.Group'
+                    $ref: '#/definitions/datastore.Project'
                   type: array
               type: object
         "400":
@@ -1039,12 +886,12 @@ paths:
         name: orgID
         required: true
         type: string
-      - description: Group Details
+      - description: Project Details
         in: body
-        name: group
+        name: project
         required: true
         schema:
-          $ref: '#/definitions/models.Group'
+          $ref: '#/definitions/models.Project'
       produces:
       - application/json
       responses:
@@ -1055,7 +902,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Group'
+                  $ref: '#/definitions/datastore.Project'
               type: object
         "400":
           description: Bad Request
@@ -1164,7 +1011,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Group'
+                  $ref: '#/definitions/datastore.Project'
               type: object
         "400":
           description: Bad Request
@@ -1208,12 +1055,12 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Group Details
+      - description: Project Details
         in: body
-        name: group
+        name: project
         required: true
         schema:
-          $ref: '#/definitions/models.Group'
+          $ref: '#/definitions/models.Project'
       produces:
       - application/json
       responses:
@@ -1224,7 +1071,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Group'
+                  $ref: '#/definitions/datastore.Project'
               type: object
         "400":
           description: Bad Request
@@ -1991,7 +1838,7 @@ paths:
         type: string
       - description: event delivery ids
         in: body
-        name: deliveryIds
+        name: ids
         required: true
         schema:
           allOf:
@@ -2144,7 +1991,7 @@ paths:
         type: string
       - description: event delivery ids
         in: body
-        name: deliveryIds
+        name: ids
         required: true
         schema:
           allOf:
@@ -3593,12 +3440,6 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Filter Details
-        in: body
-        name: filter
-        required: true
-        schema:
-          $ref: '#/definitions/models.TestFilter'
       produces:
       - application/json
       responses:
@@ -3609,7 +3450,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  type: boolean
+                  $ref: '#/definitions/server.Stub'
               type: object
         "400":
           description: Bad Request
@@ -3841,118 +3682,6 @@ paths:
       summary: Get portal link keys
       tags:
       - PortalLinks
-  /ui/users/forgot-password:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint verifies a user's email
-      parameters:
-      - description: Email verification token
-        in: query
-        name: token
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Verify Email
-      tags:
-      - User
-  /ui/users/reset-password:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint resets a users password
-      parameters:
-      - description: reset token
-        in: query
-        name: token
-        required: true
-        type: string
-      - description: Reset Password Details
-        in: body
-        name: password
-        required: true
-        schema:
-          $ref: '#/definitions/models.ResetPassword'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/server.Stub'
-              type: object
-      summary: Reset user password
-      tags:
-      - User
 schemes:
 - https
 securityDefinitions:

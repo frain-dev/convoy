@@ -10,10 +10,9 @@ import { BadgeComponent } from '../components/badge/badge.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { GithubStarComponent } from '../components/github-star/github-star.component';
 import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
-import { OverlayDirective } from '../components/overlay/overlay.directive';
 
 @NgModule({
 	declarations: [PrivateComponent],
-	imports: [CommonModule, PrivateRoutingModule, CreateOrganisationModule, AddAnalyticsModule, DropdownComponent, ButtonComponent, BadgeComponent, GithubStarComponent, DropdownOptionDirective, VerifyEmailComponent, OverlayDirective]
+	imports: [CommonModule, PrivateRoutingModule, CreateOrganisationModule, AddAnalyticsModule, DropdownComponent, ButtonComponent, BadgeComponent, GithubStarComponent, DropdownOptionDirective, VerifyEmailComponent]
 })
 export class PrivateModule {}

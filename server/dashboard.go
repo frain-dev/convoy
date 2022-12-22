@@ -73,9 +73,9 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
-	qs := fmt.Sprintf("%v:%v:%v:%v", group.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
+	qs := fmt.Sprintf("%v:%v:%v:%v", project.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
 	var data *models.DashboardSummary
 
@@ -92,13 +92,13 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 	}
 
 	endpointService := createEndpointService(a)
-	apps, err := endpointService.CountGroupEndpoints(r.Context(), group.UID)
+	apps, err := endpointService.CountProjectEndpoints(r.Context(), project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
 	}
 
-	eventsSent, messages, err := a.M.ComputeDashboardMessages(r.Context(), group.UID, searchParams, p)
+	eventsSent, messages, err := a.M.ComputeDashboardMessages(r.Context(), project.UID, searchParams, p)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 		return
@@ -122,14 +122,12 @@ func (a *ApplicationHandler) GetDashboardSummary(w http.ResponseWriter, r *http.
 }
 
 func (a *ApplicationHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
-
 	_ = render.Render(w, r, util.NewServerResponse("Logged in successfully",
 		m.GetAuthLoginFromContext(r.Context()), http.StatusOK))
 }
 
 func (a *ApplicationHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
-
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 
 	viewableConfig := ViewableConfiguration{
 		Strategy:  *g.Config.Strategy,

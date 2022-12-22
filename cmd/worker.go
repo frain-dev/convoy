@@ -57,7 +57,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			endpointRepo := cm.NewEndpointRepo(a.store)
 			eventRepo := cm.NewEventRepository(a.store)
 			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
-			groupRepo := cm.NewGroupRepo(a.store)
+			projectRepo := cm.NewProjectRepo(a.store)
 			subRepo := cm.NewSubscriptionRepo(a.store)
 			deviceRepo := cm.NewDeviceRepository(a.store)
 			configRepo := cm.NewConfigRepo(a.store)
@@ -65,7 +65,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
 				eventDeliveryRepo,
-				groupRepo,
+				projectRepo,
 				a.limiter,
 				subRepo,
 				a.queue))
@@ -73,7 +73,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
 				eventRepo,
-				groupRepo,
+				projectRepo,
 				eventDeliveryRepo,
 				a.cache,
 				a.queue,
@@ -84,7 +84,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
 				cfg,
 				configRepo,
-				groupRepo,
+				projectRepo,
 				eventRepo,
 				eventDeliveryRepo,
 				a.searcher))
@@ -101,7 +101,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
-			//start worker
+			// start worker
 			lo.Infof("Starting Convoy workers...")
 			consumer.Start()
 

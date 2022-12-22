@@ -48,8 +48,8 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	_, err := seedConfiguration(r.ConvoyApp.store)
 	require.NoError(r.T(), err)
 
-	// seed group
-	groupConfig := &datastore.GroupConfig{
+	// seed Project
+	projectConfig := &datastore.ProjectConfig{
 		Signature: &datastore.SignatureConfiguration{
 			Header: "X-Convoy-Signature",
 			Versions: []datastore.SignatureVersion{
@@ -74,20 +74,20 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	project, err := testdb.SeedProject(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingProject, projectConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
 	duration, err := time.ParseDuration("80h")
 	require.NoError(r.T(), err)
 
-	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
+	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), project.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
 
-	//seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	// seed eventdelivery
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), project.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
@@ -95,7 +95,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.groupRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
+	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -106,10 +106,10 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
 
-	// check the number of retained events on groups
-	g, err := r.ConvoyApp.groupRepo.FetchGroupByID(context.Background(), group.UID)
+	// check the number of retained events on projects
+	p, err := r.ConvoyApp.projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.NoError(r.T(), err)
-	require.Equal(r.T(), g.Metadata.RetainedEvents, 1)
+	require.Equal(r.T(), p.Metadata.RetainedEvents, 1)
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Documents() {
@@ -117,8 +117,8 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	_, err := seedConfiguration(r.ConvoyApp.store)
 	require.NoError(r.T(), err)
 
-	// seed group
-	groupConfig := &datastore.GroupConfig{
+	// seed project
+	projectConfig := &datastore.ProjectConfig{
 		Signature: &datastore.SignatureConfiguration{
 			Header: "X-Convoy-Signature",
 			Versions: []datastore.SignatureVersion{
@@ -143,17 +143,17 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	group, err := testdb.SeedGroup(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingGroup, groupConfig)
+	project, err := testdb.SeedProject(r.ConvoyApp.store, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingProject, projectConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
-	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), group.UID, "", "*", []byte(`{}`), SeedFilter{
+	event, err := seedEvent(r.ConvoyApp.store, uuid.NewString(), project.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt: time.Now().UTC(),
 	})
 	require.NoError(r.T(), err)
 
-	//seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), group.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	// seed eventdelivery
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.store, event.UID, uuid.NewString(), project.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
 		CreatedAt: time.Now().UTC(),
 	})
 	require.NoError(r.T(), err)
@@ -161,7 +161,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.groupRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
+	fn := RententionPolicies(getConfig(), r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.searcher)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -207,13 +207,13 @@ func buildApplication() *applicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	store := datastore.New(db.Database())
 
-	groupRepo := convoyMongo.NewGroupRepo(store)
+	projectRepo := convoyMongo.NewProjectRepo(store)
 	eventRepo := convoyMongo.NewEventRepository(store)
 	configRepo := convoyMongo.NewConfigRepo(store)
 	eventDeliveryRepo := convoyMongo.NewEventDeliveryRepository(store)
 
 	app := &applicationHandler{
-		groupRepo:         groupRepo,
+		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		configRepo:        configRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
@@ -225,7 +225,7 @@ func buildApplication() *applicationHandler {
 }
 
 type applicationHandler struct {
-	groupRepo         datastore.GroupRepository
+	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -233,7 +233,7 @@ type applicationHandler struct {
 	store             datastore.Store
 }
 
-func seedEvent(store datastore.Store, endpointID string, groupID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
+func seedEvent(store datastore.Store, endpointID string, projectID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -243,7 +243,7 @@ func seedEvent(store datastore.Store, endpointID string, groupID string, uid, ev
 		EventType: datastore.EventType(eventType),
 		Data:      data,
 		Endpoints: []string{endpointID},
-		GroupID:   groupID,
+		ProjectID: projectID,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -258,7 +258,7 @@ func seedEvent(store datastore.Store, endpointID string, groupID string, uid, ev
 	return ev, nil
 }
 
-func seedEventDelivery(store datastore.Store, eventID string, endpointID string, groupID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(store datastore.Store, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -269,7 +269,7 @@ func seedEventDelivery(store datastore.Store, eventID string, endpointID string,
 		EndpointID:     endpointID,
 		Status:         status,
 		SubscriptionID: subcriptionID,
-		GroupID:        groupID,
+		ProjectID:      projectID,
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Unix(filter.CreatedAt.Unix(), 0)),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}

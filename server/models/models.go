@@ -9,21 +9,21 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Group struct {
-	Name              string                 `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	Type              datastore.GroupType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
-	LogoURL           string                 `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	RateLimit         int                    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration string                 `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
-	Config            *datastore.GroupConfig `json:"config"`
+type Project struct {
+	Name              string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	Type              datastore.ProjectType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
+	LogoURL           string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int                      `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration string                   `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Config            *datastore.ProjectConfig `json:"config"`
 }
 
-type UpdateGroup struct {
-	Name              string                 `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	LogoURL           string                 `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	RateLimit         int                    `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration string                 `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
-	Config            *datastore.GroupConfig `json:"config" valid:"optional"`
+type UpdateProject struct {
+	Name              string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	LogoURL           string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	RateLimit         int                      `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
+	RateLimitDuration string                   `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
+	Config            *datastore.ProjectConfig `json:"config" valid:"optional"`
 }
 
 type Organisation struct {
@@ -67,9 +67,9 @@ type PersonalAPIKey struct {
 }
 
 type Role struct {
-	Type  auth.RoleType `json:"type"`
-	Group string        `json:"group"`
-	App   string        `json:"app,omitempty"`
+	Type    auth.RoleType `json:"type"`
+	Project string        `json:"project"`
+	App     string        `json:"app,omitempty"`
 }
 
 type UpdateOrganisationMember struct {
@@ -95,9 +95,9 @@ type APIKeyResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type CreateGroupResponse struct {
-	APIKey *APIKeyResponse  `json:"api_key"`
-	Group  *datastore.Group `json:"group"`
+type CreateProjectResponse struct {
+	APIKey  *APIKeyResponse    `json:"api_key"`
+	Project *datastore.Project `json:"project"`
 }
 
 type PortalAPIKeyResponse struct {
@@ -106,13 +106,13 @@ type PortalAPIKeyResponse struct {
 	Url        string    `json:"url,omitempty"`
 	Type       string    `json:"key_type"`
 	EndpointID string    `json:"endpoint_id,omitempty"`
-	GroupID    string    `json:"group_id,omitempty"`
+	ProjectID  string    `json:"project_id,omitempty"`
 }
 
 type SourceResponse struct {
 	UID            string                    `json:"uid"`
 	MaskID         string                    `json:"mask_id"`
-	GroupID        string                    `json:"group_id"`
+	ProjectID      string                    `json:"project_id"`
 	Name           string                    `json:"name"`
 	Type           datastore.SourceType      `json:"type"`
 	URL            string                    `json:"url"`
@@ -175,7 +175,7 @@ type Endpoint struct {
 	Secret             string `json:"secret" bson:"secret"`
 	OwnerID            string `json:"owner_id" bson:"owner_id"`
 	Description        string `json:"description" bson:"description"`
-	AdvancedSignatures *bool  `json:"advanced_signatures" bson:"advanced_signatures"`
+	AdvancedSignatures bool   `json:"advanced_signatures" bson:"advanced_signatures"`
 	Name               string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
 	SupportEmail       string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
 	IsDisabled         bool   `json:"is_disabled"`
@@ -336,7 +336,7 @@ type ResetPassword struct {
 }
 
 type CreateEndpointApiKey struct {
-	Group      *datastore.Group
+	Project    *datastore.Project
 	Endpoint   *datastore.Endpoint
 	Name       string `json:"name"`
 	BaseUrl    string
@@ -352,7 +352,7 @@ type PortalLink struct {
 type PortalLinkResponse struct {
 	UID               string               `json:"uid"`
 	Name              string               `json:"name"`
-	GroupID           string               `json:"group_id"`
+	ProjectID         string               `json:"project_id"`
 	Endpoints         []string             `json:"endpoints"`
 	EndpointCount     int                  `json:"endpoint_count"`
 	Token             string               `json:"token"`

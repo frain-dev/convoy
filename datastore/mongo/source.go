@@ -30,9 +30,9 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	return err
 }
 
-func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *datastore.Source) error {
+func (s *sourceRepo) UpdateSource(ctx context.Context, projectId string, source *datastore.Source) error {
 	ctx = s.setCollectionInContext(ctx)
-	filter := bson.M{"uid": source.UID, "group_id": groupId}
+	filter := bson.M{"uid": source.UID, "project_id": projectId}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -49,11 +49,11 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, groupId string, source *d
 	return err
 }
 
-func (s *sourceRepo) FindSourceByID(ctx context.Context, groupId string, id string) (*datastore.Source, error) {
+func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id string) (*datastore.Source, error) {
 	ctx = s.setCollectionInContext(ctx)
 	source := &datastore.Source{}
 
-	filter := bson.M{"uid": id, "group_id": groupId}
+	filter := bson.M{"uid": id, "project_id": projectId}
 
 	err := s.store.FindOne(ctx, filter, nil, source)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -77,7 +77,7 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*da
 	return source, nil
 }
 
-func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id string) error {
+func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id string) error {
 	ctx = s.setCollectionInContext(ctx)
 	update := bson.M{
 		"$set": bson.M{
@@ -86,7 +86,7 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, groupId string, id st
 	}
 
 	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
-		srcfilter := bson.M{"uid": id, "group_id": groupId}
+		srcfilter := bson.M{"uid": id, "project_id": projectId}
 		err := s.store.UpdateOne(sessCtx, srcfilter, update)
 		if err != nil {
 			return err
@@ -112,11 +112,11 @@ func (s *sourceRepo) deleteSubscription(ctx context.Context, sourceId string, up
 	return err
 }
 
-func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, groupID string, f *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, f *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	ctx = s.setCollectionInContext(ctx)
 	var sources []datastore.Source
 
-	filter := bson.M{"group_id": groupID, "type": f.Type, "provider": f.Provider}
+	filter := bson.M{"project_id": projectID, "type": f.Type, "provider": f.Provider}
 
 	removeUnusedFields(filter)
 	pagination, err := s.store.FindMany(ctx, filter, nil, nil,

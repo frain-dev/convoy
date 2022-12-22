@@ -117,8 +117,8 @@ func (db *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, f *datastore.ApiKeyF
 
 	filter := bson.M{}
 
-	if !util.IsStringEmpty(f.GroupID) {
-		filter["role.group"] = f.GroupID
+	if !util.IsStringEmpty(f.ProjectID) {
+		filter["role.project"] = f.ProjectID // TODO(daniel): migrate apikey.group field
 	}
 
 	if !util.IsStringEmpty(f.EndpointID) {

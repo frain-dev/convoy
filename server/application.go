@@ -39,11 +39,11 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	uid := uuid.New().String()
 	endpoint := &datastore.Endpoint{
 		UID:             uid,
-		GroupID:         group.UID,
+		ProjectID:       project.UID,
 		Title:           newApp.Name,
 		SupportEmail:    newApp.SupportEmail,
 		SlackWebhookURL: newApp.SlackWebhookURl,
@@ -54,7 +54,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
-	err = endpointRepo.CreateEndpoint(r.Context(), endpoint, group.UID)
+	err = endpointRepo.CreateEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		msg := "failed to create application"
 		if err == datastore.ErrDuplicateEndpointName {
@@ -70,12 +70,12 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 
-	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), group.UID, q, pageable)
+	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), project.UID, q, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))
@@ -124,7 +124,7 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 
 func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	endpoints := m.GetEndpointsFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 
 	appUpdate := struct {
@@ -160,7 +160,7 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 			endpoint.SupportEmail = *appUpdate.SupportEmail
 		}
 
-		err := endpointRepo.UpdateEndpoint(r.Context(), &endpoint, group.UID)
+		err := endpointRepo.UpdateEndpoint(r.Context(), &endpoint, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -189,7 +189,7 @@ func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	endpoints := m.GetEndpointsFromContext(r.Context())
 	es := createEndpointService(a)
@@ -198,7 +198,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		URL                string   `json:"url"`
 		Description        string   `json:"description"`
 		Events             []string `json:"events"`
-		AdvancedSignatures *bool    `json:"advanced_signatures"`
+		AdvancedSignatures bool     `json:"advanced_signatures"`
 		Secret             string   `json:"secret"`
 
 		HttpTimeout       string                            `json:"http_timeout"`
@@ -242,7 +242,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 			AppID:              appDetails.AppID,
 		}
 
-		endpoint, err = es.CreateEndpoint(r.Context(), e, group.UID)
+		endpoint, err = es.CreateEndpoint(r.Context(), e, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
@@ -310,7 +310,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		endpoint.Authentication = auth
 
 		endpointRepo := mongo.NewEndpointRepo(a.A.Store)
-		err = endpointRepo.UpdateEndpoint(r.Context(), endpoint, group.UID)
+		err = endpointRepo.UpdateEndpoint(r.Context(), endpoint, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -345,7 +345,6 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 	resp := generateEndpointResponse(*endpoint)
 
 	_ = render.Render(w, r, util.NewServerResponse("App endpoint fetched successfully", resp, http.StatusOK))
-
 }
 
 func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -417,7 +416,7 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 func generateAppResponse(endpoint *datastore.Endpoint) *datastore.Application {
 	return &datastore.Application{
 		UID:             endpoint.AppID,
-		GroupID:         endpoint.GroupID,
+		ProjectID:       endpoint.ProjectID,
 		Title:           endpoint.Title,
 		SupportEmail:    endpoint.SupportEmail,
 		SlackWebhookURL: endpoint.SlackWebhookURL,

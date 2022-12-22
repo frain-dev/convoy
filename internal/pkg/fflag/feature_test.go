@@ -18,13 +18,13 @@ import (
 
 type FF struct {
 	cache       cache.Cache
-	groupRepo   datastore.GroupRepository
+	projectRepo datastore.ProjectRepository
 }
 
 func provideServices(ctrl *gomock.Controller) *FF {
 	return &FF{
 		cache:       mocks.NewMockCache(ctrl),
-		groupRepo:   mocks.NewMockGroupRepository(ctrl),
+		projectRepo: mocks.NewMockProjectRepository(ctrl),
 	}
 }
 
@@ -44,8 +44,8 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				cache, _ := ff.cache.(*mocks.MockCache)
 				cache.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-				repo, _ := ff.groupRepo.(*mocks.MockGroupRepository)
-				repo.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{
+				repo, _ := ff.projectRepo.(*mocks.MockProjectRepository)
+				repo.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{
 					UID:            "123456",
 					OrganisationID: "1234",
 				}, nil)
@@ -76,8 +76,8 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				cache, _ := ff.cache.(*mocks.MockCache)
 				cache.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-				repo, _ := ff.groupRepo.(*mocks.MockGroupRepository)
-				repo.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Return(&datastore.Group{
+				repo, _ := ff.projectRepo.(*mocks.MockProjectRepository)
+				repo.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{
 					UID:            "123456",
 					OrganisationID: "1234",
 				}, nil)
@@ -113,9 +113,9 @@ func TestFeatureFlags_CLI(t *testing.T) {
 			defer ctrl.Finish()
 
 			ss := provideServices(ctrl)
-			m := middleware.NewMiddleware(&middleware.CreateMiddleware{Cache: ss.cache, GroupRepo: ss.groupRepo})
+			m := middleware.NewMiddleware(&middleware.CreateMiddleware{Cache: ss.cache, ProjectRepo: ss.projectRepo})
 
-			fn := m.RequireGroup()(CanAccessFeature(tc.IsEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fn := m.RequireProject()(CanAccessFeature(tc.IsEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, err := w.Write([]byte(`Hello`))
 

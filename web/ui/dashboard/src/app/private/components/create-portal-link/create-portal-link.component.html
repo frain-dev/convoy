@@ -1,4 +1,4 @@
-<convoy-modal position="full" [title]="linkUid ? 'Update Portal Link' : 'Create Portal Link'" (closeModal)="goBack()">
+<div convoy-modal position="full" [title]="linkUid ? 'Update Portal Link' : 'Create Portal Link'" (closeModal)="goBack()">
 	<div modalBody>
 		<form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
 			<convoy-card className="p-24px mt-40px">
@@ -44,4 +44,4 @@
 			</div>
 		</form>
 	</div>
-</convoy-modal>
+</div>

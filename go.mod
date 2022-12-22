@@ -25,13 +25,12 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/hibiken/asynq v0.23.0
-	github.com/hibiken/asynq/x v0.0.0-20211219150637-8dfabfccb3be
+	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
 	github.com/hibiken/asynqmon v0.7.1
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jaswdr/faker v1.10.2
 	github.com/jedib0t/go-pretty/v6 v6.3.2
 	github.com/jeremywohl/flatten v1.0.1
-	github.com/jirevwe/eflat v0.0.0-20221021221006-40872f1c0902
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mongodb/mongo-tools v0.0.0-20220615145412-ec9893cba7e6

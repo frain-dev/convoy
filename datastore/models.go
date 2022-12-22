@@ -62,7 +62,7 @@ type SearchParams struct {
 
 type (
 	StrategyProvider string
-	GroupType        string
+	ProjectType      string
 	SourceType       string
 	SourceProvider   string
 	VerifierType     string
@@ -123,8 +123,8 @@ func (e EncodingType) String() string {
 }
 
 const (
-	OutgoingGroup GroupType = "outgoing"
-	IncomingGroup GroupType = "incoming"
+	OutgoingProject ProjectType = "outgoing"
+	IncomingProject ProjectType = "incoming"
 )
 
 const (
@@ -221,7 +221,7 @@ type SubscriptionStatus string
 type Endpoint struct {
 	ID                 primitive.ObjectID `json:"-" bson:"_id"`
 	UID                string             `json:"uid" bson:"uid"`
-	GroupID            string             `json:"group_id" bson:"group_id"`
+	ProjectID          string             `json:"project_id" bson:"project_id"`
 	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
 	TargetURL          string             `json:"target_url" bson:"target_url"`
 	Title              string             `json:"title" bson:"title"`
@@ -277,31 +277,31 @@ var (
 	ErrOrgMemberNotFound = errors.New("organisation member not found")
 )
 
-type Group struct {
+type Project struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
 	Name           string             `json:"name" bson:"name"`
 	LogoURL        string             `json:"logo_url" bson:"logo_url"`
 	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
-	Type           GroupType          `json:"type" bson:"type"`
-	Config         *GroupConfig       `json:"config" bson:"config"`
-	Statistics     *GroupStatistics   `json:"statistics" bson:"-"`
+	Type           ProjectType        `json:"type" bson:"type"`
+	Config         *ProjectConfig     `json:"config" bson:"config"`
+	Statistics     *ProjectStatistics `json:"statistics" bson:"-"`
 
 	// TODO(subomi): refactor this into the Instance API.
-	RateLimit         int            `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string         `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Metadata          *GroupMetadata `json:"metadata" bson:"metadata"`
+	RateLimit         int              `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string           `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Metadata          *ProjectMetadata `json:"metadata" bson:"metadata"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
-type GroupMetadata struct {
+type ProjectMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
-type GroupConfig struct {
+type ProjectConfig struct {
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
@@ -341,31 +341,31 @@ type RetentionPolicyConfiguration struct {
 	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
 }
 
-type GroupStatistics struct {
-	GroupID      string `json:"-" bson:"group_id"`
+type ProjectStatistics struct {
+	ProjectID    string `json:"-" bson:"project_id"`
 	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
 	TotalApps    int64  `json:"total_endpoints" bson:"total_endpoints"`
 }
 
-type GroupFilter struct {
+type ProjectFilter struct {
 	OrgID string   `json:"org_id" bson:"org_id"`
 	Names []string `json:"name" bson:"name"`
 }
 
 type EventFilter struct {
-	GroupID        string `json:"group_id" bson:"group_id"`
+	ProjectID      string `json:"project_id" bson:"project_id"`
 	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
 type EventDeliveryFilter struct {
-	GroupID        string `json:"group_id" bson:"group_id"`
+	ProjectID      string `json:"project_id" bson:"project_id"`
 	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
-func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
-	f := GroupFilter{OrgID: g.OrgID, Names: []string{}}
+func (g *ProjectFilter) WithNamesTrimmed() *ProjectFilter {
+	f := ProjectFilter{OrgID: g.OrgID, Names: []string{}}
 
 	for _, s := range g.Names {
 		s = strings.TrimSpace(s)
@@ -378,20 +378,20 @@ func (g *GroupFilter) WithNamesTrimmed() *GroupFilter {
 	return &f
 }
 
-func (g *GroupFilter) ToGenericMap() map[string]interface{} {
+func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
 	m := map[string]interface{}{"name": g.Names}
 	return m
 }
 
-func (o *Group) IsDeleted() bool { return o.DeletedAt != nil }
+func (o *Project) IsDeleted() bool { return o.DeletedAt != nil }
 
-func (o *Group) IsOwner(e *Endpoint) bool { return o.UID == e.GroupID }
+func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 
 var (
 	ErrUserNotFound                  = errors.New("user not found")
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")
-	ErrGroupNotFound                 = errors.New("group not found")
+	ErrProjectNotFound               = errors.New("project not found")
 	ErrAPIKeyNotFound                = errors.New("api key not found")
 	ErrEndpointNotFound              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
@@ -401,7 +401,7 @@ var (
 	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
-	ErrDuplicateGroupName            = errors.New("a group with this name already exists")
+	ErrDuplicateProjectName          = errors.New("a project with this name already exists")
 	ErrDuplicateEmail                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                = errors.New("no active secret found")
 )
@@ -409,7 +409,7 @@ var (
 type AppMetadata struct {
 	UID          string `json:"uid" bson:"uid"`
 	Title        string `json:"title" bson:"title"`
-	GroupID      string `json:"group_id" bson:"group_id"`
+	ProjectID    string `json:"project_id" bson:"project_id"`
 	SupportEmail string `json:"support_email" bson:"support_email"`
 }
 
@@ -428,7 +428,7 @@ type Event struct {
 
 	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
 	AppID            string                `json:"app_id,omitempty" bson:"app_id"` // Deprecated
-	GroupID          string                `json:"group_id,omitempty" bson:"group_id"`
+	ProjectID        string                `json:"project_id,omitempty" bson:"project_id"`
 	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
 	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
@@ -437,6 +437,7 @@ type Event struct {
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data,omitempty" bson:"data"`
+	Raw  string          `json:"raw,omitempty" bson:"raw"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -487,6 +488,7 @@ const (
 type Metadata struct {
 	// Data to be sent to endpoint.
 	Data     json.RawMessage  `json:"data" bson:"data"`
+	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
 	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
@@ -546,7 +548,7 @@ type DeliveryAttempt struct {
 type EventDelivery struct {
 	ID             primitive.ObjectID    `json:"-" bson:"_id"`
 	UID            string                `json:"uid" bson:"uid"`
-	GroupID        string                `json:"group_id,omitempty" bson:"group_id"`
+	ProjectID      string                `json:"project_id,omitempty" bson:"project_id"`
 	EventID        string                `json:"event_id,omitempty" bson:"event_id"`
 	EndpointID     string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
 	DeviceID       string                `json:"device_id" bson:"device_id"`
@@ -593,7 +595,7 @@ type Subscription struct {
 	Name       string             `json:"name" bson:"name"`
 	Type       SubscriptionType   `json:"type" bson:"type"`
 	Status     SubscriptionStatus `json:"status" bson:"status"`
-	GroupID    string             `json:"-" bson:"group_id"`
+	ProjectID  string             `json:"-" bson:"project_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`
 	DeviceID   string             `json:"device_id" bson:"device_id"`
@@ -616,7 +618,7 @@ type Subscription struct {
 type Source struct {
 	ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string             `json:"uid" bson:"uid"`
-	GroupID        string             `json:"group_id" bson:"group_id"`
+	ProjectID      string             `json:"project_id" bson:"project_id"`
 	MaskID         string             `json:"mask_id" bson:"mask_id"`
 	Name           string             `json:"name" bson:"name"`
 	Type           SourceType         `json:"type" bson:"type"`
@@ -755,7 +757,7 @@ type OrganisationMember struct {
 type Device struct {
 	ID         primitive.ObjectID  `json:"-" bson:"_id"`
 	UID        string              `json:"uid" bson:"uid"`
-	GroupID    string              `json:"group_id,omitempty" bson:"group_id"`
+	ProjectID  string              `json:"project_id,omitempty" bson:"project_id"`
 	EndpointID string              `json:"endpoint_id,omitempty" bson:"endpoint_id"`
 	HostName   string              `json:"host_name,omitempty" bson:"host_name"`
 	Status     DeviceStatus        `json:"status,omitempty" bson:"status"`
@@ -811,7 +813,7 @@ type PortalLink struct {
 	ID                primitive.ObjectID `json:"-" bson:"_id"`
 	UID               string             `json:"uid" bson:"uid"`
 	Name              string             `json:"name" bson:"name"`
-	GroupID           string             `json:"group_id" bson:"group_id"`
+	ProjectID         string             `json:"project_id" bson:"project_id"`
 	Token             string             `json:"-" bson:"token"`
 	Endpoints         []string           `json:"endpoints" bson:"endpoints"`
 	EndpointsMetadata []Endpoint         `json:"endpoints_metadata" bson:"endpoints_metadata"`
@@ -825,7 +827,7 @@ type PortalLink struct {
 type Application struct {
 	ID              primitive.ObjectID `json:"-" bson:"_id"`
 	UID             string             `json:"uid" bson:"uid"`
-	GroupID         string             `json:"group_id" bson:"group_id"`
+	ProjectID       string             `json:"project_id" bson:"project_id"`
 	Title           string             `json:"name" bson:"title"`
 	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
 	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
