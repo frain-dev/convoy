@@ -122,6 +122,96 @@ func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", event, http.StatusOK))
 }
 
+// BatchReplayEvents
+// @Summary Replays multiple endpoint events
+// @Description This endpoint replays multiple events
+// @Tags Events
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
+// @Param source query string false "Source id"
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/events/batchreplay [post]
+func (a *ApplicationHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
+	p := m.GetProjectFromContext(r.Context())
+	eventService := createEventService(a)
+
+	searchParams, err := getSearchParams(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	f := &datastore.Filter{
+		Project: p,
+		Pageable: datastore.Pageable{
+			Page:    0,
+			PerPage: 1000000000000, // large number so we get everything in most cases
+			Sort:    -1,
+		},
+		SourceID:     r.URL.Query().Get("sourceId"),
+		EndpointID:   r.URL.Query().Get("endpointId"),
+		SearchParams: searchParams,
+	}
+
+	successes, failures, err := eventService.BatchReplayEvents(r.Context(), f)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
+}
+
+// CountAffectedEvents
+// @Summary Counts affected events
+// @Description This endpoint counts events that will be affected by a batch replay operation
+// @Tags Events
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
+// @Param source query string false "Source id"
+// @Success 200 {object} util.ServerResponse{data=Stub{num=integer}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/events/countbatchreplayevents [get]
+func (a *ApplicationHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
+	p := m.GetProjectFromContext(r.Context())
+	eventService := createEventService(a)
+
+	searchParams, err := getSearchParams(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	f := &datastore.Filter{
+		Project: p,
+		Pageable: datastore.Pageable{
+			Page:    0,
+			PerPage: 1000000000000, // large number so we get everything in most cases
+			Sort:    -1,
+		},
+		SourceID:     r.URL.Query().Get("sourceId"),
+		EndpointID:   r.URL.Query().Get("endpointId"),
+		SearchParams: searchParams,
+	}
+
+	count, err := eventService.CountAffectedEvents(r.Context(), f)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": count}, http.StatusOK))
+}
+
 // GetEndpointEvent
 // @Summary Get endpoint event
 // @Description This endpoint fetches an endpoint event

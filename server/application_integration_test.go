@@ -311,12 +311,12 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	title := "random-name"
 	supportEmail := "10xengineer@getconvoy.io"
-	isDisabled := randBool()
+	isDisabled := true
 	appID := uuid.New().String()
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", isDisabled, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", isDisabled, datastore.InactiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -324,7 +324,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 		"name": "%s",
 		"support_email": "%s",
 		"is_disabled": %t
-	}`, title, supportEmail, !isDisabled)
+	}`, title, supportEmail, false)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -344,13 +344,13 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	require.Equal(s.T(), app.UID, dbApp.UID)
 	require.Equal(s.T(), title, dbApp.Title)
 	require.Equal(s.T(), supportEmail, dbApp.SupportEmail)
-	require.Equal(s.T(), !isDisabled, dbApp.IsDisabled)
+	require.Equal(s.T(), datastore.ActiveEndpointStatus, dbApp.Status)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	title := "random-name"
 	supportEmail := "10xengineer@getconvoy.io"
-	isDisabled := randBool()
+	isDisabled := false
 	appID := uuid.New().String()
 	expectedStatusCode := http.StatusAccepted
 
@@ -363,7 +363,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 		"name": "%s",
 		"support_email": "%s",
 		"is_disabled": %t
-	}`, title, supportEmail, !isDisabled)
+	}`, title, supportEmail, true)
 	req := createRequest(http.MethodPut, url, s.PersonalAPIKey, body)
 	w := httptest.NewRecorder()
 
@@ -383,7 +383,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	require.Equal(s.T(), app.UID, dbApp.UID)
 	require.Equal(s.T(), title, dbApp.Title)
 	require.Equal(s.T(), supportEmail, dbApp.SupportEmail)
-	require.Equal(s.T(), !isDisabled, dbApp.IsDisabled)
+	require.Equal(s.T(), datastore.InactiveEndpointStatus, dbApp.Status)
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {

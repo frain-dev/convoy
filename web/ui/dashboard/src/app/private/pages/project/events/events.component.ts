@@ -29,7 +29,6 @@ export class EventsComponent implements OnInit {
 	dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
 	filterOptions: ['daily', 'weekly', 'monthly', 'yearly'] = ['daily', 'weekly', 'monthly', 'yearly'];
 	dashboardData = { apps: 0, events_sent: 0 };
-	eventDeliveryFilteredByEventId!: string;
 	events!: { pagination: PAGINATION; content: EVENT[] };
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	statsDateRange: FormGroup = this.formBuilder.group({
@@ -94,10 +93,6 @@ export class EventsComponent implements OnInit {
 		return { startDate, endDate };
 	}
 
-	getEventDeliveries(eventId: string) {
-		this.eventDeliveryFilteredByEventId = eventId;
-		this.toggleActiveTab('event deliveries');
-	}
 
 	initConvoyChart(dashboardResponse: HTTP_RESPONSE, chatLabels: LABELS[]) {
 		let chartData: { label: string; data: any }[] = [];

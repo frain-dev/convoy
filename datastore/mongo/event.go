@@ -188,6 +188,10 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 		d = append(d, bson.E{Key: "project_id", Value: f.Project.UID})
 	}
 
+	if !util.IsStringEmpty(f.EndpointID) {
+		f.EndpointIDs = append(f.EndpointIDs, f.EndpointID)
+	}
+
 	if len(f.EndpointIDs) > 0 {
 		filter["endpoints"] = bson.M{"$in": f.EndpointIDs}
 		d = append(d, bson.E{Key: "endpoints", Value: bson.M{"$in": f.EndpointIDs}})
@@ -286,6 +290,30 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 	}
 
 	return events, pagination, nil
+}
+
+func (db *eventRepo) CountEvents(ctx context.Context, f *datastore.Filter) (int64, error) {
+	ctx = db.setCollectionInContext(ctx)
+
+	filter := bson.M{"deleted_at": nil, "created_at": getCreatedDateFilter(f.SearchParams)}
+	if !util.IsStringEmpty(f.Project.UID) {
+		filter["project_id"] = f.Project.UID
+	}
+
+	if !util.IsStringEmpty(f.SourceID) {
+		filter["source_id"] = f.SourceID
+	}
+
+	if !util.IsStringEmpty(f.EndpointID) {
+		filter["endpoints"] = f.EndpointID
+	}
+
+	c, err := db.store.Count(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return c, nil
 }
 
 func getCreatedDateFilter(searchParams datastore.SearchParams) bson.M {

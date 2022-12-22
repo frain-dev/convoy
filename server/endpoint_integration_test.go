@@ -321,12 +321,11 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
 	endpointURL := faker.New().Internet().URL()
 	supportEmail := "10xengineer@getconvoy.io"
-	isDisabled := randBool()
 	endpointID := uuid.New().String()
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, endpointID, "", "", isDisabled, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
@@ -334,9 +333,8 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 		"name": "%s",
 		"description": "test endpoint",
 		"url": "%s",
-		"support_email": "%s",
-		"is_disabled": %t
-	}`, title, endpointURL, supportEmail, !isDisabled)
+		"support_email": "%s"
+ 	}`, title, endpointURL, supportEmail)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -357,7 +355,6 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
 	require.Equal(s.T(), title, dbEndpoint.Title)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
-	require.Equal(s.T(), !isDisabled, dbEndpoint.IsDisabled)
 	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
 }
 
@@ -402,7 +399,6 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() 
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
 	require.Equal(s.T(), title, dbEndpoint.Title)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
-	require.Equal(s.T(), !isDisabled, dbEndpoint.IsDisabled)
 	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
 }
 

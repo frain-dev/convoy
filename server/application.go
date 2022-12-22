@@ -420,7 +420,7 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 }
 
 func generateAppResponse(endpoint *datastore.Endpoint) *datastore.Application {
-	return &datastore.Application{
+	a := &datastore.Application{
 		UID:             endpoint.AppID,
 		ProjectID:       endpoint.ProjectID,
 		Title:           endpoint.Title,
@@ -429,6 +429,12 @@ func generateAppResponse(endpoint *datastore.Endpoint) *datastore.Application {
 		CreatedAt:       endpoint.CreatedAt,
 		UpdatedAt:       endpoint.UpdatedAt,
 	}
+
+	if endpoint.Status != datastore.ActiveEndpointStatus {
+		a.IsDisabled = true
+	}
+
+	return a
 }
 
 func generateEndpointResponse(endpoint datastore.Endpoint) datastore.DeprecatedEndpoint {

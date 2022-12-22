@@ -141,7 +141,7 @@ export class CreateProjectComponent implements OnInit {
 			this.generalService.showNotification({ message: 'Project created successfully!', style: 'success', type: this.privateService.activeProjectDetails?.uid ? 'modal' : 'alert' });
 			this.privateService.activeProjectDetails = response.data.group;
 			this.apiKey = response.data.api_key.key;
-			this.projectDetails = response.data.group;
+			this.projectDetails = response.data.project;
 			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
 			this.showApiKey = true;
 		} catch (error) {

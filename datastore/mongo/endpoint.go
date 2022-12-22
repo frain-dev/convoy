@@ -113,6 +113,7 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 			"rate_limit":          endpoint.RateLimit,
 			"advanced_signatures": endpoint.AdvancedSignatures,
 			"authentication":      endpoint.Authentication,
+			"status":              endpoint.Status,
 			"updated_at":          endpoint.UpdatedAt,
 		},
 	}

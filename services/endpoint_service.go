@@ -80,6 +80,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		AdvancedSignatures: e.AdvancedSignatures,
 		AppID:              e.AppID,
 		RateLimitDuration:  duration.String(),
+		Status:             datastore.ActiveEndpointStatus,
 		CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 	}

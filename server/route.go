@@ -204,6 +204,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateEndpointEvent)
 						eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
 						eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+						eventRouter.Post("/batchreplay", a.BatchReplayEvents)
+						eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
 						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 							eventSubRouter.Use(a.M.RequireEvent())
@@ -399,6 +401,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 							eventRouter.Post("/", a.CreateEndpointEvent)
 							eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
 							eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+							eventRouter.Post("/batchreplay", a.BatchReplayEvents)
+							eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 								eventSubRouter.Use(a.M.RequireEvent())
@@ -515,6 +519,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 		portalRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+			eventRouter.Post("/batchreplay", a.BatchReplayEvents)
+			eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Use(a.M.RequireEvent())
