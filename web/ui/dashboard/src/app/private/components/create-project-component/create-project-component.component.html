@@ -12,7 +12,7 @@
 			<label for="project-name" convoy-label>Project Id</label>
 			<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
 				<span class="text-16 text-grey-60 font-normal">{{ projectDetails?.uid }}</span>
-				<convoy-copy-button [text]="projectDetails?.uid || ''"></convoy-copy-button>
+				<convoy-copy-button [text]="projectDetails?.uid || ''"  notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
 			</div>
 		</ng-container>
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
@@ -172,6 +172,6 @@
 	</div>
 </div>
 
-<convoy-token-modal *ngIf="showApiKey" title="Project Created Successfully" description="Your API Key has also been created. Please copy this key and save it somewhere safe." [token]="apiKey" (closeModal)="onAction.emit({ action: 'createProject', data: projectDetails })"></convoy-token-modal>
+<convoy-token-modal *ngIf="showApiKey" title="Project Created Successfully" description="Your API Key has also been created. Please copy this key and save it somewhere safe." [token]="apiKey" notificationText="API key has been copied to your clipboard." (closeModal)="onAction.emit({ action: 'createProject', data: projectDetails })"></convoy-token-modal>
 
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="router.navigateByUrl('/')" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
