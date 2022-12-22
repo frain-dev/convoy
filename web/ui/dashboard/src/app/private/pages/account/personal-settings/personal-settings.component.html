@@ -103,7 +103,7 @@
 </div>
 
 <!-- token generated  -->
-<convoy-token-modal *ngIf="showAccessKey" title="Generate Token" description="Your access code has been generated successfully" [token]="accessKey" (closeModal)="showAccessKey = false; fetchPersonalKeys()"></convoy-token-modal>
+<convoy-token-modal *ngIf="showAccessKey" title="Generate Token" description="Your personal API key has been generated successfully" notificationText="Personal API key has been copied to your clipboard." [token]="accessKey" (closeModal)="showAccessKey = false; fetchPersonalKeys()"></convoy-token-modal>
 
 <!-- revoke token modal  -->
 <app-delete-modal *ngIf="showRevokeKeyModal" [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="showRevokeKeyModal = false" (deleteData)="revokeKey()"></app-delete-modal>
