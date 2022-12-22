@@ -5,7 +5,7 @@
 		<p class="text-14 text-grey-60 font-normal text-center mb-60px mt-8px max-w-[270px] m-auto">{{ description }}</p>
 		<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
 			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ token }}</span>
-			<convoy-copy-button [text]="token"></convoy-copy-button>
+			<convoy-copy-button [text]="token" [notificationText]="notificationText"></convoy-copy-button>
 		</div>
 		<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>
 	</div>
