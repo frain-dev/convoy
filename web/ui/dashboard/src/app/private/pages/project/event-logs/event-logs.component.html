@@ -167,7 +167,9 @@
 
 				<ng-container *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
-					<prism language="json" [code]="getCodeSnippetString()" title="Event"></prism>
+					<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
+                    <div class="mb-20px"></div>
+					<prism language="json" [code]="getCodeSnippetString('header')" title="Header"></prism>
 
 					<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
 					<div *ngIf="isLoadingSidebarDeliveries">
