@@ -32,7 +32,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		}),
 		filter_config: this.formBuilder.group({
 			event_types: [null],
-			filter: [null]
+			filter: this.formBuilder.group({
+				headers: [null],
+				body: [null]
+			})
 		})
 	});
 	endpoints!: ENDPOINT[];
@@ -273,9 +276,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	getFilterSchema(schema: any) {
-		this.subscriptionForm.patchValue({
-			filter_config: { filter: schema }
-		});
+		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
+		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
+
 		this.showFilterForm = false;
 	}
 }
