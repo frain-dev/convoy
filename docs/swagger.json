@@ -1556,7 +1556,7 @@
                     },
                     {
                         "description": "event delivery ids",
-                        "name": "ids",
+                        "name": "deliveryIds",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -1834,7 +1834,7 @@
                     },
                     {
                         "description": "event delivery ids",
-                        "name": "ids",
+                        "name": "deliveryIds",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2701,6 +2701,272 @@
                 }
             }
         },
+        "/api/v1/projects/{projectID}/events/batchreplay": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint replays multiple events",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Replays multiple endpoint events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project id",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start date",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end date",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Source id",
+                        "name": "source",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/datastore.Event"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "data": {
+                                                            "$ref": "#/definitions/server.Stub"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectID}/events/countbatchreplayevents": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint counts events that will be affected by a batch replay operation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Counts affected events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project id",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start date",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end date",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Source id",
+                        "name": "source",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/server.Stub"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "num": {
+                                                            "type": "integer"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects/{projectID}/events/fanout": {
             "post": {
                 "security": [
@@ -2733,7 +2999,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Event"
+                            "$ref": "#/definitions/models.FanoutEvent"
                         }
                     }
                 ],
@@ -4525,6 +4791,15 @@
                         "name": "projectID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Filter Details",
+                        "name": "filter",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.TestFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -4539,7 +4814,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "type": "boolean"
                                         }
                                     }
                                 }
@@ -5418,6 +5693,211 @@
                     }
                 }
             }
+        },
+        "/ui/users/forgot-password": {
+            "post": {
+                "description": "This endpoint verifies a user's email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Verify Email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/ui/users/reset-password": {
+            "post": {
+                "description": "This endpoint resets a users password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Reset user password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "reset token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Reset Password Details",
+                        "name": "password",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ResetPassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/datastore.User"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/server.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -5434,6 +5914,15 @@
                     "type": "string"
                 }
             }
+        },
+        "config.SignatureHeaderProvider": {
+            "type": "string",
+            "enum": [
+                "X-Convoy-Signature"
+            ],
+            "x-enum-varnames": [
+                "DefaultSignatureHeader"
+            ]
         },
         "datastore.AlertConfiguration": {
             "type": "object",
@@ -5554,7 +6043,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.DeviceStatus"
                 },
                 "uid": {
                     "type": "string"
@@ -5563,6 +6052,30 @@
                     "type": "string"
                 }
             }
+        },
+        "datastore.DeviceStatus": {
+            "type": "string",
+            "enum": [
+                "offline",
+                "online",
+                "disabled"
+            ],
+            "x-enum-varnames": [
+                "DeviceStatusOffline",
+                "DeviceStatusOnline",
+                "DeviceStatusDisabled"
+            ]
+        },
+        "datastore.EncodingType": {
+            "type": "string",
+            "enum": [
+                "base64",
+                "hex"
+            ],
+            "x-enum-varnames": [
+                "Base64Encoding",
+                "HexEncoding"
+            ]
         },
         "datastore.Endpoint": {
             "type": "object",
@@ -5636,9 +6149,18 @@
                     "$ref": "#/definitions/datastore.ApiKey"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.EndpointAuthenticationType"
                 }
             }
+        },
+        "datastore.EndpointAuthenticationType": {
+            "type": "string",
+            "enum": [
+                "api_key"
+            ],
+            "x-enum-varnames": [
+                "APIKeyAuthentication"
+            ]
         },
         "datastore.Event": {
             "type": "object",
@@ -5683,6 +6205,9 @@
                     "type": "integer"
                 },
                 "project_id": {
+                    "type": "string"
+                },
+                "raw": {
                     "type": "string"
                 },
                 "source_id": {
@@ -5739,7 +6264,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.EventDeliveryStatus"
                 },
                 "subscription_id": {
                     "type": "string"
@@ -5752,6 +6277,25 @@
                 }
             }
         },
+        "datastore.EventDeliveryStatus": {
+            "type": "string",
+            "enum": [
+                "Scheduled",
+                "Processing",
+                "Discarded",
+                "Failure",
+                "Success",
+                "Retry"
+            ],
+            "x-enum-varnames": [
+                "ScheduledEventStatus",
+                "ProcessingEventStatus",
+                "DiscardedEventStatus",
+                "FailureEventStatus",
+                "SuccessEventStatus",
+                "RetryEventStatus"
+            ]
+        },
         "datastore.FilterConfiguration": {
             "type": "object",
             "properties": {
@@ -5762,6 +6306,18 @@
                     }
                 },
                 "filter": {
+                    "$ref": "#/definitions/datastore.FilterSchema"
+                }
+            }
+        },
+        "datastore.FilterSchema": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "headers": {
                     "type": "object",
                     "additionalProperties": true
                 }
@@ -5771,7 +6327,7 @@
             "type": "object",
             "properties": {
                 "encoding": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.EncodingType"
                 },
                 "hash": {
                     "type": "string"
@@ -5809,6 +6365,9 @@
                 "num_trials": {
                     "description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
                     "type": "integer"
+                },
+                "raw": {
+                    "type": "string"
                 },
                 "retry_limit": {
                     "type": "integer"
@@ -5902,7 +6461,7 @@
                     "$ref": "#/definitions/datastore.ProjectStatistics"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.ProjectType"
                 },
                 "uid": {
                     "type": "string"
@@ -5959,6 +6518,17 @@
                     "type": "integer"
                 }
             }
+        },
+        "datastore.ProjectType": {
+            "type": "string",
+            "enum": [
+                "outgoing",
+                "incoming"
+            ],
+            "x-enum-varnames": [
+                "OutgoingProject",
+                "IncomingProject"
+            ]
         },
         "datastore.ProviderConfig": {
             "type": "object",
@@ -6028,7 +6598,7 @@
             "type": "object",
             "properties": {
                 "header": {
-                    "type": "string"
+                    "$ref": "#/definitions/config.SignatureHeaderProvider"
                 },
                 "versions": {
                     "type": "array",
@@ -6045,7 +6615,7 @@
                     "type": "string"
                 },
                 "encoding": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.EncodingType"
                 },
                 "hash": {
                     "type": "string"
@@ -6083,13 +6653,13 @@
                     "type": "string"
                 },
                 "provider": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SourceProvider"
                 },
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SourceType"
                 },
                 "uid": {
                     "type": "string"
@@ -6101,6 +6671,34 @@
                     "$ref": "#/definitions/datastore.VerifierConfig"
                 }
             }
+        },
+        "datastore.SourceProvider": {
+            "type": "string",
+            "enum": [
+                "github",
+                "twitter",
+                "shopify"
+            ],
+            "x-enum-varnames": [
+                "GithubSourceProvider",
+                "TwitterSourceProvider",
+                "ShopifySourceProvider"
+            ]
+        },
+        "datastore.SourceType": {
+            "type": "string",
+            "enum": [
+                "http",
+                "rest_api",
+                "pub_sub",
+                "db_change_stream"
+            ],
+            "x-enum-varnames": [
+                "HTTPSource",
+                "RestApiSource",
+                "PubSubSource",
+                "DBChangeStream"
+            ]
         },
         "datastore.StrategyConfiguration": {
             "type": "object",
@@ -6121,7 +6719,11 @@
             "properties": {
                 "alert_config": {
                     "description": "subscription config",
-                    "$ref": "#/definitions/datastore.AlertConfiguration"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/datastore.AlertConfiguration"
+                        }
+                    ]
                 },
                 "created_at": {
                     "type": "string"
@@ -6154,10 +6756,10 @@
                     "$ref": "#/definitions/datastore.Source"
                 },
                 "status": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SubscriptionStatus"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SubscriptionType"
                 },
                 "uid": {
                     "type": "string"
@@ -6167,11 +6769,70 @@
                 }
             }
         },
+        "datastore.SubscriptionStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "inactive",
+                "pending"
+            ],
+            "x-enum-varnames": [
+                "ActiveSubscriptionStatus",
+                "InactiveSubscriptionStatus",
+                "PendingSubscriptionStatus"
+            ]
+        },
+        "datastore.SubscriptionType": {
+            "type": "string",
+            "enum": [
+                "cli",
+                "api"
+            ],
+            "x-enum-varnames": [
+                "SubscriptionTypeCLI",
+                "SubscriptionTypeAPI"
+            ]
+        },
         "datastore.TwitterProviderConfig": {
             "type": "object",
             "properties": {
                 "crc_verified_at": {
                     "type": "integer"
+                }
+            }
+        },
+        "datastore.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "reset_password_expires_at": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/auth.Role"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -6188,9 +6849,24 @@
                     "$ref": "#/definitions/datastore.HMac"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.VerifierType"
                 }
             }
+        },
+        "datastore.VerifierType": {
+            "type": "string",
+            "enum": [
+                "noop",
+                "hmac",
+                "basic_auth",
+                "api_key"
+            ],
+            "x-enum-varnames": [
+                "NoopVerifier",
+                "HMacVerifier",
+                "BasicAuthVerifier",
+                "APIKeyVerifier"
+            ]
         },
         "httpheader.HTTPHeader": {
             "type": "object",
@@ -6272,6 +6948,30 @@
                     "type": "string"
                 },
                 "event_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.FanoutEvent": {
+            "type": "object",
+            "properties": {
+                "custom_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "data": {
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "owner_id": {
                     "type": "string"
                 }
             }
@@ -6376,6 +7076,17 @@
                     "type": "string"
                 },
                 "type": {
+                    "$ref": "#/definitions/datastore.ProjectType"
+                }
+            }
+        },
+        "models.ResetPassword": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "password_confirmation": {
                     "type": "string"
                 }
             }
@@ -6407,10 +7118,10 @@
                     "type": "string"
                 },
                 "provider": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SourceProvider"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SourceType"
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
@@ -6439,13 +7150,13 @@
                     "type": "string"
                 },
                 "provider": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SourceProvider"
                 },
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.SourceType"
                 },
                 "uid": {
                     "type": "string"
@@ -6491,6 +7202,19 @@
                 },
                 "source_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.TestFilter": {
+            "type": "object",
+            "properties": {
+                "request": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },

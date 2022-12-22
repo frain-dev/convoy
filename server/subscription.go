@@ -227,7 +227,8 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Param filter body models.TestFilter true "Filter Details"
+// @Success 200 {object} util.ServerResponse{data=boolean}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
@@ -240,6 +241,7 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 	}
 
 	subService := createSubscriptionService(a)
+
 	isValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request, test.Schema)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")

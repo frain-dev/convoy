@@ -444,6 +444,23 @@ type Event struct {
 	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
+func (e *Event) GetRawHeaders() map[string]interface{} {
+	h := map[string]interface{}{}
+	for k, v := range e.Headers {
+		h[k] = v
+	}
+	return h
+}
+
+func (e *Event) GetRawHeadersJSON() ([]byte, error) {
+	h := map[string]interface{}{}
+	for k, v := range e.Headers {
+		h[k] = v
+	}
+
+	return json.Marshal(h)
+}
+
 type (
 	SubscriptionType    string
 	EventDeliveryStatus string
@@ -663,8 +680,13 @@ type AlertConfiguration struct {
 }
 
 type FilterConfiguration struct {
-	EventTypes []string               `json:"event_types" bson:"event_types,omitempty"`
-	Filter     map[string]interface{} `json:"filter" bson:"filter"`
+	EventTypes []string     `json:"event_types" bson:"event_types,omitempty"`
+	Filter     FilterSchema `json:"filter" bson:"filter"`
+}
+
+type FilterSchema struct {
+	Headers map[string]interface{} `json:"headers" bson:"headers"`
+	Body    map[string]interface{} `json:"body" bson:"body"`
 }
 
 type ProviderConfig struct {
@@ -888,13 +910,6 @@ func (p *Password) Matches() (bool, error) {
 
 	return true, err
 }
-
-type (
-	EventMap    map[string]*Event
-	SourceMap   map[string]*Source
-	DeviceMap   map[string]*Device
-	EndpointMap map[string]*Endpoint
-)
 
 type SubscriptionFilter struct {
 	ID        primitive.ObjectID     `json:"-" bson:"_id"`

@@ -215,8 +215,8 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Param token query true "Email verification token"
-// @Success 200 {object} util.ServerResponse{data=datastore.Stub}
+// @Param token query string true "Email verification token"
+// @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Router /ui/users/forgot-password  [post]
 func (a *ApplicationHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
