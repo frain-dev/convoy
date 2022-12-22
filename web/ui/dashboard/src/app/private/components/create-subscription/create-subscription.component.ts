@@ -185,16 +185,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
 
-		console.log(this.subscriptionForm);
 		if (this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
-
-		if (this.token && (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid)) {
-			return this.subscriptionForm.markAllAsTouched();
-		}
-
-		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('type')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid) {
-			return this.subscriptionForm.markAllAsTouched();
-		}
 
 		const subscription = this.subscriptionForm.value;
 		if (this.projectType === 'outgoing') delete subscription.source_id;
@@ -209,18 +200,16 @@ export class CreateSubscriptionComponent implements OnInit {
 			retryDuration?.patchValue(retryDuration?.value + 's');
 		}
 
-		// this.isCreatingSubscription = true;
+		this.isCreatingSubscription = true;
 
-		console.log('works');
-
-		// try {
-		// 	const response =
-		// 		this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
-		// 	this.isCreatingSubscription = false;
-		// 	this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
-		// } catch (error) {
-		// 	this.isCreatingSubscription = false;
-		// }
+		try {
+			const response =
+				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
+			this.isCreatingSubscription = false;
+			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
+		} catch (error) {
+			this.isCreatingSubscription = false;
+		}
 	}
 
 	removeEventTag(tag: string) {
