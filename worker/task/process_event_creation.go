@@ -36,9 +36,12 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		}
 
 		event = createEvent.Event
-		err = eventRepo.CreateEvent(ctx, &event)
+		_, err = eventRepo.FindEventByID(ctx, event.UID)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			err = eventRepo.CreateEvent(ctx, &event)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
 		}
 
 		var project *datastore.Project

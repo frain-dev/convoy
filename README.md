@@ -42,7 +42,7 @@ $ docker run \
 
 ### Option 2: Spin up an instance with third-party dependencies on a Linux VM
 ```bash
- /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/frain-dev/convoy/main/deploy/vm-deploy)"
+ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/frain-dev/convoy/main/deploy/vm-deploy.sh)"
 ```
 
 ### Option 3: If you don't wish to self-host
