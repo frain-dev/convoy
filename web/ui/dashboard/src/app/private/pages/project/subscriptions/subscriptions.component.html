@@ -128,12 +128,6 @@
 					<div class="w-[50%] text-grey-40">Subscription type</div>
 					<div class="w-[50%] text-right capitalize">{{ activeSubscription?.type }}</div>
 				</li>
-				<li convoy-list-item class="text-14 font-normal py-16px px-24px">
-					<div class="w-[50%] text-grey-40 font-medium">Status</div>
-					<div class="w-[50%] text-right">
-						<span [class]="'ml-4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
-					</div>
-				</li>
 				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.endpoint_metadata">
 					<div class="w-[50%] text-grey-40">Endpoint</div>
 					<div class="w-[50%] text-right text-ellipsis whitespace-nowrap overflow-hidden">{{ activeSubscription?.endpoint_metadata?.target_url }}</div>
