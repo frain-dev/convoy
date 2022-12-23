@@ -151,10 +151,13 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async createProject() {
+		const projectFormModal = document.getElementById('projectForm');
+
 		if (this.enableMoreConfig) {
-			if (this.newSignatureForm.invalid) {
+			if (this.newSignatureForm.invalid || this.projectForm.invalid) {
 				this.newSignatureForm.markAllAsTouched();
 				this.projectForm.markAllAsTouched();
+				projectFormModal?.scroll({ top: 0 });
 				return;
 			}
 
@@ -162,15 +165,17 @@ export class CreateProjectComponent implements OnInit {
 			this.checkProjectConfig();
 		}
 
-		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-
-		if (!this.enableMoreConfig) delete this.projectForm.value.config;
+		if (!this.enableMoreConfig && this.projectForm.get('name')?.invalid && this.projectForm.get('type')?.invalid) {
+			projectFormModal?.scroll({ top: 0 });
+			return this.projectForm.markAllAsTouched();
+		}
+		const dataForNoConfig = this.projectForm.value;
+		if (!this.enableMoreConfig) delete dataForNoConfig.config;
 
 		this.isCreatingProject = true;
 
 		try {
-			const response = await this.createProjectService.createProject(this.projectForm.value);
-			const projectFormModal = document.getElementById('projectForm');
+			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
