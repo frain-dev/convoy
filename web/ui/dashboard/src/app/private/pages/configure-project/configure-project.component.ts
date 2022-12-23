@@ -10,29 +10,37 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CreateEndpointComponent } from '../../components/create-endpoint/create-endpoint.component';
+import { LoaderModule } from '../../components/loader/loader.module';
 
 export type STAGES = 'setupSDK' | 'createSource' | 'createEndpoint' | 'createSubscription';
 
 @Component({
 	selector: 'convoy-configure-project',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, SdkDocumentationComponent, CreateEndpointComponent],
+	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, SdkDocumentationComponent, CreateEndpointComponent, LoaderModule],
 	templateUrl: './configure-project.component.html',
 	styleUrls: ['./configure-project.component.scss']
 })
 export class ConfigureProjectComponent implements OnInit {
 	projectStage: STAGES = 'setupSDK';
 	projectStages = [
-		{ projectStage: 'Create Endpoint', currentStage: 'pending', id: 'createEndpoint' },
 		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
+		{ projectStage: 'Create Endpoint', currentStage: 'pending', id: 'createEndpoint' },
 		{ projectStage: 'Create Subscription', currentStage: 'pending', id: 'createSubscription' }
 	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
 	activeProjectId = this.route.snapshot.params.id;
+	showLoader = false;
 
 	constructor(public privateService: PrivateService, private generalService: GeneralService, public router: Router, private route: ActivatedRoute) {}
 
-	ngOnInit() {
+	async ngOnInit() {
+		if (!this.privateService.activeProjectDetails?.uid) {
+			this.showLoader = true;
+			await this.privateService.getProjectDetails();
+			this.showLoader = false;
+		}
+
 		if (this.privateService.activeProjectDetails?.uid) {
 			this.projectType = this.privateService.activeProjectDetails?.type;
 			this.goToCurrentState(this.privateService.activeProjectDetails?.type);
@@ -44,7 +52,7 @@ export class ConfigureProjectComponent implements OnInit {
 			this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
 			this.toggleActiveStage({ project: 'setupSDK' });
 		} else {
-			this.toggleActiveStage({ project: 'createEndpoint' });
+			this.toggleActiveStage({ project: 'createSource' });
 		}
 	}
 

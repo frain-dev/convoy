@@ -15,7 +15,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
-		type: ['', Validators.required],
+		type: ['http', Validators.required],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
