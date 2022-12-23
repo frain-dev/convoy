@@ -364,6 +364,11 @@ type PortalLinkResponse struct {
 }
 
 type TestFilter struct {
-	Request map[string]interface{} `json:"request"`
-	Schema  map[string]interface{} `json:"schema"`
+	Request FilterSchema `json:"request"`
+	Schema  FilterSchema `json:"schema"`
+}
+
+type FilterSchema struct {
+	Headers map[string]interface{} `json:"header" bson:"header"`
+	Body    map[string]interface{} `json:"body" bson:"body"`
 }

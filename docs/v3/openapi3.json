@@ -200,9 +200,6 @@
 					"http_timeout": {
 						"type": "string"
 					},
-					"is_disabled": {
-						"type": "boolean"
-					},
 					"owner_id": {
 						"type": "string"
 					},
@@ -223,6 +220,9 @@
 					},
 					"slack_webhook_url": {
 						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.EndpointStatus"
 					},
 					"support_email": {
 						"type": "string"
@@ -260,6 +260,19 @@
 				"type": "string",
 				"x-enum-varnames": [
 					"APIKeyAuthentication"
+				]
+			},
+			"datastore.EndpointStatus": {
+				"enum": [
+					"active",
+					"inactive",
+					"pending"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"ActiveEndpointStatus",
+					"InactiveEndpointStatus",
+					"PendingEndpointStatus"
 				]
 			},
 			"datastore.Event": {
@@ -854,9 +867,6 @@
 					"source_metadata": {
 						"$ref": "#/components/schemas/datastore.Source"
 					},
-					"status": {
-						"$ref": "#/components/schemas/datastore.SubscriptionStatus"
-					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.SubscriptionType"
 					},
@@ -868,19 +878,6 @@
 					}
 				},
 				"type": "object"
-			},
-			"datastore.SubscriptionStatus": {
-				"enum": [
-					"active",
-					"inactive",
-					"pending"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"ActiveSubscriptionStatus",
-					"InactiveSubscriptionStatus",
-					"PendingSubscriptionStatus"
-				]
 			},
 			"datastore.SubscriptionType": {
 				"enum": [
@@ -1072,6 +1069,19 @@
 					},
 					"owner_id": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.FilterSchema": {
+				"properties": {
+					"body": {
+						"additionalProperties": true,
+						"type": "object"
+					},
+					"header": {
+						"additionalProperties": true,
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -1308,12 +1318,10 @@
 			"models.TestFilter": {
 				"properties": {
 					"request": {
-						"additionalProperties": true,
-						"type": "object"
+						"$ref": "#/components/schemas/models.FilterSchema"
 					},
 					"schema": {
-						"additionalProperties": true,
-						"type": "object"
+						"$ref": "#/components/schemas/models.FilterSchema"
 					}
 				},
 				"type": "object"
@@ -2866,6 +2874,130 @@
 				"summary": "Expire and generate new application endpoint secret",
 				"tags": [
 					"Endpoints"
+				]
+			}
+		},
+		"/api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
+			"put": {
+				"description": "This endpoint updates a subscription",
+				"parameters": [
+					{
+						"description": "Project id",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "endpoint id",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Endpoint"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Toggles an endpoint's status from active \u003c-\u003e inactive",
+				"tags": [
+					"Subscriptions"
 				]
 			}
 		},
