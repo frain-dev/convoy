@@ -180,6 +180,7 @@ export class CreateProjectComponent implements OnInit {
 			this.isCreatingProject = false;
 			this.projectForm.reset();
 			this.privateService.activeProjectDetails = response.data.group;
+			this.privateService.getProjects();
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
 			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';

@@ -13,6 +13,7 @@ export class PrivateService {
 	activeProjectDetails?: GROUP;
 	organisationDetails!: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
+	projects: GROUP[] = [];
 
 	constructor(private http: HttpService, private router: Router) {}
 
@@ -189,12 +190,13 @@ export class PrivateService {
 	getProjects(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const groupsResponse = await this.http.request({
+				const projectsResponse = await this.http.request({
 					url: `${this.urlFactory('org')}/projects`,
 					method: 'get'
 				});
 
-				return resolve(groupsResponse);
+				this.projects = projectsResponse.data;
+				return resolve(projectsResponse);
 			} catch (error) {
 				return reject(error);
 			}
