@@ -211,12 +211,12 @@ func GetDefaultSignatureConfig() *SignatureConfiguration {
 }
 
 const (
-	ActiveSubscriptionStatus   SubscriptionStatus = "active"
-	InactiveSubscriptionStatus SubscriptionStatus = "inactive"
-	PendingSubscriptionStatus  SubscriptionStatus = "pending"
+	ActiveEndpointStatus   EndpointStatus = "active"
+	InactiveEndpointStatus EndpointStatus = "inactive"
+	PendingEndpointStatus  EndpointStatus = "pending"
 )
 
-type SubscriptionStatus string
+type EndpointStatus string
 
 type Endpoint struct {
 	ID                 primitive.ObjectID `json:"-" bson:"_id"`
@@ -225,7 +225,6 @@ type Endpoint struct {
 	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
 	TargetURL          string             `json:"target_url" bson:"target_url"`
 	Title              string             `json:"title" bson:"title"`
-	Secret             string             `json:"-" bson:"secret"` // Deprecated but necessary for migration to run
 	Secrets            []Secret           `json:"secrets" bson:"secrets"`
 	AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
 	Description        string             `json:"description" bson:"description"`
@@ -233,10 +232,10 @@ type Endpoint struct {
 	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
 	AppID              string             `json:"-" bson:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout string `json:"http_timeout" bson:"http_timeout"`
-	RateLimit   int    `json:"rate_limit" bson:"rate_limit"`
-	Events      int64  `json:"events,omitempty" bson:"-"`
-	IsDisabled  bool   `json:"is_disabled,omitempty" bson:"is_disabled"`
+	HttpTimeout string         `json:"http_timeout" bson:"http_timeout"`
+	RateLimit   int            `json:"rate_limit" bson:"rate_limit"`
+	Events      int64          `json:"events,omitempty" bson:"-"`
+	Status      EndpointStatus `json:"status" bson:"status"`
 
 	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
@@ -611,7 +610,6 @@ type Subscription struct {
 	UID        string             `json:"uid" bson:"uid"`
 	Name       string             `json:"name" bson:"name"`
 	Type       SubscriptionType   `json:"type" bson:"type"`
-	Status     SubscriptionStatus `json:"status" bson:"status"`
 	ProjectID  string             `json:"-" bson:"project_id"`
 	SourceID   string             `json:"-" bson:"source_id"`
 	EndpointID string             `json:"-" bson:"endpoint_id"`

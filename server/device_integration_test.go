@@ -74,7 +74,7 @@ func (d *DeviceIntegrationTestSuite) TearDownTest() {
 func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByEndpointID() {
 	expectedStatusCode := http.StatusOK
 
-	endpoint, err := testdb.SeedEndpoint(d.ConvoyApp.A.Store, d.DefaultProject, "", "", "", false)
+	endpoint, err := testdb.SeedEndpoint(d.ConvoyApp.A.Store, d.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(d.T(), err)
 
 	// Just Before.

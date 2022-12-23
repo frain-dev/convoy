@@ -133,17 +133,16 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		if subscription.Status == datastore.InactiveSubscriptionStatus {
+		if e.Status == datastore.InactiveEndpointStatus {
 			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.DiscardedEventStatus)
 			if err != nil {
-				log.WithError(err).Error("failed to update status of messages - ")
+				log.WithError(err).Error("failed to update event delivery status")
 				return &EndpointError{Err: err, delay: delayDuration}
 			}
 
-			log.Debugf("subscription %s is inactive, failing to send.", e.TargetURL)
+			log.Debugf("endpoint %s is inactive, failing to send.", e.TargetURL)
 			return nil
 		}
-
 
 		sig := newSignature(endpoint, p, json.RawMessage(ed.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
@@ -199,23 +198,23 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
-		if done && subscription.Status == datastore.PendingSubscriptionStatus && ec.disableEndpoint() {
-			subscriptionStatus := datastore.ActiveSubscriptionStatus
-			err := subRepo.UpdateSubscriptionStatus(context.Background(), p.UID, subscription.UID, subscriptionStatus)
+		if done && e.Status == datastore.PendingEndpointStatus && ec.disableEndpoint() {
+			endpointStatus := datastore.ActiveEndpointStatus
+			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
 			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), endpoint, p, subscriptionStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
+			err = notifications.SendEndpointNotification(context.Background(), endpoint, p, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
 		}
 
-		if !done && subscription.Status == datastore.PendingSubscriptionStatus {
-			subscriptionStatus := datastore.InactiveSubscriptionStatus
-			err := subRepo.UpdateSubscriptionStatus(context.Background(), p.UID, subscription.UID, subscriptionStatus)
+		if !done && e.Status == datastore.PendingEndpointStatus {
+			endpointStatus := datastore.InactiveEndpointStatus
+			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -237,16 +236,16 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				ed.Status = datastore.FailureEventStatus
 			}
 
-			if ec.disableEndpoint() && subscription.Status != datastore.PendingSubscriptionStatus {
-				subscriptionStatus := datastore.InactiveSubscriptionStatus
+			if ec.disableEndpoint() && e.Status != datastore.PendingEndpointStatus {
+				endpointStatus := datastore.InactiveEndpointStatus
 
-				err := subRepo.UpdateSubscriptionStatus(context.Background(), p.UID, subscription.UID, subscriptionStatus)
+				err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 				if err != nil {
-					log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
 				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), endpoint, p, subscriptionStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
+				err = notifications.SendEndpointNotification(context.Background(), endpoint, p, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
 				if err != nil {
 					log.WithError(err).Error("failed to send notification")
 				}

@@ -320,7 +320,6 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Title:           "endpoint",
 				SupportEmail:    "endpoint@test.com",
-				IsDisabled:      false,
 				SlackWebhookURL: "https://google.com",
 				ProjectID:       project.UID,
 				Secrets: []datastore.Secret{
@@ -329,6 +328,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         5000,
+				Status:            datastore.ActiveEndpointStatus,
 				RateLimitDuration: "1m0s",
 			},
 			wantErr: false,
@@ -370,6 +370,7 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				TargetURL:         "https://google.com",
 				Description:       "test_endpoint",
 				RateLimit:         100,
+				Status:            datastore.ActiveEndpointStatus,
 				RateLimitDuration: "1m0s",
 				Authentication: &datastore.EndpointAuthentication{
 					Type: datastore.APIKeyAuthentication,
@@ -476,7 +477,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("Endpoint2"),
 					Description:       "test_endpoint",
-					Secret:            "newly-generated-secret",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
 					RateLimitDuration: "1m",
@@ -487,7 +487,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Title:             "Endpoint2",
 				Description:       "test_endpoint",
-				Secret:            "newly-generated-secret",
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
 				RateLimitDuration: "1m0s",

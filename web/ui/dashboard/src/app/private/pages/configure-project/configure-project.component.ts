@@ -26,7 +26,7 @@ export class ConfigureProjectComponent implements OnInit {
 	projectStages = [
 		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
 		{ projectStage: 'Create Endpoint', currentStage: 'pending', id: 'createEndpoint' },
-		{ projectStage: 'Create Subscription', currentStage: 'pending', id: 'createSubscription' }
+		{ projectStage: 'Subscribe Endpoint', currentStage: 'pending', id: 'createSubscription' }
 	];
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
 	activeProjectId = this.route.snapshot.params.id;
@@ -52,6 +52,7 @@ export class ConfigureProjectComponent implements OnInit {
 			this.projectStages = this.projectStages.filter(e => e.id !== 'createSource');
 			this.toggleActiveStage({ project: 'setupSDK' });
 		} else {
+			this.projectStages[2].projectStage = 'Subscribe Endpoint to Source';
 			this.toggleActiveStage({ project: 'createSource' });
 		}
 	}

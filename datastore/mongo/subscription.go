@@ -284,25 +284,6 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, pro
 	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, projectID string, subscriptionId string, status datastore.SubscriptionStatus) error {
-	ctx = s.setCollectionInContext(ctx)
-
-	filter := bson.M{
-		"uid":        subscriptionId,
-		"project_id": projectID,
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"status":     status,
-			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
-		},
-	}
-
-	err := s.store.UpdateOne(ctx, filter, update)
-	return err
-}
-
 func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.FilterCollection)
 	isValid := false
