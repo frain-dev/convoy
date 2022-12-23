@@ -1,65 +1,81 @@
 <div>
 	<convoy-card className="p-24px mt-40px">
+		<h2 class="mb-12px font-semibold">Endpoint</h2>
+		<p class="max-w-[600px] text-14 text-grey-60 pb-40px">Endpoint represents where you want to receive your events, we'll forward events to this endpoint.</p>
+
 		<form [formGroup]="addNewEndpointForm">
 			<convoy-input-field>
 				<label for="name" convoy-label required="true">Endpoint Name</label>
 				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g paystack-prod" />
 				<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
 			</convoy-input-field>
+
 			<div class="grid grid-cols-2 gap-24px">
 				<convoy-input-field>
 					<label for="url" convoy-label required="true">Enter URL</label>
 					<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
 					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
 				</convoy-input-field>
+
 				<convoy-input-field>
 					<label for="description" convoy-label required="true">Description</label>
 					<input id="description" convoy-input autocomplete="description" formControlName="description" placeholder="Description" />
 					<convoy-input-error *ngIf="addNewEndpointForm.get('description')?.touched && addNewEndpointForm.get('description')?.invalid">Please provide a description</convoy-input-error>
 				</convoy-input-field>
-				<convoy-input-field>
-					<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
-					<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
-					<input id="slack-url" convoy-input autocomplete="slack-url" formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="secret" convoy-label>Secret</label>
-					<input id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="********" />
-					<!-- <convoy-input-error *ngIf="addNewEndpointForm.get('secret')?.touched && addNewEndpointForm.get('secret')?.invalid">Endpoint URL is required</convoy-input-error> -->
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="http_timeout" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Http Timeout</label>
-					<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 10s" />
-				</convoy-input-field>
 			</div>
 
-			<h3 class="mt-34px mb-14px font-medium text-16 flex items-center">
-				Endpoint Authentication
-				<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
-			</h3>
-			<ng-container formGroupName="authentication">
-				<div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
-					<convoy-input-field>
-						<label for="header_name" convoy-label>API Key Name</label>
-						<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="header_value" convoy-label>API Key Value</label>
-						<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
-					</convoy-input-field>
-				</div>
-			</ng-container>
+			<div class="border border-grey-20 p-16px mt-20px">
+				<convoy-toggle name="endpointMoreConfig" [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add More configurations" className="w-full justify-between !mb-0"></convoy-toggle>
 
-			<h3 class="mb-8px font-medium text-16 flex items-center">
-				Signature Format
-				<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project</convoy-tooltip>
-			</h3>
-			<div class="grid grid-cols-2 gap-6 mb-50px">
-				<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
-				<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+				<ng-container *ngIf="enableMoreConfig">
+					<div class="grid grid-cols-2 gap-24px mt-40px">
+						<convoy-input-field>
+							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
+							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
+						</convoy-input-field>
+
+						<convoy-input-field>
+							<label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
+							<input id="slack-url" convoy-input autocomplete="slack-url" formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
+						</convoy-input-field>
+
+						<convoy-input-field>
+							<label for="secret" convoy-label>Secret</label>
+							<input id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="********" />
+						</convoy-input-field>
+
+						<convoy-input-field>
+							<label for="http_timeout" convoy-label tooltip="This specifies how long the socket stays open in the absense of a response.">Http Timeout</label>
+							<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 10s" />
+						</convoy-input-field>
+					</div>
+
+					<h3 class="mt-34px mb-14px font-medium text-16 flex items-center">
+						Endpoint Authentication
+						<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
+					</h3>
+					<ng-container formGroupName="authentication">
+						<div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
+							<convoy-input-field>
+								<label for="header_name" convoy-label>API Key Name</label>
+								<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
+							</convoy-input-field>
+							<convoy-input-field>
+								<label for="header_value" convoy-label>API Key Value</label>
+								<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
+							</convoy-input-field>
+						</div>
+					</ng-container>
+
+					<h3 class="mb-8px font-medium text-16 flex items-center">
+						Signature Format
+						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project</convoy-tooltip>
+					</h3>
+					<div class="grid grid-cols-2 gap-6 mb-50px">
+						<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
+						<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+					</div>
+				</ng-container>
 			</div>
 		</form>
 	</convoy-card>
