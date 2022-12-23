@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 
@@ -288,24 +287,23 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 }
 
 func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint, deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
-	if endpoint != nil && endpoint.IsDisabled {
-		return datastore.DiscardedEventStatus
-	}
-
-	if subscription.Status != datastore.ActiveSubscriptionStatus {
-		return datastore.DiscardedEventStatus
-	} else {
-		if !util.IsStringEmpty(subscription.DeviceID) {
-			device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.ProjectID)
-			if err != nil {
-				log.WithError(err).Error("an error occurred fetching the subscription's device")
-				return datastore.DiscardedEventStatus
-			}
-
-			if device.Status != datastore.DeviceStatusOnline {
-				return datastore.DiscardedEventStatus
-			}
+	switch subscription.Type {
+	case datastore.SubscriptionTypeAPI:
+		if endpoint.Status != datastore.ActiveEndpointStatus {
+			return datastore.DiscardedEventStatus
 		}
+	case datastore.SubscriptionTypeCLI:
+		device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.ProjectID)
+		if err != nil {
+			log.WithError(err).Error("an error occurred fetching the subscription's device")
+			return datastore.DiscardedEventStatus
+		}
+
+		if device.Status != datastore.DeviceStatusOnline {
+			return datastore.DiscardedEventStatus
+		}
+	default:
+		log.Errorf("unknown subscription type: %s", subscription.Type)
 	}
 
 	return datastore.ScheduledEventStatus
@@ -321,7 +319,5 @@ func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoi
 		FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
 		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-
-		Status: datastore.ActiveSubscriptionStatus,
 	}
 }

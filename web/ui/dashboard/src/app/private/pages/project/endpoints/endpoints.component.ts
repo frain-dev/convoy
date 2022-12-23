@@ -17,6 +17,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -39,7 +40,8 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		CreateEndpointComponent,
 		TagComponent,
 		FormsModule,
-		RouterModule
+		RouterModule,
+        StatusColorModule
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']

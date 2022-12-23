@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -82,8 +81,6 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-
-		Status: datastore.ActiveSubscriptionStatus,
 	}
 
 	if newSubscription.DisableEndpoint != nil {
@@ -238,35 +235,8 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 	return subscription, nil
 }
 
-func (s *SubcriptionService) ToggleSubscriptionStatus(ctx context.Context, projectId string, subscriptionId string) (*datastore.Subscription, error) {
-	subscription, err := s.subRepo.FindSubscriptionByID(ctx, projectId, subscriptionId)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
-		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
-	}
-
-	switch subscription.Status {
-	case datastore.ActiveSubscriptionStatus:
-		subscription.Status = datastore.InactiveSubscriptionStatus
-	case datastore.InactiveSubscriptionStatus:
-		subscription.Status = datastore.ActiveSubscriptionStatus
-	case datastore.PendingSubscriptionStatus:
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("subscription is in pending status"))
-	default:
-		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown subscription status: %s", subscription.Status))
-	}
-
-	err = s.subRepo.UpdateSubscriptionStatus(ctx, projectId, subscription.UID, subscription.Status)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update subscription status")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update subscription status"))
-	}
-
-	return subscription, nil
-}
-
-func (s *SubcriptionService) DeleteSubscription(ctx context.Context, projectId string, subscription *datastore.Subscription) error {
-	err := s.subRepo.DeleteSubscription(ctx, projectId, subscription)
+func (s *SubcriptionService) DeleteSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription) error {
+	err := s.subRepo.DeleteSubscription(ctx, groupId, subscription)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrDeletedSubscriptionError.Error())
 		return util.NewServiceError(http.StatusBadRequest, ErrDeletedSubscriptionError)

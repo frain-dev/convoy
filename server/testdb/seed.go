@@ -23,7 +23,7 @@ import (
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
-func SeedEndpoint(store datastore.Store, g *datastore.Project, uid, title, ownerID string, disabled bool) (*datastore.Endpoint, error) {
+func SeedEndpoint(store datastore.Store, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -37,12 +37,12 @@ func SeedEndpoint(store datastore.Store, g *datastore.Project, uid, title, owner
 	}
 
 	endpoint := &datastore.Endpoint{
-		UID:        uid,
-		Title:      title,
-		ProjectID:  g.UID,
-		OwnerID:    ownerID,
-		IsDisabled: disabled,
-		AppID:      uid,
+		UID:       uid,
+		Title:     title,
+		ProjectID: g.UID,
+		OwnerID:   ownerID,
+		Status:    status,
+		AppID:     uid,
 	}
 
 	// Seed Data.
@@ -59,10 +59,9 @@ func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count in
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Endpoint{
-			UID:        uid,
-			Title:      fmt.Sprintf("Test-%s", uid),
-			ProjectID:  g.UID,
-			IsDisabled: false,
+			UID:       uid,
+			Title:     fmt.Sprintf("Test-%s", uid),
+			ProjectID: g.UID,
 		}
 
 		// Seed Data.
@@ -479,14 +478,9 @@ func SeedSubscription(store datastore.Store,
 	retryConfig *datastore.RetryConfiguration,
 	alertConfig *datastore.AlertConfiguration,
 	filterConfig *datastore.FilterConfiguration,
-	status datastore.SubscriptionStatus,
 ) (*datastore.Subscription, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
-	}
-
-	if status == "" {
-		status = datastore.ActiveSubscriptionStatus
 	}
 
 	subscription := &datastore.Subscription{
@@ -503,8 +497,6 @@ func SeedSubscription(store datastore.Store,
 
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-
-		Status: status,
 	}
 
 	subRepo := cm.NewSubscriptionRepo(store)

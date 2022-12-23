@@ -195,6 +195,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 }
 
 // ToggleSubscriptionStatus
+// Deprecated
 // @Summary Toggles a subscription's status from active <-> inactive
 // @Description This endpoint updates a subscription
 // @Tags Subscriptions
@@ -207,17 +208,8 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	g := m.GetProjectFromContext(r.Context())
-	subscription := chi.URLParam(r, "subscriptionID")
-
-	subService := createSubscriptionService(a)
-	sub, err := subService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", sub, http.StatusAccepted))
+	// For backward compatibility
+	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
 }
 
 // TestSubscriptionFilter
