@@ -1285,9 +1285,6 @@
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
 					},
-					"disable_endpoint": {
-						"type": "boolean"
-					},
 					"endpoint_id": {
 						"type": "string"
 					},
