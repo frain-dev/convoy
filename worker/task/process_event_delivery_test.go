@@ -199,96 +199,6 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name:          "Max retries reached - do not disable subscription - failed",
-			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: nil,
-			msg: &datastore.EventDelivery{
-				UID: "",
-			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Endpoint{
-						ProjectID: "123",
-						Secrets: []datastore.Secret{
-							{Value: "secret"},
-						},
-						RateLimit:         10,
-						RateLimitDuration: "1m",
-						Status:            datastore.ActiveEndpointStatus,
-					}, nil)
-				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&datastore.Subscription{}, nil)
-
-				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.EventDelivery{
-						Metadata: &datastore.Metadata{
-							Data:            []byte(`{"event": "invoice.completed"}`),
-							Raw:             `{"event": "invoice.completed"}`,
-							NumTrials:       2,
-							RetryLimit:      3,
-							IntervalSeconds: 20,
-						},
-						Status: datastore.ScheduledEventStatus,
-					}, nil).Times(1)
-
-				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
-					Limit:     redis_rate.PerMinute(10),
-					Allowed:   10,
-					Remaining: 10,
-				}, nil).Times(1)
-
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
-					Limit:     redis_rate.PerMinute(10),
-					Allowed:   10,
-					Remaining: 10,
-				}, nil).Times(1)
-
-				o.EXPECT().
-					FetchProjectByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Project{
-						LogoURL: "",
-						Config: &datastore.ProjectConfig{
-							Signature: &datastore.SignatureConfiguration{
-								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Versions: []datastore.SignatureVersion{
-									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
-									},
-								},
-							},
-							Strategy: &datastore.StrategyConfiguration{
-								Type:       datastore.LinearStrategyProvider,
-								Duration:   60,
-								RetryCount: 1,
-							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
-						},
-					}, nil).Times(1)
-
-				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
-
-				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
-			},
-			nFn: func() func() {
-				httpmock.Activate()
-
-				httpmock.RegisterResponder("POST", "https://google.com",
-					httpmock.NewStringResponder(200, ``))
-
-				return func() {
-					httpmock.DeactivateAndReset()
-				}
-			},
-		},
-		{
 			name:          "Max retries reached - disabled endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
 			expectedError: nil,
@@ -384,7 +294,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name:          "Manual retry - no disable endpoint - failed",
+			name:          "Manual retry - disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
@@ -403,6 +313,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
+
+				a.EXPECT().
+					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
+					Return(nil).Times(1)
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
@@ -568,7 +482,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name:          "Manual retry - no disable endpoint - success",
+			name:          "Manual retry - disable endpoint - success",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
@@ -612,6 +526,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					Allowed:   10,
 					Remaining: 10,
 				}, nil).Times(1)
+
+				a.EXPECT().
+					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
+					Return(nil).Times(1)
 
 				o.EXPECT().
 					FetchProjectByID(gomock.Any(), gomock.Any()).
