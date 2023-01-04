@@ -198,7 +198,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
-		if done && e.Status == datastore.PendingEndpointStatus && ec.disableEndpoint() {
+		if done && e.Status == datastore.PendingEndpointStatus {
 			endpointStatus := datastore.ActiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
@@ -236,7 +236,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				ed.Status = datastore.FailureEventStatus
 			}
 
-			if ec.disableEndpoint() && e.Status != datastore.PendingEndpointStatus {
+			// TODO(all): this block of code is unnecessary L215 - L 221 already caters for this case
+			if e.Status != datastore.PendingEndpointStatus {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
@@ -328,13 +329,13 @@ type RateLimitConfig struct {
 	Duration uint64
 }
 
-func (ec *EventDeliveryConfig) disableEndpoint() bool {
-	if ec.subscription.DisableEndpoint != nil {
-		return *ec.subscription.DisableEndpoint
-	}
-
-	return ec.project.Config.DisableEndpoint
-}
+//func (ec *EventDeliveryConfig) disableEndpoint() bool {
+//	if ec.subscription.DisableEndpoint != nil {
+//		return *ec.subscription.DisableEndpoint
+//	}
+//
+//	return ec.project.Config.DisableEndpoint
+//}
 
 func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 	rc := &RetryConfig{}

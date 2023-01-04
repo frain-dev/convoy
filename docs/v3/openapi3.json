@@ -586,9 +586,6 @@
 			},
 			"datastore.ProjectConfig": {
 				"properties": {
-					"disable_endpoint": {
-						"type": "boolean"
-					},
 					"is_retention_policy_enabled": {
 						"type": "boolean"
 					},
@@ -845,9 +842,6 @@
 					},
 					"device_id": {
 						"type": "string"
-					},
-					"disable_endpoint": {
-						"type": "boolean"
 					},
 					"endpoint_metadata": {
 						"$ref": "#/components/schemas/datastore.Endpoint"

@@ -175,8 +175,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -266,8 +265,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: false,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -362,8 +360,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -453,8 +450,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: false,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -548,8 +544,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -639,8 +634,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: false,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -734,8 +728,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -830,8 +823,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -931,8 +923,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -1038,15 +1029,11 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 					Count:    100,
 					Duration: 1,
 				},
-				DisableEndpoint: func(b bool) *bool {
-					return &b
-				}(true),
 			},
 			project: &datastore.Project{
 				Config: &datastore.ProjectConfig{
-					Strategy:        &datastore.DefaultStrategyConfig,
-					RateLimit:       &datastore.DefaultRateLimitConfig,
-					DisableEndpoint: false,
+					Strategy:  &datastore.DefaultStrategyConfig,
+					RateLimit: &datastore.DefaultRateLimitConfig,
 				},
 			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
@@ -1075,7 +1062,6 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 						Count:    100,
 						Duration: 10,
 					},
-					DisableEndpoint: false,
 				},
 			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
@@ -1111,9 +1097,6 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Count)
 				assert.Equal(t, tc.wantRateLimitConfig.Duration, rlc.Duration)
 			}
-
-			disableEndpoint := evConfig.disableEndpoint()
-			assert.Equal(t, tc.wantDisableEndpoint, disableEndpoint)
 		})
 	}
 }

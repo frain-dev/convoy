@@ -306,7 +306,6 @@ type ProjectConfig struct {
 	Signature                *SignatureConfiguration       `json:"signature"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
 	MaxIngestSize            uint64                        `json:"max_payload_read_size" bson:"max_payload_read_size"`
-	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
 	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
 	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
 }
@@ -623,7 +622,6 @@ type Subscription struct {
 	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
 	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
-	DisableEndpoint *bool                   `json:"disable_endpoint,omitempty" bson:"disable_endpoint"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
