@@ -33,36 +33,32 @@ Convoy provides several key features:
 ## Installation, Getting Started
 There are several ways to get started using Convoy.
 
-### Option 1: Download our Binaries or Docker Image
-Convoy binaries can be downloaded with your package manager of choice. You can head over to [Downloads Page](https://getconvoy.io/download) to proceed.
-
-```bash
-$ docker run \
-	-p 5005:5005 \
-	--name convoy-server \
-    --network=host \
-	-v `pwd`/convoy.json:/convoy.json \
-	docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:latest
-```
-
-### Option 2: Spin up an instance with third-party dependencies on a Linux VM
+### Option 1: Using our Install Script on Linux
 ```bash
  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/frain-dev/convoy/main/deploy/vm-deploy.sh)"
 ```
 
-### Option 3: If you don't wish to self-host
-Sign up for a free [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
+### Option 2: Convoy Cloud
+Get started with our free Cloud version -- Sign up for [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
 
-
-### Option 4: Building from source
+### Option 3: Building from source
 To build Convoy from source code, you need:
 * Go [version 1.16 or greater](https://golang.org/doc/install).
 * NodeJS [version 14.17 or greater](https://nodejs.org).
 * Npm [version 6 or greater](https://npmjs.com).
 
 ```bash
-$ git clone https://github.com/frain-dev/convoy.git && cd convoy
+# Get the code
+$ git clone https://github.com/frain-dev/convoy.git
+
+# Go to the Convoy folder
+cd convoy
+
+# Build Binary
 $ make build
+
+# Start server
+$ ./convoy server
 ```
 
 ## Contributing
