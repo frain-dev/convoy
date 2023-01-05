@@ -12,25 +12,23 @@
 
 Convoy is a fast & secure webhooks proxy. It enables you to receive webhook events from providers and publish them to users.. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
 
-Convoy includes the following features:
+Convoy provides several key features:
 
-- **Webhooks Proxy:** Convoy enables you send webhooks to users, and helps you receive webhooks from your providers. It acts as a full proxy and lives at the edge of your network so you don't expose any of your internal systems or microservices.
+- **Webhooks Proxy:** Convoy acts as webhooks proxy/gateway that lives at the edge of your network to stream webhooks from your micoservices, and send them out to your users as well as receive webhooks from your providers and route them to the required services. With this your internal systems are never exposed to the public internet.
 
-- **Scalability:** Convoy acts as a dedicated message queue for webhooks. Its design enables you to horizontally scale out webhooks delivery.
+- **Scalability:** Convoy acts as a dedicated message queue for webhooks, and was designed to be horizontally scalable. It includes several components like the `api server`, `workers`, `scheduler`, and `socket server` which can be scaled independently to fit the need.
 
-- **Security:** Convoy ships with several security features for webhooks, such as payload signing to ensure message integrity, endpoint authentication for authenticated routes, and static ips for network environments with strict firewall rules.
+- **Security:** Convoy ships with several security features for webhooks, such as payload signing to ensure message integrity, bearer token authentication for authenticated webhook endpoints, and static ips for network environments with strict firewall rules.
 
-- **Fan Out:** Convoy is able to route an event to multiple endpoints based on the event type or payload structure. It relies on a subset of [MongoDB's Extended JSON v2](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/) to match event payload structure and route events respectively.
+- **Fan Out:** Convoy is able to route an events to multiple endpoints based on the event type or payload structure. It relies on a subset of [MongoDB's Extended JSON v2](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/) to match event payload structure and route events to their respective destination(s).
 
-- **Rate Limiting:** While Convoy is able to ingest events at a large rate, it throttles the delivery of these events to the endpoints at a configurable rate per endpoint. 
+- **Rate Limiting:** While Convoy is able to ingest events at a massive rate, it throttles the delivery of these events to the endpoints at a configurable rate per endpoint. 
 
-- **Retries & Batch Retries:** Convoy currently supports two retry mechanisms: Constant time retries and exponential backoff. Once the retry limit is exhausted, you can batch retry any number of events when the endpoint is back up.
+- **Retries & Batch Retries:** Convoy supports two retry algorithms; constant time and exponential backoff with jitter. Where automatic retries are not sufficient, convoy provides batch retries for endpoints are consecutively failed to process retried events.
 
-- **Management UI**: Visibility and easy debugging are one of highly coveted features of a webhook delivery system. Convoy provides a UI to view your delivery attempt logs, filter by application, event status, date & time and perform flexible batch retries during downtimes.
+- **Customer-Facing Dashboards:** Convoy allows you to generate customer facing webhooks dashboard to embed into your applications using an iframe. On this dashboard, users can debug webhooks, retry events, add endpoints, and configure each endpoint's subscription.
 
-- **Customer-Facing Dashboards:** Convoy ships with out-of-the box webhooks dashboard that can be embedded into your dashboard with an iframe. With this, end-users can debug webhooks, retry and batch retry events easily.
-
-- **Endpoints Failure Notification:** Convoy ships with failure notifications for endpoint failure. When an endpoint becomes dead, convoy sends out an email instantly to notify the endpoint owner of the failure.
+- **Endpoint Failure Notifications:** When endpoints consecutively fails to process events, convoy disables the endpoint and sends out a notification. Two types of notifications are supported: Email and Slack Notifications.
 
 ## Installation, Getting Started
 There are several ways to get started using Convoy.
