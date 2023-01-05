@@ -329,14 +329,6 @@ type RateLimitConfig struct {
 	Duration uint64
 }
 
-//func (ec *EventDeliveryConfig) disableEndpoint() bool {
-//	if ec.subscription.DisableEndpoint != nil {
-//		return *ec.subscription.DisableEndpoint
-//	}
-//
-//	return ec.project.Config.DisableEndpoint
-//}
-
 func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 	rc := &RetryConfig{}
 
