@@ -990,7 +990,7 @@ func EnsurePeriod(start time.Time, end time.Time) error {
 func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
-	messages, err := m.eventRepo.LoadEventIntervals(ctx, orgId, searchParams, period, 1)
+	messages, err := m.eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, orgId, searchParams, period, 1)
 	if err != nil {
 		m.logger.WithError(err).Error("failed to load message intervals - ")
 		return 0, nil, err

@@ -279,6 +279,21 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(arg0, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventDeliveryByID", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindEventDeliveryByID), arg0, arg1)
 }
 
+// LoadEventDeliveriesIntervals mocks base method.
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(arg0 context.Context, arg1 string, arg2 datastore.SearchParams, arg3 datastore.Period, arg4 int) ([]datastore.EventInterval, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].([]datastore.EventInterval)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadEventDeliveriesIntervals indicates an expected call of LoadEventDeliveriesIntervals.
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), arg0, arg1, arg2, arg3, arg4)
+}
+
 // LoadEventDeliveriesPaged mocks base method.
 func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(arg0 context.Context, arg1 string, arg2 []string, arg3 string, arg4 []datastore.EventDeliveryStatus, arg5 datastore.SearchParams, arg6 datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
@@ -446,21 +461,6 @@ func (m *MockEventRepository) FindEventsByIDs(arg0 context.Context, arg1 []strin
 func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIDs", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIDs), arg0, arg1)
-}
-
-// LoadEventIntervals mocks base method.
-func (m *MockEventRepository) LoadEventIntervals(arg0 context.Context, arg1 string, arg2 datastore.SearchParams, arg3 datastore.Period, arg4 int) ([]datastore.EventInterval, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventIntervals", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].([]datastore.EventInterval)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// LoadEventIntervals indicates an expected call of LoadEventIntervals.
-func (mr *MockEventRepositoryMockRecorder) LoadEventIntervals(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventIntervals", reflect.TypeOf((*MockEventRepository)(nil).LoadEventIntervals), arg0, arg1, arg2, arg3, arg4)
 }
 
 // LoadEventsPaged mocks base method.
@@ -1183,17 +1183,17 @@ func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpoint(ctx, endpoint, proj
 }
 
 // UpdateEndpointStatus mocks base method.
-func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, groupID, endpointID string, status datastore.EndpointStatus) error {
+func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateEndpointStatus", ctx, groupID, endpointID, status)
+	ret := m.ctrl.Call(m, "UpdateEndpointStatus", ctx, projectID, endpointID, status)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateEndpointStatus indicates an expected call of UpdateEndpointStatus.
-func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpointStatus(ctx, groupID, endpointID, status interface{}) *gomock.Call {
+func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpointStatus(ctx, projectID, endpointID, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpointStatus", reflect.TypeOf((*MockEndpointRepository)(nil).UpdateEndpointStatus), ctx, groupID, endpointID, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpointStatus", reflect.TypeOf((*MockEndpointRepository)(nil).UpdateEndpointStatus), ctx, projectID, endpointID, status)
 }
 
 // MockSubscriptionRepository is a mock of SubscriptionRepository interface.
