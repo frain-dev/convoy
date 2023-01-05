@@ -76,7 +76,7 @@ func (s *ProjectIntegrationTestSuite) TestGetProject() {
 	// Just Before.
 	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, projectID, "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
 	require.NoError(s.T(), err)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, project, uuid.NewString(), "test-app", "", false)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, project, uuid.NewString(), "test-app", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.Store, endpoint, project.UID, uuid.NewString(), "*", "", []byte("{}"))
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, project.UID)

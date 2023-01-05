@@ -327,19 +327,19 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
+	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID)
 	if err != nil {
-		return ErrSubscriptionNotFound
+		return datastore.ErrEndpointNotFound
 	}
 
-	if sub.Status == datastore.PendingSubscriptionStatus {
-		return errors.New("subscription is being re-activated")
+	if endpoint.Status == datastore.PendingEndpointStatus {
+		return errors.New("endpoint is being re-activated")
 	}
 
-	if sub.Status == datastore.InactiveSubscriptionStatus {
-		err = e.subRepo.UpdateSubscriptionStatus(context.Background(), eventDelivery.ProjectID, eventDelivery.SubscriptionID, datastore.PendingSubscriptionStatus)
+	if endpoint.Status == datastore.InactiveEndpointStatus {
+		err = e.endpointRepo.UpdateEndpointStatus(context.Background(), eventDelivery.ProjectID, eventDelivery.EndpointID, datastore.PendingEndpointStatus)
 		if err != nil {
-			return errors.New("failed to update subscription status")
+			return errors.New("failed to update endpoint status")
 		}
 	}
 
@@ -347,12 +347,12 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 }
 
 func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Project) error {
-	sub, err := e.subRepo.FindSubscriptionByID(ctx, g.UID, eventDelivery.SubscriptionID)
+	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID)
 	if err != nil {
-		return ErrSubscriptionNotFound
+		return datastore.ErrEndpointNotFound
 	}
 
-	if sub.Status != datastore.ActiveSubscriptionStatus {
+	if endpoint.Status != datastore.ActiveEndpointStatus {
 		return errors.New("force resend to an inactive or pending endpoint is not allowed")
 	}
 

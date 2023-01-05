@@ -46,7 +46,7 @@
 					</tr>
 					<tr convoy-table-row *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i">
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]" class="pl-16px">
-							<convoy-tag type="success">Enabled</convoy-tag>
+							<convoy-tag *ngIf="endpoint.status" [type]="endpoint.status | statuscolor" className="ml-4px">{{ endpoint.status }}</convoy-tag>
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
 							{{ endpoint.title }}

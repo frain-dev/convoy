@@ -9,10 +9,10 @@
 
 					<nav class="ml-130px desktop:ml-20px transition-all duration-200">
 						<ul class="flex items-center">
-							<li *ngIf="!organisations?.length || !projects?.length">
+							<li *ngIf="!organisations?.length || !privateService.projects?.length">
 								<a routerLink="/get-started" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Get Started</a>
 							</li>
-							<li *ngIf="organisations?.length && projects?.length">
+							<li *ngIf="organisations?.length && privateService.projects?.length">
 								<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
 							</li>
 							<li *ngIf="organisations?.length">
@@ -61,7 +61,6 @@
 							</li>
 						</ul>
 					</div>
-
 
 					<div convoy-dropdown size="lg" #accountDropdown>
 						<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-12px px-20px rounded-8px h-36px">

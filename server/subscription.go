@@ -195,6 +195,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 }
 
 // ToggleSubscriptionStatus
+// Deprecated
 // @Summary Toggles a subscription's status from active <-> inactive
 // @Description This endpoint updates a subscription
 // @Tags Subscriptions
@@ -207,17 +208,8 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	g := m.GetProjectFromContext(r.Context())
-	subscription := chi.URLParam(r, "subscriptionID")
-
-	subService := createSubscriptionService(a)
-	sub, err := subService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", sub, http.StatusAccepted))
+	// For backward compatibility
+	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
 }
 
 // TestSubscriptionFilter
@@ -242,12 +234,21 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 
 	subService := createSubscriptionService(a)
 
-	isValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request, test.Schema)
+	isBodyValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	isHeaderValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers)
+	if err != nil {
+		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	isValid := isBodyValid && isHeaderValid
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusCreated))
 }

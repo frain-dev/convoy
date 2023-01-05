@@ -105,9 +105,7 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 		"$set": bson.M{
 			"title":               endpoint.Title,
 			"support_email":       endpoint.SupportEmail,
-			"is_disabled":         endpoint.IsDisabled,
 			"target_url":          endpoint.TargetURL,
-			"secret":              endpoint.Secret,
 			"secrets":             endpoint.Secrets,
 			"description":         endpoint.Description,
 			"slack_webhook_url":   endpoint.SlackWebhookURL,
@@ -115,11 +113,29 @@ func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.
 			"rate_limit":          endpoint.RateLimit,
 			"advanced_signatures": endpoint.AdvancedSignatures,
 			"authentication":      endpoint.Authentication,
+			"status":              endpoint.Status,
 			"updated_at":          endpoint.UpdatedAt,
 		},
 	}
 
 	return db.store.UpdateByID(ctx, endpoint.UID, update)
+}
+
+func (db *endpointRepo) UpdateEndpointStatus(ctx context.Context, groupID, endpointID string, status datastore.EndpointStatus) error {
+	ctx = db.setCollectionInContext(ctx)
+
+	filter := bson.M{
+		"uid":        endpointID,
+		"project_id": groupID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"status": status,
+		},
+	}
+
+	return db.store.UpdateOne(ctx, filter, update)
 }
 
 func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint) error {

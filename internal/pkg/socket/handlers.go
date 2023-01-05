@@ -256,7 +256,6 @@ func listen(ctx context.Context, project *datastore.Project, endpoint *datastore
 				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
 				CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-				Status:       datastore.ActiveSubscriptionStatus,
 			}
 
 			err = r.SubscriptionRepo.CreateSubscription(ctx, project.UID, s)

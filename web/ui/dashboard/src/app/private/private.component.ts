@@ -1,6 +1,5 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
 import { PrivateService } from './private.service';
@@ -20,12 +19,11 @@ export class PrivateComponent implements OnInit {
 	showVerifyEmailModal = false;
 	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
-	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
 	userOrganization?: ORGANIZATION_DATA;
 	convoyVersion: string = '';
 
-	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
+	constructor(private generalService: GeneralService, private router: Router, public privateService: PrivateService) {}
 
 	async ngOnInit() {
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
@@ -66,8 +64,7 @@ export class PrivateComponent implements OnInit {
 	async getProjects() {
 		try {
 			const projectsResponse = await this.privateService.getProjects();
-			this.projects = projectsResponse.data;
-			if (this.projects?.length === 0) return this.router.navigateByUrl('/get-started');
+			if (projectsResponse.data?.length === 0) return this.router.navigateByUrl('/get-started');
 			return;
 		} catch (error) {
 			return error;

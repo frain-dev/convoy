@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
@@ -12,8 +13,9 @@ export class PrivateService {
 	activeProjectDetails?: GROUP;
 	organisationDetails!: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
+	projects: GROUP[] = [];
 
-	constructor(private http: HttpService) {}
+	constructor(private http: HttpService, private router: Router) {}
 
 	getOrganisation(): ORGANIZATION_DATA {
 		let org = localStorage.getItem('CONVOY_ORG');
@@ -124,10 +126,12 @@ export class PrivateService {
 	}
 
 	getProjectDetails(): Promise<HTTP_RESPONSE> {
+		const projectId = this.router.url.split('/')[2];
+
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${this.urlFactory('org')}/projects/${this.activeProjectDetails?.uid}`,
+					url: `${this.urlFactory('org')}/projects/${this.activeProjectDetails?.uid || projectId}`,
 					method: 'get'
 				});
 
@@ -186,12 +190,13 @@ export class PrivateService {
 	getProjects(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const groupsResponse = await this.http.request({
+				const projectsResponse = await this.http.request({
 					url: `${this.urlFactory('org')}/projects`,
 					method: 'get'
 				});
 
-				return resolve(groupsResponse);
+				this.projects = projectsResponse.data;
+				return resolve(projectsResponse);
 			} catch (error) {
 				return reject(error);
 			}
@@ -257,7 +262,7 @@ export class PrivateService {
 		});
 	}
 
-    getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
+	getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({

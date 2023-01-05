@@ -132,8 +132,6 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
-			this.projectForm.get('config.ratelimit.duration')?.patchValue(this.getTimeString(response.data.config.ratelimit.duration));
-			this.projectForm.get('config.strategy.duration')?.patchValue(this.getTimeString(response.data.config.strategy.duration));
 
 			const versions = response.data.config.signature.versions;
 			if (!versions?.length) return;
@@ -151,10 +149,13 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async createProject() {
+		const projectFormModal = document.getElementById('projectForm');
+
 		if (this.enableMoreConfig) {
-			if (this.newSignatureForm.invalid) {
+			if (this.newSignatureForm.invalid || this.projectForm.invalid) {
 				this.newSignatureForm.markAllAsTouched();
 				this.projectForm.markAllAsTouched();
+				projectFormModal?.scroll({ top: 0 });
 				return;
 			}
 
@@ -162,19 +163,22 @@ export class CreateProjectComponent implements OnInit {
 			this.checkProjectConfig();
 		}
 
-		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-
-		if (!this.enableMoreConfig) delete this.projectForm.value.config;
+		if (!this.enableMoreConfig && this.projectForm.get('name')?.invalid && this.projectForm.get('type')?.invalid) {
+			projectFormModal?.scroll({ top: 0 });
+			return this.projectForm.markAllAsTouched();
+		}
+		const dataForNoConfig = this.projectForm.value;
+		if (!this.enableMoreConfig) delete dataForNoConfig.config;
 
 		this.isCreatingProject = true;
 
 		try {
-			const response = await this.createProjectService.createProject(this.projectForm.value);
-			const projectFormModal = document.getElementById('projectForm');
+			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
 			this.privateService.activeProjectDetails = response.data.group;
+			this.privateService.getProjects();
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
 			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';

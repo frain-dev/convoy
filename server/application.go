@@ -47,10 +47,14 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		Title:           newApp.Name,
 		SupportEmail:    newApp.SupportEmail,
 		SlackWebhookURL: newApp.SlackWebhookURl,
-		IsDisabled:      newApp.IsDisabled,
+		Status:          datastore.ActiveEndpointStatus,
 		AppID:           uid,
 		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	if newApp.IsDisabled {
+		endpoint.Status = datastore.InactiveEndpointStatus
 	}
 
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
@@ -148,8 +152,12 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	for _, endpoint := range endpoints {
 		endpoint.Title = *appUpdate.Name
 
-		if appUpdate.IsDisabled != nil {
-			endpoint.IsDisabled = *appUpdate.IsDisabled
+		if appUpdate.IsDisabled != nil && endpoint.Status != datastore.PendingEndpointStatus {
+			if *appUpdate.IsDisabled {
+				endpoint.Status = datastore.InactiveEndpointStatus
+			} else {
+				endpoint.Status = datastore.ActiveEndpointStatus
+			}
 		}
 
 		if appUpdate.SlackWebhookURL != nil {
@@ -233,7 +241,6 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 			AdvancedSignatures: req.AdvancedSignatures,
 			Name:               appDetails.Title,
 			SupportEmail:       appDetails.SupportEmail,
-			IsDisabled:         appDetails.IsDisabled,
 			SlackWebhookURL:    appDetails.SlackWebhookURL,
 			HttpTimeout:        req.HttpTimeout,
 			RateLimit:          req.RateLimit,
@@ -382,7 +389,6 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 		AdvancedSignatures: req.AdvancedSignatures,
 		Name:               &endpoint.Title,
 		SupportEmail:       &endpoint.SupportEmail,
-		IsDisabled:         &endpoint.IsDisabled,
 		SlackWebhookURL:    &endpoint.SlackWebhookURL,
 		HttpTimeout:        req.HttpTimeout,
 		RateLimit:          req.RateLimit,
@@ -414,16 +420,21 @@ func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Re
 }
 
 func generateAppResponse(endpoint *datastore.Endpoint) *datastore.Application {
-	return &datastore.Application{
+	a := &datastore.Application{
 		UID:             endpoint.AppID,
 		ProjectID:       endpoint.ProjectID,
 		Title:           endpoint.Title,
 		SupportEmail:    endpoint.SupportEmail,
 		SlackWebhookURL: endpoint.SlackWebhookURL,
-		IsDisabled:      endpoint.IsDisabled,
 		CreatedAt:       endpoint.CreatedAt,
 		UpdatedAt:       endpoint.UpdatedAt,
 	}
+
+	if endpoint.Status != datastore.ActiveEndpointStatus {
+		a.IsDisabled = true
+	}
+
+	return a
 }
 
 func generateEndpointResponse(endpoint datastore.Endpoint) datastore.DeprecatedEndpoint {

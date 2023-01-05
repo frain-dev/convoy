@@ -12,11 +12,11 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -67,22 +67,22 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	}
 
 	endpoint := &datastore.Endpoint{
-		UID:               uuid.New().String(),
-		ProjectID:         projectID,
-		OwnerID:           e.OwnerID,
-		Title:             e.Name,
-		SupportEmail:      e.SupportEmail,
-		SlackWebhookURL:   e.SlackWebhookURL,
-		IsDisabled:        e.IsDisabled,
-		TargetURL:         e.URL,
-		Description:       e.Description,
-		RateLimit:         e.RateLimit,
-		HttpTimeout:       e.HttpTimeout,
-    AdvancedSignatures: e.AdvancedSignatures,
-		AppID:             e.AppID,
-		RateLimitDuration: duration.String(),
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		UID:                uuid.New().String(),
+		ProjectID:          projectID,
+		OwnerID:            e.OwnerID,
+		Title:              e.Name,
+		SupportEmail:       e.SupportEmail,
+		SlackWebhookURL:    e.SlackWebhookURL,
+		TargetURL:          e.URL,
+		Description:        e.Description,
+		RateLimit:          e.RateLimit,
+		HttpTimeout:        e.HttpTimeout,
+		AdvancedSignatures: e.AdvancedSignatures,
+		AppID:              e.AppID,
+		RateLimitDuration:  duration.String(),
+		Status:             datastore.ActiveEndpointStatus,
+		CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	if util.IsStringEmpty(endpoint.AppID) {
@@ -205,10 +205,6 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 		endpoint.SupportEmail = *e.SupportEmail
 	}
 
-	if e.IsDisabled != nil {
-		endpoint.IsDisabled = *e.IsDisabled
-	}
-
 	if e.SlackWebhookURL != nil {
 		endpoint.SlackWebhookURL = *e.SlackWebhookURL
 	}
@@ -232,10 +228,6 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 
 	if !util.IsStringEmpty(e.HttpTimeout) {
 		endpoint.HttpTimeout = e.HttpTimeout
-	}
-
-	if !util.IsStringEmpty(e.Secret) {
-		endpoint.Secret = e.Secret
 	}
 
 	auth, err := ValidateEndpointAuthentication(e.Authentication)
@@ -319,6 +311,33 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	err = a.cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
 	if err != nil {
 		log.WithError(err).Error("failed to update app cache")
+	}
+
+	return endpoint, nil
+}
+
+func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, groupId string, endpointId string) (*datastore.Endpoint, error) {
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointId)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
+	}
+
+	switch endpoint.Status {
+	case datastore.ActiveEndpointStatus:
+		endpoint.Status = datastore.InactiveEndpointStatus
+	case datastore.InactiveEndpointStatus:
+		endpoint.Status = datastore.ActiveEndpointStatus
+	case datastore.PendingEndpointStatus:
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("endpoint is in pending status"))
+	default:
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown endpoint status: %s", endpoint.Status))
+	}
+
+	err = s.endpointRepo.UpdateEndpointStatus(ctx, groupId, endpoint.UID, endpoint.Status)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to update endpoint status")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update endpoint status"))
 	}
 
 	return endpoint, nil

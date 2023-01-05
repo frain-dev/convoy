@@ -25,10 +25,6 @@
 			<span>Please select a project type</span>
 		</div>
 
-		<!-- <div class="flex">
-			<convoy-toggle class="flex justify-end mt-20px" label="Add more configurations" (onChange)="toggleMoreConfig($event)" [isChecked]="enableMoreConfig"></convoy-toggle>
-		</div> -->
-
 		<div class="border border-grey-20 p-16px mt-20px">
 			<convoy-toggle label="Add more configurations" (onChange)="toggleMoreConfig($event)" [isChecked]="enableMoreConfig" className="w-full justify-between !mb-0"></convoy-toggle>
 
@@ -110,7 +106,7 @@
 						<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
 					</div>
 
-					<h3 class="mt-48px mb-16px font-semibold">Data Rentention</h3>
+					<h3 class="mt-48px mb-16px font-semibold">Data Retention</h3>
 					<div formGroupName="retention_policy">
 						<convoy-input-field>
 							<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
