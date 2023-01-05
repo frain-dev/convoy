@@ -14,15 +14,23 @@ Convoy is a fast & secure webhooks proxy. It enables you to receive webhook even
 
 Convoy includes the following features:
 
-- **Security:** Convoy signs the payload of events, so applications ensure the events have not been tampered with. You can configure your desired hash function to use as well as the name of the header E.g. `X-Stripe-Signature` to enable backward compatible migrations from custom-built systems to Convoy.
+- **Webhooks Proxy:** Convoy enables you send webhooks to users, and helps you receive webhooks from your providers. It acts as a full proxy and lives at the edge of your network so you don't expose any of your internal systems or microservices.
 
-- **URL per Events:** Convoy is able to receive one event and fan-out the event to multiple endpoints based on the configuration by the endpoint owner. On subscription, the endpoint owner configures what events should go to each endpoint. Overlaps are allowed.
+- **Scalability:** Convoy acts as a dedicated message queue for webhooks. Its design enables you to horizontally scale out webhooks delivery.
 
-- **Retries:** Convoy currently supports two retry mechanisms: Constant time retries and exponential backoff. You can configure which retry mechanism works best for your application.
+-- **Security:** Convoy ships with several security features for webhooks, such as payload signing to ensure message integrity, endpoint authentication for authenticated routes, and static ips for network environments with strict firewall rules.
+
+- **Fan Out:** Convoy is able to route an event to multiple endpoints based on the event type or payload structure. It relies on a subset of [MongoDB's Extended JSON v2](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/) to match event payload structure and route events respectively.
+
+- **Rate Limiting:** While Convoy is able to ingest events at a large rate, it throttles the delivery of these events to the endpoints at a configurable rate per endpoint. 
+
+- **Retries & Batch Retries:** Convoy currently supports two retry mechanisms: Constant time retries and exponential backoff. Once the retry limit is exhausted, you can batch retry any number of events when the endpoint is back up.
 
 - **Management UI**: Visibility and easy debugging are one of highly coveted features of a webhook delivery system. Convoy provides a UI to view your delivery attempt logs, filter by application, event status, date & time and perform flexible batch retries during downtimes.
 
-- **Application Portal**: Application Portal allows API providers embed Convoy dashboard directly into their API dashboard. With the API, users can build their own webhooks portal if you care so much about whitelisting. :)
+- **Customer-Facing Dashboards:** Convoy ships with out-of-the box webhooks dashboard that can be embedded into your dashboard with an iframe. With this, end-users can debug webhooks, retry and batch retry events easily.
+
+- **Endpoints Failure Notification:** Convoy ships with failure notifications for endpoint failure. When an endpoint becomes dead, convoy sends out an email instantly to notify the endpoint owner of the failure.
 
 ## Installation, Getting Started
 There are several ways to get started using Convoy.
