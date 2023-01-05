@@ -18,7 +18,7 @@ Convoy includes the following features:
 
 - **Scalability:** Convoy acts as a dedicated message queue for webhooks. Its design enables you to horizontally scale out webhooks delivery.
 
--- **Security:** Convoy ships with several security features for webhooks, such as payload signing to ensure message integrity, endpoint authentication for authenticated routes, and static ips for network environments with strict firewall rules.
+- **Security:** Convoy ships with several security features for webhooks, such as payload signing to ensure message integrity, endpoint authentication for authenticated routes, and static ips for network environments with strict firewall rules.
 
 - **Fan Out:** Convoy is able to route an event to multiple endpoints based on the event type or payload structure. It relies on a subset of [MongoDB's Extended JSON v2](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/) to match event payload structure and route events respectively.
 
