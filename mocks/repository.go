@@ -561,17 +561,17 @@ func (mr *MockProjectRepositoryMockRecorder) FetchProjectsByIDs(arg0, arg1 inter
 }
 
 // FillProjectsStatistics mocks base method.
-func (m *MockProjectRepository) FillProjectsStatistics(ctx context.Context, projects []*datastore.Project) error {
+func (m *MockProjectRepository) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FillProjectsStatistics", ctx, projects)
+	ret := m.ctrl.Call(m, "FillProjectsStatistics", ctx, project)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // FillProjectsStatistics indicates an expected call of FillProjectsStatistics.
-func (mr *MockProjectRepositoryMockRecorder) FillProjectsStatistics(ctx, projects interface{}) *gomock.Call {
+func (mr *MockProjectRepositoryMockRecorder) FillProjectsStatistics(ctx, project interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillProjectsStatistics", reflect.TypeOf((*MockProjectRepository)(nil).FillProjectsStatistics), ctx, projects)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillProjectsStatistics", reflect.TypeOf((*MockProjectRepository)(nil).FillProjectsStatistics), ctx, project)
 }
 
 // LoadProjects mocks base method.
