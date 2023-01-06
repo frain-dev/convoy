@@ -101,19 +101,14 @@ func (db *groupRepo) FetchGroupByID(ctx context.Context, id string) (*datastore.
 	return group, err
 }
 
-func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups *datastore.Group) error {
 	ctx = db.setCollectionInContext(ctx)
-
-	ids := make([]string, 0, len(groups))
-	for _, group := range groups {
-		ids = append(ids, group.UID)
-	}
 
 	matchStage := bson.D{
 		{
 			Key: "$match",
 			Value: bson.D{
-				{Key: "uid", Value: bson.M{"$in": ids}},
+				{Key: "uid", Value: groups.UID},
 			},
 		},
 	}
@@ -141,16 +136,16 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			{Key: "from", Value: datastore.EventCollection},
 			{Key: "localField", Value: "uid"},
 			{Key: "foreignField", Value: "group_id"},
+			{Key: "as", Value: "group_events"},
 			{Key: "pipeline", Value: mongo.Pipeline{
 				bson.D{
 					{
 						Key: "$project", Value: bson.D{
-							{Key: "_id", Value: "$uid"},
+							{Key: "uid", Value: 1},
 						},
 					},
 				},
 			}},
-			{Key: "as", Value: "group_events"},
 		}},
 	}
 
@@ -164,7 +159,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 			},
 		},
 	}
-	var stats []datastore.GroupStatistics
+	var stats []*datastore.GroupStatistics
 
 	err := db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, projectStage}, &stats, false)
 	if err != nil {
@@ -172,14 +167,7 @@ func (db *groupRepo) FillGroupsStatistics(ctx context.Context, groups []*datasto
 		return err
 	}
 
-	statsMap := map[string]*datastore.GroupStatistics{}
-	for i, s := range stats {
-		statsMap[s.GroupID] = &stats[i]
-	}
-
-	for i := range groups {
-		groups[i].Statistics = statsMap[groups[i].UID]
-	}
+	groups.Statistics = stats[0]
 
 	return nil
 }

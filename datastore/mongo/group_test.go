@@ -209,8 +209,7 @@ func Test_FillGroupsStatistics(t *testing.T) {
 	err = NewEventRepository(store).CreateEvent(eventCtx, event)
 	require.NoError(t, err)
 
-	groups := []*datastore.Group{group1, group2}
-	err = groupRepo.FillGroupsStatistics(context.Background(), groups)
+	err = groupRepo.FillGroupsStatistics(context.Background(), group1)
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.GroupStatistics{
@@ -218,6 +217,9 @@ func Test_FillGroupsStatistics(t *testing.T) {
 		MessagesSent: 1,
 		TotalApps:    1,
 	}, *group1.Statistics)
+
+	err = groupRepo.FillGroupsStatistics(context.Background(), group2)
+	require.NoError(t, err)
 
 	require.Equal(t, datastore.GroupStatistics{
 		GroupID:      group2.UID,
