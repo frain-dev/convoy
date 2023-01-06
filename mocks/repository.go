@@ -546,7 +546,7 @@ func (mr *MockGroupRepositoryMockRecorder) FetchGroupsByIDs(arg0, arg1 interface
 }
 
 // FillGroupsStatistics mocks base method.
-func (m *MockGroupRepository) FillGroupsStatistics(ctx context.Context, groups []*datastore.Group) error {
+func (m *MockGroupRepository) FillGroupsStatistics(ctx context.Context, groups *datastore.Group) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FillGroupsStatistics", ctx, groups)
 	ret0, _ := ret[0].(error)

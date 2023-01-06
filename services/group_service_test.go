@@ -629,13 +629,8 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
-
-					groups[1].Statistics = &datastore.GroupStatistics{
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, groups *datastore.Group) error {
+					groups.Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
@@ -674,16 +669,12 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, groups *datastore.Group) error {
+					groups.Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					groups[1].Statistics = &datastore.GroupStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -719,16 +710,12 @@ func TestGroupService_GetGroups(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, groups *datastore.Group) error {
+					groups.Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					groups[1].Statistics = &datastore.GroupStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -816,8 +803,8 @@ func TestGroupService_FillGroupsStatistics(t *testing.T) {
 			},
 			dbFn: func(gs *GroupService) {
 				g, _ := gs.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups []*datastore.Group) error {
-					groups[0].Statistics = &datastore.GroupStatistics{
+				g.EXPECT().FillGroupsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, groups *datastore.Group) error {
+					groups.Statistics = &datastore.GroupStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
