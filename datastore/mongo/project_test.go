@@ -209,8 +209,7 @@ func Test_FillProjectStatistics(t *testing.T) {
 	err = NewEventRepository(store).CreateEvent(eventCtx, event)
 	require.NoError(t, err)
 
-	projects := []*datastore.Project{project1, project2}
-	err = projectRepo.FillProjectsStatistics(context.Background(), projects)
+	err = projectRepo.FillProjectsStatistics(context.Background(), project1)
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.ProjectStatistics{
@@ -218,6 +217,9 @@ func Test_FillProjectStatistics(t *testing.T) {
 		MessagesSent: 1,
 		TotalApps:    1,
 	}, *project1.Statistics)
+
+	err = projectRepo.FillProjectsStatistics(context.Background(), project2)
+	require.NoError(t, err)
 
 	require.Equal(t, datastore.ProjectStatistics{
 		ProjectID:    project2.UID,

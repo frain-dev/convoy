@@ -561,17 +561,17 @@ func (mr *MockProjectRepositoryMockRecorder) FetchProjectsByIDs(arg0, arg1 inter
 }
 
 // FillProjectsStatistics mocks base method.
-func (m *MockProjectRepository) FillProjectsStatistics(ctx context.Context, projects []*datastore.Project) error {
+func (m *MockProjectRepository) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FillProjectsStatistics", ctx, projects)
+	ret := m.ctrl.Call(m, "FillProjectsStatistics", ctx, project)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // FillProjectsStatistics indicates an expected call of FillProjectsStatistics.
-func (mr *MockProjectRepositoryMockRecorder) FillProjectsStatistics(ctx, projects interface{}) *gomock.Call {
+func (mr *MockProjectRepositoryMockRecorder) FillProjectsStatistics(ctx, project interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillProjectsStatistics", reflect.TypeOf((*MockProjectRepository)(nil).FillProjectsStatistics), ctx, projects)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillProjectsStatistics", reflect.TypeOf((*MockProjectRepository)(nil).FillProjectsStatistics), ctx, project)
 }
 
 // LoadProjects mocks base method.
@@ -1183,17 +1183,17 @@ func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpoint(ctx, endpoint, proj
 }
 
 // UpdateEndpointStatus mocks base method.
-func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, groupID, endpointID string, status datastore.EndpointStatus) error {
+func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateEndpointStatus", ctx, groupID, endpointID, status)
+	ret := m.ctrl.Call(m, "UpdateEndpointStatus", ctx, projectID, endpointID, status)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateEndpointStatus indicates an expected call of UpdateEndpointStatus.
-func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpointStatus(ctx, groupID, endpointID, status interface{}) *gomock.Call {
+func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpointStatus(ctx, projectID, endpointID, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpointStatus", reflect.TypeOf((*MockEndpointRepository)(nil).UpdateEndpointStatus), ctx, groupID, endpointID, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpointStatus", reflect.TypeOf((*MockEndpointRepository)(nil).UpdateEndpointStatus), ctx, projectID, endpointID, status)
 }
 
 // MockSubscriptionRepository is a mock of SubscriptionRepository interface.

@@ -48,7 +48,7 @@ type ProjectRepository interface {
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
 	FetchProjectsByIDs(context.Context, []string) ([]Project, error)
-	FillProjectsStatistics(ctx context.Context, projects []*Project) error
+	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
 type OrganisationRepository interface {

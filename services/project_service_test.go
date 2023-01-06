@@ -629,16 +629,12 @@ func TestProjectService_GetProjects(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					projects[1].Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -674,16 +670,12 @@ func TestProjectService_GetProjects(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					projects[1].Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -719,16 +711,12 @@ func TestProjectService_GetProjects(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					projects[1].Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -816,8 +804,8 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
