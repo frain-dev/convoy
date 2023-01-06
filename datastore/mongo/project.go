@@ -101,19 +101,14 @@ func (db *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datast
 	return project, err
 }
 
-func (db *projectRepo) FillProjectsStatistics(ctx context.Context, projects []*datastore.Project) error {
+func (db *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
 	ctx = db.setCollectionInContext(ctx)
-
-	ids := make([]string, 0, len(projects))
-	for _, project := range projects {
-		ids = append(ids, project.UID)
-	}
 
 	matchStage := bson.D{
 		{
 			Key: "$match",
 			Value: bson.D{
-				{Key: "uid", Value: bson.M{"$in": ids}},
+				{Key: "uid", Value: project.UID},
 			},
 		},
 	}
@@ -145,7 +140,7 @@ func (db *projectRepo) FillProjectsStatistics(ctx context.Context, projects []*d
 				bson.D{
 					{
 						Key: "$project", Value: bson.D{
-							{Key: "_id", Value: "$uid"},
+							{Key: "uid", Value: 1},
 						},
 					},
 				},
@@ -164,7 +159,7 @@ func (db *projectRepo) FillProjectsStatistics(ctx context.Context, projects []*d
 			},
 		},
 	}
-	var stats []datastore.ProjectStatistics
+	var stats []*datastore.ProjectStatistics
 
 	err := db.store.Aggregate(ctx, mongo.Pipeline{matchStage, lookupStage1, lookupStage2, projectStage}, &stats, false)
 	if err != nil {
@@ -172,14 +167,7 @@ func (db *projectRepo) FillProjectsStatistics(ctx context.Context, projects []*d
 		return err
 	}
 
-	statsMap := map[string]*datastore.ProjectStatistics{}
-	for i, s := range stats {
-		statsMap[s.ProjectID] = &stats[i]
-	}
-
-	for i := range projects {
-		projects[i].Statistics = statsMap[projects[i].UID]
-	}
+	project.Statistics = stats[0]
 
 	return nil
 }
