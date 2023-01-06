@@ -83,10 +83,6 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	if newSubscription.DisableEndpoint != nil {
-		subscription.DisableEndpoint = newSubscription.DisableEndpoint
-	}
-
 	if subscription.FilterConfig == nil {
 		subscription.FilterConfig = &datastore.FilterConfiguration{}
 	}
@@ -220,10 +216,6 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 			subscription.RateLimitConfig = &datastore.RateLimitConfiguration{}
 		}
 		subscription.RateLimitConfig.Duration = update.RateLimitConfig.Duration
-	}
-
-	if update.DisableEndpoint != nil {
-		subscription.DisableEndpoint = update.DisableEndpoint
 	}
 
 	err = s.subRepo.UpdateSubscription(ctx, projectId, subscription)

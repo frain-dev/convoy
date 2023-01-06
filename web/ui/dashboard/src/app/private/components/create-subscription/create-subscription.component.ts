@@ -20,7 +20,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		group_id: [null, Validators.required],
-		disable_endpoint: [false, Validators.required],
 		alert_config: this.formBuilder.group({
 			threshold: [],
 			count: []

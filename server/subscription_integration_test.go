@@ -121,7 +121,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	require.Equal(s.T(), dbSub.Name, subscription.Name)
 	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
 	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
-	require.Equal(s.T(), dbSub.DisableEndpoint, subscription.DisableEndpoint)
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProject() {
@@ -576,7 +575,6 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
 	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
 	require.Equal(s.T(), subscription.RetryConfig.Duration, dbSub.RetryConfig.Duration)
-	require.Equal(s.T(), subscription.DisableEndpoint, dbSub.DisableEndpoint)
 }
 
 func TestSubscriptionIntegrationTestSuite(t *testing.T) {
