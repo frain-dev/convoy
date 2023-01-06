@@ -100,11 +100,6 @@
 						</convoy-input-field>
 					</div>
 
-					<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
-					<div class="grid grid-cols-2 gap-24px">
-						<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
-						<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
-					</div>
 
 					<h3 class="mt-48px mb-16px font-semibold">Data Retention</h3>
 					<div formGroupName="retention_policy">

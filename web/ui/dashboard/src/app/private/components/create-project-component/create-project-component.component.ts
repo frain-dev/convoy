@@ -32,7 +32,6 @@ export class CreateProjectComponent implements OnInit {
 			retention_policy: this.formBuilder.group({
 				policy: ['30d']
 			}),
-			disable_endpoint: [true],
 			is_retention_policy_enabled: [true]
 		}),
 		type: [null, Validators.required]
@@ -224,7 +223,6 @@ export class CreateProjectComponent implements OnInit {
 			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
 		});
 
-		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;
 		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
 	}
 
