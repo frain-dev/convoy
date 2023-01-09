@@ -1,0 +1,47 @@
+{
+    "environment": "dev",
+    "database": {
+        "type": "mongodb",
+        "dsn": "mongodb://localhost:27017,localhost:27018,localhost:27019/convoy?replicaSet=rs&readPreference=primary&ssl=false",
+	"dsn_1": "mongodb://localhost:27017/convoy"
+    },
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "redis://localhost:6379"
+        }
+    },
+    "cache": {
+        "type": "redis",
+        "redis": {
+            "dsn": "redis://localhost:6379"
+        }
+    },
+    "host": "localhost:5005",
+    "logger": {
+        "level": "fatal"
+    },
+    "search": {
+        "type": "typesense",
+        "typesense": {
+            "host": "http://localhost:8108",
+            "api_key": "convoy"
+        }
+    },
+    "server": {
+        "http": {
+            "ssl": false,
+            "ssl_cert_file": "",
+            "ssl_key_file": "",
+            "port": 5005
+        }
+    },
+    "auth": {
+        "jwt": {
+            "enabled": true
+        },
+        "native": {
+            "enabled": true
+        }
+    }
+}
