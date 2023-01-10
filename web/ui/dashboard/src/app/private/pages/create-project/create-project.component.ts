@@ -1,4 +1,3 @@
-import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
@@ -14,7 +13,7 @@ export class CreateProjectComponent implements OnInit {
 	showInfo = false;
 	isLoadingProjects = false;
 
-	constructor(private router: Router, private location: Location, public privateService: PrivateService) {}
+	constructor(private router: Router, public privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.getProjects();
@@ -39,6 +38,6 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.location.back();
+		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.router.navigateByUrl('/projects');
 	}
 }

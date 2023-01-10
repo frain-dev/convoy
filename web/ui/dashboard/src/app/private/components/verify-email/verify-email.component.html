@@ -1,0 +1,14 @@
+<convoy-modal size="md" position="center" (closeModal)="closeModal.emit()">
+	<div class="px-30px py-40px">
+		<div class="rounded-12px bg-primary-500 w-80px h-80px flex justify-center items-center">
+			<img src="assets/img/svg/lock-open.svg" alt="lock icon" class="h-26px" />
+		</div>
+		<h3 class="font-bold mt-12px mb-20px">Verify Email</h3>
+		<p class="text-grey-40">Please verify your email.</p>
+		<p class="text-grey-40">If you didn't receive a verification email, please try resending your verification email below.</p>
+		<div class="flex mt-38px">
+			<button convoy-button [disabled]="isResendingEmail" (click)="resendVerificationEmail()">Resend Verification</button>
+			<button convoy-button fill="outline" class="ml-24px" (click)="closeModal.emit()">Maybe Later</button>
+		</div>
+	</div>
+</convoy-modal>

@@ -27,7 +27,7 @@ type DeviceIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultProject  *datastore.Project
 	DefaultUser     *datastore.User
 	APIKey          string
 }
@@ -41,8 +41,8 @@ func (d *DeviceIntegrationTestSuite) SetupSuite() {
 func (d *DeviceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(d.T(), d.DB)
 
-	// Setup Default Group.
-	d.DefaultGroup, _ = testdb.SeedDefaultGroup(d.ConvoyApp.A.Store, "")
+	// Setup Default Project.
+	d.DefaultProject, _ = testdb.SeedDefaultProject(d.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(d.ConvoyApp.A.Store)
 	require.NoError(d.T(), err)
@@ -74,14 +74,14 @@ func (d *DeviceIntegrationTestSuite) TearDownTest() {
 func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByEndpointID() {
 	expectedStatusCode := http.StatusOK
 
-	endpoint, err := testdb.SeedEndpoint(d.ConvoyApp.A.Store, d.DefaultGroup, "", "", "", false)
+	endpoint, err := testdb.SeedEndpoint(d.ConvoyApp.A.Store, d.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(d.T(), err)
 
 	// Just Before.
-	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultGroup, endpoint.UID)
+	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultProject, endpoint.UID)
 
 	// Arrange
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/devices", d.DefaultOrg.UID, d.DefaultGroup.UID, endpoint.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/devices", d.DefaultOrg.UID, d.DefaultProject.UID, endpoint.UID)
 	req := createRequest(http.MethodGet, url, d.APIKey, nil)
 	err = d.AuthenticatorFn(req, d.Router)
 	require.NoError(d.T(), err)

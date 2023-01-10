@@ -58,11 +58,7 @@
 			<span class="text-grey-40 italic text-12">Separate event types with comma (,) or space</span>
 		</div>
 
-		<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
-		<div class="grid grid-cols-2 gap-24px">
-			<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
-			<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
-		</div>
+
 
 		<div class="border border-grey-20 rounded-4px p-16px mt-20px">
 			<div class="flex justify-between items-center mb-14px">
@@ -86,7 +82,8 @@
 		</div>
 
 		<div class="border border-grey-20 p-16px mt-20px">
-			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig" label="Add more configurations" className="w-full justify-between !mb-0"></convoy-toggle>
+			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig; onToggleMoreConfig()" label="Add more configurations" className="w-full justify-between !mb-0"></convoy-toggle>
+
 			<div class="transition-all ease-in-out duration-300" [class]="enableMoreConfig ? 'h-full' : 'max-h-0 overflow-hidden'">
 				<h2 class="font-semibold flex items-center mb-20px mt-30px">
 					Retry Logic
@@ -97,16 +94,29 @@
 				</h2>
 
 				<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
-					<convoy-select [options]="retryLogicTypes" name="type" formControlName="type" label="Mechanism" placeholder="Select mechanism" (selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"></convoy-select>
+					<convoy-input-field>
+						<convoy-select
+							[options]="retryLogicTypes"
+							name="type"
+							formControlName="type"
+							label="Mechanism"
+							placeholder="Select mechanism"
+							(selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"
+							errorMessage="Select retry mechanism"
+						></convoy-select>
+					</convoy-input-field>
 					<convoy-input-field>
 						<label for="retry-logic-duration" convoy-label>Duration</label>
-						<input type="text" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3s" />
-						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter new subscription name</convoy-input-error>
+						<div class="relative">
+							<input type="number" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3" />
+							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+						</div>
+						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter wait duration before retry</convoy-input-error>
 					</convoy-input-field>
 					<convoy-input-field>
 						<label for="retry-logic-count" convoy-label>Limit</label>
-						<input type="text" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
-						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">Enter new subscription name</convoy-input-error>
+						<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
+						<convoy-input-error *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">Enter max retry limit</convoy-input-error>
 					</convoy-input-field>
 				</div>
 
@@ -117,13 +127,16 @@
 				<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
 					<convoy-input-field>
 						<label for="alert-config-time" convoy-label>Time</label>
-						<input type="text" id="alert-config-time" convoy-input autocomplete="alert-config-time" formControlName="threshold" placeholder="e.g 1h" />
-						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.threshold')?.touched && subscriptionForm.get('alert_config.threshold')?.invalid">Enter new subscription error alert threshold</convoy-input-error>
+						<div class="relative">
+							<input type="number" id="alert-config-time" convoy-input autocomplete="alert-config-time" formControlName="threshold" placeholder="e.g 30" />
+							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+						</div>
+						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.threshold')?.touched && subscriptionForm.get('alert_config.threshold')?.invalid">Enter error alert threshold</convoy-input-error>
 					</convoy-input-field>
 					<convoy-input-field>
 						<label for="alert-config-count" convoy-label>Limit</label>
 						<input type="number" id="alert-config-count" convoy-input autocomplete="alert-config-count" formControlName="count" placeholder="e.g 5" />
-						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.count')?.touched && subscriptionForm.get('alert_config.count')?.invalid">Enter new subscription error alert limit</convoy-input-error>
+						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.count')?.touched && subscriptionForm.get('alert_config.count')?.invalid">Enter error alert limit</convoy-input-error>
 					</convoy-input-field>
 				</div>
 			</div>
@@ -146,16 +159,16 @@
 	<button convoy-button size="sm" class="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</button>
 </div>
 
-<convoy-modal size="lg" [title]="showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'" *ngIf="showCreateSourceModal || showCreateEndpointModal" (closeModal)="showCreateSourceModal = false; showCreateEndpointModal = false">
+<div convoy-modal size="lg" [title]="showCreateSourceModal ? 'Create New Source' : 'Create New Endpoint'" *ngIf="showCreateSourceModal || showCreateEndpointModal" (closeModal)="showCreateSourceModal = false; showCreateEndpointModal = false">
 	<div modalBody>
 		<convoy-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action === 'close' ? (showCreateSourceModal = false) : onCreateSource($event.data); showCreateSourceModal = false"></convoy-create-source>
 		<convoy-create-endpoint *ngIf="showCreateEndpointModal" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false"></convoy-create-endpoint>
 	</div>
-</convoy-modal>
+</div>
 
-<convoy-modal position="full" [title]="action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter'" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
+<div convoy-modal position="full" [title]="action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter'" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
 	<div class="max-w-[1312px] m-auto">
 		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
 	</div>
-</convoy-modal>
+</div>
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="onAction.emit({ action: 'cancel' })" (closeModal)="confirmModal = false"></convoy-confirmation-modal>

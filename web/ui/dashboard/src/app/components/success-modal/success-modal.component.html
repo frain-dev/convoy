@@ -1,7 +1,7 @@
-<convoy-modal position="center" (closeModal)="closeModal.emit()" *ngIf="notification.show && notification.type === 'modal'">
+<div convoy-modal position="center" (closeModal)="closeModal.emit()" *ngIf="notification.show && notification.type === 'modal'">
 	<div class="p-40px" modalBody>
 		<img src="/assets/img/success.gif" loop="1" alt="Success gif" class="h-140px w-140px rounded-[100%] m-auto mb-16px" />
 		<p class="text-center text-16 font-semibold text-black max-w-[250px] m-auto mb-60px">{{ notification.message }}</p>
 		<button convoy-button class="m-auto px-60px" (click)="dismissNotification()">Continue</button>
 	</div>
-</convoy-modal>
+</div>

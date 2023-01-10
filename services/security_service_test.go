@@ -19,9 +19,9 @@ import (
 )
 
 func provideSecurityService(ctrl *gomock.Controller) *SecurityService {
-	groupRepo := mocks.NewMockGroupRepository(ctrl)
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
-	return NewSecurityService(groupRepo, apiKeyRepo)
+	return NewSecurityService(projectRepo, apiKeyRepo)
 }
 
 func sameMinute(date1, date2 time.Time) bool {
@@ -56,8 +56,8 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
-						Group: "1234",
+						Type:    auth.RoleAdmin,
+						Project: "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -71,14 +71,14 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				Name: "test_api_key",
 				Type: "api",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
+					Type:    auth.RoleAdmin,
+					Project: "1234",
 				},
 				ExpiresAt: primitive.NewDateTimeFromTime(expires),
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Group{UID: "abc", OrganisationID: "1234"}, nil)
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
@@ -93,9 +93,9 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
-						Group: "1234",
-						App:   "1234",
+						Type:    auth.RoleAdmin,
+						Project: "1234",
+						App:     "1234",
 					},
 					ExpiresAt: expires.Add(-2 * time.Hour),
 				},
@@ -117,9 +117,9 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  "abc",
-						Group: "1234",
-						App:   "1234",
+						Type:    "abc",
+						Project: "1234",
+						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -130,16 +130,16 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 			wantErrMsg:  "invalid api key role",
 		},
 		{
-			name: "should_fail_to_fetch_group",
+			name: "should_fail_to_fetch_project",
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
-						Group: "1234",
-						App:   "1234",
+						Type:    auth.RoleAdmin,
+						Project: "1234",
+						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -150,13 +150,13 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to fetch group by id",
+			wantErrMsg:  "failed to fetch project by id",
 		},
 		{
 			name: "should_error_for_organisation_id_mismatch",
@@ -166,9 +166,9 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
-						Group: "1234",
-						App:   "1234",
+						Type:    auth.RoleAdmin,
+						Project: "1234",
+						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -179,25 +179,25 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
-					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "555"}, nil)
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Project{UID: "1234", OrganisationID: "555"}, nil)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "unauthorized to access group",
+			wantErrMsg:  "unauthorized to access project",
 		},
 		{
-			name: "should_error_for_member_not_authorized_to_access_group",
+			name: "should_error_for_member_not_authorized_to_access_project",
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.APIKey{
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
-						Group: "1234",
-						App:   "1234",
+						Type:    auth.RoleAdmin,
+						Project: "1234",
+						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -208,13 +208,13 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
-					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "555"}, nil)
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Project{UID: "1234", OrganisationID: "555"}, nil)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "unauthorized to access group",
+			wantErrMsg:  "unauthorized to access project",
 		},
 		{
 			name: "should_fail_to_create_api_key",
@@ -224,9 +224,9 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:  auth.RoleAdmin,
-						Group: "1234",
-						App:   "1234",
+						Type:    auth.RoleAdmin,
+						Project: "1234",
+						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -237,9 +237,9 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
-					Times(1).Return(&datastore.Group{UID: "1234", OrganisationID: "1234"}, nil)
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Project{UID: "1234", OrganisationID: "1234"}, nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
@@ -307,8 +307,8 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.CreateEndpointApiKey{
-					Group:    &datastore.Group{UID: "1234"},
-					Endpoint: &datastore.Endpoint{UID: "abc", GroupID: "1234", Title: "test_endpoint"},
+					Project:  &datastore.Project{UID: "1234"},
+					Endpoint: &datastore.Endpoint{UID: "abc", ProjectID: "1234", Title: "test_endpoint"},
 					KeyType:  datastore.AppPortalKey,
 					BaseUrl:  "https://getconvoy.io",
 					Name:     "api-key-1",
@@ -319,7 +319,7 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 				Type: datastore.AppPortalKey,
 				Role: auth.Role{
 					Type:     auth.RoleAdmin,
-					Group:    "1234",
+					Project:  "1234",
 					Endpoint: "abc",
 				},
 				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
@@ -330,15 +330,15 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 					Times(1).Return(nil)
 			},
 			verifyBaseUrl: true,
-			wantBaseUrl:   "?groupID=1234&appId=abc",
+			wantBaseUrl:   "?projectID=1234&appId=abc",
 		},
 		{
 			name: "should_create_cli_api_key",
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.CreateEndpointApiKey{
-					Group:      &datastore.Group{UID: "1234"},
-					Endpoint:   &datastore.Endpoint{UID: "abc", GroupID: "1234", Title: "test_endpoint"},
+					Project:    &datastore.Project{UID: "1234"},
+					Endpoint:   &datastore.Endpoint{UID: "abc", ProjectID: "1234", Title: "test_endpoint"},
 					KeyType:    datastore.CLIKey,
 					BaseUrl:    "https://getconvoy.io",
 					Name:       "api-key-1",
@@ -350,7 +350,7 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 				Type: datastore.CLIKey,
 				Role: auth.Role{
 					Type:     auth.RoleAdmin,
-					Group:    "1234",
+					Project:  "1234",
 					Endpoint: "abc",
 				},
 				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 7)),
@@ -362,25 +362,25 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 			},
 		},
 		{
-			name: "should_error_for_endpoint_not_belong_to_group_api_key",
+			name: "should_error_for_endpoint_not_belong_to_project_api_key",
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.CreateEndpointApiKey{
-					Group:    &datastore.Group{UID: "1234"},
-					Endpoint: &datastore.Endpoint{GroupID: "12345"},
+					Project:  &datastore.Project{UID: "1234"},
+					Endpoint: &datastore.Endpoint{ProjectID: "12345"},
 				},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "endpoint does not belong to group",
+			wantErrMsg:  "endpoint does not belong to project",
 		},
 		{
 			name: "should_fail_to_create_app_portal_api_key",
 			args: args{
 				ctx: ctx,
 				newApiKey: &models.CreateEndpointApiKey{
-					Group:    &datastore.Group{UID: "1234"},
-					Endpoint: &datastore.Endpoint{UID: "abc", GroupID: "1234", Title: "test_app"},
+					Project:  &datastore.Project{UID: "1234"},
+					Endpoint: &datastore.Endpoint{UID: "abc", ProjectID: "1234", Title: "test_app"},
 					BaseUrl:  "https://getconvoy.io",
 				},
 			},
@@ -424,7 +424,7 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 			require.Empty(t, apiKey.DeletedAt)
 
 			if tc.verifyBaseUrl {
-				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?groupID=%s&appId=%s", tc.args.newApiKey.Group.UID, tc.args.newApiKey.Endpoint.UID))
+				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?projectID=%s&appId=%s", tc.args.newApiKey.Project.UID, tc.args.newApiKey.Endpoint.UID))
 			}
 
 			require.True(t, sameMinute(apiKey.ExpiresAt.Time(), tc.wantAPIKey.ExpiresAt.Time()))
@@ -613,14 +613,14 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
+					Type:    auth.RoleAdmin,
+					Project: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
-					Times(1).Return(&datastore.Group{UID: "1234"},
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Project{UID: "1234"},
 					nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -630,7 +630,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 						UID: "ref",
 						Role: auth.Role{
 							Type:     auth.RoleAPI,
-							Group:    "avs",
+							Project:  "avs",
 							Endpoint: "",
 						},
 					}, nil)
@@ -641,8 +641,8 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 			wantAPIKey: &datastore.APIKey{
 				UID: "ref",
 				Role: auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
+					Type:    auth.RoleAdmin,
+					Project: "1234",
 				},
 			},
 		},
@@ -652,8 +652,8 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
+					Type:    auth.RoleAdmin,
+					Project: "1234",
 				},
 			},
 			wantErr:     true,
@@ -674,23 +674,23 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 			wantErrMsg:  "invalid api key role",
 		},
 		{
-			name: "should_fail_to_fetch_group",
+			name: "should_fail_to_fetch_project",
 			args: args{
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
+					Type:    auth.RoleAdmin,
+					Project: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "invalid group",
+			wantErrMsg:  "invalid project",
 		},
 		{
 			name: "should_fail_find_api_key_by_id",
@@ -698,14 +698,14 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
+					Type:    auth.RoleAdmin,
+					Project: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
-					Times(1).Return(&datastore.Group{UID: "1234"},
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Project{UID: "1234"},
 					nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -722,14 +722,14 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:  auth.RoleAdmin,
-					Group: "1234",
+					Type:    auth.RoleAdmin,
+					Project: "1234",
 				},
 			},
 			dbFn: func(ss *SecurityService) {
-				g, _ := ss.groupRepo.(*mocks.MockGroupRepository)
-				g.EXPECT().FetchGroupByID(gomock.Any(), "1234").
-					Times(1).Return(&datastore.Group{UID: "1234"},
+				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
+					Times(1).Return(&datastore.Project{UID: "1234"},
 					nil)
 
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -739,7 +739,7 @@ func TestSecurityService_UpdateAPIKey(t *testing.T) {
 						UID: "ref",
 						Role: auth.Role{
 							Type:     auth.RoleAPI,
-							Group:    "avs",
+							Project:  "avs",
 							Endpoint: "",
 						},
 					}, nil)
@@ -817,7 +817,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 							UID: "ref",
 							Role: auth.Role{
 								Type:     auth.RoleAPI,
-								Group:    "avs",
+								Project:  "avs",
 								Endpoint: "",
 							},
 						},
@@ -825,7 +825,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 							UID: "abc",
 							Role: auth.Role{
 								Type:     auth.RoleAPI,
-								Group:    "123",
+								Project:  "123",
 								Endpoint: "",
 							},
 						},
@@ -844,7 +844,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 					UID: "ref",
 					Role: auth.Role{
 						Type:     auth.RoleAPI,
-						Group:    "avs",
+						Project:  "avs",
 						Endpoint: "",
 					},
 				},
@@ -852,7 +852,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 					UID: "abc",
 					Role: auth.Role{
 						Type:     auth.RoleAPI,
-						Group:    "123",
+						Project:  "123",
 						Endpoint: "",
 					},
 				},

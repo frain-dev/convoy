@@ -21,7 +21,7 @@ type CollectionKey string
 
 const (
 	ConfigCollection              = "configurations"
-	GroupCollection               = "groups"
+	ProjectsCollection            = "projects"
 	OrganisationCollection        = "organisations"
 	OrganisationInvitesCollection = "organisation_invites"
 	OrganisationMembersCollection = "organisation_members"
@@ -518,8 +518,8 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 	switch ctx.Value(CollectionCtx) {
 	case "configurations":
 		return ConfigCollection, nil
-	case "groups":
-		return GroupCollection, nil
+	case "projects":
+		return ProjectsCollection, nil
 	case "organisations":
 		return OrganisationCollection, nil
 	case "organisation_invites":
@@ -546,10 +546,14 @@ func (d *MongoStore) retrieveCollection(ctx context.Context) (string, error) {
 		return FilterCollection, nil
 	case "data_migrations", nil:
 		return DataMigrationsCollection, nil
-	case "applications", nil:
-		return "applications", nil
 	case "portal_links":
 		return PortalLinkCollection, nil
+
+	// Deprecated collections
+	case "applications", nil:
+		return "applications", nil
+	case "groups":
+		return "groups", nil
 	default:
 		return "", ErrInvalidCollection
 	}

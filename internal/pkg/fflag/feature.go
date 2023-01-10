@@ -39,7 +39,7 @@ func newFliptClient(cfg config.Configuration) *flipt.Flipt {
 
 var Features = map[string]IsEnabledFunc{
 	CanCreateCLIAPIKey: func(r *http.Request) error {
-		group := middleware.GetGroupFromContext(r.Context())
+		project := middleware.GetProjectFromContext(r.Context())
 
 		cfg, err := config.Get()
 		if err != nil {
@@ -69,10 +69,9 @@ var Features = map[string]IsEnabledFunc{
 
 		if apiKey.KeyType == datastore.CLIKey {
 			isEnabled, err := ff.IsEnabled(CanCreateCLIAPIKey, map[string]string{
-				"group_id":        group.UID,
-				"organisation_id": group.OrganisationID,
+				"project_id":      project.UID,
+				"organisation_id": project.OrganisationID,
 			})
-
 			if err != nil {
 				log.WithError(err).Error("failed to check flag on flipt")
 				return err
@@ -91,7 +90,6 @@ func CanAccessFeature(fn IsEnabledFunc) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			err := fn(r)
-
 			if err != nil {
 				statusCode := http.StatusInternalServerError
 

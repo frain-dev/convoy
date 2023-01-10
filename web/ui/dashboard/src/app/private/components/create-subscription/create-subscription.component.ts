@@ -17,26 +17,28 @@ export class CreateSubscriptionComponent implements OnInit {
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
 		type: [null, Validators.required],
-		source_id: [null, Validators.required],
+		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		group_id: [null, Validators.required],
-		disable_endpoint: [false, Validators.required],
 		alert_config: this.formBuilder.group({
-			threshold: [null],
-			count: [null]
+			threshold: [],
+			count: []
 		}),
 		retry_config: this.formBuilder.group({
-			type: [null],
-			retry_count: [null],
-			duration: [null]
+			type: [],
+			retry_count: [],
+			duration: []
 		}),
 		filter_config: this.formBuilder.group({
 			event_types: [null],
-			filter: [null]
+			filter: this.formBuilder.group({
+				headers: [null],
+				body: [null]
+			})
 		})
 	});
 	endpoints!: ENDPOINT[];
-    eventTags: string[] = [];
+	eventTags: string[] = [];
 	apps!: APP[];
 	sources!: SOURCE[];
 	endPoints: ENDPOINT[] = [];
@@ -63,6 +65,12 @@ export class CreateSubscriptionComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private formatSeconds: FormatSecondsPipe) {}
 
 	async ngOnInit() {
+		// add required validation on source input for incoming projects
+		if (this.projectType === 'incoming') {
+			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
+			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
+		}
+
 		this.isLoadingForm = true;
 		await Promise.all([this.getPortalProject(), this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
@@ -92,7 +100,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-            response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
+			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {
 				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
@@ -146,12 +154,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async onUpdateAppSelection() {
-		// await this.getApps();
-		const app = this.apps.find(app => app.uid === this.subscriptionForm.value.app_id);
-		this.modifyEndpointData(app?.endpoints);
-	}
-
 	async onCreateSource(newSource: SOURCE) {
 		await this.getSources();
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
@@ -161,19 +163,31 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 	}
 
+	onToggleMoreConfig() {
+		const alertControls = Object.keys((this.subscriptionForm.get('alert_config') as FormGroup).controls);
+		const retryControls = Object.keys((this.subscriptionForm.get('retry_config') as FormGroup).controls);
+
+		if (this.enableMoreConfig) {
+			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.setValidators(Validators.required));
+			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.updateValueAndValidity());
+
+			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.setValidators(Validators.required));
+			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.updateValueAndValidity());
+		} else {
+			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.removeValidators(Validators.required));
+			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.updateValueAndValidity());
+
+			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.removeValidators(Validators.required));
+			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.updateValueAndValidity());
+		}
+	}
+
 	async saveSubscription() {
-        this.subscriptionForm.patchValue({
+		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
 
-		if (this.projectType === 'incoming' && this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
-		if (this.token && (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('app_id')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid)) {
-			return this.subscriptionForm.markAllAsTouched();
-		}
-
-		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('type')?.invalid || this.subscriptionForm.get('app_id')?.invalid || this.subscriptionForm.get('endpoint_id')?.invalid || this.subscriptionForm.get('group_id')?.invalid) {
-			return this.subscriptionForm.markAllAsTouched();
-		}
+		if (this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
 
 		const subscription = this.subscriptionForm.value;
 		if (this.projectType === 'outgoing') delete subscription.source_id;
@@ -181,11 +195,15 @@ export class CreateSubscriptionComponent implements OnInit {
 			delete subscription.alert_config;
 			delete subscription.retry_config;
 		} else {
-			this.subscriptionForm.get('alert_config.count')?.patchValue(parseInt(this.subscriptionForm.get('alert_config.count')?.value));
-			this.subscriptionForm.get('retry_config.retry_count')?.patchValue(parseInt(this.subscriptionForm.get('retry_config.retry_count')?.value));
+			const alertConfigThreshold = this.subscriptionForm.get('alert_config.threshold');
+			const retryDuration = this.subscriptionForm.get('retry_config.duration');
+
+			alertConfigThreshold?.patchValue(alertConfigThreshold?.value + 's');
+			retryDuration?.patchValue(retryDuration?.value + 's');
 		}
 
 		this.isCreatingSubscription = true;
+
 		try {
 			const response =
 				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
@@ -195,12 +213,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.isCreatingSubscription = false;
 		}
 	}
-
-	async onCreateNewApp(newApp: APP) {
-		this.subscriptionForm.patchValue({ app_id: newApp.uid });
-		this.onUpdateAppSelection();
-	}
-
 
 	removeEventTag(tag: string) {
 		this.eventTags = this.eventTags.filter(e => e !== tag);
@@ -263,9 +275,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	getFilterSchema(schema: any) {
-		this.subscriptionForm.patchValue({
-			filter_config: { filter: schema }
-		});
+		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
+		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
+
 		this.showFilterForm = false;
 	}
 }

@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
@@ -62,7 +65,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
-	//Arrange Request
+	// Arrange Request
 	url := "/ui/auth/login"
 	bodyStr := fmt.Sprintf(`{
 		"username": "%s",
@@ -76,7 +79,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
 	var response models.LoginUserResponse
@@ -93,7 +96,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser() {
 }
 
 func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
-	//Arrange Request
+	// Arrange Request
 	url := "/ui/auth/login"
 	bodyStr := fmt.Sprintf(`{
 			"username": "%s",
@@ -107,7 +110,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
@@ -115,7 +118,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
 
-	//Arrange Request
+	// Arrange Request
 	url := "/ui/auth/login"
 	bodyStr := fmt.Sprintf(`{
 			"username": "%s",
@@ -129,7 +132,7 @@ func (u *UserIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
@@ -157,10 +160,10 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusCreated, w.Code)
 
 	var response models.LoginUserResponse
@@ -173,6 +176,12 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 	require.Equal(u.T(), r.FirstName, response.FirstName)
 	require.Equal(u.T(), r.LastName, response.LastName)
 	require.Equal(u.T(), r.Email, response.Email)
+
+	dbUser, err := cm.NewUserRepo(u.ConvoyApp.A.Store).FindUserByID(context.Background(), response.UID)
+	require.NoError(u.T(), err)
+	require.False(u.T(), dbUser.EmailVerified)
+	require.NotEmpty(u.T(), dbUser.EmailVerificationToken)
+	require.NotEmpty(u.T(), dbUser.EmailVerificationExpiresAt)
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
@@ -204,12 +213,11 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusForbidden, w.Code)
-
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
@@ -235,10 +243,10 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusBadRequest, w.Code)
 }
 
@@ -265,10 +273,10 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
-	//Act
+	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusBadRequest, w.Code)
 }
 
@@ -293,7 +301,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
 	var response jwt.Token
@@ -301,7 +309,6 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 
 	require.NotEmpty(u.T(), response.AccessToken)
 	require.NotEmpty(u.T(), response.RefreshToken)
-
 }
 
 func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
@@ -325,7 +332,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
@@ -350,7 +357,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
@@ -371,9 +378,8 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
-
 }
 
 func (u *UserIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
@@ -387,7 +393,7 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
@@ -408,7 +414,7 @@ func (u *UserIntegrationTestSuite) Test_GetUser() {
 	// Act
 	u.Router.ServeHTTP(w, req)
 
-	//Assert
+	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
 	var response datastore.User
@@ -423,6 +429,12 @@ func (u *UserIntegrationTestSuite) Test_GetUser() {
 func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
+
+	user.EmailVerified = true
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -453,19 +465,23 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 
-	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
 	dbUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 
 	require.Equal(u.T(), dbUser.UID, response.UID)
 	require.Equal(u.T(), firstName, dbUser.FirstName)
 	require.Equal(u.T(), lastName, dbUser.LastName)
 	require.Equal(u.T(), email, dbUser.Email)
-
 }
 
 func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
+
+	user.EmailVerified = true
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -494,7 +510,6 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 
-	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
 	dbUser, err := userRepo.FindUserByID(context.Background(), user.UID)
 
 	p := datastore.Password{Plaintext: newPassword, Hash: []byte(dbUser.Password)}
@@ -509,6 +524,12 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
+
+	user.EmailVerified = true
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -536,6 +557,12 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password(
 func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirmation() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", password)
+
+	user.EmailVerified = true
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
 
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
@@ -586,7 +613,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
-	//Reset password
+	// Reset password
 	url = fmt.Sprintf("/ui/users/reset-password?token=%s", dbUser.ResetPasswordToken)
 	bodyStr = fmt.Sprintf(`{
 		"password": "%s",
@@ -631,7 +658,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	//Reset password
+	// Reset password
 	url = fmt.Sprintf("/ui/users/reset-password?token=%s", "fake-token")
 	bodyStr = fmt.Sprintf(`{
 		"password": "%s",
@@ -643,6 +670,33 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 	w = httptest.NewRecorder()
 	u.Router.ServeHTTP(w, req)
 	require.Equal(u.T(), http.StatusBadRequest, w.Code)
+}
+
+func (u *UserIntegrationTestSuite) Test_VerifyEmail() {
+	user, _ := testdb.SeedUser(u.ConvoyApp.A.Store, "", testdb.DefaultUserPassword)
+
+	user.EmailVerificationToken = uuid.NewString()
+	user.EmailVerificationExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
+
+	userRepo := cm.NewUserRepo(u.ConvoyApp.A.Store)
+	err := userRepo.UpdateUser(context.Background(), user)
+	require.NoError(u.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/ui/users/verify_email?token=%s", user.EmailVerificationToken)
+
+	req := createRequest(http.MethodPost, url, "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	u.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(u.T(), http.StatusOK, w.Code)
+
+	dbUser, err := userRepo.FindUserByID(context.Background(), user.UID)
+	require.NoError(u.T(), err)
+	require.True(u.T(), dbUser.EmailVerified)
 }
 
 func TestUserIntegrationTestSuite(t *testing.T) {

@@ -19,7 +19,7 @@ func Test_FilterBy(t *testing.T) {
 			expected: "group_id:=uid-1 && created_at:[0..1] && app_id:=app-1",
 			filter: FilterBy{
 				EndpointID: "app-1",
-				GroupID:    "uid-1",
+				ProjectID:  "uid-1",
 				SearchParams: SearchParams{
 					CreatedAtStart: 0,
 					CreatedAtEnd:   1,
@@ -30,7 +30,7 @@ func Test_FilterBy(t *testing.T) {
 			name:     "missing_app_id",
 			expected: "group_id:=uid-1 && created_at:[0..1]",
 			filter: FilterBy{
-				GroupID: "uid-1",
+				ProjectID: "uid-1",
 				SearchParams: SearchParams{
 					CreatedAtStart: 0,
 					CreatedAtEnd:   1,

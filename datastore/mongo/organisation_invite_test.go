@@ -116,8 +116,8 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:  auth.RoleAdmin,
-			Group: uuid.NewString(),
+			Type:    auth.RoleAdmin,
+			Project: uuid.NewString(),
 		},
 		Status:    datastore.InviteStatusPending,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -129,7 +129,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 
 	role := auth.Role{
 		Type:     auth.RoleSuperUser,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}
 	status := datastore.InviteStatusAccepted
@@ -162,8 +162,8 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:  auth.RoleAdmin,
-			Group: uuid.NewString(),
+			Type:    auth.RoleAdmin,
+			Project: uuid.NewString(),
 		},
 		Status:    datastore.InviteStatusPending,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -191,8 +191,8 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:  auth.RoleAdmin,
-			Group: uuid.NewString(),
+			Type:    auth.RoleAdmin,
+			Project: uuid.NewString(),
 		},
 		Status:    datastore.InviteStatusPending,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -221,8 +221,8 @@ func TestFetchOrganisationInviteByTokenAndEmail(t *testing.T) {
 		InviteeEmail: fmt.Sprintf("%s@gmail.com", uuid.NewString()),
 		Token:        uuid.NewString(),
 		Role: auth.Role{
-			Type:  auth.RoleAdmin,
-			Group: uuid.NewString(),
+			Type:    auth.RoleAdmin,
+			Project: uuid.NewString(),
 		},
 		Status:    datastore.InviteStatusPending,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),

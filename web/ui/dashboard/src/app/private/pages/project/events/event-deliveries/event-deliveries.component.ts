@@ -22,7 +22,7 @@ import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.
 })
 export class EventDeliveriesComponent implements OnInit {
 	@Output() pushEventDeliveries = new EventEmitter<any>();
-	@Input() eventDeliveryFilteredByEventId?: string;
+	eventDeliveryFilteredByEventId?: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Max Attempts', 'Time Created', '', ''];
@@ -74,12 +74,6 @@ export class EventDeliveriesComponent implements OnInit {
 		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
-	ngOnChanges(changes: SimpleChanges) {
-		const prevValue = changes?.eventDeliveryFilteredByEventId.previousValue;
-		const currentValue = changes?.eventDeliveryFilteredByEventId.currentValue;
-		if (currentValue !== prevValue) this.getEventDeliveries();
-	}
-
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
@@ -88,6 +82,7 @@ export class EventDeliveriesComponent implements OnInit {
 			startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '',
 			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
 		};
+		this.eventDeliveryFilteredByEventId = filters.eventId ?? '';
 		this.eventDeliveriesEndpoint = filters.eventDelsEndpoint ?? '';
 		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
 	}
@@ -145,7 +140,7 @@ export class EventDeliveriesComponent implements OnInit {
 
 		try {
 			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries({
-				eventId: requestDetails.eventId || '',
+				eventId: requestDetails.eventId || this.eventDeliveryFilteredByEventId || '',
 				pageNo: requestDetails.pageNo || 1,
 				startDate: requestDetails.startDate,
 				endDate: requestDetails.endDate,
@@ -167,6 +162,7 @@ export class EventDeliveriesComponent implements OnInit {
 		if (startDate) queryParams.eventDelsStartDate = startDate;
 		if (endDate) queryParams.eventDelsEndDate = endDate;
 		if (this.eventDeliveriesEndpoint) queryParams.eventDelsEndpoint = this.eventDeliveriesEndpoint;
+		if (this.eventDeliveryFilteredByEventId) queryParams.eventId = this.eventDeliveryFilteredByEventId;
 		queryParams.eventDelsSource = this.eventDeliveriesSource;
 		queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 
@@ -198,7 +194,7 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ addToURL: true });
 	}
 
-	clearFilters(filterType?: 'endpoint' | 'time' | 'date' | 'status' | 'source') {
+	clearFilters(filterType?: 'endpoint' | 'eventId' | 'time' | 'date' | 'status' | 'source') {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.datePicker.clearDate();
@@ -212,6 +208,10 @@ export class EventDeliveriesComponent implements OnInit {
 				filterItems = ['eventDelsEndpoint'];
 				this.eventDeliveriesEndpoint = undefined;
 				this.endpointsFilterDropdown.show = false;
+				break;
+			case 'eventId':
+				filterItems = ['eventId'];
+				this.eventDeliveryFilteredByEventId = undefined;
 				break;
 			case 'date':
 				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
@@ -231,7 +231,8 @@ export class EventDeliveriesComponent implements OnInit {
 				this.eventDeliveriesSource = undefined;
 				break;
 			default:
-				filterItems = ['eventDelsStartDate', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsEndpoint', 'eventDelsStatus', 'eventDelsSource'];
+				filterItems = ['eventDelsStartDate', 'eventId', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsEndpoint', 'eventDelsStatus', 'eventDelsSource'];
+				this.eventDeliveryFilteredByEventId = undefined;
 				this.eventDeliveriesEndpoint = undefined;
 				this.eventDeliveriesSource = undefined;
 				this.dateFiltersFromURL = { startDate: '', endDate: '' };
@@ -241,7 +242,6 @@ export class EventDeliveriesComponent implements OnInit {
 				break;
 		}
 
-		this.eventDeliveryFilteredByEventId = undefined;
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate(['./'], { relativeTo: this.route, queryParams: activeFilters });

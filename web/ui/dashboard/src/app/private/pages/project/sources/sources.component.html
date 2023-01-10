@@ -189,10 +189,10 @@
 	</button>
 </div>
 
-<convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [id]="'sourceForm'" [title]="shouldShowUpdateSourceModal ? 'Update Source' : 'Create source'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
+<div convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [id]="'sourceForm'" [title]="shouldShowUpdateSourceModal ? 'Update Source' : 'Create source'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
 	<ng-container modalBody>
 		<convoy-create-source (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
 	</ng-container>
-</convoy-modal>
+</div>
 
 <app-delete-modal *ngIf="showDeleteSourceModal" [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="showDeleteSourceModal = false" (deleteData)="deleteSource()"></app-delete-modal>

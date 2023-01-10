@@ -5,6 +5,7 @@
 		"ng": "ng",
 		"start": "ng serve --hmr",
 		"build": "ng build",
+		"postbuild": "mkdir -p ./source-maps && mv `pwd`/dist/*.map ./source-maps",
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test",
 		"docs:json": "compodoc -p ./tsconfig.app.json -e json -d .",
