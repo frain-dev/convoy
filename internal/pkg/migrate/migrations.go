@@ -1150,8 +1150,8 @@ var Migrations = []*Migration{
 					endpointCtx := context.WithValue(context.Background(), datastore.CollectionCtx, datastore.EndpointCollection)
 					err := store.FindByID(endpointCtx, s.EndpointID, nil, &e)
 					if err != nil {
-						log.WithError(err).Fatalf("20221221112519_subscription_status_to_endpoint_status Failed to find endpoint")
-						return err
+						log.WithError(err).Errorf("20221221112519_subscription_status_to_endpoint_status Failed to find endpoint with id: %s", s.EndpointID)
+						continue
 					}
 
 					if e.IsDisabled {
