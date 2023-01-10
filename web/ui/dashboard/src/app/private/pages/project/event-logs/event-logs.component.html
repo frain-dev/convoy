@@ -12,9 +12,17 @@
 
 <div class="flex py-24px items-center justify-between">
 	<div class="flex">
-		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" [ngClass]="{ active: eventsSearchString != undefined && eventsSearchString != '' }">
+		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-			<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="getEvents({ addToURL: true, page: 1 })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
+			<input
+				type="search"
+				placeholder="Search events"
+				[(ngModel)]="eventsSearchString"
+				(change)="getEvents({ addToURL: true, page: 1 })"
+				[ngModelOptions]="{ standalone: true }"
+				class="w-full text-grey-40 text-14 outline-none bg-transparent"
+				[ngClass]="{ 'bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }"
+			/>
 			<button>
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
@@ -70,6 +78,23 @@
 				</div>
 			</ng-container>
 		</div>
+
+		<button
+			convoy-button
+			size="sm"
+			fill="outline"
+			class="ml-14px px-10px border-primary-400 h-36px whitespace-nowrap"
+			[disabled]="
+				(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') &&
+				(eventEndpoint?.length == 0 || eventEndpoint == undefined) &&
+				eventsTimeFilterData.startTime == 'T00:00:00' &&
+				eventsTimeFilterData.endTime == 'T23:59:59' &&
+				(eventSource?.length == 0 || eventSource == undefined)
+			"
+			(click)="fetchRetryCount(); showBatchRetryModal = true"
+		>
+			Batch Retry
+		</button>
 	</div>
 
 	<button
@@ -124,7 +149,13 @@
 								</td>
 								<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
 								<td convoy-table-cell>
-									<button convoy-button fill="clear" class="!p-0" size="sm">
+									<button convoy-button size="xs" texture="light" (click)="retryEvent({ e: $event, index: this.index, eventId: event.uid })">
+										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+										Retry
+									</button>
+								</td>
+								<td convoy-table-cell>
+									<button convoy-button fill="clear" class="!p-0" size="sm" (click)="viewEventDeliveries(event.uid)">
 										Deliveries
 										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
 									</button>
@@ -144,7 +175,9 @@
 
 				<ng-container *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
-					<prism language="json" [code]="getCodeSnippetString()" title="Event"></prism>
+					<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
+					<div class="mb-20px"></div>
+					<prism language="json" [code]="getCodeSnippetString('header')" title="Header"></prism>
 
 					<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
 					<div *ngIf="isLoadingSidebarDeliveries">
@@ -165,7 +198,14 @@
 					<div class="mt-30px italic w-full text-grey-20" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0">...no event deliveries for this event</div>
 
 					<ul *ngIf="sidebarEventDeliveries && sidebarEventDeliveries.length > 0" class="-ml-10px">
-						<li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries" [title]="delivery?.endpoint_metadata?.target_url || ''" [routerLink]="['../events/event-deliveries/' + delivery.uid]" [relativeTo]="route" class="cursor-pointer flex !justify-start mb-10px hover:bg-primary-500 p-10px rounded-4px transition-colors">
+						<li
+							convoy-list-item
+							*ngFor="let delivery of sidebarEventDeliveries"
+							[title]="delivery?.endpoint_metadata?.target_url || ''"
+							[routerLink]="['../events/event-deliveries/' + delivery.uid]"
+							[relativeTo]="route"
+							class="cursor-pointer flex !justify-start mb-10px hover:bg-primary-500 p-10px rounded-4px transition-colors"
+						>
 							<div class="flex items-center">
 								<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
 									<use xlink:href="#cli-icon"></use>
@@ -208,4 +248,15 @@
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</button>
+</div>
+
+<!-- bacth retry modal -->
+<div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
+	<div class="text-center py-30px" modalBody>
+		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
+		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
+		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
+		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
+	</div>
 </div>

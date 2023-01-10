@@ -6,7 +6,7 @@
 					"endpoint": {
 						"type": "string"
 					},
-					"group": {
+					"project": {
 						"type": "string"
 					},
 					"type": {
@@ -14,6 +14,15 @@
 					}
 				},
 				"type": "object"
+			},
+			"config.SignatureHeaderProvider": {
+				"enum": [
+					"X-Convoy-Signature"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"DefaultSignatureHeader"
+				]
 			},
 			"datastore.AlertConfiguration": {
 				"properties": {
@@ -123,17 +132,17 @@
 					"endpoint_id": {
 						"type": "string"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"host_name": {
 						"type": "string"
 					},
 					"last_seen_at": {
 						"type": "string"
 					},
-					"status": {
+					"project_id": {
 						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.DeviceStatus"
 					},
 					"uid": {
 						"type": "string"
@@ -143,6 +152,30 @@
 					}
 				},
 				"type": "object"
+			},
+			"datastore.DeviceStatus": {
+				"enum": [
+					"offline",
+					"online",
+					"disabled"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"DeviceStatusOffline",
+					"DeviceStatusOnline",
+					"DeviceStatusDisabled"
+				]
+			},
+			"datastore.EncodingType": {
+				"enum": [
+					"base64",
+					"hex"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"Base64Encoding",
+					"HexEncoding"
+				]
 			},
 			"datastore.Endpoint": {
 				"properties": {
@@ -164,16 +197,13 @@
 					"events": {
 						"type": "integer"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"http_timeout": {
 						"type": "string"
 					},
-					"is_disabled": {
-						"type": "boolean"
-					},
 					"owner_id": {
+						"type": "string"
+					},
+					"project_id": {
 						"type": "string"
 					},
 					"rate_limit": {
@@ -190,6 +220,9 @@
 					},
 					"slack_webhook_url": {
 						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.EndpointStatus"
 					},
 					"support_email": {
 						"type": "string"
@@ -215,10 +248,32 @@
 						"$ref": "#/components/schemas/datastore.ApiKey"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.EndpointAuthenticationType"
 					}
 				},
 				"type": "object"
+			},
+			"datastore.EndpointAuthenticationType": {
+				"enum": [
+					"api_key"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"APIKeyAuthentication"
+				]
+			},
+			"datastore.EndpointStatus": {
+				"enum": [
+					"active",
+					"inactive",
+					"pending"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"ActiveEndpointStatus",
+					"InactiveEndpointStatus",
+					"PendingEndpointStatus"
+				]
 			},
 			"datastore.Event": {
 				"properties": {
@@ -254,15 +309,18 @@
 					"event_type": {
 						"type": "string"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"headers": {
 						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
 					"matched_endpoints": {
 						"description": "TODO(all) remove this field",
 						"type": "integer"
+					},
+					"project_id": {
+						"type": "string"
+					},
+					"raw": {
+						"type": "string"
 					},
 					"source_id": {
 						"type": "string"
@@ -308,17 +366,17 @@
 					"event_metadata": {
 						"$ref": "#/components/schemas/datastore.Event"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"headers": {
 						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
 					},
-					"status": {
+					"project_id": {
 						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.EventDeliveryStatus"
 					},
 					"subscription_id": {
 						"type": "string"
@@ -332,6 +390,25 @@
 				},
 				"type": "object"
 			},
+			"datastore.EventDeliveryStatus": {
+				"enum": [
+					"Scheduled",
+					"Processing",
+					"Discarded",
+					"Failure",
+					"Success",
+					"Retry"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"ScheduledEventStatus",
+					"ProcessingEventStatus",
+					"DiscardedEventStatus",
+					"FailureEventStatus",
+					"SuccessEventStatus",
+					"RetryEventStatus"
+				]
+			},
 			"datastore.FilterConfiguration": {
 				"properties": {
 					"event_types": {
@@ -341,101 +418,20 @@
 						"type": "array"
 					},
 					"filter": {
+						"$ref": "#/components/schemas/datastore.FilterSchema"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.FilterSchema": {
+				"properties": {
+					"body": {
 						"additionalProperties": true,
 						"type": "object"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.Group": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.GroupConfig"
 					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"metadata": {
-						"$ref": "#/components/schemas/datastore.GroupMetadata"
-					},
-					"name": {
-						"type": "string"
-					},
-					"organisation_id": {
-						"type": "string"
-					},
-					"rate_limit": {
-						"description": "TODO(subomi): refactor this into the Instance API.",
-						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
-					},
-					"statistics": {
-						"$ref": "#/components/schemas/datastore.GroupStatistics"
-					},
-					"type": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.GroupConfig": {
-				"properties": {
-					"disable_endpoint": {
-						"type": "boolean"
-					},
-					"is_retention_policy_enabled": {
-						"type": "boolean"
-					},
-					"max_payload_read_size": {
-						"type": "integer"
-					},
-					"ratelimit": {
-						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
-					},
-					"replay_attacks": {
-						"type": "boolean"
-					},
-					"retention_policy": {
-						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.GroupMetadata": {
-				"properties": {
-					"retained_events": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.GroupStatistics": {
-				"properties": {
-					"messages_sent": {
-						"type": "integer"
-					},
-					"total_endpoints": {
-						"type": "integer"
+					"headers": {
+						"additionalProperties": true,
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -443,7 +439,7 @@
 			"datastore.HMac": {
 				"properties": {
 					"encoding": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.EncodingType"
 					},
 					"hash": {
 						"type": "string"
@@ -482,6 +478,9 @@
 						"description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
 						"type": "integer"
 					},
+					"raw": {
+						"type": "string"
+					},
 					"retry_limit": {
 						"type": "integer"
 					},
@@ -493,7 +492,13 @@
 			},
 			"datastore.Organisation": {
 				"properties": {
+					"assigned_domain": {
+						"type": "string"
+					},
 					"created_at": {
+						"type": "string"
+					},
+					"custom_domain": {
 						"type": "string"
 					},
 					"deleted_at": {
@@ -533,6 +538,107 @@
 					}
 				},
 				"type": "object"
+			},
+			"datastore.Project": {
+				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/datastore.ProjectConfig"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"logo_url": {
+						"type": "string"
+					},
+					"metadata": {
+						"$ref": "#/components/schemas/datastore.ProjectMetadata"
+					},
+					"name": {
+						"type": "string"
+					},
+					"organisation_id": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"description": "TODO(subomi): refactor this into the Instance API.",
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
+					"statistics": {
+						"$ref": "#/components/schemas/datastore.ProjectStatistics"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.ProjectType"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.ProjectConfig": {
+				"properties": {
+					"is_retention_policy_enabled": {
+						"type": "boolean"
+					},
+					"max_payload_read_size": {
+						"type": "integer"
+					},
+					"ratelimit": {
+						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+					},
+					"replay_attacks": {
+						"type": "boolean"
+					},
+					"retention_policy": {
+						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
+					},
+					"signature": {
+						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
+					},
+					"strategy": {
+						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.ProjectMetadata": {
+				"properties": {
+					"retained_events": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.ProjectStatistics": {
+				"properties": {
+					"messages_sent": {
+						"type": "integer"
+					},
+					"total_endpoints": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.ProjectType": {
+				"enum": [
+					"outgoing",
+					"incoming"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"OutgoingProject",
+					"IncomingProject"
+				]
 			},
 			"datastore.ProviderConfig": {
 				"properties": {
@@ -601,7 +707,7 @@
 			"datastore.SignatureConfiguration": {
 				"properties": {
 					"header": {
-						"type": "string"
+						"$ref": "#/components/schemas/config.SignatureHeaderProvider"
 					},
 					"versions": {
 						"items": {
@@ -618,7 +724,7 @@
 						"type": "string"
 					},
 					"encoding": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.EncodingType"
 					},
 					"hash": {
 						"type": "string"
@@ -643,9 +749,6 @@
 						},
 						"type": "array"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -655,14 +758,17 @@
 					"name": {
 						"type": "string"
 					},
-					"provider": {
+					"project_id": {
 						"type": "string"
+					},
+					"provider": {
+						"$ref": "#/components/schemas/datastore.SourceProvider"
 					},
 					"provider_config": {
 						"$ref": "#/components/schemas/datastore.ProviderConfig"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.SourceType"
 					},
 					"uid": {
 						"type": "string"
@@ -675,6 +781,34 @@
 					}
 				},
 				"type": "object"
+			},
+			"datastore.SourceProvider": {
+				"enum": [
+					"github",
+					"twitter",
+					"shopify"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"GithubSourceProvider",
+					"TwitterSourceProvider",
+					"ShopifySourceProvider"
+				]
+			},
+			"datastore.SourceType": {
+				"enum": [
+					"http",
+					"rest_api",
+					"pub_sub",
+					"db_change_stream"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"HTTPSource",
+					"RestApiSource",
+					"PubSubSource",
+					"DBChangeStream"
+				]
 			},
 			"datastore.StrategyConfiguration": {
 				"properties": {
@@ -693,7 +827,12 @@
 			"datastore.Subscription": {
 				"properties": {
 					"alert_config": {
-						"$ref": "#/components/schemas/datastore.AlertConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.AlertConfiguration"
+							}
+						],
+						"description": "subscription config"
 					},
 					"created_at": {
 						"type": "string"
@@ -703,9 +842,6 @@
 					},
 					"device_id": {
 						"type": "string"
-					},
-					"disable_endpoint": {
-						"type": "boolean"
 					},
 					"endpoint_metadata": {
 						"$ref": "#/components/schemas/datastore.Endpoint"
@@ -725,11 +861,8 @@
 					"source_metadata": {
 						"$ref": "#/components/schemas/datastore.Source"
 					},
-					"status": {
-						"type": "string"
-					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.SubscriptionType"
 					},
 					"uid": {
 						"type": "string"
@@ -740,10 +873,56 @@
 				},
 				"type": "object"
 			},
+			"datastore.SubscriptionType": {
+				"enum": [
+					"cli",
+					"api"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"SubscriptionTypeCLI",
+					"SubscriptionTypeAPI"
+				]
+			},
 			"datastore.TwitterProviderConfig": {
 				"properties": {
 					"crc_verified_at": {
 						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.User": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"email_verified": {
+						"type": "boolean"
+					},
+					"first_name": {
+						"type": "string"
+					},
+					"last_name": {
+						"type": "string"
+					},
+					"reset_password_expires_at": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/auth.Role"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -760,10 +939,25 @@
 						"$ref": "#/components/schemas/datastore.HMac"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.VerifierType"
 					}
 				},
 				"type": "object"
+			},
+			"datastore.VerifierType": {
+				"enum": [
+					"noop",
+					"hmac",
+					"basic_auth",
+					"api_key"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"NoopVerifier",
+					"HMacVerifier",
+					"BasicAuthVerifier",
+					"APIKeyVerifier"
+				]
 			},
 			"httpheader.HTTPHeader": {
 				"additionalProperties": {
@@ -849,25 +1043,39 @@
 				},
 				"type": "object"
 			},
-			"models.Group": {
+			"models.FanoutEvent": {
 				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.GroupConfig"
+					"custom_headers": {
+						"additionalProperties": {
+							"type": "string"
+						},
+						"type": "object"
 					},
-					"logo_url": {
+					"data": {
+						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"event_type": {
 						"type": "string"
 					},
-					"name": {
+					"owner_id": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.FilterSchema": {
+				"properties": {
+					"body": {
+						"additionalProperties": true,
+						"type": "object"
 					},
-					"rate_limit": {
-						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
+					"header": {
+						"additionalProperties": true,
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -877,13 +1085,13 @@
 					"endpoint_id": {
 						"type": "string"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"key": {
 						"type": "string"
 					},
 					"key_type": {
+						"type": "string"
+					},
+					"project_id": {
 						"type": "string"
 					},
 					"role": {
@@ -932,10 +1140,10 @@
 						},
 						"type": "array"
 					},
-					"group_id": {
+					"name": {
 						"type": "string"
 					},
-					"name": {
+					"project_id": {
 						"type": "string"
 					},
 					"token": {
@@ -948,6 +1156,40 @@
 						"type": "integer"
 					},
 					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.Project": {
+				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/datastore.ProjectConfig"
+					},
+					"logo_url": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.ProjectType"
+					}
+				},
+				"type": "object"
+			},
+			"models.ResetPassword": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"password_confirmation": {
 						"type": "string"
 					}
 				},
@@ -979,10 +1221,10 @@
 						"type": "string"
 					},
 					"provider": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.SourceProvider"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.SourceType"
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
@@ -998,9 +1240,6 @@
 					"deleted_at": {
 						"type": "integer"
 					},
-					"group_id": {
-						"type": "string"
-					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -1010,14 +1249,17 @@
 					"name": {
 						"type": "string"
 					},
-					"provider": {
+					"project_id": {
 						"type": "string"
+					},
+					"provider": {
+						"$ref": "#/components/schemas/datastore.SourceProvider"
 					},
 					"provider_config": {
 						"$ref": "#/components/schemas/datastore.ProviderConfig"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.SourceType"
 					},
 					"uid": {
 						"type": "string"
@@ -1043,9 +1285,6 @@
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
 					},
-					"disable_endpoint": {
-						"type": "boolean"
-					},
 					"endpoint_id": {
 						"type": "string"
 					},
@@ -1063,6 +1302,17 @@
 					},
 					"source_id": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.TestFilter": {
+				"properties": {
+					"request": {
+						"$ref": "#/components/schemas/models.FilterSchema"
+					},
+					"schema": {
+						"$ref": "#/components/schemas/models.FilterSchema"
 					}
 				},
 				"type": "object"
@@ -1272,7 +1522,7 @@
 				"description": "This endpoint fetches projects",
 				"parameters": [
 					{
-						"description": "group name",
+						"description": "Project name",
 						"in": "query",
 						"name": "name",
 						"schema": {
@@ -1302,7 +1552,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/datastore.Group"
+														"$ref": "#/components/schemas/datastore.Project"
 													},
 													"type": "array"
 												}
@@ -1409,13 +1659,13 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Group"
+								"$ref": "#/components/schemas/models.Project"
 							}
 						}
 					},
-					"description": "Group Details",
+					"description": "Project Details",
 					"required": true,
-					"x-originalParamName": "group"
+					"x-originalParamName": "project"
 				},
 				"responses": {
 					"200": {
@@ -1429,7 +1679,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
+													"$ref": "#/components/schemas/datastore.Project"
 												}
 											},
 											"type": "object"
@@ -1657,7 +1907,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
+													"$ref": "#/components/schemas/datastore.Project"
 												}
 											},
 											"type": "object"
@@ -1762,13 +2012,13 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Group"
+								"$ref": "#/components/schemas/models.Project"
 							}
 						}
 					},
-					"description": "Group Details",
+					"description": "Project Details",
 					"required": true,
-					"x-originalParamName": "group"
+					"x-originalParamName": "project"
 				},
 				"responses": {
 					"200": {
@@ -1782,7 +2032,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Group"
+													"$ref": "#/components/schemas/datastore.Project"
 												}
 											},
 											"type": "object"
@@ -2618,6 +2868,130 @@
 				]
 			}
 		},
+		"/api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
+			"put": {
+				"description": "This endpoint updates a subscription",
+				"parameters": [
+					{
+						"description": "Project id",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "endpoint id",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.Endpoint"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Toggles an endpoint's status from active \u003c-\u003e inactive",
+				"tags": [
+					"Subscriptions"
+				]
+			}
+		},
 		"/api/v1/projects/{projectID}/eventdeliveries": {
 			"get": {
 				"description": "This endpoint fetch event deliveries.",
@@ -2866,7 +3240,7 @@
 					},
 					"description": "event delivery ids",
 					"required": true,
-					"x-originalParamName": "ids"
+					"x-originalParamName": "deliveryIds"
 				},
 				"responses": {
 					"200": {
@@ -3183,7 +3557,7 @@
 					},
 					"description": "event delivery ids",
 					"required": true,
-					"x-originalParamName": "ids"
+					"x-originalParamName": "deliveryIds"
 				},
 				"responses": {
 					"200": {
@@ -4153,6 +4527,308 @@
 				]
 			}
 		},
+		"/api/v1/projects/{projectID}/events/batchreplay": {
+			"post": {
+				"description": "This endpoint replays multiple events",
+				"parameters": [
+					{
+						"description": "Project id",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "start date",
+						"in": "query",
+						"name": "startDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "end date",
+						"in": "query",
+						"name": "endDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Source id",
+						"in": "query",
+						"name": "source",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/datastore.Event"
+														},
+														{
+															"properties": {
+																"data": {
+																	"$ref": "#/components/schemas/server.Stub"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Replays multiple endpoint events",
+				"tags": [
+					"Events"
+				]
+			}
+		},
+		"/api/v1/projects/{projectID}/events/countbatchreplayevents": {
+			"get": {
+				"description": "This endpoint counts events that will be affected by a batch replay operation",
+				"parameters": [
+					{
+						"description": "Project id",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "start date",
+						"in": "query",
+						"name": "startDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "end date",
+						"in": "query",
+						"name": "endDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Source id",
+						"in": "query",
+						"name": "source",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/server.Stub"
+														},
+														{
+															"properties": {
+																"num": {
+																	"type": "integer"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Counts affected events",
+				"tags": [
+					"Events"
+				]
+			}
+		},
 		"/api/v1/projects/{projectID}/events/fanout": {
 			"post": {
 				"description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
@@ -4171,7 +4847,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Event"
+								"$ref": "#/components/schemas/models.FanoutEvent"
 							}
 						}
 					},
@@ -6200,6 +6876,18 @@
 						}
 					}
 				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.TestFilter"
+							}
+						}
+					},
+					"description": "Filter Details",
+					"required": true,
+					"x-originalParamName": "filter"
+				},
 				"responses": {
 					"200": {
 						"content": {
@@ -6212,7 +6900,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/server.Stub"
+													"type": "boolean"
 												}
 											},
 											"type": "object"
@@ -7214,6 +7902,238 @@
 				"summary": "Get portal link keys",
 				"tags": [
 					"PortalLinks"
+				]
+			}
+		},
+		"/ui/users/forgot-password": {
+			"post": {
+				"description": "This endpoint verifies a user's email",
+				"parameters": [
+					{
+						"description": "Email verification token",
+						"in": "query",
+						"name": "token",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"summary": "Verify Email",
+				"tags": [
+					"User"
+				]
+			}
+		},
+		"/ui/users/reset-password": {
+			"post": {
+				"description": "This endpoint resets a users password",
+				"parameters": [
+					{
+						"description": "reset token",
+						"in": "query",
+						"name": "token",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.ResetPassword"
+							}
+						}
+					},
+					"description": "Reset Password Details",
+					"required": true,
+					"x-originalParamName": "password"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.User"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"500": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/server.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Internal Server Error"
+					}
+				},
+				"summary": "Reset user password",
+				"tags": [
+					"User"
 				]
 			}
 		}

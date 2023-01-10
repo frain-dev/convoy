@@ -196,7 +196,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	role := auth.Role{
 		Type:     auth.RoleSuperUser,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	}
 	m.Role = role

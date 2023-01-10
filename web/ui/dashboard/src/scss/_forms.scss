@@ -11,3 +11,11 @@ textarea.ng-invalid.ng-touched {
 		@apply font-semibold text-primary-100 transition-all duration-300;
 	}
 }
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}

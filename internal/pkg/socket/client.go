@@ -125,7 +125,7 @@ func (c *Client) pingHandler(appData string) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.EndpointID, c.Device.GroupID, datastore.DeviceStatusOnline)
+	err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.EndpointID, c.Device.ProjectID, datastore.DeviceStatusOnline)
 	if err != nil {
 		log.WithError(err).Error(ErrFailedToUpdateDevice.Error())
 		return ErrFailedToUpdateDevice
@@ -154,7 +154,7 @@ func (c *Client) GoOffline() {
 
 	c.Device.Status = datastore.DeviceStatusOffline
 
-	err := c.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.EndpointID, c.Device.GroupID)
+	err := c.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.EndpointID, c.Device.ProjectID)
 	if err != nil {
 		log.WithError(err).Error("failed to update device status to offline")
 	}
@@ -239,7 +239,7 @@ func (c *Client) ResendEventDeliveries(since time.Time, events chan *CLIEvent) {
 			EventType:  ed.CLIMetadata.EventType,
 			EndpointID: ed.EndpointID,
 			DeviceID:   ed.DeviceID,
-			GroupID:    ed.GroupID,
+			ProjectID:  ed.ProjectID,
 		}
 	}
 }

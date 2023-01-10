@@ -36,7 +36,7 @@
 				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'mediumDate' }})</span>
 			</p>
 		</div>
-		<button convoy-button size="sm" fill="text" color="danger" (click)="selectedKey = key; showRevokeKeyModal = true">
+		<button convoy-button size="sm" fill="text" color="danger" (click)="selectedKey = key; showRevokeKeyModal = true" *ngIf="getKeyStatus(key.expires_at) === 'active'">
 			<svg width="16" height="16" class="mr-8px fill-danger-100">
 				<use xlink:href="#delete-icon"></use>
 			</svg>
@@ -103,18 +103,7 @@
 </div>
 
 <!-- token generated  -->
-<convoy-modal position="center" *ngIf="showAccessKey">
-	<div class="flex flex-col items-center justify-center py-60px px-30px" modalBody>
-		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
-		<h2 class="font-semibold mt-16px">Generate Token</h2>
-		<p class="text-14 text-grey-60 font-normal text-center mb-60px mt-8px max-w-[270px] m-auto">Your access code has been generated successfully</p>
-		<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
-			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ accessKey }}</span>
-			<convoy-copy-button [text]="accessKey"></convoy-copy-button>
-		</div>
-		<button convoy-button size="sm" class="px-40px" (click)="showAccessKey = false; fetchPersonalKeys()" type="button">Done</button>
-	</div>
-</convoy-modal>
+<convoy-token-modal *ngIf="showAccessKey" title="Generate Token" description="Your personal API key has been generated successfully" notificationText="Personal API key has been copied to your clipboard." [token]="accessKey" (closeModal)="showAccessKey = false; fetchPersonalKeys()"></convoy-token-modal>
 
 <!-- revoke token modal  -->
 <app-delete-modal *ngIf="showRevokeKeyModal" [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="showRevokeKeyModal = false" (deleteData)="revokeKey()"></app-delete-modal>

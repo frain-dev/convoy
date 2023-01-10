@@ -52,7 +52,7 @@ func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	eventService := createEventService(a)
 
 	event, err := eventService.CreateEvent(r.Context(), &newMessage, g)
@@ -71,7 +71,7 @@ func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Param event body models.Event true "Event Details"
+// @Param event body models.FanoutEvent true "Event Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -84,7 +84,7 @@ func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r 
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	eventService := createEventService(a)
 
 	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, g)
@@ -109,7 +109,7 @@ func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r 
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
 	eventService := createEventService(a)
 
@@ -120,6 +120,96 @@ func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", event, http.StatusOK))
+}
+
+// BatchReplayEvents
+// @Summary Replays multiple endpoint events
+// @Description This endpoint replays multiple events
+// @Tags Events
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
+// @Param source query string false "Source id"
+// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/events/batchreplay [post]
+func (a *ApplicationHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
+	p := m.GetProjectFromContext(r.Context())
+	eventService := createEventService(a)
+
+	searchParams, err := getSearchParams(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	f := &datastore.Filter{
+		Project: p,
+		Pageable: datastore.Pageable{
+			Page:    0,
+			PerPage: 1000000000000, // large number so we get everything in most cases
+			Sort:    -1,
+		},
+		SourceID:     r.URL.Query().Get("sourceId"),
+		EndpointID:   r.URL.Query().Get("endpointId"),
+		SearchParams: searchParams,
+	}
+
+	successes, failures, err := eventService.BatchReplayEvents(r.Context(), f)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
+}
+
+// CountAffectedEvents
+// @Summary Counts affected events
+// @Description This endpoint counts events that will be affected by a batch replay operation
+// @Tags Events
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project id"
+// @Param startDate query string false "start date"
+// @Param endDate query string false "end date"
+// @Param source query string false "Source id"
+// @Success 200 {object} util.ServerResponse{data=Stub{num=integer}}
+// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /api/v1/projects/{projectID}/events/countbatchreplayevents [get]
+func (a *ApplicationHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
+	p := m.GetProjectFromContext(r.Context())
+	eventService := createEventService(a)
+
+	searchParams, err := getSearchParams(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	f := &datastore.Filter{
+		Project: p,
+		Pageable: datastore.Pageable{
+			Page:    0,
+			PerPage: 1000000000000, // large number so we get everything in most cases
+			Sort:    -1,
+		},
+		SourceID:     r.URL.Query().Get("sourceId"),
+		EndpointID:   r.URL.Query().Get("endpointId"),
+		SearchParams: searchParams,
+	}
+
+	count, err := eventService.CountAffectedEvents(r.Context(), f)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": count}, http.StatusOK))
 }
 
 // GetEndpointEvent
@@ -172,7 +262,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 	eventService := createEventService(a)
 
-	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetGroupFromContext(r.Context()))
+	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetProjectFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -189,7 +279,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
+// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -222,7 +312,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:       m.GetGroupFromContext(r.Context()),
+		Project:     m.GetProjectFromContext(r.Context()),
 		EndpointIDs: endpoints,
 		EventID:     r.URL.Query().Get("eventId"),
 		Status:      status,
@@ -288,7 +378,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 	}
 
 	f := &datastore.Filter{
-		Group:        m.GetGroupFromContext(r.Context()),
+		Project:      m.GetProjectFromContext(r.Context()),
 		EndpointIDs:  endpoints,
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
@@ -312,7 +402,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Param delivery ids body Stub{ids=[]string} true "event delivery ids"
+// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -327,7 +417,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 	}
 
 	eventService := createEventService(a)
-	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetGroupFromContext(r.Context()))
+	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetProjectFromContext(r.Context()))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -370,7 +460,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	query := r.URL.Query().Get("query")
 	endpointID := m.GetEndpointIDFromContext(r)
 	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
@@ -385,7 +475,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 
 	f := &datastore.Filter{
 		Query:        query,
-		Group:        group,
+		Project:      project,
 		EndpointID:   endpointID,
 		EndpointIDs:  endpoints,
 		SourceID:     m.GetSourceIDFromContext(r),
@@ -463,7 +553,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	}
 
 	f := &datastore.Filter{
-		Group:        m.GetGroupFromContext(r.Context()),
+		Project:      m.GetProjectFromContext(r.Context()),
 		EventID:      r.URL.Query().Get("eventId"),
 		EndpointIDs:  endpoints,
 		Status:       status,

@@ -30,7 +30,7 @@ type OrganisationMemberIntegrationTestSuite struct {
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
 	DefaultOrg      *datastore.Organisation
-	DefaultGroup    *datastore.Group
+	DefaultProject  *datastore.Project
 	DefaultUser     *datastore.User
 }
 
@@ -44,8 +44,8 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 	s.DB = getDB()
 
-	// Setup Default Group.
-	s.DefaultGroup, _ = testdb.SeedDefaultGroup(s.ConvoyApp.A.Store, "")
+	// Setup Default Project.
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
 	require.NoError(s.T(), err)
@@ -82,7 +82,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
@@ -135,7 +135,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	})
 
@@ -177,7 +177,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
@@ -185,7 +185,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 
-	body := strings.NewReader(`{"role":{ "type":"api", "group":"123"}}`)
+	body := strings.NewReader(`{"role":{ "type":"api", "project":"123"}}`)
 	req := createRequest(http.MethodPut, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -204,7 +204,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	parseResponse(s.T(), w.Result(), &m)
 
 	require.Equal(s.T(), member.UID, m.UID)
-	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Group: "123"}, m.Role)
+	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Project: "123"}, m.Role)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember() {
@@ -215,7 +215,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Group:    uuid.NewString(),
+		Project:  uuid.NewString(),
 		Endpoint: "",
 	})
 

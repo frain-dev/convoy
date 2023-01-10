@@ -24,9 +24,9 @@ func NewSubscriptionRepo(store datastore.Store) datastore.SubscriptionRepository
 	}
 }
 
-func (s *subscriptionRepo) CreateSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription) error {
+func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
 	ctx = s.setCollectionInContext(ctx)
-	if groupId != subscription.GroupID {
+	if projectID != subscription.ProjectID {
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
@@ -34,17 +34,17 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, groupId strin
 	return s.store.Save(ctx, subscription, nil)
 }
 
-func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription) error {
+func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
 	ctx = s.setCollectionInContext(ctx)
-	if groupId != subscription.GroupID {
+	if projectID != subscription.ProjectID {
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
 	subscription.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	filter := bson.M{
-		"uid":      subscription.UID,
-		"group_id": groupId,
+		"uid":        subscription.UID,
+		"project_id": projectID,
 	}
 
 	update := bson.M{
@@ -57,7 +57,6 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 			"filter_config.filter":      subscription.FilterConfig.Filter,
 			"alert_config":              subscription.AlertConfig,
 			"retry_config":              subscription.RetryConfig,
-			"disable_endpoint":          subscription.DisableEndpoint,
 			"rate_limit_config":         subscription.RateLimitConfig,
 		},
 	}
@@ -66,7 +65,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, groupId strin
 	return err
 }
 
-func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
+func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	ctx = s.setCollectionInContext(ctx)
 	var subscriptions []datastore.Subscription
 
@@ -74,7 +73,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		{
 			Key: "$match",
 			Value: bson.D{
-				{Key: "group_id", Value: groupId},
+				{Key: "project_id", Value: projectID},
 				{Key: "deleted_at", Value: nil},
 			},
 		},
@@ -85,7 +84,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 			{
 				Key: "$match",
 				Value: bson.D{
-					{Key: "group_id", Value: groupId},
+					{Key: "project_id", Value: projectID},
 					{Key: "endpoint_id", Value: bson.M{
 						"$in": f.EndpointIDs,
 					}},
@@ -96,7 +95,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	}
 
 	endpointStage := bson.D{
-		{Key: "$lookup",
+		{
+			Key: "$lookup",
 			Value: bson.D{
 				{Key: "from", Value: "endpoints"},
 				{Key: "localField", Value: "endpoint_id"},
@@ -110,7 +110,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 								Value: bson.D{
 									{Key: "uid", Value: 1},
 									{Key: "title", Value: 1},
-									{Key: "group_id", Value: 1},
+									{Key: "project_id", Value: 1},
 									{Key: "support_email", Value: 1},
 									{Key: "target_url", Value: 1},
 									{Key: "secrets", Value: 1},
@@ -142,7 +142,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 									{Key: "name", Value: 1},
 									{Key: "type", Value: 1},
 									{Key: "mask_id", Value: 1},
-									{Key: "group_id", Value: 1},
+									{Key: "project_id", Value: 1},
 									{Key: "verifier", Value: 1},
 									{Key: "is_disabled", Value: 1},
 								},
@@ -177,7 +177,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 		return nil, datastore.PaginationData{}, err
 	}
 
-	filter := bson.M{"group_id": groupId}
+	filter := bson.M{"project_id": projectID}
 	if len(f.EndpointIDs) > 0 {
 		filter["endpoint_id"] = bson.M{"$in": f.EndpointIDs}
 	}
@@ -199,24 +199,24 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, groupId s
 	return subscriptions, pagination, nil
 }
 
-func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription) error {
+func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
 	ctx = s.setCollectionInContext(ctx)
-	if groupId != subscription.GroupID {
+	if projectID != subscription.ProjectID {
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
 	filter := bson.M{
-		"uid":      subscription.UID,
-		"group_id": groupId,
+		"uid":        subscription.UID,
+		"project_id": projectID,
 	}
 	return s.store.DeleteOne(ctx, filter, false)
 }
 
-func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId string, uid string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID string, uid string) (*datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 	subscription := &datastore.Subscription{}
 
-	filter := bson.M{"uid": uid, "group_id": groupId}
+	filter := bson.M{"uid": uid, "project_id": projectID}
 	err := s.store.FindOne(ctx, filter, nil, subscription)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrSubscriptionNotFound
@@ -225,10 +225,10 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, groupId str
 	return subscription, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, groupId string, endpointID string, eventType datastore.EventType) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, projectID string, endpointID string, eventType datastore.EventType) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
-	filter := bson.M{"group_id": groupId, "endpoint_id": endpointID, "filter_config.event_types": string(eventType)}
+	filter := bson.M{"project_id": projectID, "endpoint_id": endpointID, "filter_config.event_types": string(eventType)}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
@@ -239,12 +239,12 @@ func (s *subscriptionRepo) FindSubscriptionsByEventType(ctx context.Context, gro
 	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, groupId string, endpointID string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectID string, endpointID string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{
 		"endpoint_id": endpointID,
-		"group_id":    groupId,
+		"project_id":  projectID,
 	}
 
 	subscriptions := make([]datastore.Subscription, 0)
@@ -253,12 +253,12 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, gr
 	return subscriptions, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, groupId, deviceID string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string) (*datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{
-		"device_id": deviceID,
-		"group_id":  groupId,
+		"device_id":  deviceID,
+		"project_id": projectID,
 	}
 
 	subscription := &datastore.Subscription{}
@@ -270,9 +270,9 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, group
 	return subscription, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, groupId string, sourceId string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, projectID string, sourceId string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
-	filter := bson.M{"group_id": groupId, "source_id": sourceId}
+	filter := bson.M{"project_id": projectID, "source_id": sourceId}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
@@ -281,25 +281,6 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, gro
 	}
 
 	return subscriptions, nil
-}
-
-func (s *subscriptionRepo) UpdateSubscriptionStatus(ctx context.Context, groupId string, subscriptionId string, status datastore.SubscriptionStatus) error {
-	ctx = s.setCollectionInContext(ctx)
-
-	filter := bson.M{
-		"uid":      subscriptionId,
-		"group_id": groupId,
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"status":     status,
-			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
-		},
-	}
-
-	err := s.store.UpdateOne(ctx, filter, update)
-	return err
 }
 
 func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {

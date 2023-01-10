@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -50,6 +52,7 @@ func addDomainCommand(a *app) *cobra.Command {
 			}
 
 			s := server.NewServer(domainPort, func() {})
+			client := &http.Client{Timeout: time.Second * 10}
 
 			router := chi.NewRouter()
 			router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +76,36 @@ func addDomainCommand(a *app) *cobra.Command {
 				forwardedPath := strings.Join(rElems[1:], "/")
 				redirectURL := fmt.Sprintf("%s/%s?%s", c.Host, forwardedPath, r.URL.RawQuery)
 
-				http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+				redirectReq, err := http.NewRequest(r.Method, redirectURL, r.Body)
+				if err != nil {
+					log.WithError(err).Error("error occurred while creating the request")
+					return
+				}
+
+				redirectReq.Header = r.Header
+
+				res, err := client.Do(redirectReq)
+				if err != nil {
+					log.WithError(err).Error("error occurred while forwarding the request")
+					return
+				}
+
+				for k, v := range res.Header {
+					w.Header().Add(k, v[0])
+				}
+
+				w.WriteHeader(res.StatusCode)
+				body, err := io.ReadAll(res.Body)
+				if err != nil {
+					log.WithError(err).Error("error occurred while reading the response body")
+					return
+				}
+
+				_, err = w.Write(body)
+				if err != nil {
+					log.WithError(err).Error("error occurred while writing response")
+					return
+				}
 			})
 
 			log.Infof("Domain server running on port %v", domainPort)

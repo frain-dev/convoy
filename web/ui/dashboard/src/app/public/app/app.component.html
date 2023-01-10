@@ -87,14 +87,14 @@
 
 	<div class="mb-24px"></div>
 
-	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event" [eventDeliveryFilteredByEventId]="eventDeliveryFilteredByEventId"></app-event-deliveries>
+	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 </convoy-page>
 
-<convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
+<div convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
 	<ng-container modalBody>
 		<convoy-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : getSubscripions()"></convoy-create-subscription>
 	</ng-container>
-</convoy-modal>
+</div>
 
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscription()"></app-delete-modal>
 

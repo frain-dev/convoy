@@ -12,11 +12,11 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -42,7 +42,7 @@ func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, q 
 	return endpoints, paginationData, nil
 }
 
-func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint, groupID string) (*datastore.Endpoint, error) {
+func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint, projectID string) (*datastore.Endpoint, error) {
 	if err := util.Validate(e); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -68,12 +68,11 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 
 	endpoint := &datastore.Endpoint{
 		UID:                uuid.New().String(),
-		GroupID:            groupID,
+		ProjectID:          projectID,
 		OwnerID:            e.OwnerID,
 		Title:              e.Name,
 		SupportEmail:       e.SupportEmail,
 		SlackWebhookURL:    e.SlackWebhookURL,
-		IsDisabled:         e.IsDisabled,
 		TargetURL:          e.URL,
 		Description:        e.Description,
 		RateLimit:          e.RateLimit,
@@ -81,6 +80,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		AdvancedSignatures: e.AdvancedSignatures,
 		AppID:              e.AppID,
 		RateLimitDuration:  duration.String(),
+		Status:             datastore.ActiveEndpointStatus,
 		CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -118,7 +118,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	}
 
 	endpoint.Authentication = auth
-	err = a.endpointRepo.CreateEndpoint(ctx, endpoint, groupID)
+	err = a.endpointRepo.CreateEndpoint(ctx, endpoint, projectID)
 	if err != nil {
 		log.WithError(err).Error("failed to create endpoint")
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred while adding endpoint"))
@@ -155,7 +155,7 @@ func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEnd
 		return endpoint, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	err = a.endpointRepo.UpdateEndpoint(ctx, endpoint, endpoint.GroupID)
+	err = a.endpointRepo.UpdateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	if err != nil {
 		return endpoint, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating endpoints"))
 	}
@@ -185,11 +185,11 @@ func (a *EndpointService) DeleteEndpoint(ctx context.Context, e *datastore.Endpo
 	return nil
 }
 
-func (a *EndpointService) CountGroupEndpoints(ctx context.Context, groupID string) (int64, error) {
-	endpoints, err := a.endpointRepo.CountGroupEndpoints(ctx, groupID)
+func (a *EndpointService) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {
+	endpoints, err := a.endpointRepo.CountProjectEndpoints(ctx, projectID)
 	if err != nil {
-		log.WithError(err).Error("failed to count group endpoints")
-		return 0, util.NewServiceError(http.StatusBadRequest, errors.New("failed to count group endpoints"))
+		log.WithError(err).Error("failed to count project endpoints")
+		return 0, util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project endpoints"))
 	}
 
 	return endpoints, nil
@@ -203,10 +203,6 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 
 	if e.SupportEmail != nil {
 		endpoint.SupportEmail = *e.SupportEmail
-	}
-
-	if e.IsDisabled != nil {
-		endpoint.IsDisabled = *e.IsDisabled
 	}
 
 	if e.SlackWebhookURL != nil {
@@ -232,10 +228,6 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 
 	if !util.IsStringEmpty(e.HttpTimeout) {
 		endpoint.HttpTimeout = e.HttpTimeout
-	}
-
-	if !util.IsStringEmpty(e.Secret) {
-		endpoint.Secret = e.Secret
 	}
 
 	auth, err := ValidateEndpointAuthentication(e.Authentication)
@@ -309,7 +301,7 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	secrets := append(endpoint.Secrets, sc)
 	endpoint.Secrets = secrets
 
-	err = a.endpointRepo.ExpireSecret(ctx, endpoint.GroupID, endpoint.UID, secrets)
+	err = a.endpointRepo.ExpireSecret(ctx, endpoint.ProjectID, endpoint.UID, secrets)
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
@@ -319,6 +311,33 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	err = a.cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
 	if err != nil {
 		log.WithError(err).Error("failed to update app cache")
+	}
+
+	return endpoint, nil
+}
+
+func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, groupId string, endpointId string) (*datastore.Endpoint, error) {
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointId)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
+	}
+
+	switch endpoint.Status {
+	case datastore.ActiveEndpointStatus:
+		endpoint.Status = datastore.InactiveEndpointStatus
+	case datastore.InactiveEndpointStatus:
+		endpoint.Status = datastore.ActiveEndpointStatus
+	case datastore.PendingEndpointStatus:
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("endpoint is in pending status"))
+	default:
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown endpoint status: %s", endpoint.Status))
+	}
+
+	err = s.endpointRepo.UpdateEndpointStatus(ctx, groupId, endpoint.UID, endpoint.Status)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to update endpoint status")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update endpoint status"))
 	}
 
 	return endpoint, nil

@@ -1,4 +1,5 @@
-<convoy-modal position="full" [id]="'configureProjectForm'" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
+<div convoy-modal position="full" [id]="'configureProjectForm'" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
+	<convoy-loader *ngIf="showLoader"></convoy-loader>
 	<div class="pt-40px pb-60px" modalBody>
 		<convoy-card className="p-30px" *ngIf="projectStage === 'setupSDK'">
 			<h2 class="font-semibold mb-8px">SDK installation</h2>
@@ -49,13 +50,13 @@
 			</div>
 		</convoy-card>
 
-		<convoy-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: 'createSource' })"></convoy-create-source>
+		<convoy-create-source *ngIf="projectStage === 'createSource' && privateService.activeProjectDetails?.uid" (onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createEndpoint', prevStage: 'createSource' })"></convoy-create-source>
 
 		<convoy-create-endpoint
 			*ngIf="projectStage === 'createEndpoint' && privateService.activeProjectDetails?.uid"
-			(onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: projectType === 'outgoing' ? 'createSubscription' : 'createSource', prevStage: 'createEndpoint' })"
+			(onAction)="$event?.action == 'close' ? cancel() : toggleActiveStage({ project: 'createSubscription', prevStage: projectType === 'outgoing' ? 'createEndpoint' : 'createEndpoint' })"
 		></convoy-create-endpoint>
 
 		<convoy-create-subscription *ngIf="projectStage === 'createSubscription' && privateService.activeProjectDetails?.uid" (onAction)="onProjectOnboardingComplete()"></convoy-create-subscription>
 	</div>
-</convoy-modal>
+</div>

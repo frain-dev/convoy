@@ -58,9 +58,9 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 
 		wg.Add(1)
 		eventDeliveryRepo := mongo.NewEventDeliveryRepository(store)
-		groupRepo := mongo.NewGroupRepo(store)
+		projectRepo := mongo.NewProjectRepo(store)
 
-		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, groupRepo, deliveryChan, q, &wg)
+		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, projectRepo, deliveryChan, q, &wg)
 
 		counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, status, searchParams)
 		if err != nil {
@@ -95,7 +95,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 	}
 }
 
-func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
+func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	batchCount := 1

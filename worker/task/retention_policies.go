@@ -17,7 +17,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, groupRepo datastore.GroupRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
+func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
@@ -34,15 +34,15 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 			return err
 		}
 
-		filter := &datastore.GroupFilter{}
-		groups, err := groupRepo.LoadGroups(context.Background(), filter)
+		filter := &datastore.ProjectFilter{}
+		projects, err := projectRepo.LoadProjects(context.Background(), filter)
 		if err != nil {
-			log.WithError(err).Error("failed to load groups.")
+			log.WithError(err).Error("failed to load projects.")
 			return err
 		}
 
-		for _, g := range groups {
-			cfg := g.Config
+		for _, p := range projects {
+			cfg := p.Config
 			if cfg.IsRetentionPolicyEnabled {
 				//export events collection
 				policy, err := time.ParseDuration(cfg.RetentionPolicy.Policy)
@@ -52,7 +52,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 				expDate := time.Now().UTC().Add(-policy)
 				uri := instanceConfig.Database.Dsn
 				for _, collection := range collections {
-					err = ExportCollection(ctx, collection, uri, exportDir, expDate, objectStoreClient, g, eventRepo, eventDeliveriesRepo, groupRepo, searcher)
+					err = ExportCollection(ctx, collection, uri, exportDir, expDate, objectStoreClient, p, eventRepo, eventDeliveriesRepo, projectRepo, searcher)
 					if err != nil {
 						log.WithError(err).Errorf("Error exporting collection %v", collection)
 						return err
@@ -97,19 +97,19 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 	}
 }
 
-func GetArgsByCollection(collection string, uri string, exportDir string, expDate time.Time, group *datastore.Group) ([]string, string, error) {
+func GetArgsByCollection(collection string, uri string, exportDir string, expDate time.Time, project *datastore.Project) ([]string, string, error) {
 	switch collection {
 	case "events":
-		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+		query := fmt.Sprintf(`{ "project_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, project.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
 		// orgs/<org-id>/projects/<project-id>/events/<today-as-ISODateTime>
-		out := fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
+		out := fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s.json", exportDir, project.OrganisationID, project.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 
 	case "eventdeliveries":
-		query := fmt.Sprintf(`{ "group_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, group.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+		query := fmt.Sprintf(`{ "project_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, project.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
 		// orgs/<org-id>/projects/<project-id>/eventdeliveries/<today-as-ISODateTime>
-		out := fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s.json", exportDir, group.OrganisationID, group.UID, time.Now().UTC().Format(time.RFC3339))
+		out := fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s.json", exportDir, project.OrganisationID, project.UID, time.Now().UTC().Format(time.RFC3339))
 		args := util.MongoExportArgsBuilder(uri, collection, query, out)
 		return args, out, nil
 	default:
@@ -117,8 +117,8 @@ func GetArgsByCollection(collection string, uri string, exportDir string, expDat
 	}
 }
 
-func ExportCollection(ctx context.Context, collection string, uri string, exportDir string, expDate time.Time, objectStoreClient objectstore.ObjectStore, group *datastore.Group, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, groupRepo datastore.GroupRepository, searcher searcher.Searcher) error {
-	args, out, err := GetArgsByCollection(collection, uri, exportDir, expDate, group)
+func ExportCollection(ctx context.Context, collection string, uri string, exportDir string, expDate time.Time, objectStoreClient objectstore.ObjectStore, project *datastore.Project, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, searcher searcher.Searcher) error {
+	args, out, err := GetArgsByCollection(collection, uri, exportDir, expDate, project)
 	if err != nil {
 		return err
 	}
@@ -143,35 +143,35 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 	switch collection {
 	case "events":
 		evntFilter := &datastore.EventFilter{
-			GroupID:        group.UID,
+			ProjectID:      project.UID,
 			CreatedAtStart: 0,
 			CreatedAtEnd:   expDate.Unix(),
 		}
-		err = eventRepo.DeleteGroupEvents(ctx, evntFilter, true)
+		err = eventRepo.DeleteProjectEvents(ctx, evntFilter, true)
 		if err != nil {
 			return err
 		}
-		groupMetaData := group.Metadata
+		projectMetadata := project.Metadata
 		// update retain count
-		if groupMetaData == nil {
-			group.Metadata = &datastore.GroupMetadata{
+		if projectMetadata == nil {
+			project.Metadata = &datastore.ProjectMetadata{
 				RetainedEvents: int(numDocs),
 			}
 		} else {
-			group.Metadata.RetainedEvents += int(numDocs)
+			project.Metadata.RetainedEvents += int(numDocs)
 		}
-		err = groupRepo.UpdateGroup(ctx, group)
+		err = projectRepo.UpdateProject(ctx, project)
 		if err != nil {
 			return err
 		}
 
 	case "eventdeliveries":
 		evntDeliveryFilter := &datastore.EventDeliveryFilter{
-			GroupID:        group.UID,
+			ProjectID:      project.UID,
 			CreatedAtStart: 0,
 			CreatedAtEnd:   expDate.Unix(),
 		}
-		err = eventDeliveriesRepo.DeleteGroupEventDeliveries(ctx, evntDeliveryFilter, true)
+		err = eventDeliveriesRepo.DeleteProjectEventDeliveries(ctx, evntDeliveryFilter, true)
 		if err != nil {
 			return err
 		}
@@ -179,7 +179,7 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 
 	// delete documents
 	sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
-		GroupID: group.UID,
+		ProjectID: project.UID,
 		SearchParams: datastore.SearchParams{
 			CreatedAtStart: 0,
 			CreatedAtEnd:   expDate.Unix(),

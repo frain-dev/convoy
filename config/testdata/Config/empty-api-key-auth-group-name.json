@@ -7,7 +7,7 @@
                     "api_key": "abc",
                     "role": {
                         "type": "admin",
-                        "groups": ""
+                        "project": ""
                     }
                 }
             ]

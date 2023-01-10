@@ -1,0 +1,12 @@
+<div convoy-modal position="center">
+	<div class="flex flex-col items-center justify-center py-60px px-30px" modalBody>
+		<img src="/assets/img/success.gif" class="h-150px w-150px" alt="success" />
+		<h2 class="font-semibold mt-16px">{{ title }}</h2>
+		<p class="text-14 text-grey-60 font-normal text-center mb-60px mt-8px max-w-[270px] m-auto">{{ description }}</p>
+		<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
+			<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ token }}</span>
+			<convoy-copy-button [text]="token" [notificationText]="notificationText"></convoy-copy-button>
+		</div>
+		<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>
+	</div>
+</div>

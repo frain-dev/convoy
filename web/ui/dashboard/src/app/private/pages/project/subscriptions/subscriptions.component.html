@@ -53,7 +53,6 @@
 						<h4 class="pl-16px font-medium text-14">
 							{{ subscription.name }}
 						</h4>
-						<convoy-tag [type]="subscription.status | statuscolor" className="ml-4px">{{ subscription.status }}</convoy-tag>
 					</div>
 					<div class="flex items-center">
 						<a class="pr-4 text-primary-100 text-12 flex items-center" routerLink="./" [queryParams]="{ id: subscription.uid }">
@@ -128,12 +127,6 @@
 				<li convoy-list-item class="text-14 font-normal py-16px px-24px">
 					<div class="w-[50%] text-grey-40">Subscription type</div>
 					<div class="w-[50%] text-right capitalize">{{ activeSubscription?.type }}</div>
-				</li>
-				<li convoy-list-item class="text-14 font-normal py-16px px-24px">
-					<div class="w-[50%] text-grey-40 font-medium">Status</div>
-					<div class="w-[50%] text-right">
-						<span [class]="'ml-4px tag' + ' tag--' + activeSubscription?.status">{{ activeSubscription?.status }}</span>
-					</div>
 				</li>
 				<li convoy-list-item class="text-14 font-normal py-16px px-24px" *ngIf="activeSubscription?.endpoint_metadata">
 					<div class="w-[50%] text-grey-40">Endpoint</div>
@@ -227,9 +220,9 @@
 	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
 ></convoy-empty-state>
 
-<convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
+<div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
 	<ng-container modalBody>
 		<convoy-create-subscription (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
 	</ng-container>
-</convoy-modal>
+</div>
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>

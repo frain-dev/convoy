@@ -42,7 +42,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	var endpoints []string
 
 	pageable := m.GetPageableFromContext(r.Context())
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointID := m.GetEndpointIDFromContext(r)
 	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
 
@@ -54,7 +54,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 		endpoints = endpointIDs
 	}
 
-	filter := &datastore.FilterBy{GroupID: group.UID, EndpointIDs: endpoints}
+	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpoints}
 
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
@@ -82,10 +82,10 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
 func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	subService := createSubscriptionService(a)
-	subscription, err := subService.FindSubscriptionByID(r.Context(), group, subId, false)
+	subscription, err := subService.FindSubscriptionByID(r.Context(), project, subId, false)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -107,7 +107,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [post]
 func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	var sub models.Subscription
 	err := util.ReadJSON(r, &sub)
@@ -117,14 +117,14 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	subService := createSubscriptionService(a)
-	subscription, err := subService.CreateSubscription(r.Context(), group, &sub)
+	subscription, err := subService.CreateSubscription(r.Context(), project, &sub)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions created successfully", subscription, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", subscription, http.StatusCreated))
 }
 
 // DeleteSubscription
@@ -140,16 +140,16 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	group := m.GetGroupFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	subService := createSubscriptionService(a)
 
-	sub, err := subService.FindSubscriptionByID(r.Context(), group, chi.URLParam(r, "subscriptionID"), true)
+	sub, err := subService.FindSubscriptionByID(r.Context(), project, chi.URLParam(r, "subscriptionID"), true)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = subService.DeleteSubscription(r.Context(), group.UID, sub)
+	err = subService.DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -181,7 +181,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	g := m.GetGroupFromContext(r.Context())
+	g := m.GetProjectFromContext(r.Context())
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	subService := createSubscriptionService(a)
@@ -195,6 +195,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 }
 
 // ToggleSubscriptionStatus
+// Deprecated
 // @Summary Toggles a subscription's status from active <-> inactive
 // @Description This endpoint updates a subscription
 // @Tags Subscriptions
@@ -207,17 +208,8 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	g := m.GetGroupFromContext(r.Context())
-	subscription := chi.URLParam(r, "subscriptionID")
-
-	subService := createSubscriptionService(a)
-	sub, err := subService.ToggleSubscriptionStatus(r.Context(), g.UID, subscription)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", sub, http.StatusAccepted))
+	// For backward compatibility
+	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
 }
 
 // TestSubscriptionFilter
@@ -227,7 +219,8 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
+// @Param filter body models.TestFilter true "Filter Details"
+// @Success 200 {object} util.ServerResponse{data=boolean}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
@@ -240,12 +233,22 @@ func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *ht
 	}
 
 	subService := createSubscriptionService(a)
-	isValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request, test.Schema)
+
+	isBodyValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	isHeaderValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers)
+	if err != nil {
+		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	isValid := isBodyValid && isHeaderValid
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusCreated))
 }

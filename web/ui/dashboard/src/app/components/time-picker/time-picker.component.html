@@ -1,4 +1,4 @@
-<div convoyScreen *ngIf="showPicker" (onClick)="showPicker = false"></div>
+<div convoyOverlay *ngIf="showPicker" (click)="showPicker = false"></div>
 <div class="relative">
 	<button convoy-button class="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" fill="outline" size="sm" [ngClass]="{ 'text-primary-100 !bg-primary-500': filterIsActive() }" (click)="showPicker = !showPicker">
 		<img src="assets/img/clock.svg" class="mr-10px w-14px" alt="time filter icon" />

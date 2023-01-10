@@ -1,6 +1,5 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
 import { PrivateService } from './private.service';
@@ -17,16 +16,17 @@ export class PrivateComponent implements OnInit {
 	showOverlay = false;
 	showAddOrganisationModal = false;
 	showAddAnalytics = false;
+	showVerifyEmailModal = false;
+	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
-	projects?: GROUP[];
 	organisations?: ORGANIZATION_DATA[];
 	userOrganization?: ORGANIZATION_DATA;
+	convoyVersion: string = '';
 
-	constructor(private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
+	constructor(private generalService: GeneralService, private router: Router, public privateService: PrivateService) {}
 
 	async ngOnInit() {
-		this.getConfiguration();
-		await this.getOrganizations();
+		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
 	}
 
 	async logout() {
@@ -44,7 +44,8 @@ export class PrivateComponent implements OnInit {
 	async getConfiguration() {
 		try {
 			const response = await this.privateService.getConfiguration();
-			if (response.data.length === 0 && !this.router.url.includes('app-portal')) this.showAddAnalytics = true;
+			this.convoyVersion = response.data[0].api_version;
+			if (response.data.length === 0 && !this.router.url.includes('portal')) this.showAddAnalytics = true;
 		} catch {}
 	}
 
@@ -63,9 +64,18 @@ export class PrivateComponent implements OnInit {
 	async getProjects() {
 		try {
 			const projectsResponse = await this.privateService.getProjects();
-			this.projects = projectsResponse.data;
-			if (this.projects?.length === 0) return this.router.navigateByUrl('/get-started');
+			if (projectsResponse.data?.length === 0) return this.router.navigateByUrl('/get-started');
 			return;
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async getUserDetails() {
+		try {
+			const response = await this.privateService.getUserDetails({ userId: this.authDetails()?.uid });
+			const userDetails = response.data;
+			this.isEmailVerified = userDetails?.email_verified;
 		} catch (error) {
 			return error;
 		}
@@ -115,6 +125,6 @@ export class PrivateComponent implements OnInit {
 	get showHelpCard() {
 		const formUrls = ['apps/new', 'sources/new', 'subscriptions/new'];
 		const checkForCreateForms = formUrls.some(url => this.router.url.includes(url));
-		return this.router.url === '/projects' || this.router.url === '/projects/new' || checkForCreateForms;
+		return this.router.url === '/projects/new' || checkForCreateForms;
 	}
 }
