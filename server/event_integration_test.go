@@ -499,6 +499,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	v := []*datastore.EventDelivery{d1, d2}
 	for i, delivery := range v {
 		require.Equal(s.T(), respEvents[i].UID, delivery.UID)
+		require.NotNil(s.T(), delivery.Event)
 	}
 }
 
