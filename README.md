@@ -54,11 +54,8 @@ $ git clone https://github.com/frain-dev/convoy.git
 # Go to the Convoy folder
 $ cd convoy
 
-# Build Binary
-$ make build
-
-# Start server
-$ ./convoy server
+# Start Services
+docker compose -f configs/local/docker-compose.yml up
 ```
 
 ## Contributing
