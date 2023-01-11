@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 
@@ -70,79 +69,6 @@ func (db *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.
 		return err
 	}
 	return nil
-}
-
-func (db *eventRepo) LoadEventIntervals(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
-	ctx = db.setCollectionInContext(ctx)
-
-	start := searchParams.CreatedAtStart
-	end := searchParams.CreatedAtEnd
-	if end == 0 || end < searchParams.CreatedAtStart {
-		end = start
-	}
-
-	matchStage := bson.D{{Key: "$match", Value: bson.D{
-		{Key: "project_id", Value: projectID},
-		{Key: "deleted_at", Value: nil},
-		{Key: "created_at", Value: bson.D{
-			{Key: "$gte", Value: primitive.NewDateTimeFromTime(time.Unix(start, 0))},
-			{Key: "$lte", Value: primitive.NewDateTimeFromTime(time.Unix(end, 0))},
-		}},
-	}}}
-
-	var timeComponent string
-	var format string
-	switch period {
-	case datastore.Daily:
-		timeComponent = "$dayOfYear"
-		format = dailyIntervalFormat
-	case datastore.Weekly:
-		timeComponent = "$week"
-		format = weeklyIntervalFormat
-	case datastore.Monthly:
-		timeComponent = "$month"
-		format = monthlyIntervalFormat
-	case datastore.Yearly:
-		timeComponent = "$year"
-		format = yearlyIntervalFormat
-	default:
-		return nil, errors.New("specified data cannot be generated for period")
-	}
-	groupStage := bson.D{
-		{
-			Key: "$group", Value: bson.D{
-				{
-					Key: "_id",
-					Value: bson.D{
-						{
-							Key:   "total_time",
-							Value: bson.D{{Key: "$dateToString", Value: bson.D{{Key: "date", Value: "$created_at"}, {Key: "format", Value: format}}}},
-						},
-						{Key: "index", Value: bson.D{{Key: "$trunc", Value: bson.D{{
-							Key: "$divide", Value: bson.A{
-								bson.D{{Key: timeComponent, Value: "$created_at"}},
-								interval,
-							},
-						}}}}},
-					},
-				},
-				{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
-			},
-		},
-	}
-	sortStage := bson.D{{Key: "$sort", Value: bson.D{primitive.E{Key: "_id", Value: 1}}}}
-	var eventsIntervals []datastore.EventInterval
-
-	err := db.store.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, sortStage}, &eventsIntervals, false)
-	if err != nil {
-		log.WithError(err).Errorln("aggregate error")
-		return nil, err
-	}
-	if eventsIntervals == nil {
-		eventsIntervals = make([]datastore.EventInterval, 0)
-	}
-
-	return eventsIntervals, nil
 }
 
 func (db *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {

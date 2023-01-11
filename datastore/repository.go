@@ -28,11 +28,11 @@ type EventDeliveryRepository interface {
 	CountEventDeliveries(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
 }
 
 type EventRepository interface {
 	CreateEvent(context.Context, *Event) error
-	LoadEventIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
 	FindEventByID(ctx context.Context, id string) (*Event, error)
 	FindEventsByIDs(context.Context, []string) ([]Event, error)
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)
@@ -48,7 +48,7 @@ type ProjectRepository interface {
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
 	FetchProjectsByIDs(context.Context, []string) ([]Project, error)
-	FillProjectsStatistics(ctx context.Context, projects []*Project) error
+	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
 type OrganisationRepository interface {

@@ -70,7 +70,6 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 			Policy: "72h",
 		},
 		RateLimit:                &datastore.DefaultRateLimitConfig,
-		DisableEndpoint:          true,
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
@@ -139,7 +138,6 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 			Policy: "72h",
 		},
 		RateLimit:                &datastore.DefaultRateLimitConfig,
-		DisableEndpoint:          true,
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
