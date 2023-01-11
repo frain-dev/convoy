@@ -2,8 +2,9 @@
     "environment": "dev",
     "database": {
         "type": "mongodb",
-        "dsn": "mongodb://localhost:27017,localhost:27018,localhost:27019/convoy?replicaSet=rs&readPreference=primary&ssl=false",
-	"dsn_1": "mongodb://localhost:27017/convoy"
+        "dsn_0": "mongodb://localhost:27017/convoy?replicaSet=localhost&readPreference=primary&ssl=false",
+        "dsn_1": "mongodb://localhost:27017,localhost:27018,localhost:27019/convoy?replicaSet=rs0&readPreference=primary&ssl=false",
+	"dsn": "mongodb://mongo:27017/convoy?replicaSet=localhost"
     },
     "queue": {
         "type": "redis",
@@ -24,7 +25,7 @@
     "search": {
         "type": "typesense",
         "typesense": {
-            "host": "http://localhost:8108",
+            "host": "http://typesense:8108",
             "api_key": "convoy"
         }
     },

@@ -37,14 +37,20 @@ services:
             - redis_server
 
     mongo:
-      image: ray-rs
+      image: mongo:5.0.14
+      command: "--replSet localhost"
       restart: always
-      environment:
-        - VERSION=${VERSION:-5.0.4}
       ports: 
         - "27017:27017"
         - "27018:27018"
         - "27019:27019"
+
+    mongosetup:
+        image: mongo:5.0.14
+        depends_on:
+          - mongo
+        restart: "no"
+        entrypoint: [ "bash", "-c", "sleep 10 && mongo --host mongo:27017 --eval 'rs.initiate()'"]
 
     redis_server:
         image: redis:alpine
