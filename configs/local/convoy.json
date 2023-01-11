@@ -2,20 +2,18 @@
     "environment": "dev",
     "database": {
         "type": "mongodb",
-        "dsn_0": "mongodb://localhost:27017/convoy?replicaSet=localhost&readPreference=primary&ssl=false",
-        "dsn_1": "mongodb://localhost:27017,localhost:27018,localhost:27019/convoy?replicaSet=rs0&readPreference=primary&ssl=false",
 	"dsn": "mongodb://mongo:27017/convoy?replicaSet=localhost"
     },
     "queue": {
         "type": "redis",
         "redis": {
-            "dsn": "redis://localhost:6379"
+            "dsn": "redis://redis_server:6379"
         }
     },
     "cache": {
         "type": "redis",
         "redis": {
-            "dsn": "redis://localhost:6379"
+            "dsn": "redis://redis_server:6379"
         }
     },
     "host": "localhost:5005",

@@ -55,8 +55,6 @@ services:
     redis_server:
         image: redis:alpine
         restart: always
-        ports:
-          - "6379:6379"
 
     typesense:
         image: typesense/typesense:0.22.2
