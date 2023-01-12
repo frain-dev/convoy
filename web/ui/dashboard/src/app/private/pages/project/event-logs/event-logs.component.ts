@@ -57,7 +57,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Time Created', '', ''];
+	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Time Created', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
@@ -336,8 +336,7 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
-	async retryEvent(requestDetails: { e: any; index: number; eventId: string }) {
-		requestDetails.e.stopPropagation();
+	async retryEvent(requestDetails: { eventId: string }) {
 
 		try {
 			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId, token: this.portalToken });
