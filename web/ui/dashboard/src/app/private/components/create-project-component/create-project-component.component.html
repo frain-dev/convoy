@@ -100,15 +100,19 @@
 						</convoy-input-field>
 					</div>
 
-
-					<h3 class="mt-48px mb-16px font-semibold">Data Retention</h3>
-					<div formGroupName="retention_policy">
-						<convoy-input-field>
-							<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
-							<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
-							<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
-						</convoy-input-field>
+					<div class="flex justify-between items-center mt-48px mb-16px">
+						<h3 class="font-semibold">Enable Retention Policy</h3>
+						<convoy-toggle label="Enabled" name="is_retention_policy_enabled" formControlName="is_retention_policy_enabled" className="!mb-0"></convoy-toggle>
 					</div>
+					<ng-container *ngIf="projectForm.get('config.is_retention_policy_enabled')?.value">
+                        <div formGroupName="retention_policy">
+                            <convoy-input-field>
+                                <label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
+                                <input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
+                                <convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
+                            </convoy-input-field>
+                        </div>
+                    </ng-container>
 				</div>
 			</div>
 		</div>

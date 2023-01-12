@@ -148,12 +148,7 @@
 									<span *ngIf="portalToken">{{ event.source_metadata.name }}</span>
 								</td>
 								<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
-								<td convoy-table-cell>
-									<button convoy-button size="xs" texture="light" (click)="retryEvent({ e: $event, index: this.index, eventId: event.uid })">
-										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-										Retry
-									</button>
-								</td>
+
 								<td convoy-table-cell>
 									<button convoy-button fill="clear" class="!p-0" size="sm" (click)="viewEventDeliveries(event.uid)">
 										Deliveries
@@ -174,12 +169,19 @@
 				<convoy-loader id="details_section_loader" *ngIf="isloadingEvents"></convoy-loader>
 
 				<ng-container *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
-					<h3 class="text-16 font-bold mb-16px">Details</h3>
+					<div class="flex items-center justify-between mb-16px">
+						<h3 class="text-16 font-bold">Details</h3>
+						<button convoy-button size="xs" texture="light" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
+							<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+							Retry
+						</button>
+					</div>
 					<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
 					<div class="mb-20px"></div>
 					<prism language="json" [code]="getCodeSnippetString('header')" title="Header"></prism>
 
 					<h3 class="text-16 font-bold mb-16px mt-26px">Deliveries Overview</h3>
+
 					<div *ngIf="isLoadingSidebarDeliveries">
 						<div class="flex mb-20px">
 							<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
