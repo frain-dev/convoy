@@ -4,6 +4,8 @@ import { environment } from 'src/environments/environment';
 import axios from 'axios';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from '../general/general.service';
+import { JwtHelperService } from '@auth0/angular-jwt';
+import { differenceInSeconds } from 'date-fns';
 
 @Injectable({
 	providedIn: 'root'
@@ -13,13 +15,16 @@ export class HttpService {
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
 	portalToken = this.route.snapshot.queryParams?.token;
 
+	public jwtHelper: JwtHelperService = new JwtHelperService();
+
 	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute) {}
 
 	authDetails() {
-		const authDetails = localStorage.getItem('CONVOY_AUTH');
+		const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
 		if (authDetails && authDetails !== 'undefined') {
-			const { token } = JSON.parse(authDetails);
-			return { token: token.access_token, authState: true };
+			const token = JSON.parse(authDetails);
+			console.log(token);
+			return { access_token: token.access_token, refresh_token: token.refresh_token, authState: true };
 		} else {
 			return { authState: false };
 		}
@@ -34,6 +39,7 @@ export class HttpService {
 				// Interceptor
 				http.interceptors.response.use(
 					request => {
+						this.checkIfTokenIsExpired();
 						return request;
 					},
 					error => {
@@ -42,16 +48,7 @@ export class HttpService {
 							let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
 
 							if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
-								// save previous location before session timeout
-								if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
-
-								// then logout
-								this.router.navigate(['/login'], { replaceUrl: true });
-								localStorage.removeItem('CONVOY_AUTH');
-								this.generalService.showNotification({
-									message: errorMessage,
-									style: 'error'
-								});
+								this.getRefreshToken();
 								return Promise.reject(error);
 							}
 
@@ -77,7 +74,7 @@ export class HttpService {
 				);
 
 				const requestHeader = {
-					Authorization: `Bearer ${this.portalToken || this.authDetails()?.token}`
+					Authorization: `Bearer ${this.portalToken || this.authDetails()?.access_token}`
 				};
 
 				// make request
@@ -97,6 +94,41 @@ export class HttpService {
 					return reject('An unexpected error occurred');
 				}
 			}
+		});
+	}
+
+	async getRefreshToken() {
+		try {
+			const refreshedTokens = await this.request({
+				url: `/auth/token/refresh`,
+				method: 'post',
+				body: this.authDetails()
+			});
+			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(refreshedTokens.data));
+		} catch {
+			this.initiateLogout();
+		}
+	}
+
+	checkIfTokenIsExpired() {
+		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(this.authDetails().access_token);
+		const currentTime = new Date();
+		if (tokenExpiryTime) {
+			const expiryPeriodInSeconds = differenceInSeconds(tokenExpiryTime, currentTime);
+			if (expiryPeriodInSeconds <= 180) this.getRefreshToken();
+		}
+	}
+
+	initiateLogout() {
+		// save previous location before session timeout
+		if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
+
+		// then logout
+		this.router.navigate(['/login'], { replaceUrl: true });
+		localStorage.removeItem('CONVOY_AUTH_TOKENS');
+		this.generalService.showNotification({
+			message: 'Your session has expired, please login',
+			style: 'error'
 		});
 	}
 }
