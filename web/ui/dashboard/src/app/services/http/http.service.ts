@@ -23,8 +23,7 @@ export class HttpService {
 		const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
 		if (authDetails && authDetails !== 'undefined') {
 			const token = JSON.parse(authDetails);
-			console.log(token);
-			return { access_token: token.access_token, refresh_token: token.refresh_token, authState: true };
+			return { token: token.access_token, authState: true };
 		} else {
 			return { authState: false };
 		}
@@ -74,7 +73,7 @@ export class HttpService {
 				);
 
 				const requestHeader = {
-					Authorization: `Bearer ${this.portalToken || this.authDetails()?.access_token}`
+					Authorization: `Bearer ${this.portalToken || this.authDetails()?.token}`
 				};
 
 				// make request
@@ -111,7 +110,7 @@ export class HttpService {
 	}
 
 	checkIfTokenIsExpired() {
-		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(this.authDetails().access_token);
+		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(this.authDetails().token);
 		const currentTime = new Date();
 		if (tokenExpiryTime) {
 			const expiryPeriodInSeconds = differenceInSeconds(tokenExpiryTime, currentTime);
