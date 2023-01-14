@@ -234,6 +234,14 @@ func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context,
 		return nil, nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
+	org, err := ois.orgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation by id")
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by id"))
+	}
+
+	iv.OrganisationName = &org.Name
+
 	return user, iv, nil
 }
 
