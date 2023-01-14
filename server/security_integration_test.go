@@ -154,10 +154,10 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 }
 
 func (s *SecurityIntegrationTestSuite) Test_RegenerateProjectAPIKey() {
-	expectedStatusCode := http.StatusCreated
+	expectedStatusCode := http.StatusOK
 
 	// Switch to the native realm
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
@@ -173,7 +173,7 @@ func (s *SecurityIntegrationTestSuite) Test_RegenerateProjectAPIKey() {
 	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "api", "")
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/security/keys/regenarate", s.DefaultOrg.UID, s.DefaultProject.UID)
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/security/keys/regenerate", s.DefaultOrg.UID, s.DefaultProject.UID)
 
 	req := createRequest(http.MethodPut, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
