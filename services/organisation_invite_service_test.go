@@ -916,6 +916,11 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 					nil,
 				)
 
+				o, _ := ois.orgRepo.(*mocks.MockOrganisationRepository)
+				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").Times(1).Return(
+					&datastore.Organisation{UID: "123ab", Name: "test_org"},
+					nil)
+
 				u, _ := ois.userRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
@@ -930,8 +935,9 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 				Email: "test@email.com",
 			},
 			wantInvite: &datastore.OrganisationInvite{
-				OrganisationID: "123ab",
-				InviteeEmail:   "test@email.com",
+				OrganisationID:   "123ab",
+				OrganisationName: stringPtr("test_org"),
+				InviteeEmail:     "test@email.com",
 			},
 		},
 
