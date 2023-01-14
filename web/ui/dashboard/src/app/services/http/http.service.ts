@@ -23,7 +23,7 @@ export class HttpService {
 		const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
 		if (authDetails && authDetails !== 'undefined') {
 			const token = JSON.parse(authDetails);
-			return { token: token.access_token, authState: true };
+			return { access_token: token.access_token, refresh_token: token.refresh_token, authState: true };
 		} else {
 			return { authState: false };
 		}
@@ -73,7 +73,7 @@ export class HttpService {
 				);
 
 				const requestHeader = {
-					Authorization: `Bearer ${this.portalToken || this.authDetails()?.token}`
+					Authorization: `Bearer ${this.portalToken || this.authDetails()?.access_token}`
 				};
 
 				// make request
@@ -104,14 +104,15 @@ export class HttpService {
 				body: this.authDetails()
 			});
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(refreshedTokens.data));
+			window.location.reload();
 		} catch {
 			this.initiateLogout();
 		}
 	}
 
 	checkIfTokenIsExpired() {
-		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(this.authDetails().token);
 		const currentTime = new Date();
+		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(this.authDetails().access_token);
 		if (tokenExpiryTime) {
 			const expiryPeriodInSeconds = differenceInSeconds(tokenExpiryTime, currentTime);
 			if (expiryPeriodInSeconds <= 180) this.getRefreshToken();
@@ -126,7 +127,7 @@ export class HttpService {
 		this.router.navigate(['/login'], { replaceUrl: true });
 		localStorage.removeItem('CONVOY_AUTH_TOKENS');
 		this.generalService.showNotification({
-			message: 'Your session has expired, please login',
+			message: 'Authorization Failed',
 			style: 'error'
 		});
 	}
