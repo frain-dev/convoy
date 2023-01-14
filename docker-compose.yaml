@@ -1,0 +1,83 @@
+version: "3"
+
+services:
+  convoy_server:
+    image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.0
+    entrypoint: ["./cmd", "server", "--config", "convoy.json"]
+    restart: always
+    volumes:
+      - ./convoy.json:/convoy.json
+    ports:
+      - 5005:5005
+    depends_on:
+      - convoy_migrate
+      - mongo
+      - redis_server
+    networks:
+      - backendCluster
+
+  convoy_migrate:
+    image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.0
+    entrypoint: ["./cmd", "migrate", "up", "--config", "convoy.json"]
+    restart: on-failure
+    volumes:
+      - ./convoy.json:/convoy.json
+    depends_on:
+      - mongo
+    networks:
+      - backendCluster
+
+  scheduler:
+    image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.0
+    entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
+    volumes:
+      - ./convoy.json:/convoy.json
+    restart: always
+    depends_on:
+      - convoy_migrate
+      - mongo
+      - redis_server
+    networks:
+      - backendCluster
+
+  worker:
+    image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.0
+    entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
+    volumes:
+      - ./convoy.json:/convoy.json
+    restart: always
+    depends_on:
+      - convoy_migrate
+      - mongo
+      - redis_server
+    networks:
+      - backendCluster
+
+  mongo:
+    image: mongo:5.0.11
+    command:
+      ["--replSet", "localhost", "--bind_ip_all", "--logpath", "/dev/null"]
+    hostname: mongo
+    container_name: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - /var/convoy/data/mongo:/data/db
+    networks:
+      - backendCluster
+    healthcheck:
+      test: mongo --eval "rs.initiate()"
+      interval: 30s
+      start_period: 10s
+
+  redis_server:
+    image: redis:alpine
+    hostname: redis_server
+    container_name: redis_server
+    restart: always
+    networks:
+      - backendCluster
+
+networks:
+  backendCluster:
