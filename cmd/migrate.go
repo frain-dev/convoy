@@ -1,17 +1,12 @@
 package main
 
 import (
-	"context"
-	"net/url"
-	"strings"
-
 	"github.com/frain-dev/convoy/config"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
-	"github.com/frain-dev/convoy/internal/pkg/migrate"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/pkg/migrator"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/spf13/cobra"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func addMigrateCommand(a *app) *cobra.Command {
@@ -32,33 +27,20 @@ func addUpCommand() *cobra.Command {
 		Aliases: []string{"migrate-up"},
 		Short:   "Run all pending migrations",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, err := config.Get()
+			_, err := config.Get()
 			if err != nil {
 				log.WithError(err).Fatalf("Error fetching the config.")
 			}
 
-			db, err := cm.New(cfg)
+			db, err := database.New()
 			if err != nil {
-				log.WithError(err).Fatalf("Error instantiating a database client")
+				log.Fatal(err)
 			}
 
-			c := db.Client().(*mongo.Database).Client()
-
-			u, err := url.Parse(cfg.Database.Dsn)
+			m := migrator.New(db)
+			err = m.Up()
 			if err != nil {
-				log.WithError(err).Error("Error parsing database url")
-			}
-
-			dbName := strings.TrimPrefix(u.Path, "/")
-			opts := &migrate.Options{
-				DatabaseName: dbName,
-			}
-
-			m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-
-			err = m.Migrate(context.Background())
-			if err != nil {
-				log.WithError(err).Fatalf("Error running migrations")
+				log.Fatalf("migration up failed with error: %+v", err)
 			}
 		},
 	}
@@ -74,33 +56,20 @@ func addDownCommand() *cobra.Command {
 		Aliases: []string{"migrate-down"},
 		Short:   "Rollback migrations",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, err := config.Get()
+			_, err := config.Get()
 			if err != nil {
 				log.WithError(err).Fatalf("Error fetching the config.")
 			}
 
-			db, err := cm.New(cfg)
+			db, err := database.New()
 			if err != nil {
-				log.WithError(err).Fatalf("Error instantiating a database client")
+				log.Fatal(err)
 			}
 
-			c := db.Client().(*mongo.Database).Client()
-
-			u, err := url.Parse(cfg.Database.Dsn)
+			m := migrator.New(db)
+			err = m.Down()
 			if err != nil {
-				log.WithError(err).Error("Error parsing database url")
-			}
-
-			dbName := strings.TrimPrefix(u.Path, "/")
-			opts := &migrate.Options{
-				DatabaseName: dbName,
-			}
-
-			m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-
-			err = m.RollbackTo(context.Background(), migrationID)
-			if err != nil {
-				log.WithError(err).Fatalf("Error rolling back migrations")
+				log.Fatalf("migration up failed with error: %+v", err)
 			}
 		},
 	}

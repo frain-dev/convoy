@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/frain-dev/convoy/database/sqlite3"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -10,7 +10,7 @@ type Database interface {
 }
 
 func New() (Database, error) {
-	db, err := sqlite3.NewDB()
+	db, err := postgres.NewDB()
 	if err != nil {
 		return nil, err
 	}
