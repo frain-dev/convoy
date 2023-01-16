@@ -1,6 +1,6 @@
 <convoy-card className="py-26px px-32px mb-20px mt-16px">
 	<div class="flex justify-between items-center pb-18px border-b border-grey-10">
-		<h3 class="font-medium">{{ eventDelsDetails?.endpoint_metadata?.title }}</h3>
+		<h3 class="font-medium capitalize">{{ eventDelsDetails?.endpoint_metadata?.title }}</h3>
 
 		<button
 			convoy-button
@@ -45,7 +45,7 @@
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">ATTEMPTS</p>
-			<p class="text-14 font-medium">{{ eventDelsDetails?.metadata?.num_trials }}</p>
+			<p class="text-14">{{ eventDelsDetails?.metadata?.num_trials }}</p>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">STATUS</p>
@@ -53,16 +53,16 @@
 		</div>
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">IP ADDRESS</p>
-			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
+			<p class="text-14">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
 		</div>
 
 		<div *ngIf="eventDelsDetails?.status == 'Success'">
 			<p class="text-grey-40 text-12 font-light">TIME</p>
-			<p class="text-14 font-medium">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
+			<p class="text-14">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
 		</div>
 	</div>
 
-	<div class="grid grid-cols-5 mb-32px" *ngIf="isLoadingDeliveryDetails">
+	<div class="grid grid-cols-5 mb-32px border-b border-b-grey-10 pb-24px" *ngIf="isLoadingDeliveryDetails">
 		<div>
 			<p class="text-grey-40 text-12 font-light">HTTP STATUS</p>
 			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
@@ -79,25 +79,25 @@
 		<div></div>
 	</div>
 
-	<div class="grid grid-cols-5 mb-40px" *ngIf="!isLoadingDeliveryDetails">
+	<div class="grid grid-cols-5 mb-40px border-b border-b-grey-10 pb-24px" *ngIf="!isLoadingDeliveryDetails">
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">HTTP STATUS</p>
-			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
+			<p class="text-14">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
 		</div>
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">API VERSION</p>
-			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
+			<p class="text-14">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
 		</div>
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">ENDPOINT</p>
-			<p class="text-primary-100 text-14 font-medium overflow-ellipsis whitespace-nowrap w-200px overflow-hidden" [title]="eventDelsDetails?.endpoint_metadata?.target_url">
+			<p class="text-primary-100 text-14 overflow-ellipsis whitespace-nowrap w-200px overflow-hidden" [title]="eventDelsDetails?.endpoint_metadata?.target_url">
 				{{ eventDelsDetails?.endpoint_metadata?.target_url }}
 			</p>
 		</div>
 		<div *ngIf="eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">DEVICE</p>
 
-			<div class="flex items-center text-14 font-medium">
+			<div class="flex items-center text-14">
 				<div>
 					<svg width="16" height="14" class="mr-8px">
 						<use xlink:href="#cli-icon"></use>
@@ -110,12 +110,12 @@
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
 	</div>
 
-	<h3 class="font-semibold mb-8px">Event Delivery Attempts</h3>
+	<h2 class="font-medium mb-8px">Event Delivery Attempts</h2>
 
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
 		<div class="flex justify-between items-center py-18px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<div>
-				<p class="text-14 font-semibold flex items-center">
+				<p class="text-14 font-medium flex items-center">
 					Attempt {{ eventDeliveryAtempts.length - i }}
 					<convoy-tag *ngIf="deliveryAttempt?.http_status" [type]="deliveryAttempt.error ? 'danger' : 'success'" className="ml-8px">{{ deliveryAttempt?.http_status }}</convoy-tag>
 				</p>

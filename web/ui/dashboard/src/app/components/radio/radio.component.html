@@ -4,13 +4,13 @@
 		<div class="flex justify-between">
 			<div class="flex items-center">
 				<div class="w-16px"></div>
-				<p class="text-14 font-semibold ml-8px">{{ label }}</p>
+				<p class="text-14 font-medium ml-8px">{{ label }}</p>
 			</div>
 			<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize">
 				{{ tooltipContent }}
 			</convoy-tooltip>
 		</div>
-		<p *ngIf="description" class="text-grey-80 text-14 text-left font-normal mt-8px">{{ description }}</p>
+		<p *ngIf="description" class="text-grey-80 text-14 text-left font-light mt-8px">{{ description }}</p>
 	</label>
 	<div class="absolute top-20px left-[17px] rounded-[50px] mb-0 border border-grey-10 w-16px h-16px transition-all duration-200 peer-checked:border-primary-100 peer-checked:border-[5px]"></div>
 </div>

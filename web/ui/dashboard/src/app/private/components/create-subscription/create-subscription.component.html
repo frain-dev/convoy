@@ -85,13 +85,13 @@
 			<convoy-toggle [isChecked]="enableMoreConfig" (onChange)="enableMoreConfig = !enableMoreConfig; onToggleMoreConfig()" label="Add more configurations" className="w-full justify-between !mb-0"></convoy-toggle>
 
 			<div class="transition-all ease-in-out duration-300" [class]="enableMoreConfig ? 'h-full' : 'max-h-0 overflow-hidden'">
-				<h2 class="font-semibold flex items-center mb-20px mt-30px">
+				<h3 class="font-semibold flex items-center mb-20px mt-30px">
 					Retry Logic
 					<convoy-tooltip position="right" size="sm" class="ml-4px">
 						These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before
 						the next retry attempt.
 					</convoy-tooltip>
-				</h2>
+				</h3>
 
 				<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
 					<convoy-input-field>
@@ -120,10 +120,10 @@
 					</convoy-input-field>
 				</div>
 
-				<h2 class="font-semibold flex items-center mb-20px mt-30px">
+				<h3 class="font-semibold flex items-center mb-20px mt-30px">
 					Alert Rule
 					<convoy-tooltip position="right" size="sm" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
-				</h2>
+				</h3>
 				<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
 					<convoy-input-field>
 						<label for="alert-config-time" convoy-label>Time</label>

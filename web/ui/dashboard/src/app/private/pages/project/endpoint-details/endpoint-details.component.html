@@ -1,5 +1,5 @@
-<div class="text-12 font-medium flex items-center mb-24px uppercase">
-	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+<div class="text-12 font-light flex items-center mb-24px uppercase">
+	<a routerLink="/projects" class="cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-4px fill-dark-grey">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -7,18 +7,18 @@
 	<svg width="16" height="16" class="mx-4px fill-dark-grey">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<a class="cursor-pointer font-medium" (click)="goBack()">Endpoints</a>
+	<a class="cursor-pointer" (click)="goBack()">Endpoints</a>
 	<svg width="16" height="16" class="mx-4px fill-dark-grey">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	<span class="font-medium text-primary-100">{{ endpointDetails?.title || 'Endpoint' }}</span>
+	<span class="text-primary-100">{{ endpointDetails?.title || 'Endpoint' }}</span>
 </div>
 
 <convoy-card className="p-20px mb-20px">
 	<div class="flex justify-between items-center mb-24px border-b border-b-grey-20 pb-12px">
 		<ng-container *ngIf="!isLoadingEndpointDetails && endpointDetails">
 			<div class="flex items-center">
-				<h3 class="font-medium capitalize">{{ endpointDetails.title }}</h3>
+				<h3 class="capitalize">{{ endpointDetails.title }}</h3>
 				<div convoy-dropdown position="left" size="sm" class="ml-4px">
 					<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
 						<svg width="24" height="24" class="mr-8px fill-primary-100">
@@ -103,11 +103,11 @@
 		<div class="flex items-center flex-wrap justify-between mb-32px">
 			<div>
 				<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.created_at | date: 'mediumDate' }}</p>
+				<p class="text-black text-14 font-light">{{ endpointDetails.created_at | date: 'mediumDate' }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.support_email || '-' }}</p>
+				<p class="text-black text-14 font-light">{{ endpointDetails.support_email || '-' }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SECRET</p>
@@ -118,16 +118,16 @@
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">EVENTS</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.events || 0 }}</p>
+				<p class="text-black text-14 font-light">{{ endpointDetails.events || 0 }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">UPDATED</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.updated_at | date: 'mediumDate' }}</p>
+				<p class="text-black text-14 font-light">{{ endpointDetails.updated_at | date: 'mediumDate' }}</p>
 			</div>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">URL</p>
-			<p class="text-black text-14 font-normal flex">
+			<p class="text-black text-14 font-light flex">
 				<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
 				{{ endpointDetails.target_url }}
 			</p>

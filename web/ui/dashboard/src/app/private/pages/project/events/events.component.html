@@ -3,8 +3,8 @@
 </div>
 
 <ng-container *ngIf="!isloadingDashboardData">
-	<div class="text-12 font-medium flex items-center uppercase">
-		<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+	<div class="text-12 font-light text-grey-100 flex items-center uppercase">
+		<a routerLink="/projects" class="cursor-pointer">Projects</a>
 		<svg width="16" height="16" class="mx-4px">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
@@ -12,7 +12,7 @@
 		<svg width="16" height="16" class="mx-4px">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
-		<span class="text-primary-100 font-medium">Events</span>
+		<span class="text-primary-100">Events</span>
 	</div>
 
 	<ng-container *ngIf="eventsFetched?.length === 0">

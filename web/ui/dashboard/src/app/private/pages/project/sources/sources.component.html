@@ -46,8 +46,8 @@
 			</table>
 
 			<div class="h-full min-h-[70vh] w-full max-w-[382px] min-w-[310px] pl-16px border-l border-l-grey-10 transition-all duration-200 desktop:max-w-none desktop:border-none" *ngIf="activeSource?.uid">
-				<div class="flex items-center justify-between pr-24px">
-					<h2 class="pt-24px pb-16px text-16 font-bold">Source name goes here</h2>
+				<div class="flex items-center justify-between pl-14px pr-28px">
+					<h3 class="pt-24px pb-16px text-16 font-medium">{{activeSource?.name}}</h3>
 					<a [routerLink]="['./']" [queryParams]="{}" class="w-32px h-32px flex items-center justify-center rounded-[6px] bg-primary-500" tabindex="0">
 						<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 					</a>
@@ -55,56 +55,56 @@
 
 				<ul>
 					<li convoy-list-item>
-						<div class="w-1/2 text-14 font-medium">Source type</div>
-						<div class="w-1/2 text-14 font-medium text-grey-40 text-right capitalize mr-24px">{{ activeSource?.type || '' | sourceValue: 'sourceType' }}</div>
+						<div class="w-1/2 text-14">Source type</div>
+						<div class="w-1/2 text-14 font-light text-grey-40 text-right capitalize mr-14px">{{ activeSource?.type || '' | sourceValue: 'sourceType' }}</div>
 					</li>
 
 					<li convoy-list-item>
-						<div class="w-1/2 text-14 font-medium">Ingester Type</div>
-						<div class="w-1/2 text-14 font-medium text-grey-40 text-right capitalize mr-24px">{{ activeSource?.verifier?.type ?? '' | sourceValue: 'verifier' }}</div>
+						<div class="w-1/2 text-14">Ingester Type</div>
+						<div class="w-1/2 text-14 font-light text-grey-40 text-right capitalize mr-14px">{{ activeSource?.verifier?.type ?? '' | sourceValue: 'verifier' }}</div>
 					</li>
 
 					<li convoy-list-item *ngIf="activeSource?.provider !== ''">
-						<div class="w-1/2 text-14 font-medium">Provider</div>
-						<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px capitalize">{{ activeSource?.provider }}</div>
+						<div class="w-1/2 text-14">Provider</div>
+						<div class="w-1/2 text-14 font-light text-grey-40 text-right mr-14px capitalize">{{ activeSource?.provider }}</div>
 					</li>
 
 					<ng-container *ngIf="activeSource?.verifier?.type == 'hmac'">
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">Encoding</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right uppercase mr-24px">{{ activeSource?.verifier?.hmac?.encoding }}</div>
+							<div class="w-1/2 text-14">Encoding</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right uppercase mr-14px">{{ activeSource?.verifier?.hmac?.encoding }}</div>
 						</li>
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">Algorithm</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right uppercase mr-24px">{{ activeSource?.verifier?.hmac?.hash }}</div>
+							<div class="w-1/2 text-14">Algorithm</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right uppercase mr-14px">{{ activeSource?.verifier?.hmac?.hash }}</div>
 						</li>
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">Signature header</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.verifier?.hmac?.header }}</div>
+							<div class="w-1/2 text-14">Signature header</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right mr-14px">{{ activeSource?.verifier?.hmac?.header }}</div>
 						</li>
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">Signing secret</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px flex justify-end">
+							<div class="w-1/2 text-14">Signing secret</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right mr-14px flex justify-end">
 								*******
 								<convoy-copy-button [text]="activeSource?.verifier?.hmac?.secret || ''" size="md" className="ml-2px" notificationText="Signing secret has been copied to clipboard"></convoy-copy-button>
 							</div>
 						</li>
 						<ng-container *ngIf="activeSource?.provider === 'twitter' && isDateBefore(activeSource?.provider_config?.twitter?.crc_verified_at, activeSource?.created_at)">
 							<li convoy-list-item>
-								<div class="w-1/2 text-14 font-medium">Last verified</div>
-								<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.provider_config?.twitter?.crc_verified_at | date: 'medium' }}</div>
+								<div class="w-1/2 text-14">Last verified</div>
+								<div class="w-1/2 text-14 font-light text-grey-40 text-right mr-14px">{{ activeSource?.provider_config?.twitter?.crc_verified_at | date: 'medium' }}</div>
 							</li>
 						</ng-container>
 					</ng-container>
 
 					<ng-container *ngIf="activeSource?.verifier?.type == 'basic_auth'">
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">Username</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.verifier?.basic_auth?.username }}</div>
+							<div class="w-1/2 text-14">Username</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right mr-14px">{{ activeSource?.verifier?.basic_auth?.username }}</div>
 						</li>
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">Password</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px flex justify-end">
+							<div class="w-1/2 text-14">Password</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right mr-14px flex justify-end">
 								*******
 								<convoy-copy-button [text]="activeSource?.verifier?.basic_auth?.password || ''" size="md" className="ml-2px" notificationText="Password has been copied to clipboard"></convoy-copy-button>
 							</div>
@@ -113,12 +113,12 @@
 
 					<ng-container *ngIf="activeSource?.verifier?.type == 'api_key'">
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">API Key Header</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-24px">{{ activeSource?.verifier?.api_key?.header_name }}</div>
+							<div class="w-1/2 text-14">API Key Header</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right mr-14px">{{ activeSource?.verifier?.api_key?.header_name }}</div>
 						</li>
 						<li convoy-list-item>
-							<div class="w-1/2 text-14 font-medium">API Key</div>
-							<div class="w-1/2 text-14 font-medium text-grey-40 text-right flex items-center justify-end mr-24px">
+							<div class="w-1/2 text-14">API Key</div>
+							<div class="w-1/2 text-14 font-light text-grey-40 text-right flex items-center justify-end mr-14px">
 								*******
 								<convoy-copy-button [text]="activeSource?.verifier?.api_key?.header_value || ''" notificationText="Api Key has been copied to clipboard" className="ml-4px"></convoy-copy-button>
 							</div>

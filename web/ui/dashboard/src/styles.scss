@@ -13,6 +13,10 @@
 		--color-white: 252, 252, 252;
 	}
 
+	body {
+		@apply text-grey-100;
+	}
+
 	h1 {
 		@apply text-h1;
 	}

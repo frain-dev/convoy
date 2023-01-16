@@ -1,6 +1,6 @@
 <form class="pb-40px mt-40px" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
 	<convoy-card className="p-24px">
-		<h2 class="mb-12px font-semibold">Source name</h2>
+		<h3 class="mb-12px font-medium">Source name</h3>
 
 		<convoy-input-field>
 			<label for="source-name" required="true" convoy-label required="true">Source name</label>
@@ -11,7 +11,7 @@
 
 	<div formGroupName="verifier">
 		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.type === 'http'">
-			<h2 class="font-semibold mb-12px">Select Ingester HTTP type</h2>
+			<h3 class="font-medium mb-20px">Ingester HTTP type</h3>
 			<div class="grid grid-cols-2 gap-6">
 				<convoy-radio
 					*ngFor="let httpType of httpTypes"
@@ -27,7 +27,7 @@
 		</convoy-card>
 
 		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'api_key'" formGroupName="api_key">
-			<h2 class="font-semibold mb-20px">Configure API Key</h2>
+			<h3 class="font-medium mb-20px">Configure API Key</h3>
 
 			<div class="grid grid-cols-2 gap-6">
 				<convoy-input-field>
@@ -44,10 +44,10 @@
 		</convoy-card>
 
 		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" formGroupName="hmac">
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</h2>
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'github'">Github Credentials</h2>
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'twitter'">Twitter Credentials</h2>
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'shopify'">Shopify Credentials</h2>
+			<h3 class="font-medium mb-20px" *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</h3>
+			<h3 class="font-medium mb-20px" *ngIf="sourceForm.value.verifier.type === 'github'">Github Credentials</h3>
+			<h3 class="font-medium mb-20px" *ngIf="sourceForm.value.verifier.type === 'twitter'">Twitter Credentials</h3>
+			<h3 class="font-medium mb-20px" *ngIf="sourceForm.value.verifier.type === 'shopify'">Shopify Credentials</h3>
 
 			<div class="grid grid-cols-2 gap-6">
 				<convoy-select
@@ -88,7 +88,7 @@
 		</convoy-card>
 
 		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" formGroupName="basic_auth">
-			<h2 class="font-semibold mb-20px">Configure Basic Auth</h2>
+			<h3 class="font-medium mb-20px">Configure Basic Auth</h3>
 
 			<div class="grid grid-cols-2 gap-6">
 				<convoy-input-field>

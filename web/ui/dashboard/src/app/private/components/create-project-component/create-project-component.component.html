@@ -30,7 +30,7 @@
 
 			<div [hidden]="!enableMoreConfig">
 				<div formGroupName="config">
-					<h3 class="mt-24px mb-16px font-semibold flex items-center">
+					<h3 class="mt-24px mb-16px font-medium flex items-center">
 						Signature Details
 						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 					</h3>
@@ -56,7 +56,7 @@
 						</ng-container>
 					</div>
 
-					<h3 class="mt-48px mb-16px flex items-center font-semibold">
+					<h3 class="mt-48px mb-16px flex items-center font-medium">
 						Retry Logic
 						<convoy-tooltip size="sm" position="right" class="ml-4px">
 							These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry
@@ -80,7 +80,7 @@
 						</convoy-input-field>
 					</div>
 
-					<h3 class="mt-24px mb-16px flex items-center font-semibold">
+					<h3 class="mt-24px mb-16px flex items-center font-medium">
 						Rate Limit Parameters
 						<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 					</h3>
@@ -101,7 +101,7 @@
 					</div>
 
 
-					<h3 class="mt-48px mb-16px font-semibold">Data Retention</h3>
+					<h3 class="mt-48px mb-16px font-medium">Data Retention</h3>
 					<div formGroupName="retention_policy">
 						<convoy-input-field>
 							<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
