@@ -173,9 +173,9 @@ type AnalyticsConfiguration struct {
 }
 
 type StoragePolicyConfiguration struct {
-	Type   string         `json:"type" envconfig:"CONVOY_STORAGE_POLICY_TYPE"`
-	S3     *S3Storage     `json:"s3"`
-	OnPrem *OnPremStorage `json:"on_prem"`
+	Type   string        `json:"type" envconfig:"CONVOY_STORAGE_POLICY_TYPE"`
+	S3     S3Storage     `json:"s3"`
+	OnPrem OnPremStorage `json:"on_prem"`
 }
 
 type S3Storage struct {
