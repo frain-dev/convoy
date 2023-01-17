@@ -1,7 +1,6 @@
 package sqs
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -9,11 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-type SQS struct {
+type Sqs struct {
 	accessKeyID   string
 	secretKey     string
 	defaultRegion string
@@ -22,8 +20,8 @@ type SQS struct {
 	done          chan struct{}
 }
 
-func newSqsPubSub(cfg *datastore.SQSPubSubConfig) pubsub.PubSub {
-	return &SQS{
+func New(cfg *datastore.SQSPubSubConfig) *Sqs {
+	return &Sqs{
 		accessKeyID:   cfg.AccessKeyID,
 		secretKey:     cfg.SecretKey,
 		defaultRegion: cfg.DefaultRegion,
@@ -32,13 +30,13 @@ func newSqsPubSub(cfg *datastore.SQSPubSubConfig) pubsub.PubSub {
 	}
 }
 
-func (s *SQS) Dispatch() {
+func (s *Sqs) Dispatch() {
 	for i := 1; i <= s.workers; i++ {
 		go s.Listen()
 	}
 }
 
-func (s *SQS) cancelled() bool {
+func (s *Sqs) cancelled() bool {
 	select {
 	case <-s.done:
 		return true
@@ -47,7 +45,7 @@ func (s *SQS) cancelled() bool {
 	}
 }
 
-func (s *SQS) Listen() {
+func (s *Sqs) Listen() {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(s.defaultRegion),
 		Credentials: credentials.NewStaticCredentials(s.accessKeyID, s.secretKey, ""),
@@ -100,6 +98,6 @@ func (s *SQS) Listen() {
 	}
 }
 
-func (s *SQS) Stop() {
+func (s *Sqs) Stop() {
 	close(s.done)
 }

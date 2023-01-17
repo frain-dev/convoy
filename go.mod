@@ -3,6 +3,7 @@ module github.com/frain-dev/convoy
 go 1.16
 
 require (
+	cloud.google.com/go/pubsub v1.28.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/cip8/autoname v1.0.1
@@ -46,7 +47,7 @@ require (
 	github.com/slack-go/slack v0.10.2
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.8.2
 	github.com/typesense/typesense-go v0.4.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
@@ -54,11 +55,6 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.9.1
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
-	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
-	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
-	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5 // indirect
-	google.golang.org/grpc v1.50.0 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/yaml.v3 v3.0.1

@@ -69,6 +69,7 @@ type (
 	EncodingType     string
 	StorageType      string
 	KeyType          string
+	PubSubType       string
 )
 
 type EndpointAuthenticationType string
@@ -88,6 +89,11 @@ const (
 
 const (
 	APIKeyAuthentication EndpointAuthenticationType = "api_key"
+)
+
+const (
+	SqsPubSub    PubSubType = "sqs"
+	GooglePubSub PubSubType = "google"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -648,6 +654,7 @@ type Source struct {
 }
 
 type PubSubConfig struct {
+	Type   PubSubType          `json:"type" bson:"type"`
 	Sqs    *SQSPubSubConfig    `json:"sqs" bson:"sqs"`
 	Google *GooglePubSubConfig `json:"google" bson:"google"`
 }
