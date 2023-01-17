@@ -205,6 +205,17 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
+	async regenerateKey() {
+		try {
+			const response = await this.createProjectService.regenerateKey();
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.apiKey = response.data.key;
+			this.showApiKey = true;
+		} catch (error) {
+			return error;
+		}
+	}
+
 	async createNewSignature(i: number) {
 		if (this.newSignatureForm.invalid) return this.newSignatureForm.markAllAsTouched();
 
