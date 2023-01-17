@@ -640,10 +640,29 @@ type Source struct {
 	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
 	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
 	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
+	PubSubConfig   *PubSubConfig      `json:"pub_sub_config" bson:"pub_sub_config"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
 	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+}
+
+type PubSubConfig struct {
+	Sqs    *SQSPubSubConfig    `json:"sqs" bson:"sqs"`
+	Google *GooglePubSubConfig `json:"google" bson:"google"`
+}
+
+type SQSPubSubConfig struct {
+	AccessKeyID   string `json:"access_key_id" bson:"access_key_id"`
+	SecretKey     string `json:"secret_key" bson:"secret_key"`
+	DefaultRegion string `json:"default_region" bson:"default_region"`
+	QueueName     string `json:"queue_name" bson:"queue_name"`
+}
+
+type GooglePubSubConfig struct {
+	ApiKey    string `json:"api_key" bson:"api_key"`
+	TopicName string `json:"topic_name" bson:"topic_name"`
+	ProjectID string `json:"project_id" bson:"project_id"`
 }
 
 type User struct {
