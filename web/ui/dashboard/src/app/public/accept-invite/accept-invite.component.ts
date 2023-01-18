@@ -32,6 +32,7 @@ export class AcceptInviteComponent implements OnInit {
 		}),
 		password: ['', Validators.compose([Validators.minLength(8), Validators.required])]
 	});
+	organisationName!: string;
 
 	constructor(private formBuilder: FormBuilder, private acceptInviteService: AcceptInviteService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
@@ -46,6 +47,7 @@ export class AcceptInviteComponent implements OnInit {
 			const response = await this.acceptInviteService.getUserDetails(token);
 			response.data.user ? (this.userDetailsAvailable = true) : (this.userDetailsAvailable = false);
 			const inviteeDetails = response.data.token;
+			if (inviteeDetails?.organisation_name) this.organisationName = inviteeDetails?.organisation_name;
 			inviteeDetails.status === 'accepted' ? (this.isInviteAccepted = true) : (this.isInviteAccepted = false);
 			const userDetails = response.data.user;
 			this.acceptInviteForm.patchValue({
