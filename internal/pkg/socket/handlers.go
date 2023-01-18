@@ -60,7 +60,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 		streamRouter.Use(
 			m.RequireAuth(),
 			m.RequireProject(),
-			m.RequireAppID(),
+			m.RequireEndpointID(),
 			// m.RequireAppPortalApplication(),
 		)
 
@@ -72,7 +72,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 }
 
 func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		listenRequest := &ListenRequest{}
 		err := json.Unmarshal([]byte(r.Header.Get("Body")), &listenRequest)
 		if err != nil {
@@ -98,7 +98,7 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 		}
 
 		NewClient(conn, device, listenRequest.EventTypes, repo.DeviceRepo, repo.EventDeliveryRepo)
-	})
+	}
 }
 
 func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
