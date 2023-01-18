@@ -968,8 +968,9 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 			},
 			wantUser: nil,
 			wantInvite: &datastore.OrganisationInvite{
-				OrganisationID: "123ab",
-				InviteeEmail:   "test@email.com",
+				OrganisationID:   "123ab",
+				OrganisationName: "test_org",
+				InviteeEmail:     "test@email.com",
 			},
 		},
 
