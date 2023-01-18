@@ -226,7 +226,7 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireEndpointID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
