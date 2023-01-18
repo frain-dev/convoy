@@ -2,7 +2,7 @@
 <div class="bg-[url('/assets/img/Pattern.svg')] bg-center min-h-screen flex flex-col items-center justify-center bg-cover" *ngIf="!fetchingDetails">
 	<ng-container *ngIf="!isInviteAccepted">
 		<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
-		<h2 class="font-semibold text-20 mb-10px">Join your team to start managing webhooks</h2>
+		<h2 class="font-semibold text-20 mb-10px">Join your team <span *ngIf="organisationName">({{organisationName}})</span> to start managing webhooks</h2>
 		<p *ngIf="!userDetailsAvailable" class="text-grey-40 text-center text-16px max-w-[445px] mb-32px">Please fill in your {{ userDetailsAvailable ? 'password details below to' : 'details below to create your account and' }} join your team</p>
 		<section class="max-w-[445px] mx-auto px-24px py-24px w-full bg-white-100 shadow-default rounded-8px" [ngClass]="{ 'mt-20px': userDetailsAvailable }">
 			<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()">
