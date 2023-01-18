@@ -16,8 +16,8 @@
 			</div>
 
 			<div class="flex justify-end mt-24px">
-				<button convoy-button color="primary" fill="outline" type="button" (click)="regenerateKey()">
-					<svg width="16" height="16" class="mr-8px">
+				<button convoy-button color="primary" fill="outline" size="sm" type="button" (click)="regenerateKey()" [disabled]="regeneratingKey">
+					<svg width="16" height="16" class="mr-8px" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
 						<use xlink:href="#refresh-icon"></use>
 					</svg>
 					Regenerate API Key
