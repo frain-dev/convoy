@@ -230,7 +230,7 @@ func (ois *OrganisationInviteService) FindUserByInviteToken(ctx context.Context,
 		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation by id")
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by id"))
 	}
-	iv.OrganisationName = &org.Name
+	iv.OrganisationName = org.Name
 
 	user, err := ois.userRepo.FindUserByEmail(ctx, iv.InviteeEmail)
 	if err != nil {

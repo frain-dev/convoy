@@ -366,7 +366,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 	require.Equal(s.T(), iv.UID, response.Token.UID)
 	require.Equal(s.T(), iv.InviteeEmail, response.Token.InviteeEmail)
 	require.Equal(s.T(), iv.Token, response.Token.Token)
-	require.Equal(s.T(), *response.Token.OrganisationName, s.DefaultOrg.Name)
+	require.Equal(s.T(), response.Token.OrganisationName, s.DefaultOrg.Name)
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewUser() {
