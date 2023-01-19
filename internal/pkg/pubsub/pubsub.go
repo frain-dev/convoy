@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type PubSub interface {
@@ -38,7 +39,7 @@ func (s *SourcePool) Insert(source *datastore.Source) error {
 		// The source config has changed
 		if s.hash(source) != sour.hash {
 			s.Remove(source.UID)
-			s.insert(source)
+			return s.insert(source)
 		}
 
 		return nil
@@ -66,6 +67,13 @@ func (s *SourcePool) insert(source *datastore.Source) error {
 func (s *SourcePool) Remove(sourceId string) {
 	s.sources[sourceId].client.Stop()
 	delete(s.sources, sourceId)
+}
+
+func (s *SourcePool) Stop() {
+	for key, source := range s.sources {
+		log.Printf("Stopping pub source with ID: %s", key)
+		source.client.Stop()
+	}
 }
 
 func (s *SourcePool) hash(source *datastore.Source) string {

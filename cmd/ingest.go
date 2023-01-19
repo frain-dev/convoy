@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -12,7 +14,7 @@ import (
 )
 
 var (
-	sourcePool = pubsub.NewSourcePool()
+	exit chan os.Signal
 )
 
 func addIngestCommand(a *app) *cobra.Command {
@@ -20,16 +22,31 @@ func addIngestCommand(a *app) *cobra.Command {
 		Use:   "ingest",
 		Short: "Ingest webhook events from Pub/Sub streams",
 		Run: func(cmd *cobra.Command, args []string) {
+			sourcePool := pubsub.NewSourcePool()
 			ticker := time.NewTicker(1 * time.Minute)
+			exit = make(chan os.Signal)
+			
+			signal.Notify(exit, os.Interrupt)
 
 			for {
 				select {
 				case <-ticker.C:
 					sourceRepo := mongo.NewSourceRepo(a.store)
-					err := fetchPubSubSources(sourceRepo, 1)
+					err := fetchPubSubSources(sourceRepo, sourcePool, 1)
 					if err != nil {
 						log.WithError(err).Error("failed to fetch pub sub sources")
 					}
+
+				case <-exit:
+					log.Println("Received SIGINT interrupt signal. Closing all pub sub sources")
+              
+					// Stop the ticker
+					ticker.Stop()
+
+					// Stop the existing pub sub sources
+					sourcePool.Stop()
+
+					return
 				}
 			}
 		},
@@ -38,7 +55,7 @@ func addIngestCommand(a *app) *cobra.Command {
 	return cmd
 }
 
-func fetchPubSubSources(sourceRepo datastore.SourceRepository, page int) error {
+func fetchPubSubSources(sourceRepo datastore.SourceRepository, sourcePool *pubsub.SourcePool, page int) error {
 	filter := &datastore.SourceFilter{
 		Type: string(datastore.PubSubSource),
 	}
@@ -66,5 +83,5 @@ func fetchPubSubSources(sourceRepo datastore.SourceRepository, page int) error {
 	}
 
 	page += 1
-	return fetchPubSubSources(sourceRepo, page)
+	return fetchPubSubSources(sourceRepo, sourcePool, page)
 }
