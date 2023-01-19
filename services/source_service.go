@@ -49,6 +49,14 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
 	}
 
+	if newSource.PubSub.Type == datastore.SqsPubSub && newSource.PubSub.Sqs == nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid pub sub config for sqs"))
+	}
+
+	if newSource.PubSub.Type == datastore.GooglePubSub && newSource.PubSub.Google == nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid pub sub config for sqs"))
+	}
+
 	source := &datastore.Source{
 		UID:       uuid.New().String(),
 		ProjectID: g.UID,
@@ -63,6 +71,10 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 
 	if source.Provider == datastore.TwitterSourceProvider {
 		source.ProviderConfig = &datastore.ProviderConfig{Twitter: &datastore.TwitterProviderConfig{}}
+	}
+
+	if !util.IsStringEmpty(string(newSource.PubSub.Type)) {
+		source.PubSubConfig = &newSource.PubSub
 	}
 
 	err := s.sourceRepo.CreateSource(ctx, source)

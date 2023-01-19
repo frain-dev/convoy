@@ -654,9 +654,10 @@ type Source struct {
 }
 
 type PubSubConfig struct {
-	Type   PubSubType          `json:"type" bson:"type"`
-	Sqs    *SQSPubSubConfig    `json:"sqs" bson:"sqs"`
-	Google *GooglePubSubConfig `json:"google" bson:"google"`
+	Type    PubSubType          `json:"type" bson:"type" valid:"supported_pub_sub~unsupported pub sub type"`
+	Workers int                 `json:"workers" bson:"workers" valid:"required"`
+	Sqs     *SQSPubSubConfig    `json:"sqs" bson:"sqs"`
+	Google  *GooglePubSubConfig `json:"google" bson:"google"`
 }
 
 type SQSPubSubConfig struct {
@@ -720,7 +721,7 @@ type TwitterProviderConfig struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
+	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type"`
 	HMac      *HMac        `json:"hmac" bson:"hmac"`
 	BasicAuth *BasicAuth   `json:"basic_auth" bson:"basic_auth"`
 	ApiKey    *ApiKey      `json:"api_key" bson:"api_key"`

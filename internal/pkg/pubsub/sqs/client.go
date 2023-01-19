@@ -20,13 +20,14 @@ type Sqs struct {
 	done          chan struct{}
 }
 
-func New(cfg *datastore.SQSPubSubConfig) *Sqs {
+func New(cfg *datastore.SQSPubSubConfig, workers int) *Sqs {
 	return &Sqs{
 		accessKeyID:   cfg.AccessKeyID,
 		secretKey:     cfg.SecretKey,
 		defaultRegion: cfg.DefaultRegion,
 		queueName:     cfg.QueueName,
 		done:          make(chan struct{}),
+		workers:       workers,
 	}
 }
 

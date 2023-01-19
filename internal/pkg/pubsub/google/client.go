@@ -11,12 +11,12 @@ import (
 type Google struct {
 	projectId string
 	topicName string
-	workers int
+	workers   int
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
 
-func New(cfg *datastore.GooglePubSubConfig) *Google {
+func New(cfg *datastore.GooglePubSubConfig, workers int) *Google {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Google{
@@ -24,6 +24,7 @@ func New(cfg *datastore.GooglePubSubConfig) *Google {
 		topicName: cfg.TopicName,
 		ctx:       ctx,
 		cancel:    cancel,
+		workers:   workers,
 	}
 }
 

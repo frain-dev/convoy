@@ -209,7 +209,8 @@ type Source struct {
 	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
 	Provider   datastore.SourceProvider `json:"provider"`
 	IsDisabled bool                     `json:"is_disabled"`
-	Verifier   datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
+	Verifier   datastore.VerifierConfig `json:"verifier"`
+	PubSub     datastore.PubSubConfig   `json:"pub_sub"`
 }
 
 type UpdateSource struct {
@@ -217,7 +218,7 @@ type UpdateSource struct {
 	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
 	IsDisabled     *bool                    `json:"is_disabled"`
 	ForwardHeaders []string                 `json:"forward_headers"`
-	Verifier       datastore.VerifierConfig `json:"verifier" valid:"required~please provide a verifier"`
+	Verifier       datastore.VerifierConfig `json:"verifier"`
 }
 
 type Event struct {
