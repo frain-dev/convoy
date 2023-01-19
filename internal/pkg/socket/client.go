@@ -27,9 +27,9 @@ var (
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
+	// EventTypes        []string
 	// device id of the cli client
 	deviceID          string
-	EventTypes        []string
 	Device            *datastore.Device
 	deviceRepo        datastore.DeviceRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -44,7 +44,6 @@ func NewClient(conn WebSocketConnection, device *datastore.Device, events []stri
 	client := &Client{
 		conn:              conn,
 		Device:            device,
-		EventTypes:        events,
 		deviceID:          device.UID,
 		deviceRepo:        deviceRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
@@ -169,14 +168,14 @@ func (c *Client) IsOnline() bool {
 	return since < maxDeviceLastSeenDuration
 }
 
-func (c *Client) HasEventType(evType string) bool {
-	for _, eventType := range c.EventTypes {
-		if evType == eventType || eventType == "*" {
-			return true
-		}
-	}
-	return false
-}
+//func (c *Client) HasEventType(evType string) bool {
+//	for _, eventType := range c.EventTypes {
+//		if evType == eventType || eventType == "*" {
+//			return true
+//		}
+//	}
+//	return false
+//}
 
 func (c *Client) parseTime(message string) (time.Time, error) {
 	var since time.Time = time.Now()

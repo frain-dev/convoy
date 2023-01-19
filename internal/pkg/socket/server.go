@@ -14,7 +14,6 @@ import (
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -72,6 +71,14 @@ func NewHub() *Hub {
 	}
 }
 
+func (h *Hub) Start() {
+	go h.StartRegister()
+	go h.StartUnregister()
+	go h.StartEventWatcher()
+	go h.StartEventSender()
+	go h.StartClientStatusWatcher()
+}
+
 func (h *Hub) StartEventSender() {
 	for {
 		select {
@@ -95,15 +102,15 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			if !util.IsStringEmpty(client.Device.EndpointID) {
-				if client.Device.EndpointID != ev.EndpointID {
-					continue
-				}
-			}
+			//if !util.IsStringEmpty(client.Device.EndpointID) {
+			//	if client.Device.EndpointID != ev.EndpointID {
+			//		continue
+			//	}
+			//}
 
-			if !client.HasEventType(ev.EventType) {
-				continue
-			}
+			//if !client.HasEventType(ev.EventType) {
+			//	continue
+			//}
 
 			j, err := json.Marshal(ev)
 			if err != nil {

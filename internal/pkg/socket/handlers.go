@@ -22,10 +22,10 @@ import (
 )
 
 type ListenRequest struct {
-	HostName   string   `json:"host_name"`
-	DeviceID   string   `json:"device_id"`
-	SourceID   string   `json:"source_id"`
-	EventTypes []string `json:"event_types"`
+	HostName string `json:"host_name"`
+	DeviceID string `json:"device_id"`
+	SourceID string `json:"source_id"`
+	// EventTypes []string `json:"event_types"`
 }
 
 type LoginRequest struct {
@@ -82,9 +82,9 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 		}
 
 		project := m.GetProjectFromContext(r.Context())
-		app := m.GetEndpointFromContext(r.Context())
+		// app := m.GetEndpointFromContext(r.Context())
 
-		device, err := listen(r.Context(), project, app, listenRequest, hub, repo)
+		device, err := listen(r.Context(), project, nil, listenRequest, hub, repo)
 		if err != nil {
 			respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 			return
@@ -97,7 +97,7 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		NewClient(conn, device, listenRequest.EventTypes, repo.DeviceRepo, repo.EventDeliveryRepo)
+		NewClient(conn, device, nil, repo.DeviceRepo, repo.EventDeliveryRepo)
 	}
 }
 
@@ -111,15 +111,22 @@ func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 		}
 
 		project := m.GetProjectFromContext(r.Context())
-		endpoint := m.GetEndpointFromContext(r.Context())
+		// endpoint := m.GetEndpointFromContext(r.Context())
 
-		device, err := login(r.Context(), project, endpoint, loginRequest, hub, repo)
+		// We're in the process of redefining how CLI debugging works, so far we have only figured out CLI for
+		// incoming projects. So we're limiting this functionality here.
+		if project.Type != datastore.IncomingProject {
+			respond(w, http.StatusBadRequest, "CLI debugging is only available to incoming projects")
+			return
+		}
+
+		device, err := login(r.Context(), project, nil, loginRequest, hub, repo)
 		if err != nil {
 			respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 			return
 		}
 
-		lr := &LoginResponse{Device: device, Project: project, Endpoint: endpoint}
+		lr := &LoginResponse{Device: device, Project: project, Endpoint: nil}
 
 		respondWithData(w, http.StatusOK, lr)
 	})
@@ -270,7 +277,7 @@ func listen(ctx context.Context, project *datastore.Project, endpoint *datastore
 	}
 
 	sub.SourceID = listenRequest.SourceID
-	sub.FilterConfig = &datastore.FilterConfiguration{EventTypes: listenRequest.EventTypes}
+	// sub.FilterConfig = &datastore.FilterConfiguration{EventTypes: listenRequest.EventTypes}
 	sub.AlertConfig = &datastore.DefaultAlertConfig
 	sub.RetryConfig = &datastore.DefaultRetryConfig
 	err = r.SubscriptionRepo.UpdateSubscription(ctx, project.UID, sub)

@@ -55,11 +55,7 @@ func addStreamCommand(a *app) *cobra.Command {
 			}
 
 			h := socket.NewHub()
-			go h.StartRegister()
-			go h.StartUnregister()
-			go h.StartEventWatcher()
-			go h.StartEventSender()
-			go h.StartClientStatusWatcher()
+			h.Start()
 
 			lo := a.logger.(*log.Logger)
 			lo.SetPrefix("socket server")
