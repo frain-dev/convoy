@@ -60,7 +60,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 		streamRouter.Use(
 			m.RequireAuth(),
 			m.RequireProject(),
-			m.RequireEndpointID(),
+			// m.RequireEndpointID(),
 			// m.RequireAppPortalApplication(),
 		)
 

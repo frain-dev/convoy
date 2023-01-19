@@ -293,7 +293,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 			return datastore.DiscardedEventStatus
 		}
 	case datastore.SubscriptionTypeCLI:
-		device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.ProjectID)
+		device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, "", subscription.ProjectID)
 		if err != nil {
 			log.WithError(err).Error("an error occurred fetching the subscription's device")
 			return datastore.DiscardedEventStatus
