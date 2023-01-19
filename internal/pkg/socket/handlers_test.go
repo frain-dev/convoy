@@ -56,10 +56,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -105,10 +104,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -136,10 +134,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -167,10 +164,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234"},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -188,10 +184,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -222,10 +217,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -260,10 +254,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -301,10 +294,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -349,10 +341,9 @@ func TestHub_listen(t *testing.T) {
 				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
 				endpoint: &datastore.Endpoint{UID: "abc"},
 				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					HostName: "",
+					DeviceID: "device-id",
+					SourceID: "source-id",
 				},
 			},
 			dbFn: func(h *Repo) {
