@@ -23,7 +23,7 @@ func NewOrgRepo(store datastore.Store) datastore.OrganisationRepository {
 
 func (db *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
 	ctx = db.setCollectionInContext(ctx)
-	org.ID = primitive.NewObjectID()
+	// org.ID = primitive.NewObjectID()
 	return db.store.Save(ctx, org, nil)
 }
 
@@ -42,7 +42,7 @@ func (db *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastor
 
 func (db *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
 	ctx = db.setCollectionInContext(ctx)
-	org.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	org.UpdatedAt = time.Now()
 	update := bson.M{
 		"$set": bson.M{
 			"name":          org.Name,

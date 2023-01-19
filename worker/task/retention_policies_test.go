@@ -66,9 +66,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 			Duration:   20,
 			RetryCount: 4,
 		},
-		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy: "72h",
-		},
+		RetentionPolicy: "72h",
 		RateLimit:                &datastore.DefaultRateLimitConfig,
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,

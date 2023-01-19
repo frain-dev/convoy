@@ -5,21 +5,21 @@ import (
 	"errors"
 	"math"
 
-	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
 
 var (
-	ErrOrganizationNotUpdated = errors.New("organization could not be update")
+	ErrOrganizationNotCreated = errors.New("organization could not be created")
+	ErrOrganizationNotUpdated = errors.New("organization could not be updated")
 	ErrOrganizationNotDeleted = errors.New("organization could not be deleted")
 )
 
 const (
 	createOrganization = `
 	-- organisation.go:createOrganization
-	INSERT INTO convoy.organisations (id, name, owner_id)
-	VALUES ($1, $2, $3);
+	INSERT INTO convoy.organisations (name, owner_id)
+	VALUES ($1, $2);
 	`
 
 	fetchOrganisation = `
@@ -30,10 +30,10 @@ const (
 
 	fetchOrganisationsPaginated = `
 	-- organisation.go:fetchOrganisationsPaginated
-	SELECT * FROM convoy.organisations
-	ORDER BY $3
-	LIMIT $1
-	OFFSET $2;
+	SELECT * FROM convoy.organisations;
+	-- ORDER BY $3
+	-- LIMIT $1
+	-- OFFSET $2;
 	`
 
 	updateOrganizationById = `
@@ -68,23 +68,26 @@ func NewOrgRepo(db *sqlx.DB) datastore.OrganisationRepository {
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	_, err := o.db.Exec(
-		createOrganization,
-		uniuri.NewLen(uniuri.UUIDLen),
-		org.Name,
-		org.OwnerID,
-	)
-
+	result, err := o.db.Exec(createOrganization, org.Name, org.OwnerID)
 	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrOrganizationNotCreated
 	}
 
 	return nil
 }
 
 func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
-	skip := pageable.Page * pageable.PerPage
-	rows, err := o.db.Queryx(fetchOrganisationsPaginated, pageable.Page, skip, pageable.Sort)
+	// skip := pageable.Page * pageable.PerPage
+	rows, err := o.db.Queryx(fetchOrganisationsPaginated)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -120,7 +123,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 }
 
 func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.Exec(updateOrganizationById, org.ID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
+	result, err := o.db.Exec(updateOrganizationById, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
 	if err != nil {
 		return err
 	}

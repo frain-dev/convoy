@@ -266,7 +266,7 @@ var Migrations = []*Migration{
 						Signature:       datastore.GetDefaultSignatureConfig(),
 						Strategy:        &datastore.DefaultStrategyConfig,
 						RateLimit:       &datastore.DefaultRateLimitConfig,
-						RetentionPolicy: &datastore.DefaultRetentionPolicy,
+						// RetentionPolicy: &datastore.DefaultRetentionPolicy,
 					}
 
 					update := bson.M{

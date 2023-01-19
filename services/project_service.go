@@ -54,7 +54,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		config.Signature = datastore.GetDefaultSignatureConfig()
 		config.Strategy = &datastore.DefaultStrategyConfig
 		config.RateLimit = &datastore.DefaultRateLimitConfig
-		config.RetentionPolicy = &datastore.DefaultRetentionPolicy
+		// config.RetentionPolicy = &datastore.DefaultRetentionPolicy
 	} else {
 		if newProject.Config.Signature == nil {
 			config.Signature = datastore.GetDefaultSignatureConfig()
@@ -70,9 +70,9 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			config.RateLimit = &datastore.DefaultRateLimitConfig
 		}
 
-		if newProject.Config.RetentionPolicy == nil {
-			config.RetentionPolicy = &datastore.DefaultRetentionPolicy
-		}
+		// if newProject.Config.RetentionPolicy == nil {
+		// 	config.RetentionPolicy = &datastore.DefaultRetentionPolicy
+		// }
 
 	}
 
@@ -85,16 +85,14 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	}
 
 	project := &datastore.Project{
-		UID:               uuid.New().String(),
-		Name:              projectName,
-		Type:              newProject.Type,
-		OrganisationID:    org.UID,
-		Config:            config,
-		LogoURL:           newProject.LogoURL,
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		RateLimit:         newProject.RateLimit,
-		RateLimitDuration: newProject.RateLimitDuration,
+		UID:            uuid.New().String(),
+		Name:           projectName,
+		Type:           newProject.Type,
+		OrganisationID: org.UID,
+		Config:         config,
+		LogoURL:        newProject.LogoURL,
+		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	err = ps.projectRepo.CreateProject(ctx, project)

@@ -337,16 +337,19 @@ definitions:
   datastore.Organisation:
     properties:
       assigned_domain:
-        type: string
+        $ref: '#/definitions/null.String'
       created_at:
         type: string
       custom_domain:
-        type: string
+        $ref: '#/definitions/null.String'
       deleted_at:
+        type: string
+      id:
+        description: ID             primitive.ObjectID  `json:"-" bson:"_id"`
         type: string
       name:
         type: string
-      uid:
+      ownerID:
         type: string
       updated_at:
         type: string
@@ -376,17 +379,12 @@ definitions:
         type: string
       logo_url:
         type: string
-      metadata:
-        $ref: '#/definitions/datastore.ProjectMetadata'
       name:
         type: string
       organisation_id:
         type: string
-      rate_limit:
-        description: 'TODO(subomi): refactor this into the Instance API.'
+      retained_events:
         type: integer
-      rate_limit_duration:
-        type: string
       statistics:
         $ref: '#/definitions/datastore.ProjectStatistics'
       type:
@@ -398,25 +396,34 @@ definitions:
     type: object
   datastore.ProjectConfig:
     properties:
-      is_retention_policy_enabled:
-        type: boolean
+      hsignature_header:
+        $ref: '#/definitions/config.SignatureHeaderProvider'
       max_payload_read_size:
         type: integer
       ratelimit:
-        $ref: '#/definitions/datastore.RateLimitConfiguration'
-      replay_attacks:
+        allOf:
+        - $ref: '#/definitions/datastore.RateLimitConfiguration'
+        description: old fields
+      ratelimit.count:
+        type: integer
+      ratelimit.duration:
+        type: integer
+      replay_attacks_prevention_enabled:
         type: boolean
       retention_policy:
-        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
+        type: string
+      retention_policy_enabled:
+        type: boolean
       signature:
         $ref: '#/definitions/datastore.SignatureConfiguration'
       strategy:
         $ref: '#/definitions/datastore.StrategyConfiguration'
-    type: object
-  datastore.ProjectMetadata:
-    properties:
-      retained_events:
+      strategy_duration:
         type: integer
+      strategy_retry_count:
+        type: integer
+      strategy_type:
+        type: string
     type: object
   datastore.ProjectStatistics:
     properties:
@@ -444,11 +451,6 @@ definitions:
         type: integer
       duration:
         type: integer
-    type: object
-  datastore.RetentionPolicyConfiguration:
-    properties:
-      policy:
-        type: string
     type: object
   datastore.RetryConfiguration:
     properties:
@@ -885,6 +887,14 @@ definitions:
         $ref: '#/definitions/models.FilterSchema'
       schema:
         $ref: '#/definitions/models.FilterSchema'
+    type: object
+  null.String:
+    properties:
+      string:
+        type: string
+      valid:
+        description: Valid is true if String is not NULL
+        type: boolean
     type: object
   server.Stub:
     type: object

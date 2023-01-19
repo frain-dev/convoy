@@ -45,7 +45,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 			cfg := p.Config
 			if cfg.IsRetentionPolicyEnabled {
 				//export events collection
-				policy, err := time.ParseDuration(cfg.RetentionPolicy.Policy)
+				policy, err := time.ParseDuration(cfg.RetentionPolicy)
 				if err != nil {
 					return err
 				}
@@ -151,15 +151,8 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 		if err != nil {
 			return err
 		}
-		projectMetadata := project.Metadata
-		// update retain count
-		if projectMetadata == nil {
-			project.Metadata = &datastore.ProjectMetadata{
-				RetainedEvents: int(numDocs),
-			}
-		} else {
-			project.Metadata.RetainedEvents += int(numDocs)
-		}
+
+		project.RetainedEvents += int(numDocs)
 		err = projectRepo.UpdateProject(ctx, project)
 		if err != nil {
 			return err

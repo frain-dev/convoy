@@ -57,7 +57,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl, org.CustomDomain)
+	sr := sourceResponse(source, baseUrl, org.CustomDomain.String)
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", sr, http.StatusCreated))
 }
 
@@ -91,7 +91,7 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl, org.CustomDomain)
+	sr := sourceResponse(source, baseUrl, org.CustomDomain.String)
 
 	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", sr, http.StatusOK))
 }
@@ -140,7 +140,7 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl, org.CustomDomain)
+	sr := sourceResponse(source, baseUrl, org.CustomDomain.String)
 
 	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", sr, http.StatusAccepted))
 }
@@ -216,7 +216,7 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 	}
 
 	for _, source := range sources {
-		s := sourceResponse(&source, baseUrl, org.CustomDomain)
+		s := sourceResponse(&source, baseUrl, org.CustomDomain.String)
 		sourcesResponse = append(sourcesResponse, s)
 	}
 

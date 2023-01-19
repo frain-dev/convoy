@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/guregu/null.v4"
 )
 
 type Pageable struct {
@@ -286,10 +287,7 @@ type Project struct {
 	Config         *ProjectConfig     `json:"config" bson:"config"`
 	Statistics     *ProjectStatistics `json:"statistics" bson:"-"`
 
-	// TODO(subomi): refactor this into the Instance API.
-	RateLimit         int              `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string           `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Metadata          *ProjectMetadata `json:"metadata" bson:"metadata"`
+	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
@@ -301,13 +299,26 @@ type ProjectMetadata struct {
 }
 
 type ProjectConfig struct {
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
-	MaxIngestSize            uint64                        `json:"max_payload_read_size" bson:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
-	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
+	RateLimitCount    int `json:"ratelimit.count" db:"ratelimit_count"`
+	RateLimitDuration int `json:"ratelimit.duration" db:"ratelimit_duration"`
+
+	StrategyType       StrategyProvider `json:"strategy_type" db:"strategy_type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
+	StrategyDuration   uint64           `json:"strategy_duration" db:"strategy_duration" valid:"optional~please provide a valid duration in seconds,int"`
+	StrategyRetryCount uint64           `json:"strategy_retry_count" db:"strategy_retry_count" valid:"optional~please provide a valid retry count,int"`
+
+	SignatureHeader config.SignatureHeaderProvider `json:"hsignature_header" db:"signature_header" valid:"required~please provide a valid signature header"`
+	SignatureHash   string                         `json:"-" db:"signature_hash"`
+	RetentionPolicy string                         `json:"retention_policy" db:"retention_policy" valid:"required~please provide a valid retention policy"`
+
+	MaxIngestSize            uint64 `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks            bool   `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+
+	// old fields
+	RateLimit *RateLimitConfiguration `json:"ratelimit"`
+	Strategy  *StrategyConfiguration  `json:"strategy"`
+	Signature *SignatureConfiguration `json:"signature"`
+	// RetentionPolicy *RetentionPolicyConfiguration `json:"policy" bson:"retention_policy"`
 }
 
 type RateLimitConfiguration struct {
@@ -718,15 +729,15 @@ type ApiKey struct {
 }
 
 type Organisation struct {
-	ID             primitive.ObjectID  `json:"-" bson:"_id"`
-	UID            string              `json:"uid" bson:"uid"`
-	OwnerID        string              `json:"-" bson:"owner_id"`
-	Name           string              `json:"name" bson:"name"`
-	CustomDomain   string              `json:"custom_domain" bson:"custom_domain"`
-	AssignedDomain string              `json:"assigned_domain" bson:"assigned_domain"`
-	CreatedAt      primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	// ID             primitive.ObjectID  `json:"-" bson:"_id"`
+	UID            string      `json:"id" db:"id"`
+	OwnerID        string      `json:"" db:"owner_id"`
+	Name           string      `json:"name" db:"name"`
+	CustomDomain   null.String `json:"custom_domain" db:"custom_domain"`
+	AssignedDomain null.String `json:"assigned_domain" db:"assigned_domain"`
+	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type Configuration struct {
