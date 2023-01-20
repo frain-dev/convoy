@@ -114,6 +114,9 @@ module.exports = {
 			black: '#16192C',
 			'dark-grey': '#B2B2B2',
 			transparent: 'transparent'
+		},
+		animation: {
+			'spin-slow': 'spin 3s linear infinite'
 		}
 	},
 	plugins: []
