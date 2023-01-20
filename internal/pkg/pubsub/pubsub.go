@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 )
 
 type PubSub interface {
@@ -16,24 +17,29 @@ type PubSub interface {
 	Stop()
 }
 
-type SourceStream struct {
+type Source struct {
+	// The pub sub client
 	client PubSub
-	hash   string
+
+	// An identifier for the source config
+	hash string
 }
 
 type SourcePool struct {
-	sources map[string]*SourceStream
+	queue   queue.Queuer
+	sources map[string]*Source
 }
 
-func NewSourcePool() *SourcePool {
+func NewSourcePool(queue queue.Queuer) *SourcePool {
 	return &SourcePool{
-		sources: make(map[string]*SourceStream),
+		queue:   queue,
+		sources: make(map[string]*Source),
 	}
 }
 
 func (s *SourcePool) Insert(source *datastore.Source) error {
-	// before inserting, we need to make sure the source doesn't already exists in the source
-	// pool. If it does, make sure the hash hasn't changed
+	// Make sure the source doesn't already exists in the source
+	// pool. If it does, ensure the hash hasn't changed
 	sour, exists := s.sources[source.UID]
 	if exists {
 		// The source config has changed
@@ -49,13 +55,13 @@ func (s *SourcePool) Insert(source *datastore.Source) error {
 }
 
 func (s *SourcePool) insert(source *datastore.Source) error {
-	client, err := NewPubSub(source.PubSubConfig)
+	client, err := NewPubSub(source, s.queue)
 	if err != nil {
 		return err
 	}
 
 	client.Dispatch()
-	sourceSteam := &SourceStream{
+	sourceSteam := &Source{
 		client: client,
 		hash:   s.hash(source),
 	}
@@ -92,14 +98,14 @@ func (s *SourcePool) hash(source *datastore.Source) string {
 	return base64.StdEncoding.EncodeToString([]byte(hash))
 }
 
-func NewPubSub(cfg *datastore.PubSubConfig) (PubSub, error) {
-	if cfg.Type == datastore.SqsPubSub {
-		return sqs.New(cfg.Sqs, cfg.Workers), nil
+func NewPubSub(source *datastore.Source, queue queue.Queuer) (PubSub, error) {
+	if source.PubSubConfig.Type == datastore.SqsPubSub {
+		return sqs.New(source, queue), nil
 	}
 
-	if cfg.Type == datastore.GooglePubSub {
-		return google.New(cfg.Google, cfg.Workers), nil
+	if source.PubSubConfig.Type == datastore.GooglePubSub {
+		return google.New(source), nil
 	}
 
-	return nil, fmt.Errorf("pub sub type %s is not supported", cfg.Type)
+	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSubConfig.Type)
 }

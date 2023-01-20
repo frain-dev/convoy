@@ -9,22 +9,22 @@ import (
 )
 
 type Google struct {
-	projectId string
-	topicName string
-	workers   int
-	ctx       context.Context
-	cancel    context.CancelFunc
+	cfg     *datastore.GooglePubSubConfig
+	source  *datastore.Source
+	workers int
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
-func New(cfg *datastore.GooglePubSubConfig, workers int) *Google {
+func New(source *datastore.Source) *Google {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Google{
-		projectId: cfg.ProjectID,
-		topicName: cfg.TopicName,
-		ctx:       ctx,
-		cancel:    cancel,
-		workers:   workers,
+		cfg:     source.PubSubConfig.Google,
+		source:  source,
+		ctx:     ctx,
+		cancel:  cancel,
+		workers: source.PubSubConfig.Workers,
 	}
 }
 
@@ -37,7 +37,7 @@ func (g *Google) Stop() {
 }
 
 func (g *Google) Listen() {
-	client, err := pubsub.NewClient(context.Background(), g.projectId)
+	client, err := pubsub.NewClient(context.Background(), g.cfg.ProjectID)
 
 	if err != nil {
 		log.WithError(err).Error("failed to create new pubsub client")
@@ -45,7 +45,7 @@ func (g *Google) Listen() {
 
 	defer client.Close()
 
-	sub := client.Subscription(g.topicName)
+	sub := client.Subscription(g.cfg.TopicName)
 
 	// To enable concurrency settings
 	sub.ReceiveSettings.Synchronous = false

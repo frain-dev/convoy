@@ -1,33 +1,40 @@
 package sqs
 
 import (
+	"encoding/json"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Sqs struct {
-	accessKeyID   string
-	secretKey     string
-	defaultRegion string
-	queueName     string
-	workers       int
-	done          chan struct{}
+	cfg     *datastore.SQSPubSubConfig
+	source  *datastore.Source
+	workers int
+	done    chan struct{}
+	queue   queue.Queuer
 }
 
-func New(cfg *datastore.SQSPubSubConfig, workers int) *Sqs {
+func New(source *datastore.Source, queue queue.Queuer) *Sqs {
 	return &Sqs{
-		accessKeyID:   cfg.AccessKeyID,
-		secretKey:     cfg.SecretKey,
-		defaultRegion: cfg.DefaultRegion,
-		queueName:     cfg.QueueName,
-		done:          make(chan struct{}),
-		workers:       workers,
+		cfg:     source.PubSubConfig.Sqs,
+		source:  source,
+		workers: source.PubSubConfig.Workers,
+		done:    make(chan struct{}),
+		queue:   queue,
 	}
 }
 
@@ -48,8 +55,8 @@ func (s *Sqs) cancelled() bool {
 
 func (s *Sqs) Listen() {
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(s.defaultRegion),
-		Credentials: credentials.NewStaticCredentials(s.accessKeyID, s.secretKey, ""),
+		Region:      aws.String(s.cfg.DefaultRegion),
+		Credentials: credentials.NewStaticCredentials(s.cfg.AccessKeyID, s.cfg.SecretKey, ""),
 	})
 
 	if err != nil {
@@ -58,7 +65,7 @@ func (s *Sqs) Listen() {
 
 	svc := sqs.New(sess)
 	url, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
-		QueueName: &s.queueName,
+		QueueName: &s.cfg.QueueName,
 	})
 
 	if err != nil {
@@ -88,10 +95,54 @@ func (s *Sqs) Listen() {
 			go func(m *sqs.Message) {
 				defer wg.Done()
 
-				svc.DeleteMessage(&sqs.DeleteMessageInput{
+				var msg models.Event
+
+				if err := json.Unmarshal([]byte(*m.Body), &msg); err != nil {
+					log.WithError(err).Error("failed to marshal event")
+					return
+				}
+
+				event := &datastore.Event{
+					UID:       uuid.NewString(),
+					EventType: datastore.EventType(msg.EventType),
+					SourceID:  s.source.UID,
+					ProjectID: s.source.ProjectID,
+					Raw:       string(msg.Data),
+					Data:      msg.Data,
+					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					Endpoints: []string{msg.EndpointID},
+				}
+
+				createEvent := task.CreateEvent{
+					Event:              *event,
+					CreateSubscription: !util.IsStringEmpty(msg.EndpointID),
+				}
+
+				eventByte, err := json.Marshal(createEvent)
+				if err != nil {
+					log.WithError(err).Error("failed to marshal event byte")
+				}
+
+				job := &queue.Job{
+					ID:      event.UID,
+					Payload: json.RawMessage(eventByte),
+					Delay:   0,
+				}
+
+				err = s.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+				if err != nil {
+					log.WithError(err).Error("failed to write event to queue")
+				}
+
+				_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
 					QueueUrl:      queueURL,
 					ReceiptHandle: m.ReceiptHandle,
 				})
+
+				if err != nil {
+					log.WithError(err).Error("failed to delete message")
+				}
 			}(message)
 
 			wg.Wait()

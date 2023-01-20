@@ -22,10 +22,10 @@ func addIngestCommand(a *app) *cobra.Command {
 		Use:   "ingest",
 		Short: "Ingest webhook events from Pub/Sub streams",
 		Run: func(cmd *cobra.Command, args []string) {
-			sourcePool := pubsub.NewSourcePool()
+			sourcePool := pubsub.NewSourcePool(a.queue)
 			ticker := time.NewTicker(1 * time.Minute)
 			exit = make(chan os.Signal)
-			
+
 			signal.Notify(exit, os.Interrupt)
 
 			for {
@@ -39,13 +39,10 @@ func addIngestCommand(a *app) *cobra.Command {
 
 				case <-exit:
 					log.Println("Received SIGINT interrupt signal. Closing all pub sub sources")
-              
 					// Stop the ticker
 					ticker.Stop()
-
 					// Stop the existing pub sub sources
 					sourcePool.Stop()
-
 					return
 				}
 			}
