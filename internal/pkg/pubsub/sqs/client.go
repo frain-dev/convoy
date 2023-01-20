@@ -1,24 +1,18 @@
 package sqs
 
 import (
-	"encoding/json"
 	"sync"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server/models"
-	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker/task"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+type handlerFn func(source *datastore.Source, queue queue.Queuer, msg string) error
 
 type Sqs struct {
 	cfg     *datastore.SQSPubSubConfig
@@ -26,15 +20,17 @@ type Sqs struct {
 	workers int
 	done    chan struct{}
 	queue   queue.Queuer
+	handler handlerFn
 }
 
-func New(source *datastore.Source, queue queue.Queuer) *Sqs {
+func New(source *datastore.Source, queue queue.Queuer, handler handlerFn) *Sqs {
 	return &Sqs{
 		cfg:     source.PubSubConfig.Sqs,
 		source:  source,
 		workers: source.PubSubConfig.Workers,
 		done:    make(chan struct{}),
 		queue:   queue,
+		handler: handler,
 	}
 }
 
@@ -95,44 +91,8 @@ func (s *Sqs) Listen() {
 			go func(m *sqs.Message) {
 				defer wg.Done()
 
-				var msg models.Event
-
-				if err := json.Unmarshal([]byte(*m.Body), &msg); err != nil {
-					log.WithError(err).Error("failed to marshal event")
-					return
-				}
-
-				event := &datastore.Event{
-					UID:       uuid.NewString(),
-					EventType: datastore.EventType(msg.EventType),
-					SourceID:  s.source.UID,
-					ProjectID: s.source.ProjectID,
-					Raw:       string(msg.Data),
-					Data:      msg.Data,
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					Endpoints: []string{msg.EndpointID},
-				}
-
-				createEvent := task.CreateEvent{
-					Event:              *event,
-					CreateSubscription: !util.IsStringEmpty(msg.EndpointID),
-				}
-
-				eventByte, err := json.Marshal(createEvent)
-				if err != nil {
-					log.WithError(err).Error("failed to marshal event byte")
-				}
-
-				job := &queue.Job{
-					ID:      event.UID,
-					Payload: json.RawMessage(eventByte),
-					Delay:   0,
-				}
-
-				err = s.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
-				if err != nil {
-					log.WithError(err).Error("failed to write event to queue")
+				if err := s.handler(s.source, s.queue, *m.Body); err != nil {
+					log.WithError(err).Error("failed to write message to create event queue")
 				}
 
 				_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{

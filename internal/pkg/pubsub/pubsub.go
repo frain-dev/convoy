@@ -2,13 +2,21 @@ package pubsub
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PubSub interface {
@@ -29,6 +37,51 @@ type SourcePool struct {
 	queue   queue.Queuer
 	sources map[string]*Source
 }
+
+var (
+	handlerFunc = func(source *datastore.Source, q queue.Queuer, msg string) error {
+		var ev models.Event
+
+		if err := json.Unmarshal([]byte(msg), &ev); err != nil {
+			return err
+		}
+
+		event := datastore.Event{
+			UID:       uuid.NewString(),
+			EventType: datastore.EventType(ev.EventType),
+			SourceID:  source.UID,
+			ProjectID: source.ProjectID,
+			Raw:       string(ev.Data),
+			Data:      ev.Data,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			Endpoints: []string{ev.EndpointID},
+		}
+
+		createEvent := task.CreateEvent{
+			Event:              event,
+			CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
+		}
+
+		eventByte, err := json.Marshal(createEvent)
+		if err != nil {
+			return err
+		}
+
+		job := &queue.Job{
+			ID:      event.UID,
+			Payload: json.RawMessage(eventByte),
+			Delay:   0,
+		}
+
+		err = q.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+)
 
 func NewSourcePool(queue queue.Queuer) *SourcePool {
 	return &SourcePool{
@@ -100,7 +153,7 @@ func (s *SourcePool) hash(source *datastore.Source) string {
 
 func NewPubSub(source *datastore.Source, queue queue.Queuer) (PubSub, error) {
 	if source.PubSubConfig.Type == datastore.SqsPubSub {
-		return sqs.New(source, queue), nil
+		return sqs.New(source, queue, handlerFunc), nil
 	}
 
 	if source.PubSubConfig.Type == datastore.GooglePubSub {
