@@ -48,7 +48,7 @@ func addRunCommand() *cobra.Command {
 			// 	Name:    "123",
 			// })
 
-			orgs, pageable, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
+			_, pageable, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
 				Page:    1,
 				PerPage: 10,
 			})
@@ -82,17 +82,15 @@ func addRunCommand() *cobra.Command {
 			// 	return
 			// }
 
-			projects, err := p.LoadProjects(cmd.Context(), &datastore.ProjectFilter{
-				OrgID: orgs[0].UID,
-			})
+			err = p.DeleteProject(cmd.Context(), "1")
 			if err != nil {
 				fmt.Printf("err: %+v", err)
 				return
 			}
 
-			for _, v := range projects {
-				fmt.Printf("Proj: %+v\n", v)
-			}
+			// for _, v := range projects {
+			// 	fmt.Printf("Proj: %+v\n", v)
+			// }
 		},
 	}
 

@@ -3,12 +3,20 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 
 	"github.com/frain-dev/convoy/datastore"
-	"go.mongodb.org/mongo-driver/bson"
+)
+
+var (
+	ErrProjectNotCreated              = errors.New("project could not be created")
+	ErrProjectNotUpdated              = errors.New("project could not be updated")
+	ErrProjectNotDeleted              = errors.New("project could not be deleted")
+	ErrProjectEventsNotDeleted        = errors.New("project events could not be deleted")
+	ErrProjectEndpointsNotDeleted     = errors.New("project endpoints could not be deleted")
+	ErrProjectSubscriptionsNotDeleted = errors.New("project subscriptions could not be deleted")
 )
 
 const (
@@ -79,11 +87,36 @@ const (
 	WHERE id = $1;
 	`
 
+	getProjectEndpoints = `
+	-- project.go:updateProjectById
+	SELECT id FROM convoy.endpoints WHERE project_id = $1
+	`
+
 	deleteProject = `
 	-- project.go:deleteProject
 	UPDATE convoy.projects SET 
 	deleted_at = now()
 	WHERE id = $1;
+	`
+
+	deleteProjectEndpoints = `
+	-- project.go:deleteProjectEndpoints
+	UPDATE convoy.endpoints SET 
+	deleted_at = now()
+	WHERE project_id = $1;
+	`
+
+	deleteProjectEvents = `
+	-- project.go:deleteProjectEvents
+	UPDATE convoy.events 
+	SET deleted_at = now() 
+	WHERE project_id = $1;
+	`
+	deleteProjectEndpointSubscriptions = `
+	-- project.go:deleteProjectEndpointSubscriptions
+	UPDATE convoy.subscriptions SET 
+	deleted_at = now()
+	WHERE project_id = $1;
 	`
 
 	countProjects = `
@@ -136,7 +169,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 	}
 
 	if rowsAffected < 1 {
-		return ErrOrganizationNotCreated
+		return ErrProjectNotCreated
 	}
 
 	return tx.Commit()
@@ -164,6 +197,20 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 }
 
 func (p *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) error {
+	result, err := p.db.Exec(updateProjectById, o)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrProjectNotUpdated
+	}
+
 	return nil
 }
 
@@ -181,22 +228,43 @@ func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datas
 	return nil
 }
 
-func (p *projectRepo) DeleteProject(ctx context.Context, uid string) error {
-	return nil
+func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
+	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(deleteProject, id)
+	if err != nil {
+		return err
+	}
+
+	// var ids []int
+	// err = tx.Select(&ids, getProjectEndpoints, uid)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// fmt.Println(ids)
+
+	_, err = tx.Exec(deleteProjectEndpoints, id)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(deleteProjectEvents, id)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(deleteProjectEndpointSubscriptions, id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (p *projectRepo) FetchProjectsByIDs(ctx context.Context, ids []string) ([]datastore.Project, error) {
 	return nil, nil
-}
-
-func (p *projectRepo) deleteEndpointEvents(ctx context.Context, endpoint_id string, update bson.M) error {
-	return nil
-}
-
-func (p *projectRepo) deleteEndpoint(ctx context.Context, endpoint_id string, update bson.M) error {
-	return nil
-}
-
-func (p *projectRepo) deleteEndpointSubscriptions(ctx context.Context, endpoint_id string, update bson.M) error {
-	return nil
 }
