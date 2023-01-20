@@ -271,7 +271,13 @@ func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 			}
 
 			if project == nil {
-				project, err = m.projectRepo.FetchProjectByID(r.Context(), projectID)
+				id, err := strconv.Atoi(projectID)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("failed to parse project id", http.StatusNotFound))
+					return
+				}
+
+				project, err = m.projectRepo.FetchProjectByID(r.Context(), id)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch project by id", http.StatusNotFound))
 					return
@@ -612,7 +618,13 @@ func (m *Middleware) RequireProject() func(next http.Handler) http.Handler {
 				}
 
 				if project == nil {
-					project, err = m.projectRepo.FetchProjectByID(r.Context(), projectID)
+					id, err := strconv.Atoi(projectID)
+					if err != nil {
+						_ = render.Render(w, r, util.NewErrorResponse("failed to parse project id", http.StatusNotFound))
+						return
+					}
+
+					project, err = m.projectRepo.FetchProjectByID(r.Context(), id)
 					if err != nil {
 						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch project by id", http.StatusNotFound))
 						return
@@ -1016,7 +1028,7 @@ func (m *Middleware) RateLimitByProjectID() func(next http.Handler) http.Handler
 
 			var rateLimitDuration time.Duration
 			var err error
-			if project.Config.RateLimit.Duration == 0 {
+			if project.Config.RateLimitDuration == 0 {
 				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
@@ -1031,10 +1043,10 @@ func (m *Middleware) RateLimitByProjectID() func(next http.Handler) http.Handler
 			}
 
 			var rateLimit int
-			if project.Config.RateLimit.Count == 0 {
+			if project.Config.RateLimitCount == 0 {
 				rateLimit = convoy.RATE_LIMIT
 			} else {
-				rateLimit = project.Config.RateLimit.Count
+				rateLimit = project.Config.RateLimitCount
 			}
 
 			res, err := m.limiter.Allow(r.Context(), project.UID, rateLimit, int(rateLimitDuration))

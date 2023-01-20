@@ -6584,6 +6584,7 @@
                     "$ref": "#/definitions/datastore.ProjectType"
                 },
                 "uid": {
+                    "description": "ID              primitive.ObjectID `json:\"-\" bson:\"_id\"`",
                     "type": "string"
                 },
                 "updated_at": {
@@ -6637,6 +6638,12 @@
                 },
                 "strategy_type": {
                     "type": "string"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastore.SignatureVersion"
+                    }
                 }
             }
         },
@@ -7185,12 +7192,6 @@
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
                     "type": "string"
                 },
                 "type": {

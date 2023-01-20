@@ -45,27 +45,8 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
 	deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS convoy.projects (
-	id BIGSERIAL PRIMARY KEY,
-	
-	name TEXT NOT NULL,
-	type TEXT NOT NULL,
-	logo_url TEXT,
-	metadata_retained_events INTEGER DEFAULT 0,
-	rate_limit INTEGER DEFAULT 5000,
-	rate_limit_duration TEXT DEFAULT '1m',
-	
-	organisation_id BIGINT NOT NULL REFERENCES convoy.organisations (id),
-	
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
-);
-
 CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	id BIGSERIAL PRIMARY KEY,
-
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
 	
 	retention_policy TEXT NOT NULL,
 	max_payload_read_size INTEGER NOT NULL,
@@ -82,6 +63,22 @@ CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	
 	signature_header TEXT NOT NULL,
 	signature_hash TEXT,
+	
+	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS convoy.projects (
+	id BIGSERIAL PRIMARY KEY,
+	
+	name TEXT NOT NULL,
+	type TEXT NOT NULL,
+	logo_url TEXT,
+	retained_events INTEGER DEFAULT 0,
+	
+	organisation_id BIGINT NOT NULL REFERENCES convoy.organisations (id),
+	project_configuration_id BIGINT NOT NULL REFERENCES convoy.project_configurations (id),
 	
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

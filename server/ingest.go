@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -86,7 +87,14 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	projectRepo := mongo.NewProjectRepo(a.A.Store)
-	g, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
+
+	id, err := strconv.Atoi(source.ProjectID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	g, err := projectRepo.FetchProjectByID(r.Context(), id)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

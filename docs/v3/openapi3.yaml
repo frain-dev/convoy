@@ -390,6 +390,7 @@ components:
         type:
           $ref: '#/components/schemas/datastore.ProjectType'
         uid:
+          description: ID              primitive.ObjectID `json:"-" bson:"_id"`
           type: string
         updated_at:
           type: string
@@ -424,6 +425,10 @@ components:
           type: integer
         strategy_type:
           type: string
+        versions:
+          items:
+            $ref: '#/components/schemas/datastore.SignatureVersion'
+          type: array
       type: object
     datastore.ProjectStatistics:
       properties:
@@ -793,10 +798,6 @@ components:
         logo_url:
           type: string
         name:
-          type: string
-        rate_limit:
-          type: integer
-        rate_limit_duration:
           type: string
         type:
           $ref: '#/components/schemas/datastore.ProjectType'

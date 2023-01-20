@@ -30,10 +30,10 @@ const (
 
 	fetchOrganisationsPaginated = `
 	-- organisation.go:fetchOrganisationsPaginated
-	SELECT * FROM convoy.organisations;
-	-- ORDER BY $3
-	-- LIMIT $1
-	-- OFFSET $2;
+	SELECT * FROM convoy.organisations
+	ORDER BY id
+	LIMIT $1
+	OFFSET $2;
 	`
 
 	updateOrganizationById = `
@@ -86,8 +86,8 @@ func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organis
 }
 
 func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
-	// skip := pageable.Page * pageable.PerPage
-	rows, err := o.db.Queryx(fetchOrganisationsPaginated)
+	skip := (pageable.Page - 1) * pageable.PerPage
+	rows, err := o.db.Queryx(fetchOrganisationsPaginated, pageable.PerPage, skip)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

@@ -443,7 +443,7 @@ var Migrations = []*Migration{
 							UID:       uuid.NewString(),
 							Hash:      project.Config.Signature.Hash,
 							Encoding:  datastore.HexEncoding,
-							CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+							CreatedAt: time.Now(),
 						},
 					}
 

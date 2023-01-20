@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 
@@ -29,15 +30,36 @@ const (
 	  ) 
 	  VALUES 
 		(
-		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
+		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 		  $11
-		) RETURNING id;	  
+		) RETURNING id;
 	`
 
-	fetchProject = `
-	-- project.go:fetchProject
-	SELECT * FROM convoy.projects 
-	WHERE $1 = $2;
+	fetchProjectById = `
+	-- project.go:fetchProjectById
+	SELECT
+		p.name,
+		p.type,
+		p.retained_events,
+		p.created_at,
+		p.updated_at,
+		p.deleted_at,
+		p.organisation_id,
+		c.retention_policy as "config.retention_policy",
+		c.max_payload_read_size as "config.max_payload_read_size",
+		c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled",
+		c.retention_policy_enabled as "config.retention_policy_enabled",
+		c.ratelimit_count as "config.ratelimit_count",
+		c.ratelimit_duration as "config.ratelimit_duration",
+		c.strategy_type as "config.strategy_type",
+		c.strategy_duration as "config.strategy_duration",
+		c.strategy_retry_count as "config.strategy_retry_count",
+		c.signature_header as "config.signature_header",
+		c.signature_hash as "config.signature_hash"
+	FROM convoy.projects p
+	LEFT JOIN convoy.project_configurations c
+		ON p.project_configuration_id = c.id
+	WHERE p.id = $1;
 	`
 
 	fetchProjectsPaginated = `
@@ -129,8 +151,15 @@ func (p *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) e
 	return nil
 }
 
-func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
-	return nil, nil
+func (p *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {
+	var project datastore.Project
+	err := p.db.Get(&project, fetchProjectById, id)
+	fmt.Printf("QueryRowx: %+v\n", err)
+	if err != nil {
+		return nil, err
+	}
+
+	return &project, nil
 }
 
 func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {

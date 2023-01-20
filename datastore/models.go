@@ -164,6 +164,27 @@ const (
 )
 
 var (
+	DefaultProjectConfig = ProjectConfig{
+		RateLimitCount:           1000,
+		RateLimitDuration:        60,
+		StrategyType:             DefaultStrategyProvider,
+		StrategyDuration:         100,
+		StrategyRetryCount:       10,
+		RetentionPolicy:          "30d",
+		MaxIngestSize:            config.MaxResponseSizeKb,
+		ReplayAttacks:            false,
+		IsRetentionPolicyEnabled: false,
+		SignatureHeader:          "X-Convoy-Signature",
+		Versions: []SignatureVersion{
+			{
+				UID:       uuid.NewString(),
+				Hash:      "SHA256",
+				Encoding:  HexEncoding,
+				CreatedAt: time.Now(),
+			},
+		},
+	}
+
 	DefaultStrategyConfig = StrategyConfiguration{
 		Type:       DefaultStrategyProvider,
 		Duration:   100,
@@ -205,7 +226,7 @@ func GetDefaultSignatureConfig() *SignatureConfiguration {
 				UID:       uuid.NewString(),
 				Hash:      "SHA256",
 				Encoding:  HexEncoding,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
 			},
 		},
 	}
@@ -278,20 +299,21 @@ var (
 )
 
 type Project struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	Name           string             `json:"name" bson:"name"`
-	LogoURL        string             `json:"logo_url" bson:"logo_url"`
-	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
-	Type           ProjectType        `json:"type" bson:"type"`
-	Config         *ProjectConfig     `json:"config" bson:"config"`
-	Statistics     *ProjectStatistics `json:"statistics" bson:"-"`
+	// ID              primitive.ObjectID `json:"-" bson:"_id"`
+	UID             string             `json:"uid" db:"id"`
+	Name            string             `json:"name" db:"name"`
+	LogoURL         string             `json:"logo_url" db:"logo_url"`
+	OrganisationID  string             `json:"organisation_id" db:"organisation_id"`
+	ProjectConfigID string             `json:"-" db:"project_configuration_id"`
+	Type            ProjectType        `json:"type" db:"type"`
+	Config          *ProjectConfig     `json:"config" db:"config"`
+	Statistics      *ProjectStatistics `json:"statistics" db:"-"`
 
-	RetainedEvents int `json:"retained_events" bson:"retained_events"`
+	RetainedEvents int `json:"retained_events" db:"retained_events"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type ProjectMetadata struct {
@@ -299,6 +321,8 @@ type ProjectMetadata struct {
 }
 
 type ProjectConfig struct {
+	RetentionPolicy string `json:"retention_policy" db:"retention_policy" valid:"required~please provide a valid retention policy"`
+
 	RateLimitCount    int `json:"ratelimit.count" db:"ratelimit_count"`
 	RateLimitDuration int `json:"ratelimit.duration" db:"ratelimit_duration"`
 
@@ -308,7 +332,7 @@ type ProjectConfig struct {
 
 	SignatureHeader config.SignatureHeaderProvider `json:"hsignature_header" db:"signature_header" valid:"required~please provide a valid signature header"`
 	SignatureHash   string                         `json:"-" db:"signature_hash"`
-	RetentionPolicy string                         `json:"retention_policy" db:"retention_policy" valid:"required~please provide a valid retention policy"`
+	Versions        []SignatureVersion             `json:"versions" bson:"versions"`
 
 	MaxIngestSize            uint64 `json:"max_payload_read_size" db:"max_payload_read_size"`
 	ReplayAttacks            bool   `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
@@ -340,10 +364,10 @@ type SignatureConfiguration struct {
 }
 
 type SignatureVersion struct {
-	UID       string             `json:"uid" bson:"uid"`
-	Hash      string             `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
-	Encoding  EncodingType       `json:"encoding" bson:"encoding" valid:"required~please provide a valid signature header"`
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UID       string       `json:"uid" bson:"uid"`
+	Hash      string       `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Encoding  EncodingType `json:"encoding" bson:"encoding" valid:"required~please provide a valid signature header"`
+	CreatedAt time.Time    `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -392,7 +416,7 @@ func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
 	return m
 }
 
-func (o *Project) IsDeleted() bool { return o.DeletedAt != nil }
+func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 

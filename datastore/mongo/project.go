@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -33,7 +34,7 @@ func NewProjectRepo(store datastore.Store) datastore.ProjectRepository {
 func (db *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	o.ID = primitive.NewObjectID()
+	// o.ID = primitive.NewObjectID()
 
 	err := db.store.Save(ctx, o, nil)
 
@@ -69,15 +70,13 @@ func (db *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFil
 func (db *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	o.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	o.UpdatedAt = time.Now()
 	update := bson.D{
 		primitive.E{Key: "name", Value: o.Name},
 		primitive.E{Key: "logo_url", Value: o.LogoURL},
 		primitive.E{Key: "updated_at", Value: o.UpdatedAt},
 		primitive.E{Key: "config", Value: o.Config},
-		// primitive.E{Key: "rate_limit", Value: o.RateLimit},
 		primitive.E{Key: "retained_events", Value: o.RetainedEvents},
-		// primitive.E{Key: "rate_limit_duration", Value: o.RateLimitDuration},
 	}
 
 	err := db.store.UpdateByID(ctx, o.UID, bson.M{"$set": update})
@@ -88,12 +87,12 @@ func (db *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) 
 	return err
 }
 
-func (db *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
+func (db *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	project := new(datastore.Project)
 
-	err := db.store.FindByID(ctx, id, nil, project)
+	err := db.store.FindByID(ctx, fmt.Sprint(id), nil, project)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrProjectNotFound
 	}

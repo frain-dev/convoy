@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -54,7 +55,12 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		}
 
 		if project == nil {
-			project, err = projectRepo.FetchProjectByID(ctx, event.ProjectID)
+			id, err := strconv.Atoi(event.ProjectID)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			project, err = projectRepo.FetchProjectByID(ctx, id)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}

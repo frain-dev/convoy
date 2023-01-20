@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
@@ -44,7 +45,13 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	project, err := ss.projectRepo.FetchProjectByID(ctx, newApiKey.Role.Project)
+	id, err := strconv.Atoi(newApiKey.Role.Project)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to fetch project by id")
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch project by id"))
+	}
+
+	project, err := ss.projectRepo.FetchProjectByID(ctx, id)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch project by id")
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch project by id"))
@@ -249,7 +256,12 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid api key role"))
 	}
 
-	_, err = ss.projectRepo.FetchProjectByID(ctx, role.Project)
+	id, err := strconv.Atoi(role.Project)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid project"))
+	}
+
+	_, err = ss.projectRepo.FetchProjectByID(ctx, id)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("invalid project"))
 	}

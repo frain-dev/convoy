@@ -17,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProjectService struct {
@@ -50,38 +49,9 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	config := newProject.Config
 	if newProject.Config == nil {
-		config = &datastore.ProjectConfig{}
-		config.Signature = datastore.GetDefaultSignatureConfig()
-		config.Strategy = &datastore.DefaultStrategyConfig
-		config.RateLimit = &datastore.DefaultRateLimitConfig
-		// config.RetentionPolicy = &datastore.DefaultRetentionPolicy
+		config = &datastore.DefaultProjectConfig
 	} else {
-		if newProject.Config.Signature == nil {
-			config.Signature = datastore.GetDefaultSignatureConfig()
-		}
-
 		checkSignatureVersions(newProject.Config.Signature.Versions)
-
-		if newProject.Config.Strategy == nil {
-			config.Strategy = &datastore.DefaultStrategyConfig
-		}
-
-		if newProject.Config.RateLimit == nil {
-			config.RateLimit = &datastore.DefaultRateLimitConfig
-		}
-
-		// if newProject.Config.RetentionPolicy == nil {
-		// 	config.RetentionPolicy = &datastore.DefaultRetentionPolicy
-		// }
-
-	}
-
-	if newProject.RateLimit == 0 {
-		newProject.RateLimit = convoy.RATE_LIMIT
-	}
-
-	if util.IsStringEmpty(newProject.RateLimitDuration) {
-		newProject.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
 	project := &datastore.Project{
@@ -91,8 +61,8 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		OrganisationID: org.UID,
 		Config:         config,
 		LogoURL:        newProject.LogoURL,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err = ps.projectRepo.CreateProject(ctx, project)
@@ -178,8 +148,8 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 			v.UID = uuid.NewString()
 		}
 
-		if v.CreatedAt == 0 {
-			v.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+		if v.CreatedAt.Unix() == 0 {
+			v.CreatedAt = time.Now()
 		}
 	}
 }

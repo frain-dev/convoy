@@ -48,7 +48,7 @@ func addRunCommand() *cobra.Command {
 			// 	Name:    "123",
 			// })
 
-			orgs, _, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
+			orgs, pageable, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
 				Page:    1,
 				PerPage: 10,
 			})
@@ -58,31 +58,37 @@ func addRunCommand() *cobra.Command {
 				return
 			}
 
-			fmt.Printf("page: %+v\n", orgs[0].UID)
+			fmt.Printf("org id: %+v\n", orgs[0].UID)
+			fmt.Printf("pageable: %+v\n", pageable)
 
 			p := postgres.NewProjectRepo(db.GetDB())
-			err = p.CreateProject(cmd.Context(), &datastore.Project{
-				Name:           "MMM",
-				Type:           datastore.IncomingProject,
-				OrganisationID: orgs[0].UID,
-				Config: &datastore.ProjectConfig{
-					RateLimitCount:     1000,
-					RateLimitDuration:  60,
-					StrategyType:       datastore.LinearStrategyProvider,
-					StrategyDuration:   100,
-					StrategyRetryCount: 10,
-					SignatureHeader:    config.DefaultSignatureHeader,
-					SignatureHash:      "SHA265",
-					RetentionPolicy:    "30d",
-				},
-			})
+			// err = p.CreateProject(cmd.Context(), &datastore.Project{
+			// 	Name:           "MMM",
+			// 	Type:           datastore.IncomingProject,
+			// 	OrganisationID: orgs[0].UID,
+			// 	Config: &datastore.ProjectConfig{
+			// 		RateLimitCount:     1000,
+			// 		RateLimitDuration:  60,
+			// 		StrategyType:       datastore.LinearStrategyProvider,
+			// 		StrategyDuration:   100,
+			// 		StrategyRetryCount: 10,
+			// 		SignatureHeader:    config.DefaultSignatureHeader,
+			// 		SignatureHash:      "SHA265",
+			// 		RetentionPolicy:    "30d",
+			// 	},
+			// })
+			// if err != nil {
+			// 	fmt.Printf("err: %+v", err)
+			// 	return
+			// }
 
+			project, err := p.FetchProjectByID(cmd.Context(), 1)
 			if err != nil {
 				fmt.Printf("err: %+v", err)
 				return
 			}
 
-			// fmt.Printf("Org: %+v\n", o)
+			fmt.Printf("Proj: %+v\n", project.Config)
 		},
 	}
 

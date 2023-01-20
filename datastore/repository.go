@@ -46,7 +46,7 @@ type ProjectRepository interface {
 	CreateProject(context.Context, *Project) error
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
-	FetchProjectByID(context.Context, string) (*Project, error)
+	FetchProjectByID(context.Context, int) (*Project, error)
 	FetchProjectsByIDs(context.Context, []string) ([]Project, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }

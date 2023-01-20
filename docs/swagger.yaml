@@ -390,6 +390,7 @@ definitions:
       type:
         $ref: '#/definitions/datastore.ProjectType'
       uid:
+        description: ID              primitive.ObjectID `json:"-" bson:"_id"`
         type: string
       updated_at:
         type: string
@@ -424,6 +425,10 @@ definitions:
         type: integer
       strategy_type:
         type: string
+      versions:
+        items:
+          $ref: '#/definitions/datastore.SignatureVersion'
+        type: array
     type: object
   datastore.ProjectStatistics:
     properties:
@@ -793,10 +798,6 @@ definitions:
       logo_url:
         type: string
       name:
-        type: string
-      rate_limit:
-        type: integer
-      rate_limit_duration:
         type: string
       type:
         $ref: '#/definitions/datastore.ProjectType'
