@@ -264,7 +264,3 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 
 	return tx.Commit()
 }
-
-func (p *projectRepo) FetchProjectsByIDs(ctx context.Context, ids []string) ([]datastore.Project, error) {
-	return nil, nil
-}

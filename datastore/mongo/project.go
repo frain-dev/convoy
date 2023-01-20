@@ -212,25 +212,6 @@ func (db *projectRepo) DeleteProject(ctx context.Context, uid string) error {
 	return err
 }
 
-func (db *projectRepo) FetchProjectsByIDs(ctx context.Context, ids []string) ([]datastore.Project, error) {
-	ctx = db.setCollectionInContext(ctx)
-
-	filter := bson.M{
-		"uid": bson.M{
-			"$in": ids,
-		},
-	}
-
-	projects := make([]datastore.Project, 0)
-	sort := bson.M{"created_at": 1}
-	err := db.store.FindAll(ctx, filter, sort, nil, &projects)
-	if err != nil {
-		return nil, err
-	}
-
-	return projects, err
-}
-
 func (db *projectRepo) deleteEndpointEvents(ctx context.Context, endpoint_id string, update bson.M) error {
 	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.EventCollection)
 

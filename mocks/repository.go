@@ -545,21 +545,6 @@ func (mr *MockProjectRepositoryMockRecorder) FetchProjectByID(arg0, arg1 interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchProjectByID", reflect.TypeOf((*MockProjectRepository)(nil).FetchProjectByID), arg0, arg1)
 }
 
-// FetchProjectsByIDs mocks base method.
-func (m *MockProjectRepository) FetchProjectsByIDs(arg0 context.Context, arg1 []string) ([]datastore.Project, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchProjectsByIDs", arg0, arg1)
-	ret0, _ := ret[0].([]datastore.Project)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FetchProjectsByIDs indicates an expected call of FetchProjectsByIDs.
-func (mr *MockProjectRepositoryMockRecorder) FetchProjectsByIDs(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchProjectsByIDs", reflect.TypeOf((*MockProjectRepository)(nil).FetchProjectsByIDs), arg0, arg1)
-}
-
 // FillProjectsStatistics mocks base method.
 func (m *MockProjectRepository) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
 	m.ctrl.T.Helper()
