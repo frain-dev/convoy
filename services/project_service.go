@@ -155,7 +155,7 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 }
 
 func (ps *ProjectService) GetProjects(ctx context.Context, filter *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	projects, err := ps.projectRepo.LoadProjects(ctx, filter.WithNamesTrimmed())
+	projects, err := ps.projectRepo.LoadProjects(ctx, filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load projects")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching projects"))

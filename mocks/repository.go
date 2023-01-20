@@ -531,7 +531,7 @@ func (mr *MockProjectRepositoryMockRecorder) DeleteProject(ctx, uid interface{})
 }
 
 // FetchProjectByID mocks base method.
-func (m *MockProjectRepository) FetchProjectByID(arg0 context.Context, arg1 string) (*datastore.Project, error) {
+func (m *MockProjectRepository) FetchProjectByID(arg0 context.Context, arg1 int) (*datastore.Project, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchProjectByID", arg0, arg1)
 	ret0, _ := ret[0].(*datastore.Project)

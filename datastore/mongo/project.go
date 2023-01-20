@@ -56,11 +56,6 @@ func (db *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFil
 		filter["organisation_id"] = f.OrgID
 	}
 
-	f = f.WithNamesTrimmed()
-	if len(f.Names) > 0 {
-		filter["name"] = bson.M{"$in": f.Names}
-	}
-
 	sort := bson.M{"created_at": 1}
 	err := db.store.FindAll(ctx, filter, sort, nil, &projects)
 

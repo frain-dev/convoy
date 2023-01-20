@@ -62,12 +62,11 @@ const (
 	WHERE p.id = $1;
 	`
 
-	fetchProjectsPaginated = `
-	-- project.go:fetchProjectsPaginated
+	fetchProjects = `
+	-- project.go:fetchProjects
 	SELECT * FROM convoy.projects
-	ORDER BY $3
-	LIMIT $1
-	OFFSET $2;
+	WHERE organisation_id = $1
+	ORDER BY id;
 	`
 
 	updateProjectById = `
@@ -144,7 +143,24 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 }
 
 func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	return nil, nil
+	rows, err := p.db.Queryx(fetchProjects, f.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	var projects []*datastore.Project
+	for rows.Next() {
+		var proj datastore.Project
+
+		err = rows.StructScan(&proj)
+		if err != nil {
+			return nil, err
+		}
+
+		projects = append(projects, &proj)
+	}
+
+	return projects, nil
 }
 
 func (p *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) error {
@@ -154,7 +170,6 @@ func (p *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) e
 func (p *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {
 	var project datastore.Project
 	err := p.db.Get(&project, fetchProjectById, id)
-	fmt.Printf("QueryRowx: %+v\n", err)
 	if err != nil {
 		return nil, err
 	}

@@ -567,19 +567,6 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 	}
 }
 
-func (m *Middleware) GetDefaultProject(r *http.Request, projectRepo datastore.ProjectRepository) (*datastore.Project, error) {
-	projects, err := projectRepo.LoadProjects(r.Context(), &datastore.ProjectFilter{Names: []string{"default-project"}})
-	if err != nil {
-		return nil, err
-	}
-
-	if !(len(projects) > 0) {
-		return nil, errors.New("no default project, please your config")
-	}
-
-	return projects[0], err
-}
-
 func (m *Middleware) RequireProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

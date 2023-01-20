@@ -179,10 +179,8 @@ func _() {}
 
 func (a *ApplicationHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
-	name := r.URL.Query().Get("name")
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	filter.Names = append(filter.Names, name)
 	projectService := createProjectService(a)
 
 	projects, err := projectService.GetProjects(r.Context(), filter)

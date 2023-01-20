@@ -47,11 +47,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newProject: &models.Project{
-					Name:              "test_project",
-					Type:              "outgoing",
-					LogoURL:           "https://google.com",
-					RateLimit:         1000,
-					RateLimitDuration: "1m",
+					Name:    "test_project",
+					Type:    "outgoing",
+					LogoURL: "https://google.com",
 					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
@@ -86,12 +84,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project",
-				Type:              "outgoing",
-				LogoURL:           "https://google.com",
-				RateLimit:         1000,
-				OrganisationID:    "1234",
-				RateLimitDuration: "1m",
+				Name:           "test_project",
+				Type:           "outgoing",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -106,7 +102,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Duration: 60,
 					},
 					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks:   true,
+					ReplayAttacks: true,
 				},
 			},
 			wantErr: false,
@@ -116,11 +112,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newProject: &models.Project{
-					Name:              "test_project",
-					Type:              "incoming",
-					LogoURL:           "https://google.com",
-					RateLimit:         1000,
-					RateLimitDuration: "1m",
+					Name:    "test_project",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
 					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
@@ -155,12 +149,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project",
-				Type:              "incoming",
-				LogoURL:           "https://google.com",
-				OrganisationID:    "1234",
-				RateLimit:         1000,
-				RateLimitDuration: "1m",
+				Name:           "test_project",
+				Type:           "incoming",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -175,7 +167,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Duration: 60,
 					},
 					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks:   true,
+					ReplayAttacks: true,
 				},
 			},
 			wantErr: false,
@@ -208,12 +200,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project_1",
-				Type:              "incoming",
-				LogoURL:           "https://google.com",
-				OrganisationID:    "1234",
-				RateLimit:         5000,
-				RateLimitDuration: "1m",
+				Name:           "test_project_1",
+				Type:           "incoming",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -224,10 +214,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
-					Strategy:        &datastore.DefaultStrategyConfig,
-					RateLimit:       &datastore.DefaultRateLimitConfig,
+					Strategy:  &datastore.DefaultStrategyConfig,
+					RateLimit: &datastore.DefaultRateLimitConfig,
 					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks:   false,
+					ReplayAttacks: false,
 				},
 			},
 			wantErr: false,
@@ -264,20 +254,19 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project",
-				Type:              "outgoing",
-				LogoURL:           "https://google.com",
-				RateLimit:         5000,
-				OrganisationID:    "1234",
-				RateLimitDuration: "1m",
+				Name:           "test_project",
+				Type:           "outgoing",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
+
 				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 					},
-					Strategy:        &datastore.DefaultStrategyConfig,
-					RateLimit:       &datastore.DefaultRateLimitConfig,
+					Strategy:  &datastore.DefaultStrategyConfig,
+					RateLimit: &datastore.DefaultRateLimitConfig,
 					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks:   false,
+					ReplayAttacks: false,
 				},
 			},
 			wantErr: false,
@@ -400,7 +389,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 			// fmt.Println("eee", err.Error())
 			require.Nil(t, err)
 			require.NotEmpty(t, project.UID)
-			require.NotEmpty(t, project.ID)
 			require.NotEmpty(t, project.CreatedAt)
 			require.NotEmpty(t, project.UpdatedAt)
 			require.Empty(t, project.DeletedAt)

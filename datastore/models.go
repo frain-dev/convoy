@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -381,8 +380,7 @@ type ProjectStatistics struct {
 }
 
 type ProjectFilter struct {
-	OrgID string   `json:"org_id" bson:"org_id"`
-	Names []string `json:"name" bson:"name"`
+	OrgID string `json:"org_id" bson:"org_id"`
 }
 
 type EventFilter struct {
@@ -397,24 +395,24 @@ type EventDeliveryFilter struct {
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
-func (g *ProjectFilter) WithNamesTrimmed() *ProjectFilter {
-	f := ProjectFilter{OrgID: g.OrgID, Names: []string{}}
+// func (g *ProjectFilter) WithNamesTrimmed() *ProjectFilter {
+// 	f := ProjectFilter{OrgID: g.OrgID, Names: []string{}}
 
-	for _, s := range g.Names {
-		s = strings.TrimSpace(s)
-		if len(s) == 0 {
-			continue
-		}
-		f.Names = append(f.Names, s)
-	}
+// 	for _, s := range g.Names {
+// 		s = strings.TrimSpace(s)
+// 		if len(s) == 0 {
+// 			continue
+// 		}
+// 		f.Names = append(f.Names, s)
+// 	}
 
-	return &f
-}
+// 	return &f
+// }
 
-func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
-	m := map[string]interface{}{"name": g.Names}
-	return m
-}
+// func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
+// 	m := map[string]interface{}{"name": g.Names}
+// 	return m
+// }
 
 func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 

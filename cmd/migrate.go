@@ -58,7 +58,7 @@ func addRunCommand() *cobra.Command {
 				return
 			}
 
-			fmt.Printf("org id: %+v\n", orgs[0].UID)
+			// fmt.Printf("org id: %+v\n", orgs[0].UID)
 			fmt.Printf("pageable: %+v\n", pageable)
 
 			p := postgres.NewProjectRepo(db.GetDB())
@@ -82,13 +82,17 @@ func addRunCommand() *cobra.Command {
 			// 	return
 			// }
 
-			project, err := p.FetchProjectByID(cmd.Context(), 1)
+			projects, err := p.LoadProjects(cmd.Context(), &datastore.ProjectFilter{
+				OrgID: orgs[0].UID,
+			})
 			if err != nil {
 				fmt.Printf("err: %+v", err)
 				return
 			}
 
-			fmt.Printf("Proj: %+v\n", project.Config)
+			for _, v := range projects {
+				fmt.Printf("Proj: %+v\n", v)
+			}
 		},
 	}
 
