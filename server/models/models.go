@@ -7,13 +7,14 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/guregu/null.v4"
 )
 
 type Project struct {
-	Name              string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	Type              datastore.ProjectType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
-	LogoURL           string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	Config            *datastore.ProjectConfig `json:"config"`
+	Name    string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	Type    datastore.ProjectType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
+	LogoURL string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	Config  *datastore.ProjectConfig `json:"config"`
 }
 
 type UpdateProject struct {
@@ -42,9 +43,9 @@ type ConfigurationResponse struct {
 	ApiVersion         string                                `json:"api_version"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	DeletedAt null.Time `json:"deleted_at,omitempty"`
 }
 
 type OrganisationInvite struct {

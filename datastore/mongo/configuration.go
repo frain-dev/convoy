@@ -23,7 +23,7 @@ func NewConfigRepo(store datastore.Store) datastore.ConfigurationRepository {
 
 func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.Configuration) error {
 	ctx = c.setCollectionInContext(ctx)
-	config.ID = primitive.NewObjectID()
+	// config.ID = primitive.NewObjectID()
 
 	return c.store.Save(ctx, config, nil)
 }

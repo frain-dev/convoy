@@ -11,12 +11,9 @@ import (
 )
 
 var (
-	ErrProjectNotCreated              = errors.New("project could not be created")
-	ErrProjectNotUpdated              = errors.New("project could not be updated")
-	ErrProjectNotDeleted              = errors.New("project could not be deleted")
-	ErrProjectEventsNotDeleted        = errors.New("project events could not be deleted")
-	ErrProjectEndpointsNotDeleted     = errors.New("project endpoints could not be deleted")
-	ErrProjectSubscriptionsNotDeleted = errors.New("project subscriptions could not be deleted")
+	ErrProjectNotCreated = errors.New("project could not be created")
+	ErrProjectNotUpdated = errors.New("project could not be updated")
+	ErrProjectNotDeleted = errors.New("project could not be deleted")
 )
 
 const (
@@ -80,16 +77,10 @@ const (
 	updateProjectById = `
 	-- project.go:updateProjectById
 	UPDATE convoy.projects SET
-	name = $2,
-	owner_id = $3,
-	custom_domain = $4,
-	assigned_domain = $5
+	name = $2, 
+	logo_url = $3,
+	updated_at = now()
 	WHERE id = $1;
-	`
-
-	getProjectEndpoints = `
-	-- project.go:updateProjectById
-	SELECT id FROM convoy.endpoints WHERE project_id = $1
 	`
 
 	deleteProject = `
@@ -117,11 +108,6 @@ const (
 	UPDATE convoy.subscriptions SET 
 	deleted_at = now()
 	WHERE project_id = $1;
-	`
-
-	countProjects = `
-	-- project.go:countProjects
-	SELECT COUNT(id) FROM convoy.projects;
 	`
 )
 
@@ -238,14 +224,6 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-
-	// var ids []int
-	// err = tx.Select(&ids, getProjectEndpoints, uid)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// fmt.Println(ids)
 
 	_, err = tx.Exec(deleteProjectEndpoints, id)
 	if err != nil {

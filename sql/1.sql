@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS convoy.devices (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.configurations (
-	id BIGSERIAL PRIMARY KEY,
+	id TEXT PRIMARY KEY,
 	
 	is_analytics_enabled TEXT NOT NULL,
 	is_signup_enabled BOOLEAN NOT NULL,

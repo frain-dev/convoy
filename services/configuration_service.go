@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ConfigService struct {
@@ -49,8 +48,8 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 	config := &datastore.Configuration{
 		UID:           uuid.New().String(),
 		StoragePolicy: newConfig.StoragePolicy,
-		CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	if newConfig.IsAnalyticsEnabled != nil {

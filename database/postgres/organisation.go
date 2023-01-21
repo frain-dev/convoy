@@ -43,6 +43,7 @@ const (
 	owner_id = $3,
 	custom_domain = $4,
 	assigned_domain = $5
+	updated_at = now()
 	WHERE id = $1;
 	`
 

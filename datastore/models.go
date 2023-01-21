@@ -208,7 +208,7 @@ var (
 	DefaultStoragePolicy = StoragePolicyConfiguration{
 		Type: OnPrem,
 		OnPrem: &OnPremStorage{
-			Path: convoy.DefaultOnPremDir,
+			Path: null.NewString(convoy.DefaultOnPremDir, true),
 		},
 	}
 
@@ -763,34 +763,33 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	ID                 primitive.ObjectID          `json:"-" bson:"_id"`
-	UID                string                      `json:"uid" bson:"uid"`
-	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
-	IsSignupEnabled    bool                        `json:"is_signup_enabled" bson:"is_signup_enabled"`
-	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" bson:"storage_policy"`
+	UID                string                      `json:"uid" db:"id"`
+	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsSignupEnabled    bool                        `json:"is_signup_enabled" db:"is_signup_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" db:"storage_policy"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type StoragePolicyConfiguration struct {
-	Type   StorageType    `json:"type,omitempty" bson:"type" valid:"supported_storage~please provide a valid storage type,required"`
-	S3     *S3Storage     `json:"s3" bson:"s3"`
-	OnPrem *OnPremStorage `json:"on_prem" bson:"on_prem"`
+	Type   StorageType    `json:"type,omitempty" db:"type" valid:"supported_storage~please provide a valid storage type,required"`
+	S3     *S3Storage     `json:"s3" db:"s3"`
+	OnPrem *OnPremStorage `json:"on_prem" db:"on_prem"`
 }
 
 type S3Storage struct {
-	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
-	AccessKey    string `json:"access_key,omitempty" bson:"access_key" valid:"required~please provide an access key"`
-	SecretKey    string `json:"secret_key,omitempty" bson:"secret_key" valid:"required~please provide a secret key"`
-	Region       string `json:"region,omitempty" bson:"region"`
-	SessionToken string `json:"-" bson:"session_token"`
-	Endpoint     string `json:"endpoint,omitempty" bson:"endpoint"`
+	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name"`
+	AccessKey    null.String  `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
+	SecretKey    null.String  `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`
+	Region       null.String  `json:"region,omitempty" db:"region"`
+	SessionToken null.String  `json:"session_token" db:"session_token"`
+	Endpoint     null.String  `json:"endpoint,omitempty" db:"endpoint"`
 }
 
 type OnPremStorage struct {
-	Path string `json:"path" bson:"path"`
+	Path null.String `json:"path" db:"path"`
 }
 
 type OrganisationMember struct {

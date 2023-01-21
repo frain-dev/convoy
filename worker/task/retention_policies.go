@@ -69,12 +69,12 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 	case datastore.S3:
 		exportDir := convoy.TmpExportDir
 		objectStoreOpts := objectstore.ObjectStoreOptions{
-			Bucket:       config.StoragePolicy.S3.Bucket,
-			Endpoint:     config.StoragePolicy.S3.Endpoint,
-			AccessKey:    config.StoragePolicy.S3.AccessKey,
-			SecretKey:    config.StoragePolicy.S3.SecretKey,
-			SessionToken: config.StoragePolicy.S3.SessionToken,
-			Region:       config.StoragePolicy.S3.Region,
+			Bucket:       config.StoragePolicy.S3.Bucket.String,
+			Endpoint:     config.StoragePolicy.S3.Endpoint.String,
+			AccessKey:    config.StoragePolicy.S3.AccessKey.String,
+			SecretKey:    config.StoragePolicy.S3.SecretKey.String,
+			SessionToken: config.StoragePolicy.S3.SessionToken.String,
+			Region:       config.StoragePolicy.S3.Region.String,
 		}
 		objectStoreClient, err := objectstore.NewS3Client(objectStoreOpts)
 		if err != nil {
@@ -85,13 +85,13 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 	case datastore.OnPrem:
 		exportDir := config.StoragePolicy.OnPrem.Path
 		objectStoreOpts := objectstore.ObjectStoreOptions{
-			OnPremStorageDir: exportDir,
+			OnPremStorageDir: exportDir.String,
 		}
 		objectStoreClient, err := objectstore.NewOnPremClient(objectStoreOpts)
 		if err != nil {
 			return nil, "", err
 		}
-		return objectStoreClient, exportDir, nil
+		return objectStoreClient, exportDir.String, nil
 	default:
 		return nil, "", errors.New("invalid storage policy")
 	}
