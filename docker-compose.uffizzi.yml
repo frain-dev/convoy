@@ -1,0 +1,67 @@
+version: "3"
+
+x-uffizzi:
+  ingress:
+    service: web
+    port: 5005
+
+services:
+    web:
+        image: "${CONVOY_IMAGE}"
+        entrypoint: ["/bin/sh"] 
+        command: /uffizzi/start.sh
+        ports:
+        - "5005:5005"
+        volumes:
+            - ./uffizzi:/uffizzi
+        deploy:
+          resources:
+            limits:
+              memory: 2000M
+    
+    scheduler:
+        image: "${CONVOY_IMAGE}"
+        volumes:
+            - ./uffizzi:/uffizzi:rw
+        entrypoint: ["./cmd", "scheduler", "--config", "./uffizzi/convoy-uffizzi.json"]
+        deploy:
+          resources:
+            limits:
+              memory: 1000M
+
+    worker:
+        image: "${CONVOY_IMAGE}"
+        volumes:
+            - ./uffizzi:/uffizzi:rw
+        entrypoint: ["./cmd", "worker", "--config", "./uffizzi/convoy-uffizzi.json"]
+        deploy:
+          resources:
+            limits:
+              memory: 2000M
+
+    mongo:
+      image: mongo:5.0.14
+      entrypoint: ["/usr/bin/mongod", "--replSet", "localhost"]
+      ports: 
+        - "27017:27017"
+        - "27018:27018"
+        - "27019:27019"
+      deploy:
+          resources:
+            limits:
+              memory: 2000M  
+   
+    mongosetup:
+        image: mongo:5.0.14
+        entrypoint: [ "bash", "-c", "sleep 10 && mongo --host 127.0.0.1:27017 --eval 'rs.initiate()'"]    
+        deploy:
+          resources:
+            limits:
+              memory: 1000M   
+
+    redis_server:
+        image: redis:alpine
+        deploy:
+          resources:
+            limits:
+              memory: 500M

@@ -22,7 +22,7 @@ type Client struct {
 }
 
 func New(cfg config.Configuration) (*Client, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	opts := options.Client()
@@ -35,7 +35,7 @@ func New(cfg config.Configuration) (*Client, error) {
 		return nil, err
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := client.Ping(ctx, nil); err != nil {
@@ -142,7 +142,7 @@ func (c *Client) ensureIndex(collectionName string, field string, unique bool, p
 		Options: createIndexOpts,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	collection := c.db.Collection(collectionName)
@@ -159,7 +159,7 @@ func (c *Client) ensureIndex(collectionName string, field string, unique bool, p
 func (c *Client) ensureCompoundIndex(collectionName string) bool {
 	collection := c.db.Collection(collectionName)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	compoundIndices := compoundIndices()

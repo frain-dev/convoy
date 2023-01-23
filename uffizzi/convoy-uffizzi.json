@@ -1,0 +1,48 @@
+{
+    "environment": "dev",
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "redis://localhost:6379"
+        }
+    },
+    "cache": {
+        "type": "redis",
+        "redis": {
+            "dsn": "redis://localhost:6379"
+        }
+    },
+    "host": "localhost:5005",
+    "base_url": "localhost:5005",
+    "logger": {
+        "level": "info"
+    },
+    "server": {
+        "http": {
+            "ssl": false,
+            "ssl_cert_file": "",
+            "ssl_key_file": "",
+            "port": 5005
+        }
+    },
+    "database": {
+        "type": "mongo",
+        "dsn": "mongodb://127.0.0.1:27017/convoy?replicaSet=localhost"
+    },
+    "auth": {
+        "jwt": {
+            "enabled": true
+        },
+        "file": {
+            "basic": [
+                {
+                    "username": "test",
+                    "password": "test",
+                    "role": {
+                        "type": "super_user"
+                    }
+                }
+            ]
+        }
+    }
+}

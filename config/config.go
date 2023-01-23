@@ -41,7 +41,7 @@ var DefaultConfiguration = Configuration{
 	Queue: QueueConfiguration{
 		Type: RedisQueueProvider,
 		Redis: RedisQueueConfiguration{
-			Dsn: "redis://localhost:6378",
+			Dsn: "redis://localhost:6379",
 		},
 	},
 	Logger: LoggerConfiguration{
