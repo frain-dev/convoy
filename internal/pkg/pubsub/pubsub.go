@@ -218,7 +218,7 @@ func (s *SourcePool) hash(source *datastore.Source) string {
 
 	if source.PubSubConfig.Type == datastore.GooglePubSub {
 		gq := source.PubSubConfig.Google
-		hash = fmt.Sprintf("%s,%s,%s,%v", gq.ApiKey, gq.ProjectID, gq.TopicName, source.PubSubConfig.Workers)
+		hash = fmt.Sprintf("%s,%s,%s,%v", gq.Credentials, gq.ProjectID, gq.SubscriptionID, source.PubSubConfig.Workers)
 	}
 
 	return base64.StdEncoding.EncodeToString([]byte(hash))
@@ -230,7 +230,7 @@ func NewPubSub(source *datastore.Source, handler datastore.PubSubHandler) (PubSu
 	}
 
 	if source.PubSubConfig.Type == datastore.GooglePubSub {
-		return google.New(source), nil
+		return google.New(source, handler), nil
 	}
 
 	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSubConfig.Type)

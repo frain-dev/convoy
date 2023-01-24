@@ -6,6 +6,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"google.golang.org/api/option"
 )
 
 type Google struct {
@@ -14,9 +15,10 @@ type Google struct {
 	workers int
 	ctx     context.Context
 	cancel  context.CancelFunc
+	handler datastore.PubSubHandler
 }
 
-func New(source *datastore.Source) *Google {
+func New(source *datastore.Source, handler datastore.PubSubHandler) *Google {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Google{
@@ -25,6 +27,7 @@ func New(source *datastore.Source) *Google {
 		ctx:     ctx,
 		cancel:  cancel,
 		workers: source.PubSubConfig.Workers,
+		handler: handler,
 	}
 }
 
@@ -37,7 +40,7 @@ func (g *Google) Stop() {
 }
 
 func (g *Google) Consume() {
-	client, err := pubsub.NewClient(context.Background(), g.cfg.ProjectID)
+	client, err := pubsub.NewClient(context.Background(), g.cfg.ProjectID, option.WithCredentialsJSON(g.cfg.Credentials))
 
 	if err != nil {
 		log.WithError(err).Error("failed to create new pubsub client")
@@ -45,7 +48,7 @@ func (g *Google) Consume() {
 
 	defer client.Close()
 
-	sub := client.Subscription(g.cfg.TopicName)
+	sub := client.Subscription(g.cfg.SubscriptionID)
 
 	// To enable concurrency settings
 	sub.ReceiveSettings.Synchronous = false
@@ -55,6 +58,10 @@ func (g *Google) Consume() {
 	sub.ReceiveSettings.MaxOutstandingMessages = 8
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
+		if err := g.handler(g.source, string(m.Data)); err != nil {
+			log.WithError(err).Error("failed to write message to create event queue - google pub sub")
+		}
+
 		m.Ack()
 	})
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"encoding/json"
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -74,6 +75,14 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	}
 
 	if !util.IsStringEmpty(string(newSource.PubSub.Type)) {
+		if newSource.PubSub.Type == datastore.GooglePubSub {
+			serviceAccount, err := json.Marshal(newSource.PubSub.Google.ServiceAccount)
+			if err != nil {
+				return nil, util.NewServiceError(http.StatusBadRequest, err)
+			}
+
+			newSource.PubSub.Google.Credentials = serviceAccount
+		}
 		source.PubSubConfig = &newSource.PubSub
 	}
 

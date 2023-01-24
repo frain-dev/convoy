@@ -669,9 +669,21 @@ type SQSPubSubConfig struct {
 }
 
 type GooglePubSubConfig struct {
-	ApiKey    string `json:"api_key" bson:"api_key"`
-	TopicName string `json:"topic_name" bson:"topic_name"`
-	ProjectID string `json:"project_id" bson:"project_id"`
+	ServiceAccount struct {
+		Type         string `json:"type"`
+		ProjectID    string `json:"project_id"`
+		PrivateKeyID string `json:"private_key_id"`
+		PrivateKey   string `json:"private_key"`
+		ClientEmail  string `json:"client_email"`
+		ClientID     string `json:"client_id"`
+		AuthUri      string `json:"auth_uri"`
+		TokenUri     string `json:"token_uri"`
+		AuthProvider string `json:"auth_provider_x509_cert_url"`
+		Client       string `json:"client_x509_cert_url"`
+	} `json:"service_account" bson:"-"`
+	SubscriptionID string `json:"subscription_id" bson:"subscription_id"`
+	Credentials    []byte `json:"credentails" bson:"credentials"`
+	ProjectID      string `json:"project_id" bson:"project_id"`
 }
 
 type User struct {
