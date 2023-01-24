@@ -9,34 +9,29 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/queue"
 )
-
-type handlerFn func(source *datastore.Source, queue queue.Queuer, msg string) error
 
 type Sqs struct {
 	cfg     *datastore.SQSPubSubConfig
 	source  *datastore.Source
 	workers int
 	done    chan struct{}
-	queue   queue.Queuer
-	handler handlerFn
+	handler datastore.PubSubHandler
 }
 
-func New(source *datastore.Source, queue queue.Queuer, handler handlerFn) *Sqs {
+func New(source *datastore.Source, handler datastore.PubSubHandler) *Sqs {
 	return &Sqs{
 		cfg:     source.PubSubConfig.Sqs,
 		source:  source,
 		workers: source.PubSubConfig.Workers,
 		done:    make(chan struct{}),
-		queue:   queue,
 		handler: handler,
 	}
 }
 
-func (s *Sqs) Dispatch() {
+func (s *Sqs) Start() {
 	for i := 1; i <= s.workers; i++ {
-		go s.Listen()
+		go s.Consume()
 	}
 }
 
@@ -49,7 +44,7 @@ func (s *Sqs) cancelled() bool {
 	}
 }
 
-func (s *Sqs) Listen() {
+func (s *Sqs) Consume() {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(s.cfg.DefaultRegion),
 		Credentials: credentials.NewStaticCredentials(s.cfg.AccessKeyID, s.cfg.SecretKey, ""),
@@ -91,7 +86,7 @@ func (s *Sqs) Listen() {
 			go func(m *sqs.Message) {
 				defer wg.Done()
 
-				if err := s.handler(s.source, s.queue, *m.Body); err != nil {
+				if err := s.handler(s.source, *m.Body); err != nil {
 					log.WithError(err).Error("failed to write message to create event queue")
 				}
 

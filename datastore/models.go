@@ -70,6 +70,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
+	PubSubHandler    func(*Source, string) error
 )
 
 type EndpointAuthenticationType string

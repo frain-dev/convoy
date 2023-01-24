@@ -28,15 +28,15 @@ func New(source *datastore.Source) *Google {
 	}
 }
 
-func (g *Google) Dispatch() {
-	go g.Listen()
+func (g *Google) Start() {
+	go g.Consume()
 }
 
 func (g *Google) Stop() {
 	g.cancel()
 }
 
-func (g *Google) Listen() {
+func (g *Google) Consume() {
 	client, err := pubsub.NewClient(context.Background(), g.cfg.ProjectID)
 
 	if err != nil {
