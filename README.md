@@ -6,7 +6,6 @@
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
 - Documentation: [getconvoy.io/docs](https://getconvoy.io/docs)
 - Download: [getconvoy.io/download](https://getconvoy.io/download)
-- Announcement: [Convoy Blog](https://getconvoy.io/blog?tag=News)
 - Slack: [Join the Community](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 
 
