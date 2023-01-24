@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -14,109 +16,6 @@ var (
 	ErrProjectNotCreated = errors.New("project could not be created")
 	ErrProjectNotUpdated = errors.New("project could not be updated")
 	ErrProjectNotDeleted = errors.New("project could not be deleted")
-)
-
-const (
-	createProject = `
-	INSERT INTO convoy.projects (name, type, logo_url, organisation_id, project_configuration_id)
-	VALUES ($1, $2, $3, $4, $5) RETURNING id;
-	`
-
-	createProjectConfiguration = `
-	INSERT INTO convoy.project_configurations (
-		retention_policy, max_payload_read_size, 
-		replay_attacks_prevention_enabled, 
-		retention_policy_enabled, ratelimit_count, 
-		ratelimit_duration, strategy_type, 
-		strategy_duration, strategy_retry_count, 
-		signature_header, signature_hash
-	  ) 
-	  VALUES 
-		(
-		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-		  $11
-		) RETURNING id;
-	`
-
-	updateProjectConfiguration = `
-	UPDATE convoy.project_configurations SET
-		retention_policy = $2,
-		max_payload_read_size = $3,
-		replay_attacks_prevention_enabled = $4,
-		retention_policy_enabled = $5,
-		ratelimit_count = $6,
-		ratelimit_duration = $7,
-		strategy_type = $8,
-		strategy_duration = $9,
-		strategy_retry_count = $10,
-		signature_header = $11,
-		signature_hash = $12,
-		updated_at = now()
-	WHERE id = $1;
-	`
-
-	fetchProjectById = `
-	SELECT
-		p.name,
-		p.type,
-		p.retained_events,
-		p.created_at,
-		p.updated_at,
-		p.deleted_at,
-		p.organisation_id,
-		c.retention_policy as "config.retention_policy",
-		c.max_payload_read_size as "config.max_payload_read_size",
-		c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled",
-		c.retention_policy_enabled as "config.retention_policy_enabled",
-		c.ratelimit_count as "config.ratelimit_count",
-		c.ratelimit_duration as "config.ratelimit_duration",
-		c.strategy_type as "config.strategy_type",
-		c.strategy_duration as "config.strategy_duration",
-		c.strategy_retry_count as "config.strategy_retry_count",
-		c.signature_header as "config.signature_header",
-		c.signature_hash as "config.signature_hash"
-	FROM convoy.projects p
-	LEFT JOIN convoy.project_configurations c
-		ON p.project_configuration_id = c.id
-	WHERE p.id = $1;
-	`
-
-	fetchProjects = `
-	SELECT * FROM convoy.projects
-	WHERE organisation_id = $1
-	ORDER BY id;
-	`
-
-	updateProjectById = `
-	UPDATE convoy.projects SET
-	name = $2, 
-	logo_url = $3,
-	updated_at = now()
-	WHERE id = $1;
-	`
-
-	deleteProject = `
-	UPDATE convoy.projects SET 
-	deleted_at = now()
-	WHERE id = $1;
-	`
-
-	deleteProjectEndpoints = `
-	UPDATE convoy.endpoints SET 
-	deleted_at = now()
-	WHERE project_id = $1;
-	`
-
-	deleteProjectEvents = `
-	UPDATE convoy.events 
-	SET deleted_at = now() 
-	WHERE project_id = $1;
-	`
-	deleteProjectEndpointSubscriptions = `
-	UPDATE convoy.subscriptions SET 
-	deleted_at = now()
-	WHERE project_id = $1;
-	`
 )
 
 type projectRepo struct {
@@ -133,36 +32,60 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 		return err
 	}
 
+	cfgQuery := sq.Insert("convoy.project_configurations").
+		Columns("retention_policy", "max_payload_read_size",
+			"replay_attacks_prevention_enabled",
+			"retention_policy_enabled", "ratelimit_count",
+			"ratelimit_duration", "strategy_type",
+			"strategy_duration", "strategy_retry_count",
+			"signature_header", "signature_hash").
+		Values(o.Config.RetentionPolicy,
+			o.Config.MaxIngestSize,
+			o.Config.ReplayAttacks,
+			o.Config.IsRetentionPolicyEnabled,
+			o.Config.RateLimitCount,
+			o.Config.RateLimitDuration,
+			o.Config.StrategyType,
+			o.Config.StrategyDuration,
+			o.Config.StrategyRetryCount,
+			o.Config.SignatureHeader,
+			o.Config.SignatureHash).
+		Suffix(`RETURNING id`).
+		PlaceholderFormat(sq.Dollar)
+
+	cfgSql, cfgVals, err := cfgQuery.ToSql()
+	if err != nil {
+		return err
+	}
+
 	var id int
-	err = tx.QueryRowx(createProjectConfiguration,
-		o.Config.RetentionPolicy,
-		o.Config.MaxIngestSize,
-		o.Config.ReplayAttacks,
-		o.Config.IsRetentionPolicyEnabled,
-		o.Config.RateLimitCount,
-		o.Config.RateLimitDuration,
-		o.Config.StrategyType,
-		o.Config.StrategyDuration,
-		o.Config.StrategyRetryCount,
-		o.Config.SignatureHeader,
-		o.Config.SignatureHash,
-	).Scan(&id)
-
+	err = tx.QueryRowContext(ctx, cfgSql, cfgVals...).Scan(&id)
 	if err != nil {
 		return err
 	}
 
-	proResult, err := tx.Exec(createProject, o.Name, o.Type, o.LogoURL, o.OrganisationID, id)
+	query := sq.Insert("convoy.projects").
+		Columns("name", "type", "logo_url", "organisation_id", "project_configuration_id").
+		Values(o.Name, o.Type, o.LogoURL, o.OrganisationID, id).
+		Suffix(`RETURNING id`).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err := query.ToSql()
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := proResult.RowsAffected()
+	result, err := tx.ExecContext(ctx, sql, vals...)
 	if err != nil {
 		return err
 	}
 
-	if rowsAffected < 1 {
+	nRows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if nRows < 1 {
 		return ErrProjectNotCreated
 	}
 
@@ -170,7 +93,18 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 }
 
 func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	rows, err := p.db.Queryx(fetchProjects, f.OrgID)
+	q := sq.Select("*").
+		From("convoy.projects").
+		Where("organisation_id = ?", f.OrgID).
+		OrderBy("id").
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := p.db.Queryx(sql, vals...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +121,7 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 		projects = append(projects, &proj)
 	}
 
-	return projects, nil
+	return projects, rows.Close()
 }
 
 func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Project) error {
@@ -196,7 +130,19 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return err
 	}
 
-	pRes, err := tx.Exec(updateProjectById, project.UID, project.Name, project.LogoURL)
+	q := sq.Update("convoy.projects").
+		Set("name", project.Name).
+		Set("logo_url", project.LogoURL).
+		Set("updated_at", time.Now()).
+		Where("id = ?", project.UID).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err := q.ToSql()
+	if err != nil {
+		return err
+	}
+
+	pRes, err := tx.Exec(sql, vals...)
 	if err != nil {
 		return err
 	}
@@ -210,20 +156,28 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotUpdated
 	}
 
-	cRes, err := tx.Exec(updateProjectConfiguration,
-		project.UID,
-		project.Config.RetentionPolicy,
-		project.Config.MaxIngestSize,
-		project.Config.ReplayAttacks,
-		project.Config.IsRetentionPolicyEnabled,
-		project.Config.RateLimitCount,
-		project.Config.RateLimitDuration,
-		project.Config.StrategyType,
-		project.Config.StrategyDuration,
-		project.Config.StrategyRetryCount,
-		project.Config.SignatureHeader,
-		project.Config.SignatureHash,
-	)
+	q = sq.Update("convoy.project_configurations").
+		Set("retention_policy", project.Config.RetentionPolicy).
+		Set("max_payload_read_size", project.Config.MaxIngestSize).
+		Set("replay_attacks_prevention_enabled", project.Config.ReplayAttacks).
+		Set("retention_policy_enabled", project.Config.IsRetentionPolicyEnabled).
+		Set("ratelimit_count", project.Config.RateLimitCount).
+		Set("ratelimit_duration", project.Config.RateLimitDuration).
+		Set("strategy_type", project.Config.StrategyType).
+		Set("strategy_duration", project.Config.StrategyDuration).
+		Set("strategy_retry_count", project.Config.StrategyRetryCount).
+		Set("signature_header", project.Config.SignatureHeader).
+		Set("signature_hash", project.Config.SignatureHash).
+		Set("updated_at", time.Now()).
+		Where("id = ?", project.UID).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err = q.ToSql()
+	if err != nil {
+		return err
+	}
+
+	cRes, err := tx.Exec(sql, vals...)
 	if err != nil {
 		return err
 	}
@@ -241,8 +195,37 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 }
 
 func (p *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {
+	q := sq.Select(
+		"p.name",
+		"p.type",
+		"p.retained_events",
+		"p.created_at",
+		"p.updated_at",
+		"p.deleted_at",
+		"p.organisation_id",
+		`c.retention_policy as "config.retention_policy"`,
+		`c.max_payload_read_size as "config.max_payload_read_size"`,
+		`c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled"`,
+		`c.retention_policy_enabled as "config.retention_policy_enabled"`,
+		`c.ratelimit_count as "config.ratelimit_count"`,
+		`c.ratelimit_duration as "config.ratelimit_duration"`,
+		`c.strategy_type as "config.strategy_type"`,
+		`c.strategy_duration as "config.strategy_duration"`,
+		`c.strategy_retry_count as "config.strategy_retry_count"`,
+		`c.signature_header as "config.signature_header"`,
+		`c.signature_hash as "config.signature_hash"`).
+		From("convoy.projects as p").
+		Join("convoy.project_configurations c ON p.project_configuration_id = c.id").
+		Where("p.id = ?", id).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	var project datastore.Project
-	err := p.db.Get(&project, fetchProjectById, id)
+	err = p.db.Get(&project, sql, vals...)
 	if err != nil {
 		return nil, err
 	}
@@ -260,22 +243,62 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProject, id)
+	q := sq.Update("convoy.projects").
+		Set("deleted_at", time.Now()).
+		Where("id = ?", id).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err := q.ToSql()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProjectEndpoints, id)
+	_, err = tx.Exec(sql, vals...)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProjectEvents, id)
+	q = sq.Update("convoy.endpoints").
+		Set("deleted_at", time.Now()).
+		Where("project_id = ?", id).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err = q.ToSql()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProjectEndpointSubscriptions, id)
+	_, err = tx.Exec(sql, vals...)
+	if err != nil {
+		return err
+	}
+
+	q = sq.Update("convoy.events").
+		Set("deleted_at", time.Now()).
+		Where("project_id = ?", id).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err = q.ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(sql, vals...)
+	if err != nil {
+		return err
+	}
+
+	q = sq.Update("convoy.subscriptions").
+		Set("deleted_at", time.Now()).
+		Where("project_id = ?", id).
+		PlaceholderFormat(sq.Dollar)
+
+	sql, vals, err = q.ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(sql, vals...)
 	if err != nil {
 		return err
 	}

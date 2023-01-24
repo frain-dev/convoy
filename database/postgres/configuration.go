@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -34,7 +35,6 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		}
 	}
 
-	var id string
 	query := sq.Insert("convoy.configurations").
 		Columns("id", "is_analytics_enabled",
 			"is_signup_enabled", "storage_policy_type",
@@ -52,13 +52,26 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 			config.StoragePolicy.S3.Region,
 			config.StoragePolicy.S3.SessionToken,
 			config.StoragePolicy.S3.Endpoint).
-		Suffix("RETURNING \"id\"").
-		RunWith(c.db).
+		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar)
 
-	err := query.QueryRowContext(ctx).Scan(&id)
+	sql, vals, err := query.ToSql()
 	if err != nil {
 		return err
+	}
+
+	result, err := c.db.ExecContext(ctx, sql, vals...)
+	if err != nil {
+		return err
+	}
+
+	nRows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if nRows < 1 {
+		return errors.New("configuration not created")
 	}
 
 	return nil
@@ -69,14 +82,14 @@ func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configur
 		"id",
 		"is_analytics_enabled",
 		"is_signup_enabled",
-		"storage_policy_type AS \"storage_policy.type\"",
-		"on_prem_path AS \"storage_policy.on_prem.path\"",
-		"s3_bucket AS \"storage_policy.s3.bucket\"",
-		"s3_access_key AS \"storage_policy.s3.access_key\"",
-		"s3_secret_key AS \"storage_policy.s3.secret_key\"",
-		"s3_region AS \"storage_policy.s3.region\"",
-		"s3_session_token AS \"storage_policy.s3.session_token\"",
-		"s3_endpoint AS \"storage_policy.s3.endpoint\"",
+		`storage_policy_type AS "storage_policy.type"`,
+		`on_prem_path AS "storage_policy.on_prem.path"`,
+		`s3_bucket AS "storage_policy.s3.bucket"`,
+		`s3_access_key AS "storage_policy.s3.access_key"`,
+		`s3_secret_key AS "storage_policy.s3.secret_key"`,
+		`s3_region AS "storage_policy.s3.region"`,
+		`s3_session_token AS "storage_policy.s3.session_token"`,
+		`s3_endpoint AS "storage_policy.s3.endpoint"`,
 	).From("convoy.configurations").Where("id = 'default'")
 
 	sql, _, err := query.ToSql()
@@ -121,28 +134,26 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		Set("s3_session_token", cfg.StoragePolicy.S3.SessionToken).
 		Set("s3_endpoint", cfg.StoragePolicy.S3.Endpoint).
 		Set("updated_at", time.Now()).
-		Where("id = 'default'").RunWith(c.db).
+		Where("id = 'default'").
 		PlaceholderFormat(sq.Dollar)
 
-	sql, _, err := query.ToSql()
+	sql, vals, err := query.ToSql()
 	if err != nil {
 		return err
 	}
 
-	println(sql)
-
-	result, err := query.ExecContext(ctx)
+	result, err := c.db.ExecContext(ctx, sql, vals...)
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	nRows, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
 
-	if rowsAffected < 1 {
-		return ErrProjectNotUpdated
+	if nRows < 1 {
+		return errors.New("configuration not updated")
 	}
 
 	return nil
